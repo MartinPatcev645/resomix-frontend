@@ -47,7 +47,7 @@ def _patch_internal_singletons(playlist_info=None):
     mock db session.
     """
     with patch(
-        "app.services.similarity_service.OperationLimitRepository"
+        "app.services.similarity_service.OperationLimitEvaluator"
     ) as mock_olr_cls, patch(
         "app.services.playlist_engagement_service.PlaylistEngagementService"
     ) as mock_eng_cls:

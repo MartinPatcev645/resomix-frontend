@@ -22,7 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.track_repository import TrackRepository
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.similarity_repository import SimilarityRepository
-from app.repositories.operation_limit_repository import OperationLimitRepository
+from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.services.similarity_segment import SimilaritySegmentService
 from app.core.config import settings
 from app.utils.demo_mode_utils import apply_demo_mode_redaction, is_anonymous_frontend, ANON_VISIBLE_COUNT
@@ -299,15 +299,15 @@ class SimilarityService:
                     if filtered_queried_tracks:
                         response_data["queried_track"] = filtered_queried_tracks[0]
 
-                # Increment usage counter if user is available
+                # Record a successful playlist creation against the daily entitlement counter.
                 if user_id:
                     try:
-                        await OperationLimitRepository().async_increment_usage(
+                        await OperationLimitEvaluator().record_success(
                             db, user_id=user_id, operation_code="playlist_create"
                         )
-                        print(f"SIMILARITY UPLOAD: Incremented usage for user_id={user_id}")
+                        print(f"SIMILARITY UPLOAD: Recorded playlist use for user_id={user_id}")
                     except Exception as inc_err:
-                        print(f"SIMILARITY UPLOAD: Failed to increment usage: {str(inc_err)}")
+                        print(f"SIMILARITY UPLOAD: Failed to record playlist use: {str(inc_err)}")
 
                 await db.commit()
 
@@ -522,15 +522,15 @@ class SimilarityService:
                     if filtered_queried_tracks:
                         response_data["queried_track"] = filtered_queried_tracks[0]
 
-                # Increment usage counter if user is available
+                # Record a successful playlist creation against the daily entitlement counter.
                 if user_id:
                     try:
-                        await OperationLimitRepository().async_increment_usage(
+                        await OperationLimitEvaluator().record_success(
                             db, user_id=user_id, operation_code="playlist_create"
                         )
-                        print(f"SIMILARITY BY PATH: Incremented usage for user_id={user_id}")
+                        print(f"SIMILARITY BY PATH: Recorded playlist use for user_id={user_id}")
                     except Exception as inc_err:
-                        print(f"SIMILARITY BY PATH: Failed to increment usage: {str(inc_err)}")
+                        print(f"SIMILARITY BY PATH: Failed to record playlist use: {str(inc_err)}")
 
                 await db.commit()
 

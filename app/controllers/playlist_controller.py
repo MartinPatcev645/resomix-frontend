@@ -841,6 +841,7 @@ class PlaylistController:
             response_data = format_response(
                 success=False,
                 error=limit_check.message or "Operation not permitted",
+                reason=limit_check.reason,
             )
             return JSONResponse(
                 status_code=limit_check.status_code,
@@ -897,16 +898,12 @@ class PlaylistController:
                         "response": result,
                     },
                 )
-                # Increment operation usage for playlist_create on successful fork
-                try:
-                    await self.operation_limit_repository.async_increment_usage(
-                        db,
-                        user_id=current_user.id,
-                        operation_code="playlist_create",
-                        increment=1,
-                    )
-                except Exception:
-                    pass
+                # Record the successful fork against the daily playlist entitlement counter.
+                await self.operation_limit_evaluator.record_success(
+                    db,
+                    user_id=current_user.id,
+                    operation_code="playlist_create",
+                )
                 await db.commit()
                 return JSONResponse(status_code=status.HTTP_201_CREATED, content=result)
 

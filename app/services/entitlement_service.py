@@ -25,7 +25,7 @@ Email: usman.naeem2212@gmail.com
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -200,6 +200,31 @@ class EntitlementService:
     async def get_str(self, db, feature_key, *, user=None, visitor_id=None) -> str:
         val = await self.get_entitlement(db, feature_key, user=user, visitor_id=visitor_id)
         return "" if val is None else str(val)
+
+    async def get_effective_map(
+        self, db: AsyncSession, *, user: Optional[User] = None, visitor_id: Optional[str] = None
+    ) -> Tuple[Plan, Dict[str, Any]]:
+        """Resolve the caller's effective plan + full ``{feature_key: value}`` map — plan values
+        with any active per-subject overrides overlaid. Powers the consumer 'my entitlements'
+        endpoint so the frontend can drive its UI from a single call."""
+        plan = await self.get_effective_plan(db, user)
+        result: Dict[str, Any] = dict(await self.get_entitlements_map(db, plan))
+        subject = ("user", str(user.id)) if user is not None else (("visitor", visitor_id) if visitor_id else None)
+        if subject is not None:
+            rows = (await db.execute(
+                select(EntitlementOverride, Feature)
+                .join(Feature, EntitlementOverride.feature_id == Feature.id)
+                .where(
+                    EntitlementOverride.subject_type == subject[0],
+                    EntitlementOverride.subject_id == subject[1],
+                )
+            )).all()
+            now = datetime.utcnow()
+            for ov, feat in rows:
+                if ov.expires_at is not None and ov.expires_at < now:
+                    continue
+                result[feat.key] = _entitlement_value(ov, feat)
+        return plan, result
 
     # ------------------------------------------------------------------ #
     # Internals

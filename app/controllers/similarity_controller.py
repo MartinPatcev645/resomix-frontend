@@ -137,6 +137,7 @@ class SimilarityController:
                 response_content = format_response(
                     success=False,
                     error=limit_check.message or "Operation not permitted",
+                    reason=limit_check.reason,
                 )
                 return JSONResponse(
                     status_code=limit_check.status_code,
@@ -1053,6 +1054,7 @@ class SimilarityController:
                 response_content = format_response(
                     success=False,
                     error=limit_check.message or "Operation not permitted",
+                    reason=limit_check.reason,
                 )
                 return JSONResponse(
                     status_code=limit_check.status_code,

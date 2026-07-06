@@ -20,6 +20,7 @@ from app.services.auth_service import AuthService
 from app.services.email_service import EmailService
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
+from app.services.guest_identity_service import GuestIdentityService
 from app.core.config import settings
 
 
@@ -30,6 +31,18 @@ class AuthController:
         self.auth_service = AuthService()
         self.email_service = EmailService()
         self.logging_service = LoggingService()
+        self.guest_identity = GuestIdentityService()
+
+    def _guest_visitor_id(self, request: Request) -> str:
+        """Derive the server-side guest visitor_id for this device (Phase 6 reparenting).
+
+        Same derivation the similarity endpoints use to tag guest playlists, so a
+        sign-in from the same device resolves to the matching id. Best-effort — a
+        derivation hiccup must never block auth."""
+        try:
+            return self.guest_identity.derive_visitor_id(request)
+        except Exception:
+            return ""
 
     def _get_client_info(self, request: Request) -> Dict[str, str]:
         """Extract client information from request"""
@@ -63,6 +76,7 @@ class AuthController:
                 username=registration_data["username"],
                 password=registration_data["password"],
                 name=registration_data.get("name"),
+                guest_visitor_id=self._guest_visitor_id(request),
             )
 
             # Send verification email
@@ -182,6 +196,7 @@ class AuthController:
                 password=login_data["password"],
                 user_agent=client_info["user_agent"],
                 ip_address=client_info["ip_address"],
+                guest_visitor_id=self._guest_visitor_id(request),
             )
 
             # Check if 2FA is required
@@ -316,6 +331,7 @@ class AuthController:
                 code=verification_data["code"],
                 user_agent=client_info["user_agent"],
                 ip_address=client_info["ip_address"],
+                guest_visitor_id=self._guest_visitor_id(request),
             )
 
             duration_ms = (time.time() - start_time) * 1000

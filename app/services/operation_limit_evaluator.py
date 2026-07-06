@@ -17,17 +17,16 @@ from dataclasses import dataclass
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select
 
-from app.models import OperationType, UserOperationLimit, Playlist
+from app.models import OperationType, UserOperationLimit
 from app.models.user import User
 from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.core.entitlement_keys import FeatureKey
 from app.services.entitlement_service import EntitlementService
+from app.services.entitlement_gate import EntitlementGate
 
-# Bridge the legacy OperationType.code space to the new entitlement feature keys. Phase 5 will
-# switch the enforcement path to source limits from entitlements; for now this is only used by
-# ``resolve_effective_limit`` (the seam), leaving ``check()`` behavior unchanged.
+# Bridge the legacy OperationType.code space to the new entitlement feature keys.
 OPERATION_TO_FEATURE = {
     "playlist_create": FeatureKey.PLAYLISTS_PER_DAY,
 }
@@ -38,6 +37,7 @@ class OperationLimitResult:
     allowed: bool
     status_code: int
     message: Optional[str] = None
+    reason: Optional[str] = None  # login_required | upgrade_required (soft nudge, when denied)
 
 
 class OperationLimitEvaluator:
@@ -46,6 +46,7 @@ class OperationLimitEvaluator:
     def __init__(self) -> None:
         self._op_repo = OperationLimitRepository()
         self._entitlements = EntitlementService()
+        self._gate = EntitlementGate()
 
     async def resolve_effective_limit(
         self, db: AsyncSession, user: Optional[User], operation_code: str
@@ -74,6 +75,14 @@ class OperationLimitEvaluator:
         if not user_id:
             return OperationLimitResult(allowed=True, status_code=200)
 
+        # --- playlist_create: per-plan DAILY limit via the entitlement gate (T1) --------------
+        # Logged-in frontend users are now governed by their plan's PLAYLISTS_PER_DAY (Redis daily
+        # counter), the same mechanism guests use — replacing the legacy lifetime-total limit.
+        # (B2B partners never reach here: they have no user_id, short-circuited above.)
+        if operation_code == "playlist_create":
+            return await self._check_playlist_daily(db, user_id)
+
+        # --- legacy per-user operation limits (e.g. spotify_transfer) — unchanged -------------
         operation = await db.execute(
             select(OperationType).where(OperationType.code == operation_code)
         )
@@ -103,34 +112,6 @@ class OperationLimitEvaluator:
                 message="This action is disabled for your account.",
             )
 
-        if operation_code == "playlist_create":
-            # Prefer stored usage if present; if zero, backfill from actual playlist count once.
-            current_usage = (getattr(limit, "usage", 0) or 0)
-            if current_usage == 0:
-                count_stmt = select(func.count(Playlist.id)).where(
-                    Playlist.user_id == user_id, Playlist.deleted_at.is_(None)
-                )
-                current_usage = (await db.execute(count_stmt)).scalar_one() or 0
-                # Best-effort backfill of usage so future checks are O(1)
-                try:
-                    # Only update if different to avoid unnecessary writes
-                    if current_usage > 0:
-                        await self._op_repo.async_increment_usage(
-                            db, user_id=user_id, operation_code=operation_obj.code, increment=current_usage
-                        )
-                        # Refresh local value
-                        limit = await self._fetch_limit(db, user_id, operation_obj.id)
-                        current_usage = getattr(limit, "usage", current_usage)
-                except Exception:
-                    # Do not fail the request because of a metering write issue
-                    pass
-            if current_usage >= limit.limit_value:
-                return OperationLimitResult(
-                    allowed=False,
-                    status_code=403,
-                    message=f"Playlist limit reached ({limit.limit_value}). Please remove an existing playlist or upgrade your plan.",
-                )
-
         if operation_code == "spotify_transfer":
             # Enforce using the per-user usage counter stored on the limit row
             current_usage = getattr(limit, "usage", 0) or 0
@@ -142,6 +123,51 @@ class OperationLimitEvaluator:
                 )
 
         return OperationLimitResult(allowed=True, status_code=200)
+
+    # ------------------------------------------------------------------ #
+    # playlist_create → entitlement daily gate (peek before, record on success)
+    # ------------------------------------------------------------------ #
+
+    async def _load_user(self, db: AsyncSession, user_id: int) -> Optional[User]:
+        return (
+            await db.execute(select(User).where(User.id == user_id))
+        ).scalar_one_or_none()
+
+    async def _check_playlist_daily(self, db: AsyncSession, user_id: int) -> OperationLimitResult:
+        """Peek the caller's daily playlist allowance (does not consume). Soft-denies with an
+        upgrade nudge when at limit. Fails open (allowed) if Redis is unavailable."""
+        user = await self._load_user(db, user_id)
+        gate = await self._gate.peek_allowed(db, FeatureKey.PLAYLISTS_PER_DAY, user=user)
+        if gate.allowed:
+            return OperationLimitResult(allowed=True, status_code=200)
+        limit_txt = f" ({gate.limit})" if gate.limit else ""
+        return OperationLimitResult(
+            allowed=False,
+            status_code=403,
+            message=f"You've reached today's playlist limit{limit_txt}. Upgrade your plan to create more.",
+            reason=gate.reason,
+        )
+
+    async def record_success(
+        self, db: AsyncSession, *, user_id: Optional[int], operation_code: str
+    ) -> None:
+        """Record one successful operation. For ``playlist_create`` this increments the daily
+        entitlement counter (paired with the ``check`` peek); for other operations it falls back
+        to the legacy per-user usage counter. Best-effort — never raises into the caller."""
+        if not user_id:
+            return
+        try:
+            if operation_code == "playlist_create":
+                user = await self._load_user(db, user_id)
+                if user is not None:
+                    await self._gate.record_use(FeatureKey.PLAYLISTS_PER_DAY, user=user)
+                return
+            await self._op_repo.async_increment_usage(
+                db, user_id=user_id, operation_code=operation_code
+            )
+        except Exception:
+            # Metering must not fail the underlying operation.
+            pass
 
     async def _fetch_limit(self, db: AsyncSession, user_id: int, operation_id: int) -> UserOperationLimit | None:
         stmt = select(UserOperationLimit).where(

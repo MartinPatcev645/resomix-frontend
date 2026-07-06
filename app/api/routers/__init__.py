@@ -29,6 +29,7 @@ from .admin.users import router as admin_users_router
 from .admin.roles import router as admin_roles_router
 from .admin.processing import router as admin_processing_router
 from .admin.logs import router as admin_logs_router
+from .admin.entitlements import router as admin_entitlements_router
 from .partner import router as partner_router
 from .contact import router as contact_router
 from .health import router as health_router
@@ -48,6 +49,7 @@ from .open_tracks_pipeline import router as open_tracks_pipeline_router
 from .tracks import router as tracks_router
 from .telemetry import router as telemetry_router
 from .purchases import router as purchases_router
+from .entitlements import router as entitlements_router
 from .webhooks import router as webhooks_router
 from .internal.sftp import router as sftp_internal_router
 from .internal.notify import router as notify_internal_router
@@ -68,6 +70,7 @@ v1_routers = [
     (preview_router, V1_PREFIX),
     (telemetry_router, V1_PREFIX),
     (purchases_router, V1_PREFIX),
+    (entitlements_router, V1_PREFIX),
     (playlists_router, V1_PREFIX),
     (playlist_engagement_router, V1_PREFIX),
     (tracks_router, V1_PREFIX),
@@ -93,6 +96,7 @@ v1_routers = [
     (admin_roles_router, V1_PREFIX),
     (admin_processing_router, V1_PREFIX),
     (admin_logs_router, V1_PREFIX),
+    (admin_entitlements_router, V1_PREFIX),
     (health_router, V1_PREFIX),
     (dummy_router, V1_PREFIX),
     # Special case: webhooks_router has internal /api/v1 prefix

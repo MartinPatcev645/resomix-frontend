@@ -12,10 +12,15 @@ Date: October 23, 2025
 
 from typing import Optional, Dict, Any, Tuple
 from datetime import datetime, timedelta, timezone
+import logging
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
 from app.models.user import User
+from app.models.plan import Plan
+
+logger = logging.getLogger(__name__)
 from app.repositories.user_repository import (
     UserRepository,
     UserTokenRepository,
@@ -45,6 +50,56 @@ class AuthService:
         self.session_repo = UserSessionRepository()
         self.operation_limit_repo = OperationLimitRepository()
 
+    # ------------------------------------------------------------------ #
+    # Phase 6 — guest → account association (frontend, System Partner 1)
+    # ------------------------------------------------------------------ #
+
+    async def _reparent_guest_playlists(
+        self, db: AsyncSession, user_id: int, visitor_id: Optional[str]
+    ) -> int:
+        """Claim any guest-created playlists for this device onto the freshly
+        authenticated user. Best-effort: never break auth on failure.
+
+        Scoped to still-unowned rows tagged with THIS ``visitor_id`` under the
+        frontend system partner, so it can never claim another visitor's or a
+        B2B partner's playlists. Idempotent (a re-run matches nothing once the
+        rows are owned and their ``guest_visitor_id`` cleared).
+        """
+        if not visitor_id:
+            return 0
+        try:
+            result = await db.execute(
+                text(
+                    "UPDATE playlists SET user_id = :uid, guest_visitor_id = NULL "
+                    "WHERE guest_visitor_id = :vid AND user_id IS NULL AND partner_id = :pid"
+                ),
+                {"uid": user_id, "vid": visitor_id, "pid": settings.system_partner_id},
+            )
+            await db.commit()
+            claimed = result.rowcount or 0
+            if claimed:
+                logger.info("Reparented %d guest playlist(s) to user %s", claimed, user_id)
+            return claimed
+        except Exception as exc:
+            logger.warning("Guest playlist reparent failed for user %s: %s", user_id, exc)
+            return 0
+
+    async def _assign_default_plan(self, db: AsyncSession, user: User) -> None:
+        """Attach a newly registered user to the default (free) plan. Best-effort;
+        resolution already treats a NULL ``plan_id`` as the default, so failure is
+        non-fatal — this just makes the assignment explicit for admin queries."""
+        try:
+            if user.plan_id is not None:
+                return
+            default_plan = (
+                await db.execute(select(Plan).where(Plan.is_default.is_(True)))
+            ).scalar_one_or_none()
+            if default_plan:
+                user.plan_id = default_plan.id
+                await db.commit()
+        except Exception as exc:
+            logger.warning("Default-plan assignment failed for user %s: %s", user.id, exc)
+
     async def register_user(
         self,
         db: AsyncSession,
@@ -52,6 +107,7 @@ class AuthService:
         username: str,
         password: str,
         name: Optional[str] = None,
+        guest_visitor_id: Optional[str] = None,
     ) -> Tuple[User, str]:
         """
         Register a new user account.
@@ -140,6 +196,12 @@ class AuthService:
             # Don't fail registration if limit setup fails
             pass
 
+        # Phase 6.2 — put the new user on the default (free) plan explicitly.
+        await self._assign_default_plan(db, user)
+
+        # Phase 6.1 — claim any playlists this device created as a guest.
+        await self._reparent_guest_playlists(db, user.id, guest_visitor_id)
+
         return user, token
 
     async def login_user(
@@ -149,6 +211,7 @@ class AuthService:
         password: str,
         user_agent: Optional[str] = None,
         ip_address: Optional[str] = None,
+        guest_visitor_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Authenticate user and create session.
@@ -214,7 +277,8 @@ class AuthService:
 
         # Generate tokens
         return await self._create_user_session(
-            db=db, user=user, user_agent=user_agent, ip_address=ip_address
+            db=db, user=user, user_agent=user_agent, ip_address=ip_address,
+            guest_visitor_id=guest_visitor_id,
         )
 
     async def verify_2fa_and_login(
@@ -224,6 +288,7 @@ class AuthService:
         code: str,
         user_agent: Optional[str] = None,
         ip_address: Optional[str] = None,
+        guest_visitor_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Verify 2FA code and complete login.
@@ -264,7 +329,8 @@ class AuthService:
 
         # Generate tokens
         return await self._create_user_session(
-            db=db, user=user, user_agent=user_agent, ip_address=ip_address
+            db=db, user=user, user_agent=user_agent, ip_address=ip_address,
+            guest_visitor_id=guest_visitor_id,
         )
 
     async def _create_user_session(
@@ -273,6 +339,7 @@ class AuthService:
         user: User,
         user_agent: Optional[str] = None,
         ip_address: Optional[str] = None,
+        guest_visitor_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create user session and return tokens"""
         # Create access token
@@ -298,6 +365,10 @@ class AuthService:
             ip_address=ip_address,
             expires_at=expires_at,
         )
+
+        # Phase 6.1 — a returning user on a device that has guest playlists claims
+        # them at sign-in (covers login and 2FA-verified login through this choke point).
+        await self._reparent_guest_playlists(db, user.id, guest_visitor_id)
 
         return {
             "access_token": access_token,

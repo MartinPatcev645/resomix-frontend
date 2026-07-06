@@ -13,9 +13,9 @@
 
 ---
 
-## 📍 Progress & Audit — checkpoint after Phase 5 (increment 1)
+## 📍 Progress & Audit — checkpoint after Phase 7.1
 
-**Full suite: 420 passed, 0 failed, 0 skipped** with both servers healthy (Alwyzon 8001 + similarity 8004). Migrations head = `e2a3b4c5d6e7`. Seed = 15 features × 5 plans = 75 entitlements (idempotent, typed correctly, `free` = default).
+**Full suite: 438 passed, 0 failed** with both servers healthy (Alwyzon 8001 + similarity 8004). Seed baseline verified intact after admin-write tests (15 features / 5 plans / 75 entitlements, default=`free`, zero leftover temp rows). Migrations head = `e2a3b4c5d6e7`. Seed = 15 features × 5 plans = 75 entitlements (idempotent, typed correctly, `free` = default).
 
 | Phase | Status | Notes |
 |---|---|---|
@@ -24,7 +24,19 @@
 | 2 — Entitlement resolution | ✅ done | `EntitlementService` (override→plan→default, Redis version-cache). Evaluator **seam** added (non-breaking). |
 | 3 — Guest identity | ✅ done (services) · ⚠️ not wired | `GuestIdentityService` + `get_guest_context`. **Gap:** not called by any endpoint yet → cookie never issued / `visitor_id` never derived live. |
 | 4 — Counters + gate | ✅ done | `redis_counter` (atomic Lua), `UsageCounterService` (UTC daily, self-clearing), `EntitlementGate` (soft, fail-open). |
-| 5 — Endpoint enforcement | 🟢 **mostly done** (2 items remain) | Wired + tested: similarity-**upload** guest-deny, **rating** gate, **guest daily playlist limit + track clamp + `guest_visitor_id` tagging** (E2E via live 8004), **Spotify export** gate. Remaining: logged-in daily migration + Apple/Tidal export (see below). |
+| 5 — Endpoint enforcement | 🟢 **core done** (tail = TODOs, see below) | Wired + tested: similarity-**upload** guest-deny, **rating** gate, **guest daily playlist limit + track clamp + `guest_visitor_id` tagging** (E2E via live 8004), **Spotify export** gate. **Logged-in daily migration = [T1] ✅ done** (both guests & logged-in now on the same `PLAYLISTS_PER_DAY` gate — split-brain resolved). Remaining tail: Apple/Tidal export ([T2]), analysis ([T3]). |
+| 2.3 — Evaluator on entitlements | ✅ **done via [T1]** | `operation_limit_evaluator` now sources `playlist_create` limits from entitlements (override→plan→default) and enforces the daily counter; legacy `UserOperationLimit` retained only for `spotify_transfer`. |
+| 6 — Guest → account association | ✅ **done** | 6.1 reparent guest playlists on register/login/2FA (device `visitor_id`, system-partner-scoped, idempotent, no cross-visitor/owned-row claim); 6.2 new users placed on the default (free) plan explicitly. Best-effort (never breaks auth). Tests: `test_phase6_reparent.py` (4). Signup-bonus consumption deferred → see [T4] (unblocked by [T1]). |
+| 7.1 — Admin entitlement API | ✅ **done** | `/api/v1/admin/plans|features` read + `PUT` entitlement edit (typed-validated, cache-busting, audited) + `PATCH` plan flags (single-default invariant) + user effective-plan view. RBAC `plans:manage`. Tests: `test_admin_entitlements.py` (8). |
+| 7.2 — Admin UI plan editor | 🟧 **next (frontend repo)** | Grid of plans × features with typed inputs, activate/deactivate, effective-plan lookup — consumes the 7.1 API. Lives in `resomix-web`, not this backend. |
+
+### 🔖 TODO backlog
+> **Scheduling (user decision, 2026-07):** [T2] and [T4] are **deferred to after all phases are complete** — verified that neither is a prerequisite for any remaining phase (Spotify already demonstrates the export-gate pattern for the frontend; the signup bonus is a standalone grant). Pick them up in the end-of-plan cleanup pass alongside [T5].
+- **[T1] Logged-in daily migration — ✅ DONE (user-approved behavior change).** `playlist_create` is now governed by the plan's `PLAYLISTS_PER_DAY` daily counter for logged-in frontend users, via `OperationLimitEvaluator.check` (peek) + a new `record_success` (record), unifying them with the guest path. Centralized in the evaluator, so **all three creation paths** migrate together: similarity **upload** + **by_id** (`similarity_service` records) and playlist **fork** (`playlist_controller` records). `OperationLimitResult` gained a `reason` (`upgrade_required`) propagated by all three controllers. Legacy total-limit logic removed for `playlist_create`; the register-time `UserOperationLimit(1000)` grant is now **vestigial** for playlist_create (still read for `spotify_transfer`). Tests: `test_t1_logged_in_daily.py` (3: peek/record, per-user isolation, E2E 1/day denial). **Effect: existing users (NULL plan_id → free) now get 2 playlists/day** instead of a 1000 lifetime total. *(Cleanup candidate: drop the vestigial register grant — deferred to avoid touching the legacy op-limit tests.)*
+- **[T2] Apple Music & Tidal export gating (blocked on auth uplift).** Their transfer endpoints authenticate with `get_api_key` only — no `get_current_user`, so no plan to gate on. Require `get_current_user` first, then apply `check_export("apple"/"tidal", user=…)` exactly like Spotify.
+- **[T3] Analysis gating (no endpoint yet).** `analysis_per_day` / `analysis_feature_count` plumbing is ready; wire when the analysis action ships (Step 5.6).
+- **[T4] Signup-bonus consumption (Step 6.2 tail) — now UNBLOCKED by [T1].** `signup_bonus_playlists` is seeded per-plan and users are on a plan + the daily gate. Grant the bonus as a **one-time** day-1 allowance (e.g. pre-seed the user's Redis daily counter to `-bonus`, or an effective-limit bump gated by a one-time token). Must be idempotent (applied exactly once). Small, stateful — deserves its own increment; not required for correctness.
+- **[T5] `guest_cookie_secret` prod env + `.env.example`** (secrets hygiene, from the Phase-5 audit).
 
 ### Audit findings & things the original step list under-specified (NEW — address before "done")
 1. **Two enforcement systems now coexist.** The legacy `operation_limits` still governs logged-in users (`playlist_create` = *total*, Spotify toggle); the new entitlement system is additive. **Logged-in users are still on the OLD total limit, not the new per-day** — the evaluator `check()` switch (Step 2.3 follow-up) must migrate them, or we have two sources of truth. *Decide + do in the Phase-5 remainder.*
@@ -181,27 +193,29 @@
 
 ---
 
-## Phase 6 — Guest → account association
+## Phase 6 — Guest → account association ✅ (core done)
 
-### Step 6.1 — Reparent guest playlists on login/register
-- 🟦 On successful login/register, `UPDATE playlists SET user_id=:uid, guest_visitor_id=NULL WHERE guest_visitor_id=:vid AND user_id IS NULL`.
-- **Best practice:** run inside the auth transaction; idempotent; only claims rows still owned by that visitor & unowned.
-- 🧪 reparent correctness; **no cross-user leak** (can't claim another visitor's playlists); idempotent re-run; visitor with no playlists → no-op. ✅
+### Step 6.1 — Reparent guest playlists on login/register ✅ **done**
+- 🟦 On successful **register / login / 2FA-verified login**, `UPDATE playlists SET user_id=:uid, guest_visitor_id=NULL WHERE guest_visitor_id=:vid AND user_id IS NULL AND partner_id=:system_partner_id`.
+- **Implementation:** `AuthService._reparent_guest_playlists(db, user_id, visitor_id)` (raw SQL → bypasses the ORM tenancy failsafe; explicit `partner_id` scoping). The controller derives the device `visitor_id` via `GuestIdentityService.derive_visitor_id(request)` (same derivation the similarity path used to tag) and threads it through `register_user` / `login_user` / `verify_2fa_and_login` → `_create_user_session` (the single login choke point covering both login and 2FA). **Best-effort** — a derivation/DB hiccup logs and returns 0, never breaking auth.
+- **Best practice:** idempotent (re-run matches nothing once owned & un-tagged); only claims **unowned** rows tagged with **that** visitor under the **frontend system partner** → no cross-visitor / cross-partner / owned-row claim.
+- 🧪 `test_phase6_reparent.py`: reparent-own-only + isolation from another visitor; idempotent re-run + no-op without visitor_id; **never claims an already-owned row**; login-endpoint E2E (controller derives + threads the id). ✅
 
-### Step 6.2 — Default plan + signup bonus
-- 🟦 On register: set `users.plan_id = free`; grant `signup_bonus_playlists` (admin-set) by seeding the user's Redis daily counter down (or granting a one-time bonus token). No guest-counter cross-referencing.
-- 🧪 new user is on free; bonus applied exactly once; bonus number is admin-editable (reads entitlement). ✅
+### Step 6.2 — Default plan + signup bonus 🟢 **default-plan done; bonus = [T4] TODO**
+- 🟦 On register: `AuthService._assign_default_plan` sets `users.plan_id` = the `is_default` plan (best-effort; resolution already treats NULL as default, so this just makes it explicit for admin queries). ✅
+- ⏳ **Signup bonus deferred → [T4].** `signup_bonus_playlists` is seeded and readable, but granting it by seeding the user's Redis daily counter is only meaningful once logged-in users are on the daily gate (**[T1]**). Wire the two together. No guest-counter cross-referencing.
+- 🧪 new user is on the default plan (covered). Bonus tests land with [T1]/[T4]. 
 
 ---
 
 ## Phase 7 — Admin API + UI
 
-### Step 7.1 — 🟦 Admin entitlement endpoints
-- CRUD for `plans`, read `features`, edit `plan_entitlements`; **validate writes against `feature.value_type`**; **bump entitlement version / bust Redis cache** on save; record `updated_by`.
-- **Best practice:** RBAC (existing admin permission), audit trail, transactional writes, reject unknown feature keys / wrong types.
-- 🧪 admin-only (401/403 for non-admin); validation rejects bad types; **edit → cache busts → new limit effective**; audit fields set. ✅
+### Step 7.1 — 🟦 Admin entitlement endpoints ✅ **done**
+- **Endpoints** (`/api/v1/admin/...`, reads need `admin:access`, writes add `plans:manage`): `GET /plans` (all plans + resolved entitlements), `GET /features` (catalog), `GET /plans/{code}`, `PUT /plans/{code}/entitlements/{feature_key}` (typed-validated edit), `PATCH /plans/{code}` (name / is_active / is_default), `GET /users/{uuid}/effective-plan` (support view: plan + entitlements + overrides).
+- **Implementation:** `AdminEntitlementService` (validate+cast vs `feature.value_type`; upsert the correct typed column; **bump `entitlements_version` + drop Redis cache** via `EntitlementService.bump_plan_version`; stamp `updated_by`; single-default invariant) → `AdminEntitlementController` (`KeyError`→404, `ValueError`→400) → router. Added `plans:manage` to the RBAC registry (auto-granted to the admin role + the static super-key).
+- 🧪 `tests/api/admin/test_admin_entitlements.py` (8): list/get/features/effective-plan (+404s), typed validation (int/bool ok, bad-type→400, unknown feature/plan→404), plan-flag update, **single-default invariant** (restores the real default), non-admin rejected (401/403), and the money test — **edit busts the cache so `EntitlementService` reads the new value immediately**. Mutation tests use throwaway temp plans (never seeded rows). ✅
 
-### Step 7.2 — 🟧 Admin UI plan editor
+### Step 7.2 — 🟧 Admin UI plan editor (frontend — next deliverable, not in this repo)
 - A grid: **plans × features** with typed inputs (int / toggle / enum / csv), save-per-cell, plan activate/deactivate, view a user's effective plan + overrides.
 - **Best practice:** optimistic UI with server validation; confirm on destructive edits; show "who/when last changed."
 - 🧪 (frontend) component + e2e: edit a number → reflected in an API call's enforcement. ✅
@@ -210,15 +224,17 @@
 
 ## Phase 8 — Frontend (🟨 `resomix-web`)
 
-### Step 8.1 — Device signal + guest cookie
-- Integrate **ThumbmarkJS** (MIT), compute the device hash, send it as `X-Device-Hash`; let the server manage the httpOnly guest cookie.
-- **Best practice:** compute once per session, cache; never send/trust a client `visitor_id`; degrade gracefully if ThumbmarkJS blocked.
-- 🧪 hash sent on gated calls; works in incognito; absent-hash fallback still functions. ✅
+> **Backend prerequisite for 8.2 — ✅ done (in Alwyzon):** `GET /api/v1/entitlements/me` returns the caller's effective plan + full entitlement map (plan values with per-subject overrides overlaid), for guests (server-derived `visitor_id`, never returned) and logged-in users alike. `EntitlementService.get_effective_map` + `EntitlementController` + `app/api/routers/entitlements.py`. Tests: `test_entitlements_me.py` (3). The frontend drives all of 8.2 off this single call.
 
-### Step 8.2 — Entitlement-driven UI
-- Grey dropdown options beyond `dropdown_max_tracks`; show/hide export/rename/favorite/rate per plan (from an entitlements endpoint); handle `login_required` / `upgrade_required` soft responses with the right CTA.
-- **Best practice:** UI reflects entitlements but the **server is the guard** (UI greying is convenience, not security).
-- 🧪 e2e: guest hits daily limit → login CTA; after login, guest playlists appear (reparented); upgrade CTA on paid features. ✅
+### Step 8.1 — Device signal + guest cookie 🟢 **transport layer done** (in `resomix-web`)
+- ✅ `packages/api-client/src/deviceId.ts` — **ThumbmarkJS** loaded from CDN (no bundle dep → degrades gracefully if blocked/offline), computed once, cached in memory + localStorage. `X-Device-Hash` injected on all non-admin requests by **both** axios interceptors (`utils.ts` + `authClient.ts`). `initDeviceHash()` fired at app start (`apps/webapp/src/main.tsx`). **Backend:** `X-Device-Hash` added to `cors_allow_headers` (else preflight would block every request). Type-checks clean.
+- ⏳ Remaining: verify in a browser (incognito, adblock-on fallback), and the httpOnly guest **cookie** issuance (server already signs/verifies it; wire `get_guest_context` on the frontend surface if a fast-path cookie is wanted alongside the device hash).
+
+### Step 8.2 — Entitlement-driven UI 🟢 **data layer done; component wiring remains** (in `resomix-web`)
+- ✅ **Backend:** `GET /api/v1/entitlements/me` (see prerequisite above). **api-client:** `getMyEntitlements()` + `FEATURE_KEYS` + types (`entitlements.ts`). **hooks:** `useEntitlements()` (shared cache, typed `getInt/getBool/getStr/can`, `dropdownMaxTracks`, `playlistsPerDay`, `refresh()` for post-login/upgrade) — type-checks clean.
+- ⏳ Remaining (component-level): grey dropdown options beyond `dropdownMaxTracks`; show/hide export/rename/favorite/rate from `useEntitlements`; render `login_required` / `upgrade_required` soft-response CTAs; call `refresh()` on auth change.
+- **Best practice:** UI reflects entitlements but the **server is the guard** (greying is convenience, not security).
+- 🧪 e2e (pending browser): guest hits daily limit → login CTA; after login, guest playlists appear (reparented); upgrade CTA on paid features.
 
 ### Step 8.3 — Consent / privacy disclosure
 - Disclose fingerprinting for anti-abuse under **legitimate interest**, **separate from the analytics (PostHog/GA) consent** (which stays optional). Update privacy policy + `consentConfig.ts`.

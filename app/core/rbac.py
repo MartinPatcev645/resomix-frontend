@@ -35,6 +35,7 @@ PERMISSIONS = {
     "role:read": "View roles and their permissions",
     "role:manage": "Create, update, or delete roles and their permission assignments",
     "operation_limit:manage": "Set or adjust per-user operation limits",
+    "plans:manage": "View and edit frontend plans, features, and entitlement values",
     "waitlist:manage": "Approve, reject, or delete waitlist entries",
     "feedback:manage": "View and resolve feedback entries",
     "contact:manage": "View and resolve contact inquiries",

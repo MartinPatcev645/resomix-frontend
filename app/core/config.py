@@ -269,7 +269,7 @@ class Settings(BaseModel):
         description="Allowed HTTP methods for CORS",
     )
     cors_allow_headers: List[str] = Field(
-        default=["Authorization", "Content-Type", "X-Requested-With", "X-Api-Key"],
+        default=["Authorization", "Content-Type", "X-Requested-With", "X-Api-Key", "X-Device-Hash"],
         description="Allowed headers for CORS requests",
     )
     cors_expose_headers: List[str] = Field(
