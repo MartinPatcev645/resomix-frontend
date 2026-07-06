@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { useAuthStore } from "@resomix/stores";
 import {
   FEATURE_KEYS,
   getMyEntitlements,
@@ -18,17 +19,25 @@ import {
   type MyEntitlements,
 } from "@resomix/api-client";
 
-// Shared across all hook consumers so we issue a single request.
+// Shared across all hook consumers so we issue a single request. Keyed by **identity** (guest vs
+// a specific user) so logging in/out automatically invalidates it — a guest and a user resolve to
+// different entitlements.
 let cache: MyEntitlements | null = null;
+let cachedIdentity: string | null = null;
 let inflight: Promise<MyEntitlements | null> | null = null;
 
-async function fetchEntitlements(force = false): Promise<MyEntitlements | null> {
-  if (cache && !force) return cache;
-  if (inflight && !force) return inflight;
+function _cacheFresh(identity: string): boolean {
+  return cache !== null && cachedIdentity === identity;
+}
+
+async function fetchEntitlements(identity: string, force = false): Promise<MyEntitlements | null> {
+  if (_cacheFresh(identity) && !force) return cache;
+  if (inflight && cachedIdentity === identity && !force) return inflight;
   inflight = (async () => {
     const res = await getMyEntitlements();
     if (res && typeof res === "object" && "data" in res && (res as { success?: boolean }).success !== false) {
       cache = (res as { data: MyEntitlements }).data;
+      cachedIdentity = identity;
       return cache;
     }
     return null;
@@ -61,27 +70,31 @@ export interface UseEntitlements {
 }
 
 export function useEntitlements(): UseEntitlements {
-  const [data, setData] = useState<MyEntitlements | null>(cache);
-  const [loading, setLoading] = useState<boolean>(!cache);
+  // A stable identity string: "guest" or the logged-in user's uuid. Changes on login/logout.
+  const identity = useAuthStore((s) => (s.isAuthenticated ? (s.user?.uuid ?? "user") : "guest"));
+
+  const [data, setData] = useState<MyEntitlements | null>(_cacheFresh(identity) ? cache : null);
+  const [loading, setLoading] = useState<boolean>(!_cacheFresh(identity));
   const [error, setError] = useState<boolean>(false);
 
   const load = useCallback(async (force = false) => {
     setLoading(true);
     setError(false);
-    const result = await fetchEntitlements(force);
+    const result = await fetchEntitlements(identity, force);
     setData(result);
     setError(result === null);
     setLoading(false);
-  }, []);
+  }, [identity]);
 
+  // (Re)load whenever the identity changes (login/logout) or on first mount.
   useEffect(() => {
-    if (cache) {
+    if (_cacheFresh(identity)) {
       setData(cache);
       setLoading(false);
       return;
     }
     void load(false);
-  }, [load]);
+  }, [identity, load]);
 
   const map = data?.entitlements ?? {};
 
@@ -123,5 +136,6 @@ export function useEntitlements(): UseEntitlements {
 /** Clear the shared cache (e.g. on logout) so the next hook use refetches. */
 export function resetEntitlementsCache(): void {
   cache = null;
+  cachedIdentity = null;
   inflight = null;
 }

@@ -15,17 +15,20 @@ import { useEntitlementCta } from "@/utils/entitlementCta.ts";
 export interface GateCtaModalProps {
   reason: string | null; // "login_required" | "upgrade_required"
   onClose: () => void;
+  /** Optional copy overrides — e.g. for the "log in to rate tracks" prompt. */
+  title?: string;
+  body?: string;
 }
 
-export const GateCtaModal: React.FC<GateCtaModalProps> = ({ reason, onClose }) => {
+export const GateCtaModal: React.FC<GateCtaModalProps> = ({ reason, onClose, title: titleProp, body: bodyProp }) => {
   const { onLogin, onSubscribe } = useEntitlementCta();
   if (!reason) return null;
 
   const isLogin = reason === "login_required";
-  const title = isLogin ? "Monthly free limit reached" : "Plan limit reached";
-  const body = isLogin
+  const title = titleProp ?? (isLogin ? "Monthly free limit reached" : "Plan limit reached");
+  const body = bodyProp ?? (isLogin
     ? "You've used this month's free playlists. Log in or create a free account to make more."
-    : "You've reached your plan's monthly playlist limit. Subscribe to create more.";
+    : "You've reached your plan's monthly playlist limit. Subscribe to create more.");
 
   return (
     <div

@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { IconButton, HoverFlow, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, usePlaylistExport } from "@resomix/hooks";
+import { formatDuration, usePlaylistExport, useEntitlements } from "@resomix/hooks";
+import { FEATURE_KEYS } from "@resomix/api-client";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
@@ -38,6 +39,11 @@ const PlaylistHero: React.FC = () => {
   const { playlistData, isLoading, error } = usePlaylistStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
+  // Entitlement gating (server is the guard; this hides actions the plan doesn't grant).
+  // Rename is logged-in-owner-only; the overall "Rate These Results" (playlist rating + feedback)
+  // stays open to guests (visitor_id), so it is NOT gated here.
+  const { can } = useEntitlements();
+  const canRename = can(FEATURE_KEYS.CAN_RENAME);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -226,18 +232,20 @@ const PlaylistHero: React.FC = () => {
                     id="playlist-hero-autoplay-toggle"
                   />
                 </Tooltip>
-                <Tooltip message="Rename your Playlist">
-                  <IconButton
-                    text="Rename"
-                    transparent={true}
-                    customWidth="min-w-[var(--px-100)]"
-                    onClick={() => setShowRename(true)}
-                    icon={<img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    hoverIcon={<img src={RenameBlackSvg} aria-label="Rename" draggable={false} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    className="playlist-action-button"
-                    id="playlist-hero-rename-button"
-                  />
-                </Tooltip>
+                {canRename && (
+                  <Tooltip message="Rename your Playlist">
+                    <IconButton
+                      text="Rename"
+                      transparent={true}
+                      customWidth="min-w-[var(--px-100)]"
+                      onClick={() => setShowRename(true)}
+                      icon={<img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                      hoverIcon={<img src={RenameBlackSvg} aria-label="Rename" draggable={false} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                      className="playlist-action-button"
+                      id="playlist-hero-rename-button"
+                    />
+                  </Tooltip>
+                )}
 
                 <div ref={exportButtonWrapRef} className="relative">
                   <Tooltip message="Export Playlist to TXT file">

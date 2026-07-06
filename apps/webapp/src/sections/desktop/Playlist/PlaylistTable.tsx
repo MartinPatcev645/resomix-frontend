@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { SimilarityPlayer, ThumbIcon, CCLicenseGroup } from "@/components/index.ts";
 import { IconComp, Tooltip, ButtonSleek } from "@resomix/ui";
 import { formatDuration, formatPercentage, useGlobalAudioController, useEntitlements } from "@resomix/hooks";
-import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
+import { usePlayerStore, usePlaylistStore, useAuthStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import { useEntitlementCta } from "@/utils/entitlementCta.ts";
+import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
@@ -23,6 +24,9 @@ const PlaylistTable: React.FC = () => {
 
     // Result-unlock teasing: how many tracks this plan reveals; the rest are blurred + upsold.
     const { maxTracksPerPlaylist, isGuest, loading: entitlementsLoading } = useEntitlements();
+    // Per-track rating is login-required: guests can click but get a login prompt (no API call).
+    const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+    const [rateLoginPrompt, setRateLoginPrompt] = useState(false);
     const { trigger: triggerCta } = useEntitlementCta();
     const maxUnlocked = entitlementsLoading ? Number.POSITIVE_INFINITY : maxTracksPerPlaylist;
     const ctaCardRank = entitlementsLoading ? -1 : maxTracksPerPlaylist + 2; // card sits 2 rows into the locked zone
@@ -89,6 +93,12 @@ const PlaylistTable: React.FC = () => {
     }, [trackIdsKey, setTrackRating, trackRatings, tracks]);
 
     const handleTrackRating = async (trackId: string, rating: number) => {
+        // Track rating requires a logged-in user (always sent with a user id). Guests can click but
+        // get a login prompt instead of an API call.
+        if (!isAuthenticated) {
+            setRateLoginPrompt(true);
+            return;
+        }
         try {
             const playlistId = playlistData?.playlist?.id || null;
             setTrackRating(trackId, rating);
@@ -292,6 +302,12 @@ const PlaylistTable: React.FC = () => {
                     Matched by PYXIS-1 : {footerResultCount} results{footerTopMatch ? ` | Top match: ${footerTopMatch}` : ''}{footerAnalysisTime ? ` | Analysis: ${footerAnalysisTime}` : ''}
                 </div>
             </div>
+            <GateCtaModal
+                reason={rateLoginPrompt ? "login_required" : null}
+                title="Log in to rate tracks"
+                body="Rating individual tracks needs an account. Log in or create a free account to rate."
+                onClose={() => setRateLoginPrompt(false)}
+            />
         </div>
     );
 };
