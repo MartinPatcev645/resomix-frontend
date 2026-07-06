@@ -50,8 +50,10 @@ export interface UseEntitlements {
   getStr: (key: string, fallback?: string) => string;
   /** True if a boolean capability is enabled (alias of getBool). */
   can: (key: string) => boolean;
-  /** Convenience for the two most-used caps. */
+  /** Convenience for the most-used caps. */
   dropdownMaxTracks: number;
+  /** How many result tracks are unlocked in a created playlist; the rest are teased. */
+  maxTracksPerPlaylist: number;
   playlistsPerDay: number;
   /** Force a refetch (call after login/logout/upgrade). */
   refresh: () => Promise<void>;
@@ -111,6 +113,7 @@ export function useEntitlements(): UseEntitlements {
     getStr,
     can: getBool,
     dropdownMaxTracks: getInt(FEATURE_KEYS.DROPDOWN_MAX_TRACKS, 20),
+    maxTracksPerPlaylist: getInt(FEATURE_KEYS.MAX_TRACKS_PER_PLAYLIST, 10),
     playlistsPerDay: getInt(FEATURE_KEYS.PLAYLISTS_PER_DAY, 1),
     refresh,
   };

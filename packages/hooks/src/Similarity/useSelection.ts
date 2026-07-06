@@ -38,6 +38,7 @@ export function useTrackSimilarity(options?: TrackSimilarityOptions) {
     setResponse,
     setOverlay,
     setIsFileUpload,
+    setGateReason,
   } = useUploadStore();
 
   // Playlist store – we will save API response here
@@ -55,6 +56,7 @@ export function useTrackSimilarity(options?: TrackSimilarityOptions) {
 
       // Reset state first
       setError(null);
+      setGateReason(null);
       setResponse(null);
       setProgress(0);
       setUploading(false);
@@ -103,14 +105,23 @@ export function useTrackSimilarity(options?: TrackSimilarityOptions) {
             }
           }
         } else {
-          // API indicated failure – surface error and keep overlay to show banner
-          setError(mapPlaylistErrorMessage(result?.error, "Failed to fetch similar tracks."));
+          // API indicated failure. A soft entitlement gate (daily limit / plan cap) drives a
+          // login/subscribe CTA rather than a generic error banner.
+          const reason = (result as { reason?: string } | null)?.reason;
+          if (reason === "login_required" || reason === "upgrade_required") {
+            setGateReason(reason);
+          } else {
+            setError(mapPlaylistErrorMessage(result?.error, "Failed to fetch similar tracks."));
+          }
           setOverlay(false);
         }
       } catch (err: any) {
-        // Network / Axios error; show message, keep overlay so banner displays
-        const mappedError = mapPlaylistErrorMessage(err?.error || err?.message, "Failed to fetch similar tracks.");
-        setError(mappedError);
+        // Network / Axios error (or a gate surfaced as a thrown error).
+        if (err?.reason === "login_required" || err?.reason === "upgrade_required") {
+          setGateReason(err.reason);
+        } else {
+          setError(mapPlaylistErrorMessage(err?.error || err?.message, "Failed to fetch similar tracks."));
+        }
         setOverlay(false);
       }
     },

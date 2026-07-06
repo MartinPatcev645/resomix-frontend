@@ -28,8 +28,16 @@ export interface UseTrackCountOptions {
   cap: number;
   /** True while entitlements are still loading (no options are locked yet, to avoid flicker). */
   loading: boolean;
-  /** Guests get a "log in" nudge on locked options; users get an "upgrade" nudge. */
   isGuest: boolean;
+  /** True when at least one option is locked (i.e. show the nudge). */
+  hasLockedOptions: boolean;
+  /**
+   * Tier-correct nudge to render next to the dropdown when options are locked, or `null`.
+   * Guests are nudged to log in; logged-in users are nudged to subscribe.
+   */
+  lockedCtaLabel: string | null;
+  /** What the nudge should do — routes the CTA without hardcoding copy in components. */
+  lockedCtaAction: "login" | "subscribe" | null;
 }
 
 export function useTrackCountOptions(): UseTrackCountOptions {
@@ -56,5 +64,13 @@ export function useTrackCountOptions(): UseTrackCountOptions {
     }
   }, [loading, topSk, dropdownMaxTracks, setTopSk]);
 
-  return { options, cap: dropdownMaxTracks, loading, isGuest };
+  const hasLockedOptions = !loading && options.some((o) => o.locked);
+  const lockedCtaAction: "login" | "subscribe" | null = hasLockedOptions
+    ? (isGuest ? "login" : "subscribe")
+    : null;
+  const lockedCtaLabel = hasLockedOptions
+    ? (isGuest ? "Log in to unlock deeper results" : "Subscribe to unlock deeper results")
+    : null;
+
+  return { options, cap: dropdownMaxTracks, loading, isGuest, hasLockedOptions, lockedCtaLabel, lockedCtaAction };
 }

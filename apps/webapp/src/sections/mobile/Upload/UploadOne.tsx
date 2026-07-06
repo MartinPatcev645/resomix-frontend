@@ -8,6 +8,8 @@ import { SearchComponentMobile, UploadComponentMobile, PopularComponentMobile } 
 import { Tooltip } from "@resomix/ui";
 import { usePlayerStore } from "@resomix/stores";
 import { savePlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
+import { LockNudge } from "@/components/Entitlements/LockNudge.tsx";
+import { useEntitlementCta } from "@/utils/entitlementCta.ts";
 
 const UploadOne: React.FC = () => {
     const [activeComponent, setActiveComponent] = useState<'search' | 'upload'>('search');
@@ -16,7 +18,8 @@ const UploadOne: React.FC = () => {
     const { topSk, setTopSk } = usePlayerStore();
 
     // Entitlement-aware track-count options (locks values beyond the caller's plan cap).
-    const { options: trackCountOptions, isGuest } = useTrackCountOptions();
+    const { options: trackCountOptions, lockedCtaLabel, lockedCtaAction } = useTrackCountOptions();
+    const { trigger: triggerEntitlementCta } = useEntitlementCta();
 
     const handleSearchClick = () => {
         setActiveComponent('search');
@@ -70,7 +73,7 @@ const UploadOne: React.FC = () => {
                         >
                             {trackCountOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value} disabled={opt.locked}>
-                                    {opt.label}{opt.locked ? (isGuest ? " · log in" : " · upgrade") : ""}
+                                    {opt.label}
                                 </option>
                             ))}
                         </select>
@@ -107,6 +110,9 @@ const UploadOne: React.FC = () => {
                             </div>
                         </div>
                     </Tooltip>
+                    {lockedCtaLabel && (
+                        <LockNudge label={lockedCtaLabel} onClick={() => triggerEntitlementCta(lockedCtaAction)} />
+                    )}
                 </div>
             </div>
             <div className="flex flex-col mt-[var(--px-20)]">

@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimilarityPlayer, ThumbIcon, CCLicenseGroup } from "@/components/index.ts";
 import { IconComp, Tooltip, ButtonSleek } from "@resomix/ui";
-import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
-import { usePlayerStore, usePlaylistStore, useAuthStore } from "@resomix/stores";
+import { formatDuration, formatPercentage, useGlobalAudioController, useEntitlements } from "@resomix/hooks";
+import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
+import { useEntitlementCta } from "@/utils/entitlementCta.ts";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
@@ -19,7 +20,12 @@ const PlaylistTable: React.FC = () => {
     const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
     const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
-    const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+
+    // Result-unlock teasing: how many tracks this plan reveals; the rest are blurred + upsold.
+    const { maxTracksPerPlaylist, isGuest, loading: entitlementsLoading } = useEntitlements();
+    const { trigger: triggerCta } = useEntitlementCta();
+    const maxUnlocked = entitlementsLoading ? Number.POSITIVE_INFINITY : maxTracksPerPlaylist;
+    const ctaCardRank = entitlementsLoading ? -1 : maxTracksPerPlaylist + 2; // card sits 2 rows into the locked zone
 
     const handlePlayButtonClick = useCallback((trackId: string) => {
         if (!DEMO_MODE) {
@@ -110,23 +116,31 @@ const PlaylistTable: React.FC = () => {
                 <div className="ml-[var(--px-30)]" role="columnheader">Chain Discover</div>
             </div>
             {tracks.map((track) => {
-                const isRestricted = !isAuthenticated && track.rank > 10;
+                const isRestricted = track.rank > maxUnlocked;
 
                 return (
                     <div key={track.id} className={`relative w-full py-[var(--px-5)] ${isRestricted ? "pointer-events-none select-none" : "select-text"}`}>
-                        {/* Check if the rank is 12 and isRestricted is true, display a text here on top of the usual track details */}
-                        {track.rank === 12 && isRestricted && (
+                        {/* Upsell card sits 2 rows into the locked zone, on top of the blurred tracks. */}
+                        {track.rank === ctaCardRank && isRestricted && (
                             <div className="absolute z-50 left-0 w-full flex flex-col items-center justify-center px-[var(--px-20)] pt-[var(--px-40)] pointer-events-auto">
                                 <div className="bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-40)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center max-w-[var(--px-450)] w-full">
                                     <h3 className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)] text-center">
                                         Unlock all matching tracks
                                     </h3>
                                     <p className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] text-center text-white mb-[var(--px-20)]">
-                                        Guest access includes the first 10 results. Create a free account or log in to view the complete similarity list and save your playlist.
+                                        {isGuest
+                                            ? `Guest access includes the first ${maxTracksPerPlaylist} results. Create a free account or log in to view the complete similarity list and save your playlist.`
+                                            : `Your plan includes the first ${maxTracksPerPlaylist} results. Subscribe to unlock the complete similarity list.`}
                                     </p>
                                     <div className="flex gap-[var(--px-15)] justify-center items-center">
-                                        <ButtonSleek text="Create Free Account" href="/auth/register" onClick={() => {}} />
-                                        <ButtonSleek text="Log In" href="/auth/login" onClick={() => {}} transparent />
+                                        {isGuest ? (
+                                            <>
+                                                <ButtonSleek text="Create Free Account" href="/auth/register" onClick={() => {}} />
+                                                <ButtonSleek text="Log In" href="/auth/login" onClick={() => {}} transparent />
+                                            </>
+                                        ) : (
+                                            <ButtonSleek text="Subscribe" onClick={() => triggerCta("subscribe")} />
+                                        )}
                                     </div>
                                 </div>
                             </div>

@@ -80,6 +80,8 @@ export const handleApiError = (error: AxiosError | Error): {
   error: string;
   details?: unknown;
   status?: number;
+  /** Soft-gate reason from the entitlement layer: "login_required" | "upgrade_required". */
+  reason?: string | null;
 } => {
   console.error("API Error:", error);
 
@@ -110,6 +112,7 @@ export const handleApiError = (error: AxiosError | Error): {
         error: errorMessage,
         details: apiError.data?.details || apiError.details || null,
         status,
+        reason: apiError.reason ?? null,
       };
     }
 
