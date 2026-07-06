@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { useTrackSimilarity } from "@resomix/hooks";
+import { useTrackSimilarity, useTrackCountOptions } from "@resomix/hooks";
 import type { SearchResult } from "@resomix/hooks";
 import InfoSvg from "@/assets/icons/info.svg";
 import SoundWavesSvg from "@/assets/icons/sound_waves.svg";
@@ -14,6 +14,9 @@ const UploadOne: React.FC = () => {
 
     // Get topSk state from the store
     const { topSk, setTopSk } = usePlayerStore();
+
+    // Entitlement-aware track-count options (locks values beyond the caller's plan cap).
+    const { options: trackCountOptions, isGuest } = useTrackCountOptions();
 
     const handleSearchClick = () => {
         setActiveComponent('search');
@@ -76,10 +79,16 @@ const UploadOne: React.FC = () => {
                             onChange={handleCountChange}
                             className="w-[var(--px-97)] h-[var(--px-26)] bg-transparent border border-dotted border-slate-200 text-[length:var(--px-11)] font-fira font-extralight text-center text-[var(--color-primary)] upload-settings-select"
                         >
-                            <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="10">10 tracks</option>
-                            <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="20">20 tracks</option>
-                            <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="50">50 tracks</option>
-                            <option className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]" value="100">100 tracks</option>
+                            {trackCountOptions.map((opt) => (
+                                <option
+                                    key={opt.value}
+                                    value={opt.value}
+                                    disabled={opt.locked}
+                                    className="text-[length:var(--px-11)] font-fira font-extralight bg-[var(--color-primary-background)]"
+                                >
+                                    {opt.label}{opt.locked ? (isGuest ? " · log in" : " · upgrade") : ""}
+                                </option>
+                            ))}
                         </select>
                     </div>
                 </div>

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { useTrackSimilarity } from "@resomix/hooks";
+import { useTrackSimilarity, useTrackCountOptions } from "@resomix/hooks";
 import type { SearchResult } from "@resomix/hooks";
 import InfoSvg from "@/assets/icons/info.svg";
 import SoundWavesSvg from "@/assets/icons/sound_waves.svg";
@@ -14,6 +14,9 @@ const UploadOne: React.FC = () => {
 
     // Get topSk state from the store
     const { topSk, setTopSk } = usePlayerStore();
+
+    // Entitlement-aware track-count options (locks values beyond the caller's plan cap).
+    const { options: trackCountOptions, isGuest } = useTrackCountOptions();
 
     const handleSearchClick = () => {
         setActiveComponent('search');
@@ -65,10 +68,11 @@ const UploadOne: React.FC = () => {
                             onChange={handleCountChange}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none upload-settings-select"
                         >
-                            <option value="10">10 tracks</option>
-                            <option value="20">20 tracks</option>
-                            <option value="50">50 tracks</option>
-                            <option value="100">100 tracks</option>
+                            {trackCountOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value} disabled={opt.locked}>
+                                    {opt.label}{opt.locked ? (isGuest ? " · log in" : " · upgrade") : ""}
+                                </option>
+                            ))}
                         </select>
 
                         {/* Visible label and arrow */}
