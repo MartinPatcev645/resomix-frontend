@@ -155,11 +155,12 @@ async def test_waitlist_status_not_found(client):
 
 
 @pytest.mark.asyncio
-async def test_waitlist_requires_api_key(client):
-    """POST /api/v1/waitlist/ without an API key should be rejected."""
+async def test_waitlist_public_access(client):
+    """POST /api/v1/waitlist/ is public: guests join anonymously (→ System Partner 1). The
+    retired static API key is no longer required (or accepted) for this frontend surface."""
     payload = {"email": "nokey@test.com"}
     response = await client.post("/api/v1/waitlist/", json=payload)
-    assert response.status_code in (401, 403)
+    assert response.status_code in (200, 201)
 
 
 # ──────────────────────────────────────────────────────────────

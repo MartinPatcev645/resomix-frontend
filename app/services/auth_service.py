@@ -49,6 +49,8 @@ class AuthService:
         self.user_token_repo = UserTokenRepository()
         self.session_repo = UserSessionRepository()
         self.operation_limit_repo = OperationLimitRepository()
+        from app.services.entitlement_gate import EntitlementGate
+        self.entitlement_gate = EntitlementGate()
 
     # ------------------------------------------------------------------ #
     # Phase 6 — guest → account association (frontend, System Partner 1)
@@ -414,6 +416,12 @@ class AuthService:
                 detail="Invalid or expired verification token",
             )
 
+        # Was the account already verified before this call? Used as the one-time guard for the
+        # signup bonus (verification is effectively one-time — token consumed + resend blocked once
+        # verified — but this makes the bonus robust even if two tokens ever coexist).
+        existing = await self.user_repo.async_get_by_id(db, verification_token.user_id)
+        already_verified = bool(existing and existing.is_email_verified)
+
         # Mark email as verified
         user = await self.user_repo.async_update_email_verified(
             db=db, user_id=verification_token.user_id, is_verified=True
@@ -423,6 +431,16 @@ class AuthService:
         await self.user_token_repo.async_delete_token(
             db, verification_token.user_id, "email_verification"
         )
+
+        # Signup bonus: granted once, only on the FIRST verification (best-effort — never blocks
+        # verification). Extra playlists are added to the user's current monthly period.
+        if not already_verified:
+            try:
+                granted = await self.entitlement_gate.grant_playlist_signup_bonus(db, user)
+                if granted:
+                    logger.info("Granted signup bonus of %d playlist(s) to user %s", granted, user.id)
+            except Exception as exc:
+                logger.warning("Signup bonus grant failed for user %s: %s", user.id, exc)
 
         return user
 

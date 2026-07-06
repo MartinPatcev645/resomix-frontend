@@ -5,6 +5,19 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.main import app
 from app.core.config import settings
+from tests.api.library_helpers import create_admin_user, admin_auth_headers
+
+# Admin auth via an admin-role JWT (the static super-key was retired). ADMIN is repopulated before
+# every test by the autouse fixture; call sites use `dict(ADMIN)` for a private copy.
+ADMIN: dict = {}
+
+
+@pytest.fixture(autouse=True)
+async def _admin_auth():
+    ADMIN.clear()
+    ADMIN.update(admin_auth_headers(await create_admin_user()))
+    yield
+
 
 @pytest.mark.asyncio
 async def test_admin_waitlist_secondary():
@@ -17,7 +30,7 @@ async def test_admin_waitlist_secondary():
     with patch("app.api.routers.admin.waitlist.waitlist_controller", mock_controller):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"X-API-KEY": settings.api_key}
+            headers = dict(ADMIN)
             res = await ac.delete("/api/v1/admin/waitlist/1", headers=headers)
             assert res.status_code == 200
 
@@ -39,7 +52,7 @@ async def test_admin_contact_secondary():
     with patch("app.api.routers.admin.contact.contact_controller", mock_controller):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"X-API-KEY": settings.api_key}
+            headers = dict(ADMIN)
             res = await ac.get("/api/v1/admin/contact/1", headers=headers)
             assert res.status_code == 200
 
@@ -74,7 +87,7 @@ async def test_admin_feedback_secondary():
     with patch("app.api.routers.admin.feedback.feedback_controller", mock_controller):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"X-API-KEY": settings.api_key}
+            headers = dict(ADMIN)
             res = await ac.get("/api/v1/admin/feedback/1", headers=headers)
             assert res.status_code == 200
 
@@ -126,7 +139,7 @@ async def test_admin_spotify_apps():
     with patch("app.api.routers.admin.spotify_apps.controller", mock_controller):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"X-API-KEY": settings.api_key}
+            headers = dict(ADMIN)
             
             res = await ac.get("/api/v1/admin/spotify-apps/", headers=headers)
             assert res.status_code == 200
@@ -190,7 +203,7 @@ async def test_admin_playlist_secondary():
     with patch("app.api.routers.admin.playlist.playlist_controller", mock_controller):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"X-API-KEY": settings.api_key}
+            headers = dict(ADMIN)
             
             res = await ac.get(f"/api/v1/admin/playlist/{str(uuid.uuid4())}", headers=headers)
             assert res.status_code == 200
@@ -229,7 +242,7 @@ async def test_admin_users_and_roles_secondary():
          patch("app.api.routers.admin.roles.role_controller", mock_role_ctrl):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"X-API-KEY": settings.api_key}
+            headers = dict(ADMIN)
             
             res = await ac.get(f"/api/v1/admin/users/{uid}", headers=headers)
             assert res.status_code == 200
@@ -255,7 +268,7 @@ async def test_admin_promo_codes():
     with patch("app.api.routers.admin.promo.admin_controller", mock_ctrl):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"X-API-KEY": settings.api_key}
+            headers = dict(ADMIN)
             res = await ac.post("/api/v1/admin/promo/create", headers=headers, json={"code": "TEST", "discount_type": "percentage", "discount_value": 10})
             assert res.status_code in [200, 201]
 
@@ -290,7 +303,7 @@ async def test_admin_operation_limits():
     with patch("app.api.routers.admin.operation_limits.controller", mock_controller):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"X-API-KEY": settings.api_key}
+            headers = dict(ADMIN)
             
             res = await ac.get("/api/v1/admin/operation-limits/operation-types", headers=headers)
             assert res.status_code == 200
@@ -317,7 +330,7 @@ async def test_admin_similarity():
     ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"X-API-KEY": settings.api_key}
+            headers = dict(ADMIN)
             res = await ac.post(
                 "/api/v1/admin/similarity/rebuild-index?partner_id=1", headers=headers
             )

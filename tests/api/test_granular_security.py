@@ -70,12 +70,11 @@ async def test_user_operation_limits_enforcement(clean_overrides):
         allowed=False, status_code=403, message="Playlist limit reached (5). Please upgrade."
     ))
     
-    from app.api.dependencies.auth import get_current_user, get_api_key
+    from app.api.dependencies.auth import get_current_user
     from app.api.dependencies.partner import get_current_partner
     from app.core.context import set_current_partner_id
     
     app.dependency_overrides[get_current_user] = lambda: mock_user
-    app.dependency_overrides[get_api_key] = lambda: "dummy"
     # Ensure partner_id is set in context to pass failsafe
     app.dependency_overrides[get_current_partner] = lambda: (set_current_partner_id(1), Partner(id=1))[1]
     
@@ -100,12 +99,11 @@ async def test_spotify_transfer_limits_enforcement(clean_overrides):
         allowed=False, status_code=403, message="Spotify transfer limit reached."
     ))
     
-    from app.api.dependencies.auth import get_current_user, get_api_key
+    from app.api.dependencies.auth import get_current_user
     from app.api.dependencies.partner import get_current_partner
     from app.core.context import set_current_partner_id
     
     app.dependency_overrides[get_current_user] = lambda: mock_user
-    app.dependency_overrides[get_api_key] = lambda: "dummy"
     # Ensure partner_id is set in context to pass failsafe
     app.dependency_overrides[get_current_partner] = lambda: (set_current_partner_id(1), Partner(id=1))[1]
     
@@ -159,13 +157,12 @@ async def test_spotify_app_association_admin(clean_overrides):
         "user_email": "u@t.com", "user_username": "u", "user_uuid": str(uuid.uuid4()), "spotify_app_name": "A"
     })
     
-    from app.api.dependencies.auth import get_api_key
-    app.dependency_overrides[get_api_key] = lambda: settings.api_key
-    
+    from tests.api.library_helpers import create_admin_user, admin_auth_headers
+    headers = admin_auth_headers(await create_admin_user())  # admin-role JWT (super-key retired)
+
     with patch("app.api.routers.admin.spotify_apps.controller", mock_controller):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"X-API-KEY": settings.api_key}
             res = await ac.post("/api/v1/admin/spotify-apps/", headers=headers, json={"name": "A", "client_id": "c", "client_secret": "s"})
             assert res.status_code == 201
             res = await ac.put("/api/v1/admin/spotify-apps/users", headers=headers, json={"user_identifier": "u", "spotify_app_id": 10})

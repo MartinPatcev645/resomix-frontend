@@ -29,6 +29,12 @@ BASE_URL = "http://localhost:8001"  # Default port from user logs
 # Partner 1 = "Resomix System" (frontend / canonical sandbox).
 _PROTECTED_PARTNER_IDS: frozenset[int] = frozenset({1})
 
+# The per-IP frontend similarity burst brake is keyed by client IP; in-process tests all share one
+# IP, so leave it OFF for the suite to avoid cross-test/cross-run accumulation. It is covered
+# directly in test_frontend_rate_limit.py. Production keeps its configured value.
+from app.core.config import settings as _settings  # noqa: E402
+_settings.frontend_similarity_burst_per_min = 0
+
 # Entity tables that tests create rows in. Cleaned after every test session via a
 # high-water-mark strategy: we snapshot COALESCE(MAX(id), 0) for each table BEFORE
 # any test runs, then DELETE rows with id > that snapshot afterwards. This removes

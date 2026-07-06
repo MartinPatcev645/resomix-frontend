@@ -14,9 +14,15 @@ from unittest.mock import patch, MagicMock
 from app.main import app
 
 # Test constants
-ADMIN_API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"
 PARTNER_2_API_KEY = "rmx_test_V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"
 PARTNER_2_ID = 2
+
+
+@pytest.fixture
+async def admin_headers():
+    """Admin-role JWT — the internal monthly pipeline is now admin-only (was the static super-key)."""
+    from tests.api.library_helpers import create_admin_user, admin_auth_headers
+    return admin_auth_headers(await create_admin_user())
 
 # EICAR test string
 EICAR_STRING = r"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"
@@ -63,11 +69,11 @@ def mock_pipeline_services():
         }
 
 @pytest.mark.asyncio
-async def test_monthly_pipeline_success(client, mock_pipeline_services):
-    """Verify Monthly Pipeline ingestion with Admin API Key."""
+async def test_monthly_pipeline_success(client, mock_pipeline_services, admin_headers):
+    """Verify Monthly Pipeline ingestion with an admin JWT."""
     if not os.path.exists("prelisten.mp3"):
         pytest.skip("prelisten.mp3 not found")
-    headers = {"X-API-KEY": ADMIN_API_KEY}
+    headers = admin_headers
     test_path = f"/test_pipeline/monthly_{uuid.uuid4()}.mp3"
     with open("prelisten.mp3", "rb") as f:
         files = {"file": ("test.mp3", f, "audio/mpeg")}
@@ -93,7 +99,8 @@ async def test_monthly_pipeline_forbidden_for_partner(client):
     """Verify Monthly Pipeline rejects Partner API Key (403)."""
     headers = {"Authorization": f"Bearer {PARTNER_2_API_KEY}"}
     response = await client.post("/api/v1/ingest/monthly/track", files={"file": ("test.mp3", b"dummy content", "audio/mpeg")}, data={"path": "/some/path.mp3"}, headers=headers)
-    assert response.status_code == 403
+    # Admin-only route: a partner key is not a valid admin JWT → denied (401 bad token / 403 not admin).
+    assert response.status_code in (401, 403)
 
 @pytest.mark.asyncio
 async def test_open_tracks_pipeline_success(client, mock_pipeline_services):
@@ -137,9 +144,9 @@ async def test_open_tracks_pipeline_av_check_missing(client, mock_pipeline_servi
     assert response.status_code != 200
 
 @pytest.mark.asyncio
-async def test_bulk_embedding_updates(client, mock_pipeline_services):
+async def test_bulk_embedding_updates(client, mock_pipeline_services, admin_headers):
     """Verify trigger for bulk embedding updates."""
-    headers_admin = {"X-API-KEY": ADMIN_API_KEY}
+    headers_admin = admin_headers
     response = await client.post("/api/v1/ingest/monthly/update_embeddings", headers=headers_admin)
     assert response.status_code == 200
     headers_partner = {"Authorization": f"Bearer {PARTNER_2_API_KEY}"}

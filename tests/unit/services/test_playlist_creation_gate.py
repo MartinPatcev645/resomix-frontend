@@ -611,30 +611,32 @@ class TestAuthGate_LiveServer:
 
     # --- play-session endpoint ---
 
-    def test_play_session_no_api_key_rejected(self):
+    def test_play_session_no_credentials_is_public(self):
         """
-        POST /playlists/{uuid}/play-session with NO api_key header → 401/403.
+        POST /playlists/{uuid}/play-session with NO credentials → anonymous playback is public
+        (→ System Partner 1). Not a 401/403; expect 200 (token minted) or 404 (unknown playlist).
+        The retired static API key is neither required nor accepted.
         """
         import requests as req
         r = req.post(
             f"{self.BASE_URL}/playlists/{self.SEED_TRACK_UUID}/play-session",
-            # No api_key query param, no X-API-KEY header
         )
-        assert r.status_code in (401, 403), (
-            f"Expected 401/403 for no API key, got {r.status_code}: {r.text}"
+        assert r.status_code in (200, 404), (
+            f"Anonymous playback must be public, got {r.status_code}: {r.text}"
         )
 
-    def test_play_session_wrong_api_key_rejected(self):
+    def test_play_session_garbage_api_key_ignored(self):
         """
-        POST /playlists/{uuid}/play-session with WRONG api_key → 401/403.
+        POST /playlists/{uuid}/play-session with a garbage ?api_key → the vestigial param is
+        ignored and the request is treated as an anonymous guest (public). Not a 401/403.
         """
         import requests as req
         r = req.post(
             f"{self.BASE_URL}/playlists/{self.SEED_TRACK_UUID}/play-session",
             params={"api_key": self.WRONG_API_KEY},
         )
-        assert r.status_code in (401, 403), (
-            f"Expected 401/403 for wrong API key, got {r.status_code}: {r.text}"
+        assert r.status_code in (200, 404), (
+            f"Garbage api_key must be ignored (guest), got {r.status_code}: {r.text}"
         )
 
     def test_play_session_valid_key_anonymous_frontend_allowed(self):
@@ -695,11 +697,15 @@ class TestAuthGate_LiveServer:
         created PUBLIC). The endpoint itself no longer blocks. Text /search_tracks stays open.
         """
         import requests as req
+        import uuid
         r = req.post(
             f"{self.BASE_URL}/similarity/search",
             json={"track_id": self.SEED_TRACK_UUID},
             params={"api_key": self.VALID_API_KEY},
-            # No Authorization header → anonymous user
+            # No Authorization header → anonymous user. A UNIQUE device hash gives a fresh guest
+            # visitor_id (fresh monthly counter) — otherwise repeated runs share the degraded
+            # localhost visitor_id and eventually hit the guest monthly playlist limit (403).
+            headers={"X-Device-Hash": f"livetest-{uuid.uuid4().hex}"},
         )
         # The point of this test is the AUTH GATE: an anonymous frontend request with a
         # valid API key must not be blocked. A full 200 additionally depends on the external

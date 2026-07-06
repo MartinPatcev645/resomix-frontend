@@ -20,7 +20,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.telemetry_controller import TelemetryController
-from app.api.dependencies.auth import get_api_key
+
+from app.api.dependencies.partner import get_public_partner
+from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
 from app.schemas.telemetry import (
     TelemetryBatch,
@@ -66,7 +68,7 @@ async def sync_telemetry_endpoint(
     request: Request,
     payload: TelemetryBatch,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
 ) -> JSONResponse:
     """
     Sync stream telemetry events from the frontend audio player.

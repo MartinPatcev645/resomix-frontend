@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import get_current_user_optional
 from app.api.dependencies.database import get_database_session
-from app.api.dependencies.partner import get_current_partner
+from app.api.dependencies.partner import get_current_partner, get_public_partner
 from app.controllers.entitlement_controller import EntitlementController
 from app.models.partner import Partner
 from app.models.user import User
@@ -36,7 +36,7 @@ controller = EntitlementController()
 async def get_my_entitlements(
     request: Request,
     db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner),
+    partner: Partner = Depends(get_public_partner),
     current_user: Optional[User] = Depends(get_current_user_optional),
 ) -> JSONResponse:
     return await controller.get_my_entitlements(db, request, current_user, partner.id)

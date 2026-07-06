@@ -44,37 +44,14 @@ from app.db.redis import _redis_pool
 # API Key Authentication (Existing - for backward compatibility)
 # ============================================================================
 
-# Set up API key security - using header for flexibility (query param removed for security)
+# APIKeyHeader kept only so the partner dependencies can read an X-API-KEY header if a B2B client
+# sends its ``rmx_…`` key that way. The old static-super-key ``get_api_key`` dependency was removed
+# entirely: no endpoint accepts a static key anymore (frontend = anonymous/JWT → Partner 1;
+# admin = admin-role JWT via /admin/auth/login).
 api_key_header = APIKeyHeader(name="X-API-KEY", auto_error=False)
 
 
 from app.core.context import set_admin_context
-
-async def get_api_key(
-    request: Request,
-    api_key_header: Optional[str] = Security(api_key_header),
-):
-    """
-    Validate API key for endpoints.
-    Checks X-API-KEY header and falls back to 'api_key' query parameter
-    to support HLS manifests and heartbeat beacons.
-
-    Allows CORS preflight (OPTIONS) to pass through without credentials.
-    """
-    if request.method == "OPTIONS":
-        return api_key_header
-
-    # Extract key from header or query parameter
-    key = api_key_header or request.query_params.get("api_key")
-
-    if key == settings.api_key:
-        # Flag this request as administrative to allow multi-tenant bypass
-        set_admin_context(True)
-        return key
-
-    raise HTTPException(
-        status_code=HTTP_403_FORBIDDEN, detail="Could not validate credentials"
-    )
 
 
 # ============================================================================
@@ -268,56 +245,18 @@ def require_permission(permission_name: str):
         request: Request,
         db: AsyncSession = Depends(get_database_session),
     ) -> User:
-        # 1. Try Static API Key first (Legacy / ZTS / Tests) - Header only
-        api_key = request.headers.get("X-API-KEY")
-        if api_key and api_key == settings.api_key:
-            # Resolve a system admin user for audit logging
-            admin = await UserRepository().async_get_first_admin(db)
-            
-            if not admin:
-                # Fallback for tests or fresh installs
-                admin = User(
-                    id=0, 
-                    email="system@resomix.local", 
-                    username="system_admin",
-                    uuid=str(uuid.uuid4())
-                )
-            
-            set_admin_context(True)
-            # Cache all permissions for static key access (it's a super-key)
-            if not hasattr(request.state, "permissions"):
-                request.state.permissions = list(PERMISSIONS.keys())
-            
-            return admin
-
-        # 2. Check Authorization header for Bearer token
+        # A Bearer JWT is the only accepted credential for permission-gated routes. The static
+        # super-key was retired: administrative access now flows through a real login
+        # (/admin/auth/login) that mints an admin-role JWT, and permissions are resolved from RBAC.
         auth_header = request.headers.get("Authorization")
         token = None
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
-        
-        # 3. Allow Static API Key in Bearer token (for some tests/legacy clients)
-        if token and token == settings.api_key:
-            admin = await UserRepository().async_get_first_admin(db)
-            
-            if not admin:
-                admin = User(
-                    id=0, 
-                    email="system@resomix.local", 
-                    username="system_admin",
-                    uuid=str(uuid.uuid4())
-                )
-            
-            set_admin_context(True)
-            if not hasattr(request.state, "permissions"):
-                request.state.permissions = list(PERMISSIONS.keys())
-            
-            return admin
-        
+
         if not token:
             raise HTTPException(
                 status_code=HTTP_403_FORBIDDEN,
-                detail="Authentication required. Please provide a valid API key or JWT token.",
+                detail="Authentication required. Please provide a valid JWT token.",
             )
 
         current_user = await get_current_user(request, token, db)
@@ -354,19 +293,9 @@ async def require_admin(
     Enforces 'admin:access' permission and verifies admin JWT claim.
     Administrative routes strictly require a valid JWT with 'role' set to 'admin'.
     """
-    # Allow static API key bypass for legacy systems/automated tests
-    api_key = request.headers.get("X-API-KEY")
-    auth_header = request.headers.get("Authorization")
-    token = None
-    if auth_header and auth_header.startswith("Bearer "):
-        token = auth_header.split(" ")[1]
-
-    is_static_api_key = (api_key and api_key == settings.api_key) or (token and token == settings.api_key)
-    if is_static_api_key:
-        set_admin_context(True)
-        return current_user
-
-    # Force JWT-based authentication for administrative routes
+    # Administrative routes strictly require a valid admin JWT: the token must carry a
+    # 'role': 'admin' claim AND the user must actually hold the admin role in the database
+    # (defence-in-depth against a forged/leaked token). The static super-key was retired.
     payload = getattr(request.state, "token_payload", None)
     if not payload:
         raise HTTPException(
@@ -374,32 +303,22 @@ async def require_admin(
             detail="Administrative routes strictly require a valid JWT token authentication."
         )
 
-    if not is_static_api_key:
-        payload = getattr(request.state, "token_payload", None)
-        if not payload:
-            raise HTTPException(
-                status_code=HTTP_403_FORBIDDEN,
-                detail="Administrative routes strictly require a valid JWT token authentication."
-            )
+    if payload.get("role") != "admin":
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail="Admin JWT claim missing. Please login via the admin portal."
+        )
 
-        if payload.get("role") != "admin":
-            raise HTTPException(
-                status_code=HTTP_403_FORBIDDEN,
-                detail="Admin JWT claim missing. Please login via the admin portal."
-            )
-            
-        # Strictly verify admin status in database (Don't trust payload alone)
-        # This fulfills the request to rely on user authentication + role verification
-        # We reuse the cached permissions if possible, but a role check is more explicit
-        if not hasattr(request.state, "is_verified_admin"):
-            async with AsyncSessionLocal() as db:
-                roles = await RBACRepository.get_user_roles(db, current_user.id)
-                if not any(r.name == "admin" for r in roles):
-                    raise HTTPException(
-                        status_code=HTTP_403_FORBIDDEN,
-                        detail="Administrative privileges required (Verified)."
-                    )
-                request.state.is_verified_admin = True
+    # Strictly verify admin status in database (don't trust the payload alone).
+    if not hasattr(request.state, "is_verified_admin"):
+        async with AsyncSessionLocal() as db:
+            roles = await RBACRepository.get_user_roles(db, current_user.id)
+            if not any(r.name == "admin" for r in roles):
+                raise HTTPException(
+                    status_code=HTTP_403_FORBIDDEN,
+                    detail="Administrative privileges required (Verified)."
+                )
+            request.state.is_verified_admin = True
 
     # Enable multi-tenant bypass for this admin request
     set_admin_context(True)

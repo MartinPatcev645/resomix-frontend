@@ -93,7 +93,7 @@ class AuthController:
                     "user_uuid": user.uuid,
                     "email": user.email,
                     "username": user.username,
-                    "message": "Registration successful. Please check your email to verify your account.",
+                    "message": "Registration successful. Verify your email to activate your account and unlock your welcome bonus playlists.",
                 },
             )
 
@@ -423,7 +423,7 @@ class AuthController:
             response_data = format_response(
                 success=True,
                 data={
-                    "message": "Email verified successfully!",
+                    "message": "Email verified successfully! Your welcome bonus playlists have been added to your account.",
                     "user_uuid": user.uuid,
                 },
             )

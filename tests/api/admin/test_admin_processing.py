@@ -29,8 +29,9 @@ from app.models.partner_processing_job import PartnerProcessingJob
 
 
 @pytest.fixture
-def admin_auth_headers():
-    return {"X-API-KEY": settings.api_key}
+async def admin_auth_headers():
+    from tests.api.library_helpers import create_admin_user, admin_auth_headers as _hdrs
+    return _hdrs(await create_admin_user())
 
 
 @pytest.fixture

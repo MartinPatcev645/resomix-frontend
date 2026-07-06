@@ -43,8 +43,18 @@ async def mock_require_permission_dummy():
 # tear it down afterwards. Setting these on app.dependency_overrides at import time leaks
 # the bypass into every other test in the session (e.g. routes that assert a 403 without
 # auth would start returning 200).
+# Admin auth is a real admin-role JWT (the static super-key was retired). ADMIN_HEADERS is
+# repopulated before each test by the autouse fixture. The require_admin / partners:manage
+# overrides remain so tests that hit admin routes without headers still bypass, but endpoints
+# needing other permissions authenticate via the real JWT in ADMIN_HEADERS.
+ADMIN_HEADERS: dict = {}
+
+
 @pytest.fixture(autouse=True)
-def _override_admin_auth():
+async def _override_admin_auth():
+    from tests.api.library_helpers import create_admin_user, admin_auth_headers
+    ADMIN_HEADERS.clear()
+    ADMIN_HEADERS.update(admin_auth_headers(await create_admin_user()))
     perm_dep = require_permission("partners:manage")
     app.dependency_overrides[require_admin] = mock_require_admin
     app.dependency_overrides[perm_dep] = mock_require_permission_dummy
@@ -53,8 +63,6 @@ def _override_admin_auth():
     finally:
         app.dependency_overrides.pop(require_admin, None)
         app.dependency_overrides.pop(perm_dep, None)
-
-ADMIN_HEADERS = {"X-Api-Key": settings.api_key}
 
 
 # ==============================================================================

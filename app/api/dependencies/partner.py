@@ -49,14 +49,18 @@ async def _get_partner_core(
 ) -> Partner:
     """Internal core logic for partner resolution.
 
-    Credential priority (do NOT confuse the partner key with the admin/system key):
-      1. Partner API key (``rmx_…``) — scopes the request to THAT partner. Wins over
+    Credential priority:
+      1. Partner API key (``rmx_…``) — scopes the request to THAT B2B partner. Wins over
          everything, from whichever source it arrives (Bearer header, ``X-Api-Key``
          header, or ``?api_key=`` query param). So a request carrying BOTH a user
          JWT and a partner key is scoped to the partner.
-      2. Admin/frontend system key (``settings.api_key``) — System Partner 1 + admin.
-      3. User JWT — System Partner 1 (the global open-tracks catalog).
-      4. Anonymous — System Partner 1, only when ``allow_anonymous`` and no scope.
+      2. User JWT — System Partner 1 (the global open-tracks catalog / frontend surface).
+      3. Anonymous — System Partner 1, only when ``allow_anonymous`` is set.
+
+    The old static system key (``settings.api_key``) is no longer accepted here: the frontend
+    is now identified by a user JWT (logged-in) or the anonymous fallback (guests). A stale
+    client still sending it fails JWT decode and degrades to the anonymous branch on public
+    endpoints.
     """
     # Gather every place a credential can arrive, then split partner key vs.
     # platform (JWT/admin) token so an rmx_ key always takes priority regardless of
@@ -107,28 +111,26 @@ async def _get_partner_core(
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
-    # 2. Standard Platform Access (Legacy JWT or Admin Key) — only reached when no
-    #    partner key was supplied, so an authenticated user always lands on the
-    #    global System Partner 1 catalog.
+    # 2. Platform access — only reached when no partner key was supplied:
+    #      • a valid user JWT  → the global System Partner 1 catalog;
+    #      • anonymous         → System Partner 1, on public endpoints (allow_anonymous).
+    #    The retired static system key is no longer consulted here. A stale client that still
+    #    sends it (as X-API-KEY or Bearer) fails JWT decode and simply degrades to anonymous on
+    #    public endpoints, rather than hard-failing.
     partner = None
-
-    # Check for Admin/Frontend System Key
-    from app.core.config import settings
-    from app.core.context import set_admin_context
-    if platform_token and platform_token == settings.api_key:
-        partner = await partner_service.partner_repo.async_get_by_id(db, SYSTEM_PARTNER_ID)
-        set_admin_context(True)
-        request.state.partner_id = SYSTEM_PARTNER_ID
-    else:
-        # Check for User JWT or Anonymous fallback
-        if platform_token:
+    if platform_token:
+        try:
             user = await get_current_user_optional(platform_token, db)
-            if user:
-                partner = await partner_service.partner_repo.async_get_by_id(db, SYSTEM_PARTNER_ID)
-                request.state.partner_id = SYSTEM_PARTNER_ID
-        elif allow_anonymous and not required_scope:
+        except HTTPException:
+            if not allow_anonymous:
+                raise  # private endpoint: a bad/expired token is a real 401
+            user = None  # public endpoint: treat a stale/invalid token as a guest
+        if user:
             partner = await partner_service.partner_repo.async_get_by_id(db, SYSTEM_PARTNER_ID)
             request.state.partner_id = SYSTEM_PARTNER_ID
+    if partner is None and allow_anonymous:
+        partner = await partner_service.partner_repo.async_get_by_id(db, SYSTEM_PARTNER_ID)
+        request.state.partner_id = SYSTEM_PARTNER_ID
 
     if not partner:
         raise HTTPException(
@@ -166,8 +168,13 @@ async def get_public_partner(
     """Dependency that allows anonymous fallback to Partner 1 (Public Access)."""
     return await _get_partner_core(request, auth, db, partner_service, background_tasks, api_key_token=api_key_header, allow_anonymous=True)
 
-def get_current_partner_scoped(required_scope: str):
-    """Factory for getting partner with a required scope."""
+def get_current_partner_scoped(required_scope: str, allow_anonymous: bool = False):
+    """Factory for getting a partner with a required scope.
+
+    ``required_scope`` is enforced only for B2B partner API keys. When ``allow_anonymous`` is
+    True, the frontend surface (a user JWT or an anonymous visitor) still resolves to System
+    Partner 1 — the scope is a partner-key concept and does not apply to Partner 1.
+    """
     async def scoped_dependency(
         request: Request,
         background_tasks: BackgroundTasks,
@@ -178,7 +185,8 @@ def get_current_partner_scoped(required_scope: str):
     ) -> Partner:
         return await _get_partner_core(
             request, auth, db, partner_service, background_tasks,
-            api_key_token=api_key_header, required_scope=required_scope
+            api_key_token=api_key_header, required_scope=required_scope,
+            allow_anonymous=allow_anonymous,
         )
     return scoped_dependency
 

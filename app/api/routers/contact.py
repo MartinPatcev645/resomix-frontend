@@ -20,7 +20,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.controllers.contact_controller import ContactController
-from app.api.dependencies.auth import get_api_key, get_current_user_optional
+from app.api.dependencies.auth import get_current_user_optional, require_admin
+from app.api.dependencies.partner import get_public_partner
+from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
 from app.models.user import User
 from app.schemas.contact import (
@@ -64,7 +66,7 @@ async def submit_contact(
     request: Request,
     contact_request: ContactRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
@@ -100,7 +102,7 @@ async def get_contact(
     request: Request,
     contact_id: int = Path(..., description="The ID of the contact to retrieve", ge=1),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    _admin: User = Depends(require_admin)  # admin-only (was static super-key)
 ):
     """
     Get a contact submission by ID.
@@ -128,7 +130,7 @@ async def update_contact_status(
     status_request: ContactUpdateRequest,
     contact_id: int = Path(..., description="The ID of the contact to update", ge=1),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    _admin: User = Depends(require_admin)  # admin-only (was static super-key)
 ):
     """
     Update contact submission status.

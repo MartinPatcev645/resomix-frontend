@@ -69,3 +69,16 @@ class UsageCounterService:
         return await redis_counter.incr_with_ttl(
             self._key(subject_type, subject_id, feature_key, period_key), ttl_seconds
         )
+
+    async def grant_bonus(
+        self, subject_type: str, subject_id: str, feature_key: str,
+        amount: int, period_key: str, ttl_seconds: int,
+    ) -> Optional[int]:
+        """Seed the counter negative by ``amount`` — a one-time bonus, so this period's effective
+        allowance becomes ``limit + amount``. The limit itself stays plan-resolved (not snapshotted),
+        so a mid-period up/downgrade adjusts automatically. None if Redis down or ``amount <= 0``."""
+        if amount <= 0:
+            return None
+        return await redis_counter.incr_by(
+            self._key(subject_type, subject_id, feature_key, period_key), -int(amount), ttl_seconds
+        )

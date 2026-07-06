@@ -7,6 +7,19 @@ from datetime import datetime
 from app.main import app
 from app.core.config import settings
 from app.models.partner import Partner
+from tests.api.library_helpers import create_admin_user, admin_auth_headers
+
+# Admin auth via an admin-role JWT (the static super-key was retired). ADMIN is repopulated before
+# every test by the autouse fixture; call sites use `dict(ADMIN)` for a private copy.
+ADMIN: dict = {}
+
+
+@pytest.fixture(autouse=True)
+async def _admin_auth():
+    ADMIN.clear()
+    ADMIN.update(admin_auth_headers(await create_admin_user()))
+    yield
+
 
 @pytest.mark.asyncio
 async def test_admin_waitlist_workflow():
@@ -53,7 +66,7 @@ async def test_admin_waitlist_workflow():
     with patch("app.api.routers.admin.waitlist.waitlist_controller", mock_controller):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"X-API-KEY": settings.api_key}
+            headers = dict(ADMIN)
             
             # 1. List waitlist
             res = await ac.get("/api/v1/admin/waitlist/", headers=headers)
@@ -108,7 +121,7 @@ async def test_admin_feedback_workflow():
     with patch("app.api.routers.admin.feedback.feedback_controller", mock_controller):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"Authorization": f"Bearer {settings.api_key}"}
+            headers = dict(ADMIN)  # admin JWT is already a Bearer token
             res = await ac.get("/api/v1/admin/feedback/", headers=headers)
             assert res.status_code == 200
             res = await ac.get("/api/v1/admin/feedback/stats", headers=headers)
@@ -159,7 +172,7 @@ async def test_admin_partner_management():
     with patch("app.api.routers.admin.partners.partner_controller", mock_controller):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"X-API-KEY": settings.api_key}
+            headers = dict(ADMIN)
             res = await ac.post("/api/v1/admin/partners/", headers=headers, json={
                 "display_name": "New Partner", "legal_name": "Legal", "contact_email": "p@test.com", "tier": "sandbox"
             })
@@ -203,7 +216,7 @@ async def test_admin_contact_management():
     with patch("app.api.routers.admin.contact.contact_controller", mock_controller):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            headers = {"X-API-KEY": settings.api_key}
+            headers = dict(ADMIN)
             res = await ac.get("/api/v1/admin/contact/", headers=headers)
             assert res.status_code == 200
             res = await ac.post("/api/v1/admin/contact/mark-status/1", headers=headers, json={"status": "resolved"})
@@ -223,12 +236,12 @@ async def test_admin_security_enforcement():
         assert res.status_code == 403
 
         # Ensure query parameters are blocked for administrative keys (Best Practice)
-        res = await ac.get(f"/api/v1/admin/waitlist/?api_key={settings.api_key}")
+        res = await ac.get("/api/v1/admin/waitlist/?api_key=legacy-static-key")
         assert res.status_code == 403
 
         # Ensure API key issue route blocks static API keys in query parameters
         res = await ac.post(
-            f"/api/v1/admin/partners/api-keys/issue?api_key={settings.api_key}",
+            "/api/v1/admin/partners/api-keys/issue?api_key=legacy-static-key",
             json={"partner_id": 100, "label": "Key", "tier": "sandbox", "scopes": []}
         )
         assert res.status_code == 403

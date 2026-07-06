@@ -21,7 +21,7 @@ from app.core.context import admin_context
 from app.core.security import create_access_token, hash_password
 from app.models.playlist import Playlist
 from app.models.track import Track
-from app.models.user import User
+from app.models.user import User, Role, UserRole
 from database.connection import AsyncSessionLocal
 
 
@@ -62,6 +62,28 @@ async def create_user(*, is_active: bool = True, is_email_verified: bool = True)
 def auth_headers(user: User) -> dict:
     """Bearer header carrying a valid access token for ``user`` (frontend → partner 1)."""
     token = create_access_token(data={"sub": user.uuid})
+    return {"Authorization": f"Bearer {token}"}
+
+
+async def create_admin_user() -> User:
+    """Create a user holding the seeded ``admin`` RBAC role (grants every permission).
+
+    This is the JWT-based replacement for the old static super-key: admin routes now require a
+    real JWT with an ``admin`` role claim *and* the ``admin`` role in the DB (see
+    ``require_admin``). Roles are seeded in the baseline DB, so we just link the user to it.
+    """
+    user = await create_user()
+    async with AsyncSessionLocal() as db:
+        role = (await db.execute(select(Role).where(Role.name == "admin"))).scalar_one()
+        db.add(UserRole(user_id=user.id, role_id=role.id))
+        await db.commit()
+    return user
+
+
+def admin_auth_headers(user: User) -> dict:
+    """Bearer header with an admin-claim JWT. ``require_admin`` needs both the ``role: admin``
+    claim *and* the user actually holding the DB ``admin`` role (use ``create_admin_user``)."""
+    token = create_access_token(data={"sub": user.uuid, "role": "admin"})
     return {"Authorization": f"Bearer {token}"}
 
 

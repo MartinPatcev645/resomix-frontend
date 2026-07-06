@@ -90,6 +90,14 @@ class AdminEntitlementController:
         logger.info("Plan updated: code=%s by=%s", code, current_admin.id)
         return JSONResponse(status_code=200, content=format_response(success=True, data=result))
 
+    async def get_metrics(self) -> JSONResponse:
+        """In-process entitlement observability counters (gate allow/deny, fail-open, cache hit/miss)."""
+        from app.services import entitlement_metrics
+        return JSONResponse(
+            status_code=200,
+            content=format_response(success=True, data={"metrics": entitlement_metrics.snapshot()}),
+        )
+
     async def get_user_effective(self, db: AsyncSession, user_uuid: str) -> JSONResponse:
         user = await self.user_repo.async_get_by_uuid(db, user_uuid)
         if user is None:

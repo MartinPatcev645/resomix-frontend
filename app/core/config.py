@@ -35,8 +35,13 @@ class Settings(BaseModel):
 
     # API Configuration
     api_key: str = Field(
-        default="bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ",
-        description="API key for authentication (should be set via environment variable in production)",
+        default="",
+        description=(
+            "RETIRED. This was the static frontend/admin super-key (env RESOMIX_API_KEY). It is no "
+            "longer accepted anywhere: the frontend is anonymous or JWT-authenticated (→ System "
+            "Partner 1) and admins use an admin-role JWT via /admin/auth/login. The field is kept "
+            "only so legacy test references resolve; it grants no access. Do not reintroduce it."
+        ),
     )
     demo_mode: bool = Field(
         default=False,
@@ -403,6 +408,13 @@ class Settings(BaseModel):
     )
     password_reset_rate_limit: str = Field(
         default="4/hour", description="Rate limit for password reset requests"
+    )
+    frontend_similarity_burst_per_min: int = Field(
+        default=30,
+        description="Per-IP burst limit (requests/minute) on similarity create for the FRONTEND "
+                    "surface only (System Partner 1: guests + logged-in). B2B partners are NEVER "
+                    "affected — they have their own DB-backed per-second/monthly quotas. Catches "
+                    "one-IP hammering with rotating visitor_ids (the monthly cap can't). 0 disables.",
     )
 
     # Email Service (SMTP)

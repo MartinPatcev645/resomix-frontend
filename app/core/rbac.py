@@ -41,6 +41,14 @@ PERMISSIONS = {
     "contact:manage": "View and resolve contact inquiries",
     "content:takedown": "Issue a manual content takedown",
     "reports:view": "View generated reports and analytics",
+    # Admin management umbrellas (referenced by admin routers; formerly reachable only via the
+    # static super-key, which bypassed the permission check. Registered so the admin role — and
+    # any future scoped operator role — can actually be granted them via RBAC.)
+    "partners:manage": "Full administrative management of partner tenants and their API keys",
+    "playlist:manage": "Administrative management of any playlist (moderation, reparenting)",
+    "promo:manage": "Create, update, or delete promo codes and campaigns",
+    "similarity:manage": "Administrative management of similarity indexes and results",
+    "spotify_apps:manage": "Manage Spotify application credentials used for playlist transfers",
 }
 
 # Define roles and their descriptions

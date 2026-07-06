@@ -15,8 +15,10 @@ from fastapi import APIRouter, Depends, Path, Query, Request, Security
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.user_controller import UserController
+from app.api.dependencies.partner import get_public_partner
+from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
-from app.api.dependencies.auth import get_current_user, get_api_key
+from app.api.dependencies.auth import get_current_user
 from app.models.user import User
 from app.schemas.auth import (
     UserProfileResponse,
@@ -60,7 +62,7 @@ async def search_users(
     q: str = Query(..., min_length=1, max_length=100, description="Search query"),
     limit: int = Query(20, ge=1, le=50, description="Maximum number of results to return"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
 ):
     return await user_controller.search_users(db, request, q, limit)
 

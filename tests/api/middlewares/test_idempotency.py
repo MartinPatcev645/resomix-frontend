@@ -160,8 +160,9 @@ async def test_idempotency_security_invalid_token(setup_redis):
                 "Authorization": "Bearer rmx_invalid", "Idempotency-Key": shared_key
             })
             
-            # Should be 403 (from router's get_api_key) and NO idempotency hit
-            assert res_bad.status_code == 403
+            # An invalid partner API key is rejected (401 from validate_api_key) and MUST NOT
+            # produce an idempotency cache hit. (Previously 403 via the retired static-key gate.)
+            assert res_bad.status_code in (401, 403)
             assert res_bad.headers.get("X-Idempotency-Hit") is None
 
 @pytest.mark.asyncio

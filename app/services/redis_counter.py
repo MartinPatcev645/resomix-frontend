@@ -45,6 +45,14 @@ if v < 0 then redis.call('SET', KEYS[1], '0'); return 0 end
 return v
 """
 
+# Apply a signed delta (may go negative) and (re)set the TTL — used to grant a one-time bonus by
+# seeding the counter negative so the effective allowance = limit + |delta| for this period.
+_INCR_BY = """
+local v = redis.call('INCRBY', KEYS[1], tonumber(ARGV[1]))
+redis.call('EXPIRE', KEYS[1], tonumber(ARGV[2]))
+return v
+"""
+
 
 async def incr_with_ttl(key: str, ttl_seconds: int) -> Optional[int]:
     """Increment a counter (unconditionally), setting the TTL on first use. None if Redis down."""
@@ -55,6 +63,20 @@ async def incr_with_ttl(key: str, ttl_seconds: int) -> Optional[int]:
         return int(await client.eval(_INCR_TTL, 1, key, int(ttl_seconds)))
     except Exception as exc:
         logger.warning("redis incr_with_ttl failed for %s: %s", key, exc)
+        return None
+    finally:
+        await client.close()
+
+
+async def incr_by(key: str, delta: int, ttl_seconds: int) -> Optional[int]:
+    """Apply a signed ``delta`` to a counter (may go negative) and (re)set its TTL. None if Redis down."""
+    client = await get_redis_or_none()
+    if client is None:
+        return None
+    try:
+        return int(await client.eval(_INCR_BY, 1, key, int(delta), int(ttl_seconds)))
+    except Exception as exc:
+        logger.warning("redis incr_by failed for %s: %s", key, exc)
         return None
     finally:
         await client.close()

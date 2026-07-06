@@ -21,7 +21,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
 from app.controllers.tidal_transfer_controller import TidalTransferController
-from app.api.dependencies.auth import get_api_key
+
+from app.api.dependencies.partner import get_public_partner
+from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
 from app.schemas.tidal_transfer import (
     TidalTransferRequest,
@@ -70,7 +72,7 @@ tidal_transfer_controller = TidalTransferController()
 async def exchange_token(
     request: Request,
     request_data: TidalTokenRequest,
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
 ) -> JSONResponse:
     """
     Exchange authorization code for Tidal access token.
@@ -151,7 +153,7 @@ async def transfer_playlist_to_tidal_endpoint(
     request: Request,
     request_data: TidalTransferRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
 ) -> JSONResponse:
     """
     Transfer a Resomix playlist to user's Tidal account using official Tidal API v2 endpoints.

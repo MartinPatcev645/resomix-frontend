@@ -23,7 +23,16 @@ from sqlalchemy import select
 # ──────────────────────────────────────────────────────────────
 # Constants
 # ──────────────────────────────────────────────────────────────
-API_KEY_HEADER = {"X-API-KEY": settings.api_key}
+# Public frontend endpoints (health, telemetry beacons) need no credentials — this empty header
+# keeps the call sites unchanged. Admin endpoints use the admin-JWT fixture below.
+API_KEY_HEADER: dict = {}
+
+
+@pytest.fixture
+async def admin_headers():
+    """Admin-role JWT (the static super-key was retired) for admin-only endpoints."""
+    from tests.api.library_helpers import create_admin_user, admin_auth_headers
+    return admin_auth_headers(await create_admin_user())
 
 
 # ──────────────────────────────────────────────────────────────
@@ -236,8 +245,9 @@ async def test_telemetry_sync_stream_start_nonzero_duration(client, track_uuid):
 
 
 @pytest.mark.asyncio
-async def test_telemetry_requires_api_key(client, track_uuid):
-    """POST /telemetry/sync without API key should return 401/403."""
+async def test_telemetry_public_access(client, track_uuid):
+    """POST /telemetry/sync is public: guest playback beacons post anonymously (→ System
+    Partner 1). The retired static API key is no longer required (or accepted)."""
     payload = {
         "events": [
             {
@@ -253,7 +263,7 @@ async def test_telemetry_requires_api_key(client, track_uuid):
         ]
     }
     response = await client.post("/api/v1/telemetry/sync", json=payload)
-    assert response.status_code in (401, 403)
+    assert response.status_code == 200
 
 
 # ──────────────────────────────────────────────────────────────
@@ -261,10 +271,10 @@ async def test_telemetry_requires_api_key(client, track_uuid):
 # ──────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_list_operation_types(client):
+async def test_list_operation_types(client, admin_headers):
     """GET /admin/operation-limits/operation-types should return available types."""
     response = await client.get(
-        "/api/v1/admin/operation-limits/operation-types", headers=API_KEY_HEADER
+        "/api/v1/admin/operation-limits/operation-types", headers=admin_headers
     )
     assert response.status_code == 200
     data = response.json()
@@ -273,9 +283,9 @@ async def test_list_operation_types(client):
 
 
 @pytest.mark.asyncio
-async def test_list_user_operation_limits(client):
+async def test_list_user_operation_limits(client, admin_headers):
     """GET /admin/operation-limits/ should return paginated limits."""
-    response = await client.get("/api/v1/admin/operation-limits/", headers=API_KEY_HEADER)
+    response = await client.get("/api/v1/admin/operation-limits/", headers=admin_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True

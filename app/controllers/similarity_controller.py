@@ -67,6 +67,36 @@ class SimilarityController:
         except (TypeError, ValueError):
             return top_sk
 
+    async def _frontend_rate_ok(self, request) -> bool:
+        """Per-IP burst brake for the FRONTEND surface only (System Partner 1 — guests + logged-in).
+
+        B2B partners are NEVER checked here: they have their own DB-backed per-second/monthly quotas
+        (partner rate limits), so frontend abuse protection must not be mixed with theirs. Keyed by
+        client IP per UTC minute; catches one-IP hammering with rotating visitor_ids (which the
+        per-visitor monthly cap can't stop). Fails **open** if Redis is down (a soft brake must not
+        block users on an infra outage)."""
+        limit = int(getattr(settings, "frontend_similarity_burst_per_min", 0) or 0)
+        if limit <= 0:
+            return True
+        from datetime import datetime as _dt
+        from app.services import redis_counter
+        ip = self.guest_identity.client_ip(request)
+        minute = _dt.utcnow().strftime("%Y%m%d%H%M")
+        count = await redis_counter.incr_with_ttl(f"rate:fe:sim:{ip}:{minute}", 70)
+        if count is None:  # Redis down → fail open
+            return True
+        return count <= limit
+
+    def _rate_limited_response(self) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content=format_response(
+                success=False,
+                error="Too many requests — please slow down and try again in a moment.",
+                reason="rate_limited",
+            ),
+        )
+
     async def _apply_frontend_unlock_redaction(
         self, db, similarity_results, *, request, current_user, partner_id
     ) -> None:
@@ -142,6 +172,11 @@ class SimilarityController:
                     error="Authentication required to access similarity features.",
                 ),
             )
+
+        # Frontend-only per-IP burst brake (B2B exempt — see _frontend_rate_ok).
+        if partner_id == settings.system_partner_id:
+            if not await self._frontend_rate_ok(request):
+                return self._rate_limited_response()
 
         # Check operation limits before processing - only if user is logged in
         user_id = current_user.id if current_user else None
@@ -1049,6 +1084,9 @@ class SimilarityController:
         is_frontend = partner_id == settings.system_partner_id
         gate_visitor_id = None
         if is_frontend:
+            # Frontend-only per-IP burst brake (B2B has its own quotas — see _frontend_rate_ok).
+            if not await self._frontend_rate_ok(request):
+                return self._rate_limited_response()
             gate_visitor_id = None if current_user else self.guest_identity.derive_visitor_id(request)
             # Clamp the requested track count to the caller's dropdown cap (server-side guard;
             # the frontend greys the rest). Guest = 20, free = 50, etc.

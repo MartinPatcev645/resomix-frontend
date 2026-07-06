@@ -146,26 +146,26 @@ async def test_idempotency_error_caching(setup_redis):
     """
     W2-3 Edge Case: Verify that 4xx errors ARE cached, but 5xx errors ARE NOT.
     """
-    p1 = Partner(id=1, partner_uuid=str(uuid.uuid4()))
-    k1 = PartnerApiKey(id=1, partner_id=1, is_active=True)
-    
-    with patch("app.api.middlewares.idempotency.PartnerService") as mock_partner_service:
-        mock_partner_service.return_value.validate_api_key = AsyncMock(return_value=(p1, k1))
-        
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            # 1. 422 Unprocessable Entity (Missing payload)
-            key_422 = str(uuid.uuid4())
-            res1 = await ac.post("/api/v1/waitlist/", 
-                json={}, # Missing email
-                headers={"Authorization": "Bearer rmx_test", "Idempotency-Key": key_422, "X-API-KEY": settings.api_key}
-            )
-            assert res1.status_code == 422
-            
-            # Replay 422 -> Should hit cache
-            res2 = await ac.post("/api/v1/waitlist/", 
-                json={}, 
-                headers={"Authorization": "Bearer rmx_test", "Idempotency-Key": key_422, "X-API-KEY": settings.api_key}
-            )
-            assert res2.status_code == 422
-            assert res2.headers.get("X-Idempotency-Hit") == "true"
+    # A frontend user JWT scopes idempotency to System Partner 1 (the middleware maps frontend
+    # users to SYSTEM_PARTNER_ID). The retired static key is no longer involved.
+    from tests.api.library_helpers import create_user, auth_headers
+    user = await create_user()
+    hdrs = auth_headers(user)
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # 1. 422 Unprocessable Entity (Missing payload)
+        key_422 = str(uuid.uuid4())
+        res1 = await ac.post("/api/v1/waitlist/",
+            json={},  # Missing email
+            headers={**hdrs, "Idempotency-Key": key_422}
+        )
+        assert res1.status_code == 422
+
+        # Replay 422 -> Should hit cache
+        res2 = await ac.post("/api/v1/waitlist/",
+            json={},
+            headers={**hdrs, "Idempotency-Key": key_422}
+        )
+        assert res2.status_code == 422
+        assert res2.headers.get("X-Idempotency-Hit") == "true"

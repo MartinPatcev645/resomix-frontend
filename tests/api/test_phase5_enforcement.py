@@ -148,9 +148,10 @@ async def test_check_export_by_plan():
         f = await gate.check_export(db, "spotify", user=free_user)
         assert f.allowed is False and f.reason == "upgrade_required"
 
-        # basic-tier user: targets = spotify,apple → spotify allowed, tidal denied
+        # basic-tier user: targets = spotify,apple → spotify + apple allowed, tidal denied
         u = await _reload_user(db, basic_user.id)  # now carries plan_id
         assert (await gate.check_export(db, "spotify", user=u)).allowed is True
+        assert (await gate.check_export(db, "apple", user=u)).allowed is True
         assert (await gate.check_export(db, "tidal", user=u)).allowed is False
 
 
@@ -165,6 +166,22 @@ async def test_spotify_transfer_denied_for_free_user_endpoint():
             "/api/v1/spotify/transfer-playlist/",
             headers={**auth_headers(user), "X-API-KEY": settings.api_key},
             json={"playlist_id": str(uuid.uuid4()), "access_token": "dummy-token"},
+        )
+    assert res.status_code == 403
+    assert res.json().get("reason") == "upgrade_required"
+
+
+@pytest.mark.asyncio
+async def test_apple_transfer_denied_for_free_user_endpoint():
+    """A free user hitting the Apple Music transfer endpoint is denied (before any Apple call)."""
+    from app.main import app
+    user = await create_user()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        res = await ac.post(
+            "/api/v1/apple-music/transfer-playlist/",
+            headers={**auth_headers(user), "X-API-KEY": settings.api_key},
+            json={"playlist_id": str(uuid.uuid4()), "music_user_token": "dummy-token-123"},
         )
     assert res.status_code == 403
     assert res.json().get("reason") == "upgrade_required"

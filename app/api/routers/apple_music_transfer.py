@@ -20,8 +20,11 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.apple_music_transfer_controller import AppleMusicTransferController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.auth import get_current_user
+from app.api.dependencies.partner import get_public_partner
+from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
+from app.models.user import User
 from app.schemas.apple_music_transfer import (
     AppleMusicTransferRequest,
     AppleMusicTransferResponse,
@@ -51,7 +54,7 @@ apple_music_transfer_controller = AppleMusicTransferController()
     description="Generate or retrieve cached Apple Music developer token (JWT ES256)."
 )
 async def get_developer_token_endpoint(
-    api_key: str = Security(get_api_key)
+    _partner: Partner = Depends(get_public_partner)
 ) -> JSONResponse:
     """
     Get or generate Apple Music developer token.
@@ -98,7 +101,8 @@ async def transfer_playlist_to_apple_music_endpoint(
     request: Request,
     request_data: AppleMusicTransferRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    _partner: Partner = Depends(get_public_partner),
+    current_user: User = Depends(get_current_user),  # REQUIRED — needed to resolve the export plan
 ) -> JSONResponse:
     """
     Transfer a Resomix playlist to user's Apple Music library.
@@ -131,7 +135,8 @@ async def transfer_playlist_to_apple_music_endpoint(
     return await apple_music_transfer_controller.transfer_playlist_to_apple_music(
         db,
         request,
-        request_data.playlist_id, 
+        request_data.playlist_id,
         request_data.music_user_token,
-        custom_playlist_name=request_data.playlist_name
+        custom_playlist_name=request_data.playlist_name,
+        current_user=current_user,
     )

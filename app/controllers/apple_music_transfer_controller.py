@@ -21,13 +21,36 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 import time
 
+from typing import Optional
+
 from app.services.apple_music_transfer_service import AppleMusicTransferService
 from app.services.logging_service import LoggingService
 from app.services.playlist_service import PlaylistService
+from app.services.entitlement_gate import EntitlementGate
+from app.models.user import User
 from app.utils.response_utils import format_response
 
 # Set up logger for controller
 logger = logging.getLogger(__name__)
+
+# ─────────────────────────────────────────────────────────────────────────────────────────────
+# GOOD-TO-KNOWS — Apple Music export gating (read before touching this / wiring Apple export)
+# ─────────────────────────────────────────────────────────────────────────────────────────────
+# * Apple export is a PLAN feature. It is gated on the `export_targets` entitlement (a CSV like
+#   "spotify,apple,tidal"). A plan may transfer to Apple Music only if "apple" is in its
+#   export_targets. Seeds (admin-editable): guest/free = none; basic/pro = "spotify,apple";
+#   max = all. So free users are denied with 403 `upgrade_required`; basic+ are allowed.
+# * The gate is `EntitlementGate.check_export(db, "apple", user=current_user)` — identical to the
+#   Spotify controller. It runs BEFORE any Apple API call.
+# * AUTH UPLIFT (done): this endpoint now REQUIRES `get_current_user` (was api-key-only). A logged-in
+#   user is needed to resolve which plan to gate on. The frontend must send the JWT.
+# * Tokens: the Apple *developer* token is backend-generated (get_or_create_dev_token); the
+#   *music_user_token* comes from the frontend (MusicKit.authorize()). Gating is orthogonal to both.
+# * FRONTEND (when the Apple export button is built): show/enable it only when the caller's
+#   `export_targets` (from `useEntitlements`) contains "apple"; otherwise show an upgrade CTA.
+# * TIDAL is intentionally NOT gated yet (still api-key-only). When Tidal export is activated, do the
+#   same auth uplift + `check_export(db, "tidal", user=…)` here's Apple pattern.
+# ─────────────────────────────────────────────────────────────────────────────────────────────
 
 
 class AppleMusicTransferController:
@@ -38,6 +61,7 @@ class AppleMusicTransferController:
         self.apple_music_service = AppleMusicTransferService()
         self.logging_service = LoggingService()
         self.playlist_service = PlaylistService()
+        self.entitlement_gate = EntitlementGate()
         logger.info("AppleMusicTransferController initialized")
 
     async def get_developer_token(self) -> JSONResponse:
@@ -70,6 +94,7 @@ class AppleMusicTransferController:
         playlist_id: str,
         music_user_token: str,
         custom_playlist_name: str = None,
+        current_user: Optional[User] = None,
     ) -> JSONResponse:
         """
         Handle playlist transfer to Apple Music request
@@ -89,6 +114,19 @@ class AppleMusicTransferController:
         )
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
+
+        # Export gate: only plans whose export_targets include "apple" may transfer to Apple Music
+        # (see the GOOD-TO-KNOWS block at the top of this file). Runs before any Apple API call.
+        export_gate = await self.entitlement_gate.check_export(db, "apple", user=current_user)
+        if not export_gate.allowed:
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content=format_response(
+                    success=False,
+                    error="Exporting to Apple Music is not available on your plan.",
+                    reason=export_gate.reason,
+                ),
+            )
 
         # Resolve playlist int ID early for logging
         playlist_obj = (

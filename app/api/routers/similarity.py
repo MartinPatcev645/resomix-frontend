@@ -87,7 +87,7 @@ async def get_similarity_upload_endpoint(
     top_sk: Optional[int] = Query(None, description="Number of similar tracks to return (10, 20, 50, or 100)"),
     engine: Optional[str] = Query(None, description="Similarity engine (E1-E6)"),
     db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner_scoped("search:read")),
+    partner: Partner = Depends(get_current_partner_scoped("search:read", allow_anonymous=True)),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
@@ -147,7 +147,7 @@ async def get_similarity_by_id_endpoint(
     request: Request,
     request_data: SimilarityByIdRequest,
     db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner_scoped("search:read")),
+    partner: Partner = Depends(get_current_partner_scoped("search:read", allow_anonymous=True)),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """

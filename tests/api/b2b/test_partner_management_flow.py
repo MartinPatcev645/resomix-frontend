@@ -6,11 +6,36 @@ from app.core.config import settings
 
 # Configuration for integration tests
 BASE_URL = "http://localhost:8001"
-ADMIN_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"
 
 @pytest.fixture(scope="module")
 def admin_headers():
-    return {"X-API-KEY": ADMIN_KEY}
+    """Admin-role JWT (the static super-key was retired). The live server on :8001 shares this
+    process's DB and JWT secret, so a locally-minted admin token authenticates against it.
+
+    Built with the *sync* SessionLocal (no asyncio.run) to avoid an event-loop conflict with the
+    session-scoped async test loop."""
+    import uuid as _uuid
+    from sqlalchemy import select
+    from database.connection import SessionLocal
+    from app.core.context import set_admin_context
+    from app.core.security import hash_password, create_access_token
+    from app.models.user import User, Role, UserRole
+
+    set_admin_context(True)
+    db = SessionLocal()
+    try:
+        suffix = _uuid.uuid4().hex[:8]
+        user = User(
+            username=f"admjwt_{suffix}", email=f"admjwt_{suffix}@example.com",
+            password_hash=hash_password("StrongPass123!"), is_active=True, is_email_verified=True,
+        )
+        db.add(user); db.commit(); db.refresh(user)
+        admin_role = db.execute(select(Role).where(Role.name == "admin")).scalar_one()
+        db.add(UserRole(user_id=user.id, role_id=admin_role.id)); db.commit()
+        token = create_access_token(data={"sub": user.uuid, "role": "admin"})
+    finally:
+        db.close(); set_admin_context(False)
+    return {"Authorization": f"Bearer {token}"}
 
 @pytest.fixture(scope="module")
 def test_partner_data():

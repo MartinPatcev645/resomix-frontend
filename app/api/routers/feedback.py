@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.controllers.feedback_controller import FeedbackController
-from app.api.dependencies.partner import get_current_partner
+from app.api.dependencies.partner import get_current_partner, get_public_partner
 from app.models.partner import Partner
 from app.api.dependencies.auth import get_current_user_optional
 from app.api.dependencies.database import get_database_session
@@ -67,7 +67,7 @@ async def submit_feedback(
     request: Request,
     feedback_request: FeedbackRequest,
     db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner),
+    partner: Partner = Depends(get_public_partner),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """

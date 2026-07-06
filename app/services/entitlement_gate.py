@@ -29,6 +29,7 @@ from app.models.user import User
 from app.services.billing_period_service import BillingPeriodService
 from app.services.entitlement_service import EntitlementService
 from app.services.usage_counter_service import UsageCounterService
+from app.services import entitlement_metrics
 
 REASON_LOGIN = "login_required"      # guest → sign up for more
 REASON_UPGRADE = "upgrade_required"  # user  → upgrade plan
@@ -45,7 +46,9 @@ class GateResult:
 
 def _deny(user: Optional[User], limit: Optional[int] = None, count: Optional[int] = None) -> GateResult:
     if user is None:
+        entitlement_metrics.incr(f"gate.deny.{REASON_LOGIN}")
         return GateResult(False, REASON_LOGIN, "Log in to do more.", limit, count)
+    entitlement_metrics.incr(f"gate.deny.{REASON_UPGRADE}")
     return GateResult(False, REASON_UPGRADE, "Upgrade your plan for more.", limit, count)
 
 
@@ -109,6 +112,7 @@ class EntitlementGate:
         result = await self._usage.try_consume(subject[0], subject[1], feature_key, limit, period_key, ttl)
         if result is None:
             # Redis unavailable → fail open (soft limit must not block on infra failure).
+            entitlement_metrics.incr("gate.fail_open")
             return GateResult(True, limit=limit)
 
         allowed, count = result
@@ -142,6 +146,7 @@ class EntitlementGate:
         period_key, _ttl = await self._period(db, user, visitor_id)
         count = await self._usage.peek(subject[0], subject[1], feature_key, period_key)
         if count is None:
+            entitlement_metrics.incr("gate.fail_open")
             return GateResult(True, limit=limit)  # Redis down → fail open
         if count >= limit:
             return _deny(user, limit=limit, count=count)
@@ -155,3 +160,17 @@ class EntitlementGate:
         if subject is not None:
             period_key, ttl = await self._period(db, user, visitor_id)
             await self._usage.increment(subject[0], subject[1], feature_key, period_key, ttl)
+
+    async def grant_playlist_signup_bonus(self, db, user: User) -> int:
+        """One-time signup bonus: grant ``signup_bonus_playlists`` EXTRA playlist creations for the
+        user's current monthly period (seeds the counter negative). Returns the granted amount (0 if
+        none / Redis down). Idempotency is the caller's responsibility — call exactly once, on the
+        FIRST email verification. Best-effort (fails soft)."""
+        if user is None:
+            return 0
+        amount = await self._entitlements.get_int(db, FeatureKey.SIGNUP_BONUS_PLAYLISTS, user=user)
+        if amount <= 0:
+            return 0
+        period_key, ttl = await self._period(db, user, None)
+        await self._usage.grant_bonus("user", str(user.id), FeatureKey.PLAYLISTS_PER_MONTH, amount, period_key, ttl)
+        return amount

@@ -46,6 +46,13 @@ async def list_plans(
     return await controller.list_plans(db)
 
 
+@router.get("/entitlements/metrics", status_code=200, summary="Entitlement gate/cache metrics (in-process)")
+async def entitlement_metrics_endpoint(
+    current_admin: User = Depends(require_admin),
+) -> JSONResponse:
+    return await controller.get_metrics()
+
+
 @router.get("/features", status_code=200, summary="List the feature catalog")
 async def list_features(
     db: AsyncSession = Depends(get_database_session),

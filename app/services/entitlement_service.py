@@ -35,6 +35,7 @@ from app.core.entitlement_keys import ACTIVE_SUBSCRIPTION_STATUSES, PlanCode
 from app.models.plan import EntitlementOverride, Feature, Plan, PlanEntitlement
 from app.models.purchase import UserSubscription
 from app.models.user import User
+from app.services import entitlement_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -135,10 +136,12 @@ class EntitlementService:
             try:
                 cached = await client.get(cache_key)
                 if cached:
+                    entitlement_metrics.incr("entl.cache.hit")
                     return json.loads(cached)
             except Exception as exc:  # cache read failure → fall through to DB
                 logger.debug("Entitlement cache read failed: %s", exc)
 
+        entitlement_metrics.incr("entl.cache.miss")
         data = await self._load_map_from_db(db, plan)
 
         if client is not None:

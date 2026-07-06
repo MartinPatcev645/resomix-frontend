@@ -20,7 +20,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.waitlist_controller import WaitlistController
-from app.api.dependencies.auth import get_api_key
+
+from app.api.dependencies.partner import get_public_partner
+from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
 from app.schemas.waitlist import (
     WaitlistRequest,
@@ -63,7 +65,7 @@ async def join_waitlist_endpoint(
     request: Request,
     request_data: WaitlistRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
 ) -> JSONResponse:
     """
     Add an email address to the waitlist.
@@ -91,7 +93,7 @@ async def check_waitlist_status_endpoint(
     request: Request,
     request_data: WaitlistRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
 ) -> JSONResponse:
     """
     Check if an email address is in the waitlist and get its status.

@@ -134,26 +134,27 @@ async def test_admin_route_rejects_query_api_key():
     """
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        # Pass the correct global admin key as query param
+        # Pass a would-be admin key as a query param — query-param auth is not accepted at all.
         res = await ac.get(
-            f"/api/v1/admin/feedback/?api_key={settings.api_key}"
+            "/api/v1/admin/feedback/?api_key=bearer-resomix-api-legacy-static-key"
         )
-        # Should be 403 because query param is ignored and no header/bearer is provided
+        # 403 because the query param is ignored and no header/bearer JWT is provided.
         assert res.status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_admin_route_accepts_header_api_key():
+async def test_admin_route_rejects_header_api_key():
     """
-    Ensure the fallback X-API-KEY header still works for legacy/automated systems.
+    The retired static super-key must NO LONGER grant admin access via the X-API-KEY header.
+    Admin routes require a real admin-role JWT (via /admin/auth/login).
     """
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         res = await ac.get(
             "/api/v1/admin/feedback/",
-            headers={"X-API-KEY": settings.api_key}
+            headers={"X-API-KEY": "bearer-resomix-api-legacy-static-key"}
         )
-        assert res.status_code == 200
+        assert res.status_code == 403
 
 
 @pytest.mark.asyncio

@@ -27,10 +27,19 @@ from app.models.plan import Plan
 from app.models.user import User
 from app.services.entitlement_service import EntitlementService
 from database.connection import AsyncSessionLocal
-from tests.api.library_helpers import create_user
+from tests.api.library_helpers import create_user, create_admin_user, admin_auth_headers
 
-ADMIN = {"X-API-KEY": settings.api_key}
+# Admin auth is an admin-role JWT (the static super-key was retired). This dict is repopulated
+# before every test by the autouse fixture below, so all the `headers=ADMIN` call sites are unchanged.
+ADMIN: dict = {}
 BASE = "/api/v1/admin"
+
+
+@pytest.fixture(autouse=True)
+async def _admin_auth():
+    ADMIN.clear()
+    ADMIN.update(admin_auth_headers(await create_admin_user()))
+    yield
 
 
 async def _client() -> AsyncClient:
@@ -210,3 +219,18 @@ async def test_non_admin_is_rejected():
                                headers=auth_headers(user), json={"value": 999})
     assert r_read.status_code in (401, 403)
     assert r_write.status_code in (401, 403)
+
+
+@pytest.mark.asyncio
+async def test_entitlement_metrics_endpoint():
+    """Observability: a guest denial bumps a gate counter that the admin metrics endpoint exposes."""
+    from app.services.entitlement_gate import EntitlementGate
+    async with AsyncSessionLocal() as db:
+        # guest can't export → a login_required denial (increments gate.deny.login_required).
+        await EntitlementGate().check_boolean(db, FeatureKey.CAN_EXPORT, visitor_id="vid_metrics_" + uuid.uuid4().hex)
+    async with await _client() as ac:
+        res = await ac.get(f"{BASE}/entitlements/metrics", headers=ADMIN)
+    assert res.status_code == 200, res.text
+    metrics = res.json()["data"]["metrics"]
+    assert isinstance(metrics, dict)
+    assert metrics.get("gate.deny.login_required", 0) >= 1

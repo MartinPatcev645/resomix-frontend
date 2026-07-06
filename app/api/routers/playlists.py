@@ -22,7 +22,7 @@ from typing import Optional
 
 from app.controllers.playlist_controller import PlaylistController
 from app.api.dependencies.auth import get_current_user_optional, get_current_user
-from app.api.dependencies.partner import get_current_partner
+from app.api.dependencies.partner import get_current_partner, get_public_partner
 from app.api.dependencies.database import get_database_session
 from app.models.user import User
 from app.models.partner import Partner
@@ -211,7 +211,7 @@ async def get_playlist_similarity_endpoint(
     request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner),
+    partner: Partner = Depends(get_public_partner),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ) -> JSONResponse:
     """
@@ -333,7 +333,7 @@ async def get_playlist_hls_endpoint(
     request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner),  # sets request.state.partner_id
+    partner: Partner = Depends(get_public_partner),  # sets request.state.partner_id
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
@@ -456,7 +456,7 @@ async def get_playlist_playback_session_endpoint(
     request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_current_partner),
+    partner: Partner = Depends(get_public_partner),
     current_user: Optional[User] = Depends(get_current_user_optional),
 ) -> JSONResponse:
     """

@@ -208,10 +208,13 @@ class PlaylistService:
         base_url = settings.hls_media_base_url.rstrip("/")
         target_url = f"{base_url}{endpoint}"
 
-        # Add API key as query parameter
+        # Authenticate to the internal HLS media service with the dedicated cross-service key
+        # (NOT the retired frontend key). NOTE: verify the media server accepts
+        # HETZNER_INTERNAL_API_KEY — streaming is out of the current scope, so this path is
+        # untested here; configure the media server to match if needed.
         url_parts = list(urllib.parse.urlparse(target_url))
         query = dict(urllib.parse.parse_qsl(url_parts[4]))
-        query.update({"api_key": settings.api_key})
+        query.update({"api_key": settings.hetzner_internal_api_key or ""})
         url_parts[4] = urllib.parse.urlencode(query)
         signed_url = urllib.parse.urlunparse(url_parts)
 

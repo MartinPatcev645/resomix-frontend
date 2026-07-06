@@ -19,7 +19,9 @@ from fastapi import APIRouter, Security, Depends, Path, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.auth import get_api_key, get_current_user
+from app.api.dependencies.auth import get_current_user
+from app.api.dependencies.partner import get_public_partner
+from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
 from app.controllers.playlist_engagement_controller import PlaylistEngagementController
 from app.models.user import User
@@ -54,7 +56,7 @@ async def add_favorite_playlist_endpoint(
     request: Request,
     playlist_id: str = Path(..., description="The UUID of the playlist to add to favorites"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
     current_user: User = Depends(get_current_user),  # REQUIRED auth
 ) -> JSONResponse:
     """
@@ -87,7 +89,7 @@ async def remove_favorite_playlist_endpoint(
     request: Request,
     playlist_id: str = Path(..., description="The UUID of the playlist to remove from favorites"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
     current_user: User = Depends(get_current_user),  # REQUIRED auth
 ) -> JSONResponse:
     """
@@ -120,7 +122,7 @@ async def follow_playlist_endpoint(
     request: Request,
     playlist_id: str = Path(..., description="The UUID of the playlist to follow"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
     current_user: User = Depends(get_current_user),  # REQUIRED auth
 ) -> JSONResponse:
     """
@@ -153,7 +155,7 @@ async def unfollow_playlist_endpoint(
     request: Request,
     playlist_id: str = Path(..., description="The UUID of the playlist to unfollow"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
     current_user: User = Depends(get_current_user),  # REQUIRED auth
 ) -> JSONResponse:
     """

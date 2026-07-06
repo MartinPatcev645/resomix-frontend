@@ -3,7 +3,8 @@ from fastapi.responses import Response, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 import os
 
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.partner import get_public_partner
+from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
 from app.utils.response_utils import format_response
 
@@ -40,7 +41,7 @@ async def dummy_hls_endpoint(
     request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),  # Unused but keeps schema consistent
-    api_key: str = Security(get_api_key)
+    _partner: Partner = Depends(get_public_partner)
 ):
     """
     Return the content of the local **hls.m3u8** file.

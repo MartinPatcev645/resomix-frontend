@@ -112,7 +112,7 @@ def auth_rate_limit(endpoint_type: str = "default"):
         "password_reset": settings.password_reset_rate_limit,
         "default": "10/minute"
     }
-    
+
     return limits.get(endpoint_type, limits["default"])
 
 

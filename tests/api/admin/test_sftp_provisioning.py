@@ -11,10 +11,10 @@ from sqlalchemy import text
 from unittest.mock import patch, AsyncMock
 
 @pytest.fixture
-def admin_auth_headers():
-    """Use static API key to bypass JWT permissions for admin routes."""
-    from app.core.config import settings
-    return {"X-API-KEY": settings.api_key}
+async def admin_auth_headers():
+    """Admin-role JWT (replaces the retired static super-key) for admin routes."""
+    from tests.api.library_helpers import create_admin_user, admin_auth_headers as _hdrs
+    return _hdrs(await create_admin_user())
 
 @pytest.fixture
 async def sample_partner():

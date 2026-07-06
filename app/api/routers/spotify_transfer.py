@@ -21,7 +21,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.spotify_transfer_controller import SpotifyTransferController
 from app.controllers.spotify_app_controller import SpotifyAppController
-from app.api.dependencies.auth import get_api_key, get_current_user
+from app.api.dependencies.auth import get_current_user
+from app.api.dependencies.partner import get_public_partner
+from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
 from app.models.user import User
 from app.schemas.spotify_transfer import (
@@ -79,7 +81,7 @@ async def transfer_playlist_to_spotify_endpoint(
     request: Request,
     request_data: SpotifyTransferRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
     current_user: User = Depends(get_current_user)  # REQUIRED auth
 ) -> JSONResponse:
     """
@@ -148,7 +150,7 @@ async def transfer_playlist_to_spotify_endpoint(
 async def get_user_spotify_app_client_id(
     request: Request,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
     current_user: User = Depends(get_current_user)  # REQUIRED auth
 ) -> JSONResponse:
     """

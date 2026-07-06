@@ -22,7 +22,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.rating_controller import RatingController
-from app.api.dependencies.auth import get_api_key, get_current_user, get_current_user_optional
+from app.api.dependencies.auth import get_current_user, get_current_user_optional
+from app.api.dependencies.partner import get_public_partner
+from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
 from app.models.user import User
 from app.schemas.rating import (
@@ -70,7 +72,7 @@ async def rate_track_endpoint(
     request: Request,
     request_data: TrackRatingRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
     current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
@@ -105,7 +107,7 @@ async def get_track_rating_endpoint(
     track_id: str = Path(..., description="Track UUID"),
     playlist_id: str = Path(..., description="Playlist UUID"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
     current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
@@ -140,7 +142,7 @@ async def delete_track_rating_endpoint(
     track_id: str = Path(..., description="Track UUID"),
     playlist_id: str = Path(..., description="Playlist UUID"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
     current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
@@ -174,7 +176,7 @@ async def get_track_rating_stats_endpoint(
     request: Request,
     track_id: str,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
 ) -> JSONResponse:
     """
     Get rating statistics for a specific track.
@@ -206,7 +208,7 @@ async def rate_playlist_endpoint(
     request: Request,
     request_data: PlaylistRatingRequest,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
     current_user: Optional[User] = Depends(get_current_user_optional),
 ) -> JSONResponse:
     """
@@ -241,7 +243,7 @@ async def get_playlist_rating_endpoint(
     request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
     current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
@@ -275,7 +277,7 @@ async def delete_playlist_rating_endpoint(
     request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
     current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
@@ -308,7 +310,7 @@ async def get_playlist_rating_stats_endpoint(
     request: Request,
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _partner: Partner = Depends(get_public_partner),
 ) -> JSONResponse:
     """
     Get rating statistics for a specific playlist.

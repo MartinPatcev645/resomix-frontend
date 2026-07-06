@@ -20,7 +20,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.monthly_pipeline_controller import MonthlyPipelineController
-from app.api.dependencies.auth import get_api_key
+from app.api.dependencies.auth import require_admin
+from app.models.user import User
 from app.api.dependencies.database import get_database_session
 from app.schemas.monthly_pipeline import (
     MonthlyPipelineTrackSuccessResponse,
@@ -62,7 +63,7 @@ monthly_pipeline_controller = MonthlyPipelineController()
 async def monthly_pipeline_update_embeddings_endpoint(
     request: Request,
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key),
+    _admin: User = Depends(require_admin),
 ) -> JSONResponse:
     """Trigger bulk embeddings update on similarity server."""
     return await monthly_pipeline_controller.update_embeddings(db)
@@ -102,7 +103,7 @@ async def monthly_pipeline_track_endpoint(
     file: UploadFile = File(..., description="Audio file to process for monthly pipeline"),
     path: str = Form(..., description="File path for the track"),
     db: AsyncSession = Depends(get_database_session),
-    api_key: str = Security(get_api_key)
+    _admin: User = Depends(require_admin)
 ) -> JSONResponse:
     """
     Process an audio file for the monthly pipeline.
