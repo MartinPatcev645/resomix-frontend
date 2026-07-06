@@ -14,7 +14,6 @@ import time
 
 # Configuration
 BASE_URL = "http://localhost:8005"
-API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"
 TIMEOUT = 30
 
 def print_test_result(test_name: str, success: bool, message: str = "", response_time: float = 0):
@@ -41,7 +40,7 @@ def test_feedback_submit_valid():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -98,7 +97,7 @@ def test_feedback_submit_invalid_ratings():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -138,7 +137,7 @@ def test_feedback_submit_missing_required_fields():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -220,7 +219,7 @@ def test_feedback_get_by_id():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         # Create feedback
@@ -273,7 +272,7 @@ def test_feedback_update_status():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         # Try to update status (assuming ID 1 exists)

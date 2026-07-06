@@ -26,7 +26,6 @@ from datetime import datetime
 
 # Configuration
 BASE_URL = "http://localhost:8005"
-API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"  # Use the actual API key from auth.py
 HEADERS = {
     "Accept": "application/json"
 }
@@ -99,7 +98,7 @@ def test_similarity_valid_files():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -146,7 +145,7 @@ def test_similarity_missing_file():
     try:
         # Send request without any file
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -198,7 +197,7 @@ def test_similarity_invalid_files():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -248,7 +247,7 @@ def test_similarity_empty_files():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -300,7 +299,7 @@ def test_selection_similarity_valid():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -352,7 +351,7 @@ def test_selection_similarity_missing_data():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -404,7 +403,7 @@ def test_selection_similarity_invalid_data():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(

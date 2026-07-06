@@ -246,9 +246,8 @@ async def test_telemetry_sync(client, auth_headers, test_data):
             }
         ]
     }
-    # Telemetry uses API key, not JWT necessarily, but we can send both
-    headers = {"X-API-KEY": "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"}
-    response = await client.post("/api/v1/telemetry/sync", json=payload, headers=headers)
+    # Telemetry is public (guest beacons → System Partner 1); no credentials needed.
+    response = await client.post("/api/v1/telemetry/sync", json=payload)
     assert response.status_code == 200
     assert response.json()["success"] is True
     assert response.json()["data"]["accepted"] == 2

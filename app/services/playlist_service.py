@@ -204,19 +204,13 @@ class PlaylistService:
         if not settings.hls_media_base_url:
             raise ValueError("HLS media base URL not configured")
 
-        # Build target URL
+        # Build target URL. This is an internal Alwyzon → Hetzner media-server call: the media
+        # server authenticates it by IP allowlist and reads the authoritative ``partner_id`` from
+        # the query string (see the media server's ``require_partner_id``). No api_key is sent —
+        # the retired static key was never validated there, and playback by the browser is
+        # authorised separately by the Edge Authorization JWT (``?token=``).
         base_url = settings.hls_media_base_url.rstrip("/")
-        target_url = f"{base_url}{endpoint}"
-
-        # Authenticate to the internal HLS media service with the dedicated cross-service key
-        # (NOT the retired frontend key). NOTE: verify the media server accepts
-        # HETZNER_INTERNAL_API_KEY — streaming is out of the current scope, so this path is
-        # untested here; configure the media server to match if needed.
-        url_parts = list(urllib.parse.urlparse(target_url))
-        query = dict(urllib.parse.parse_qsl(url_parts[4]))
-        query.update({"api_key": settings.hetzner_internal_api_key or ""})
-        url_parts[4] = urllib.parse.urlencode(query)
-        signed_url = urllib.parse.urlunparse(url_parts)
+        signed_url = f"{base_url}{endpoint}"
 
         print(f"Calling media server: {signed_url}")
 

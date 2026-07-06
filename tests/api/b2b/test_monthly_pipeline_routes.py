@@ -26,7 +26,6 @@ from datetime import datetime
 
 # Configuration
 BASE_URL = "http://localhost:8001"  # Update to your server port
-API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"  # Use the actual API key from auth.py
 HEADERS = {
     "Accept": "application/json"
 }
@@ -103,7 +102,7 @@ def test_monthly_pipeline_valid_upload():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -159,7 +158,7 @@ def test_monthly_pipeline_missing_file():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -212,7 +211,7 @@ def test_monthly_pipeline_missing_path():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -269,7 +268,7 @@ def test_monthly_pipeline_empty_path():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -327,7 +326,7 @@ def test_monthly_pipeline_invalid_file():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -385,7 +384,7 @@ def test_monthly_pipeline_empty_file():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -444,7 +443,7 @@ def test_monthly_pipeline_large_file():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -502,7 +501,7 @@ def test_monthly_pipeline_large_mp3_mix_filter():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -619,7 +618,7 @@ def test_monthly_pipeline_very_long_path():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -677,7 +676,7 @@ def test_monthly_pipeline_special_characters_path():
         }
         
         params = {
-            'api_key': API_KEY
+            
         }
         
         response = requests.post(
@@ -763,7 +762,6 @@ def run_monthly_pipeline_tests():
     print("\n🚀 Starting Monthly Pipeline Route Tests")
     print("="*60)
     print(f"📡 Testing against: {BASE_URL}")
-    print(f"🔐 Using API Key: {API_KEY[:20]}...")
     print(f"⏰ Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Test cases in order of complexity

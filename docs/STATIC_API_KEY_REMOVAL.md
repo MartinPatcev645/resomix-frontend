@@ -21,7 +21,7 @@ not have. It is now retired.
 | Admin | super-key bypass (all perms) | **Admin-role JWT** via `/admin/auth/login` + **RBAC** (`require_admin` needs the `role:admin` claim *and* the DB `admin` role) |
 | B2B partner | `rmx_…` partner key | unchanged (`rmx_…` key, its own per-second/monthly quotas) |
 | Internal monthly pipeline | super-key | **`require_admin`** (admin JWT) |
-| HLS media server (outbound) | `settings.api_key` | **`settings.hetzner_internal_api_key`** (dedicated cross-service key) |
+| HLS media server (outbound) | `?api_key=<static key>` (never validated) | **no key** — the media server (Hetzner) authenticates internal Alwyzon calls by **IP allowlist** + authoritative `partner_id`, and browser playback by the **Edge Authorization JWT** (`?token=`) |
 
 ## Backend changes
 - `app/api/dependencies/partner.py::_get_partner_core` — removed the `settings.api_key` credential
@@ -57,12 +57,14 @@ not have. It is now retired.
 - Frontend: `api-client`, `hooks`, `webapp` type-check clean (`tsc -b`).
 
 ## ⚠️ Follow-ups / flags
-- **HLS media server** (`playlist_service._call_media_server`) now sends
-  `HETZNER_INTERNAL_API_KEY`. Streaming was out of scope (on hold) and `HLS_MEDIA_BASE_URL` is unset
-  in dev, so this path is untested here — **verify the media server accepts that key** (or configure
-  it) before re-enabling streaming.
-- **Test hygiene (optional):** ~16 test files still include a now-inert `X-API-KEY: settings.api_key`
-  header (value is `""`, ignored). Harmless; can be scrubbed later. The `settings.api_key` field can
-  be deleted once those references are gone.
+- **HLS media server** (`playlist_service._call_media_server`) no longer appends any `api_key` — the
+  Hetzner media server never validated that param. Verified against the Hetzner source: internal
+  Alwyzon calls are trusted by **IP allowlist** (+ authoritative `partner_id`), and browser playback
+  is authorised by the **Edge Authorization JWT** (`?token=`, shared `EDGE_JWT_SECRET`).
+- **Fake-key literal fully removed from active source** (Alwyzon, Hetzner, CCReplica, frontend). A few
+  **inert** artifacts still contain it and may be deleted at will: `backup/main.py`, `backups/*.sql`,
+  `.claude/settings.local.json` (permission records), Hetzner `logs_output_test.txt`.
+- The `settings.api_key` field is retired (`default=""`, accepted nowhere). It can be deleted once the
+  remaining inert `X-API-KEY: settings.api_key` test headers (value `""`, ignored) are removed.
 - **Admin web app:** relies on `/admin/auth/login` producing an admin-role JWT (no more super-key
   fallback). Confirm the admin app's login flow is wired when building the admin UI (Phase 7.2).

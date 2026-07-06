@@ -107,10 +107,10 @@ def append_to_file(filepath: str, content: str):
 
 async def call_similarity_api(uuids: List[str]) -> Dict:
     """Call the similarity API probe-durations endpoint."""
-    # Build URL with API key as query parameter
-    base_url = f"{SIMILARITY_SERVER_URL.rstrip('/')}/probe-durations/"
-    api_key = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"
-    url = f"{base_url}?api_key={api_key}"
+    # No api_key: the retired static key is not accepted. The media/similarity server
+    # authenticates internal callers by IP allowlist (see its ``require_partner_id``); add the
+    # required partner_id / internal auth here if your environment enforces it.
+    url = f"{SIMILARITY_SERVER_URL.rstrip('/')}/probe-durations/"
     
     payload = {"uuids": uuids}
     

@@ -589,15 +589,17 @@ class TestAuthGate_LiveServer:
     """
     Integration tests that hit the running Alwyzon server on localhost:8001.
 
-    These verify that API key validation (no key / wrong key / right key) is
-    enforced BEFORE any similarity or playlist logic runs.
+    The frontend surface no longer has a static-api-key gate: guests are anonymous (→ System
+    Partner 1) and any leftover ``?api_key=`` is ignored. These verify that anonymous frontend
+    playback / search is ALLOWED, and that a garbage api_key neither authenticates nor breaks it.
 
     Requires: server running with `make api`.
     """
 
     BASE_URL = "http://localhost:8001/api/v1"
-    VALID_API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"
-    WRONG_API_KEY = "bearer-resomix-api-INVALID-KEY-000000000000000000"
+    # Any value is IGNORED — the api_key gate was removed. Used only to prove a leftover/garbage
+    # ``?api_key=`` param does not authenticate and does not break the request.
+    GARBAGE_KEY = "garbage-not-a-real-key"
     SEED_TRACK_UUID = SEED_UUID
 
     @pytest.fixture(autouse=True)
@@ -633,92 +635,58 @@ class TestAuthGate_LiveServer:
         import requests as req
         r = req.post(
             f"{self.BASE_URL}/playlists/{self.SEED_TRACK_UUID}/play-session",
-            params={"api_key": self.WRONG_API_KEY},
+            params={"api_key": self.GARBAGE_KEY},
         )
         assert r.status_code in (200, 404), (
             f"Garbage api_key must be ignored (guest), got {r.status_code}: {r.text}"
         )
 
-    def test_play_session_valid_key_anonymous_frontend_allowed(self):
-        """
-        POST /playlists/{uuid}/play-session with valid API key but NO JWT user token →
-        anonymous playback is now ALLOWED (the HLS manifest is truncated to the first 10 tracks
-        elsewhere), so this mints a session token. Expect 200 (existing playlist) or 404
-        (unknown uuid) — but NOT 401.
-        """
-        import requests as req
-        r = req.post(
-            f"{self.BASE_URL}/playlists/{self.SEED_TRACK_UUID}/play-session",
-            params={"api_key": self.VALID_API_KEY},
-            # No Authorization header → anonymous user
-        )
-        assert r.status_code != 401, (
-            f"Anonymous frontend playback must no longer be blocked with 401, got {r.status_code}: {r.text}"
-        )
-        assert r.status_code in (200, 404), (
-            f"Expected 200 (token minted) or 404 (unknown playlist), got {r.status_code}: {r.text}"
-        )
+    # --- similarity search endpoint (anonymous allowed, degraded — no api_key gate) ---
 
-    # --- similarity search endpoint ---
-
-    def test_similarity_search_no_api_key_rejected(self):
+    def test_similarity_search_anonymous_allowed(self):
         """
-        POST /similarity/search with no API key → 401/403.
-        """
-        import requests as req
-        r = req.post(
-            f"{self.BASE_URL}/similarity/search",
-            json={"track_id": self.SEED_TRACK_UUID},
-        )
-        assert r.status_code in (401, 403), (
-            f"Expected 401/403 for no API key on similarity search, got {r.status_code}"
-        )
-
-    def test_similarity_search_wrong_api_key_rejected(self):
-        """
-        POST /similarity/search with wrong API key → 401/403.
-        """
-        import requests as req
-        r = req.post(
-            f"{self.BASE_URL}/similarity/search",
-            json={"track_id": self.SEED_TRACK_UUID},
-            params={"api_key": self.WRONG_API_KEY},
-        )
-        assert r.status_code in (401, 403), (
-            f"Expected 401/403 for wrong API key on similarity search, got {r.status_code}"
-        )
-
-    def test_similarity_search_valid_key_anonymous_allowed_degraded(self):
-        """
-        POST /similarity/search with valid API key but NO JWT user token → 200.
-
-        Anonymous frontend users are ALLOWED but degraded: the response shows the first
-        ANON_VISIBLE_COUNT (10) tracks in full and scrambles the rest (and the playlist is
-        created PUBLIC). The endpoint itself no longer blocks. Text /search_tracks stays open.
+        POST /similarity/search with NO credentials → anonymous frontend users are ALLOWED
+        (degraded: first ANON_VISIBLE_COUNT tracks in full, the rest scrambled; playlist created
+        PUBLIC). There is no api_key gate. A UNIQUE device hash gives a fresh guest visitor_id
+        (fresh monthly counter) so repeated runs don't trip the guest monthly playlist limit.
         """
         import requests as req
         import uuid
         r = req.post(
             f"{self.BASE_URL}/similarity/search",
             json={"track_id": self.SEED_TRACK_UUID},
-            params={"api_key": self.VALID_API_KEY},
-            # No Authorization header → anonymous user. A UNIQUE device hash gives a fresh guest
-            # visitor_id (fresh monthly counter) — otherwise repeated runs share the degraded
-            # localhost visitor_id and eventually hit the guest monthly playlist limit (403).
             headers={"X-Device-Hash": f"livetest-{uuid.uuid4().hex}"},
         )
-        # The point of this test is the AUTH GATE: an anonymous frontend request with a
-        # valid API key must not be blocked. A full 200 additionally depends on the external
-        # similarity microservice being reachable — which is orthogonal to the gate.
         assert r.status_code not in (401, 403), (
             f"Anonymous frontend similarity search must not be blocked, got {r.status_code}: {r.text}"
         )
-        # If the similarity microservice is unreachable (503), the gate has already passed —
-        # skip rather than fail on an external-dependency outage (mirrors the server-down skip).
+        # If the similarity microservice is unreachable (503), the request already passed the
+        # (now non-existent) gate — skip rather than fail on an external-dependency outage.
         if r.status_code == 503 and "similarity service" in r.text.lower():
-            pytest.skip(
-                "Similarity microservice unreachable — auth gate passed; skipping full-result check"
-            )
+            pytest.skip("Similarity microservice unreachable — skipping full-result check")
         assert r.status_code == 200, (
             f"Anonymous frontend similarity search must be allowed (200), got {r.status_code}: {r.text}"
+        )
+
+    def test_similarity_search_garbage_api_key_ignored(self):
+        """
+        POST /similarity/search with a leftover/garbage ?api_key → the param is ignored (never
+        validated); the request is still an anonymous guest and allowed. Unique device hash to
+        avoid the guest monthly limit.
+        """
+        import requests as req
+        import uuid
+        r = req.post(
+            f"{self.BASE_URL}/similarity/search",
+            json={"track_id": self.SEED_TRACK_UUID},
+            params={"api_key": self.GARBAGE_KEY},
+            headers={"X-Device-Hash": f"livetest-{uuid.uuid4().hex}"},
+        )
+        assert r.status_code not in (401, 403), (
+            f"A garbage api_key must be ignored (anonymous allowed), got {r.status_code}: {r.text}"
+        )
+        if r.status_code == 503 and "similarity service" in r.text.lower():
+            pytest.skip("Similarity microservice unreachable — skipping full-result check")
+        assert r.status_code == 200, (
+            f"Anonymous similarity search must be allowed (200), got {r.status_code}: {r.text}"
         )

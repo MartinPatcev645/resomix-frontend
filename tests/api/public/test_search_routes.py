@@ -18,7 +18,6 @@ from datetime import datetime
 
 # Configuration
 BASE_URL = "http://localhost:8005"
-API_KEY = "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"  # Use the actual API key from auth.py
 HEADERS = {
     "Accept": "application/json"
 }
@@ -74,8 +73,7 @@ def test_search_tracks_valid():
     
     try:
         params = {
-            "query": "test track",
-            "api_key": API_KEY
+            "query": "test track"
         }
         
         response = requests.get(
@@ -120,8 +118,7 @@ def test_search_tracks_empty_query():
     
     try:
         params = {
-            "query": "",
-            "api_key": API_KEY
+            "query": ""
         }
         
         response = requests.get(
@@ -165,7 +162,7 @@ def test_search_tracks_missing_query():
     
     try:
         params = {
-            "api_key": API_KEY
+            
         }
         
         response = requests.get(
@@ -212,8 +209,7 @@ def test_search_tracks_with_pagination():
         params = {
             "query": "music",
             "page": 1,
-            "limit": 10,
-            "api_key": API_KEY
+            "limit": 10
         }
         
         response = requests.get(
@@ -260,8 +256,7 @@ def test_search_tracks_invalid_pagination():
         params = {
             "query": "music",
             "page": -1,
-            "limit": 0,
-            "api_key": API_KEY
+            "limit": 0
         }
         
         response = requests.get(
@@ -305,8 +300,7 @@ def test_search_tracks_special_characters():
     
     try:
         params = {
-            "query": "test & special @#$%^&*() characters",
-            "api_key": API_KEY
+            "query": "test & special @#$%^&*() characters"
         }
         
         response = requests.get(
