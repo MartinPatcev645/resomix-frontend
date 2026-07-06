@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_CONFIG } from './config';
+import { getDeviceHash } from './deviceId';
 
 // Import will be added after useAuthStore is created
 // For now, we'll use dynamic import to avoid circular dependencies
@@ -67,6 +68,14 @@ authClient.interceptors.request.use(
     // Enforce secure HTTP headers (Format B and Format A fallback)
     if (API_CONFIG.API_KEY) {
       config.headers['X-API-KEY'] = API_CONFIG.API_KEY;
+    }
+
+    // Guest device signal for server-side visitor_id derivation (not on admin routes).
+    if (!isAdminRoute) {
+      const deviceHash = getDeviceHash();
+      if (deviceHash) {
+        config.headers['X-Device-Hash'] = deviceHash;
+      }
     }
 
     // Add auth token if available

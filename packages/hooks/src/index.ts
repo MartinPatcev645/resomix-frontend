@@ -8,6 +8,7 @@ export * from "./Similarity/useUpload";
 export * from "./Similarity/useSelection";
 export * from './useFirstVisit';
 export * from './useTermsAcceptance';
+export * from './Entitlements/useEntitlements';
 export { useCustomPeaks } from "./Waveform/useCustomPeaks";
 export { loadPeaksData } from "./Waveform/peaksCache";
 export * from './Playlist/usePlaylistLoader';

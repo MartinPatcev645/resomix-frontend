@@ -24,6 +24,9 @@ export interface ApiConfig {
     USER_DISABLE_2FA: string;
     USER_DELETE: string;
 
+    // Entitlements (frontend plans/guest enforcement)
+    ENTITLEMENTS_ME: string;
+
     // Beta endpoints
     SIMILARITY: string;
     SELECTION_SIMILARITY: string;
@@ -227,6 +230,8 @@ export const API_CONFIG: ApiConfig = {
     USER_ENABLE_2FA: "/api/v1/users/me/enable-2fa",
     USER_DISABLE_2FA: "/api/v1/users/me/disable-2fa",
     USER_DELETE: "/api/v1/users/me",
+    // Entitlements (frontend plans/guest enforcement)
+    ENTITLEMENTS_ME: "/api/v1/entitlements/me",
     // Beta endpoints
     SIMILARITY: "/api/v1/similarity/upload",
     SELECTION_SIMILARITY: "/api/v1/similarity/search",

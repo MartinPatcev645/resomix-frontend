@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { API_CONFIG } from "./config";
+import { getDeviceHash } from "./deviceId";
 import type { ApiResponse } from "./types/api";
 
 
@@ -37,7 +38,15 @@ axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
       config.headers.Authorization = `Bearer ${API_CONFIG.API_KEY}`;
     }
   }
-  
+
+  // Guest device signal for server-side visitor_id derivation (never sent on admin/B2B routes).
+  if (!isAdminRoute) {
+    const deviceHash = getDeviceHash();
+    if (deviceHash) {
+      config.headers['X-Device-Hash'] = deviceHash;
+    }
+  }
+
   // Support for Idempotency-Key
   const customConfig = config as any;
   if (customConfig.idempotencyKey) {
