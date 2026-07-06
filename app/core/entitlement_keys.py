@@ -9,7 +9,9 @@ the seeded ``features.key`` values (see ``app/services/entitlement_seed.py``).
 
 
 class FeatureKey:
-    PLAYLISTS_PER_DAY = "playlists_per_day"
+    # Monthly usage window: resets on the subject's billing anchor (subscriber = Stripe cycle,
+    # free = signup anniversary, guest = calendar month). See BillingPeriodService.
+    PLAYLISTS_PER_MONTH = "playlists_per_month"
     MAX_TRACKS_PER_PLAYLIST = "max_tracks_per_playlist"
     DROPDOWN_MAX_TRACKS = "dropdown_max_tracks"
     CAN_EXPORT = "can_export"
@@ -19,7 +21,7 @@ class FeatureKey:
     CAN_RENAME = "can_rename"
     CAN_FAVORITE = "can_favorite"
     CAN_RATE_TRACKS = "can_rate_tracks"
-    ANALYSIS_PER_DAY = "analysis_per_day"
+    ANALYSIS_PER_MONTH = "analysis_per_month"
     ANALYSIS_FEATURE_COUNT = "analysis_feature_count"
     CAN_SIMILARITY_UPLOAD = "can_similarity_upload"
     DEFAULT_PLAYLIST_VISIBILITY = "default_playlist_visibility"

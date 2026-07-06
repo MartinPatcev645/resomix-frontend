@@ -171,16 +171,33 @@ async def test_spotify_transfer_denied_for_free_user_endpoint():
 
 
 # --------------------------------------------------------------------------- #
-# 5.1 / 5.2 — Guest daily playlist limit + track clamp + tagging (E2E via 8004)
+# 5.1 / 5.2 — Guest monthly playlist limit + track clamp + tagging (E2E via 8004)
 # --------------------------------------------------------------------------- #
 
 
 @requires_similarity
 @pytest.mark.asyncio
-async def test_guest_similarity_daily_limit_clamp_and_tagging():
+async def test_guest_similarity_monthly_limit_clamp_and_tagging():
     from app.main import app
-    device = "e2e-" + uuid.uuid4().hex  # unique guest device → fresh daily counter
-    headers = {"X-API-KEY": settings.api_key, "X-Device-Hash": device, "accept-language": "en"}
+    from sqlalchemy import select
+    from app.services.guest_identity_service import GuestIdentityService
+
+    # Pin THIS guest device to a monthly limit of 1 via a visitor override (deterministic: the
+    # default is 5/month, which would need 6 real searches). We fix the IP via CF-Connecting-IP so
+    # the server-derived visitor_id is reproducible, then override that exact visitor.
+    device = "e2e-" + uuid.uuid4().hex
+    visitor_id = GuestIdentityService().derive_visitor_id_from(
+        device_hash=device, ip_prefix="203.0.113.0/24", accept_language="en"
+    )
+    set_admin_context(True)
+    async with AsyncSessionLocal() as db:
+        feat = (await db.execute(select(Feature).where(Feature.key == FeatureKey.PLAYLISTS_PER_MONTH))).scalar_one()
+        db.add(EntitlementOverride(subject_type="visitor", subject_id=visitor_id,
+                                   feature_id=feat.id, int_value=1, reason="e2e-test"))
+        await db.commit()
+
+    headers = {"X-API-KEY": settings.api_key, "X-Device-Hash": device,
+               "accept-language": "en", "CF-Connecting-IP": "203.0.113.9"}
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test", timeout=60) as ac:
         # 1st guest search: allowed. top_sk=100 must be clamped to the guest cap (20). Public playlist.
@@ -193,7 +210,7 @@ async def test_guest_similarity_daily_limit_clamp_and_tagging():
         assert pl["is_public"] is True                       # guest playlists are public
         playlist_uuid = pl["id"]
 
-        # 2nd guest search (same device) → daily limit (1) reached → soft login nudge.
+        # 2nd guest search (same device) → monthly limit (1) reached → soft login nudge.
         r2 = await ac.post("/api/v1/similarity/search", headers=headers,
                            json={"track_id": SEED_TRACK, "top_sk": 20})
         assert r2.status_code == 403

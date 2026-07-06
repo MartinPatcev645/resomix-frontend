@@ -28,7 +28,7 @@ from app.services.entitlement_gate import EntitlementGate
 
 # Bridge the legacy OperationType.code space to the new entitlement feature keys.
 OPERATION_TO_FEATURE = {
-    "playlist_create": FeatureKey.PLAYLISTS_PER_DAY,
+    "playlist_create": FeatureKey.PLAYLISTS_PER_MONTH,
 }
 
 
@@ -75,12 +75,12 @@ class OperationLimitEvaluator:
         if not user_id:
             return OperationLimitResult(allowed=True, status_code=200)
 
-        # --- playlist_create: per-plan DAILY limit via the entitlement gate (T1) --------------
-        # Logged-in frontend users are now governed by their plan's PLAYLISTS_PER_DAY (Redis daily
-        # counter), the same mechanism guests use — replacing the legacy lifetime-total limit.
-        # (B2B partners never reach here: they have no user_id, short-circuited above.)
+        # --- playlist_create: per-plan MONTHLY limit via the entitlement gate (T1) -------------
+        # Logged-in frontend users are governed by their plan's PLAYLISTS_PER_MONTH (Redis counter,
+        # per-subject monthly window), the same mechanism guests use — replacing the legacy
+        # lifetime-total limit. (B2B partners never reach here: no user_id, short-circuited above.)
         if operation_code == "playlist_create":
-            return await self._check_playlist_daily(db, user_id)
+            return await self._check_playlist_monthly(db, user_id)
 
         # --- legacy per-user operation limits (e.g. spotify_transfer) — unchanged -------------
         operation = await db.execute(
@@ -125,7 +125,7 @@ class OperationLimitEvaluator:
         return OperationLimitResult(allowed=True, status_code=200)
 
     # ------------------------------------------------------------------ #
-    # playlist_create → entitlement daily gate (peek before, record on success)
+    # playlist_create → entitlement monthly gate (peek before, record on success)
     # ------------------------------------------------------------------ #
 
     async def _load_user(self, db: AsyncSession, user_id: int) -> Optional[User]:
@@ -133,25 +133,25 @@ class OperationLimitEvaluator:
             await db.execute(select(User).where(User.id == user_id))
         ).scalar_one_or_none()
 
-    async def _check_playlist_daily(self, db: AsyncSession, user_id: int) -> OperationLimitResult:
-        """Peek the caller's daily playlist allowance (does not consume). Soft-denies with an
+    async def _check_playlist_monthly(self, db: AsyncSession, user_id: int) -> OperationLimitResult:
+        """Peek the caller's monthly playlist allowance (does not consume). Soft-denies with an
         upgrade nudge when at limit. Fails open (allowed) if Redis is unavailable."""
         user = await self._load_user(db, user_id)
-        gate = await self._gate.peek_allowed(db, FeatureKey.PLAYLISTS_PER_DAY, user=user)
+        gate = await self._gate.peek_allowed(db, FeatureKey.PLAYLISTS_PER_MONTH, user=user)
         if gate.allowed:
             return OperationLimitResult(allowed=True, status_code=200)
         limit_txt = f" ({gate.limit})" if gate.limit else ""
         return OperationLimitResult(
             allowed=False,
             status_code=403,
-            message=f"You've reached today's playlist limit{limit_txt}. Upgrade your plan to create more.",
+            message=f"You've reached this month's playlist limit{limit_txt}. Upgrade your plan to create more.",
             reason=gate.reason,
         )
 
     async def record_success(
         self, db: AsyncSession, *, user_id: Optional[int], operation_code: str
     ) -> None:
-        """Record one successful operation. For ``playlist_create`` this increments the daily
+        """Record one successful operation. For ``playlist_create`` this increments the monthly
         entitlement counter (paired with the ``check`` peek); for other operations it falls back
         to the legacy per-user usage counter. Best-effort — never raises into the caller."""
         if not user_id:
@@ -160,7 +160,7 @@ class OperationLimitEvaluator:
             if operation_code == "playlist_create":
                 user = await self._load_user(db, user_id)
                 if user is not None:
-                    await self._gate.record_use(FeatureKey.PLAYLISTS_PER_DAY, user=user)
+                    await self._gate.record_use(db, FeatureKey.PLAYLISTS_PER_MONTH, user=user)
                 return
             await self._op_repo.async_increment_usage(
                 db, user_id=user_id, operation_code=operation_code

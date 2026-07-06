@@ -26,7 +26,7 @@ from app.models.plan import Feature, Plan, PlanEntitlement
 
 # key, name, value_type, window, default_value, description
 FEATURE_CATALOG = [
-    ("playlists_per_day",           "Playlists per day",                    "int",  "daily", "0",       "Max playlists creatable per day."),
+    ("playlists_per_month",         "Playlists per month",                  "int",  "monthly", "0",     "Max playlists creatable per monthly period (resets on the subject's billing anchor)."),
     ("max_tracks_per_playlist",     "Usable tracks per playlist (unlock)",  "int",  "none",  "10",      "How many of the generated tracks are unlocked/usable."),
     ("dropdown_max_tracks",         "Max selectable track count",           "int",  "none",  "20",      "Highest track-count dropdown option; rest are greyed."),
     ("can_export",                  "Can export playlist",                  "bool", "none",  "false",   "Whether export is allowed at all."),
@@ -36,11 +36,11 @@ FEATURE_CATALOG = [
     ("can_rename",                  "Can rename own playlist",              "bool", "none",  "false",   "Logged-in owners only."),
     ("can_favorite",               "Can favorite playlists",               "bool", "none",  "false",   "Logged-in only."),
     ("can_rate_tracks",            "Can rate tracks",                      "bool", "none",  "false",   "Logged-in only."),
-    ("analysis_per_day",           "Track analyses per day",              "int",  "daily", "0",       "Daily analysis allowance."),
+    ("analysis_per_month",         "Track analyses per month",            "int",  "monthly", "0",     "Monthly analysis allowance (resets on the subject's billing anchor)."),
     ("analysis_feature_count",     "Analysis features shown (of 20)",     "int",  "none",  "0",       "How many analysis features are revealed."),
     ("can_similarity_upload",      "Can run similarity by upload",        "bool", "none",  "false",   "Upload a track to find similars."),
     ("default_playlist_visibility","Default playlist visibility",         "enum", "none",  "public",  "public | private"),
-    ("signup_bonus_playlists",     "Signup bonus playlists",              "int",  "none",  "0",       "Extra daily allowance granted on signup."),
+    ("signup_bonus_playlists",     "Signup bonus playlists",              "int",  "none",  "0",       "Extra one-time playlist allowance granted on signup."),
 ]
 
 # code, name, price_cents, billing_interval, is_active, is_default, is_assignable, sort_order
@@ -55,39 +55,39 @@ PLAN_CATALOG = [
 # plan_code -> {feature_key: value}
 PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
     "guest": {
-        "playlists_per_day": 1, "max_tracks_per_playlist": 10, "dropdown_max_tracks": 20,
+        "playlists_per_month": 5, "max_tracks_per_playlist": 10, "dropdown_max_tracks": 20,
         "can_export": False, "export_scope": "none", "export_track_limit": 0, "export_targets": "",
         "can_rename": False, "can_favorite": False, "can_rate_tracks": False,
-        "analysis_per_day": 0, "analysis_feature_count": 0, "can_similarity_upload": False,
+        "analysis_per_month": 0, "analysis_feature_count": 0, "can_similarity_upload": False,
         "default_playlist_visibility": "public", "signup_bonus_playlists": 0,
     },
     "free": {
-        "playlists_per_day": 2, "max_tracks_per_playlist": 20, "dropdown_max_tracks": 50,
+        "playlists_per_month": 15, "max_tracks_per_playlist": 20, "dropdown_max_tracks": 50,
         "can_export": True, "export_scope": "first_n", "export_track_limit": 10, "export_targets": "",
         "can_rename": True, "can_favorite": True, "can_rate_tracks": True,
-        "analysis_per_day": 1, "analysis_feature_count": 5, "can_similarity_upload": True,
+        "analysis_per_month": 10, "analysis_feature_count": 5, "can_similarity_upload": True,
         "default_playlist_visibility": "private", "signup_bonus_playlists": 2,
     },
     "basic": {
-        "playlists_per_day": 5, "max_tracks_per_playlist": 50, "dropdown_max_tracks": 100,
+        "playlists_per_month": 100, "max_tracks_per_playlist": 50, "dropdown_max_tracks": 100,
         "can_export": True, "export_scope": "full", "export_track_limit": 0, "export_targets": "spotify,apple",
         "can_rename": True, "can_favorite": True, "can_rate_tracks": True,
-        "analysis_per_day": 5, "analysis_feature_count": 10, "can_similarity_upload": True,
+        "analysis_per_month": 50, "analysis_feature_count": 10, "can_similarity_upload": True,
         "default_playlist_visibility": "private", "signup_bonus_playlists": 2,
     },
     "pro": {
-        "playlists_per_day": 15, "max_tracks_per_playlist": 100, "dropdown_max_tracks": 100,
+        "playlists_per_month": 300, "max_tracks_per_playlist": 100, "dropdown_max_tracks": 100,
         "can_export": True, "export_scope": "full", "export_track_limit": 0, "export_targets": "spotify,apple",
         "can_rename": True, "can_favorite": True, "can_rate_tracks": True,
-        "analysis_per_day": 10, "analysis_feature_count": 20, "can_similarity_upload": True,
+        "analysis_per_month": 200, "analysis_feature_count": 20, "can_similarity_upload": True,
         "default_playlist_visibility": "private", "signup_bonus_playlists": 2,
     },
     "max": {
-        "playlists_per_day": 50, "max_tracks_per_playlist": 100, "dropdown_max_tracks": 100,
+        "playlists_per_month": 1000, "max_tracks_per_playlist": 100, "dropdown_max_tracks": 100,
         "can_export": True, "export_scope": "full", "export_track_limit": 0,
         "export_targets": "spotify,apple,tidal,serato,rekordbox",
         "can_rename": True, "can_favorite": True, "can_rate_tracks": True,
-        "analysis_per_day": 50, "analysis_feature_count": 20, "can_similarity_upload": True,
+        "analysis_per_month": 1000, "analysis_feature_count": 20, "can_similarity_upload": True,
         "default_playlist_visibility": "private", "signup_bonus_playlists": 2,
     },
 }

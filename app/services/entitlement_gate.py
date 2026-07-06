@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.entitlement_keys import FeatureKey
 from app.models.user import User
+from app.services.billing_period_service import BillingPeriodService
 from app.services.entitlement_service import EntitlementService
 from app.services.usage_counter_service import UsageCounterService
 
@@ -52,6 +53,7 @@ class EntitlementGate:
     def __init__(self) -> None:
         self._entitlements = EntitlementService()
         self._usage = UsageCounterService()
+        self._periods = BillingPeriodService()
 
     @staticmethod
     def _subject(user: Optional[User], visitor_id: Optional[str]) -> Optional[Tuple[str, str]]:
@@ -60,6 +62,12 @@ class EntitlementGate:
         if visitor_id:
             return ("guest", visitor_id)
         return None
+
+    async def _period(self, db, user: Optional[User], visitor_id: Optional[str]) -> Tuple[str, int]:
+        """Current monthly window (period_key, ttl_seconds) for the subject."""
+        if user is not None:
+            return await self._periods.resolve_for_user(db, user)
+        return self._periods.resolve_for_guest()
 
     async def check_boolean(
         self, db: AsyncSession, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
@@ -97,7 +105,8 @@ class EntitlementGate:
             # No identity to count against → fail open (don't block).
             return GateResult(True, limit=limit)
 
-        result = await self._usage.try_consume(subject[0], subject[1], feature_key, limit)
+        period_key, ttl = await self._period(db, user, visitor_id)
+        result = await self._usage.try_consume(subject[0], subject[1], feature_key, limit, period_key, ttl)
         if result is None:
             # Redis unavailable → fail open (soft limit must not block on infra failure).
             return GateResult(True, limit=limit)
@@ -108,12 +117,13 @@ class EntitlementGate:
         return _deny(user, limit=limit, count=count)
 
     async def refund(
-        self, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
+        self, db, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
     ) -> None:
         """Return a previously reserved unit (operation failed after reserving)."""
         subject = self._subject(user, visitor_id)
         if subject is not None:
-            await self._usage.refund(subject[0], subject[1], feature_key)
+            period_key, _ttl = await self._period(db, user, visitor_id)
+            await self._usage.refund(subject[0], subject[1], feature_key, period_key)
 
     async def peek_allowed(
         self, db: AsyncSession, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
@@ -129,7 +139,8 @@ class EntitlementGate:
         subject = self._subject(user, visitor_id)
         if subject is None:
             return GateResult(True, limit=limit)
-        count = await self._usage.peek(subject[0], subject[1], feature_key)
+        period_key, _ttl = await self._period(db, user, visitor_id)
+        count = await self._usage.peek(subject[0], subject[1], feature_key, period_key)
         if count is None:
             return GateResult(True, limit=limit)  # Redis down → fail open
         if count >= limit:
@@ -137,9 +148,10 @@ class EntitlementGate:
         return GateResult(True, limit=limit, count=count)
 
     async def record_use(
-        self, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
+        self, db, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
     ) -> None:
         """Record one successful use of a counted feature (after the operation succeeded)."""
         subject = self._subject(user, visitor_id)
         if subject is not None:
-            await self._usage.increment(subject[0], subject[1], feature_key)
+            period_key, ttl = await self._period(db, user, visitor_id)
+            await self._usage.increment(subject[0], subject[1], feature_key, period_key, ttl)

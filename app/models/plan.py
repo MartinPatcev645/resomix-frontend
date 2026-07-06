@@ -33,8 +33,9 @@ from . import Base
 # value_type values a Feature may declare (kept app-level, not a SQL enum, so adding a
 # new type never needs an enum ALTER).
 FEATURE_VALUE_TYPES = ("int", "bool", "enum", "csv")
-# window values for counted features (how usage resets).
-FEATURE_WINDOWS = ("none", "daily", "rolling_24h", "total")
+# window values for counted features (how usage resets). "monthly" = per-subject billing anchor
+# (subscriber = Stripe cycle, free = signup anniversary, guest = calendar month).
+FEATURE_WINDOWS = ("none", "daily", "monthly", "rolling_24h", "total")
 
 
 class Feature(Base):

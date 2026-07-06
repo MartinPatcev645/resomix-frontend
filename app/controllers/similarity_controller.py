@@ -1056,17 +1056,17 @@ class SimilarityController:
                 db, FeatureKey.DROPDOWN_MAX_TRACKS, user=current_user, visitor_id=gate_visitor_id
             )
             top_sk = self._clamp_top_sk(top_sk, cap)
-            # Guests: enforce the daily playlist limit (peek now, record on success below).
+            # Guests: enforce the monthly playlist limit (peek now, record on success below).
             if current_user is None:
                 pg = await self.entitlement_gate.peek_allowed(
-                    db, FeatureKey.PLAYLISTS_PER_DAY, visitor_id=gate_visitor_id
+                    db, FeatureKey.PLAYLISTS_PER_MONTH, visitor_id=gate_visitor_id
                 )
                 if not pg.allowed:
                     return JSONResponse(
                         status_code=status.HTTP_403_FORBIDDEN,
                         content=format_response(
                             success=False,
-                            error="You've reached today's free playlist limit. Log in to create more.",
+                            error="You've reached this month's free playlist limit. Log in to create more.",
                             reason=pg.reason,
                         ),
                     )
@@ -1260,11 +1260,11 @@ class SimilarityController:
                 )
                 playlist_int_id = playlist.id if playlist else None
 
-            # Guest success: record the daily playlist use and tag the playlist with the
+            # Guest success: record the monthly playlist use and tag the playlist with the
             # visitor_id so it can be reparented to the user on login (and counted).
             if is_frontend and current_user is None and generated_playlist_uuid and gate_visitor_id:
                 await self.entitlement_gate.record_use(
-                    FeatureKey.PLAYLISTS_PER_DAY, visitor_id=gate_visitor_id
+                    db, FeatureKey.PLAYLISTS_PER_MONTH, visitor_id=gate_visitor_id
                 )
                 try:
                     from sqlalchemy import text as _sql_text

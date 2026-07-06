@@ -13,6 +13,12 @@
 
 ---
 
+## 🔁 Change (2026-07): playlist limits are now MONTHLY, per-subject anchored
+
+**Daily → monthly** for the counted features (`playlists_per_day` → `playlists_per_month`, `analysis_per_day` → `analysis_per_month`; window `monthly`). Reset boundary is **anchored per subject** (`BillingPeriodService`): **subscriber** → Stripe billing cycle (`current_period_start/end`), **free user** → signup-date monthly anniversary, **guest** → calendar month. Seed defaults (admin-editable): playlists/month guest 5 · free 15 · basic 100 · pro 300 · max 1000.
+
+Implementation: `BillingPeriodService.resolve_for_user/guest → (period_key, ttl_seconds)`; `UsageCounterService` is now period-agnostic (caller passes the period + ttl); `EntitlementGate` computes the period per subject (so `record_use`/`refund` gained a `db` arg). Migration `f0a1b2c3d4e5` renames the features + resets per-plan values to monthly + bumps `entitlements_version` (cache-bust); guarded + reversible (round-trip tested). Frontend `FEATURE_KEYS`/`useEntitlements`/`GateCtaModal` copy updated to monthly. **Billing history/invoices deferred** to the Stripe phase (user decision).
+
 ## 📍 Progress & Audit — checkpoint after Phase 7.1
 
 **Full suite: 438 passed, 0 failed** with both servers healthy (Alwyzon 8001 + similarity 8004). Seed baseline verified intact after admin-write tests (15 features / 5 plans / 75 entitlements, default=`free`, zero leftover temp rows). Migrations head = `e2a3b4c5d6e7`. Seed = 15 features × 5 plans = 75 entitlements (idempotent, typed correctly, `free` = default).

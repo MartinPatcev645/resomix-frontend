@@ -82,8 +82,8 @@ async def test_entitlements_are_typed_correctly():
             )).first()
             return row[0], row[1]
 
-        ent, feat = await val("free", "playlists_per_day")
-        assert feat.value_type == "int" and ent.int_value == 2 and ent.bool_value is None
+        ent, feat = await val("free", "playlists_per_month")
+        assert feat.value_type == "int" and ent.int_value == 15 and ent.bool_value is None
 
         ent, feat = await val("guest", "can_export")
         assert feat.value_type == "bool" and ent.bool_value is False and ent.int_value is None
@@ -100,8 +100,8 @@ async def test_unique_constraints_hold():
     set_admin_context(True)
     # duplicate feature key
     async with AsyncSessionLocal() as db:
-        db.add(Feature(key="playlists_per_day", name="dup", value_type="int",
-                       window="daily", default_value="0"))
+        db.add(Feature(key="playlists_per_month", name="dup", value_type="int",
+                       window="monthly", default_value="0"))
         with pytest.raises(IntegrityError):
             await db.commit()
         await db.rollback()
@@ -109,7 +109,7 @@ async def test_unique_constraints_hold():
     # duplicate (plan_id, feature_id) entitlement
     async with AsyncSessionLocal() as db:
         free = (await db.execute(select(Plan).where(Plan.code == "free"))).scalar_one()
-        feat = (await db.execute(select(Feature).where(Feature.key == "playlists_per_day"))).scalar_one()
+        feat = (await db.execute(select(Feature).where(Feature.key == "playlists_per_month"))).scalar_one()
         db.add(PlanEntitlement(plan_id=free.id, feature_id=feat.id, int_value=99))
         with pytest.raises(IntegrityError):
             await db.commit()
