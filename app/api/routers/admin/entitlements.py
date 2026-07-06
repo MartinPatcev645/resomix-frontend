@@ -71,7 +71,7 @@ async def get_plan(
 async def set_entitlement(
     payload: SetEntitlementRequest,
     code: str = Path(..., description="Plan code"),
-    feature_key: str = Path(..., description="Feature key, e.g. playlists_per_day"),
+    feature_key: str = Path(..., description="Feature key, e.g. playlists_per_month"),
     db: AsyncSession = Depends(get_database_session),
     current_admin: User = Depends(require_admin),
     _: User = Depends(require_permission("plans:manage")),

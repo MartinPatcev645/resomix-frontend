@@ -898,7 +898,7 @@ class PlaylistController:
                         "response": result,
                     },
                 )
-                # Record the successful fork against the daily playlist entitlement counter.
+                # Record the successful fork against the monthly playlist entitlement counter.
                 await self.operation_limit_evaluator.record_success(
                     db,
                     user_id=current_user.id,

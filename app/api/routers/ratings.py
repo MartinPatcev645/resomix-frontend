@@ -15,12 +15,14 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
+from typing import Optional
+
 from fastapi import APIRouter, Security, Depends, Path, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.controllers.rating_controller import RatingController
-from app.api.dependencies.auth import get_api_key, get_current_user
+from app.api.dependencies.auth import get_api_key, get_current_user, get_current_user_optional
 from app.api.dependencies.database import get_database_session
 from app.models.user import User
 from app.schemas.rating import (
@@ -205,7 +207,7 @@ async def rate_playlist_endpoint(
     request_data: PlaylistRatingRequest,
     db: AsyncSession = Depends(get_database_session),
     api_key: str = Security(get_api_key),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
 ) -> JSONResponse:
     """
     Rate a playlist with star rating and optional message.

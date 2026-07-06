@@ -8,7 +8,7 @@ and user-based rating tracking.
 """
 
 from typing import Optional
-from sqlalchemy import Text, SmallInteger, ForeignKey, DateTime, Index
+from sqlalchemy import Text, SmallInteger, ForeignKey, DateTime, Index, String
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
@@ -62,9 +62,11 @@ class PlaylistRating(Base):
     
     # Fields
     user_id: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    # Guest identity when there is no user (playlist rating/feedback is open to guests).
+    visitor_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True, default=None)
     rating: Mapped[Optional[int]] = mapped_column(mysql.TINYINT(unsigned=True), nullable=True)  # 0-3 stars
     message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Optional user message/feedback
-    
+
     # Foreign keys
     playlist_id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), ForeignKey("playlists.id", ondelete="CASCADE"), nullable=False)
     

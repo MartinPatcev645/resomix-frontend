@@ -360,12 +360,13 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
         return None
     
     async def async_rate_playlist(
-        self, 
-        db: AsyncSession, 
+        self,
+        db: AsyncSession,
         playlist_id: str,  # Changed from int to str (UUID)
-        rating: int, 
+        rating: int,
         user_id: Optional[str] = None,
-        message: Optional[str] = None
+        message: Optional[str] = None,
+        visitor_id: Optional[str] = None,
     ) -> Optional[PlaylistRating]:
         """
         Rate a playlist by creating a new rating entry.
@@ -391,9 +392,10 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
             if not playlist_numeric_id:
                 return None  # Playlist not found
             
-            # Always create new rating (no duplicate checking)
+            # Always create new rating (no duplicate checking). Guests are tagged by visitor_id.
             new_rating = PlaylistRating(
                 user_id=user_id,
+                visitor_id=visitor_id if not user_id else None,
                 playlist_id=playlist_numeric_id,
                 rating=rating,
                 message=message

@@ -65,6 +65,9 @@ _HIGH_WATER_TABLES: tuple[str, ...] = (
     "plans",
     "features",
     # (user_subscriptions is keyed by user_id, not id, and is cleaned via the users FK cascade)
+    # ratings
+    "track_ratings",
+    "playlist_ratings",
     # engagement / telemetry
     "consumption_events",
     "playlists",

@@ -27,6 +27,7 @@ from app.schemas.rating import TrackRatingRequest, PlaylistRatingRequest
 from app.core.exceptions import ValidationError
 from app.services.playlist_service import PlaylistService
 from app.services.entitlement_gate import EntitlementGate
+from app.services.guest_identity_service import GuestIdentityService
 from app.core.entitlement_keys import FeatureKey
 from app.models.user import User
 
@@ -40,6 +41,7 @@ class RatingController:
         self.logging_service = LoggingService()
         self.playlist_service = PlaylistService()
         self.entitlement_gate = EntitlementGate()
+        self.guest_identity = GuestIdentityService()
 
     async def _rating_denied_response(self, db, request, current_user):
         """Return a 403 response if the caller's plan can't rate, else None.
@@ -610,13 +612,11 @@ class RatingController:
         request_data: PlaylistRatingRequest,
         current_user: Optional[User] = None,
     ) -> JSONResponse:
-        """Rate a playlist endpoint handler."""
+        """Rate a playlist endpoint handler. Open to guests (overall playlist rating + feedback):
+        logged-in ratings carry the user_id; guest ratings are tagged with the server-derived
+        visitor_id (a client-sent user_id is never trusted)."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
-
-        denied = await self._rating_denied_response(db, request, current_user)
-        if denied is not None:
-            return denied
 
         playlist = (
             await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
@@ -626,8 +626,8 @@ class RatingController:
         playlist_int_id = playlist.id if playlist else None
 
         try:
-            # Prioritize JWT user over request body user_id
-            user_id = current_user.id if current_user else request_data.user_id
+            user_id = current_user.id if current_user else None
+            visitor_id = None if current_user else self.guest_identity.derive_visitor_id(request)
 
             result = await self.rating_service.rate_playlist(
                 db,
@@ -635,6 +635,7 @@ class RatingController:
                 request_data.rating,
                 user_id,
                 request_data.message,
+                visitor_id=visitor_id,
             )
 
             if result["success"]:

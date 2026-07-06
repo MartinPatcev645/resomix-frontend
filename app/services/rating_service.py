@@ -224,12 +224,13 @@ class RatingService:
     
     # Playlist Rating Operations
     async def rate_playlist(
-        self, 
-        db: AsyncSession, 
+        self,
+        db: AsyncSession,
         playlist_id: str,
-        rating: int, 
+        rating: int,
         user_id: str = None,
-        message: str = None
+        message: str = None,
+        visitor_id: str = None,
     ) -> Dict[str, Any]:
         """
         Rate a playlist by creating a new rating entry.
@@ -253,7 +254,7 @@ class RatingService:
                 }
             
             rating_obj = await self.playlist_rating_repository.async_rate_playlist(
-                db, playlist_id, rating, user_id, message
+                db, playlist_id, rating, user_id, message, visitor_id=visitor_id
             )
             
             if rating_obj:
