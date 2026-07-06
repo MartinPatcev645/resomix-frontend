@@ -2,7 +2,6 @@ export interface ApiConfig {
   BASE_URL: string;
   BASE_URL_LOCAL: string;
   MEDIA_URL: string;
-  API_KEY: string;
   MAX_FILE_SIZE: number;
   ALLOWED_AUDIO_TYPES: string[];
   ENDPOINTS: {
@@ -196,7 +195,6 @@ export const API_CONFIG: ApiConfig = {
   BASE_URL: getEnv("VITE_SERVER_BACKEND", "https://bserver.resomix.com"),
   BASE_URL_LOCAL: getEnv("VITE_BASE_BETA_URL", "https://beta.resomix.com"), // used by desktop apps for direct calls
   MEDIA_URL: getEnv("VITE_SERVER_MEDIA", "https://media.resomix.com"),
-  API_KEY: getEnv("VITE_API_KEY", "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"),
   MAX_FILE_SIZE: 100 * 1024 * 1024, // 100 MB
   ALLOWED_AUDIO_TYPES: [
     "audio/mpeg",

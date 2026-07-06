@@ -44,31 +44,12 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
-// Request interceptor - Add auth token and api_key
+// Request interceptor - attach the user's JWT (and the guest device signal). The retired static
+// api_key is no longer sent: guests are anonymous (→ System Partner 1), logged-in users and admins
+// are identified by their JWT from the auth store (admins log in via /admin/auth/login).
 authClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const isAdminRoute = config.url?.includes('admin') || config.url?.includes('/admin/');
-
-    if (isAdminRoute) {
-      // Administrative endpoints MUST strictly enforce header-only authorization.
-      // Query parameter is deleted to prevent proxy/browser logs leakage.
-      if (config.params) {
-        delete (config.params as Record<string, unknown>).api_key;
-      }
-    } else {
-      // Public/Partner endpoints fallback support for query parameter
-      if (!config.params) {
-        config.params = {};
-      }
-      if (!config.params.api_key) {
-        (config.params as Record<string, unknown>).api_key = API_CONFIG.API_KEY;
-      }
-    }
-
-    // Enforce secure HTTP headers (Format B and Format A fallback)
-    if (API_CONFIG.API_KEY) {
-      config.headers['X-API-KEY'] = API_CONFIG.API_KEY;
-    }
 
     // Guest device signal for server-side visitor_id derivation (not on admin routes).
     if (!isAdminRoute) {
@@ -102,11 +83,6 @@ authClient.interceptors.request.use(
       }
     } else {
       console.warn(`[authClient] Auth store not available for ${config.url} - global store: ${!!(globalThis as Record<string, unknown>).__RESOMIX_AUTH_STORE__}`);
-    }
-
-    // Fallback Bearer header for administrative requests authorized by the admin key directly
-    if (isAdminRoute && !config.headers.Authorization && API_CONFIG.API_KEY) {
-      config.headers.Authorization = `Bearer ${API_CONFIG.API_KEY}`;
     }
 
     // Support for Idempotency-Key
@@ -189,8 +165,7 @@ authClient.interceptors.response.use(
           `${API_BASE_URL}${API_CONFIG.ENDPOINTS.AUTH_REFRESH}`,
           {}, // Empty body - server manages refresh token via HttpOnly cookie
           {
-            withCredentials: true, // Include cookies
-            params: { api_key: API_CONFIG.API_KEY } // Include api_key for auth endpoints
+            withCredentials: true, // Include cookies (server reads the refresh token from an HttpOnly cookie)
           }
         );
 

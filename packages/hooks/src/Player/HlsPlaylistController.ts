@@ -344,7 +344,6 @@ class HlsPlaylistController implements AudioController {
       const token = urlObj.searchParams.get("token");
 
       const bserverHostname = new URL(API_CONFIG.BASE_URL).hostname;
-      const apiKey = API_CONFIG.API_KEY;
 
       this.hls = new Hls({
         enableWorker: true,
@@ -365,11 +364,6 @@ class HlsPlaylistController implements AudioController {
               const sep = finalUrl.includes('?') ? '&' : '?';
               finalUrl += sep + 'token=' + token;
             }
-          }
-
-          if (isInternal && apiKey && !finalUrl.includes('api_key=')) {
-            const sep = finalUrl.includes('?') ? '&' : '?';
-            finalUrl += sep + 'api_key=' + apiKey;
           }
 
           if (finalUrl !== url) {
@@ -429,7 +423,6 @@ class HlsPlaylistController implements AudioController {
       const token = urlObj.searchParams.get("token");
 
       const bserverHostname = new URL(API_CONFIG.BASE_URL).hostname;
-      const apiKey = API_CONFIG.API_KEY;
 
       this.hls = new Hls({
         enableWorker: true,
@@ -450,11 +443,6 @@ class HlsPlaylistController implements AudioController {
               const sep = finalUrl.includes('?') ? '&' : '?';
               finalUrl += sep + 'token=' + token;
             }
-          }
-
-          if (isInternal && apiKey && !finalUrl.includes('api_key=')) {
-            const sep = finalUrl.includes('?') ? '&' : '?';
-            finalUrl += sep + 'api_key=' + apiKey;
           }
 
           if (finalUrl !== url) {
@@ -554,21 +542,9 @@ class HlsPlaylistController implements AudioController {
   }
 
   private updatePlaylistUrlWithAuth(rawUrl: string): string {
-    try {
-      const urlObj = new URL(rawUrl);
-      const isLocal = urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1';
-      const bserverHostname = API_CONFIG.BASE_URL ? new URL(API_CONFIG.BASE_URL).hostname : '';
-      const isInternal = urlObj.hostname === bserverHostname || isLocal;
-
-      let url = rawUrl;
-      if (isInternal && API_CONFIG.API_KEY && !url.includes('api_key=')) {
-        const sep = url.includes('?') ? '&' : '?';
-        url += sep + 'api_key=' + API_CONFIG.API_KEY;
-      }
-      return url;
-    } catch {
-      return rawUrl;
-    }
+    // Playback auth is carried by the `token` (edge JWT) already present in the play-session URL.
+    // The retired static api_key is no longer appended.
+    return rawUrl;
   }
 
   private wireHlsErrorHandlers() {

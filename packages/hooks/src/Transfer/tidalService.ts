@@ -57,12 +57,9 @@ const base64encode = (input: ArrayBuffer): string => {
   return btoa(binary).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 };
 
-// Helper to construct URLs with API key
+// Helper to construct URLs. No api_key — transfer endpoints authenticate via the user's JWT.
 const getUrl = (endpoint: string, queryParams: Record<string, string | number | null | undefined> = {}): string => {
   const url = new URL(`${API_CONFIG.BASE_URL}${endpoint}`);
-
-  // Add API key
-  url.searchParams.append('api_key', API_CONFIG.API_KEY);
 
   // Add any additional query params
   Object.entries(queryParams).forEach(([key, value]) => {
