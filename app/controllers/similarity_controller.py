@@ -31,7 +31,7 @@ from app.services.similarity_service import SimilarityService
 from app.services.audio_service import AudioService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
 from app.services.antivirus_service import AntivirusService
-from app.utils.demo_mode_utils import apply_demo_mode_redaction, is_anonymous_frontend, ANON_VISIBLE_COUNT
+from app.utils.demo_mode_utils import apply_demo_mode_redaction
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 from app.services.entitlement_gate import EntitlementGate
@@ -66,6 +66,24 @@ class SimilarityController:
             return min(int(top_sk), int(cap))
         except (TypeError, ValueError):
             return top_sk
+
+    async def _apply_frontend_unlock_redaction(
+        self, db, similarity_results, *, request, current_user, partner_id
+    ) -> None:
+        """Server-authoritative result teasing for the frontend surface.
+
+        Scrambles every result track beyond the caller's ``max_tracks_per_playlist`` entitlement
+        (guest 10 / free 20 / basic 50 / pro 100). This makes the "unlock N, tease the rest" UI
+        non-bypassable — the locked tracks' real metadata never leaves the server. B2B partners
+        (``partner_id != system_partner_id``) are never redacted; they have their own quota system.
+        """
+        if partner_id != settings.system_partner_id:
+            return
+        visitor_id = None if current_user else self.guest_identity.derive_visitor_id(request)
+        visible = await self.entitlement_gate.get_cap(
+            db, FeatureKey.MAX_TRACKS_PER_PLAYLIST, user=current_user, visitor_id=visitor_id
+        )
+        apply_demo_mode_redaction(similarity_results, visible_count=visible)
 
     async def get_similarity_upload(
         self,
@@ -145,6 +163,15 @@ class SimilarityController:
                 )
         else:
             logger.info("SIMILARITY UPLOAD: Skipping limit check for anonymous user")
+
+        # Frontend: clamp the requested depth to the caller's plan cap (server-side guard — the UI
+        # greys these options, but a hand-crafted request must not exceed the plan). Guests are
+        # already blocked from upload above, so this governs the logged-in tiers.
+        if partner_id == settings.system_partner_id and current_user is not None:
+            upload_cap = await self.entitlement_gate.get_cap(
+                db, FeatureKey.DROPDOWN_MAX_TRACKS, user=current_user
+            )
+            top_sk = self._clamp_top_sk(top_sk, upload_cap)
 
         # Validate and get the TOP_SK value using global settings
         validated_top_sk = settings.validate_and_get_top_sk(top_sk)
@@ -559,8 +586,9 @@ class SimilarityController:
 
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000
-                if is_anonymous_frontend(current_user is not None, partner_id, settings.system_partner_id):
-                    apply_demo_mode_redaction(similarity_results, visible_count=ANON_VISIBLE_COUNT)
+                await self._apply_frontend_unlock_redaction(
+                    db, similarity_results, request=request, current_user=current_user, partner_id=partner_id
+                )
                 response_content = format_response(
                     success=True, data=similarity_results
                 )
@@ -876,8 +904,9 @@ class SimilarityController:
 
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000
-                if is_anonymous_frontend(current_user is not None, partner_id, settings.system_partner_id):
-                    apply_demo_mode_redaction(similarity_results, visible_count=ANON_VISIBLE_COUNT)
+                await self._apply_frontend_unlock_redaction(
+                    db, similarity_results, request=request, current_user=current_user, partner_id=partner_id
+                )
                 response_content = format_response(
                     success=True, data=similarity_results
                 )
@@ -1251,8 +1280,9 @@ class SimilarityController:
                     logger.warning(f"Guest playlist tag failed for {generated_playlist_uuid}: {_tag_exc}")
 
             duration_ms = (time.time() - start_time) * 1000
-            if is_anonymous_frontend(current_user is not None, partner_id, settings.system_partner_id):
-                apply_demo_mode_redaction(similarity_results, visible_count=ANON_VISIBLE_COUNT)
+            await self._apply_frontend_unlock_redaction(
+                db, similarity_results, request=request, current_user=current_user, partner_id=partner_id
+            )
             response_content = format_response(success=True, data=similarity_results)
             self.logging_service.log(
                 async_db=db,
