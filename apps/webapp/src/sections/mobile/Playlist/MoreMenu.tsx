@@ -181,7 +181,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                 }} id={`playlist-table-sonic-discovery-${trackId}`} />
                             </div>
                         )}
-                        {isInput && (
+                        {isInput && canExport && (
                             <div className="w-full flex gap-2 flex-col">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
                             </div>

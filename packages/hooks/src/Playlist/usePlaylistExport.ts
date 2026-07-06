@@ -1,29 +1,38 @@
 import { useCallback, useState } from 'react';
 import { usePlaylistStore } from '@resomix/stores';
 import { DEMO_MODE } from '@resomix/config';
+import { FEATURE_KEYS } from '@resomix/api-client';
+import { useEntitlements } from '../Entitlements/useEntitlements';
 
 /**
- * Hook for exporting playlist data to a TXT file
- * Formats the playlist data according to the specified structure and triggers download
+ * Hook for exporting playlist data to a TXT file.
+ * Entitlement-aware: `canExport` respects the plan's `can_export`, and the exported track count is
+ * capped by `export_track_limit` (free = first N, paid = full). The server remains the guard.
  */
 export function usePlaylistExport() {
   const { playlistData } = usePlaylistStore();
   const [isExporting, setIsExporting] = useState(false);
+  const { can, getInt } = useEntitlements();
+  const canExportEntitlement = can(FEATURE_KEYS.CAN_EXPORT);
+  const exportTrackLimit = getInt(FEATURE_KEYS.EXPORT_TRACK_LIMIT, 0); // 0 = full/unlimited
 
   const formatPlaylistForExport = useCallback((data: typeof playlistData): string => {
     if (!data) return '';
 
     const { playlist, queried_track, similar_tracks } = data;
-    
+
     // Format playlist name in uppercase
     const playlistName = playlist?.name ? playlist.name.toUpperCase() : '';
-    
+
     // Format input track
     const inputTrackLabel = queried_track.label ? ` [${queried_track.label}]` : '';
     const inputTrack = `INPUT TRACK: ${queried_track.artist} - ${queried_track.title}${inputTrackLabel}`;
-    
-    // Format similar tracks
-    const tracksToExport = DEMO_MODE ? similar_tracks.slice(0, 10) : similar_tracks;
+
+    // Cap the exported tracks by the plan's export_track_limit (and the demo cap, if active).
+    const entLimit = exportTrackLimit > 0 ? exportTrackLimit : Infinity;
+    const demoLimit = DEMO_MODE ? 10 : Infinity;
+    const effLimit = Math.min(entLimit, demoLimit);
+    const tracksToExport = Number.isFinite(effLimit) ? similar_tracks.slice(0, effLimit) : similar_tracks;
 
     const similarTracksFormatted = tracksToExport
       .map(track => {
@@ -31,14 +40,14 @@ export function usePlaylistExport() {
          return `${track.rank}. ${track.artist} - ${track.title}${trackLabel}`;
       })
       .join('\n');
-    
+
     // Combine all parts
-    const footer = DEMO_MODE 
-      ? `\n\nRestricted to 10 tracks in demo mode.\nSonic matches provided by Resomix https://resomix.com`
+    const footer = tracksToExport.length < similar_tracks.length
+      ? `\n\nShowing the first ${tracksToExport.length} tracks. Upgrade your plan to export the full list.\nSonic matches provided by Resomix https://resomix.com`
       : `\n\nSonic matches provided by Resomix https://resomix.com`;
 
     return `${playlistName}\n\n${inputTrack}\n\n${similarTracksFormatted}${footer}`;
-  }, []);
+  }, [exportTrackLimit]);
 
   const generateFilename = useCallback((data: typeof playlistData): string => {
     if (!data) return '';
@@ -153,7 +162,7 @@ export function usePlaylistExport() {
     exportPlaylist,
     exportAndDownloadPlaylist,
     downloadFile,
-    canExport: !!playlistData,
+    canExport: !!playlistData && canExportEntitlement,
     isExporting,
     playlistName: playlistData?.playlist?.name || null
   };

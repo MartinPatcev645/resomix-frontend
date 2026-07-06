@@ -247,6 +247,7 @@ const PlaylistHero: React.FC = () => {
                   </Tooltip>
                 )}
 
+                {canExport && (
                 <div ref={exportButtonWrapRef} className="relative">
                   <Tooltip message="Export Playlist to TXT file">
                     <IconButton
@@ -279,6 +280,7 @@ const PlaylistHero: React.FC = () => {
                     </div>
                   )}
                 </div>
+                )}
               </div>
             </div>
 
