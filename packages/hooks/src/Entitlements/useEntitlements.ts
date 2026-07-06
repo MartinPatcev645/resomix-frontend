@@ -54,7 +54,8 @@ export interface UseEntitlements {
   dropdownMaxTracks: number;
   /** How many result tracks are unlocked in a created playlist; the rest are teased. */
   maxTracksPerPlaylist: number;
-  playlistsPerDay: number;
+  /** Playlists creatable per monthly period (resets on the subject's billing anchor). */
+  playlistsPerMonth: number;
   /** Force a refetch (call after login/logout/upgrade). */
   refresh: () => Promise<void>;
 }
@@ -114,7 +115,7 @@ export function useEntitlements(): UseEntitlements {
     can: getBool,
     dropdownMaxTracks: getInt(FEATURE_KEYS.DROPDOWN_MAX_TRACKS, 20),
     maxTracksPerPlaylist: getInt(FEATURE_KEYS.MAX_TRACKS_PER_PLAYLIST, 10),
-    playlistsPerDay: getInt(FEATURE_KEYS.PLAYLISTS_PER_DAY, 1),
+    playlistsPerMonth: getInt(FEATURE_KEYS.PLAYLISTS_PER_MONTH, 5),
     refresh,
   };
 }

@@ -22,10 +22,10 @@ export const GateCtaModal: React.FC<GateCtaModalProps> = ({ reason, onClose }) =
   if (!reason) return null;
 
   const isLogin = reason === "login_required";
-  const title = isLogin ? "Daily free limit reached" : "Plan limit reached";
+  const title = isLogin ? "Monthly free limit reached" : "Plan limit reached";
   const body = isLogin
-    ? "You've used today's free playlist. Log in or create a free account to make more."
-    : "You've reached your plan's playlist limit. Subscribe to create more.";
+    ? "You've used this month's free playlists. Log in or create a free account to make more."
+    : "You've reached your plan's monthly playlist limit. Subscribe to create more.";
 
   return (
     <div

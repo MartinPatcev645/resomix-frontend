@@ -13,7 +13,7 @@ import { API_CONFIG } from "./config";
 
 /** Canonical feature keys (mirror of the backend `FeatureKey` registry). */
 export const FEATURE_KEYS = {
-  PLAYLISTS_PER_DAY: "playlists_per_day",
+  PLAYLISTS_PER_MONTH: "playlists_per_month",
   MAX_TRACKS_PER_PLAYLIST: "max_tracks_per_playlist",
   DROPDOWN_MAX_TRACKS: "dropdown_max_tracks",
   CAN_EXPORT: "can_export",
@@ -23,7 +23,7 @@ export const FEATURE_KEYS = {
   CAN_RENAME: "can_rename",
   CAN_FAVORITE: "can_favorite",
   CAN_RATE_TRACKS: "can_rate_tracks",
-  ANALYSIS_PER_DAY: "analysis_per_day",
+  ANALYSIS_PER_MONTH: "analysis_per_month",
   ANALYSIS_FEATURE_COUNT: "analysis_feature_count",
   CAN_SIMILARITY_UPLOAD: "can_similarity_upload",
   DEFAULT_PLAYLIST_VISIBILITY: "default_playlist_visibility",
