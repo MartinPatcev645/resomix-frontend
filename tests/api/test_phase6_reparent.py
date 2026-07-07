@@ -145,6 +145,29 @@ async def test_reparent_never_claims_already_owned_playlist():
     assert row.user_id == owner.id  # unchanged
 
 
+@pytest.mark.asyncio
+async def test_reparent_skips_when_account_already_has_playlists():
+    """Anti-abuse: reparenting is a one-time onboarding convenience — it only claims guest work
+    onto an account that has NONE of its own. A user who already owns a playlist (existing account)
+    logging in from a fresh incognito guest session does NOT harvest those guest playlists, which
+    would otherwise let them farm free guest playlists past their monthly cap."""
+    user = await create_user()
+    svc = AuthService()
+
+    # The account already owns a playlist from before.
+    await _seed_guest_playlist(None, user_id=user.id, name="Already Owned")
+    # A guest created a playlist in this browser (tagged with a visitor_id).
+    vid = "vid_" + uuid.uuid4().hex
+    guest_pl = await _seed_guest_playlist(vid, name="Fresh Guest Work")
+
+    async with AsyncSessionLocal() as db:
+        claimed = await svc._reparent_guest_playlists(db, user.id, vid)
+
+    assert claimed == 0  # skipped because the account is not empty
+    row = await _playlist_row(guest_pl)
+    assert row.user_id is None and row.guest_visitor_id == vid  # guest playlist left untouched
+
+
 # --------------------------------------------------------------------------- #
 # Endpoint-level — login derives + threads the visitor_id (controller wiring)
 # --------------------------------------------------------------------------- #

@@ -98,12 +98,18 @@ class AdminEntitlementController:
             content=format_response(success=True, data={"metrics": entitlement_metrics.snapshot()}),
         )
 
-    async def get_user_effective(self, db: AsyncSession, user_uuid: str) -> JSONResponse:
-        user = await self.user_repo.async_get_by_uuid(db, user_uuid)
+    async def get_user_effective(self, db: AsyncSession, identifier: str) -> JSONResponse:
+        # Accept a UUID, email, or username so admins can look a user up by whatever they have.
+        ident = (identifier or "").strip()
+        user = (
+            await self.user_repo.async_get_by_uuid(db, ident)
+            or await self.user_repo.async_get_by_email(db, ident)
+            or await self.user_repo.async_get_by_username(db, ident)
+        )
         if user is None:
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
-                content=format_response(success=False, error="User not found."),
+                content=format_response(success=False, error="User not found (by UUID, email, or username)."),
             )
         data = await self.service.get_user_effective(db, user)
         return JSONResponse(status_code=200, content=format_response(success=True, data=data))

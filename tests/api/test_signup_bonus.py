@@ -9,6 +9,8 @@ while the limit itself stays plan-resolved (a mid-period up/downgrade adjusts au
 Deterministic via per-user overrides (limit=2, bonus=3 → 5 allowed, 6th denied). Requires Redis.
 """
 
+import uuid
+
 import pytest
 from sqlalchemy import select
 
@@ -16,6 +18,7 @@ from app.core.entitlement_keys import FeatureKey
 from app.db.redis import get_redis_or_none
 from app.models.plan import EntitlementOverride, Feature
 from app.services.entitlement_gate import EntitlementGate
+from app.services.usage_counter_service import UsageCounterService
 from app.models.user import User
 from database.connection import AsyncSessionLocal
 from tests.api.library_helpers import create_user
@@ -59,6 +62,34 @@ async def test_signup_bonus_extends_allowance_this_period():
             assert (await gate.peek_allowed(db, FeatureKey.PLAYLISTS_PER_MONTH, user=u)).allowed
             await gate.record_use(db, FeatureKey.PLAYLISTS_PER_MONTH, user=u)
         assert (await gate.peek_allowed(db, FeatureKey.PLAYLISTS_PER_MONTH, user=u)).allowed is False
+
+
+@pytest.mark.asyncio
+async def test_signup_bonus_does_not_recur_next_period():
+    """Regression: the bonus must be genuinely one-time, NOT re-added every month. It seeds only the
+    *current* period's counter; the next monthly period starts fresh at the plan limit with no
+    leftover bonus (a different period_key = a different, un-seeded Redis counter)."""
+    if not await _redis_up():
+        pytest.skip("Redis unavailable — bonus seeds a Redis counter")
+    usage = UsageCounterService()
+    subject_id = "bonus-recur-" + uuid.uuid4().hex  # isolated subject so runs never collide
+    feature = FeatureKey.PLAYLISTS_PER_MONTH
+    this_period, next_period = "20260101000000", "20260201000000"
+    ttl = 3600
+
+    # Grant a 3-playlist bonus for THIS period only.
+    await usage.grant_bonus("user", subject_id, feature, 3, this_period, ttl)
+    assert (await usage.peek("user", subject_id, feature, this_period)) == -3
+
+    # The NEXT period's counter was never touched — the bonus does not carry over.
+    assert (await usage.peek("user", subject_id, feature, next_period)) in (None, 0)
+
+    # So next period allows exactly the plan limit (2) — no recurring bonus — then denies.
+    for _ in range(2):
+        result = await usage.try_consume("user", subject_id, feature, 2, next_period, ttl)
+        assert result is not None and result[0] is True
+    result = await usage.try_consume("user", subject_id, feature, 2, next_period, ttl)
+    assert result is not None and result[0] is False
 
 
 @pytest.mark.asyncio

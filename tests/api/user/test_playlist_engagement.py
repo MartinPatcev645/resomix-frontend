@@ -179,6 +179,75 @@ async def test_playlist_engagement_fav_follow(client, auth_headers, test_data):
     response = await client.post(f"/playlist/unfollow/{playlist_uuid}", headers=auth_headers)
     assert response.status_code == 200
 
+@pytest.fixture
+def guest_playlist():
+    """A playlist created by a guest: no owning user_id, only a visitor_id, public by default."""
+    set_admin_context(True)
+    session = SessionLocal()
+    pl = Playlist(
+        name="Guest Farm Playlist",
+        user_id=None,
+        is_public=True,
+        type="similarity",
+        guest_visitor_id="vid_" + uuid.uuid4().hex,
+    )
+    session.add(pl)
+    session.commit()
+    session.refresh(pl)
+    pl_uuid = str(pl.uuid)
+    session.close()
+    set_admin_context(False)
+
+    yield pl_uuid
+
+    set_admin_context(True)
+    session = SessionLocal()
+    session.execute(delete(Playlist).where(Playlist.uuid == pl_uuid))
+    session.commit()
+    session.close()
+    set_admin_context(False)
+
+
+@pytest.mark.asyncio
+async def test_cannot_favorite_guest_playlist(client, auth_headers, guest_playlist):
+    """Anti-abuse: a guest-created playlist (user_id IS NULL) can't be favorited. Otherwise a user
+    at their playlist cap could farm free playlists in an incognito tab and collect them as
+    favorites to bypass the limit. The response is a clear 403, and the playlist never lands in the
+    user's favorites list."""
+    response = await client.post(f"/playlist/add-favorite/{guest_playlist}", headers=auth_headers)
+    assert response.status_code == 403, response.text
+    body = response.json()
+    assert body["success"] is False
+    assert "guest" in body["error"].lower()
+
+    # It must NOT have been recorded as a favorite.
+    fav = await client.get(
+        "/api/v1/playlists/get-all-playlists/?all_favorites=true", headers=auth_headers
+    )
+    assert fav.status_code == 200
+    fav_ids = [p["id"] for p in fav.json()["data"]]
+    assert guest_playlist not in fav_ids
+
+
+@pytest.mark.asyncio
+async def test_favorite_appears_in_all_favorites_list(client, auth_headers, test_data):
+    """A favorited (owned, public) playlist shows up in the library favorites tab (all_favorites)."""
+    playlist_uuid = test_data["playlist_uuid"]
+
+    add = await client.post(f"/playlist/add-favorite/{playlist_uuid}", headers=auth_headers)
+    assert add.status_code == 200, add.text
+
+    fav = await client.get(
+        "/api/v1/playlists/get-all-playlists/?all_favorites=true", headers=auth_headers
+    )
+    assert fav.status_code == 200
+    fav_ids = [p["id"] for p in fav.json()["data"]]
+    assert playlist_uuid in fav_ids
+
+    # Cleanup so the fixture teardown / other tests start clean.
+    await client.post(f"/playlist/remove-favorite/{playlist_uuid}", headers=auth_headers)
+
+
 @pytest.mark.asyncio
 async def test_ratings_flow(client, auth_headers, test_data):
     """Verify track and playlist rating system."""

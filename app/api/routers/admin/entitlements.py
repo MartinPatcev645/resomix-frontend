@@ -107,7 +107,7 @@ async def update_plan(
     summary="Inspect a user's effective plan, entitlements, and overrides",
 )
 async def get_user_effective_plan(
-    user_uuid: str = Path(..., description="Target user's UUID"),
+    user_uuid: str = Path(..., description="Target user's UUID, email, or username"),
     db: AsyncSession = Depends(get_database_session),
     current_admin: User = Depends(require_admin),
 ) -> JSONResponse:

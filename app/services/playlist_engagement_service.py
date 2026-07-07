@@ -92,7 +92,30 @@ class PlaylistEngagementService:
                     "success": False,
                     "error": "Playlist not found"
                 }
-            
+
+            # Anti-abuse guard: a playlist created by a guest (no owning user — only a visitor_id)
+            # cannot be favorited. Otherwise a user who has hit their playlist cap could open an
+            # incognito tab, create guest playlists (public by default), and "collect" them as
+            # favorites to bypass the limit. The guest must register / log in first so the playlist
+            # is reparented onto a real user_id. Checked BEFORE get-or-create so no engagement row
+            # is ever written for a guest playlist.
+            if playlist.user_id is None:
+                return {
+                    "success": False,
+                    "error": "This playlist was created by a guest and can't be added to favorites. "
+                             "Ask its creator to sign in and save it first.",
+                    "status_code": 403,
+                }
+
+            # Visibility guard: a user may favorite their OWN playlist (any visibility) or any PUBLIC
+            # playlist — never someone else's private playlist (treated as not found so we don't leak
+            # that it exists).
+            if playlist.user_id != user_id and not playlist.is_public:
+                return {
+                    "success": False,
+                    "error": "Playlist not found"
+                }
+
             # Get current engagement state
             engagement = await self.engagement_repository.async_get_engagement(
                 db, user_id, playlist.id
@@ -102,7 +125,7 @@ class PlaylistEngagementService:
                     "success": False,
                     "error": "Failed to get or create engagement record"
                 }
-            
+
             # If already favorite, return success without changing
             if engagement.is_favorite:
                 return {

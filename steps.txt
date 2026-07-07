@@ -60,6 +60,23 @@ Next Steps:
 
 
 
+
+
+
+
+- Add to favorites functionality
+- Track analysis UI creation and backend api
+- Use those filtered tracks from apple music in out frontend, change the waveforms to the line, for apple music preview. Put apple badging
+- stripe subscription integration.
+- Login with google
+- Use elastic search, just like before
+
+
+
+
+
+
+
 Now:
 10-20-50-100
 

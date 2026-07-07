@@ -98,10 +98,15 @@ class PlaylistEngagementController:
                 )
                 return JSONResponse(status_code=status.HTTP_200_OK, content=result)
             else:
-                status_code = status.HTTP_404_NOT_FOUND if "not found" in (result.get("error", "").lower()) else status.HTTP_500_INTERNAL_SERVER_ERROR
+                # Honor an explicit status_code from the service (e.g. 403 for the guest-playlist
+                # anti-abuse guard); otherwise infer 404 for "not found", 500 for anything else.
+                status_code = result.get("status_code") or (
+                    status.HTTP_404_NOT_FOUND if "not found" in (result.get("error", "").lower())
+                    else status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
                 self.logging.log(
                     async_db=db,
-                    level="WARNING" if status_code == 404 else "ERROR",
+                    level="WARNING" if status_code < 500 else "ERROR",
                     category="USER_ACTION",
                     action="playlist_add_favorite_failed",
                     message=f"Add favorite failed for playlist {playlist_id}: {result.get('error')}",
