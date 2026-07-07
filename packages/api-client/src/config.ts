@@ -88,6 +88,9 @@ export interface ApiConfig {
     ADMIN_OPERATION_TYPES: string;
     ADMIN_OPERATION_LIMITS: string;
     ADMIN_OPERATION_LIMIT_DETAIL: string;
+    ADMIN_PLANS: string;
+    ADMIN_FEATURES: string;
+    ADMIN_ENTITLEMENT_METRICS: string;
     ADMIN_SPOTIFY_APPS: string;
     ADMIN_SPOTIFY_APP_USERS: string;
     ADMIN_USER_SEARCH: string;
@@ -304,6 +307,9 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_OPERATION_TYPES: "/api/v1/admin/operation-limits/operation-types",
     ADMIN_OPERATION_LIMITS: "/api/v1/admin/operation-limits/",
     ADMIN_OPERATION_LIMIT_DETAIL: "/api/v1/admin/operation-limits/",
+    ADMIN_PLANS: "/api/v1/admin/plans",                       // GET list | GET /{code} | PATCH /{code} | PUT /{code}/entitlements/{feature_key}
+    ADMIN_FEATURES: "/api/v1/admin/features",                 // GET feature catalog
+    ADMIN_ENTITLEMENT_METRICS: "/api/v1/admin/entitlements/metrics",  // GET gate/cache metrics
     ADMIN_SPOTIFY_APPS: "/api/v1/admin/spotify-apps/",
     ADMIN_SPOTIFY_APP_USERS: "/api/v1/admin/spotify-apps/users",
     ADMIN_USER_SEARCH: "/api/v1/users/search",

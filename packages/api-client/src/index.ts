@@ -22,6 +22,7 @@ export * from "./admin/contact";
 export * from "./admin/waitlist";
 export * from "./admin/playlist";
 export * from "./admin/operationLimits";
+export * from "./admin/plans";
 export * from "./admin/spotifyApps";
 export * from "./admin/users";
 export * from "./admin/partners";
