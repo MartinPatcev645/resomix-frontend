@@ -154,8 +154,8 @@ function PlanHeader({
             active
           </span>
         </Tooltip>
-        {!plan.is_default && (
-          <Tooltip title="Make this the default plan for new users">
+        {!plan.is_default && plan.is_assignable && (
+          <Tooltip title="Make this the default plan assigned to new registrations">
             <Button size="small" type="link" className="!px-0 !text-xs" loading={busy}
               onClick={() => void patch({ is_default: true })}>
               set default
@@ -212,12 +212,12 @@ function UserLookup() {
         <div className="space-y-4">
           <Descriptions size="small" column={1} bordered>
             <Descriptions.Item label="Plan">
-              <Tag color="blue">{result.plan_name || result.plan_code}</Tag>
-              <Text type="secondary" className="font-mono !text-xs">{result.plan_code}</Text>
+              <Tag color="blue">{result.plan?.name || result.plan?.code}</Tag>
+              <Text type="secondary" className="font-mono !text-xs">{result.plan?.code}</Text>
             </Descriptions.Item>
-            {result.user_email && (
-              <Descriptions.Item label="Email">{result.user_email}</Descriptions.Item>
-            )}
+            <Descriptions.Item label="User">
+              <Text className="font-mono !text-xs">{result.user_uuid}</Text>
+            </Descriptions.Item>
           </Descriptions>
 
           <div>
@@ -231,13 +231,14 @@ function UserLookup() {
             </div>
           </div>
 
-          {result.overrides && Object.keys(result.overrides).length > 0 && (
+          {result.overrides && result.overrides.length > 0 && (
             <div>
               <Text strong className="block mb-2">Per-user overrides</Text>
               <div className="flex flex-wrap gap-2">
-                {Object.entries(result.overrides).map(([k, v]) => (
-                  <Tag key={k} color="purple" className="!m-0">
-                    {k}: <strong>{String(v)}</strong>
+                {result.overrides.map((o) => (
+                  <Tag key={o.feature} color="purple" className="!m-0">
+                    {o.feature}: <strong>{String(o.value)}</strong>
+                    {o.reason ? ` (${o.reason})` : ''}
                   </Tag>
                 ))}
               </div>

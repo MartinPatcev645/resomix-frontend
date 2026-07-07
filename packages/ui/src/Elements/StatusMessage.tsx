@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { SineWaves } from "../Animations/SineWaves";
 
@@ -36,7 +37,16 @@ interface StatusMessageProps {
     children?: React.ReactNode
 }
 
-export const StatusMessage: React.FC<StatusMessageProps> = ({
+/**
+ * Portaled to document.body so the modal escapes any page-level stacking context (e.g. the
+ * `z-30` content wrapper) and its overlay/buttons are never covered by fixed chrome (nav/player).
+ */
+export const StatusMessage: React.FC<StatusMessageProps> = (props) => {
+    if (typeof document === 'undefined') return null;
+    return createPortal(<StatusMessageInner {...props} />, document.body);
+};
+
+const StatusMessageInner: React.FC<StatusMessageProps> = ({
     isOpen,
     onClose,
     status,
@@ -81,7 +91,7 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
     // Custom content state
     if (status === 'custom') {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none">
                 {/* Backdrop with blur effect */}
                 <div
                     className="absolute inset-0 bg-black/40 backdrop-blur-md pointer-events-auto"
@@ -100,7 +110,7 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
     // Loading state
     if (status === 'loading') {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none">
                 {/* Backdrop with blur effect only */}
                 <div
                     className="absolute inset-0 bg-black/40 backdrop-blur-md pointer-events-auto"
@@ -119,7 +129,7 @@ export const StatusMessage: React.FC<StatusMessageProps> = ({
     // Error state
     if (status === 'error') {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none">
                 {/* Backdrop with blur effect only */}
                 <div
                     className="absolute inset-0 bg-black/40 backdrop-blur-md pointer-events-auto"

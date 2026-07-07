@@ -38,9 +38,19 @@ export const GateCtaModal: React.FC<GateCtaModalProps> = ({ reason, onClose, tit
       onClick={onClose}
     >
       <div
-        className="bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-40)] py-[var(--px-40)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center max-w-[var(--px-450)] w-full"
+        className="relative bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-40)] py-[var(--px-40)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center max-w-[var(--px-450)] w-full"
         onClick={(e) => e.stopPropagation()}
       >
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={onClose}
+          className="absolute top-[var(--px-12)] right-[var(--px-12)] w-[var(--px-24)] h-[var(--px-24)] flex items-center justify-center text-[var(--color-primary)] opacity-70 hover:opacity-100 transition-opacity cursor-pointer leading-none"
+        >
+          <svg viewBox="0 0 14 14" className="w-[var(--px-12)] h-[var(--px-12)]" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+        </button>
         <h3 className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)] text-center">
           {title}
         </h3>

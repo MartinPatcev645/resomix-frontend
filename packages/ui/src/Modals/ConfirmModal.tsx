@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ButtonSleek } from "../Buttons/ButtonSleek";
 
 interface ConfirmModalProps {
@@ -53,14 +54,15 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+  if (typeof document === 'undefined') return null;
 
   const handleConfirm = () => {
     onConfirm();
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+  return createPortal(
+    <div className="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none">
       {/* Backdrop with blur effect */}
       <div
         className="absolute inset-0 bg-black/10 backdrop-blur-md pointer-events-auto"
@@ -105,7 +107,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

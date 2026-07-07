@@ -7,7 +7,7 @@ import React from "react";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 
 export function UploadPage() {
-  const { response, error, setError, gateReason, setGateReason, isFileUpload } = useUploadStore();
+  const { response, error, setError, gateReason, gateTitle, gateBody, setGateReason, isFileUpload } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
   const processedId = React.useRef<string | null>(null);
@@ -77,7 +77,7 @@ export function UploadPage() {
         />
       )}
 
-      <GateCtaModal reason={gateReason} onClose={() => setGateReason(null)} />
+      <GateCtaModal reason={gateReason} title={gateTitle ?? undefined} body={gateBody ?? undefined} onClose={() => setGateReason(null)} />
     </>
   );
 }

@@ -7,6 +7,7 @@ import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
 import { useNavigate, useLocation } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport } from "@/components/index.ts";
+import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ExportSvg from "@/assets/icons/export.svg";
@@ -42,8 +43,13 @@ const PlaylistHero: React.FC = () => {
   // Entitlement gating (server is the guard; this hides actions the plan doesn't grant).
   // Rename is logged-in-owner-only; the overall "Rate These Results" (playlist rating + feedback)
   // stays open to guests (visitor_id), so it is NOT gated here.
-  const { can } = useEntitlements();
+  const { can, isGuest } = useEntitlements();
   const canRename = can(FEATURE_KEYS.CAN_RENAME);
+  // Login/upgrade gate prompt for actions the current tier can't do (guests see rename/export but
+  // are intercepted with a "log in" modal rather than the button being hidden).
+  const [gate, setGate] = React.useState<{ reason: string; title: string; body: string } | null>(null);
+  const gateFor = (title: string, body: string) =>
+    setGate({ reason: isGuest ? "login_required" : "upgrade_required", title, body });
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -76,6 +82,10 @@ const PlaylistHero: React.FC = () => {
 
   const handleExportButtonClick = () => {
     if (isExporting) return;
+    if (!canExport) {
+      gateFor("Log in to export", "Create a free account or log in to export your playlists.");
+      return;
+    }
     setShowExportMenu((v) => !v);
   };
 
@@ -232,22 +242,19 @@ const PlaylistHero: React.FC = () => {
                     id="playlist-hero-autoplay-toggle"
                   />
                 </Tooltip>
-                {canRename && (
-                  <Tooltip message="Rename your Playlist">
+                <Tooltip message="Rename your Playlist">
                     <IconButton
                       text="Rename"
                       transparent={true}
                       customWidth="min-w-[var(--px-100)]"
-                      onClick={() => setShowRename(true)}
+                      onClick={() => canRename ? setShowRename(true) : gateFor("Log in to rename", "Create a free account or log in to rename your playlists.")}
                       icon={<img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                       hoverIcon={<img src={RenameBlackSvg} aria-label="Rename" draggable={false} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                       className="playlist-action-button"
                       id="playlist-hero-rename-button"
                     />
                   </Tooltip>
-                )}
 
-                {canExport && (
                 <div ref={exportButtonWrapRef} className="relative">
                   <Tooltip message="Export Playlist to TXT file">
                     <IconButton
@@ -280,7 +287,6 @@ const PlaylistHero: React.FC = () => {
                     </div>
                   )}
                 </div>
-                )}
               </div>
             </div>
 
@@ -446,6 +452,12 @@ const PlaylistHero: React.FC = () => {
       </div>
 
       {/* Modals */}
+      <GateCtaModal
+        reason={gate?.reason ?? null}
+        title={gate?.title}
+        body={gate?.body}
+        onClose={() => setGate(null)}
+      />
       <PlaylistRating
         isOpen={showRating}
         onClose={handleRatingClose}

@@ -1,8 +1,10 @@
 import React from "react";
 import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration } from "@resomix/hooks";
+import { formatDuration, useEntitlements } from "@resomix/hooks";
+import { FEATURE_KEYS } from "@resomix/api-client";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistRename, CCLicenseGroup } from "@/components/index.ts";
+import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import AngleLeftSvg from "@/assets/icons/angle_left.svg";
@@ -38,6 +40,11 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [statusTitle, setStatusTitle] = React.useState('');
 
   const { playlistData } = usePlaylistStore();
+  const { can, isGuest } = useEntitlements();
+  const canRename = can(FEATURE_KEYS.CAN_RENAME);
+  // Login/upgrade prompt for actions the tier can't do (rename stays visible; guests are
+  // intercepted with a "log in" modal rather than opening the rename form that would then fail).
+  const [gate, setGate] = React.useState<{ reason: string; title: string; body: string } | null>(null);
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -98,7 +105,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   transparent={true}
                   customWidth="min-w-[var(--px-70)]"
                   mobile={true}
-                  onClick={() => setShowRename(true)}
+                  onClick={() => canRename ? setShowRename(true) : setGate({ reason: isGuest ? "login_required" : "upgrade_required", title: "Log in to rename", body: "Create a free account or log in to rename your playlists." })}
                   icon={<img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                   hoverIcon={<img src={RenameBlackSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                   className="playlist-action-button"
@@ -260,6 +267,12 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
       </div>
 
       {/* Modals */}
+      <GateCtaModal
+        reason={gate?.reason ?? null}
+        title={gate?.title}
+        body={gate?.body}
+        onClose={() => setGate(null)}
+      />
       <PlaylistRating
         isOpen={showRating}
         onClose={handleRatingClose}

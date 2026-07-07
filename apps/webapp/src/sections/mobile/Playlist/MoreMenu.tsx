@@ -22,9 +22,9 @@ interface MoreMenuProps {
 const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, name, label, duration, score = null }) => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
     const { exportAndDownloadPlaylist, canExport } = usePlaylistExport();
-    // Per-track rating is login-required: guests can click but get a login prompt (no API call).
+    // Per-track rating + export are gated: guests can click but get a login prompt (no API call).
     const isAuthenticated = useAuthStore(s => s.isAuthenticated);
-    const [rateLoginPrompt, setRateLoginPrompt] = React.useState(false);
+    const [gate, setGate] = React.useState<{ reason: string; title: string; body: string } | null>(null);
     const [exportButtonText, setExportButtonText] = React.useState("Export to TXT");
 
     React.useEffect(() => {
@@ -38,7 +38,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
     const handleTrackRating = async (rating: number) => {
         if (!trackId) return;
         if (!isAuthenticated) {
-            setRateLoginPrompt(true);
+            setGate({ reason: "login_required", title: "Log in to rate tracks", body: "Rating individual tracks needs an account. Log in or create a free account to rate." });
             return;
         }
         try {
@@ -52,7 +52,10 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
     };
 
     const handleExportPlaylist = async () => {
-        if (!canExport) return;
+        if (!canExport) {
+            setGate({ reason: isAuthenticated ? "upgrade_required" : "login_required", title: "Log in to export", body: "Create a free account or log in to export your playlists." });
+            return;
+        }
 
         try {
             const result = await exportAndDownloadPlaylist();
@@ -181,7 +184,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                 }} id={`playlist-table-sonic-discovery-${trackId}`} />
                             </div>
                         )}
-                        {isInput && canExport && (
+                        {isInput && (
                             <div className="w-full flex gap-2 flex-col">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
                             </div>
@@ -193,10 +196,10 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                 </div>
             </div>
             <GateCtaModal
-                reason={rateLoginPrompt ? "login_required" : null}
-                title="Log in to rate tracks"
-                body="Rating individual tracks needs an account. Log in or create a free account to rate."
-                onClose={() => setRateLoginPrompt(false)}
+                reason={gate?.reason ?? null}
+                title={gate?.title}
+                body={gate?.body}
+                onClose={() => setGate(null)}
             />
         </div >
     );

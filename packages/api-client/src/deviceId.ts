@@ -7,17 +7,18 @@
  * hash + IP/24 + language) and never trusts a client-sent id — this file only supplies the raw
  * signal.
  *
- * ThumbmarkJS is loaded from CDN (not bundled) so that a blocked/absent script **degrades
- * gracefully**: `getDeviceHash()` returns `null` and the server falls back to its signed guest
- * cookie + IP. The hash is computed once and cached in memory + localStorage.
+ * ThumbmarkJS is now **bundled from npm** (`@thumbmarkjs/thumbmarkjs`), not loaded from a CDN, so
+ * the fingerprint is available immediately at bootstrap with no network race. If it can't be
+ * computed for any reason, `getDeviceHash()` returns `null` and the server degrades gracefully to
+ * its signed guest cookie + IP. The hash is computed once and cached in memory + localStorage.
  *
  * MIT-licensed. Fingerprinting here is for anti-abuse (legitimate interest), disclosed separately
  * from optional analytics consent — see the consent config.
  */
 
+import { getFingerprint } from "@thumbmarkjs/thumbmarkjs";
+
 const STORAGE_KEY = "rmx_device_hash";
-const CDN_URL = "https://cdn.jsdelivr.net/npm/@thumbmarkjs/thumbmarkjs/dist/thumbmark.umd.js";
-const LOAD_TIMEOUT_MS = 4000;
 
 let cached: string | null = null;
 let initPromise: Promise<string | null> | null = null;
@@ -38,42 +39,13 @@ export function getDeviceHash(): string | null {
   return null;
 }
 
-function loadScript(src: string, timeoutMs: number): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof document === "undefined") {
-      reject(new Error("no document"));
-      return;
-    }
-    if (document.querySelector("script[data-rmx-thumbmark]")) {
-      resolve();
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = true;
-    script.defer = true;
-    script.setAttribute("data-rmx-thumbmark", "1");
-    const timer = setTimeout(() => {
-      script.remove();
-      reject(new Error("thumbmark load timeout"));
-    }, timeoutMs);
-    script.onload = () => {
-      clearTimeout(timer);
-      resolve();
-    };
-    script.onerror = () => {
-      clearTimeout(timer);
-      script.remove();
-      reject(new Error("thumbmark load error"));
-    };
-    document.head.appendChild(script);
-  });
-}
-
 /**
  * Compute (once) and cache the device hash. Idempotent + safe to call on every app start.
- * Resolves to the hash, or `null` if the fingerprint can't be produced (script blocked/offline).
- * Call early in app bootstrap so the first gated request already carries `X-Device-Hash`.
+ * Resolves to the hash, or `null` if the fingerprint can't be produced.
+ *
+ * Call (and ideally `await`) this before the first gated request so it already carries
+ * `X-Device-Hash` — otherwise the first guest action would fall back to the degraded IP-only
+ * visitor id, which (e.g.) would leave that first playlist un-reparentable on login.
  */
 export function initDeviceHash(): Promise<string | null> {
   if (cached) return Promise.resolve(cached);
@@ -85,17 +57,7 @@ export function initDeviceHash(): Promise<string | null> {
 
   initPromise = (async () => {
     try {
-      await loadScript(CDN_URL, LOAD_TIMEOUT_MS);
-      const tm = (window as unknown as { ThumbmarkJS?: { getFingerprint?: () => Promise<unknown> } }).ThumbmarkJS;
-      const fn = tm?.getFingerprint;
-      if (typeof fn !== "function") return null;
-      const result = await fn.call(tm);
-      const hash =
-        typeof result === "string"
-          ? result
-          : ((result as { thumbmark?: string; visitorId?: string })?.thumbmark ||
-             (result as { thumbmark?: string; visitorId?: string })?.visitorId ||
-             null);
+      const hash = await getFingerprint(); // bundled — resolves to the fingerprint string
       if (hash) {
         cached = hash;
         try {
@@ -106,7 +68,7 @@ export function initDeviceHash(): Promise<string | null> {
       }
       return cached;
     } catch {
-      // Blocked by an ad/tracker blocker, offline, or CDN down → degrade silently.
+      // Fingerprint couldn't be computed (very old browser, hardened privacy env) → degrade silently.
       return null;
     }
   })();

@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { getSimilarityForSelectedTrack } from "@resomix/api-client";
+import { getSimilarityForSelectedTrack, initDeviceHash } from "@resomix/api-client";
 // import { waitForSegmentation } from "@resomix/api-client"; // Commented out - segmentation polling no longer needed
 import { useUploadStore } from "./useUpload";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
@@ -79,6 +79,9 @@ export function useTrackSimilarity(options?: TrackSimilarityOptions) {
       const requestStart = Date.now();
 
       try {
+        // Ensure the guest device hash is ready BEFORE the first search so the created playlist is
+        // tagged with the stable visitor_id (otherwise the first one can't be reparented on login).
+        await initDeviceHash();
         const result = await getSimilarityForSelectedTrack(String(trackId), topSk);
 
         if (result && result.success) {
