@@ -66,10 +66,23 @@ class AuthService:
         frontend system partner, so it can never claim another visitor's or a
         B2B partner's playlists. Idempotent (a re-run matches nothing once the
         rows are owned and their ``guest_visitor_id`` cleared).
+
+        **Anti-abuse (one-time onboarding only):** reparenting proceeds ONLY when the account has
+        no playlists yet. This makes it a genuine guest→first-account convenience and blocks a user
+        from farming free guest playlists in incognito and then logging into an *existing* account
+        to harvest them (which would sidestep the monthly limit). A brand-new registration always
+        has zero playlists, so registration→reparent still works.
         """
         if not visitor_id:
             return 0
         try:
+            # Only claim guest work onto an account that has none of its own yet.
+            already_has = (await db.execute(
+                text("SELECT 1 FROM playlists WHERE user_id = :uid AND partner_id = :pid LIMIT 1"),
+                {"uid": user_id, "pid": settings.system_partner_id},
+            )).first()
+            if already_has is not None:
+                return 0
             result = await db.execute(
                 text(
                     "UPDATE playlists SET user_id = :uid, guest_visitor_id = NULL "

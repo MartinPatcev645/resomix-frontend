@@ -13,7 +13,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from app.api.dependencies.partner import get_current_partner
+from app.api.dependencies.partner import get_current_partner, get_public_partner
 from app.models.partner import Partner
 from app.schemas.partner import PartnerBaseResponse
 from app.services.hetzner_service import HetznerService
@@ -38,7 +38,7 @@ def _extract_client_ip(request: Request) -> str:
 @router.post("/playback-token")
 async def mint_playback_token(
     request: Request,
-    partner: Partner = Depends(get_current_partner),
+    partner: Partner = Depends(get_public_partner),  # frontend surface: guests + logged-in → System Partner 1 (B2B rmx_ key still wins)
 ):
     """
     Mint a short-lived "valet" playback token for the authenticated partner.
