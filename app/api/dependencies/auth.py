@@ -15,7 +15,6 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-import uuid
 from typing import Optional
 from fastapi import HTTPException, Security, Depends, Request
 from fastapi.security import OAuth2PasswordBearer
