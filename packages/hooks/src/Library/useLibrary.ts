@@ -1,11 +1,12 @@
 import { useCallback } from 'react';
 import { useLibraryStore, clearPlaylistFromCache } from '@resomix/stores';
-import { 
-  getAllPlaylists, 
-  getMyTracks, 
-  deleteMyTrack, 
+import {
+  getAllPlaylists,
+  getMyTracks,
+  deleteMyTrack,
   deleteMyPlaylist,
-  changePlaylistVisibility
+  changePlaylistVisibility,
+  removeFavorite
 } from '@resomix/api-client';
 
 export function useLibrary() {
@@ -148,6 +149,31 @@ export function useLibrary() {
     }
   }, [setPlaylists, setPlaylistsPagination]);
 
+  // Remove a playlist from the user's favorites (used by the library Favorites tab). On success the
+  // row is dropped from the currently-shown favorites list.
+  const removeFavoritePlaylist = useCallback(async (uuid: string) => {
+    try {
+      const resp = await removeFavorite(uuid);
+      if (resp && (resp as any).success) {
+        const currentPlaylists = useLibraryStore.getState().playlists;
+        const currentPlaylistsPage = useLibraryStore.getState().playlistsPage;
+        const currentPlaylistsTotalPages = useLibraryStore.getState().playlistsTotalPages;
+        const currentPlaylistsTotal = useLibraryStore.getState().playlistsTotal;
+
+        setPlaylists(currentPlaylists.filter(p => p.uuid !== uuid));
+        setPlaylistsPagination(
+          currentPlaylistsPage,
+          currentPlaylistsTotalPages,
+          Math.max(0, currentPlaylistsTotal - 1)
+        );
+        return { success: true };
+      }
+      return { success: false, error: (resp as any)?.error || "Failed to remove favorite" };
+    } catch (err: any) {
+      return { success: false, error: err.message || "Failed to remove favorite" };
+    }
+  }, [setPlaylists, setPlaylistsPagination]);
+
   const sharePlaylist = useCallback(async (uuid: string) => {
     try {
       const resp = await changePlaylistVisibility(uuid, true);
@@ -182,6 +208,7 @@ export function useLibrary() {
     loadTracks,
     removeTrack,
     removePlaylist,
+    removeFavoritePlaylist,
     sharePlaylist,
     reset,
   };

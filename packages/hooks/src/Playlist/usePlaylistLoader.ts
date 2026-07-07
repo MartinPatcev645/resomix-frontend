@@ -10,7 +10,7 @@ import { getPlaylistSimilarity } from '@resomix/api-client';
  * First checks localStorage cache before making API call.
  */
 export function usePlaylistLoader() {
-  const { playlistData, setPlaylistResponse, setLoading, setError, setPlaylistData, loadCachedResponse } = usePlaylistStore();
+  const { playlistData, setPlaylistResponse, setLoading, setError, setPlaylistData, loadCachedResponse, saveResponseToCache } = usePlaylistStore();
 
   useEffect(() => {
     if (playlistData) return; // already have data
@@ -37,6 +37,10 @@ export function usePlaylistLoader() {
           if (resp.data) {
             // API returns the full playlist data under data
             setPlaylistData(resp.data as any);
+            // Persist the freshly fetched data so it replaces any stale entry (e.g. a redacted
+            // anonymous teaser the user saw before logging in). saveResponseToCache itself skips
+            // redacted responses, so a still-guest refetch is never re-cached.
+            saveResponseToCache({ success: true, data: resp.data } as any);
           } else {
             // Fallback to whole response shape
             setPlaylistResponse(resp as any);
@@ -49,5 +53,5 @@ export function usePlaylistLoader() {
         setError('Failed to load playlist');
       }
     })();
-  }, [playlistData, setPlaylistResponse, setLoading, setError, setPlaylistData, loadCachedResponse]);
+  }, [playlistData, setPlaylistResponse, setLoading, setError, setPlaylistData, loadCachedResponse, saveResponseToCache]);
 }

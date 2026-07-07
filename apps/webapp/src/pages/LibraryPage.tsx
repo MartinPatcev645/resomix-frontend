@@ -24,6 +24,7 @@ export default function LibraryPage() {
     loadTracks,
     removeTrack,
     removePlaylist,
+    removeFavoritePlaylist,
     sharePlaylist,
   } = useLibrary();
 
@@ -39,27 +40,14 @@ export default function LibraryPage() {
   // Playlist deletion confirmation state
   const [playlistToDelete, setPlaylistToDelete] = useState<string | null>(null);
 
-  // Set of favorited playlist UUIDs (frontend-only toggle)
-  const [favoritedPlaylists, setFavoritedPlaylists] = useState<Set<string>>(new Set());
-
-  // Initialize favorited set with loaded playlists by default
-  useEffect(() => {
-    if (playlists.length > 0 && favoritedPlaylists.size === 0) {
-      setFavoritedPlaylists(new Set(playlists.map((p) => p.uuid)));
-    }
-  }, [playlists, favoritedPlaylists.size]);
-
-  const toggleFavorite = (uuid: string, e: React.MouseEvent) => {
+  // Remove a playlist from favorites (Favorites tab). All items in that tab are favorites, so the
+  // heart is filled and clicking it un-favorites — the row then drops out of the list.
+  const handleRemoveFavorite = async (uuid: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setFavoritedPlaylists((prev) => {
-      const next = new Set(prev);
-      if (next.has(uuid)) {
-        next.delete(uuid);
-      } else {
-        next.add(uuid);
-      }
-      return next;
-    });
+    const result = await removeFavoritePlaylist(uuid);
+    if (!result.success) {
+      handleStatusChange("error", result.error || "Failed to remove from favorites", "Error");
+    }
   };
 
   // Three-dots dropdown active menu ID
