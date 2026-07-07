@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useLibraryStore, clearPlaylistFromCache } from '@resomix/stores';
+import { useLibraryStore, clearPlaylistFromCache, type LibraryPlaylist } from '@resomix/stores';
 import {
   getAllPlaylists,
   getMyTracks,
@@ -9,59 +9,97 @@ import {
   removeFavorite
 } from '@resomix/api-client';
 
+const formatDuration = (playTime?: number): string => {
+  if (!playTime) return "0m";
+  return playTime >= 3600
+    ? `${Math.floor(playTime / 3600)}h ${Math.floor((playTime % 3600) / 60)}m`
+    : `${Math.floor(playTime / 60)}m`;
+};
+
+const formatPlaylist = (p: any): LibraryPlaylist => ({
+  id: String(p.id || p.uuid),
+  uuid: p.uuid || p.id,
+  name: p.name,
+  is_public: p.is_public,
+  trackCount: p.num_tracks || 0,
+  duration: formatDuration(p.play_time),
+  createdAt: p.created_at || new Date().toISOString(),
+});
+
 export function useLibrary() {
   const playlists = useLibraryStore(state => state.playlists);
+  const favorites = useLibraryStore(state => state.favorites);
   const tracks = useLibraryStore(state => state.tracks);
-  const loading = useLibraryStore(state => state.loading);
   const error = useLibraryStore(state => state.error);
   const activeTab = useLibraryStore(state => state.activeTab);
+
+  const playlistsLoading = useLibraryStore(state => state.playlistsLoading);
+  const favoritesLoading = useLibraryStore(state => state.favoritesLoading);
+  const tracksLoading = useLibraryStore(state => state.tracksLoading);
+
   const playlistsPage = useLibraryStore(state => state.playlistsPage);
   const playlistsTotalPages = useLibraryStore(state => state.playlistsTotalPages);
   const playlistsTotal = useLibraryStore(state => state.playlistsTotal);
+  const favoritesPage = useLibraryStore(state => state.favoritesPage);
+  const favoritesTotalPages = useLibraryStore(state => state.favoritesTotalPages);
+  const favoritesTotal = useLibraryStore(state => state.favoritesTotal);
   const tracksPage = useLibraryStore(state => state.tracksPage);
   const tracksTotalPages = useLibraryStore(state => state.tracksTotalPages);
   const tracksTotal = useLibraryStore(state => state.tracksTotal);
 
   const setPlaylists = useLibraryStore(state => state.setPlaylists);
+  const setFavorites = useLibraryStore(state => state.setFavorites);
   const setTracks = useLibraryStore(state => state.setTracks);
-  const setLoading = useLibraryStore(state => state.setLoading);
+  const setPlaylistsLoading = useLibraryStore(state => state.setPlaylistsLoading);
+  const setFavoritesLoading = useLibraryStore(state => state.setFavoritesLoading);
+  const setTracksLoading = useLibraryStore(state => state.setTracksLoading);
   const setError = useLibraryStore(state => state.setError);
   const setActiveTab = useLibraryStore(state => state.setActiveTab);
   const setPlaylistsPagination = useLibraryStore(state => state.setPlaylistsPagination);
+  const setFavoritesPagination = useLibraryStore(state => state.setFavoritesPagination);
   const setTracksPagination = useLibraryStore(state => state.setTracksPagination);
   const reset = useLibraryStore(state => state.reset);
 
-  const loadPlaylists = useCallback(async (page = 1, pageSize = 20, filters = {}) => {
-    setLoading(true);
+  const loadPlaylists = useCallback(async (page = 1, pageSize = 20) => {
+    setPlaylistsLoading(true);
     setError(null);
     try {
-      const resp = await getAllPlaylists({ page, page_size: pageSize, ...filters });
+      const resp = await getAllPlaylists({ page, page_size: pageSize });
       if (resp.success && resp.data && Array.isArray(resp.data)) {
-        const formattedPlaylists = resp.data.map((p: any) => ({
-          id: String(p.id || p.uuid),
-          uuid: p.uuid || p.id,
-          name: p.name,
-          is_public: p.is_public,
-          trackCount: p.num_tracks || 0,
-          duration: p.play_time ? (p.play_time >= 3600 ? `${Math.floor(p.play_time / 3600)}h ${Math.floor((p.play_time % 3600) / 60)}m` : `${Math.floor(p.play_time / 60)}m`) : "0m",
-          createdAt: p.created_at || new Date().toISOString(),
-        }));
-        setPlaylists(formattedPlaylists);
+        setPlaylists(resp.data.map(formatPlaylist));
         const total = (resp as any).total || 0;
-        const totalPages = Math.max(1, Math.ceil(total / pageSize));
-        setPlaylistsPagination(page, totalPages, total);
+        setPlaylistsPagination(page, Math.max(1, Math.ceil(total / pageSize)), total);
       } else {
         setError(resp.error || "Failed to load playlists");
       }
     } catch (err: any) {
       setError(err.message || "Failed to load playlists");
     } finally {
-      setLoading(false);
+      setPlaylistsLoading(false);
     }
-  }, [setLoading, setError, setPlaylists, setPlaylistsPagination]);
+  }, [setPlaylistsLoading, setError, setPlaylists, setPlaylistsPagination]);
+
+  const loadFavorites = useCallback(async (page = 1, pageSize = 20) => {
+    setFavoritesLoading(true);
+    setError(null);
+    try {
+      const resp = await getAllPlaylists({ page, page_size: pageSize, all_favorites: true });
+      if (resp.success && resp.data && Array.isArray(resp.data)) {
+        setFavorites(resp.data.map(formatPlaylist));
+        const total = (resp as any).total || 0;
+        setFavoritesPagination(page, Math.max(1, Math.ceil(total / pageSize)), total);
+      } else {
+        setError(resp.error || "Failed to load favorites");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to load favorites");
+    } finally {
+      setFavoritesLoading(false);
+    }
+  }, [setFavoritesLoading, setError, setFavorites, setFavoritesPagination]);
 
   const loadTracks = useCallback(async (page = 1, pageSize = 20) => {
-    setLoading(true);
+    setTracksLoading(true);
     setError(null);
     try {
       const limitPageSize = Math.min(pageSize, 20);
@@ -88,9 +126,9 @@ export function useLibrary() {
     } catch (err: any) {
       setError(err.message || "Failed to load tracks");
     } finally {
-      setLoading(false);
+      setTracksLoading(false);
     }
-  }, [setLoading, setError, setTracks, setTracksPagination]);
+  }, [setTracksLoading, setError, setTracks, setTracksPagination]);
 
   const removeTrack = useCallback(async (uuid: string) => {
     try {
@@ -107,8 +145,7 @@ export function useLibrary() {
         const currentTracksTotalPages = useLibraryStore.getState().tracksTotalPages;
         const currentTracksTotal = useLibraryStore.getState().tracksTotal;
 
-        const updatedTracks = currentTracks.filter(t => t.id !== uuid);
-        setTracks(updatedTracks);
+        setTracks(currentTracks.filter(t => t.id !== uuid));
         setTracksPagination(
           currentTracksPage,
           currentTracksTotalPages,
@@ -129,42 +166,37 @@ export function useLibrary() {
       const resp = await deleteMyPlaylist(uuid);
       if (resp.success) {
         clearPlaylistFromCache(uuid);
-        const currentPlaylists = useLibraryStore.getState().playlists;
-        const currentPlaylistsPage = useLibraryStore.getState().playlistsPage;
-        const currentPlaylistsTotalPages = useLibraryStore.getState().playlistsTotalPages;
-        const currentPlaylistsTotal = useLibraryStore.getState().playlistsTotal;
+        const state = useLibraryStore.getState();
 
-        const updatedPlaylists = currentPlaylists.filter(p => p.uuid !== uuid);
-        setPlaylists(updatedPlaylists);
-        setPlaylistsPagination(
-          currentPlaylistsPage,
-          currentPlaylistsTotalPages,
-          Math.max(0, currentPlaylistsTotal - 1)
-        );
+        // Drop from both the owned-playlists and favorites lists (a deletion is global).
+        setPlaylists(state.playlists.filter(p => p.uuid !== uuid));
+        setPlaylistsPagination(state.playlistsPage, state.playlistsTotalPages, Math.max(0, state.playlistsTotal - 1));
+        if (state.favorites.some(p => p.uuid === uuid)) {
+          setFavorites(state.favorites.filter(p => p.uuid !== uuid));
+          setFavoritesPagination(state.favoritesPage, state.favoritesTotalPages, Math.max(0, state.favoritesTotal - 1));
+        }
         return { success: true };
       }
       return { success: false, error: (resp as any).error || "Failed to delete playlist" };
     } catch (err: any) {
       return { success: false, error: err.message || "Failed to delete playlist" };
     }
-  }, [setPlaylists, setPlaylistsPagination]);
+  }, [setPlaylists, setPlaylistsPagination, setFavorites, setFavoritesPagination]);
 
-  // Remove a playlist from the user's favorites (used by the library Favorites tab). On success the
-  // row is dropped from the currently-shown favorites list.
+  // Remove a playlist from the user's favorites (Favorites tab). On success the row is dropped from
+  // the favorites list; the owned-playlists list is untouched.
   const removeFavoritePlaylist = useCallback(async (uuid: string) => {
     try {
       const resp = await removeFavorite(uuid);
       if (resp && (resp as any).success) {
-        const currentPlaylists = useLibraryStore.getState().playlists;
-        const currentPlaylistsPage = useLibraryStore.getState().playlistsPage;
-        const currentPlaylistsTotalPages = useLibraryStore.getState().playlistsTotalPages;
-        const currentPlaylistsTotal = useLibraryStore.getState().playlistsTotal;
-
-        setPlaylists(currentPlaylists.filter(p => p.uuid !== uuid));
-        setPlaylistsPagination(
-          currentPlaylistsPage,
-          currentPlaylistsTotalPages,
-          Math.max(0, currentPlaylistsTotal - 1)
+        // Drop any cached copy so this playlist's hero heart isn't stale (shows favorited) next open.
+        clearPlaylistFromCache(uuid);
+        const state = useLibraryStore.getState();
+        setFavorites(state.favorites.filter(p => p.uuid !== uuid));
+        setFavoritesPagination(
+          state.favoritesPage,
+          state.favoritesTotalPages,
+          Math.max(0, state.favoritesTotal - 1)
         );
         return { success: true };
       }
@@ -172,39 +204,45 @@ export function useLibrary() {
     } catch (err: any) {
       return { success: false, error: err.message || "Failed to remove favorite" };
     }
-  }, [setPlaylists, setPlaylistsPagination]);
+  }, [setFavorites, setFavoritesPagination]);
 
   const sharePlaylist = useCallback(async (uuid: string) => {
     try {
       const resp = await changePlaylistVisibility(uuid, true);
       if (resp.success) {
-        const currentPlaylists = useLibraryStore.getState().playlists;
-        const updatedPlaylists = currentPlaylists.map(p => 
-          p.uuid === uuid ? { ...p, is_public: true } : p
-        );
-        setPlaylists(updatedPlaylists);
+        const state = useLibraryStore.getState();
+        const mark = (list: LibraryPlaylist[]) => list.map(p => p.uuid === uuid ? { ...p, is_public: true } : p);
+        setPlaylists(mark(state.playlists));
+        setFavorites(mark(state.favorites));
         return { success: true };
       }
       return { success: false, error: resp.error || "Failed to share playlist" };
     } catch (err: any) {
       return { success: false, error: err.message || "Failed to share playlist" };
     }
-  }, [setPlaylists]);
+  }, [setPlaylists, setFavorites]);
 
   return {
     playlists,
+    favorites,
     tracks,
-    loading,
     error,
     activeTab,
+    playlistsLoading,
+    favoritesLoading,
+    tracksLoading,
     playlistsPage,
     playlistsTotalPages,
     playlistsTotal,
+    favoritesPage,
+    favoritesTotalPages,
+    favoritesTotal,
     tracksPage,
     tracksTotalPages,
     tracksTotal,
     setActiveTab,
     loadPlaylists,
+    loadFavorites,
     loadTracks,
     removeTrack,
     removePlaylist,

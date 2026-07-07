@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon } from "@resomix/ui";
+import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon } from "@resomix/ui";
 import { useAuthStore } from "@resomix/stores";
 import { useLibrary } from "@resomix/hooks";
 import TrackSvg from "@/assets/icons/track_2.svg";
@@ -11,22 +11,40 @@ export default function LibraryPage() {
   const { isAuthenticated } = useAuthStore();
   const {
     playlists,
+    favorites,
     tracks,
-    loading,
     error,
     activeTab,
+    playlistsLoading,
+    favoritesLoading,
+    tracksLoading,
     playlistsPage,
     playlistsTotalPages,
+    playlistsTotal,
+    favoritesPage,
+    favoritesTotalPages,
+    favoritesTotal,
     tracksPage,
     tracksTotalPages,
+    tracksTotal,
     setActiveTab,
     loadPlaylists,
+    loadFavorites,
     loadTracks,
     removeTrack,
     removePlaylist,
     removeFavoritePlaylist,
     sharePlaylist,
   } = useLibrary();
+
+  // Derived view of whichever tab is selected (each section has its own slice / paging / loading).
+  const activePlaylists = activeTab === "favorites" ? favorites : playlists;
+  const activeLoading =
+    activeTab === "tracks" ? tracksLoading : activeTab === "favorites" ? favoritesLoading : playlistsLoading;
+  const activePage =
+    activeTab === "tracks" ? tracksPage : activeTab === "favorites" ? favoritesPage : playlistsPage;
+  const activeTotalPages =
+    activeTab === "tracks" ? tracksTotalPages : activeTab === "favorites" ? favoritesTotalPages : playlistsTotalPages;
 
   // Status Message states
   const [showStatus, setShowStatus] = useState(false);
@@ -80,15 +98,23 @@ export default function LibraryPage() {
     return () => window.removeEventListener("click", handleOutsideClick);
   }, []);
 
-  // Initial load and tab/page change reactions
+  // On arrival (and on login) load all three sections, so every tab's count is populated and
+  // switching tabs is instant (data lives in the store). A full page reload or the Refresh button
+  // refetches — deliberately NOT re-run when the user merely switches tabs.
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (activeTab === "playlists" || activeTab === "favorites") {
-      loadPlaylists(playlistsPage);
-    } else {
-      loadTracks(tracksPage);
-    }
-  }, [isAuthenticated, activeTab, playlistsPage, tracksPage, loadPlaylists, loadTracks]);
+    loadPlaylists(1);
+    loadFavorites(1);
+    loadTracks(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
+
+  // Refresh only the currently-selected tab (keeps the others as-is).
+  const handleRefresh = () => {
+    if (activeTab === "playlists") loadPlaylists(playlistsPage);
+    else if (activeTab === "favorites") loadFavorites(favoritesPage);
+    else loadTracks(tracksPage);
+  };
 
   const handleDeletePlaylist = (uuid: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -156,27 +182,15 @@ export default function LibraryPage() {
   };
 
   const handlePrevPage = () => {
-    if (activeTab === "playlists" || activeTab === "favorites") {
-      if (playlistsPage > 1) {
-        loadPlaylists(playlistsPage - 1);
-      }
-    } else {
-      if (tracksPage > 1) {
-        loadTracks(tracksPage - 1);
-      }
-    }
+    if (activeTab === "playlists" && playlistsPage > 1) loadPlaylists(playlistsPage - 1);
+    else if (activeTab === "favorites" && favoritesPage > 1) loadFavorites(favoritesPage - 1);
+    else if (activeTab === "tracks" && tracksPage > 1) loadTracks(tracksPage - 1);
   };
 
   const handleNextPage = () => {
-    if (activeTab === "playlists" || activeTab === "favorites") {
-      if (playlistsPage < playlistsTotalPages) {
-        loadPlaylists(playlistsPage + 1);
-      }
-    } else {
-      if (tracksPage < tracksTotalPages) {
-        loadTracks(tracksPage + 1);
-      }
-    }
+    if (activeTab === "playlists" && playlistsPage < playlistsTotalPages) loadPlaylists(playlistsPage + 1);
+    else if (activeTab === "favorites" && favoritesPage < favoritesTotalPages) loadFavorites(favoritesPage + 1);
+    else if (activeTab === "tracks" && tracksPage < tracksTotalPages) loadTracks(tracksPage + 1);
   };
 
   return (
@@ -202,7 +216,7 @@ export default function LibraryPage() {
                   : "text-slate-400 hover:text-[var(--color-primary)]"
               }`}
             >
-              Playlists ({playlists.length})
+              Playlists ({playlistsTotal})
             </button>
             <button
               onClick={() => setSearchParams({ tab: "favorites" }, { replace: true })}
@@ -212,7 +226,7 @@ export default function LibraryPage() {
                   : "text-slate-400 hover:text-[var(--color-primary)]"
               }`}
             >
-              Favorites ({playlists.length})
+              Favorites ({favoritesTotal})
             </button>
             <button
               onClick={() => setSearchParams({ tab: "tracks" }, { replace: true })}
@@ -222,7 +236,26 @@ export default function LibraryPage() {
                   : "text-slate-400 hover:text-[var(--color-primary)]"
               }`}
             >
-              Tracks ({tracks.length})
+              Tracks ({tracksTotal})
+            </button>
+          </div>
+
+          {/* Refresh the currently-selected tab (a full page reload refetches all three). */}
+          <div className="flex justify-end mb-[var(--px-15)]">
+            <button
+              onClick={handleRefresh}
+              disabled={activeLoading}
+              className="flex items-center gap-[var(--px-8)] px-[var(--px-14)] py-[var(--px-6)] border border-dotted border-white/20 hover:border-white/50 disabled:opacity-40 text-white/80 text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer disabled:cursor-not-allowed rounded-xs"
+              aria-label="Refresh"
+            >
+              <svg
+                className={`w-[var(--px-14)] h-[var(--px-14)] ${activeLoading ? "animate-spin" : ""}`}
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+              >
+                <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                <path d="M21 3v6h-6" />
+              </svg>
+              Refresh
             </button>
           </div>
 
@@ -232,12 +265,12 @@ export default function LibraryPage() {
             </div>
           )}
 
-          {loading ? (
+          {activeLoading ? (
             <div className="p-[var(--px-40)] text-center text-slate-400 font-fira">
               Loading your library...
             </div>
           ) : activeTab === "playlists" || activeTab === "favorites" ? (
-            playlists.length === 0 ? (
+            activePlaylists.length === 0 ? (
               <div className="p-[var(--px-40)] border border-slate-200 border-dotted rounded-lg text-center">
                 <p className="text-[length:var(--px-14)] font-light font-helvetica opacity-60">
                   {activeTab === "favorites"
@@ -247,7 +280,7 @@ export default function LibraryPage() {
               </div>
             ) : (
               <div className="flex flex-col gap-[var(--px-12)] w-full">
-                {playlists.map((playlist) => (
+                {activePlaylists.map((playlist) => (
                   <div
                     key={playlist.uuid}
                     className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex justify-between items-center relative rounded-xs hover:bg-white/5 transition-colors"
@@ -299,17 +332,13 @@ export default function LibraryPage() {
 
                     <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0 align-middle">
                       {activeTab === "favorites" ? (
-                        <Tooltip message={favoritedPlaylists.has(playlist.uuid) ? "Remove from Favorites" : "Add to Favorites"}>
+                        <Tooltip message="Remove from Favorites">
                           <button
-                            onClick={(e) => toggleFavorite(playlist.uuid, e)}
+                            onClick={(e) => handleRemoveFavorite(playlist.uuid, e)}
                             className="text-white/60 hover:text-white cursor-pointer mt-[var(--px-2)] flex items-center justify-center transition-all p-[var(--px-4)] hover:scale-110 active:scale-90 bg-transparent border-0 outline-none"
-                            aria-label={favoritedPlaylists.has(playlist.uuid) ? "Remove from Favorites" : "Add to Favorites"}
+                            aria-label="Remove from Favorites"
                           >
-                            {favoritedPlaylists.has(playlist.uuid) ? (
-                              <HeartFilledIcon customWidth="22" customHeight="22" className="text-white" disableHover={true} />
-                            ) : (
-                              <HeartStrokeIcon customWidth="22" customHeight="22" className="text-white/60 hover:text-white" />
-                            )}
+                            <HeartFilledIcon customWidth="22" customHeight="22" className="text-white" disableHover={true} />
                           </button>
                         </Tooltip>
                       ) : (
@@ -599,26 +628,21 @@ export default function LibraryPage() {
             )
           )}
 
-          {/* Pagination Controls */}
-          {!loading && (activeTab === "playlists" ? playlistsTotalPages > 1 : tracksTotalPages > 1) && (
+          {/* Pagination Controls (for the active tab) */}
+          {!activeLoading && activeTotalPages > 1 && (
             <div className="flex justify-center items-center gap-[var(--px-20)] mt-[var(--px-30)] mb-[var(--px-50)]">
               <button
-                disabled={activeTab === "playlists" ? playlistsPage <= 1 : tracksPage <= 1}
+                disabled={activePage <= 1}
                 onClick={handlePrevPage}
                 className="px-[var(--px-16)] py-[var(--px-8)] border border-dotted border-white/20 hover:border-white/50 disabled:opacity-30 disabled:border-white/10 text-white/80 disabled:text-white/30 text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer disabled:cursor-not-allowed rounded-xs"
               >
                 Prev
               </button>
               <span className="text-[length:var(--px-14)] font-light font-fira text-white/80">
-                Page {activeTab === "playlists" ? playlistsPage : tracksPage} of{" "}
-                {activeTab === "playlists" ? playlistsTotalPages : tracksTotalPages}
+                Page {activePage} of {activeTotalPages}
               </span>
               <button
-                disabled={
-                  activeTab === "playlists"
-                    ? playlistsPage >= playlistsTotalPages
-                    : tracksPage >= tracksTotalPages
-                }
+                disabled={activePage >= activeTotalPages}
                 onClick={handleNextPage}
                 className="px-[var(--px-16)] py-[var(--px-8)] border border-dotted border-white/20 hover:border-white/50 disabled:opacity-30 disabled:border-white/10 text-white/80 disabled:text-white/30 text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer disabled:cursor-not-allowed rounded-xs"
               >

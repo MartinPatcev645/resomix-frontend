@@ -1,6 +1,6 @@
 import React from "react";
-import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, useEntitlements } from "@resomix/hooks";
+import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
+import { formatDuration, useEntitlements, useFavoritePlaylist } from "@resomix/hooks";
 import { FEATURE_KEYS } from "@resomix/api-client";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistRename, CCLicenseGroup } from "@/components/index.ts";
@@ -42,6 +42,9 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const { playlistData } = usePlaylistStore();
   const { can, isGuest } = useEntitlements();
   const canRename = can(FEATURE_KEYS.CAN_RENAME);
+  // Favorite/unfavorite the current playlist (heart top-right of the card). Guests are prompted to
+  // log in; a guest-created playlist is rejected by the backend and that message is surfaced.
+  const { isFavorite, toggleFavorite } = useFavoritePlaylist();
   // Login/upgrade prompt for actions the tier can't do (rename stays visible; guests are
   // intercepted with a "log in" modal rather than opening the rename form that would then fail).
   const [gate, setGate] = React.useState<{ reason: string; title: string; body: string } | null>(null);
@@ -54,6 +57,15 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
     setStatusMessage(message);
     setStatusTitle(title || '');
     setShowStatus(true);
+  };
+
+  const handleFavoriteClick = async () => {
+    const res = await toggleFavorite();
+    if (res.gated) {
+      setGate({ reason: "login_required", title: "Log in to save favorites", body: "Create a free account or log in to add playlists to your favorites." });
+    } else if (!res.ok && res.error) {
+      handleStatusChange('error', res.error, 'Favorites');
+    }
   };
 
   const handleRenameClose = () => {
@@ -235,7 +247,20 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 />
               </div>
             </div>
-            <div className="absolute right-[var(--px-16)] top-[var(--px-16)] select-none text-[#5C5C5C]">
+            <div className="absolute right-[var(--px-16)] top-[var(--px-16)] select-none text-[#5C5C5C] flex items-center gap-[var(--px-10)]">
+              <button
+                type="button"
+                onClick={handleFavoriteClick}
+                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                className="cursor-pointer bg-transparent border-0 p-0 flex items-center justify-center playlist-favorite-button"
+                id="playlist-hero-favorite-button"
+              >
+                {isFavorite ? (
+                  <HeartFilledIcon customWidth="20" customHeight="20" className="text-white" disableHover={true} />
+                ) : (
+                  <HeartStrokeIcon customWidth="20" customHeight="20" className="text-white/70" />
+                )}
+              </button>
               <button
                 type="button"
                 onClick={() => onMoreClick?.(
