@@ -49,11 +49,15 @@ export function useTrackCountOptions(): UseTrackCountOptions {
 
   const options = useMemo<TrackCountOption[]>(
     () =>
-      TRACK_COUNT_VALUES.map((value) => ({
-        value,
-        label: `${value} tracks`,
-        locked: value > effectiveCap,
-      })),
+      TRACK_COUNT_VALUES.map((value) => {
+        const locked = value > effectiveCap;
+        // Locked options are greyed out; suffix them so the picker reads e.g. "50 tracks (Premium)".
+        return {
+          value,
+          label: locked ? `${value} tracks (Premium)` : `${value} tracks`,
+          locked,
+        };
+      }),
     [effectiveCap]
   );
 

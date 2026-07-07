@@ -1,4 +1,4 @@
-import { useState, useEffect, ChangeEvent } from "react";
+import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { FormInput } from "../Elements/FormInput";
@@ -26,7 +26,11 @@ export default function VerifyEmailContent({
   const [email, setEmail] = useState(propEmail || "");
   const [emailInput, setEmailInput] = useState("");
   const [resendCountdown, setResendCountdown] = useState(0);
+  const [resendCount, setResendCount] = useState(0);
   const [verifying, setVerifying] = useState(false);
+  // Guards the verify call against React StrictMode's double-invoke (and any double-click), which
+  // would otherwise consume the one-time token on the first call and 400 on the second.
+  const verifyStartedRef = useRef(false);
 
   const [showStatus, setShowStatus] = useState(false);
   const [statusType, setStatusType] = useState<"loading" | "success" | "error">("loading");
@@ -39,6 +43,10 @@ export default function VerifyEmailContent({
       const urlParams = new URLSearchParams(window.location.search);
       const urlToken = urlParams.get("token");
 
+      // Prefill the email (for the resend flow) from ?email= if the caller didn't pass it.
+      const urlEmail = urlParams.get("email");
+      if (urlEmail && !email) setEmail(urlEmail);
+
       if (urlToken) {
         setToken(urlToken);
         verifyEmail(urlToken);
@@ -49,6 +57,7 @@ export default function VerifyEmailContent({
     } else {
       verifyEmail(propToken);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propToken, propMode]);
 
   // Countdown timer for resend
@@ -60,6 +69,8 @@ export default function VerifyEmailContent({
   }, [resendCountdown]);
 
   const verifyEmail = async (verifyToken: string) => {
+    if (verifyStartedRef.current) return; // StrictMode / double-click guard — verify only once
+    verifyStartedRef.current = true;
     setVerifying(true);
     setStatusType("loading");
     setShowStatus(true);
@@ -97,7 +108,15 @@ export default function VerifyEmailContent({
   };
 
   const handleResend = async () => {
-    if (resendCountdown > 0 || !emailInput && !email) return;
+    const target = (emailInput || email).trim();
+    if (resendCountdown > 0) return;
+    if (!target) {
+      // No email known yet — prompt the user to enter it (the input is shown below).
+      setStatusType("error");
+      setShowStatus(true);
+      setStatusMessage("Please enter your email address to resend the verification link.");
+      return;
+    }
 
     setStatusType("loading");
     setShowStatus(true);
@@ -106,12 +125,14 @@ export default function VerifyEmailContent({
     try {
       const { resendVerification } = await import("@resomix/api-client");
 
-      const result = await resendVerification(emailInput || email);
+      const result = await resendVerification(target);
 
       if (result.success) {
         setStatusType("success");
         setStatusMessage("Verification email sent! Please check your inbox.");
-        setResendCountdown(60); // 60 second cooldown
+        // Escalating cooldown: first resend after 60s, then every 5 minutes.
+        setResendCountdown(resendCount === 0 ? 60 : 300);
+        setResendCount((c) => c + 1);
       } else {
         const errorResult = result as { success: false; error: string };
         setStatusType("error");
@@ -123,6 +144,15 @@ export default function VerifyEmailContent({
       setStatusMessage("Network error. Please try again.");
     }
   };
+
+  const resendLabel =
+    resendCountdown > 0
+      ? `Resend in ${
+          resendCountdown >= 60
+            ? `${Math.floor(resendCountdown / 60)}:${String(resendCountdown % 60).padStart(2, "0")}`
+            : `${resendCountdown}s`
+        }`
+      : "Resend Verification Email";
 
   // Success state
   if (mode === "success") {
@@ -266,16 +296,24 @@ export default function VerifyEmailContent({
               If you don't see the email, check your spam folder.
             </p>
 
-            <div className="border-t border-slate-200 border-dotted pt-[var(--px-20)] w-full">
-              <p className="text-[length:var(--px-11)] font-extralight font-helvetica mb-[var(--px-10)]">
+            <div className="border-t border-slate-200 border-dotted pt-[var(--px-20)] w-full flex flex-col items-center gap-[var(--px-10)]">
+              <p className="text-[length:var(--px-11)] font-extralight font-helvetica">
                 Didn't receive the email?
               </p>
+              {!email && (
+                <div className="w-full max-w-[var(--px-320)]">
+                  <FormInput
+                    label="Email Address"
+                    name="resend-email"
+                    type="email"
+                    value={emailInput}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setEmailInput(e.target.value)}
+                    placeholder="your@email.com"
+                  />
+                </div>
+              )}
               <ButtonSleek
-                text={
-                  resendCountdown > 0
-                    ? `Resend in ${resendCountdown}s`
-                    : "Resend Verification Email"
-                }
+                text={resendLabel}
                 onClick={handleResend}
               />
             </div>

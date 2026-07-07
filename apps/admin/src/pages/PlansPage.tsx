@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   App,
   Button,
@@ -7,6 +7,8 @@ import {
   Empty,
   Input,
   InputNumber,
+  Select,
+  Space,
   Spin,
   Switch,
   Table,
@@ -15,7 +17,7 @@ import {
   Typography,
 } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { RotateCw, Search, Layers, Info } from 'lucide-react'
+import { RotateCw, Search, Layers, Info, Save, Undo2 } from 'lucide-react'
 import { usePlans } from '@/hooks/usePlans.ts'
 import {
   setPlanEntitlement,
@@ -29,93 +31,91 @@ import {
 
 const { Title, Text } = Typography
 
-// ── One editable entitlement value, typed to the feature ───────────────────
+// Allowed values for enum/csv features (backend-validated). Keeps admins from typos that would be
+// rejected server-side. If a feature's set grows, add it here.
+const ENUM_OPTIONS: Record<string, string[]> = {
+  export_scope: ['none', 'first_n', 'full'],
+  default_playlist_visibility: ['public', 'private'],
+}
+const CSV_OPTIONS: Record<string, string[]> = {
+  export_targets: ['spotify', 'apple', 'tidal', 'serato', 'rekordbox'],
+}
+
+// ── One editable entitlement value (controlled by the parent's pending-edits state) ──────────
 function EntitlementCell({
-  plan,
   feature,
-  onSaved,
+  value,
+  dirty,
+  disabled,
+  onChange,
 }: {
-  plan: AdminPlan
   feature: AdminFeature
-  onSaved: (value: PlanEntitlementValue) => void
+  value: PlanEntitlementValue
+  dirty: boolean
+  disabled: boolean
+  onChange: (value: PlanEntitlementValue) => void
 }) {
-  const { message } = App.useApp()
-  const current = plan.entitlements?.[feature.key] ?? feature.default_value
-  const [draft, setDraft] = useState<PlanEntitlementValue>(current)
-  const [saving, setSaving] = useState(false)
-
-  // Keep the draft in sync if the underlying plan changes (e.g. after a refresh).
-  const currentKey = String(current)
-  const [seen, setSeen] = useState(currentKey)
-  if (seen !== currentKey) {
-    setSeen(currentKey)
-    setDraft(current)
-  }
-
-  const save = async (next: PlanEntitlementValue) => {
-    if (String(next) === String(current)) return
-    setSaving(true)
-    const res = await setPlanEntitlement(plan.code, feature.key, next)
-    setSaving(false)
-    if (res.success) {
-      const saved = res.data?.value ?? next
-      message.success(`${plan.name} · ${feature.name} updated`)
-      onSaved(saved)
-    } else {
-      message.error(res.error || 'Could not save value')
-      setDraft(current) // revert
-    }
-  }
+  const ring = dirty ? { boxShadow: '0 0 0 2px var(--ant-color-warning)' } : undefined
 
   if (feature.value_type === 'bool') {
-    return (
-      <Switch
-        checked={Boolean(draft)}
-        loading={saving}
-        onChange={(checked) => {
-          setDraft(checked)
-          void save(checked)
-        }}
-      />
-    )
+    return <Switch checked={Boolean(value)} disabled={disabled} onChange={onChange} style={ring} />
   }
 
   if (feature.value_type === 'int') {
     return (
       <InputNumber
-        value={draft as number}
+        value={value as number}
         min={0}
         step={1}
-        disabled={saving}
-        style={{ width: 96 }}
-        onChange={(v) => setDraft(v ?? 0)}
-        onBlur={() => void save(draft)}
-        onPressEnter={() => void save(draft)}
+        disabled={disabled}
+        style={{ width: 96, ...ring }}
+        onChange={(v) => onChange(v ?? 0)}
       />
     )
   }
 
-  // enum / csv / string
+  if (feature.value_type === 'enum') {
+    const opts = ENUM_OPTIONS[feature.key] ?? []
+    return (
+      <Select
+        value={String(value ?? '')}
+        disabled={disabled}
+        style={{ width: 130, ...ring }}
+        onChange={(v) => onChange(v)}
+        options={opts.map((o) => ({ value: o, label: o }))}
+      />
+    )
+  }
+
+  if (feature.value_type === 'csv') {
+    const opts = CSV_OPTIONS[feature.key] ?? []
+    const arr = String(value ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+    return (
+      <Select
+        mode="multiple"
+        value={arr}
+        disabled={disabled}
+        placeholder="none"
+        style={{ minWidth: 170, ...ring }}
+        onChange={(vals: string[]) => onChange(vals.join(','))}
+        options={opts.map((o) => ({ value: o, label: o }))}
+      />
+    )
+  }
+
+  // fallback: free text
   return (
     <Input
-      value={String(draft ?? '')}
-      disabled={saving}
-      style={{ width: 140 }}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => void save(draft)}
-      onPressEnter={() => void save(draft)}
+      value={String(value ?? '')}
+      disabled={disabled}
+      style={{ width: 140, ...ring }}
+      onChange={(e) => onChange(e.target.value)}
     />
   )
 }
 
-// ── Column header for one plan: name + active/default toggles ──────────────
-function PlanHeader({
-  plan,
-  onChanged,
-}: {
-  plan: AdminPlan
-  onChanged: () => void | Promise<void>
-}) {
+// ── Column header for one plan: name + active/default controls ───────────────────────────────
+function PlanHeader({ plan, onChanged }: { plan: AdminPlan; onChanged: () => void | Promise<void> }) {
   const { message } = App.useApp()
   const [busy, setBusy] = useState(false)
 
@@ -136,7 +136,7 @@ function PlanHeader({
       <div className="flex items-center gap-2">
         <span className="font-semibold">{plan.name}</span>
         {plan.is_default && (
-          <Tooltip title="Default plan for new / unassigned users">
+          <Tooltip title="Default plan assigned to new registrations">
             <Tag color="gold" className="!m-0">default</Tag>
           </Tooltip>
         )}
@@ -145,19 +145,13 @@ function PlanHeader({
       <div className="flex items-center gap-3 flex-wrap">
         <Tooltip title={plan.is_active ? 'Active — visible/usable' : 'Inactive draft'}>
           <span className="flex items-center gap-1.5 text-xs">
-            <Switch
-              size="small"
-              checked={plan.is_active}
-              loading={busy}
-              onChange={(c) => void patch({ is_active: c })}
-            />
+            <Switch size="small" checked={plan.is_active} loading={busy} onChange={(c) => void patch({ is_active: c })} />
             active
           </span>
         </Tooltip>
         {!plan.is_default && plan.is_assignable && (
           <Tooltip title="Make this the default plan assigned to new registrations">
-            <Button size="small" type="link" className="!px-0 !text-xs" loading={busy}
-              onClick={() => void patch({ is_default: true })}>
+            <Button size="small" type="link" className="!px-0 !text-xs" loading={busy} onClick={() => void patch({ is_default: true })}>
               set default
             </Button>
           </Tooltip>
@@ -167,43 +161,35 @@ function PlanHeader({
   )
 }
 
-// ── User effective-plan lookup ─────────────────────────────────────────────
+// ── User effective-plan lookup (by UUID, email, or username) ─────────────────────────────────
 function UserLookup() {
   const { message } = App.useApp()
-  const [uuid, setUuid] = useState('')
+  const [ident, setIdent] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<AdminUserEffectivePlan | null>(null)
 
   const lookup = async () => {
-    const id = uuid.trim()
+    const id = ident.trim()
     if (!id) return
     setLoading(true)
     setResult(null)
     const res = await getUserEffectivePlan(id)
     setLoading(false)
-    if (res.success && res.data) {
-      setResult(res.data)
-    } else {
-      message.error(res.error || 'User not found')
-    }
+    if (res.success && res.data) setResult(res.data)
+    else message.error(res.error || 'User not found')
   }
 
   return (
-    <Card
-      className="!border-default"
-      title={<span className="flex items-center gap-2"><Search size={16} /> Inspect a user's plan</span>}
-    >
+    <Card className="!border-default" title={<span className="flex items-center gap-2"><Search size={16} /> Inspect a user's plan</span>}>
       <div className="flex gap-2 mb-4 max-w-xl">
         <Input
-          placeholder="User UUID"
-          value={uuid}
-          onChange={(e) => setUuid(e.target.value)}
+          placeholder="User UUID, email, or username"
+          value={ident}
+          onChange={(e) => setIdent(e.target.value)}
           onPressEnter={() => void lookup()}
           allowClear
         />
-        <Button type="primary" icon={<Search size={16} />} loading={loading} onClick={() => void lookup()}>
-          Look up
-        </Button>
+        <Button type="primary" icon={<Search size={16} />} loading={loading} onClick={() => void lookup()}>Look up</Button>
       </div>
 
       {loading && <div className="py-6 flex justify-center"><Spin /></div>}
@@ -215,30 +201,23 @@ function UserLookup() {
               <Tag color="blue">{result.plan?.name || result.plan?.code}</Tag>
               <Text type="secondary" className="font-mono !text-xs">{result.plan?.code}</Text>
             </Descriptions.Item>
-            <Descriptions.Item label="User">
-              <Text className="font-mono !text-xs">{result.user_uuid}</Text>
-            </Descriptions.Item>
+            <Descriptions.Item label="User"><Text className="font-mono !text-xs">{result.user_uuid}</Text></Descriptions.Item>
           </Descriptions>
-
           <div>
             <Text strong className="block mb-2">Effective entitlements</Text>
             <div className="flex flex-wrap gap-2">
               {Object.entries(result.entitlements || {}).map(([k, v]) => (
-                <Tag key={k} className="!m-0">
-                  {k}: <strong>{String(v)}</strong>
-                </Tag>
+                <Tag key={k} className="!m-0">{k}: <strong>{String(v)}</strong></Tag>
               ))}
             </div>
           </div>
-
           {result.overrides && result.overrides.length > 0 && (
             <div>
               <Text strong className="block mb-2">Per-user overrides</Text>
               <div className="flex flex-wrap gap-2">
                 {result.overrides.map((o) => (
                   <Tag key={o.feature} color="purple" className="!m-0">
-                    {o.feature}: <strong>{String(o.value)}</strong>
-                    {o.reason ? ` (${o.reason})` : ''}
+                    {o.feature}: <strong>{String(o.value)}</strong>{o.reason ? ` (${o.reason})` : ''}
                   </Tag>
                 ))}
               </div>
@@ -250,14 +229,59 @@ function UserLookup() {
   )
 }
 
-// ── Page ────────────────────────────────────────────────────────────────────
+// ── Page ─────────────────────────────────────────────────────────────────────────────────────
 interface FeatureRow {
   key: string
   feature: AdminFeature
 }
+type Edits = Record<string, Record<string, PlanEntitlementValue>>
 
 export default function PlansPage() {
-  const { plans, features, loading, error, refresh, patchPlan } = usePlans()
+  const { plans, features, loading, error, refresh } = usePlans()
+  const { message } = App.useApp()
+  const [edits, setEdits] = useState<Edits>({})
+  const [saving, setSaving] = useState(false)
+
+  const dirtyCount = useMemo(
+    () => Object.values(edits).reduce((n, m) => n + Object.keys(m).length, 0),
+    [edits],
+  )
+
+  const savedValue = (plan: AdminPlan, key: string): PlanEntitlementValue =>
+    plan.entitlements?.[key] ?? (features.find((f) => f.key === key)?.default_value ?? '')
+
+  const effectiveValue = (plan: AdminPlan, key: string): PlanEntitlementValue =>
+    edits[plan.code]?.[key] ?? savedValue(plan, key)
+
+  // Record a pending edit; if it matches the saved value again, drop it (so it's no longer "dirty").
+  const setCell = (plan: AdminPlan, feature: AdminFeature, value: PlanEntitlementValue) => {
+    const saved = savedValue(plan, feature.key)
+    setEdits((prev) => {
+      const planEdits = { ...(prev[plan.code] || {}) }
+      if (String(value) === String(saved)) delete planEdits[feature.key]
+      else planEdits[feature.key] = value
+      const next = { ...prev, [plan.code]: planEdits }
+      if (Object.keys(planEdits).length === 0) delete next[plan.code]
+      return next
+    })
+  }
+
+  const revert = () => setEdits({})
+
+  const save = async () => {
+    setSaving(true)
+    const ops: { plan: string; feature: string; value: PlanEntitlementValue }[] = []
+    for (const [planCode, m] of Object.entries(edits))
+      for (const [featureKey, value] of Object.entries(m)) ops.push({ plan: planCode, feature: featureKey, value })
+
+    const results = await Promise.all(ops.map((o) => setPlanEntitlement(o.plan, o.feature, o.value)))
+    setSaving(false)
+    const failed = results.filter((r) => !r.success).length
+    if (failed) message.error(`${failed} of ${ops.length} change(s) failed to save`)
+    else message.success(`Saved ${ops.length} change(s)`)
+    setEdits({})
+    await refresh()
+  }
 
   const columns: TableColumnsType<FeatureRow> = [
     {
@@ -273,9 +297,7 @@ export default function PlansPage() {
             <Tag className="!m-0 !text-[11px]" color="default">{feature.value_type}</Tag>
             {feature.window && <Tag className="!m-0 !text-[11px]" color="geekblue">{feature.window}</Tag>}
           </div>
-          {feature.description && (
-            <Text type="secondary" className="!text-xs mt-0.5">{feature.description}</Text>
-          )}
+          {feature.description && <Text type="secondary" className="!text-xs mt-0.5">{feature.description}</Text>}
         </div>
       ),
     },
@@ -283,15 +305,18 @@ export default function PlansPage() {
       title: <PlanHeader plan={plan} onChanged={refresh} />,
       key: plan.code,
       align: 'center' as const,
-      render: (_: unknown, { feature }: FeatureRow) => (
-        <EntitlementCell
-          plan={plan}
-          feature={feature}
-          onSaved={(value) =>
-            patchPlan({ ...plan, entitlements: { ...plan.entitlements, [feature.key]: value } })
-          }
-        />
-      ),
+      render: (_: unknown, { feature }: FeatureRow) => {
+        const dirty = edits[plan.code]?.[feature.key] !== undefined
+        return (
+          <EntitlementCell
+            feature={feature}
+            value={effectiveValue(plan, feature.key)}
+            dirty={dirty}
+            disabled={saving}
+            onChange={(value) => setCell(plan, feature, value)}
+          />
+        )
+      },
     })),
   ]
 
@@ -304,28 +329,32 @@ export default function PlansPage() {
           <Title level={2} className="!mb-1 !text-primary flex items-center gap-3">
             <Layers size={26} /> Plans &amp; Entitlements
           </Title>
-          <Text type="secondary">
-            Edit the limits each membership tier gets. Changes take effect immediately.
-          </Text>
+          <Text type="secondary">Edit the limits each membership tier gets, then Save. Nothing is sent until you click Save.</Text>
         </div>
-        <Button icon={<RotateCw size={16} />} onClick={() => void refresh()} loading={loading}>
-          Refresh
-        </Button>
+        <Space>
+          <Button icon={<RotateCw size={16} />} onClick={() => void refresh()} loading={loading} disabled={dirtyCount > 0}>
+            Refresh
+          </Button>
+          <Button icon={<Undo2 size={16} />} onClick={revert} disabled={dirtyCount === 0 || saving}>
+            Revert
+          </Button>
+          <Button type="primary" icon={<Save size={16} />} onClick={() => void save()} loading={saving} disabled={dirtyCount === 0}>
+            Save{dirtyCount ? ` (${dirtyCount})` : ''}
+          </Button>
+        </Space>
       </div>
 
       <div className="flex items-center gap-2 mb-4 text-xs text-gray-500">
         <Info size={14} />
         <span>
-          Toggle booleans instantly; for numbers/text, edit and press Enter or click away to save.
-          Guest / Free are usually the free tiers; Basic / Pro are paid.
+          Edits are highlighted and staged locally — click <strong>Save</strong> to push all of them, or{' '}
+          <strong>Revert</strong> to discard. Refresh is disabled while you have unsaved changes.
         </span>
       </div>
 
       {error && !loading ? (
         <Card className="!border-default">
-          <Empty description={error}>
-            <Button type="primary" onClick={() => void refresh()}>Try again</Button>
-          </Empty>
+          <Empty description={error}><Button type="primary" onClick={() => void refresh()}>Try again</Button></Empty>
         </Card>
       ) : (
         <div className="bg-surface rounded-xl shadow-md border border-default overflow-hidden mb-6">

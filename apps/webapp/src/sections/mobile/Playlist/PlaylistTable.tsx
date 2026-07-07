@@ -158,7 +158,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         </div>
                                         <div className="flex flex-col w-[var(--px-290)] gap-[var(--px-2)]" role="cell">
                                             <div className="w-full">
-                                                <div className="text-[length:var(--px-13)] lg:text-[length:var(--px-11)] font-helvetica font-light tracking-[var(--px-0-1)] leading-[var(--px-14)] uppercase text-left truncate max-w-[var(--px-250)]">
+                                                <div className="select-none text-[length:var(--px-13)] lg:text-[length:var(--px-11)] font-helvetica font-light tracking-[var(--px-0-1)] leading-[var(--px-14)] uppercase text-left truncate max-w-[var(--px-250)]">
                                                     {currentTrackId === track.id && isPlaying ? (
                                                         <HoverFlow
                                                             text={track.title}
@@ -175,7 +175,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                 </div>
                                             </div>
                                             <div className="w-full" role="cell">
-                                                <div className="text-[length:var(--px-8)] font-helvetica font-light tracking-[var(--px-0-1)] text-left leading-[var(--px-9)] truncate max-w-[var(--px-250)]">
+                                                <div className="select-none text-[length:var(--px-8)] font-helvetica font-light tracking-[var(--px-0-1)] text-left leading-[var(--px-9)] truncate max-w-[var(--px-250)]">
                                                     {track.artist}
                                                 </div>
                                             </div>

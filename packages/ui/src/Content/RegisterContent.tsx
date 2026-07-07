@@ -16,7 +16,7 @@ import { PasswordInput } from "../Elements/PasswordInput";
 
 interface RegisterContentProps {
   baseUrl?: string;
-  onRegisterSuccess?: () => void;
+  onRegisterSuccess?: (email?: string) => void;
   onNavigateLogin?: () => void;
 }
 
@@ -138,6 +138,7 @@ export default function RegisterContent({
     try {
       // Import dynamically to avoid circular dependencies
       const { register } = await import("@resomix/api-client");
+      const registeredEmail = form.email;
       const result = await register({
         email: form.email,
         username: form.username,
@@ -161,9 +162,9 @@ export default function RegisterContent({
         setTermsAccepted(false);
         setPrivacyAccepted(false);
 
-        // Call success callback after delay
+        // Call success callback after delay (pass the email so the verify page can pre-fill resend)
         setTimeout(() => {
-          onRegisterSuccess?.();
+          onRegisterSuccess?.(registeredEmail);
         }, 2000);
       } else {
         const errorResult = result as { success: false; error: string };
