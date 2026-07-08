@@ -472,8 +472,8 @@ export function MoodMap({ valence, arousal }: { valence: number; arousal: number
         <line x1={pad} y1={S / 2} x2={S - pad} y2={S / 2} stroke="currentColor" strokeOpacity={0.12} />
         {axisText(S / 2, pad - 12, "energetic")}
         {axisText(S / 2, S - pad + 12, "calm")}
-        {axisText(pad - 14, S / 2, "neg")}
-        {axisText(S - pad + 14, S / 2, "pos")}
+        {axisText(pad - 14, S / 2, "-ve")}
+        {axisText(S - pad + 14, S / 2, "+ve")}
         <circle cx={cx} cy={cy} r={hover ? 14 : 11} fill={ACCENT} fillOpacity={0.25} style={{ transition: "r 0.15s" }} />
         <circle cx={cx} cy={cy} r={hover ? 6 : 5} fill={ACCENT} style={{ transition: "r 0.15s" }} />
       </svg>

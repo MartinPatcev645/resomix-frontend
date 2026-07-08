@@ -9,8 +9,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
-import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
-import { CamelotWheel, Donut, Heatmap, MoodRadar, RibbonChart, sectionAt, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
+import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
+import { CamelotWheel, Donut, Heatmap, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
 
 const shortGenre = (l: string) => l.split("---").pop() ?? l;
 const fmtDuration = (ms: number) => {
@@ -165,7 +165,7 @@ export default function AnalysisPage() {
               <input
                 ref={inputRef}
                 type="file"
-                accept="audio/*,.mp3,.wav,.flac,.aiff,.aif"
+                accept="audio/*,.mp3,.wav,.flac,.aiff,.aif,.mpeg,.mpg,.m4a,.ogg"
                 className="hidden"
                 onChange={(e) => pick(e.target.files?.[0])}
               />
@@ -364,10 +364,15 @@ export default function AnalysisPage() {
 
             {/* =============== PART 1 — local DSP (shown immediately) =============== */}
             {/* spectrum */}
-            <Panel title="Mel-spectrogram" subtitle="frequency content over time (low → high) · click / play to seek">
-              <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={seek} tooltip={() => null}>
-                <Heatmap matrix={data.spectral.melSpectrogram} height={170} />
-              </TimeAxis>
+            <Panel title="Mel-spectrogram" subtitle="frequency (Hz, mel-scaled) over time · brightness = power (dB rel. peak) · click / play to seek">
+              <SpectrogramView
+                matrix={data.spectral.melSpectrogram}
+                sampleRateHz={data.identity.sampleRateHz}
+                durationMs={durationMs}
+                currentMs={currentMs}
+                onSeek={seek}
+                height={190}
+              />
             </Panel>
 
             {/* harmony */}

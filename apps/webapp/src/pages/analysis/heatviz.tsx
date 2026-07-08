@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Matrix, StemMetrics, TimelineTrack } from "./data.js";
-import { ACCENT, TimeAxis, TipRows, ToggleLegend, valueAt } from "./charts.js";
+import { ACCENT, fmtClock, TimeAxis, TipRows, ToggleLegend, valueAt } from "./charts.js";
 
 export const STEM_COLORS: Record<string, string> = {
   drums: "#EE4A26",
@@ -82,6 +82,147 @@ export function Heatmap({ matrix, height = 150 }: { matrix: Matrix; height?: num
       className="w-full rounded-[var(--px-8)]"
       style={{ height, imageRendering: "pixelated" }}
     />
+  );
+}
+
+/* ------------------------------------------------- SpectrogramView (labeled) */
+// The mel-spectrogram is dB power over 40 mel bands (0 → Nyquist). We keep the
+// heatmap edge-to-edge (so the shared playhead/seek stays aligned with the other
+// full-track charts) and overlay a mel-scaled Hz axis, a time axis, and a
+// power colorbar — the librosa `specshow` look, without breaking alignment.
+const DB_RANGE = 80; // display window in dB below the peak (librosa top_db)
+const HZ_TICKS = [0, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+const fmtHz = (f: number) => (f === 0 ? "0" : f >= 1000 ? `${f / 1000}k` : `${f}`);
+const hzToMel = (f: number) => 2595 * Math.log10(1 + f / 700);
+
+function niceTimeTicks(durationMs: number): number[] {
+  if (durationMs <= 0) return [];
+  const secs = durationMs / 1000;
+  const step = [5, 10, 15, 30, 60, 120, 300, 600].find((s) => secs / s <= 8) ?? 600;
+  const out: number[] = [];
+  for (let t = 0; t <= secs + 1e-6; t += step) out.push(t * 1000);
+  return out;
+}
+
+export function SpectrogramView({
+  matrix,
+  sampleRateHz,
+  durationMs,
+  currentMs,
+  onSeek,
+  height = 190,
+}: {
+  matrix: Matrix;
+  sampleRateHz: number;
+  durationMs: number;
+  currentMs?: number | null;
+  onSeek?: (ms: number) => void;
+  height?: number;
+}) {
+  const ref = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    const rows = matrix.data.length;
+    const cols = rows ? matrix.data[0].length : 0;
+    if (!rows || !cols) return;
+
+    // Display dB relative to the peak, clamped to an 80 dB window (librosa's
+    // `top_db=80`) — standard dynamic range, better contrast than min→max.
+    let max = -Infinity;
+    for (const row of matrix.data) for (const v of row) if (v > max) max = v;
+    const floor = max - DB_RANGE;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    canvas.width = cols;
+    canvas.height = rows;
+    const img = ctx.createImageData(cols, rows);
+    for (let r = 0; r < rows; r++) {
+      const yr = rows - 1 - r; // low band at the bottom
+      for (let c = 0; c < cols; c++) {
+        const [rr, gg, bb] = colormap((matrix.data[r][c] - floor) / DB_RANGE);
+        const o = (yr * cols + c) * 4;
+        img.data[o] = rr;
+        img.data[o + 1] = gg;
+        img.data[o + 2] = bb;
+        img.data[o + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }, [matrix]);
+
+  const rows = matrix.data.length;
+  const cols = rows ? matrix.data[0].length : 0;
+  if (!rows || !cols) {
+    return <div className="grid h-[var(--px-80)] place-items-center text-[length:var(--px-11)] opacity-40">no spectrogram</div>;
+  }
+
+  const fmax = sampleRateHz > 0 ? sampleRateHz / 2 : 22050;
+  const melMax = hzToMel(fmax) || 1;
+  const yFrac = (f: number) => 1 - hzToMel(f) / melMax; // 0 = top, 1 = bottom
+  const hzTicks = HZ_TICKS.filter((f) => f < fmax);
+  const timeTicks = niceTimeTicks(durationMs);
+  const gradient = `linear-gradient(to right, ${STOPS.map(
+    ([p, c]) => `rgb(${c[0]},${c[1]},${c[2]}) ${Math.round(p * 100)}%`,
+  ).join(", ")})`;
+
+  return (
+    <div>
+      <TimeAxis durationMs={durationMs} currentMs={currentMs ?? null} onSeek={onSeek} tooltip={() => null}>
+        <div className="relative overflow-hidden rounded-[var(--px-8)]">
+          <canvas ref={ref} className="block w-full" style={{ height, imageRendering: "pixelated" }} />
+          {hzTicks.map((f) => (
+            <div
+              key={f}
+              className="pointer-events-none absolute left-0 flex items-center gap-[var(--px-3)]"
+              style={{ top: `${yFrac(f) * 100}%`, transform: "translateY(-50%)" }}
+            >
+              <span className="h-px w-[var(--px-6)] bg-white/40" />
+              <span
+                className="font-helvetica text-[length:var(--px-9)] tabular-nums text-white/75"
+                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.95)" }}
+              >
+                {fmtHz(f)}
+              </span>
+            </div>
+          ))}
+          <span
+            className="pointer-events-none absolute right-[var(--px-6)] top-[var(--px-4)] font-helvetica text-[length:var(--px-9)] uppercase tracking-wide text-white/55"
+            style={{ textShadow: "0 1px 3px rgba(0,0,0,0.95)" }}
+          >
+            Hz
+          </span>
+        </div>
+      </TimeAxis>
+
+      {timeTicks.length > 1 && (
+        <div className="relative mt-[var(--px-4)] h-[var(--px-12)]">
+          {timeTicks.map((t) => {
+            const frac = durationMs > 0 ? t / durationMs : 0;
+            if (frac > 1.0001) return null;
+            const tx = frac < 0.03 ? "translateX(0)" : frac > 0.97 ? "translateX(-100%)" : "translateX(-50%)";
+            return (
+              <span
+                key={t}
+                className="absolute font-helvetica text-[length:var(--px-9)] tabular-nums opacity-45"
+                style={{ left: `${Math.min(100, frac * 100)}%`, transform: tx }}
+              >
+                {fmtClock(t)}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="mt-[var(--px-6)] flex items-center gap-[var(--px-8)]">
+        <span className="shrink-0 font-helvetica text-[length:var(--px-9)] uppercase tracking-wide opacity-45">Power</span>
+        <span className="shrink-0 font-helvetica text-[length:var(--px-9)] tabular-nums opacity-45">−{DB_RANGE} dB</span>
+        <div className="h-[var(--px-8)] flex-1 rounded-full" style={{ background: gradient }} />
+        <span className="shrink-0 font-helvetica text-[length:var(--px-9)] tabular-nums opacity-45">0 dB</span>
+      </div>
+    </div>
   );
 }
 
