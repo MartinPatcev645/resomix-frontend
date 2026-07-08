@@ -4,9 +4,9 @@
  * Dependency-free; canvas for the dense heatmaps, SVG for the rest.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Matrix, StemMetrics, TimelineTrack } from "./data.js";
-import { ACCENT } from "./charts.js";
+import { ACCENT, TimeAxis, TipRows, ToggleLegend, valueAt } from "./charts.js";
 
 export const STEM_COLORS: Record<string, string> = {
   drums: "#EE4A26",
@@ -121,6 +121,14 @@ export function MoodRadar({ dims }: { dims: Record<string, number> }) {
       })}
       <polygon points={poly} fill={ACCENT} fillOpacity={0.28} stroke={ACCENT} strokeWidth={1.5} />
       {axes.map((k, i) => {
+        const [x, y] = pt(i, R * Math.max(0.02, dims[k]));
+        return (
+          <circle key={`d${k}`} cx={x} cy={y} r={3.5} fill={ACCENT} className="cursor-default">
+            <title>{`${k}: ${(dims[k] * 100).toFixed(0)}%`}</title>
+          </circle>
+        );
+      })}
+      {axes.map((k, i) => {
         const [x, y] = pt(i, R + 12);
         return (
           <text
@@ -190,7 +198,10 @@ export function CamelotWheel({ camelot }: { camelot: string }) {
               fill={active ? ACCENT : neigh ? "rgba(238,74,38,0.28)" : "var(--opacity-10)"}
               stroke="currentColor"
               strokeOpacity={0.15}
-            />
+              className="cursor-default"
+            >
+              <title>{`${i + 1}B · ${WHEEL[i].major} major`}</title>
+            </path>
             <text {...xy(labelPos(i, 81))} textAnchor="middle" dominantBaseline="middle" className="fill-current font-helvetica" fontSize="7.5" opacity={active ? 1 : 0.75}>
               {i + 1}B
             </text>
@@ -207,7 +218,10 @@ export function CamelotWheel({ camelot }: { camelot: string }) {
               fill={active ? ACCENT : neigh ? "rgba(238,74,38,0.28)" : "var(--opacity-10)"}
               stroke="currentColor"
               strokeOpacity={0.15}
-            />
+              className="cursor-default"
+            >
+              <title>{`${i + 1}A · ${WHEEL[i].minor}`}</title>
+            </path>
             <text {...xy(labelPos(i, 46))} textAnchor="middle" dominantBaseline="middle" className="fill-current font-helvetica" fontSize="7" opacity={active ? 1 : 0.6}>
               {i + 1}A
             </text>
@@ -233,8 +247,6 @@ export function WaveTimeline({
   bassEntryMs = null,
   voiceRegions = [],
   durationMs,
-  cursorMs = null,
-  onSeek,
   height = 120,
 }: {
   energy: number[];
@@ -244,8 +256,6 @@ export function WaveTimeline({
   bassEntryMs?: number | null;
   voiceRegions?: { startMs: number; endMs: number; meanScore: number }[];
   durationMs: number;
-  cursorMs?: number | null;
-  onSeek?: (ms: number) => void;
   height?: number;
 }) {
   const W = 1000;
@@ -265,17 +275,7 @@ export function WaveTimeline({
   const xOf = (t: number) => (t / durS) * W;
 
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="none"
-      className={"w-full " + (onSeek ? "cursor-pointer" : "")}
-      style={{ height }}
-      onClick={(e) => {
-        if (!onSeek) return;
-        const r = e.currentTarget.getBoundingClientRect();
-        onSeek(((e.clientX - r.left) / r.width) * durationMs);
-      }}
-    >
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full" style={{ height }}>
       {/* bar grid (every 4th beat) */}
       {beatTimes.filter((_, i) => i % 4 === 0).map((t, i) => (
         <line key={`b${i}`} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="currentColor" strokeOpacity={0.06} vectorEffect="non-scaling-stroke" />
@@ -303,10 +303,6 @@ export function WaveTimeline({
           <text x={xOf(bassEntryMs / 1000) + 4} y={12} className="fill-current font-helvetica" fontSize="9" fill="#7fb0ff">bass</text>
         </>
       )}
-      {/* playhead cursor */}
-      {cursorMs != null && (
-        <line x1={xOf(cursorMs / 1000)} x2={xOf(cursorMs / 1000)} y1={0} y2={H} stroke="currentColor" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
-      )}
     </svg>
   );
 }
@@ -331,36 +327,28 @@ const fmtTime = (ms: number) => {
 export function StructureTimeline({
   segments,
   durationMs,
-  cursorMs = null,
-  onSeek,
+  currentMs = null,
 }: {
   segments: Segment[];
   durationMs: number;
-  cursorMs?: number | null;
-  onSeek?: (ms: number) => void;
+  currentMs?: number | null;
 }) {
   return (
     <div>
-      <div className="flex h-[var(--px-44)] w-full overflow-hidden rounded-[var(--px-8)]">
+      <div className="pointer-events-none flex h-[var(--px-44)] w-full overflow-hidden rounded-[var(--px-8)]">
         {segments.map((s, i) => {
           const w = ((s.endMs - s.startMs) / durationMs) * 100;
-          const active = cursorMs != null && cursorMs >= s.startMs && cursorMs < s.endMs;
+          const active = currentMs != null && currentMs >= s.startMs && currentMs < s.endMs;
           return (
-            <button
+            <div
               key={i}
-              type="button"
-              onClick={() => onSeek?.(s.startMs)}
-              title={`${s.label} · ${fmtTime(s.startMs)}–${fmtTime(s.endMs)} · ${(s.confidence * 100).toFixed(0)}% conf`}
-              className={
-                "relative flex items-center justify-center border-r border-black/30 transition-opacity " +
-                (active ? "opacity-100 ring-1 ring-white/70" : "opacity-90 hover:opacity-100")
-              }
+              className={"relative flex items-center justify-center border-r border-black/30 " + (active ? "brightness-[1.35]" : "")}
               style={{ width: `${w}%`, background: SECTION_COLOR[s.label] ?? SECTION_COLOR.section }}
             >
               <span className="truncate px-[var(--px-4)] font-helvetica text-[length:var(--px-9)] uppercase tracking-[var(--px-1)]">
                 {w > 6 ? s.label : ""}
               </span>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -374,18 +362,39 @@ export function StructureTimeline({
   );
 }
 
+/** Section label at a 0..1 fraction of the track (for the structure tooltip). */
+export function sectionAt(segments: Segment[], durationMs: number, frac: number): string | null {
+  const ms = frac * durationMs;
+  const seg = segments.find((s) => ms >= s.startMs && ms < s.endMs);
+  return seg ? seg.label : null;
+}
+
 /* -------------------------------------------------------------- RibbonChart */
-export function RibbonChart({ track, rowHeight = 16 }: { track: TimelineTrack; rowHeight?: number }) {
+export function RibbonChart({
+  track,
+  rowHeight = 18,
+  labelTransform,
+}: {
+  track: TimelineTrack;
+  rowHeight?: number;
+  labelTransform?: (label: string) => string;
+}) {
   return (
     <div className="flex flex-col gap-[var(--px-4)]">
-      {track.series.map((s) => (
-        <div key={s.label} className="flex items-center gap-[var(--px-8)]">
-          <span className="w-[var(--px-90)] shrink-0 truncate font-helvetica text-[length:var(--px-10)] lowercase opacity-70">
-            {s.label}
-          </span>
-          <RibbonRow values={s.values} height={rowHeight} />
-        </div>
-      ))}
+      {track.series.map((s) => {
+        const label = labelTransform ? labelTransform(s.label) : s.label;
+        return (
+          <div key={s.label} className="relative">
+            <RibbonRow values={s.values} height={rowHeight} />
+            <span
+              title={label}
+              className="pointer-events-none absolute left-[var(--px-6)] top-1/2 max-w-[45%] -translate-y-1/2 truncate font-helvetica text-[length:var(--px-9)] lowercase text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.95)]"
+            >
+              {label}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -414,24 +423,43 @@ function RibbonRow({ values, height }: { values: number[]; height: number }) {
   return (
     <canvas
       ref={ref}
-      className="min-w-0 flex-1 rounded-[var(--px-4)] bg-[var(--opacity-15)]"
+      className="block w-full rounded-[var(--px-4)] bg-[var(--opacity-15)]"
       style={{ height, imageRendering: "pixelated" }}
     />
   );
 }
 
 /* ------------------------------------------------------------- StemArea */
-export function StemArea({ stems, height = 150 }: { stems: Record<string, StemMetrics>; height?: number }) {
-  const names = Object.keys(stems);
+export function StemArea({
+  stems,
+  hidden,
+  onToggle,
+  height = 150,
+  durationMs,
+  currentMs = null,
+  onSeek,
+}: {
+  stems: Record<string, StemMetrics>;
+  hidden?: Set<string>;
+  onToggle?: (name: string) => void;
+  height?: number;
+  durationMs?: number;
+  currentMs?: number | null;
+  onSeek?: (ms: number) => void;
+}) {
+  const allNames = Object.keys(stems);
+  const names = allNames.filter((n) => !hidden?.has(n)); // stacked in this order
   const W = 1000;
   const H = height;
-  const nPoints = names.length ? stems[names[0]].energyCurve.values.length : 0;
+  const nPoints = allNames.length ? stems[allNames[0]].energyCurve.values.length : 0;
   if (!nPoints) return null;
 
-  const colSum = Array.from({ length: nPoints }, (_, i) =>
-    names.reduce((s, name) => s + (stems[name].energyCurve.values[i] ?? 0), 0),
+  // Scale by the TOTAL stack (all stems) so hiding a stem removes its band
+  // without rescaling the others — the remaining heights stay truthful.
+  const totalCol = Array.from({ length: nPoints }, (_, i) =>
+    allNames.reduce((s, name) => s + (stems[name].energyCurve.values[i] ?? 0), 0),
   );
-  const maxSum = Math.max(...colSum, 0.0001);
+  const maxSum = Math.max(...totalCol, 0.0001);
 
   let cumulative = new Array(nPoints).fill(0);
   const polys = names.map((name) => {
@@ -446,31 +474,58 @@ export function StemArea({ stems, height = 150 }: { stems: Record<string, StemMe
     return { name, points: [...top, ...bot].join(" ") };
   });
 
+  const svg = (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block w-full rounded-[var(--px-8)]" style={{ height }}>
+      {polys.map((p) => (
+        <polygon key={p.name} points={p.points} fill={STEM_COLORS[p.name] ?? "#888"} fillOpacity={0.8} />
+      ))}
+    </svg>
+  );
+  const tip = (frac: number) => (
+    <TipRows
+      rows={names.map((name) => {
+        const v = valueAt(stems[name].energyCurve.values, frac);
+        return { label: name, value: v == null ? "–" : v.toFixed(2), color: STEM_COLORS[name] ?? "#888" };
+      })}
+    />
+  );
+
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full rounded-[var(--px-8)]" style={{ height }}>
-        {polys.map((p) => (
-          <polygon key={p.name} points={p.points} fill={STEM_COLORS[p.name] ?? "#888"} fillOpacity={0.78} />
-        ))}
-      </svg>
-      <div className="mt-[var(--px-8)] flex flex-wrap gap-[var(--px-12)]">
-        {names.map((name) => (
-          <span key={name} className="flex items-center gap-[var(--px-5)] font-helvetica text-[length:var(--px-10)] opacity-70">
-            <span className="inline-block h-[var(--px-8)] w-[var(--px-8)] rounded-full" style={{ background: STEM_COLORS[name] ?? "#888" }} />
-            {name} · {stems[name].presencePct.toFixed(0)}%
-          </span>
-        ))}
-      </div>
+      {durationMs ? (
+        <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={onSeek} tooltip={tip}>
+          {svg}
+        </TimeAxis>
+      ) : (
+        svg
+      )}
+      {onToggle ? (
+        <ToggleLegend
+          items={allNames.map((n) => ({ label: n, color: STEM_COLORS[n] ?? "#888", suffix: `${stems[n].presencePct.toFixed(0)}%` }))}
+          hidden={hidden ?? new Set()}
+          onToggle={onToggle}
+        />
+      ) : (
+        <div className="mt-[var(--px-8)] flex flex-wrap gap-[var(--px-12)]">
+          {allNames.map((name) => (
+            <span key={name} className="flex items-center gap-[var(--px-5)] font-helvetica text-[length:var(--px-10)] opacity-70">
+              <span className="inline-block h-[var(--px-8)] w-[var(--px-8)] rounded-full" style={{ background: STEM_COLORS[name] ?? "#888" }} />
+              {name} · {stems[name].presencePct.toFixed(0)}%
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 /* --------------------------------------------------------------- Donut */
-export function Donut({ stems }: { stems: Record<string, StemMetrics> }) {
+export function Donut({ stems, hidden }: { stems: Record<string, StemMetrics>; hidden?: Set<string> }) {
   const names = Object.keys(stems);
   const total = names.reduce((s, n) => s + stems[n].presencePct, 0) || 1;
   const R = 38;
   const C = 2 * Math.PI * R;
+  const [hovered, setHovered] = useState<string | null>(null);
   let acc = 0;
 
   return (
@@ -478,7 +533,13 @@ export function Donut({ stems }: { stems: Record<string, StemMetrics> }) {
       {names.map((name) => {
         const frac = stems[name].presencePct / total;
         const dash = frac * C;
-        const el = (
+        const off = -acc * C;
+        acc += frac;
+        const isHidden = hidden?.has(name);
+        const isHover = hovered === name;
+        // deselected -> faded; hover -> full opacity + a "zoom" via thicker ring.
+        const opacity = isHidden ? (isHover ? 0.85 : 0.22) : isHover ? 1 : 0.9;
+        return (
           <circle
             key={name}
             r={R}
@@ -486,18 +547,25 @@ export function Donut({ stems }: { stems: Record<string, StemMetrics> }) {
             cy={50}
             fill="none"
             stroke={STEM_COLORS[name] ?? "#888"}
-            strokeWidth={14}
+            strokeWidth={isHover ? 21 : 14}
+            strokeOpacity={opacity}
             strokeDasharray={`${dash} ${C - dash}`}
-            strokeDashoffset={-acc * C}
+            strokeDashoffset={off}
             transform="rotate(-90 50 50)"
+            onPointerEnter={() => setHovered(name)}
+            onPointerLeave={() => setHovered(null)}
+            style={{ transition: "stroke-width 0.15s ease, stroke-opacity 0.15s ease" }}
           />
         );
-        acc += frac;
-        return el;
       })}
-      <text x={50} y={50} textAnchor="middle" dominantBaseline="middle" className="fill-current font-helvetica" fontSize="8" opacity={0.6}>
-        mix
+      <text x={50} y={hovered ? 47 : 50} textAnchor="middle" dominantBaseline="middle" className="fill-current font-helvetica" fontSize={hovered ? 12 : 8} fontWeight={hovered ? 600 : 400} opacity={hovered ? 1 : 0.6}>
+        {hovered ? `${stems[hovered].presencePct.toFixed(0)}%` : "mix"}
       </text>
+      {hovered && (
+        <text x={50} y={60} textAnchor="middle" dominantBaseline="middle" className="fill-current font-helvetica lowercase" fontSize={7} opacity={0.7}>
+          {hovered}
+        </text>
+      )}
     </svg>
   );
 }

@@ -4,11 +4,165 @@
  * self-contained for the testing phase. All colors come from the app's CSS vars.
  */
 
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { ScoredLabel, Series } from "./data.js";
 
 export const ACCENT = "#EE4A26"; // --color-neon-orange
+
+/* ------------------------------------------------------------ time helpers */
+export const fmtClock = (ms: number) => {
+  const s = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+};
+
+/** Nearest sample value at a 0..1 fraction of a series. */
+export function valueAt(values: number[], frac: number): number | null {
+  if (!values.length) return null;
+  const i = Math.min(values.length - 1, Math.max(0, Math.round(frac * (values.length - 1))));
+  return values[i];
+}
+
+/** #rrggbb (or #rgb) -> rgba() string. */
+export function hexA(hex: string, a: number): string {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const n = parseInt(full, 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+
+/* ---------------------------------------------------------------- TimeAxis */
+/**
+ * Wraps a full-track chart (rendered edge-to-edge: t=0 at the left, t=duration
+ * at the right) and overlays a shared **playhead**, **click-to-seek**, and a
+ * **hover guide + tooltip**. Every full-track graph shares one `currentMs`, so
+ * the cursor moves identically across all of them as the track plays / seeks.
+ */
+export function TimeAxis({
+  durationMs,
+  currentMs = null,
+  onSeek,
+  tooltip,
+  className = "",
+  children,
+}: {
+  durationMs: number;
+  currentMs?: number | null;
+  onSeek?: (ms: number) => void;
+  tooltip?: (frac: number) => ReactNode;
+  className?: string;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState<number | null>(null);
+  const fracAt = (clientX: number) => {
+    const el = ref.current;
+    if (!el) return 0;
+    const r = el.getBoundingClientRect();
+    return Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+  };
+  const playFrac = currentMs != null && durationMs > 0 ? Math.min(1, currentMs / durationMs) : null;
+  const flip = hover != null && hover > 0.72;
+  return (
+    <div
+      ref={ref}
+      className={"relative " + (onSeek ? "cursor-crosshair " : "") + className}
+      onClick={onSeek ? (e) => onSeek(fracAt(e.clientX) * durationMs) : undefined}
+      onPointerMove={(e) => setHover(fracAt(e.clientX))}
+      onPointerLeave={() => setHover(null)}
+    >
+      {children}
+      {hover != null && (
+        <>
+          <div className="pointer-events-none absolute inset-y-0 z-10 w-px bg-white/25" style={{ left: `${hover * 100}%` }} />
+          {tooltip && (
+            <div
+              className="pointer-events-none absolute top-[var(--px-2)] z-20 rounded-[var(--px-4)] border border-[var(--opacity-20)] bg-black/85 px-[var(--px-6)] py-[var(--px-3)] font-helvetica text-[length:var(--px-9)] leading-tight"
+              style={{ left: `${hover * 100}%`, transform: flip ? "translateX(-100%)" : "none", marginLeft: flip ? -6 : 6, maxWidth: 220 }}
+            >
+              <div className="opacity-45">{fmtClock(hover * durationMs)}</div>
+              {tooltip(hover)}
+            </div>
+          )}
+        </>
+      )}
+      {playFrac != null && (
+        <div className="pointer-events-none absolute inset-y-0 z-10 w-[1.5px] bg-white shadow-[0_0_4px_rgba(255,255,255,0.6)]" style={{ left: `${playFrac * 100}%` }} />
+      )}
+    </div>
+  );
+}
+
+/** Rows of label→value for a hover tooltip (used by multi-series graphs). */
+export function TipRows({ rows }: { rows: { label: string; value: string; color?: string }[] }) {
+  return (
+    <div className="mt-[2px] flex flex-col gap-[1px]">
+      {rows.map((r) => (
+        <div key={r.label} className="flex items-center justify-between gap-[var(--px-12)]">
+          <span className="lowercase" style={{ color: r.color }}>{r.label}</span>
+          <span className="tabular-nums opacity-70">{r.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------ ToggleLegend */
+/** Checkbox-style legend: click to show/hide a series; always keeps >= 1 on. */
+export function ToggleLegend({
+  items,
+  hidden,
+  onToggle,
+}: {
+  items: { label: string; color: string; suffix?: string }[];
+  hidden: Set<string>;
+  onToggle: (label: string) => void;
+}) {
+  return (
+    <div className="mt-[var(--px-8)] flex flex-wrap gap-[var(--px-8)]">
+      {items.map((it) => {
+        const on = !hidden.has(it.label);
+        return (
+          <button
+            key={it.label}
+            type="button"
+            onClick={() => onToggle(it.label)}
+            className={
+              "flex items-center gap-[var(--px-6)] rounded-full border px-[var(--px-10)] py-[var(--px-3)] font-helvetica text-[length:var(--px-10)] capitalize transition-all hover:brightness-125 " +
+              (on ? "" : "opacity-45")
+            }
+            style={{ borderColor: on ? it.color : "var(--opacity-30)", background: on ? hexA(it.color, 0.14) : "transparent" }}
+          >
+            <span
+              className="grid h-[var(--px-11)] w-[var(--px-11)] place-items-center rounded-[3px] border"
+              style={{ borderColor: on ? it.color : "var(--opacity-40)", background: on ? it.color : "transparent" }}
+            >
+              {on && (
+                <svg viewBox="0 0 10 10" className="h-[var(--px-8)] w-[var(--px-8)]">
+                  <path d="M1.5 5 L4 7.5 L8.5 2.5" fill="none" stroke="#000" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </span>
+            <span>{it.suffix ? `${it.label} · ${it.suffix}` : it.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Toggle a label in a hidden-set while guaranteeing at least one stays visible. */
+export function useToggleSet(total: number) {
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggle = (label: string) =>
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else if (total - next.size > 1) next.add(label); // keep >= 1 visible
+      return next;
+    });
+  return { hidden, toggle };
+}
 
 /* ------------------------------------------------------------------ Panel */
 export function Panel({
@@ -50,9 +204,9 @@ export function Panel({
 }
 
 /* --------------------------------------------------------------- StatCard */
-export function StatCard({ label, value, sub }: { label: string; value: ReactNode; sub?: string }) {
+export function StatCard({ label, value, sub, hint }: { label: string; value: ReactNode; sub?: string; hint?: string }) {
   return (
-    <div className="rounded-[var(--px-10)] border border-[var(--opacity-15)] bg-[var(--opacity-10)] p-[var(--px-14)]">
+    <div className="group relative rounded-[var(--px-10)] border border-[var(--opacity-15)] bg-[var(--opacity-10)] p-[var(--px-14)] transition-colors hover:border-[var(--opacity-30)]">
       <div className="font-helvetica text-[length:var(--px-9)] font-light uppercase tracking-[var(--px-1)] opacity-50">
         {label}
       </div>
@@ -60,6 +214,11 @@ export function StatCard({ label, value, sub }: { label: string; value: ReactNod
         {value}
       </div>
       {sub && <div className="mt-[var(--px-3)] font-helvetica text-[length:var(--px-9)] opacity-40">{sub}</div>}
+      {hint && (
+        <div className="pointer-events-none absolute left-[var(--px-8)] right-[var(--px-8)] top-full z-30 mt-[var(--px-4)] rounded-[var(--px-6)] border border-[var(--opacity-20)] bg-black/90 px-[var(--px-8)] py-[var(--px-6)] font-helvetica text-[length:var(--px-9)] font-light leading-snug opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+          {hint}
+        </div>
+      )}
     </div>
   );
 }
@@ -84,107 +243,89 @@ function useCurvePath(values: number[], w: number, h: number, pad = 2) {
 }
 
 /* -------------------------------------------------------------- LineChart */
+// Edge-to-edge single-series line/area. Cursor + hover come from a wrapping
+// <TimeAxis> so it stays in sync with every other full-track graph.
 export function LineChart({
   series,
   height = 90,
   color = ACCENT,
   area = true,
-  format = (v: number) => v.toFixed(1),
 }: {
   series: Series;
   height?: number;
   color?: string;
   area?: boolean;
-  format?: (v: number) => string;
 }) {
   const W = 600;
   const H = height;
-  const { line, area: areaPath } = useCurvePath(series.values, W, H);
+  const { line, area: areaPath } = useCurvePath(series.values, W, H, 0);
   const gid = useId();
-  const [hover, setHover] = useState<number | null>(null);
-
-  const idx = hover;
-  const dx = (W - 4) / Math.max(1, series.values.length - 1);
-  const hx = idx != null ? 2 + idx * dx : 0;
-
   return (
-    <div className="relative w-full" style={{ height }}>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        preserveAspectRatio="none"
-        className="h-full w-full"
-        onMouseMove={(e) => {
-          const r = e.currentTarget.getBoundingClientRect();
-          const rel = ((e.clientX - r.left) / r.width) * (W - 4);
-          setHover(Math.max(0, Math.min(series.values.length - 1, Math.round(rel / dx))));
-        }}
-        onMouseLeave={() => setHover(null)}
-      >
-        <defs>
-          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.35" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {area && <path d={areaPath} fill={`url(#${gid})`} />}
-        <path d={line} fill="none" stroke={color} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
-        {idx != null && (
-          <>
-            <line x1={hx} y1={0} x2={hx} y2={H} stroke="currentColor" strokeOpacity={0.25} vectorEffect="non-scaling-stroke" />
-            <circle cx={hx} cy={2 + (H - 4) * (1 - norm(series.values, idx))} r={3} fill={color} />
-          </>
-        )}
-      </svg>
-      {idx != null && (
-        <div className="pointer-events-none absolute top-[var(--px-2)] right-[var(--px-4)] font-helvetica text-[length:var(--px-10)] opacity-80">
-          {format(series.values[idx])}
-          {series.unit ? ` ${series.unit}` : ""}
-        </div>
-      )}
-    </div>
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full" style={{ height }}>
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {area && <path d={areaPath} fill={`url(#${gid})`} />}
+      <path d={line} fill="none" stroke={color} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }
 
-function norm(values: number[], i: number) {
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  return (values[i] - min) / (max - min || 1);
-}
-
 /* --------------------------------------------------------- MultiLineChart */
+// Edge-to-edge multi-series with a checkbox legend (show/hide lines, min 1) and
+// a shared playhead + hover values via TimeAxis (over the chart, not the legend).
 export function MultiLineChart({
   lines,
   height = 110,
+  durationMs,
+  currentMs = null,
+  onSeek,
 }: {
   lines: { label: string; series: Series; color: string }[];
   height?: number;
+  durationMs?: number;
+  currentMs?: number | null;
+  onSeek?: (ms: number) => void;
 }) {
   const W = 600;
   const H = height;
-  // Normalize each line to its own range so different units share the plot.
+  const { hidden, toggle } = useToggleSet(lines.length);
+  const visible = lines.filter((l) => !hidden.has(l.label));
+  const svg = (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block w-full" style={{ height }}>
+      {visible.map((l) => {
+        const vals = l.series.values;
+        const min = Math.min(...vals);
+        const max = Math.max(...vals);
+        const span = max - min || 1;
+        const d = vals
+          .map((v, i) => `${i ? "L" : "M"}${((i / Math.max(1, vals.length - 1)) * W).toFixed(1)} ${((1 - (v - min) / span) * H).toFixed(1)}`)
+          .join(" ");
+        return <path key={l.label} d={d} fill="none" stroke={l.color} strokeWidth={1.4} vectorEffect="non-scaling-stroke" />;
+      })}
+    </svg>
+  );
+  const tip = (frac: number) => (
+    <TipRows
+      rows={visible.map((l) => {
+        const v = valueAt(l.series.values, frac);
+        return { label: l.label, value: v == null ? "–" : v.toFixed(2), color: l.color };
+      })}
+    />
+  );
   return (
     <div className="w-full">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full" style={{ height }}>
-        {lines.map((l) => {
-          const vals = l.series.values;
-          const min = Math.min(...vals);
-          const max = Math.max(...vals);
-          const span = max - min || 1;
-          const dx = (W - 4) / Math.max(1, vals.length - 1);
-          const d = vals
-            .map((v, i) => `${i ? "L" : "M"}${(2 + i * dx).toFixed(1)} ${(2 + (H - 4) * (1 - (v - min) / span)).toFixed(1)}`)
-            .join(" ");
-          return <path key={l.label} d={d} fill="none" stroke={l.color} strokeWidth={1.3} vectorEffect="non-scaling-stroke" />;
-        })}
-      </svg>
-      <div className="mt-[var(--px-8)] flex flex-wrap gap-[var(--px-12)]">
-        {lines.map((l) => (
-          <span key={l.label} className="flex items-center gap-[var(--px-5)] font-helvetica text-[length:var(--px-10)] opacity-70">
-            <span className="inline-block h-[var(--px-8)] w-[var(--px-8)] rounded-full" style={{ background: l.color }} />
-            {l.label}
-          </span>
-        ))}
-      </div>
+      {durationMs ? (
+        <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={onSeek} tooltip={tip}>
+          {svg}
+        </TimeAxis>
+      ) : (
+        svg
+      )}
+      <ToggleLegend items={lines.map((l) => ({ label: l.label, color: l.color }))} hidden={hidden} onToggle={toggle} />
     </div>
   );
 }
@@ -206,15 +347,16 @@ export function BarList({
     <ul className="flex flex-col gap-[var(--px-8)]">
       {items.map((it) => {
         const pct = Math.max(2, (it.score / top) * 100);
+        const shown = labelTransform ? labelTransform(it.label) : it.label;
         return (
-          <li key={it.label} className="group">
+          <li key={it.label} className="group -mx-[var(--px-4)] rounded-[var(--px-6)] px-[var(--px-4)] py-[var(--px-2)] transition-colors hover:bg-white/5" title={`${shown} — ${format(it.score)}`}>
             <div className="mb-[var(--px-3)] flex items-baseline justify-between font-helvetica text-[length:var(--px-11)]">
-              <span className="truncate pr-[var(--px-8)]">{labelTransform ? labelTransform(it.label) : it.label}</span>
-              <span className="shrink-0 opacity-50 tabular-nums">{format(it.score)}</span>
+              <span className="truncate pr-[var(--px-8)]">{shown}</span>
+              <span className="shrink-0 opacity-50 tabular-nums group-hover:opacity-90">{format(it.score)}</span>
             </div>
             <div className="h-[var(--px-6)] w-full overflow-hidden rounded-full bg-[var(--opacity-15)]">
               <div
-                className="h-full rounded-full transition-[width] duration-500"
+                className="h-full rounded-full transition-[width,filter] duration-500 group-hover:brightness-125"
                 style={{ width: `${pct}%`, background: ACCENT }}
               />
             </div>
@@ -246,7 +388,7 @@ export function Gauge({ value, label, sub }: { value: number; label: string; sub
           {(clamped * 100).toFixed(0)}
         </text>
       </svg>
-      <div className="mt-[var(--px-2)] text-center font-helvetica text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-70">
+      <div className="mt-[var(--px-2)] w-full truncate text-center font-helvetica text-[length:var(--px-10)] uppercase opacity-70">
         {label}
       </div>
       {sub && <div className="font-helvetica text-[length:var(--px-9)] opacity-40">{sub}</div>}
@@ -293,7 +435,8 @@ export function TagChips({ items }: { items: ScoredLabel[] }) {
         return (
           <span
             key={it.label}
-            className="rounded-full border px-[var(--px-10)] py-[var(--px-4)] font-helvetica text-[length:var(--px-11)] lowercase"
+            title={`${it.label} — ${(it.score * 100).toFixed(0)}%`}
+            className="cursor-default rounded-full border px-[var(--px-10)] py-[var(--px-4)] font-helvetica text-[length:var(--px-11)] lowercase transition-all hover:!opacity-100 hover:brightness-125"
             style={{
               borderColor: ACCENT,
               background: `rgba(238,74,38,${(0.08 + strength * 0.32).toFixed(2)})`,
