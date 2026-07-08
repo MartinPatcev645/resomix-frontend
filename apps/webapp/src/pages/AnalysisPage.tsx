@@ -9,8 +9,8 @@
 
 import { useRef, useState } from "react";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
-import { ACCENT, BarList, Gauge, LineChart, MultiLineChart, Panel, StatCard, TagChips } from "./analysis/charts.js";
-import { CamelotWheel, Heatmap, MoodRadar, WaveTimeline } from "./analysis/heatviz.js";
+import { ACCENT, BarList, Gauge, LineChart, MoodMap, MultiLineChart, Panel, StatCard, TagChips } from "./analysis/charts.js";
+import { CamelotWheel, Donut, Heatmap, MoodRadar, RibbonChart, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
 
 const shortGenre = (l: string) => l.split("---").pop() ?? l;
 const fmtDuration = (ms: number) => {
@@ -22,6 +22,11 @@ export default function AnalysisPage() {
   const { status, data, progress, fileName, analyze, reset } = useTrackAnalysis();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [cursorMs, setCursorMs] = useState<number | null>(null);
+
+  const activeSection = data?.energy.structureSegments.find(
+    (s) => cursorMs != null && cursorMs >= s.startMs && cursorMs < s.endMs,
+  );
 
   const pick = (file?: File | null) => {
     if (file) analyze(file);
@@ -127,13 +132,40 @@ export default function AnalysisPage() {
               <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)]">{shortGenre(data.semantics.genreTop[0].label)}</span>} sub={`${(data.semantics.genreTop[0].score * 100).toFixed(0)}% match`} />
             </div>
 
+            {/* structure */}
+            <Panel
+              title="Structure"
+              subtitle={`${data.energy.structureSegments.length} sections · ${data.rhythm.barCount} bars · click to seek`}
+              right={
+                <div className="text-right font-helvetica text-[length:var(--px-9)] opacity-60">
+                  {activeSection ? (
+                    <span className="uppercase">{activeSection.label}</span>
+                  ) : (
+                    <span>bass in @ {(data.energy.bassEntryMs / 1000).toFixed(0)}s</span>
+                  )}
+                </div>
+              }
+            >
+              <StructureTimeline
+                segments={data.energy.structureSegments}
+                durationMs={data.identity.durationMs}
+                cursorMs={cursorMs}
+                onSeek={setCursorMs}
+              />
+            </Panel>
+
             {/* waveform + beat grid */}
-            <Panel title="Waveform & beat grid" subtitle="energy silhouette · bar lines · onsets">
+            <Panel title="Waveform & beat grid" subtitle="energy silhouette · phrase lines · bass entry · click to seek">
               <WaveTimeline
                 energy={data.energy.energyCurve.values}
                 beatTimes={data.rhythm.beatTimesSeconds}
                 onsetTimes={data.energy.onsetTimesSeconds}
+                phraseBoundaries={data.rhythm.phraseBoundariesSeconds}
+                bassEntryMs={data.energy.bassEntryMs}
+                voiceRegions={data.timeline.voiceRegions}
                 durationMs={data.identity.durationMs}
+                cursorMs={cursorMs}
+                onSeek={setCursorMs}
               />
             </Panel>
 
@@ -167,11 +199,52 @@ export default function AnalysisPage() {
               <Heatmap matrix={data.spectral.melSpectrogram} height={170} />
             </Panel>
 
+            {/* semantic evolution */}
+            <Panel title="Evolution over time" subtitle="genre · mood · instruments across the track — brighter = stronger">
+              <div className="flex flex-col gap-[var(--px-18)]">
+                <div>
+                  <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50">Genre</div>
+                  <RibbonChart track={data.timeline.genreOverTime} />
+                </div>
+                <div>
+                  <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50">Mood</div>
+                  <RibbonChart track={data.timeline.moodOverTime} />
+                </div>
+                <div>
+                  <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50">Instruments</div>
+                  <RibbonChart track={data.timeline.instrumentOverTime} />
+                </div>
+              </div>
+            </Panel>
+
+            {/* composition (stems) */}
+            <Panel
+              title="Composition (stems)"
+              subtitle="Demucs source separation — stacked stem energy over time"
+              right={
+                <div className="text-right font-helvetica text-[length:var(--px-9)] opacity-60">
+                  bass in @ {(data.composition.bassEntryMs / 1000).toFixed(0)}s · {data.composition.device.toUpperCase()}
+                </div>
+              }
+            >
+              <div className="grid grid-cols-1 items-center gap-[var(--px-16)] lg:grid-cols-[1fr_auto]">
+                <StemArea stems={data.composition.stems} />
+                <Donut stems={data.composition.stems} />
+              </div>
+            </Panel>
+
             <div className="grid grid-cols-1 gap-[var(--px-20)] lg:grid-cols-2">
               {/* vibe */}
-              <Panel title="Vibe" subtitle="mood profile & perceptual gauges">
-                <div className="grid grid-cols-1 items-center gap-[var(--px-16)] sm:grid-cols-2">
-                  <MoodRadar dims={data.semantics.moodDimensions} />
+              <Panel title="Vibe" subtitle="mood profile · emotion · perceptual gauges">
+                <div className="grid grid-cols-1 items-center gap-[var(--px-16)] sm:grid-cols-3">
+                  <div>
+                    <div className="mb-[var(--px-6)] text-center font-helvetica text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] opacity-50">Mood</div>
+                    <MoodRadar dims={data.semantics.moodDimensions} />
+                  </div>
+                  <div>
+                    <div className="mb-[var(--px-6)] text-center font-helvetica text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] opacity-50">Valence · Arousal</div>
+                    <MoodMap valence={data.semantics.valence} arousal={data.semantics.arousal} />
+                  </div>
                   <div className="grid grid-cols-2 gap-[var(--px-16)]">
                     <Gauge value={data.semantics.danceability} label="Danceable" />
                     <Gauge value={data.semantics.approachability} label="Approachable" />

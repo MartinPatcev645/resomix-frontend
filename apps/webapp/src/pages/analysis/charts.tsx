@@ -254,6 +254,35 @@ export function Gauge({ value, label, sub }: { value: number; label: string; sub
   );
 }
 
+/* --------------------------------------------------------------- MoodMap */
+export function MoodMap({ valence, arousal }: { valence: number; arousal: number }) {
+  const S = 200;
+  const pad = 26;
+  const inner = S - 2 * pad;
+  const cx = pad + Math.max(0, Math.min(1, valence)) * inner;
+  const cy = pad + (1 - Math.max(0, Math.min(1, arousal))) * inner; // invert y
+
+  const axisText = (x: number, y: number, t: string) => (
+    <text x={x} y={y} textAnchor="middle" dominantBaseline="middle" className="fill-current font-helvetica" fontSize="8" opacity={0.45}>
+      {t}
+    </text>
+  );
+
+  return (
+    <svg viewBox={`0 0 ${S} ${S}`} className="mx-auto w-full max-w-[var(--px-260)]">
+      <rect x={pad} y={pad} width={inner} height={inner} fill="var(--opacity-10)" stroke="currentColor" strokeOpacity={0.1} rx={6} />
+      <line x1={S / 2} y1={pad} x2={S / 2} y2={S - pad} stroke="currentColor" strokeOpacity={0.12} />
+      <line x1={pad} y1={S / 2} x2={S - pad} y2={S / 2} stroke="currentColor" strokeOpacity={0.12} />
+      {axisText(S / 2, pad - 12, "energetic")}
+      {axisText(S / 2, S - pad + 12, "calm")}
+      {axisText(pad - 14, S / 2, "neg")}
+      {axisText(S - pad + 14, S / 2, "pos")}
+      <circle cx={cx} cy={cy} r={11} fill={ACCENT} fillOpacity={0.25} />
+      <circle cx={cx} cy={cy} r={5} fill={ACCENT} />
+    </svg>
+  );
+}
+
 /* -------------------------------------------------------------- TagChips */
 export function TagChips({ items }: { items: ScoredLabel[] }) {
   const max = Math.max(...items.map((i) => i.score), 0.0001);

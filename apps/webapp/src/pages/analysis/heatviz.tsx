@@ -5,8 +5,15 @@
  */
 
 import { useEffect, useRef } from "react";
-import type { Matrix } from "./data.js";
+import type { Matrix, StemMetrics, TimelineTrack } from "./data.js";
 import { ACCENT } from "./charts.js";
+
+export const STEM_COLORS: Record<string, string> = {
+  drums: "#EE4A26",
+  bass: "#7fb0ff",
+  other: "#8fd694",
+  vocals: "#c88fe0",
+};
 
 /* ---------------------------------------------------- colormap (magma-ish) */
 const STOPS: [number, [number, number, number]][] = [
@@ -222,13 +229,23 @@ export function WaveTimeline({
   energy,
   beatTimes,
   onsetTimes,
+  phraseBoundaries = [],
+  bassEntryMs = null,
+  voiceRegions = [],
   durationMs,
+  cursorMs = null,
+  onSeek,
   height = 120,
 }: {
   energy: number[];
   beatTimes: number[];
   onsetTimes: number[];
+  phraseBoundaries?: number[];
+  bassEntryMs?: number | null;
+  voiceRegions?: { startMs: number; endMs: number; meanScore: number }[];
   durationMs: number;
+  cursorMs?: number | null;
+  onSeek?: (ms: number) => void;
   height?: number;
 }) {
   const W = 1000;
@@ -239,33 +256,248 @@ export function WaveTimeline({
   const span = max - min || 1;
   const mid = H / 2;
 
-  // Mirror the energy curve into a symmetric "waveform" silhouette.
-  const top = energy.map((v, i) => {
-    const x = (i / (energy.length - 1)) * W;
-    const amp = ((v - min) / span) * (H / 2 - 2);
-    return `${x.toFixed(1)},${(mid - amp).toFixed(1)}`;
-  });
+  const amp = (v: number) => ((v - min) / span) * (H / 2 - 2);
+  const top = energy.map((v, i) => `${((i / (energy.length - 1)) * W).toFixed(1)},${(mid - amp(v)).toFixed(1)}`);
   const bottom = energy
-    .map((v, i) => {
-      const x = (i / (energy.length - 1)) * W;
-      const amp = ((v - min) / span) * (H / 2 - 2);
-      return `${x.toFixed(1)},${(mid + amp).toFixed(1)}`;
-    })
+    .map((v, i) => `${((i / (energy.length - 1)) * W).toFixed(1)},${(mid + amp(v)).toFixed(1)}`)
     .reverse();
   const poly = [...top, ...bottom].join(" ");
   const xOf = (t: number) => (t / durS) * W;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full" style={{ height }}>
-      {/* bar/beat grid (every 4th beat drawn to read as bars) */}
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      className={"w-full " + (onSeek ? "cursor-pointer" : "")}
+      style={{ height }}
+      onClick={(e) => {
+        if (!onSeek) return;
+        const r = e.currentTarget.getBoundingClientRect();
+        onSeek(((e.clientX - r.left) / r.width) * durationMs);
+      }}
+    >
+      {/* bar grid (every 4th beat) */}
       {beatTimes.filter((_, i) => i % 4 === 0).map((t, i) => (
-        <line key={i} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="currentColor" strokeOpacity={0.08} vectorEffect="non-scaling-stroke" />
+        <line key={`b${i}`} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="currentColor" strokeOpacity={0.06} vectorEffect="non-scaling-stroke" />
+      ))}
+      {/* phrase boundaries (stronger) */}
+      {phraseBoundaries.map((t, i) => (
+        <line key={`p${i}`} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="currentColor" strokeOpacity={0.18} vectorEffect="non-scaling-stroke" />
+      ))}
+      {/* vocal-activity regions (behind the waveform) */}
+      {voiceRegions.map((r, i) => (
+        <g key={`v${i}`}>
+          <rect x={xOf(r.startMs / 1000)} y={0} width={xOf(r.endMs / 1000) - xOf(r.startMs / 1000)} height={H} fill="#7fb0ff" fillOpacity={0.16} />
+          <text x={xOf(r.startMs / 1000) + 3} y={H - 4} className="font-helvetica" fontSize="8" fill="#7fb0ff">vox</text>
+        </g>
       ))}
       <polygon points={poly} fill={ACCENT} fillOpacity={0.75} />
-      {/* onset markers along the centre line */}
+      {/* onsets on the centre line */}
       {onsetTimes.map((t, i) => (
-        <circle key={i} cx={xOf(t)} cy={mid} r={1.1} fill="currentColor" opacity={0.35} />
+        <circle key={`o${i}`} cx={xOf(t)} cy={mid} r={1.1} fill="currentColor" opacity={0.3} />
       ))}
+      {/* bass entry marker */}
+      {bassEntryMs != null && (
+        <>
+          <line x1={xOf(bassEntryMs / 1000)} x2={xOf(bassEntryMs / 1000)} y1={0} y2={H} stroke="#7fb0ff" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+          <text x={xOf(bassEntryMs / 1000) + 4} y={12} className="fill-current font-helvetica" fontSize="9" fill="#7fb0ff">bass</text>
+        </>
+      )}
+      {/* playhead cursor */}
+      {cursorMs != null && (
+        <line x1={xOf(cursorMs / 1000)} x2={xOf(cursorMs / 1000)} y1={0} y2={H} stroke="currentColor" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+      )}
+    </svg>
+  );
+}
+
+/* ------------------------------------------------------ StructureTimeline */
+type Segment = { startMs: number; endMs: number; label: string; confidence: number };
+
+const SECTION_COLOR: Record<string, string> = {
+  intro: "rgba(238,74,38,0.22)",
+  build: "rgba(238,74,38,0.5)",
+  drop: "#EE4A26",
+  breakdown: "rgba(127,176,255,0.45)",
+  outro: "rgba(238,74,38,0.18)",
+  section: "rgba(255,255,255,0.15)",
+};
+
+const fmtTime = (ms: number) => {
+  const s = Math.round(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+};
+
+export function StructureTimeline({
+  segments,
+  durationMs,
+  cursorMs = null,
+  onSeek,
+}: {
+  segments: Segment[];
+  durationMs: number;
+  cursorMs?: number | null;
+  onSeek?: (ms: number) => void;
+}) {
+  return (
+    <div>
+      <div className="flex h-[var(--px-44)] w-full overflow-hidden rounded-[var(--px-8)]">
+        {segments.map((s, i) => {
+          const w = ((s.endMs - s.startMs) / durationMs) * 100;
+          const active = cursorMs != null && cursorMs >= s.startMs && cursorMs < s.endMs;
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onSeek?.(s.startMs)}
+              title={`${s.label} · ${fmtTime(s.startMs)}–${fmtTime(s.endMs)} · ${(s.confidence * 100).toFixed(0)}% conf`}
+              className={
+                "relative flex items-center justify-center border-r border-black/30 transition-opacity " +
+                (active ? "opacity-100 ring-1 ring-white/70" : "opacity-90 hover:opacity-100")
+              }
+              style={{ width: `${w}%`, background: SECTION_COLOR[s.label] ?? SECTION_COLOR.section }}
+            >
+              <span className="truncate px-[var(--px-4)] font-helvetica text-[length:var(--px-9)] uppercase tracking-[var(--px-1)]">
+                {w > 6 ? s.label : ""}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {/* time axis */}
+      <div className="mt-[var(--px-4)] flex justify-between font-helvetica text-[length:var(--px-8)] opacity-40">
+        <span>0:00</span>
+        <span>{fmtTime(durationMs / 2)}</span>
+        <span>{fmtTime(durationMs)}</span>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------- RibbonChart */
+export function RibbonChart({ track, rowHeight = 16 }: { track: TimelineTrack; rowHeight?: number }) {
+  return (
+    <div className="flex flex-col gap-[var(--px-4)]">
+      {track.series.map((s) => (
+        <div key={s.label} className="flex items-center gap-[var(--px-8)]">
+          <span className="w-[var(--px-90)] shrink-0 truncate font-helvetica text-[length:var(--px-10)] lowercase opacity-70">
+            {s.label}
+          </span>
+          <RibbonRow values={s.values} height={rowHeight} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RibbonRow({ values, height }: { values: number[]; height: number }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas || values.length === 0) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const n = values.length;
+    canvas.width = n;
+    canvas.height = 1;
+    const img = ctx.createImageData(n, 1);
+    for (let c = 0; c < n; c++) {
+      const a = Math.max(0, Math.min(1, values[c]));
+      const o = c * 4;
+      img.data[o] = 238;
+      img.data[o + 1] = 74;
+      img.data[o + 2] = 38;
+      img.data[o + 3] = Math.round(a * 255);
+    }
+    ctx.putImageData(img, 0, 0);
+  }, [values]);
+  return (
+    <canvas
+      ref={ref}
+      className="min-w-0 flex-1 rounded-[var(--px-4)] bg-[var(--opacity-15)]"
+      style={{ height, imageRendering: "pixelated" }}
+    />
+  );
+}
+
+/* ------------------------------------------------------------- StemArea */
+export function StemArea({ stems, height = 150 }: { stems: Record<string, StemMetrics>; height?: number }) {
+  const names = Object.keys(stems);
+  const W = 1000;
+  const H = height;
+  const nPoints = names.length ? stems[names[0]].energyCurve.values.length : 0;
+  if (!nPoints) return null;
+
+  const colSum = Array.from({ length: nPoints }, (_, i) =>
+    names.reduce((s, name) => s + (stems[name].energyCurve.values[i] ?? 0), 0),
+  );
+  const maxSum = Math.max(...colSum, 0.0001);
+
+  let cumulative = new Array(nPoints).fill(0);
+  const polys = names.map((name) => {
+    const vals = stems[name].energyCurve.values;
+    const lower = cumulative.slice();
+    const upper = lower.map((l, i) => l + (vals[i] ?? 0));
+    cumulative = upper;
+    const x = (i: number) => (i / (nPoints - 1)) * W;
+    const yOf = (v: number) => H - (v / maxSum) * H;
+    const top = upper.map((v, i) => `${x(i).toFixed(1)},${yOf(v).toFixed(1)}`);
+    const bot = lower.map((v, i) => `${x(i).toFixed(1)},${yOf(v).toFixed(1)}`).reverse();
+    return { name, points: [...top, ...bot].join(" ") };
+  });
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full rounded-[var(--px-8)]" style={{ height }}>
+        {polys.map((p) => (
+          <polygon key={p.name} points={p.points} fill={STEM_COLORS[p.name] ?? "#888"} fillOpacity={0.78} />
+        ))}
+      </svg>
+      <div className="mt-[var(--px-8)] flex flex-wrap gap-[var(--px-12)]">
+        {names.map((name) => (
+          <span key={name} className="flex items-center gap-[var(--px-5)] font-helvetica text-[length:var(--px-10)] opacity-70">
+            <span className="inline-block h-[var(--px-8)] w-[var(--px-8)] rounded-full" style={{ background: STEM_COLORS[name] ?? "#888" }} />
+            {name} · {stems[name].presencePct.toFixed(0)}%
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------- Donut */
+export function Donut({ stems }: { stems: Record<string, StemMetrics> }) {
+  const names = Object.keys(stems);
+  const total = names.reduce((s, n) => s + stems[n].presencePct, 0) || 1;
+  const R = 38;
+  const C = 2 * Math.PI * R;
+  let acc = 0;
+
+  return (
+    <svg viewBox="0 0 100 100" className="mx-auto w-full max-w-[var(--px-140)]">
+      {names.map((name) => {
+        const frac = stems[name].presencePct / total;
+        const dash = frac * C;
+        const el = (
+          <circle
+            key={name}
+            r={R}
+            cx={50}
+            cy={50}
+            fill="none"
+            stroke={STEM_COLORS[name] ?? "#888"}
+            strokeWidth={14}
+            strokeDasharray={`${dash} ${C - dash}`}
+            strokeDashoffset={-acc * C}
+            transform="rotate(-90 50 50)"
+          />
+        );
+        acc += frac;
+        return el;
+      })}
+      <text x={50} y={50} textAnchor="middle" dominantBaseline="middle" className="fill-current font-helvetica" fontSize="8" opacity={0.6}>
+        mix
+      </text>
     </svg>
   );
 }
