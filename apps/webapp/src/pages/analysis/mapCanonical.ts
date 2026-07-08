@@ -83,8 +83,6 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
       bitRate: num(id.bit_rate),
       channels: num(id.channel_count),
       codec: str(id.codec),
-      discogsDim: num(id.discogs_embedding_dim),
-      maestDim: num(id.maest_embedding_dim),
     },
     technical: {
       integratedLufs: num(tech.integrated_loudness_lufs),
@@ -115,6 +113,8 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
       centroidCurve: series(spec.centroid_curve),
       rolloffCurve: series(spec.rolloff_curve),
       flatnessCurve: series(spec.flatness_curve),
+      bandwidthCurve: series(spec.bandwidth_curve),
+      zcrCurve: series(spec.zcr_curve),
       melSpectrogram: matrix(spec.mel_spectrogram),
     },
     energy: {
@@ -122,10 +122,10 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
       onsetTimesSeconds: arr<number>(en.onset_times_seconds),
       structureSegments: segments(en.structure_segments),
       bassEntryMs: num(en.bass_entry_ms),
-      bassExitMs: num(en.bass_exit_ms),
     },
     semantics: {
       genreTop: scored(sem.genre_top),
+      styleMaestTop: scored(sem.style_maest_top),
       moodThemeTop: scored(sem.mood_theme_top),
       instrumentTop: scored(sem.instrument_top),
       moodDimensions: numberRecord(sem.mood_dimensions),
@@ -135,6 +135,8 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
       voiceScore: num(sem.voice_score),
       timbreBright: num(sem.timbre_bright),
       timbreDark: num(sem.timbre_dark),
+      moodAcoustic: num(sem.mood_acoustic),
+      moodElectronic: num(sem.mood_electronic),
       valence: num(sem.valence),
       arousal: num(sem.arousal),
     },
@@ -146,10 +148,7 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
     },
     composition: {
       stems: stemRecord(comp.stems),
-      bassEntryMs: num(comp.bass_entry_ms),
-      bassExitMs: num(comp.bass_exit_ms),
       vocalRegions: regions(comp.vocal_regions),
-      device: str(comp.device, "cpu"),
     },
   };
 }

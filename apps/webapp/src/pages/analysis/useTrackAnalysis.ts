@@ -5,25 +5,21 @@
  *   POST /v1/analyses            -> { analysis_id }
  *   GET  /v1/analyses/{id}       -> { state, progress:{percent}, error }   (poll)
  *   GET  /v1/analyses/{id}/result-> canonical analysis JSON (once succeeded)
+ * Part 1 (fast local DSP) is rendered as soon as the backend checkpoints it; the
+ * semantic/GPU part 2 fills in when the full result lands (progressive delivery).
  * The snake_case canonical result is adapted to the camelCase `AnalysisData` the
  * dashboard renders via `mapCanonicalToAnalysisData`. We deliberately do NOT use
  * `@resomix/api-client` here — this page owns its service contract.
- *
- * Set `USE_HARDCODED = true` to render the bundled sample without the network
- * (handy for pure-UI work).
  */
 
 import { useCallback, useRef, useState } from "react";
-import { ANALYSIS_DATA, type AnalysisData } from "./data.js";
+import type { AnalysisData } from "./data.js";
 import { mapCanonicalToAnalysisData } from "./mapCanonical.js";
 
 /** resomix-analysis-service (FastAPI). Override with VITE_ANALYSIS_ENDPOINT if needed. */
 export const ANALYSIS_ENDPOINT =
   ((import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_ANALYSIS_ENDPOINT) ??
   "http://localhost:8010";
-
-/** While true, `analyze()` resolves with the bundled sample instead of hitting the network. */
-const USE_HARDCODED = false;
 
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 10 * 60 * 1000; // give a full-track analysis up to 10 minutes
@@ -47,6 +43,9 @@ export function useTrackAnalysis() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  // True once the fast local-DSP "part 1" result is loaded and shown, while the
+  // semantic/GPU "part 2" keeps computing (progressive delivery).
+  const [part1Ready, setPart1Ready] = useState(false);
   // Object URL of the uploaded file, so the page can play the actual track
   // locally (later this will be swapped for the HLS stream).
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -68,6 +67,7 @@ export function useTrackAnalysis() {
     setData(null);
     setError(null);
     setProgress(0);
+    setPart1Ready(false);
     setFileName(null);
   }, [setTrackUrl]);
 
@@ -82,21 +82,7 @@ export function useTrackAnalysis() {
     setError(null);
     setData(null);
     setProgress(0);
-
-    if (USE_HARDCODED) {
-      setStatus("uploading");
-      setProgress(12);
-      await delay(500);
-      setStatus("analyzing");
-      for (const p of [30, 50, 72, 90]) {
-        await delay(420);
-        setProgress(p);
-      }
-      setData(ANALYSIS_DATA);
-      setProgress(100);
-      setStatus("done");
-      return;
-    }
+    setPart1Ready(false);
 
     try {
       // 1) upload -> enqueue
@@ -110,23 +96,43 @@ export function useTrackAnalysis() {
       const id = created.analysis_id;
       if (!id) throw new Error("Server did not return an analysis id");
 
-      // 2) poll status until it succeeds/fails
+      // 2) poll status; render PART 1 (local DSP) as soon as it's ready, then
+      //    keep polling until the full (part 2 / GPU) result succeeds.
       live(() => setStatus("analyzing"));
       const startedAt = Date.now();
+      let part1Shown = false;
       for (;;) {
         if (runId.current !== myRun) return; // superseded by reset/re-upload
         if (Date.now() - startedAt > POLL_TIMEOUT_MS) throw new Error("Analysis timed out");
         await delay(POLL_INTERVAL_MS);
         const stRes = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}`);
         if (!stRes.ok) throw new Error(await errText(stRes, "Status check failed"));
-        const st = (await stRes.json()) as { state?: string; progress?: { percent?: number }; error?: string };
+        const st = (await stRes.json()) as {
+          state?: string;
+          part1_ready?: boolean;
+          progress?: { percent?: number };
+          error?: string;
+        };
         const pct = typeof st.progress?.percent === "number" ? st.progress.percent : 0;
         live(() => setProgress(Math.min(95, Math.max(10, pct))));
+
+        if (st.part1_ready && !part1Shown) {
+          part1Shown = true;
+          const p1 = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}/result`);
+          if (p1.ok) {
+            const raw = await p1.json();
+            if (runId.current !== myRun) return;
+            live(() => {
+              setData(mapCanonicalToAnalysisData(raw));
+              setPart1Ready(true);
+            });
+          }
+        }
         if (st.state === "succeeded") break;
         if (st.state === "failed") throw new Error(st.error || "Analysis failed on the server");
       }
 
-      // 3) fetch + adapt the canonical result
+      // 3) fetch + adapt the FULL canonical result
       const resRes = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}/result`);
       if (!resRes.ok) throw new Error(await errText(resRes, "Result fetch failed"));
       const raw = await resRes.json();
@@ -140,5 +146,5 @@ export function useTrackAnalysis() {
     }
   }, [setTrackUrl]);
 
-  return { status, data, error, progress, fileName, audioUrl, analyze, reset };
+  return { status, data, error, progress, fileName, audioUrl, part1Ready, analyze, reset };
 }

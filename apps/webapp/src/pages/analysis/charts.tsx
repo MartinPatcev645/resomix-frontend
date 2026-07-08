@@ -10,6 +10,49 @@ import type { ScoredLabel, Series } from "./data.js";
 
 export const ACCENT = "#EE4A26"; // --color-neon-orange
 
+/* ------------------------------------------------------------ Spinner/loader */
+export function Spinner({ size = 22 }: { size?: number }) {
+  return (
+    <span
+      className="inline-block animate-spin rounded-full border-2 border-white/15"
+      style={{ width: size, height: size, borderTopColor: ACCENT }}
+    />
+  );
+}
+
+/** A titled loading row: spinner + a title + optional subtitle. */
+export function LoadingStep({
+  title,
+  subtitle,
+  done = false,
+  waiting = false,
+}: {
+  title: string;
+  subtitle?: string;
+  done?: boolean;
+  waiting?: boolean;
+}) {
+  return (
+    <div className={"flex items-center gap-[var(--px-14)] " + (waiting ? "opacity-40" : "")}>
+      <span className="grid h-[var(--px-28)] w-[var(--px-28)] shrink-0 place-items-center">
+        {done ? (
+          <span className="grid h-[var(--px-22)] w-[var(--px-22)] place-items-center rounded-full" style={{ background: ACCENT }}>
+            <svg viewBox="0 0 12 12" className="h-[var(--px-10)] w-[var(--px-10)]"><path d="M2 6 L5 9 L10 3" fill="none" stroke="#000" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </span>
+        ) : waiting ? (
+          <span className="h-[var(--px-10)] w-[var(--px-10)] rounded-full border border-white/30" />
+        ) : (
+          <Spinner size={22} />
+        )}
+      </span>
+      <div className="min-w-0">
+        <div className="font-helvetica text-[length:var(--px-12)] uppercase tracking-[var(--px-1)]">{title}</div>
+        {subtitle && <div className="font-helvetica text-[length:var(--px-10)] opacity-50">{subtitle}</div>}
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------ time helpers */
 export const fmtClock = (ms: number) => {
   const s = Math.max(0, Math.round(ms / 1000));
@@ -284,7 +327,7 @@ export function MultiLineChart({
   currentMs = null,
   onSeek,
 }: {
-  lines: { label: string; series: Series; color: string }[];
+  lines: { label: string; series: Series; color: string; fmt?: (v: number) => string }[];
   height?: number;
   durationMs?: number;
   currentMs?: number | null;
@@ -312,7 +355,7 @@ export function MultiLineChart({
     <TipRows
       rows={visible.map((l) => {
         const v = valueAt(l.series.values, frac);
-        return { label: l.label, value: v == null ? "–" : v.toFixed(2), color: l.color };
+        return { label: l.label, value: v == null ? "–" : l.fmt ? l.fmt(v) : v.toFixed(2), color: l.color };
       })}
     />
   );
@@ -368,12 +411,12 @@ export function BarList({
 }
 
 /* ------------------------------------------------------------------ Gauge */
-export function Gauge({ value, label, sub }: { value: number; label: string; sub?: string }) {
+export function Gauge({ value, label, sub, hint }: { value: number; label: string; sub?: string; hint?: string }) {
   const R = 46;
   const C = Math.PI * R; // semicircle circumference
   const clamped = Math.max(0, Math.min(1, value));
   return (
-    <div className="flex flex-col items-center">
+    <div className="group relative flex flex-col items-center">
       <svg viewBox="0 0 120 70" className="w-full max-w-[var(--px-140)]">
         <path d="M6 64 A54 54 0 0 1 114 64" fill="none" stroke="var(--opacity-20)" strokeWidth={8} strokeLinecap="round" />
         <path
@@ -392,6 +435,11 @@ export function Gauge({ value, label, sub }: { value: number; label: string; sub
         {label}
       </div>
       {sub && <div className="font-helvetica text-[length:var(--px-9)] opacity-40">{sub}</div>}
+      {hint && (
+        <div className="pointer-events-none absolute left-1/2 top-full z-30 mt-[var(--px-2)] w-max max-w-[var(--px-140)] -translate-x-1/2 rounded-[var(--px-6)] border border-[var(--opacity-20)] bg-black/90 px-[var(--px-8)] py-[var(--px-6)] text-center font-helvetica text-[length:var(--px-9)] font-light leading-snug opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+          {hint}
+        </div>
+      )}
     </div>
   );
 }
@@ -403,6 +451,7 @@ export function MoodMap({ valence, arousal }: { valence: number; arousal: number
   const inner = S - 2 * pad;
   const cx = pad + Math.max(0, Math.min(1, valence)) * inner;
   const cy = pad + (1 - Math.max(0, Math.min(1, arousal))) * inner; // invert y
+  const [hover, setHover] = useState(false);
 
   const axisText = (x: number, y: number, t: string) => (
     <text x={x} y={y} textAnchor="middle" dominantBaseline="middle" className="fill-current font-helvetica" fontSize="8" opacity={0.45}>
@@ -411,17 +460,27 @@ export function MoodMap({ valence, arousal }: { valence: number; arousal: number
   );
 
   return (
-    <svg viewBox={`0 0 ${S} ${S}`} className="mx-auto w-full max-w-[var(--px-260)]">
-      <rect x={pad} y={pad} width={inner} height={inner} fill="var(--opacity-10)" stroke="currentColor" strokeOpacity={0.1} rx={6} />
-      <line x1={S / 2} y1={pad} x2={S / 2} y2={S - pad} stroke="currentColor" strokeOpacity={0.12} />
-      <line x1={pad} y1={S / 2} x2={S - pad} y2={S / 2} stroke="currentColor" strokeOpacity={0.12} />
-      {axisText(S / 2, pad - 12, "energetic")}
-      {axisText(S / 2, S - pad + 12, "calm")}
-      {axisText(pad - 14, S / 2, "neg")}
-      {axisText(S - pad + 14, S / 2, "pos")}
-      <circle cx={cx} cy={cy} r={11} fill={ACCENT} fillOpacity={0.25} />
-      <circle cx={cx} cy={cy} r={5} fill={ACCENT} />
-    </svg>
+    <div className="mx-auto w-full max-w-[var(--px-260)]">
+      <svg
+        viewBox={`0 0 ${S} ${S}`}
+        className="w-full cursor-default"
+        onPointerEnter={() => setHover(true)}
+        onPointerLeave={() => setHover(false)}
+      >
+        <rect x={pad} y={pad} width={inner} height={inner} fill="var(--opacity-10)" stroke="currentColor" strokeOpacity={0.1} rx={6} />
+        <line x1={S / 2} y1={pad} x2={S / 2} y2={S - pad} stroke="currentColor" strokeOpacity={0.12} />
+        <line x1={pad} y1={S / 2} x2={S - pad} y2={S / 2} stroke="currentColor" strokeOpacity={0.12} />
+        {axisText(S / 2, pad - 12, "energetic")}
+        {axisText(S / 2, S - pad + 12, "calm")}
+        {axisText(pad - 14, S / 2, "neg")}
+        {axisText(S - pad + 14, S / 2, "pos")}
+        <circle cx={cx} cy={cy} r={hover ? 14 : 11} fill={ACCENT} fillOpacity={0.25} style={{ transition: "r 0.15s" }} />
+        <circle cx={cx} cy={cy} r={hover ? 6 : 5} fill={ACCENT} style={{ transition: "r 0.15s" }} />
+      </svg>
+      <div className="h-[var(--px-12)] text-center font-helvetica text-[length:var(--px-9)] tabular-nums opacity-70">
+        {hover ? `valence ${(valence * 100).toFixed(0)}% · arousal ${(arousal * 100).toFixed(0)}%` : ""}
+      </div>
+    </div>
   );
 }
 

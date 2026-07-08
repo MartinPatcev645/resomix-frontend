@@ -103,49 +103,66 @@ export function MoodRadar({ dims }: { dims: Record<string, number> }) {
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
+  const [hover, setHover] = useState<string | null>(null);
 
   return (
-    <svg viewBox="0 0 200 200" className="mx-auto w-full max-w-[var(--px-260)]">
-      {[0.25, 0.5, 0.75, 1].map((g) => (
-        <polygon
-          key={g}
-          points={axes.map((_, i) => pt(i, R * g).map((v) => v.toFixed(1)).join(",")).join(" ")}
-          fill="none"
-          stroke="currentColor"
-          strokeOpacity={0.12}
-        />
-      ))}
-      {axes.map((_, i) => {
-        const [x, y] = pt(i, R);
-        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="currentColor" strokeOpacity={0.12} />;
-      })}
-      <polygon points={poly} fill={ACCENT} fillOpacity={0.28} stroke={ACCENT} strokeWidth={1.5} />
-      {axes.map((k, i) => {
-        const [x, y] = pt(i, R * Math.max(0.02, dims[k]));
-        return (
-          <circle key={`d${k}`} cx={x} cy={y} r={3.5} fill={ACCENT} className="cursor-default">
-            <title>{`${k}: ${(dims[k] * 100).toFixed(0)}%`}</title>
-          </circle>
-        );
-      })}
-      {axes.map((k, i) => {
-        const [x, y] = pt(i, R + 12);
-        return (
-          <text
-            key={k}
-            x={x}
-            y={y}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="fill-current font-helvetica"
-            fontSize="9"
-            opacity={0.7}
-          >
-            {k}
-          </text>
-        );
-      })}
-    </svg>
+    <div className="mx-auto w-full max-w-[var(--px-260)]">
+      <svg viewBox="0 0 200 200" className="w-full">
+        {[0.25, 0.5, 0.75, 1].map((g) => (
+          <polygon
+            key={g}
+            points={axes.map((_, i) => pt(i, R * g).map((v) => v.toFixed(1)).join(",")).join(" ")}
+            fill="none"
+            stroke="currentColor"
+            strokeOpacity={0.12}
+          />
+        ))}
+        {axes.map((_, i) => {
+          const [x, y] = pt(i, R);
+          return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="currentColor" strokeOpacity={0.12} />;
+        })}
+        <polygon points={poly} fill={ACCENT} fillOpacity={0.28} stroke={ACCENT} strokeWidth={1.5} />
+        {axes.map((k, i) => {
+          const [x, y] = pt(i, R * Math.max(0.02, dims[k]));
+          return (
+            <circle
+              key={`d${k}`}
+              cx={x}
+              cy={y}
+              r={hover === k ? 5.5 : 3.5}
+              fill={ACCENT}
+              className="cursor-default"
+              style={{ transition: "r 0.12s" }}
+              onPointerEnter={() => setHover(k)}
+              onPointerLeave={() => setHover(null)}
+            />
+          );
+        })}
+        {axes.map((k, i) => {
+          const [x, y] = pt(i, R + 12);
+          return (
+            <text
+              key={k}
+              x={x}
+              y={y}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="cursor-default fill-current font-helvetica"
+              fontSize="9"
+              opacity={hover === k ? 1 : 0.7}
+              fontWeight={hover === k ? 600 : 400}
+              onPointerEnter={() => setHover(k)}
+              onPointerLeave={() => setHover(null)}
+            >
+              {k}
+            </text>
+          );
+        })}
+      </svg>
+      <div className="h-[var(--px-12)] text-center font-helvetica text-[length:var(--px-9)] tabular-nums opacity-70">
+        {hover ? `${hover} · ${(dims[hover] * 100).toFixed(0)}%` : ""}
+      </div>
+    </div>
   );
 }
 
@@ -170,6 +187,7 @@ export function CamelotWheel({ camelot }: { camelot: string }) {
   const side = camelot.slice(-1).toUpperCase(); // "A" | "B"
   const cx = 110;
   const cy = 110;
+  const [hover, setHover] = useState<string | null>(null);
 
   const seg = (i: number, rInner: number, rOuter: number) => {
     const a0 = (Math.PI * 2 * (i - 0.5)) / 12 - Math.PI / 2;
@@ -187,20 +205,24 @@ export function CamelotWheel({ camelot }: { camelot: string }) {
     (i + 1 === num && s !== side);
 
   return (
-    <svg viewBox="0 0 220 220" className="mx-auto w-full max-w-[var(--px-260)]">
+    <div className="mx-auto w-full max-w-[var(--px-260)]">
+      <svg viewBox="0 0 220 220" className="w-full">
       {WHEEL.map((_, i) => {
         const active = isActive(i, "B");
         const neigh = isNeighbor(i, "B");
+        const key = `${i + 1}B · ${WHEEL[i].major} major`;
         return (
           <g key={`b${i}`}>
             <path
               d={seg(i, 62, 100)}
               fill={active ? ACCENT : neigh ? "rgba(238,74,38,0.28)" : "var(--opacity-10)"}
               stroke="currentColor"
-              strokeOpacity={0.15}
-              className="cursor-default"
+              strokeOpacity={hover === key ? 0.6 : 0.15}
+              className="cursor-default transition-[stroke-opacity]"
+              onPointerEnter={() => setHover(key)}
+              onPointerLeave={() => setHover(null)}
             >
-              <title>{`${i + 1}B · ${WHEEL[i].major} major`}</title>
+              <title>{key}</title>
             </path>
             <text {...xy(labelPos(i, 81))} textAnchor="middle" dominantBaseline="middle" className="fill-current font-helvetica" fontSize="7.5" opacity={active ? 1 : 0.75}>
               {i + 1}B
@@ -211,16 +233,19 @@ export function CamelotWheel({ camelot }: { camelot: string }) {
       {WHEEL.map((_, i) => {
         const active = isActive(i, "A");
         const neigh = isNeighbor(i, "A");
+        const key = `${i + 1}A · ${WHEEL[i].minor}`;
         return (
           <g key={`a${i}`}>
             <path
               d={seg(i, 30, 62)}
               fill={active ? ACCENT : neigh ? "rgba(238,74,38,0.28)" : "var(--opacity-10)"}
               stroke="currentColor"
-              strokeOpacity={0.15}
-              className="cursor-default"
+              strokeOpacity={hover === key ? 0.6 : 0.15}
+              className="cursor-default transition-[stroke-opacity]"
+              onPointerEnter={() => setHover(key)}
+              onPointerLeave={() => setHover(null)}
             >
-              <title>{`${i + 1}A · ${WHEEL[i].minor}`}</title>
+              <title>{key}</title>
             </path>
             <text {...xy(labelPos(i, 46))} textAnchor="middle" dominantBaseline="middle" className="fill-current font-helvetica" fontSize="7" opacity={active ? 1 : 0.6}>
               {i + 1}A
@@ -231,7 +256,11 @@ export function CamelotWheel({ camelot }: { camelot: string }) {
       <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" className="fill-current font-helvetica" fontSize="15" fontWeight={600}>
         {camelot}
       </text>
-    </svg>
+      </svg>
+      <div className="h-[var(--px-12)] text-center font-helvetica text-[length:var(--px-9)] opacity-70">
+        {hover ?? (side === "B" ? `${camelot} · ${WHEEL[num - 1]?.major ?? ""} major` : `${camelot} · ${WHEEL[num - 1]?.minor ?? ""}`)}
+      </div>
+    </div>
   );
 }
 function xy([x, y]: readonly [number, number]) {
@@ -243,6 +272,7 @@ export function WaveTimeline({
   energy,
   beatTimes,
   onsetTimes,
+  downbeats = [],
   phraseBoundaries = [],
   bassEntryMs = null,
   voiceRegions = [],
@@ -252,6 +282,7 @@ export function WaveTimeline({
   energy: number[];
   beatTimes: number[];
   onsetTimes: number[];
+  downbeats?: number[];
   phraseBoundaries?: number[];
   bassEntryMs?: number | null;
   voiceRegions?: { startMs: number; endMs: number; meanScore: number }[];
@@ -276,8 +307,8 @@ export function WaveTimeline({
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full" style={{ height }}>
-      {/* bar grid (every 4th beat) */}
-      {beatTimes.filter((_, i) => i % 4 === 0).map((t, i) => (
+      {/* bar grid: detected downbeats if present, else every 4th beat */}
+      {(downbeats.length ? downbeats : beatTimes.filter((_, i) => i % 4 === 0)).map((t, i) => (
         <line key={`b${i}`} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="currentColor" strokeOpacity={0.06} vectorEffect="non-scaling-stroke" />
       ))}
       {/* phrase boundaries (stronger) */}
@@ -438,6 +469,7 @@ export function StemArea({
   durationMs,
   currentMs = null,
   onSeek,
+  vocalRegions = [],
 }: {
   stems: Record<string, StemMetrics>;
   hidden?: Set<string>;
@@ -446,6 +478,7 @@ export function StemArea({
   durationMs?: number;
   currentMs?: number | null;
   onSeek?: (ms: number) => void;
+  vocalRegions?: { startMs: number; endMs: number; meanScore: number }[];
 }) {
   const allNames = Object.keys(stems);
   const names = allNames.filter((n) => !hidden?.has(n)); // stacked in this order
@@ -476,6 +509,20 @@ export function StemArea({
 
   const svg = (
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block w-full rounded-[var(--px-8)]" style={{ height }}>
+      {/* measured vocal-activity regions (from the vocals stem), behind the areas */}
+      {durationMs
+        ? vocalRegions.map((r, i) => (
+            <rect
+              key={`vr${i}`}
+              x={(r.startMs / durationMs) * W}
+              y={0}
+              width={Math.max(0, ((r.endMs - r.startMs) / durationMs) * W)}
+              height={H}
+              fill={STEM_COLORS.vocals}
+              fillOpacity={0.12}
+            />
+          ))
+        : null}
       {polys.map((p) => (
         <polygon key={p.name} points={p.points} fill={STEM_COLORS[p.name] ?? "#888"} fillOpacity={0.8} />
       ))}
@@ -485,7 +532,7 @@ export function StemArea({
     <TipRows
       rows={names.map((name) => {
         const v = valueAt(stems[name].energyCurve.values, frac);
-        return { label: name, value: v == null ? "–" : v.toFixed(2), color: STEM_COLORS[name] ?? "#888" };
+        return { label: name, value: v == null ? "–" : `${(v * 100).toFixed(0)}%`, color: STEM_COLORS[name] ?? "#888" };
       })}
     />
   );

@@ -9,7 +9,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
-import { ACCENT, BarList, fmtClock, Gauge, LineChart, MoodMap, MultiLineChart, Panel, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
+import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
 import { CamelotWheel, Donut, Heatmap, MoodRadar, RibbonChart, sectionAt, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
 
 const shortGenre = (l: string) => l.split("---").pop() ?? l;
@@ -33,7 +33,7 @@ const ribbonTip =
   );
 
 export default function AnalysisPage() {
-  const { status, data, error, progress, fileName, audioUrl, analyze, reset } = useTrackAnalysis();
+  const { status, data, error, progress, fileName, audioUrl, part1Ready, analyze, reset } = useTrackAnalysis();
   const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -75,6 +75,11 @@ export default function AnalysisPage() {
     if (file) analyze(file);
   };
 
+  // Progressive delivery: show the dashboard as soon as part 1 (local DSP) is in;
+  // the part-2 (semantic/GPU) panels fill in below once the full result lands.
+  const showDashboard = (part1Ready || status === "done") && data;
+  const part2Done = status === "done";
+
   return (
     <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-[var(--px-56)] lg:px-[var(--px-80)] pb-[var(--px-80)] tracking-[var(--px-1)]">
       <div className="mx-auto w-full max-w-6xl text-[var(--color-primary)]">
@@ -113,7 +118,7 @@ export default function AnalysisPage() {
         )}
 
         {/* ---------------------------------------------------------- Upload */}
-        {status !== "done" && status !== "error" && (
+        {(status === "idle" || status === "uploading") && (
           <div className="mx-auto w-full max-w-2xl">
             <button
               type="button"
@@ -168,8 +173,23 @@ export default function AnalysisPage() {
           </div>
         )}
 
+        {/* ------------------------------------------ Part-1 computing (loader) */}
+        {status === "analyzing" && !part1Ready && (
+          <div className="mx-auto w-full max-w-2xl">
+            <div className="rounded-[var(--px-16)] border border-[var(--opacity-15)] bg-[var(--opacity-10)] p-[var(--px-32)]">
+              <div className="mb-[var(--px-16)] truncate font-helvetica text-[length:var(--px-12)] uppercase tracking-[var(--px-1)] opacity-70">
+                Analyzing · {fileName}
+              </div>
+              <div className="flex flex-col gap-[var(--px-16)]">
+                <LoadingStep title="Sound & structure" subtitle="tempo · key · loudness · spectrum · sections" />
+                <LoadingStep title="Sound, mood & style" subtitle="genre · instruments · stems · emotion" />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ------------------------------------------------------- Dashboard */}
-        {status === "done" && data && (
+        {showDashboard && data && (
           <div className="flex flex-col gap-[var(--px-20)]">
             {/* headline row */}
             <div className="flex flex-wrap items-center justify-between gap-[var(--px-12)]">
@@ -242,7 +262,11 @@ export default function AnalysisPage() {
               <StatCard label="Key" value={`${data.tonality.key} ${data.tonality.scale === "major" ? "maj" : "min"}`} sub={`Camelot ${data.tonality.camelot}`} hint="Estimated musical key & scale (Krumhansl-Kessler), plus its Camelot code for harmonic mixing." />
               <StatCard label="Loudness" value={data.technical.integratedLufs.toFixed(1)} sub="LUFS integrated" hint="Integrated loudness in LUFS (EBU R128) — the overall perceived level across the whole track." />
               <StatCard label="Duration" value={fmtDuration(data.identity.durationMs)} sub={`${fmtBpm(data.rhythm.bpm)} BPM`} hint="Total track length (mm:ss)." />
-              <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)]">{shortGenre(data.semantics.genreTop[0].label)}</span>} sub={`${(data.semantics.genreTop[0].score * 100).toFixed(0)}% match`} hint="Most likely genre from the Discogs-400 classifier (see the full ranking below)." />
+              {data.semantics.genreTop.length > 0 ? (
+                <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)]">{shortGenre(data.semantics.genreTop[0].label)}</span>} sub={`${(data.semantics.genreTop[0].score * 100).toFixed(0)}% match`} hint="Most likely genre from the Discogs-400 classifier (see the full ranking below)." />
+              ) : (
+                <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)] opacity-40">…</span>} sub="analyzing" hint="Genre needs the model pass (part 2) — filling in shortly." />
+              )}
             </div>
 
             {/* structure */}
@@ -291,6 +315,7 @@ export default function AnalysisPage() {
                   energy={data.energy.energyCurve.values}
                   beatTimes={data.rhythm.beatTimesSeconds}
                   onsetTimes={data.energy.onsetTimesSeconds}
+                  downbeats={data.rhythm.downbeatsSeconds}
                   phraseBoundaries={data.rhythm.phraseBoundariesSeconds}
                   bassEntryMs={data.energy.bassEntryMs}
                   voiceRegions={data.timeline.voiceRegions}
@@ -306,7 +331,7 @@ export default function AnalysisPage() {
                 subtitle="short-term loudness vs RMS energy"
                 right={
                   <div className="text-right font-helvetica text-[length:var(--px-9)] opacity-60">
-                    LRA {data.technical.loudnessRangeLu.toFixed(1)} LU · peak {data.technical.truePeakDbtp.toFixed(1)} dB · crest {data.technical.crestFactor.toFixed(1)}
+                    LRA {data.technical.loudnessRangeLu.toFixed(1)} LU · peak {data.technical.truePeakDbtp.toFixed(1)} dB · crest {data.technical.crestFactor.toFixed(1)} · avg {data.technical.averageLoudnessDb.toFixed(1)} dB
                   </div>
                 }
               >
@@ -315,8 +340,8 @@ export default function AnalysisPage() {
                   currentMs={currentMs}
                   onSeek={seek}
                   lines={[
-                    { label: "loudness (LUFS)", series: data.technical.loudnessCurve, color: ACCENT },
-                    { label: "rms energy", series: data.technical.rmsEnergyCurve, color: "#7fb0ff" },
+                    { label: "loudness (LUFS)", series: data.technical.loudnessCurve, color: ACCENT, fmt: (v) => `${v.toFixed(1)} LUFS` },
+                    { label: "rms energy", series: data.technical.rmsEnergyCurve, color: "#7fb0ff", fmt: (v) => `${(v * 100).toFixed(0)}%` },
                   ]}
                 />
               </Panel>
@@ -337,6 +362,7 @@ export default function AnalysisPage() {
               </Panel>
             </div>
 
+            {/* =============== PART 1 — local DSP (shown immediately) =============== */}
             {/* spectrum */}
             <Panel title="Mel-spectrogram" subtitle="frequency content over time (low → high) · click / play to seek">
               <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={seek} tooltip={() => null}>
@@ -344,112 +370,123 @@ export default function AnalysisPage() {
               </TimeAxis>
             </Panel>
 
-            {/* semantic evolution */}
-            <Panel title="Evolution over time" subtitle="genre · mood · instruments across the track — brighter = stronger · click / play to seek">
-              <div className="flex flex-col gap-[var(--px-18)]">
+            {/* harmony */}
+            <Panel title="Harmony" subtitle={`${data.tonality.key} ${data.tonality.scale} · ${(data.tonality.strength * 100).toFixed(0)}% strength`}>
+              <div className="grid grid-cols-1 items-center gap-[var(--px-12)] sm:grid-cols-2">
+                <CamelotWheel camelot={data.tonality.camelot} />
                 <div>
-                  <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50">Genre</div>
-                  <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={seek} tooltip={ribbonTip(data.timeline.genreOverTime, shortGenre)}>
-                    <RibbonChart track={data.timeline.genreOverTime} labelTransform={shortGenre} />
-                  </TimeAxis>
-                </div>
-                <div>
-                  <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50">Mood</div>
-                  <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={seek} tooltip={ribbonTip(data.timeline.moodOverTime)}>
-                    <RibbonChart track={data.timeline.moodOverTime} />
-                  </TimeAxis>
-                </div>
-                <div>
-                  <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50">Instruments</div>
-                  <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={seek} tooltip={ribbonTip(data.timeline.instrumentOverTime)}>
-                    <RibbonChart track={data.timeline.instrumentOverTime} />
+                  <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase opacity-50">Chromagram</div>
+                  <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={seek} tooltip={() => null}>
+                    <Heatmap matrix={data.tonality.chromagram} height={130} />
                   </TimeAxis>
                 </div>
               </div>
             </Panel>
 
-            {/* composition (stems) */}
-            <Panel
-              title="Composition (stems)"
-              subtitle="Demucs source separation — stacked stem energy over time · click / play to seek"
-            >
-              <div className="grid grid-cols-1 items-center gap-[var(--px-16)] lg:grid-cols-[1fr_auto]">
-                <StemArea
-                  stems={data.composition.stems}
-                  hidden={stemsHidden}
-                  onToggle={toggleStem}
-                  durationMs={durationMs}
-                  currentMs={currentMs}
-                  onSeek={seek}
-                />
-                <Donut stems={data.composition.stems} hidden={stemsHidden} />
-              </div>
-            </Panel>
-
-            <div className="grid grid-cols-1 gap-[var(--px-20)] lg:grid-cols-2">
-              {/* vibe */}
-              <Panel title="Vibe" subtitle="mood profile · emotion · perceptual gauges">
-                <div className="flex flex-col gap-[var(--px-16)]">
-                  <div className="grid grid-cols-1 items-center gap-[var(--px-16)] sm:grid-cols-2">
-                    <div>
-                      <div className="mb-[var(--px-6)] text-center font-helvetica text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] opacity-50">Mood</div>
-                      <MoodRadar dims={data.semantics.moodDimensions} />
-                    </div>
-                    <div>
-                      <div className="mb-[var(--px-6)] text-center font-helvetica text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] opacity-50">Valence · Arousal</div>
-                      <MoodMap valence={data.semantics.valence} arousal={data.semantics.arousal} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-4 gap-[var(--px-10)]">
-                    <Gauge value={data.semantics.danceability} label="Danceable" />
-                    <Gauge value={data.semantics.approachability} label="Approachable" />
-                    <Gauge value={data.semantics.voiceScore} label="Vocal" sub={data.semantics.voiceInstrumental} />
-                    <Gauge value={data.semantics.timbreBright} label="Bright" sub="vs dark" />
-                  </div>
-                </div>
-              </Panel>
-
-              {/* harmony */}
-              <Panel title="Harmony" subtitle={`${data.tonality.key} ${data.tonality.scale} · ${(data.tonality.strength * 100).toFixed(0)}% strength`}>
-                <div className="grid grid-cols-1 items-center gap-[var(--px-12)] sm:grid-cols-2">
-                  <CamelotWheel camelot={data.tonality.camelot} />
-                  <div>
-                    <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase opacity-50">Chromagram</div>
-                    <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={seek} tooltip={() => null}>
-                      <Heatmap matrix={data.tonality.chromagram} height={130} />
-                    </TimeAxis>
-                  </div>
-                </div>
-              </Panel>
-            </div>
-
-            {/* composition */}
-            <div className="grid grid-cols-1 gap-[var(--px-20)] lg:grid-cols-3">
-              <Panel title="Genre" subtitle="Discogs-400 top matches">
-                <BarList items={data.semantics.genreTop} labelTransform={shortGenre} />
-              </Panel>
-              <Panel title="Instrumentation" subtitle="detected instruments">
-                <BarList items={data.semantics.instrumentTop} />
-              </Panel>
-              <Panel title="Mood / theme" subtitle="MTG-Jamendo tags">
-                <TagChips items={data.semantics.moodThemeTop} />
-              </Panel>
-            </div>
-
-            {/* spectral descriptors */}
-            <Panel title="Timbre over time" subtitle="spectral centroid · rolloff · flatness · toggle lines below">
+            {/* timbre */}
+            <Panel title="Timbre over time" subtitle="spectral centroid · rolloff · bandwidth · flatness · zero-crossing rate · toggle lines below">
               <MultiLineChart
                 height={120}
                 durationMs={durationMs}
                 currentMs={currentMs}
                 onSeek={seek}
                 lines={[
-                  { label: "centroid", series: data.spectral.centroidCurve, color: ACCENT },
-                  { label: "rolloff", series: data.spectral.rolloffCurve, color: "#7fb0ff" },
-                  { label: "flatness", series: data.spectral.flatnessCurve, color: "#8fd694" },
+                  { label: "centroid", series: data.spectral.centroidCurve, color: ACCENT, fmt: (v) => `${(v / 1000).toFixed(2)} kHz` },
+                  { label: "rolloff", series: data.spectral.rolloffCurve, color: "#7fb0ff", fmt: (v) => `${(v / 1000).toFixed(2)} kHz` },
+                  ...(data.spectral.bandwidthCurve.values.length
+                    ? [{ label: "bandwidth", series: data.spectral.bandwidthCurve, color: "#e0b46a", fmt: (v: number) => `${(v / 1000).toFixed(2)} kHz` }]
+                    : []),
+                  { label: "flatness", series: data.spectral.flatnessCurve, color: "#8fd694", fmt: (v) => `${(v * 100).toFixed(1)}%` },
+                  ...(data.spectral.zcrCurve.values.length
+                    ? [{ label: "zcr", series: data.spectral.zcrCurve, color: "#c88fe0", fmt: (v: number) => `${(v * 100).toFixed(1)}%` }]
+                    : []),
                 ]}
               />
             </Panel>
+
+            {/* =============== PART 2 — semantic / GPU (fills in below) =============== */}
+            {part2Done ? (
+              <>
+                {/* semantic evolution */}
+                <Panel title="Evolution over time" subtitle="genre · mood · instruments across the track — brighter = stronger · click / play to seek">
+                  <div className="flex flex-col gap-[var(--px-18)]">
+                    <div>
+                      <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50">Genre</div>
+                      <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={seek} tooltip={ribbonTip(data.timeline.genreOverTime, shortGenre)}>
+                        <RibbonChart track={data.timeline.genreOverTime} labelTransform={shortGenre} />
+                      </TimeAxis>
+                    </div>
+                    <div>
+                      <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50">Mood</div>
+                      <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={seek} tooltip={ribbonTip(data.timeline.moodOverTime)}>
+                        <RibbonChart track={data.timeline.moodOverTime} />
+                      </TimeAxis>
+                    </div>
+                    <div>
+                      <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50">Instruments</div>
+                      <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={seek} tooltip={ribbonTip(data.timeline.instrumentOverTime)}>
+                        <RibbonChart track={data.timeline.instrumentOverTime} />
+                      </TimeAxis>
+                    </div>
+                  </div>
+                </Panel>
+
+                {/* composition (stems) */}
+                <Panel title="Composition (stems)" subtitle="Demucs source separation — stacked stem energy over time · click / play to seek">
+                  <div className="grid grid-cols-1 items-center gap-[var(--px-16)] lg:grid-cols-[1fr_auto]">
+                    <StemArea stems={data.composition.stems} hidden={stemsHidden} onToggle={toggleStem} durationMs={durationMs} currentMs={currentMs} onSeek={seek} vocalRegions={data.composition.vocalRegions} />
+                    <Donut stems={data.composition.stems} hidden={stemsHidden} />
+                  </div>
+                </Panel>
+
+                {/* vibe */}
+                <Panel title="Vibe" subtitle="mood profile · emotion · perceptual gauges">
+                  <div className="flex flex-col gap-[var(--px-16)]">
+                    <div className="grid grid-cols-1 items-center gap-[var(--px-16)] sm:grid-cols-2">
+                      <div>
+                        <div className="mb-[var(--px-6)] text-center font-helvetica text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] opacity-50">Mood</div>
+                        <MoodRadar dims={data.semantics.moodDimensions} />
+                      </div>
+                      <div>
+                        <div className="mb-[var(--px-6)] text-center font-helvetica text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] opacity-50">Valence · Arousal</div>
+                        <MoodMap valence={data.semantics.valence} arousal={data.semantics.arousal} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-x-[var(--px-10)] gap-y-[var(--px-14)] sm:grid-cols-6">
+                      <Gauge value={data.semantics.danceability} label="Danceable" hint="How suitable for dancing (steady beat, groove) — Discogs classifier." />
+                      <Gauge value={data.semantics.approachability} label="Approachable" hint="How accessible / easy-listening vs. challenging the track sounds." />
+                      <Gauge value={data.semantics.voiceScore} label="Vocal" sub={data.semantics.voiceInstrumental} hint="Likelihood the track contains vocals vs. being instrumental." />
+                      <Gauge value={data.semantics.timbreBright} label="Bright" sub="vs dark" hint="Timbre brightness — bright/airy vs. dark/warm spectral balance." />
+                      <Gauge value={data.semantics.moodElectronic} label="Electronic" hint="Electronic vs. acoustic production character." />
+                      <Gauge value={data.semantics.moodAcoustic} label="Acoustic" hint="Acoustic-instrument character of the track." />
+                    </div>
+                  </div>
+                </Panel>
+
+                {/* genre / style / instruments / mood */}
+                <div className="grid grid-cols-1 gap-[var(--px-20)] lg:grid-cols-2">
+                  <Panel title="Genre" subtitle="Discogs-400 top matches">
+                    <BarList items={data.semantics.genreTop} labelTransform={shortGenre} />
+                  </Panel>
+                  <Panel title="Detailed style" subtitle="MAEST-519 fine-grained style">
+                    <BarList items={data.semantics.styleMaestTop} labelTransform={shortGenre} />
+                  </Panel>
+                  <Panel title="Instrumentation" subtitle="detected instruments">
+                    <BarList items={data.semantics.instrumentTop} />
+                  </Panel>
+                  <Panel title="Mood / theme" subtitle="MTG-Jamendo tags">
+                    <TagChips items={data.semantics.moodThemeTop} />
+                  </Panel>
+                </div>
+              </>
+            ) : (
+              <Panel title="Sound, mood & style" subtitle="genre · instruments · stems · emotion">
+                <div className="flex flex-col gap-[var(--px-16)] py-[var(--px-6)]">
+                  <LoadingStep title="Sound & structure" subtitle="tempo · key · loudness · spectrum · sections — ready above" done />
+                  <LoadingStep title="Sound, mood & style" subtitle="genre · instruments · stems · emotion — running the models" />
+                </div>
+              </Panel>
+            )}
 
             <p className="text-center font-helvetica text-[length:var(--px-9)] opacity-30">
               measured (tempo · key · loudness) vs predicted (genre · mood · instruments)
