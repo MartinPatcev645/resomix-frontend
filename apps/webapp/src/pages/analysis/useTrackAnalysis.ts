@@ -16,10 +16,10 @@ import { useCallback, useRef, useState } from "react";
 import type { AnalysisData } from "./data.js";
 import { mapCanonicalToAnalysisData } from "./mapCanonical.js";
 
-/** resomix-analysis-service (FastAPI). Override with VITE_ANALYSIS_ENDPOINT if needed. */
+/** resomix-analysis-service (FastAPI) base URL. Set VITE_ANALYSIS_ENDPOINT per
+ *  environment (local dev vs deployed); falls back to the local dev server. */
 export const ANALYSIS_ENDPOINT =
-  ((import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_ANALYSIS_ENDPOINT) ??
-  "http://localhost:8010";
+  import.meta.env.VITE_ANALYSIS_ENDPOINT ?? "http://localhost:8010";
 
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 10 * 60 * 1000; // give a full-track analysis up to 10 minutes
