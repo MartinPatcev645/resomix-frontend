@@ -376,20 +376,19 @@ export function MultiLineChart({
 /* ----------------------------------------------------------------- BarList */
 export function BarList({
   items,
-  max,
   format = (v: number) => `${(v * 100).toFixed(0)}%`,
   labelTransform,
 }: {
   items: ScoredLabel[];
-  max?: number;
   format?: (v: number) => string;
   labelTransform?: (label: string) => string;
 }) {
-  const top = max ? Math.max(...items.map((i) => i.score)) : Math.max(...items.map((i) => i.score), 0.0001);
   return (
     <ul className="flex flex-col gap-[var(--px-8)]">
       {items.map((it) => {
-        const pct = Math.max(2, (it.score / top) * 100);
+        // Absolute 0–100 scale: a 70% value fills 70% of the track, the rest of
+        // the (faint white) track shows the remainder — so bars are comparable.
+        const pct = Math.max(2, Math.min(100, it.score * 100));
         const shown = labelTransform ? labelTransform(it.label) : it.label;
         return (
           <li key={it.label} className="group -mx-[var(--px-4)] rounded-[var(--px-6)] px-[var(--px-4)] py-[var(--px-2)] transition-colors hover:bg-white/5" title={`${shown} — ${format(it.score)}`}>
@@ -397,7 +396,7 @@ export function BarList({
               <span className="truncate pr-[var(--px-8)]">{shown}</span>
               <span className="shrink-0 opacity-50 tabular-nums group-hover:opacity-90">{format(it.score)}</span>
             </div>
-            <div className="h-[var(--px-6)] w-full overflow-hidden rounded-full bg-[var(--opacity-15)]">
+            <div className="h-[var(--px-6)] w-full overflow-hidden rounded-full bg-white/25">
               <div
                 className="h-full rounded-full transition-[width,filter] duration-500 group-hover:brightness-125"
                 style={{ width: `${pct}%`, background: ACCENT }}

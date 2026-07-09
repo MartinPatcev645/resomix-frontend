@@ -15,6 +15,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { AnalysisData } from "./data.js";
 import { mapCanonicalToAnalysisData } from "./mapCanonical.js";
+import { makePlayableUrl } from "./audioPlayable.js";
 
 /** resomix-analysis-service (FastAPI) base URL. Set VITE_ANALYSIS_ENDPOINT per
  *  environment (local dev vs deployed); falls back to the local dev server. */
@@ -163,7 +164,9 @@ export function useTrackAnalysis() {
     };
 
     setFileName(file.name);
-    setTrackUrl(URL.createObjectURL(file));
+    // Resolve a playable URL (transcodes AIFF -> WAV so it plays too); async, so
+    // guard against a stale run replacing the current track.
+    void makePlayableUrl(file).then((url) => live(() => setTrackUrl(url)));
     setError(null);
     setData(null);
     setProgress(0);

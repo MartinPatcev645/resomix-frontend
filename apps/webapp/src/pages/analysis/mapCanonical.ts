@@ -117,6 +117,7 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
       bandwidthCurve: series(spec.bandwidth_curve),
       zcrCurve: series(spec.zcr_curve),
       melSpectrogram: matrix(spec.mel_spectrogram),
+      linearSpectrogram: spec.linear_spectrogram ? matrix(spec.linear_spectrogram) : null,
     },
     energy: {
       energyCurve: series(en.energy_curve),

@@ -11,7 +11,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
 import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
-import { CamelotWheel, Donut, Heatmap, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
+import { CamelotWheel, ChromaView, Donut, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
 
 const shortGenre = (l: string) => l.split("---").pop() ?? l;
 const fmtDuration = (ms: number) => {
@@ -41,8 +41,14 @@ export default function AnalysisPage() {
   const [dragOver, setDragOver] = useState(false);
   const [currentMs, setCurrentMs] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [volume, setVolume] = useState(1);
 
   const durationMs = data?.identity.durationMs ?? 0;
+
+  // Keep the <audio> element's volume in sync (re-applied when a new track loads).
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [volume, audioUrl]);
 
   // Shared seek: drives the <audio> playhead and the synchronized cursor on every
   // full-track graph. Any graph click routes here via TimeAxis.
@@ -295,6 +301,36 @@ export default function AnalysisPage() {
                 />
               </div>
               <span className="w-10 shrink-0 text-right font-helvetica text-[length:var(--px-11)] tabular-nums opacity-50">{fmtClock(durationMs)}</span>
+
+              {/* volume */}
+              <div className="flex shrink-0 items-center gap-[var(--px-6)]">
+                <button
+                  type="button"
+                  onClick={() => setVolume((v) => (v > 0 ? 0 : 1))}
+                  aria-label={volume > 0 ? "Mute" : "Unmute"}
+                  className="opacity-60 transition-opacity hover:opacity-100"
+                >
+                  <svg viewBox="0 0 24 24" className="h-[var(--px-16)] w-[var(--px-16)]" fill="currentColor">
+                    <path d="M3 9v6h4l5 5V4L7 9H3z" />
+                    {volume === 0 ? (
+                      <path d="M16.5 8.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    ) : (
+                      <path d="M15.5 8.5a5 5 0 0 1 0 7M17.8 6.2a8 8 0 0 1 0 11.6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                    )}
+                  </svg>
+                </button>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={volume}
+                  onChange={(e) => setVolume(parseFloat(e.target.value))}
+                  aria-label="Volume"
+                  className="h-1 w-[var(--px-72)] cursor-pointer"
+                  style={{ accentColor: ACCENT }}
+                />
+              </div>
             </div>
 
             {/* stat cards */}
@@ -415,9 +451,10 @@ export default function AnalysisPage() {
 
             {/* =============== PART 1 — local DSP (shown immediately) =============== */}
             {/* spectrum */}
-            <Panel title="Mel-spectrogram" subtitle="frequency (Hz, mel-scaled) over time · brightness = power (dB rel. peak) · click / play to seek">
+            <Panel title="Spectrogram" subtitle="frequency (Hz, linear) over time · brightness = power (dB rel. peak) · click / play to seek">
               <SpectrogramView
-                matrix={data.spectral.melSpectrogram}
+                matrix={data.spectral.linearSpectrogram ?? data.spectral.melSpectrogram}
+                linear={!!data.spectral.linearSpectrogram}
                 sampleRateHz={data.identity.sampleRateHz}
                 durationMs={durationMs}
                 currentMs={currentMs}
@@ -431,10 +468,8 @@ export default function AnalysisPage() {
               <div className="grid grid-cols-1 items-center gap-[var(--px-12)] sm:grid-cols-2">
                 <CamelotWheel camelot={data.tonality.camelot ?? ""} />
                 <div>
-                  <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase opacity-50">Chromagram</div>
-                  <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={seek} tooltip={() => null}>
-                    <Heatmap matrix={data.tonality.chromagram} height={130} />
-                  </TimeAxis>
+                  <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase opacity-50">Chromagram · hover for the notes</div>
+                  <ChromaView matrix={data.tonality.chromagram} durationMs={durationMs} currentMs={currentMs} onSeek={seek} height={140} />
                 </div>
               </div>
             </Panel>
@@ -521,14 +556,14 @@ export default function AnalysisPage() {
 
                 {/* genre / style / instruments / mood */}
                 <div className="grid grid-cols-1 gap-[var(--px-20)] lg:grid-cols-2">
-                  <Panel title="Genre" subtitle="Discogs-400 top matches">
-                    <BarList items={data.semantics.genreTop} labelTransform={shortGenre} />
+                  <Panel title="Genre" subtitle="Discogs-400 · top 7">
+                    <BarList items={data.semantics.genreTop.slice(0, 7)} labelTransform={shortGenre} />
                   </Panel>
-                  <Panel title="Detailed style" subtitle="MAEST-519 fine-grained style">
-                    <BarList items={data.semantics.styleMaestTop} labelTransform={shortGenre} />
+                  <Panel title="Detailed style" subtitle="MAEST-519 · top 7">
+                    <BarList items={data.semantics.styleMaestTop.slice(0, 7)} labelTransform={shortGenre} />
                   </Panel>
-                  <Panel title="Instrumentation" subtitle="detected instruments">
-                    <BarList items={data.semantics.instrumentTop} />
+                  <Panel title="Instrumentation" subtitle="detected instruments · top 7">
+                    <BarList items={data.semantics.instrumentTop.slice(0, 7)} />
                   </Panel>
                   <Panel title="Mood / theme" subtitle="MTG-Jamendo tags">
                     <TagChips items={data.semantics.moodThemeTop} />

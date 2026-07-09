@@ -90,9 +90,11 @@ export function Heatmap({ matrix, height = 150 }: { matrix: Matrix; height?: num
 // heatmap edge-to-edge (so the shared playhead/seek stays aligned with the other
 // full-track charts) and overlay a mel-scaled Hz axis, a time axis, and a
 // power colorbar — the librosa `specshow` look, without breaking alignment.
-const DB_RANGE = 80; // display window in dB below the peak (librosa top_db)
-const HZ_TICKS = [0, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
-const fmtHz = (f: number) => (f === 0 ? "0" : f >= 1000 ? `${f / 1000}k` : `${f}`);
+const DB_RANGE = 120; // display window in dB below the peak
+const DB_TICKS = [-120, -110, -100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0];
+const HZ_STEP = 2000; // linear frequency ticks every 2 kHz (0, 2k, 4k, … Nyquist)
+const fmtHz = (f: number) => (f === 0 ? "0" : f >= 1000 ? `${Math.round(f / 1000)}k` : `${f}`);
+const CHROMA_LABELS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const hzToMel = (f: number) => 2595 * Math.log10(1 + f / 700);
 
 function niceTimeTicks(durationMs: number): number[] {
@@ -111,6 +113,7 @@ export function SpectrogramView({
   currentMs,
   onSeek,
   height = 190,
+  linear = false,
 }: {
   matrix: Matrix;
   sampleRateHz: number;
@@ -118,6 +121,9 @@ export function SpectrogramView({
   currentMs?: number | null;
   onSeek?: (ms: number) => void;
   height?: number;
+  // true = rows are already linear frequency bins (draw directly); false = mel
+  // bands (resample onto a linear axis).
+  linear?: boolean;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
@@ -128,22 +134,60 @@ export function SpectrogramView({
     const cols = rows ? matrix.data[0].length : 0;
     if (!rows || !cols) return;
 
-    // Display dB relative to the peak, clamped to an 80 dB window (librosa's
-    // `top_db=80`) — standard dynamic range, better contrast than min→max.
+    // dB relative to the peak, clamped to the display window below it.
     let max = -Infinity;
     for (const row of matrix.data) for (const v of row) if (v > max) max = v;
     const floor = max - DB_RANGE;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    if (linear) {
+      // Already a linear-frequency spectrogram — draw each bin directly (low bin
+      // at the bottom); the axis is linear so no remap is needed.
+      canvas.width = cols;
+      canvas.height = rows;
+      const img = ctx.createImageData(cols, rows);
+      for (let r = 0; r < rows; r++) {
+        const yr = rows - 1 - r; // low frequency at the bottom
+        for (let c = 0; c < cols; c++) {
+          const [rr, gg, bb] = colormap((matrix.data[r][c] - floor) / DB_RANGE);
+          const o = (yr * cols + c) * 4;
+          img.data[o] = rr;
+          img.data[o + 1] = gg;
+          img.data[o + 2] = bb;
+          img.data[o + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+      return;
+    }
+
+    // Fallback (older results): mel-banded data — resample onto a LINEAR axis so
+    // the display + ticks are evenly spaced in Hz. Row y (0 = top = Nyquist)
+    // samples the mel band whose centre frequency matches (interpolated).
+    const fmaxHz = sampleRateHz > 0 ? sampleRateHz / 2 : 22050;
+    const melMaxHz = hzToMel(fmaxHz) || 1;
+    const OUT = 256; // vertical render resolution
+    const bandAt = new Float32Array(OUT);
+    for (let y = 0; y < OUT; y++) {
+      const f = fmaxHz * (1 - y / (OUT - 1));
+      bandAt[y] = (hzToMel(f) / melMaxHz) * (rows - 1);
+    }
     canvas.width = cols;
-    canvas.height = rows;
-    const img = ctx.createImageData(cols, rows);
-    for (let r = 0; r < rows; r++) {
-      const yr = rows - 1 - r; // low band at the bottom
+    canvas.height = OUT;
+    const img = ctx.createImageData(cols, OUT);
+    for (let y = 0; y < OUT; y++) {
+      const bp = bandAt[y];
+      const b0 = Math.max(0, Math.min(rows - 1, Math.floor(bp)));
+      const b1 = Math.min(rows - 1, b0 + 1);
+      const t = bp - b0;
+      const row0 = matrix.data[b0];
+      const row1 = matrix.data[b1];
       for (let c = 0; c < cols; c++) {
-        const [rr, gg, bb] = colormap((matrix.data[r][c] - floor) / DB_RANGE);
-        const o = (yr * cols + c) * 4;
+        const v = row0[c] * (1 - t) + row1[c] * t; // interpolate between mel bands
+        const [rr, gg, bb] = colormap((v - floor) / DB_RANGE);
+        const o = (y * cols + c) * 4;
         img.data[o] = rr;
         img.data[o + 1] = gg;
         img.data[o + 2] = bb;
@@ -151,7 +195,7 @@ export function SpectrogramView({
       }
     }
     ctx.putImageData(img, 0, 0);
-  }, [matrix]);
+  }, [matrix, sampleRateHz, linear]);
 
   const rows = matrix.data.length;
   const cols = rows ? matrix.data[0].length : 0;
@@ -160,9 +204,9 @@ export function SpectrogramView({
   }
 
   const fmax = sampleRateHz > 0 ? sampleRateHz / 2 : 22050;
-  const melMax = hzToMel(fmax) || 1;
-  const yFrac = (f: number) => 1 - hzToMel(f) / melMax; // 0 = top, 1 = bottom
-  const hzTicks = HZ_TICKS.filter((f) => f < fmax);
+  const yFrac = (f: number) => 1 - f / fmax; // LINEAR frequency axis (0 = top)
+  const hzTicks: number[] = [];
+  for (let f = 0; f <= fmax + 1; f += HZ_STEP) hzTicks.push(f); // 0, 2k, 4k, … up to Nyquist
   const timeTicks = niceTimeTicks(durationMs);
   const gradient = `linear-gradient(to right, ${STOPS.map(
     ([p, c]) => `rgb(${c[0]},${c[1]},${c[2]}) ${Math.round(p * 100)}%`,
@@ -173,21 +217,26 @@ export function SpectrogramView({
       <TimeAxis durationMs={durationMs} currentMs={currentMs ?? null} onSeek={onSeek} tooltip={() => null}>
         <div className="relative overflow-hidden rounded-[var(--px-8)]">
           <canvas ref={ref} className="block w-full" style={{ height, imageRendering: "pixelated" }} />
-          {hzTicks.map((f) => (
-            <div
-              key={f}
-              className="pointer-events-none absolute left-0 flex items-center gap-[var(--px-3)]"
-              style={{ top: `${yFrac(f) * 100}%`, transform: "translateY(-50%)" }}
-            >
-              <span className="h-px w-[var(--px-6)] bg-white/40" />
-              <span
-                className="font-helvetica text-[length:var(--px-9)] tabular-nums text-white/75"
-                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.95)" }}
+          {hzTicks.map((f) => {
+            const yf = yFrac(f);
+            // Keep the top (Nyquist) and bottom (0) labels fully inside the plot.
+            const ty = yf < 0.04 ? "translateY(0)" : yf > 0.96 ? "translateY(-100%)" : "translateY(-50%)";
+            return (
+              <div
+                key={f}
+                className="pointer-events-none absolute left-0 flex items-center gap-[var(--px-3)]"
+                style={{ top: `${yf * 100}%`, transform: ty }}
               >
-                {fmtHz(f)}
-              </span>
-            </div>
-          ))}
+                <span className="h-px w-[var(--px-6)] bg-white/40" />
+                <span
+                  className="font-helvetica text-[length:var(--px-9)] tabular-nums text-white/75"
+                  style={{ textShadow: "0 1px 3px rgba(0,0,0,0.95)" }}
+                >
+                  {fmtHz(f)}
+                </span>
+              </div>
+            );
+          })}
           <span
             className="pointer-events-none absolute right-[var(--px-6)] top-[var(--px-4)] font-helvetica text-[length:var(--px-9)] uppercase tracking-wide text-white/55"
             style={{ textShadow: "0 1px 3px rgba(0,0,0,0.95)" }}
@@ -216,13 +265,93 @@ export function SpectrogramView({
         </div>
       )}
 
-      <div className="mt-[var(--px-6)] flex items-center gap-[var(--px-8)]">
+      <div className="mt-[var(--px-6)] flex items-center gap-[var(--px-10)]">
         <span className="shrink-0 font-helvetica text-[length:var(--px-9)] uppercase tracking-wide opacity-45">Power</span>
-        <span className="shrink-0 font-helvetica text-[length:var(--px-9)] tabular-nums opacity-45">−{DB_RANGE} dB</span>
-        <div className="h-[var(--px-8)] flex-1 rounded-full" style={{ background: gradient }} />
-        <span className="shrink-0 font-helvetica text-[length:var(--px-9)] tabular-nums opacity-45">0 dB</span>
+        <div className="flex-1">
+          <div className="h-[var(--px-8)] w-full rounded-full" style={{ background: gradient }} />
+          <div className="relative mt-[var(--px-2)] h-[var(--px-10)]">
+            {DB_TICKS.map((db) => {
+              const frac = (db + DB_RANGE) / DB_RANGE; // −80 → 0 (left), 0 → 1 (right)
+              const tx = frac < 0.03 ? "translateX(0)" : frac > 0.97 ? "translateX(-100%)" : "translateX(-50%)";
+              return (
+                <span
+                  key={db}
+                  className="absolute font-helvetica text-[length:var(--px-9)] tabular-nums opacity-45"
+                  style={{ left: `${frac * 100}%`, transform: tx }}
+                >
+                  {db} dB
+                </span>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+/* --------------------------------------------------- ChromaView (labeled chroma) */
+// The chromagram is 12 pitch-class rows (C…B) over time. We reuse the Heatmap
+// canvas but add the pitch labels down the left + a hover that reports the
+// strongest pitch classes at that moment (and keeps the shared playhead/seek).
+export function ChromaView({
+  matrix,
+  durationMs,
+  currentMs,
+  onSeek,
+  height = 130,
+}: {
+  matrix: Matrix;
+  durationMs: number;
+  currentMs?: number | null;
+  onSeek?: (ms: number) => void;
+  height?: number;
+}) {
+  const rows = matrix.data.length;
+  const cols = rows ? matrix.data[0].length : 0;
+  if (!rows || !cols) {
+    return <div className="grid h-[var(--px-80)] place-items-center text-[length:var(--px-11)] opacity-40">no chromagram</div>;
+  }
+
+  // pitch-class intensities at a time fraction, strongest first.
+  const chromaAt = (frac: number) => {
+    const f = Math.min(cols - 1, Math.max(0, Math.round(frac * (cols - 1))));
+    return matrix.data
+      .map((row, i) => ({ label: CHROMA_LABELS[i] ?? String(i), v: row[f] ?? 0 }))
+      .sort((a, b) => b.v - a.v);
+  };
+
+  return (
+    <TimeAxis
+      durationMs={durationMs}
+      currentMs={currentMs ?? null}
+      onSeek={onSeek}
+      tooltip={(frac) => (
+        <TipRows rows={chromaAt(frac).slice(0, 4).map((t) => ({ label: t.label, value: `${(t.v * 100).toFixed(0)}%` }))} />
+      )}
+    >
+      <div className="relative overflow-hidden rounded-[var(--px-8)]">
+        <Heatmap matrix={matrix} height={height} />
+        {CHROMA_LABELS.slice(0, rows).map((lab, i) => {
+          const yr = rows - 1 - i; // pitch-class 0 (C) at the bottom
+          return (
+            <div
+              key={lab + i}
+              className="pointer-events-none absolute left-0 flex items-center gap-[var(--px-3)]"
+              style={{ top: `${((yr + 0.5) / rows) * 100}%`, transform: "translateY(-50%)" }}
+            >
+              <span className="h-px w-[var(--px-5)] bg-white/40" />
+              <span
+                className="font-helvetica text-[length:var(--px-8)] tabular-nums text-white/75"
+                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.95)" }}
+              >
+                {lab}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </TimeAxis>
   );
 }
 
@@ -248,7 +377,8 @@ export function MoodRadar({ dims }: { dims: Record<string, number> }) {
 
   return (
     <div className="mx-auto w-full max-w-[var(--px-260)]">
-      <svg viewBox="0 0 200 200" className="w-full">
+      {/* viewBox padded horizontally so the side labels (e.g. "relaxed") don't clip */}
+      <svg viewBox="-26 -6 252 212" className="w-full">
         {[0.25, 0.5, 0.75, 1].map((g) => (
           <polygon
             key={g}
