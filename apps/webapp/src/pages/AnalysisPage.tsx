@@ -10,7 +10,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
-import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
+import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
 import { CamelotWheel, Donut, Heatmap, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
 
 const shortGenre = (l: string) => l.split("---").pop() ?? l;
@@ -299,10 +299,20 @@ export default function AnalysisPage() {
 
             {/* stat cards */}
             <div className="grid grid-cols-2 gap-[var(--px-12)] md:grid-cols-5">
-              <StatCard label="Tempo" value={fmtBpm(data.rhythm.bpm)} sub={`${(data.rhythm.confidence * 100).toFixed(0)}% conf · ${data.rhythm.beatCount} beats`} hint="Tempo in beats per minute, tracked from the onset/beat grid. Confidence reflects how steady the pulse is." />
-              <StatCard label="Key" value={`${data.tonality.key} ${data.tonality.scale === "major" ? "maj" : "min"}`} sub={`Camelot ${data.tonality.camelot}`} hint="Estimated musical key & scale (Krumhansl-Kessler), plus its Camelot code for harmonic mixing." />
+              <StatCard
+                label="Tempo"
+                value={data.rhythm.bpm == null ? <Spinner size={20} /> : fmtBpm(data.rhythm.bpm)}
+                sub={data.rhythm.bpm == null ? "analyzing…" : `${(data.rhythm.confidence * 100).toFixed(0)}% conf · ${data.rhythm.beatCount} beats`}
+                hint="Tempo in beats per minute (Essentia RhythmExtractor2013). Confidence reflects how steady the pulse is."
+              />
+              <StatCard
+                label="Key"
+                value={data.tonality.key == null ? <Spinner size={20} /> : `${data.tonality.key} ${data.tonality.scale === "major" ? "maj" : "min"}`}
+                sub={data.tonality.key == null ? "analyzing…" : `Camelot ${data.tonality.camelot}`}
+                hint="Estimated musical key & scale (Essentia EDMA profile, tuned for electronic music), plus its Camelot code for harmonic mixing."
+              />
               <StatCard label="Loudness" value={data.technical.integratedLufs.toFixed(1)} sub="LUFS integrated" hint="Integrated loudness in LUFS (EBU R128) — the overall perceived level across the whole track." />
-              <StatCard label="Duration" value={fmtDuration(data.identity.durationMs)} sub={`${fmtBpm(data.rhythm.bpm)} BPM`} hint="Total track length (mm:ss)." />
+              <StatCard label="Duration" value={fmtDuration(data.identity.durationMs)} sub={data.rhythm.bpm == null ? "— BPM" : `${fmtBpm(data.rhythm.bpm)} BPM`} hint="Total track length (mm:ss)." />
               {data.semantics.genreTop.length > 0 ? (
                 <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)]">{shortGenre(data.semantics.genreTop[0].label)}</span>} sub={`${(data.semantics.genreTop[0].score * 100).toFixed(0)}% match`} hint="Most likely genre from the Discogs-400 classifier (see the full ranking below)." />
               ) : (
@@ -417,9 +427,9 @@ export default function AnalysisPage() {
             </Panel>
 
             {/* harmony */}
-            <Panel title="Harmony" subtitle={`${data.tonality.key} ${data.tonality.scale} · ${(data.tonality.strength * 100).toFixed(0)}% strength`}>
+            <Panel title="Harmony" subtitle={data.tonality.key == null ? "analyzing key…" : `${data.tonality.key} ${data.tonality.scale} · ${(data.tonality.strength * 100).toFixed(0)}% strength`}>
               <div className="grid grid-cols-1 items-center gap-[var(--px-12)] sm:grid-cols-2">
-                <CamelotWheel camelot={data.tonality.camelot} />
+                <CamelotWheel camelot={data.tonality.camelot ?? ""} />
                 <div>
                   <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase opacity-50">Chromagram</div>
                   <TimeAxis durationMs={durationMs} currentMs={currentMs} onSeek={seek} tooltip={() => null}>

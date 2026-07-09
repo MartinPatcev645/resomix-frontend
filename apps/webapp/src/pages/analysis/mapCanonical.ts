@@ -94,7 +94,8 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
       rmsEnergyCurve: series(tech.rms_energy_curve),
     },
     rhythm: {
-      bpm: num(rhy.bpm),
+      // null (not 0) while the GPU tempo is still loading -> UI shows a loader.
+      bpm: typeof rhy.bpm === "number" ? rhy.bpm : null,
       confidence: num(rhy.confidence),
       beatTimesSeconds: beats,
       beatCount: beats.length,
@@ -103,10 +104,10 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
       phraseBoundariesSeconds: arr<number>(rhy.phrase_boundaries_seconds),
     },
     tonality: {
-      key: str(ton.key),
-      scale: str(ton.scale),
+      key: ton.key ?? null,
+      scale: ton.scale ?? null,
       strength: num(ton.strength),
-      camelot: str(ton.camelot),
+      camelot: ton.camelot ?? null,
       chromagram: matrix(ton.chromagram),
     },
     spectral: {
