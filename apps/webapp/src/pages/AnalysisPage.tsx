@@ -7,7 +7,8 @@
  * resomix-analysis-service happens later (see useTrackAnalysis.ts).
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
 import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
 import { CamelotWheel, Donut, Heatmap, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
@@ -33,7 +34,8 @@ const ribbonTip =
   );
 
 export default function AnalysisPage() {
-  const { status, data, error, progress, fileName, audioUrl, part1Ready, analyze, reset } = useTrackAnalysis();
+  const { status, data, error, progress, fileName, audioUrl, part1Ready, analysisId, analyze, loadById, reset } = useTrackAnalysis();
+  const [searchParams, setSearchParams] = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -75,6 +77,45 @@ export default function AnalysisPage() {
     if (file) analyze(file);
   };
 
+  // --- URL <-> analysis id (refresh / shareable result) --------------------
+  // On first mount, if the URL carries ?id=, open that analysis directly.
+  // useLayoutEffect so the analyzing state is set before paint (no "drop a track"
+  // flash on a shared/refreshed link).
+  const bootstrapped = useRef(false);
+  useLayoutEffect(() => {
+    if (bootstrapped.current) return;
+    bootstrapped.current = true;
+    const urlId = searchParams.get("id");
+    if (urlId) void loadById(urlId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Mirror the current analysis id into the URL so refresh / sharing re-opens it.
+  useEffect(() => {
+    if (!analysisId) return;
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("id", analysisId);
+        return next;
+      },
+      { replace: true },
+    );
+  }, [analysisId, setSearchParams]);
+
+  // Reset + drop ?id= from the URL (start a fresh upload).
+  const resetAll = () => {
+    reset();
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("id");
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
   // Progressive delivery: show the dashboard as soon as part 1 (local DSP) is in;
   // the part-2 (semantic/GPU) panels fill in below once the full result lands.
   const showDashboard = (part1Ready || status === "done") && data;
@@ -108,7 +149,7 @@ export default function AnalysisPage() {
               </span>
               <button
                 type="button"
-                onClick={reset}
+                onClick={resetAll}
                 className="mt-[var(--px-8)] rounded-full border border-[var(--opacity-30)] px-[var(--px-16)] py-[var(--px-6)] font-helvetica text-[length:var(--px-11)] uppercase hover:bg-[var(--opacity-15)]"
               >
                 Try again
@@ -204,7 +245,7 @@ export default function AnalysisPage() {
               </div>
               <button
                 type="button"
-                onClick={reset}
+                onClick={resetAll}
                 className="rounded-full border border-[var(--opacity-30)] px-[var(--px-16)] py-[var(--px-6)] font-helvetica text-[length:var(--px-11)] uppercase hover:bg-[var(--opacity-15)]"
               >
                 Analyze another

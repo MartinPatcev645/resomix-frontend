@@ -70,6 +70,54 @@ function uploadWithProgress(
   });
 }
 
+/**
+ * Poll a job to completion: surface part-1 as soon as it's ready, then the full
+ * result. Shared by a fresh upload and by loading an existing id from the URL.
+ * Checks status first (so an already-finished analysis returns immediately).
+ */
+async function pollAnalysis(
+  id: string,
+  isLive: () => boolean,
+  onProgress: (pct: number) => void,
+  onResult: (data: AnalysisData, done: boolean) => void,
+): Promise<void> {
+  const startedAt = Date.now();
+  let part1Shown = false;
+  for (;;) {
+    if (!isLive()) return;
+    if (Date.now() - startedAt > POLL_TIMEOUT_MS) throw new Error("Analysis timed out");
+    const stRes = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}`);
+    if (stRes.status === 404) throw new Error("Analysis not found");
+    if (!stRes.ok) throw new Error(await errText(stRes, "Status check failed"));
+    const st = (await stRes.json()) as {
+      state?: string;
+      part1_ready?: boolean;
+      progress?: { percent?: number };
+      error?: string;
+    };
+    onProgress(Math.min(95, Math.max(10, st.progress?.percent ?? 0)));
+
+    if (st.part1_ready && !part1Shown) {
+      part1Shown = true;
+      const p1 = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}/result`);
+      if (p1.ok) {
+        const raw = await p1.json();
+        if (!isLive()) return;
+        onResult(mapCanonicalToAnalysisData(raw), false);
+      }
+    }
+    if (st.state === "succeeded") break;
+    if (st.state === "failed") throw new Error(st.error || "Analysis failed on the server");
+    await delay(POLL_INTERVAL_MS);
+  }
+
+  const resRes = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}/result`);
+  if (!resRes.ok) throw new Error(await errText(resRes, "Result fetch failed"));
+  const raw = await resRes.json();
+  if (!isLive()) return;
+  onResult(mapCanonicalToAnalysisData(raw), true);
+}
+
 export function useTrackAnalysis() {
   const [status, setStatus] = useState<AnalysisStatus>("idle");
   const [data, setData] = useState<AnalysisData | null>(null);
@@ -79,6 +127,9 @@ export function useTrackAnalysis() {
   // True once the fast local-DSP "part 1" result is loaded and shown, while the
   // semantic/GPU "part 2" keeps computing (progressive delivery).
   const [part1Ready, setPart1Ready] = useState(false);
+  // The server-side id of the current analysis; mirrored into the URL (?id=) so a
+  // refresh or shared link re-opens the same result.
+  const [analysisId, setAnalysisId] = useState<string | null>(null);
   // Object URL of the uploaded file, so the page can play the actual track
   // locally (later this will be swapped for the HLS stream).
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -102,6 +153,7 @@ export function useTrackAnalysis() {
     setProgress(0);
     setPart1Ready(false);
     setFileName(null);
+    setAnalysisId(null);
   }, [setTrackUrl]);
 
   const analyze = useCallback(async (file: File) => {
@@ -130,56 +182,71 @@ export function useTrackAnalysis() {
       );
       const id = created.analysis_id;
       if (!id) throw new Error("Server did not return an analysis id");
+      live(() => setAnalysisId(id)); // -> the page mirrors this into ?id=
 
-      // 2) poll status; render PART 1 (local DSP) as soon as it's ready, then
-      //    keep polling until the full (part 2 / GPU) result succeeds.
+      // 2) poll to completion; render part 1 (local DSP) as soon as it's ready.
       live(() => setStatus("analyzing"));
-      const startedAt = Date.now();
-      let part1Shown = false;
-      for (;;) {
-        if (runId.current !== myRun) return; // superseded by reset/re-upload
-        if (Date.now() - startedAt > POLL_TIMEOUT_MS) throw new Error("Analysis timed out");
-        await delay(POLL_INTERVAL_MS);
-        const stRes = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}`);
-        if (!stRes.ok) throw new Error(await errText(stRes, "Status check failed"));
-        const st = (await stRes.json()) as {
-          state?: string;
-          part1_ready?: boolean;
-          progress?: { percent?: number };
-          error?: string;
-        };
-        const pct = typeof st.progress?.percent === "number" ? st.progress.percent : 0;
-        live(() => setProgress(Math.min(95, Math.max(10, pct))));
-
-        if (st.part1_ready && !part1Shown) {
-          part1Shown = true;
-          const p1 = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}/result`);
-          if (p1.ok) {
-            const raw = await p1.json();
-            if (runId.current !== myRun) return;
-            live(() => {
-              setData(mapCanonicalToAnalysisData(raw));
+      await pollAnalysis(
+        id,
+        () => runId.current === myRun,
+        (pct) => live(() => setProgress(pct)),
+        (d, done) =>
+          live(() => {
+            setData(d);
+            if (done) {
+              setProgress(100);
+              setStatus("done");
+            } else {
               setPart1Ready(true);
-            });
-          }
-        }
-        if (st.state === "succeeded") break;
-        if (st.state === "failed") throw new Error(st.error || "Analysis failed on the server");
-      }
-
-      // 3) fetch + adapt the FULL canonical result
-      const resRes = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}/result`);
-      if (!resRes.ok) throw new Error(await errText(resRes, "Result fetch failed"));
-      const raw = await resRes.json();
-      if (runId.current !== myRun) return;
-      live(() => setData(mapCanonicalToAnalysisData(raw)));
-      live(() => setProgress(100));
-      live(() => setStatus("done"));
+            }
+          }),
+      );
     } catch (e) {
       live(() => setError(e instanceof Error ? e.message : "Analysis failed"));
       live(() => setStatus("error"));
     }
   }, [setTrackUrl]);
 
-  return { status, data, error, progress, fileName, audioUrl, part1Ready, analyze, reset };
+  // Open an existing analysis by id (refresh / shared ?id= link). No local file,
+  // so there's no audio to play until we swap in the HLS stream.
+  const loadById = useCallback(async (id: string) => {
+    const myRun = ++runId.current;
+    const live = (fn: () => void) => {
+      if (runId.current === myRun) fn();
+    };
+
+    live(() => {
+      setTrackUrl(null);
+      setError(null);
+      setData(null);
+      setProgress(10);
+      setPart1Ready(false);
+      setAnalysisId(id);
+      setStatus("analyzing");
+    });
+
+    try {
+      await pollAnalysis(
+        id,
+        () => runId.current === myRun,
+        (pct) => live(() => setProgress(pct)),
+        (d, done) =>
+          live(() => {
+            setData(d);
+            setFileName(d.identity.filename ?? null);
+            if (done) {
+              setProgress(100);
+              setStatus("done");
+            } else {
+              setPart1Ready(true);
+            }
+          }),
+      );
+    } catch (e) {
+      live(() => setError(e instanceof Error ? e.message : "Could not load analysis"));
+      live(() => setStatus("error"));
+    }
+  }, [setTrackUrl]);
+
+  return { status, data, error, progress, fileName, audioUrl, part1Ready, analysisId, analyze, loadById, reset };
 }
