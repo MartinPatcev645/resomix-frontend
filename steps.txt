@@ -73,7 +73,9 @@ Next Steps:
 
 
 
-
+- Try to analyze all tracks we have for analysis
+- Display overall genre of a playlist etc.
+- Mood creation playlist in future using tags and features.
 
 
 

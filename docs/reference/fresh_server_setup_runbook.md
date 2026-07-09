@@ -78,25 +78,29 @@ su - devuser
 
 > ⚠️ **GitHub rule:** a single SSH key can be a *Deploy Key* on **only one**
 > repository across all of GitHub. Reusing one key on the second repo fails with
-> `Key is already in use`. Because we clone **two** repos onto this box, we
-> generate **two** keys and disambiguate them with `~/.ssh/config` host aliases.
+> `Key is already in use`. We clone **three** repos onto this box (Alwyzon, media,
+> and the analysis add-on — see Part K), so we generate **three** keys and
+> disambiguate them with `~/.ssh/config` host aliases.
 
 ```bash
 git config --global user.name  "Resomix Deploy"
 git config --global user.email "usman.naeem2212@gmail.com"
 
 # One key per repo (no passphrase so unattended pulls/systemd never block):
-ssh-keygen -t ed25519 -N "" -C "alwyzon@staging" -f ~/.ssh/id_ed25519_alwyzon
-ssh-keygen -t ed25519 -N "" -C "media@staging"   -f ~/.ssh/id_ed25519_media
+ssh-keygen -t ed25519 -N "" -C "alwyzon@staging"  -f ~/.ssh/id_ed25519_alwyzon
+ssh-keygen -t ed25519 -N "" -C "media@staging"    -f ~/.ssh/id_ed25519_media
+ssh-keygen -t ed25519 -N "" -C "analysis@staging" -f ~/.ssh/id_ed25519_analysis
 
-cat ~/.ssh/id_ed25519_alwyzon.pub   # → Deploy Key on basic_fastapi_server_resomix
-cat ~/.ssh/id_ed25519_media.pub     # → Deploy Key on resomix-similarity-open
+cat ~/.ssh/id_ed25519_alwyzon.pub    # → Deploy Key on basic_fastapi_server_resomix
+cat ~/.ssh/id_ed25519_media.pub      # → Deploy Key on resomix-similarity-open
+cat ~/.ssh/id_ed25519_analysis.pub   # → Deploy Key on resomix-analysis-service
 ```
 
 Add **each** public key as a **read-only Deploy Key** on its **own** repo:
 
-- `id_ed25519_alwyzon.pub` → `Resomix/basic_fastapi_server_resomix` → Settings → Deploy keys
-- `id_ed25519_media.pub`   → `Resomix/resomix-similarity-open` → Settings → Deploy keys
+- `id_ed25519_alwyzon.pub`  → `Resomix/basic_fastapi_server_resomix` → Settings → Deploy keys
+- `id_ed25519_media.pub`    → `Resomix/resomix-similarity-open` → Settings → Deploy keys
+- `id_ed25519_analysis.pub` → `Resomix/resomix-analysis-service` → Settings → Deploy keys
 
 Then create `~/.ssh/config` so each alias picks the right key:
 
@@ -113,12 +117,27 @@ Host github-media
     User git
     IdentityFile ~/.ssh/id_ed25519_media
     IdentitiesOnly yes
+
+Host github-analysis
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_analysis
+    IdentitiesOnly yes
 EOF
 chmod 600 ~/.ssh/config
 
-ssh -T git@github-alwyzon   # → "Hi Resomix/basic_fastapi_server_resomix! ..."
-ssh -T git@github-media     # → "Hi Resomix/resomix-similarity-open! ..."
+ssh -T git@github-alwyzon    # → "Hi Resomix/basic_fastapi_server_resomix! ..."
+ssh -T git@github-media      # → "Hi Resomix/resomix-similarity-open! ..."
+ssh -T git@github-analysis   # → "Hi Resomix/resomix-analysis-service! ..."
 ```
+
+> ⚠️ **Always clone/pull through the alias, not `github.com`.** A deploy key is
+> scoped to ONE repo, so `git clone git@github.com:Resomix/<repo>.git` falls back
+> to the default key (the first/other repo's key) and GitHub answers
+> `ERROR: Repository not found` (it hides existence rather than saying "denied").
+> Use the matching host alias instead, e.g.
+> `git clone git@github-analysis:Resomix/resomix-analysis-service.git` — the clone
+> then keeps that alias as `origin`, so later `git pull` uses the right key too.
 
 ### A4. Python from source — **two versions** (one per app)
 
@@ -804,7 +823,7 @@ sudo apt install -y ufw
 sudo ufw allow OpenSSH            # your admin SSH (port 22)
 sudo ufw allow 80,443/tcp        # nginx
 sudo ufw allow 2022/tcp          # partner SFTP
-# 8090 (SFTPGo admin), 8001, 8004 stay localhost-only — do NOT open them.
+# 8090 (SFTPGo admin), 8001, 8004, 8010 (analysis, Part K) stay localhost-only — do NOT open them.
 sudo ufw enable
 ```
 
@@ -845,6 +864,7 @@ IPv6. "Name" is just the label; the provider appends `.resomix.com`.
 |------|------|-------|-------|
 | `A` | `staging-bserver` | `<SERVER_PUBLIC_IPV4>` | Alwyzon (→ nginx → 8001) |
 | `A` | `staging-media` | `<SERVER_PUBLIC_IPV4>` | media HTTPS (→ 8004) **and** SFTP host (`:2022`) |
+| `A` | `staging-analysis` | `<SERVER_PUBLIC_IPV4>` | analysis service (→ nginx → 8010); only if deploying Part K |
 | `A` | `staging-sftp-admin` | `<SERVER_PUBLIC_IPV4>` | only if exposing the admin (F-d) |
 
 > ⚠️ **Cloudflare users — set these to "DNS only" (grey cloud) for staging.**
@@ -870,9 +890,10 @@ staging box, trusting `CF-Connecting-IP` would let clients spoof their IP.
 ```bash
 sudo tee /etc/nginx/conf.d/ratelimits_realip.conf >/dev/null <<'EOF'
 # ── Rate-limit / connection zones (per client IP) ──────────────────────
-limit_req_zone  $binary_remote_addr zone=api_rl:10m    rate=3r/s;    # API/search
-limit_req_zone  $binary_remote_addr zone=media_rl:10m  rate=25r/s;   # HLS/segments (bursty)
-limit_req_zone  $binary_remote_addr zone=global_rl:10m rate=5r/s;    # catch-all
+limit_req_zone  $binary_remote_addr zone=api_rl:10m      rate=3r/s;    # API/search
+limit_req_zone  $binary_remote_addr zone=media_rl:10m    rate=25r/s;   # HLS/segments (bursty)
+limit_req_zone  $binary_remote_addr zone=analysis_rl:10m rate=2r/s;    # analysis API (Part K); upload + status polling
+limit_req_zone  $binary_remote_addr zone=global_rl:10m   rate=5r/s;    # catch-all
 limit_req_zone  $binary_remote_addr zone=admin_rl:2m   rate=10r/m;   # admin (strict)
 limit_conn_zone $binary_remote_addr zone=perip_conn:10m;
 limit_req_status 429;
@@ -1262,6 +1283,7 @@ cd /home/devuser/resomix-similarity-open && \
 
 - [ ] `https://staging-bserver.resomix.com/api/v1/health` → `{"status":"healthy"}` over TLS.
 - [ ] `https://staging-media.resomix.com/` responds over TLS.
+- [ ] *(if Part K)* `https://staging-analysis.resomix.com/health` over TLS; Celery worker up (a test upload reaches `succeeded`); analysis Redis on its **own** db (`/4`), not `/1`.
 - [ ] MariaDB: `SHOW TABLES;` lists core tables; `seed_rbac`/`seed_data` rows present.
 - [ ] `HETZNER_INTERNAL_API_KEY` and `EDGE_JWT_SECRET` identical on both apps (Part E).
 - [ ] Alwyzon `SIMILARITY_SERVER_URL` = `http://127.0.0.1:8004`; media reachable.
@@ -1319,3 +1341,161 @@ scp -P <SSH_PORT> maest_index.index maest_catalog.json \
 > Heads-up — **`audiowaveform`** (Part A) must be installed for peaks/segment
 > generation; without it the media log warns `audiowaveform not found - peaks
 > generation will fail`, and `similarity_playback` partners can't produce peaks.
+
+---
+
+## Part K — Analysis service (add-on)
+
+The **analysis service** (`resomix-analysis-service`, port **8010**) is an optional,
+later add-on to the base A–J box. It serves on-demand full-track analysis (tempo,
+key, loudness, spectral/energy curves, semantic labels) behind an async
+**upload → poll → result** API. Like the media server it is **CPU-only** here —
+every model/embedding call is delegated to the GPU embedding server
+(`maest-discogs-ccreplica`). Skip this whole part if the box doesn't run analysis.
+
+> ⚠️ **Hard dependency:** the semantic/composition stages call the embedding
+> server's newer endpoints (`/get_analysis_bundle`, `/get_semantics`, `/get_affect`,
+> `/separate_stems`). Until the GPU box serves those, analyses still complete — but
+> the semantic/composition sections come back `partial`. Local DSP ("part 1":
+> tempo/key/loudness/spectral/energy/structure) works regardless. Confirm with:
+> `curl -F file=@track.mp3 http://<GPU_EMBED_IP>:8005/get_analysis_bundle`.
+
+### K1. Clone + venv + deps
+
+```bash
+cd /home/devuser
+git clone git@github-analysis:Resomix/resomix-analysis-service.git   # ⚠️ the ALIAS, not github.com (see A3)
+cd resomix-analysis-service
+
+python3 -m venv .venv           # CPU-only, light deps — the box Python 3.12 (A4) is fine
+.venv/bin/pip install --upgrade pip
+.venv/bin/pip install -r requirements.txt
+mkdir -p var/work var/results   # local filesystem store (v1)
+```
+
+### K2. Configure `.env`
+
+```bash
+cp .env.example .env
+```
+
+```dotenv
+RESOMIX_ENV=staging
+RESOMIX_API_HOST=0.0.0.0
+RESOMIX_API_PORT=8010
+
+# ⚠️ Redis db allocation on the shared box: Alwyzon = 0/1, media = 2/3 → analysis takes /4.
+#    (.env.example ships /1, which COLLIDES with Alwyzon — change it.)
+RESOMIX_REDIS_URL=redis://127.0.0.1:6379/4
+
+# The dedicated GPU embedding server (the same box the media server's EMBED_SERVER points at).
+RESOMIX_EMBEDDING_BASE_URL=http://<GPU_EMBED_IP>:8005
+
+# Lock CORS to the browser origins that call it directly (comma-separated here, NOT JSON).
+# Leave the default "*" if only the Alwyzon backend calls it server-to-server.
+RESOMIX_CORS_ALLOW_ORIGINS=https://staging.resomix.com,https://staging-frontend.resomix.com
+```
+
+> Storage (`RESOMIX_WORK_DIR` / `RESOMIX_RESULTS_DIR`) defaults to `./var/...` under
+> the repo — fine for staging. The GPU-response cache (`./var/gpu_cache`) reuses
+> embedding-server responses across repeat analyses; delete a track's folder to
+> invalidate after a GPU change.
+
+### K3. nginx vhost (:8010) + TLS
+
+The `analysis_rl` zone is declared once in **F2** (add it there if you skipped
+ahead). Then the vhost:
+
+```bash
+sudo tee /etc/nginx/sites-available/staging-analysis >/dev/null <<'EOF'
+server {
+    listen 80;
+    server_name staging-analysis.resomix.com;
+    client_max_body_size 105M;           # audio uploads up to RESOMIX_MAX_UPLOAD_MB
+
+    add_header X-Content-Type-Options nosniff always;
+
+    location / {
+        limit_req  zone=analysis_rl burst=50 nodelay;   # upload + status polling
+        limit_conn perip_conn 40;
+        proxy_pass http://127.0.0.1:8010;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_request_buffering off;     # stream large uploads through, don't spool
+        proxy_read_timeout 300s;         # long embedding-server calls
+        proxy_send_timeout 300s;
+    }
+}
+EOF
+
+sudo ln -s /etc/nginx/sites-available/staging-analysis /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d staging-analysis.resomix.com   # adds the 443 block + HTTP→HTTPS redirect
+```
+
+> Cloudflare: if the `staging-analysis` record is proxied (orange), temporarily set
+> it to **DNS only** for the HTTP-01 challenge, then re-proxy; keep SSL mode **Full
+> (strict)** to match the real origin cert (as with the other vhosts).
+
+### K4. Run it — systemd (single unit; the launcher supervises the worker)
+
+`run_analysis.py` starts uvicorn **and** spawns the Celery worker as a supervised
+child (in its own process group), tearing it down on shutdown — so **one** unit
+runs the whole service. `RESOMIX_ENV=staging` turns autoreload off automatically.
+
+`/etc/systemd/system/resomix-analysis.service`:
+
+```ini
+[Unit]
+Description=Resomix Analysis Service (API + supervised Celery worker)
+After=network.target redis-server.service
+Requires=redis-server.service
+
+[Service]
+User=devuser
+WorkingDirectory=/home/devuser/resomix-analysis-service
+ExecStart=/home/devuser/resomix-analysis-service/.venv/bin/python run_analysis.py
+Restart=on-failure
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now resomix-analysis
+sudo systemctl status resomix-analysis
+```
+
+> `KillSignal=SIGTERM` matters: the launcher only forwards a graceful stop to the
+> worker on SIGTERM. **Never stop it with `kill -9`** (SIGKILL can't be caught → the
+> worker is orphaned). Same for the manual quick-start below.
+
+**Manual quick-start (no systemd):**
+
+```bash
+cd /home/devuser/resomix-analysis-service && source .venv/bin/activate
+nohup python run_analysis.py > analysis.out 2>&1 &   # API + worker together; stop with `kill <pid>` (SIGTERM)
+```
+
+**Prefer separate API and worker processes?** Set `RESOMIX_EMBED_WORKER=0` (the
+launcher then runs the API only) and add a second unit:
+`ExecStart=…/.venv/bin/celery -A app.workers.celery_app.celery_app worker --loglevel=INFO --concurrency=2`.
+
+### K5. Verify
+
+```bash
+curl -s http://127.0.0.1:8010/health                    # app up locally
+curl -s https://staging-analysis.resomix.com/health     # nginx + TLS + Cloudflare
+# full async flow (upload -> poll -> result):
+.venv/bin/python scripts/analyze_client.py audio/prelisten.mp3 --out result.json
+```
+
+- `8010` stays **localhost-only** in ufw (nginx is the only public door) — like 8001/8004.
+- Job stuck at `queued` → the **worker isn't running** (check the unit /
+  `RESOMIX_EMBED_WORKER`). Reaches `succeeded` but semantic/composition sections are
+  empty/`partial` → the **GPU embedding endpoints aren't deployed** yet (top callout).
