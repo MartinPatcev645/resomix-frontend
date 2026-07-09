@@ -37,6 +37,39 @@ async function errText(res: Response, fallback: string): Promise<string> {
   }
 }
 
+/**
+ * POST the file with a REAL upload-progress callback. `fetch` can't report
+ * request-body progress, so we use XHR: `onProgress` gets 0→100 as bytes leave
+ * the browser. Resolves with the parsed JSON body (or rejects with the server's
+ * error detail).
+ */
+function uploadWithProgress(
+  url: string,
+  form: FormData,
+  onProgress: (pct: number) => void,
+): Promise<{ analysis_id?: string }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    xhr.responseType = "json";
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.upload.onload = () => onProgress(100); // bytes done; server now processing
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(xhr.response ?? {});
+      } else {
+        const body = xhr.response as { detail?: string; error?: string } | null;
+        reject(new Error(body?.detail || body?.error || `Upload failed (${xhr.status})`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Upload failed (network error)"));
+    xhr.ontimeout = () => reject(new Error("Upload timed out"));
+    xhr.send(form);
+  });
+}
+
 export function useTrackAnalysis() {
   const [status, setStatus] = useState<AnalysisStatus>("idle");
   const [data, setData] = useState<AnalysisData | null>(null);
@@ -85,14 +118,16 @@ export function useTrackAnalysis() {
     setPart1Ready(false);
 
     try {
-      // 1) upload -> enqueue
+      // 1) upload -> enqueue (real byte-level upload progress via XHR)
       live(() => setStatus("uploading"));
-      live(() => setProgress(5));
+      live(() => setProgress(0));
       const form = new FormData();
       form.append("file", file);
-      const createdRes = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses`, { method: "POST", body: form });
-      if (!createdRes.ok) throw new Error(await errText(createdRes, "Upload failed"));
-      const created = (await createdRes.json()) as { analysis_id?: string };
+      const created = await uploadWithProgress(
+        `${ANALYSIS_ENDPOINT}/v1/analyses`,
+        form,
+        (pct) => live(() => setProgress(pct)),
+      );
       const id = created.analysis_id;
       if (!id) throw new Error("Server did not return an analysis id");
 
