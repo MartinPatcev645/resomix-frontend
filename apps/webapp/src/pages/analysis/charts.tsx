@@ -214,12 +214,14 @@ export function Panel({
   right,
   children,
   className = "",
+  center = false,
 }: {
   title: string;
   subtitle?: string;
   right?: ReactNode;
   children: ReactNode;
   className?: string;
+  center?: boolean;
 }) {
   return (
     <section
@@ -228,7 +230,12 @@ export function Panel({
         "p-[var(--px-20)] " + className
       }
     >
-      <header className="mb-[var(--px-14)] flex items-baseline justify-between gap-[var(--px-10)]">
+      <header
+        className={
+          "mb-[var(--px-14)] flex gap-[var(--px-10)] " +
+          (center ? "flex-col items-center text-center" : "items-baseline justify-between")
+        }
+      >
         <div>
           <h2 className="font-helvetica text-[length:var(--px-14)] font-medium uppercase tracking-[var(--px-1)]">
             {title}
@@ -484,17 +491,22 @@ export function MoodMap({ valence, arousal }: { valence: number; arousal: number
 }
 
 /* -------------------------------------------------------------- TagChips */
-export function TagChips({ items }: { items: ScoredLabel[] }) {
+export function TagChips({ items, singleLine = false }: { items: ScoredLabel[]; singleLine?: boolean }) {
   const max = Math.max(...items.map((i) => i.score), 0.0001);
   return (
-    <div className="flex flex-wrap gap-[var(--px-8)]">
+    <div
+      className={
+        "flex gap-[var(--px-8)] " +
+        (singleLine ? "flex-nowrap overflow-hidden" : "flex-wrap")
+      }
+    >
       {items.map((it) => {
         const strength = it.score / max;
         return (
           <span
             key={it.label}
             title={`${it.label} — ${(it.score * 100).toFixed(0)}%`}
-            className="cursor-default rounded-full border px-[var(--px-10)] py-[var(--px-4)] font-helvetica text-[length:var(--px-11)] lowercase transition-all hover:!opacity-100 hover:brightness-125"
+            className="shrink-0 cursor-default whitespace-nowrap rounded-full border px-[var(--px-10)] py-[var(--px-4)] font-helvetica text-[length:var(--px-11)] lowercase transition-all hover:!opacity-100 hover:brightness-125"
             style={{
               borderColor: ACCENT,
               background: `rgba(238,74,38,${(0.08 + strength * 0.32).toFixed(2)})`,

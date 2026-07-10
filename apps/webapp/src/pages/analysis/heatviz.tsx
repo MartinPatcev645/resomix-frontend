@@ -37,7 +37,7 @@ function colormap(t: number): [number, number, number] {
 }
 
 /* --------------------------------------------------------------- Heatmap */
-export function Heatmap({ matrix, height = 150 }: { matrix: Matrix; height?: number }) {
+export function Heatmap({ matrix, height = 150, gamma = 1 }: { matrix: Matrix; height?: number; gamma?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export function Heatmap({ matrix, height = 150 }: { matrix: Matrix; height?: num
       // Draw low index at the bottom (natural frequency / pitch orientation).
       const yr = rows - 1 - r;
       for (let c = 0; c < cols; c++) {
-        const [rr, gg, bb] = colormap((matrix.data[r][c] - min) / span);
+        const [rr, gg, bb] = colormap(((matrix.data[r][c] - min) / span) ** gamma);
         const o = (yr * cols + c) * 4;
         img.data[o] = rr;
         img.data[o + 1] = gg;
@@ -338,7 +338,7 @@ export function ChromaView({
             <TipRows rows={chromaAt(frac).slice(0, 4).map((t) => ({ label: t.label, value: `${(t.v * 100).toFixed(0)}%` }))} />
           )}
         >
-          <Heatmap matrix={matrix} height={height} />
+          <Heatmap matrix={matrix} height={height} gamma={2.2} />
         </TimeAxis>
       </div>
     </div>

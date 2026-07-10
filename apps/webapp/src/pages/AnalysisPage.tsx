@@ -367,7 +367,7 @@ export default function AnalysisPage() {
             {/* structure */}
             <Panel
               title="Structure"
-              subtitle={`${data.energy.structureSegments.length} sections · ${data.rhythm.barCount} bars · click to seek`}
+              subtitle={`${data.energy.structureSegments.length} sections · ${data.rhythm.barCount || "…"} bars · click to seek`}
               right={
                 <div className="text-right font-helvetica text-[length:var(--px-9)] opacity-60">
                   {activeSection ? (
@@ -474,10 +474,22 @@ export default function AnalysisPage() {
             {/* harmony */}
             <Panel title="Harmony" subtitle={data.tonality.key == null ? "analyzing key…" : `${data.tonality.key} ${data.tonality.scale} · ${(data.tonality.strength * 100).toFixed(0)}% strength`}>
               <div className="grid grid-cols-1 items-center gap-[var(--px-12)] sm:grid-cols-2">
-                <CamelotWheel camelot={data.tonality.camelot ?? ""} />
+                {data.tonality.key == null ? (
+                  <div className="flex items-center justify-center gap-[var(--px-8)] font-helvetica text-[length:var(--px-11)] opacity-60" style={{ minHeight: 140 }}>
+                    <Spinner size={16} /> analyzing…
+                  </div>
+                ) : (
+                  <CamelotWheel camelot={data.tonality.camelot ?? ""} />
+                )}
                 <div>
                   <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase opacity-50">Chromagram · hover for the notes</div>
-                  <ChromaView matrix={data.tonality.chromagram} durationMs={durationMs} currentMs={currentMs} onSeek={seek} height={140} />
+                  {data.tonality.chromagram.data.length === 0 ? (
+                    <div className="flex items-center justify-center gap-[var(--px-8)] rounded-[var(--px-8)] bg-[var(--opacity-10)] font-helvetica text-[length:var(--px-11)] opacity-60" style={{ height: 140 }}>
+                      <Spinner size={16} /> analyzing…
+                    </div>
+                  ) : (
+                    <ChromaView matrix={data.tonality.chromagram} durationMs={durationMs} currentMs={currentMs} onSeek={seek} height={140} />
+                  )}
                 </div>
               </div>
             </Panel>
@@ -562,7 +574,7 @@ export default function AnalysisPage() {
                   </div>
                 </Panel>
 
-                {/* genre / style / mood */}
+                {/* genre / style */}
                 <div className="grid grid-cols-1 gap-[var(--px-20)] lg:grid-cols-2">
                   <Panel title="Genre" subtitle="Discogs-400 (MAEST) · top 7">
                     <BarList items={data.semantics.genreTop.slice(0, 7)} labelTransform={shortGenre} />
@@ -570,10 +582,12 @@ export default function AnalysisPage() {
                   <Panel title="Detailed style" subtitle="MAEST-519 · top 7">
                     <BarList items={data.semantics.styleMaestTop.slice(0, 7)} labelTransform={shortGenre} />
                   </Panel>
-                  <Panel title="Mood / theme" subtitle="MTG-Jamendo tags">
-                    <TagChips items={data.semantics.moodThemeTop} />
-                  </Panel>
                 </div>
+
+                {/* mood / theme — full width, centered title, single row of chips */}
+                <Panel title="Mood / theme" subtitle="MTG-Jamendo tags" center>
+                  <TagChips items={data.semantics.moodThemeTop} singleLine />
+                </Panel>
               </>
             ) : (
               <Panel title="Sound, mood & style" subtitle="genre · instruments · stems · emotion">
