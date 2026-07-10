@@ -360,7 +360,7 @@ export default function AnalysisPage() {
               {data.semantics.genreTop.length > 0 ? (
                 <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)]">{shortGenre(data.semantics.genreTop[0].label)}</span>} sub={`${(data.semantics.genreTop[0].score * 100).toFixed(0)}% match`} hint="Most likely genre from the Discogs-400 model (MAEST-30s) — see the full ranking below." />
               ) : (
-                <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)] opacity-40">…</span>} sub="analyzing" hint="Genre needs the model pass (part 2) — filling in shortly." />
+                <StatCard label="Top genre" value={<Spinner size={20} />} sub="analyzing…" hint="Genre needs the model pass (part 2) — filling in shortly." />
               )}
             </div>
 
@@ -419,43 +419,42 @@ export default function AnalysisPage() {
               </TimeAxis>
             </Panel>
 
-            <div className="grid grid-cols-1 gap-[var(--px-20)] lg:grid-cols-2">
-              {/* loudness / dynamics */}
-              <Panel
-                title="Loudness & dynamics"
-                subtitle="short-term loudness vs RMS energy"
-                right={
-                  <div className="text-right font-helvetica text-[length:var(--px-9)] opacity-60">
-                    LRA {data.technical.loudnessRangeLu.toFixed(1)} LU · peak {data.technical.truePeakDbtp.toFixed(1)} dB · crest {data.technical.crestFactor.toFixed(1)} · avg {data.technical.averageLoudnessDb.toFixed(1)} dB
-                  </div>
-                }
-              >
-                <MultiLineChart
-                  durationMs={durationMs}
-                  currentMs={currentMs}
-                  onSeek={seek}
-                  lines={[
-                    { label: "loudness (LUFS)", series: data.technical.loudnessCurve, color: ACCENT, fmt: (v) => `${v.toFixed(1)} LUFS` },
-                    { label: "rms energy", series: data.technical.rmsEnergyCurve, color: "#7fb0ff", fmt: (v) => `${(v * 100).toFixed(0)}%` },
-                  ]}
-                />
-              </Panel>
+            {/* loudness / dynamics — full width */}
+            <Panel
+              title="Loudness & dynamics"
+              subtitle="short-term loudness vs RMS energy"
+              right={
+                <div className="text-right font-helvetica text-[length:var(--px-9)] opacity-60">
+                  LRA {data.technical.loudnessRangeLu.toFixed(1)} LU · peak {data.technical.truePeakDbtp.toFixed(1)} dB · crest {data.technical.crestFactor.toFixed(1)} · avg {data.technical.averageLoudnessDb.toFixed(1)} dB
+                </div>
+              }
+            >
+              <MultiLineChart
+                durationMs={durationMs}
+                currentMs={currentMs}
+                onSeek={seek}
+                height={130}
+                lines={[
+                  { label: "loudness (LUFS)", series: data.technical.loudnessCurve, color: ACCENT, fmt: (v) => `${v.toFixed(1)} LUFS` },
+                  { label: "rms energy", series: data.technical.rmsEnergyCurve, color: "#7fb0ff", fmt: (v) => `${(v * 100).toFixed(0)}%` },
+                ]}
+              />
+            </Panel>
 
-              {/* energy journey */}
-              <Panel title="Energy journey" subtitle="normalized intensity across the track">
-                <TimeAxis
-                  durationMs={durationMs}
-                  currentMs={currentMs}
-                  onSeek={seek}
-                  tooltip={(f) => {
-                    const v = valueAt(data.energy.energyCurve.values, f);
-                    return v == null ? null : <span className="ml-[var(--px-6)] tabular-nums">{(v * 100).toFixed(0)}%</span>;
-                  }}
-                >
-                  <LineChart series={data.energy.energyCurve} height={110} />
-                </TimeAxis>
-              </Panel>
-            </div>
+            {/* energy journey — full width */}
+            <Panel title="Energy journey" subtitle="normalized intensity across the track">
+              <TimeAxis
+                durationMs={durationMs}
+                currentMs={currentMs}
+                onSeek={seek}
+                tooltip={(f) => {
+                  const v = valueAt(data.energy.energyCurve.values, f);
+                  return v == null ? null : <span className="ml-[var(--px-6)] tabular-nums">{(v * 100).toFixed(0)}%</span>;
+                }}
+              >
+                <LineChart series={data.energy.energyCurve} height={130} />
+              </TimeAxis>
+            </Panel>
 
             {/* =============== PART 1 — local DSP (shown immediately) =============== */}
             {/* spectrum */}
@@ -471,27 +470,35 @@ export default function AnalysisPage() {
               />
             </Panel>
 
-            {/* harmony */}
+            {/* harmony — Camelot wheel */}
             <Panel title="Harmony" subtitle={data.tonality.key == null ? "analyzing key…" : `${data.tonality.key} ${data.tonality.scale} · ${(data.tonality.strength * 100).toFixed(0)}% strength`}>
-              <div className="grid grid-cols-1 items-center gap-[var(--px-12)] sm:grid-cols-2">
-                {data.tonality.key == null ? (
-                  <div className="flex items-center justify-center gap-[var(--px-8)] font-helvetica text-[length:var(--px-11)] opacity-60" style={{ minHeight: 140 }}>
-                    <Spinner size={16} /> analyzing…
-                  </div>
-                ) : (
-                  <CamelotWheel camelot={data.tonality.camelot ?? ""} />
-                )}
-                <div>
-                  <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase opacity-50">Chromagram · hover for the notes</div>
-                  {data.tonality.chromagram.data.length === 0 ? (
-                    <div className="flex items-center justify-center gap-[var(--px-8)] rounded-[var(--px-8)] bg-[var(--opacity-10)] font-helvetica text-[length:var(--px-11)] opacity-60" style={{ height: 140 }}>
-                      <Spinner size={16} /> analyzing…
-                    </div>
-                  ) : (
-                    <ChromaView matrix={data.tonality.chromagram} durationMs={durationMs} currentMs={currentMs} onSeek={seek} height={140} />
-                  )}
+              {data.tonality.key == null ? (
+                <div className="flex items-center justify-center gap-[var(--px-8)] font-helvetica text-[length:var(--px-11)] opacity-60" style={{ minHeight: 160 }}>
+                  <Spinner size={16} /> analyzing…
                 </div>
-              </div>
+              ) : (
+                <div className="flex justify-center">
+                  <CamelotWheel camelot={data.tonality.camelot ?? ""} />
+                </div>
+              )}
+            </Panel>
+
+            {/* chromagram — its own full-width track */}
+            <Panel
+              title="Chromagram"
+              subtitle={
+                data.tonality.chromagram.data.length === 0
+                  ? "pitch-class energy over time (Essentia HPCP) · analyzing…"
+                  : "pitch-class energy over time (Essentia HPCP) · hover for the notes · click / play to seek"
+              }
+            >
+              {data.tonality.chromagram.data.length === 0 ? (
+                <div className="flex items-center justify-center gap-[var(--px-8)] rounded-[var(--px-8)] bg-[var(--opacity-10)] font-helvetica text-[length:var(--px-11)] opacity-60" style={{ height: 170 }}>
+                  <Spinner size={16} /> analyzing…
+                </div>
+              ) : (
+                <ChromaView matrix={data.tonality.chromagram} durationMs={durationMs} currentMs={currentMs} onSeek={seek} height={170} />
+              )}
             </Panel>
 
             {/* timbre */}
@@ -590,10 +597,12 @@ export default function AnalysisPage() {
                 </Panel>
               </>
             ) : (
-              <Panel title="Sound, mood & style" subtitle="genre · instruments · stems · emotion">
-                <div className="flex flex-col gap-[var(--px-16)] py-[var(--px-6)]">
-                  <LoadingStep title="Sound & structure" subtitle="tempo · key · loudness · spectrum · sections — ready above" done />
-                  <LoadingStep title="Sound, mood & style" subtitle="genre · instruments · stems · emotion — running the models" />
+              <Panel title="Sound, mood & style" subtitle="genre · instruments · stems · emotion" center>
+                <div className="flex justify-center py-[var(--px-14)]">
+                  <div className="flex flex-col gap-[var(--px-16)]">
+                    <LoadingStep title="Sound & structure" subtitle="tempo · key · loudness · spectrum · sections — ready above" done />
+                    <LoadingStep title="Sound, mood & style" subtitle="genre · instruments · stems · emotion — running the models" />
+                  </div>
                 </div>
               </Panel>
             )}
