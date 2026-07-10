@@ -358,7 +358,7 @@ export default function AnalysisPage() {
               <StatCard label="Loudness" value={data.technical.integratedLufs.toFixed(1)} sub="LUFS integrated" hint="Integrated loudness in LUFS (EBU R128) — the overall perceived level across the whole track." />
               <StatCard label="Duration" value={fmtDuration(data.identity.durationMs)} sub={data.rhythm.bpm == null ? "— BPM" : `${fmtBpm(data.rhythm.bpm)} BPM`} hint="Total track length (mm:ss)." />
               {data.semantics.genreTop.length > 0 ? (
-                <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)]">{shortGenre(data.semantics.genreTop[0].label)}</span>} sub={`${(data.semantics.genreTop[0].score * 100).toFixed(0)}% match`} hint="Most likely genre from the Discogs-400 classifier (see the full ranking below)." />
+                <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)]">{shortGenre(data.semantics.genreTop[0].label)}</span>} sub={`${(data.semantics.genreTop[0].score * 100).toFixed(0)}% match`} hint="Most likely genre from the Discogs-400 model (MAEST-30s) — see the full ranking below." />
               ) : (
                 <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)] opacity-40">…</span>} sub="analyzing" hint="Genre needs the model pass (part 2) — filling in shortly." />
               )}
@@ -564,7 +564,7 @@ export default function AnalysisPage() {
 
                 {/* genre / style / mood */}
                 <div className="grid grid-cols-1 gap-[var(--px-20)] lg:grid-cols-2">
-                  <Panel title="Genre" subtitle="Discogs-400 · top 7">
+                  <Panel title="Genre" subtitle="Discogs-400 (MAEST) · top 7">
                     <BarList items={data.semantics.genreTop.slice(0, 7)} labelTransform={shortGenre} />
                   </Panel>
                   <Panel title="Detailed style" subtitle="MAEST-519 · top 7">
