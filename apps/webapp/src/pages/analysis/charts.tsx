@@ -4,7 +4,7 @@
  * self-contained for the testing phase. All colors come from the app's CSS vars.
  */
 
-import { useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { ScoredLabel, Series } from "./data.js";
 
@@ -493,14 +493,55 @@ export function MoodMap({ valence, arousal }: { valence: number; arousal: number
 /* -------------------------------------------------------------- TagChips */
 export function TagChips({ items, singleLine = false }: { items: ScoredLabel[]; singleLine?: boolean }) {
   const max = Math.max(...items.map((i) => i.score), 0.0001);
+  const ref = useRef<HTMLDivElement>(null);
+  const sig = items.map((i) => i.label).join("|");
+
+  // `singleLine`: show only the whole chips that fit on the FIRST row (desktop);
+  // on mobile (< sm) show them all, wrapped. Two-pass — a "measuring" render
+  // shows every chip so we can read each one's row (offsetTop); the count is set
+  // in a layout effect (flushes before paint, so the multi-row pass never shows).
+  const [measuring, setMeasuring] = useState(true);
+  const [count, setCount] = useState(items.length);
+  const lastSig = useRef(sig);
+  if (singleLine && lastSig.current !== sig) {
+    lastSig.current = sig;
+    if (!measuring) setMeasuring(true); // re-measure when the tags change
+  }
+
+  useLayoutEffect(() => {
+    if (!singleLine || !measuring) return;
+    const el = ref.current;
+    if (!el) return;
+    if (window.innerWidth < 640) {
+      setCount(items.length); // mobile: keep all, wrapped + centered
+    } else {
+      const kids = Array.from(el.children) as HTMLElement[];
+      const firstTop = kids.length ? kids[0].offsetTop : 0;
+      let n = 0;
+      for (const k of kids) {
+        if (k.offsetTop > firstTop) break; // wrapped to the next row -> drop it and the rest
+        n += 1;
+      }
+      setCount(n);
+    }
+    setMeasuring(false);
+  }, [measuring, singleLine, sig, items.length]);
+
+  useEffect(() => {
+    if (!singleLine) return;
+    const onResize = () => setMeasuring(true);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [singleLine]);
+
+  const visible = !singleLine || measuring ? items : items.slice(0, count);
+
   return (
     <div
-      className={
-        "flex gap-[var(--px-8)] " +
-        (singleLine ? "flex-nowrap overflow-hidden" : "flex-wrap")
-      }
+      ref={ref}
+      className={"flex flex-wrap gap-[var(--px-8)] " + (singleLine ? "justify-center" : "")}
     >
-      {items.map((it) => {
+      {visible.map((it) => {
         const strength = it.score / max;
         return (
           <span
