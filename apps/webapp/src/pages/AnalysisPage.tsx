@@ -269,27 +269,10 @@ export default function AnalysisPage() {
               onPause={() => setPlaying(false)}
               onEnded={() => setPlaying(false)}
             />
-            <div className="flex items-center gap-[var(--px-14)] rounded-[var(--px-10)] border border-[var(--opacity-15)] bg-[var(--opacity-10)] px-[var(--px-14)] py-[var(--px-10)]">
-              <button
-                type="button"
-                onClick={togglePlay}
-                aria-label={playing ? "Pause" : "Play"}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-black transition-transform hover:scale-105"
-              >
-                {playing ? (
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                    <rect x="6" y="5" width="4" height="14" rx="1" />
-                    <rect x="14" y="5" width="4" height="14" rx="1" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" className="h-4 w-4 translate-x-[1px]" fill="currentColor">
-                    <path d="M7 5 L19 12 L7 19 Z" />
-                  </svg>
-                )}
-              </button>
-              <span className="w-10 shrink-0 font-helvetica text-[length:var(--px-11)] tabular-nums opacity-80">{fmtClock(currentMs)}</span>
+            <div className="rounded-[var(--px-10)] border border-[var(--opacity-15)] bg-[var(--opacity-10)] px-[var(--px-20)] py-[var(--px-12)]">
+              {/* scrub bar — full width so the cursor lines up with the waveform & graphs below */}
               <div
-                className="relative h-[var(--px-6)] flex-1 cursor-pointer overflow-hidden rounded-full bg-white/25"
+                className="relative h-[var(--px-6)] w-full cursor-pointer overflow-hidden rounded-full bg-white/25"
                 onClick={(e) => {
                   const r = e.currentTarget.getBoundingClientRect();
                   seek(((e.clientX - r.left) / r.width) * durationMs);
@@ -300,36 +283,61 @@ export default function AnalysisPage() {
                   style={{ width: `${durationMs ? Math.min(100, (currentMs / durationMs) * 100) : 0}%`, background: ACCENT }}
                 />
               </div>
-              <span className="w-10 shrink-0 text-right font-helvetica text-[length:var(--px-11)] tabular-nums opacity-50">{fmtClock(durationMs)}</span>
 
-              {/* volume */}
-              <div className="flex shrink-0 items-center gap-[var(--px-6)]">
+              {/* controls row — play · time · volume, below the scrub bar */}
+              <div className="mt-[var(--px-12)] flex items-center gap-[var(--px-12)]">
                 <button
                   type="button"
-                  onClick={() => setVolume((v) => (v > 0 ? 0 : 1))}
-                  aria-label={volume > 0 ? "Mute" : "Unmute"}
-                  className="opacity-60 transition-opacity hover:opacity-100"
+                  onClick={togglePlay}
+                  aria-label={playing ? "Pause" : "Play"}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-black transition-transform hover:scale-105"
                 >
-                  <svg viewBox="0 0 24 24" className="h-[var(--px-16)] w-[var(--px-16)]" fill="currentColor">
-                    <path d="M3 9v6h4l5 5V4L7 9H3z" />
-                    {volume === 0 ? (
-                      <path d="M16.5 8.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                    ) : (
-                      <path d="M15.5 8.5a5 5 0 0 1 0 7M17.8 6.2a8 8 0 0 1 0 11.6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                    )}
-                  </svg>
+                  {playing ? (
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                      <rect x="6" y="5" width="4" height="14" rx="1" />
+                      <rect x="14" y="5" width="4" height="14" rx="1" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" className="h-4 w-4 translate-x-[1px]" fill="currentColor">
+                      <path d="M7 5 L19 12 L7 19 Z" />
+                    </svg>
+                  )}
                 </button>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={volume}
-                  onChange={(e) => setVolume(parseFloat(e.target.value))}
-                  aria-label="Volume"
-                  className="h-1 w-[var(--px-72)] cursor-pointer"
-                  style={{ accentColor: ACCENT }}
-                />
+                <span className="shrink-0 font-helvetica text-[length:var(--px-11)] tabular-nums opacity-80">{fmtClock(currentMs)}</span>
+                <span className="shrink-0 font-helvetica text-[length:var(--px-11)] tabular-nums opacity-40">/</span>
+                <span className="shrink-0 font-helvetica text-[length:var(--px-11)] tabular-nums opacity-50">{fmtClock(durationMs)}</span>
+
+                <div className="flex-1" />
+
+                {/* volume */}
+                <div className="flex shrink-0 items-center gap-[var(--px-6)]">
+                  <button
+                    type="button"
+                    onClick={() => setVolume((v) => (v > 0 ? 0 : 1))}
+                    aria-label={volume > 0 ? "Mute" : "Unmute"}
+                    className="opacity-60 transition-opacity hover:opacity-100"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-[var(--px-16)] w-[var(--px-16)]" fill="currentColor">
+                      <path d="M3 9v6h4l5 5V4L7 9H3z" />
+                      {volume === 0 ? (
+                        <path d="M16.5 8.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                      ) : (
+                        <path d="M15.5 8.5a5 5 0 0 1 0 7M17.8 6.2a8 8 0 0 1 0 11.6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                      )}
+                    </svg>
+                  </button>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={volume}
+                    onChange={(e) => setVolume(parseFloat(e.target.value))}
+                    aria-label="Volume"
+                    className="h-1 w-[var(--px-72)] cursor-pointer"
+                    style={{ accentColor: ACCENT }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -554,16 +562,13 @@ export default function AnalysisPage() {
                   </div>
                 </Panel>
 
-                {/* genre / style / instruments / mood */}
+                {/* genre / style / mood */}
                 <div className="grid grid-cols-1 gap-[var(--px-20)] lg:grid-cols-2">
                   <Panel title="Genre" subtitle="Discogs-400 · top 7">
                     <BarList items={data.semantics.genreTop.slice(0, 7)} labelTransform={shortGenre} />
                   </Panel>
                   <Panel title="Detailed style" subtitle="MAEST-519 · top 7">
                     <BarList items={data.semantics.styleMaestTop.slice(0, 7)} labelTransform={shortGenre} />
-                  </Panel>
-                  <Panel title="Instrumentation" subtitle="detected instruments · top 7">
-                    <BarList items={data.semantics.instrumentTop.slice(0, 7)} />
                   </Panel>
                   <Panel title="Mood / theme" subtitle="MTG-Jamendo tags">
                     <TagChips items={data.semantics.moodThemeTop} />

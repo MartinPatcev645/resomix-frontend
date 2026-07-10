@@ -213,76 +213,65 @@ export function SpectrogramView({
   ).join(", ")})`;
 
   return (
-    <div>
-      <TimeAxis durationMs={durationMs} currentMs={currentMs ?? null} onSeek={onSeek} tooltip={() => null}>
-        <div className="relative overflow-hidden rounded-[var(--px-8)]">
-          <canvas ref={ref} className="block w-full" style={{ height, imageRendering: "pixelated" }} />
-          {hzTicks.map((f) => {
-            const yf = yFrac(f);
-            // Keep the top (Nyquist) and bottom (0) labels fully inside the plot.
-            const ty = yf < 0.04 ? "translateY(0)" : yf > 0.96 ? "translateY(-100%)" : "translateY(-50%)";
-            return (
-              <div
-                key={f}
-                className="pointer-events-none absolute left-0 flex items-center gap-[var(--px-3)]"
-                style={{ top: `${yf * 100}%`, transform: ty }}
-              >
-                <span className="h-px w-[var(--px-6)] bg-white/40" />
-                <span
-                  className="font-helvetica text-[length:var(--px-9)] tabular-nums text-white/75"
-                  style={{ textShadow: "0 1px 3px rgba(0,0,0,0.95)" }}
-                >
-                  {fmtHz(f)}
-                </span>
-              </div>
-            );
-          })}
-          <span
-            className="pointer-events-none absolute right-[var(--px-6)] top-[var(--px-4)] font-helvetica text-[length:var(--px-9)] uppercase tracking-wide text-white/55"
-            style={{ textShadow: "0 1px 3px rgba(0,0,0,0.95)" }}
+    <div className="flex">
+      {/* frequency axis — OUTSIDE the plot, evenly spaced (0, 2k, 4k … Nyquist) */}
+      <div className="relative shrink-0 w-[var(--px-34)]" style={{ height }}>
+        {hzTicks.map((f) => (
+          <div
+            key={f}
+            className="pointer-events-none absolute right-0 flex items-center gap-[var(--px-3)]"
+            style={{ top: `${yFrac(f) * 100}%`, transform: "translateY(-50%)" }}
           >
-            Hz
-          </span>
-        </div>
-      </TimeAxis>
+            <span className="font-helvetica text-[length:var(--px-9)] tabular-nums opacity-55">{fmtHz(f)}</span>
+            <span className="h-px w-[var(--px-5)] bg-white/40" />
+          </div>
+        ))}
+      </div>
 
-      {timeTicks.length > 1 && (
-        <div className="relative mt-[var(--px-4)] h-[var(--px-12)]">
-          {timeTicks.map((t) => {
-            const frac = durationMs > 0 ? t / durationMs : 0;
-            if (frac > 1.0001) return null;
-            const tx = frac < 0.03 ? "translateX(0)" : frac > 0.97 ? "translateX(-100%)" : "translateX(-50%)";
-            return (
-              <span
-                key={t}
-                className="absolute font-helvetica text-[length:var(--px-9)] tabular-nums opacity-45"
-                style={{ left: `${Math.min(100, frac * 100)}%`, transform: tx }}
-              >
-                {fmtClock(t)}
-              </span>
-            );
-          })}
-        </div>
-      )}
+      {/* plot + time axis + power scale, all sharing the plot's width */}
+      <div className="min-w-0 flex-1">
+        <TimeAxis durationMs={durationMs} currentMs={currentMs ?? null} onSeek={onSeek} tooltip={() => null}>
+          <canvas ref={ref} className="block w-full rounded-[var(--px-8)]" style={{ height, imageRendering: "pixelated" }} />
+        </TimeAxis>
 
-      <div className="mt-[var(--px-6)] flex items-center gap-[var(--px-10)]">
-        <span className="shrink-0 font-helvetica text-[length:var(--px-9)] uppercase tracking-wide opacity-45">Power</span>
-        <div className="flex-1">
-          <div className="h-[var(--px-8)] w-full rounded-full" style={{ background: gradient }} />
-          <div className="relative mt-[var(--px-2)] h-[var(--px-10)]">
-            {DB_TICKS.map((db) => {
-              const frac = (db + DB_RANGE) / DB_RANGE; // −80 → 0 (left), 0 → 1 (right)
+        {timeTicks.length > 1 && (
+          <div className="relative mt-[var(--px-4)] h-[var(--px-12)]">
+            {timeTicks.map((t) => {
+              const frac = durationMs > 0 ? t / durationMs : 0;
+              if (frac > 1.0001) return null;
               const tx = frac < 0.03 ? "translateX(0)" : frac > 0.97 ? "translateX(-100%)" : "translateX(-50%)";
               return (
                 <span
-                  key={db}
+                  key={t}
                   className="absolute font-helvetica text-[length:var(--px-9)] tabular-nums opacity-45"
-                  style={{ left: `${frac * 100}%`, transform: tx }}
+                  style={{ left: `${Math.min(100, frac * 100)}%`, transform: tx }}
                 >
-                  {db} dB
+                  {fmtClock(t)}
                 </span>
               );
             })}
+          </div>
+        )}
+
+        <div className="mt-[var(--px-6)] flex items-center gap-[var(--px-10)]">
+          <span className="shrink-0 font-helvetica text-[length:var(--px-9)] uppercase tracking-wide opacity-45">Power</span>
+          <div className="flex-1">
+            <div className="h-[var(--px-8)] w-full rounded-full" style={{ background: gradient }} />
+            <div className="relative mt-[var(--px-2)] h-[var(--px-10)]">
+              {DB_TICKS.map((db) => {
+                const frac = (db + DB_RANGE) / DB_RANGE; // −120 → 0 (left), 0 → 1 (right)
+                const tx = frac < 0.03 ? "translateX(0)" : frac > 0.97 ? "translateX(-100%)" : "translateX(-50%)";
+                return (
+                  <span
+                    key={db}
+                    className="absolute font-helvetica text-[length:var(--px-9)] tabular-nums opacity-45"
+                    style={{ left: `${frac * 100}%`, transform: tx }}
+                  >
+                    {db} dB
+                  </span>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -322,36 +311,37 @@ export function ChromaView({
   };
 
   return (
-    <TimeAxis
-      durationMs={durationMs}
-      currentMs={currentMs ?? null}
-      onSeek={onSeek}
-      tooltip={(frac) => (
-        <TipRows rows={chromaAt(frac).slice(0, 4).map((t) => ({ label: t.label, value: `${(t.v * 100).toFixed(0)}%` }))} />
-      )}
-    >
-      <div className="relative overflow-hidden rounded-[var(--px-8)]">
-        <Heatmap matrix={matrix} height={height} />
+    <div className="flex">
+      {/* pitch-class axis — OUTSIDE the plot (C at the bottom … B at the top) */}
+      <div className="relative shrink-0 w-[var(--px-24)]" style={{ height }}>
         {CHROMA_LABELS.slice(0, rows).map((lab, i) => {
           const yr = rows - 1 - i; // pitch-class 0 (C) at the bottom
           return (
             <div
               key={lab + i}
-              className="pointer-events-none absolute left-0 flex items-center gap-[var(--px-3)]"
+              className="pointer-events-none absolute right-0 flex items-center gap-[var(--px-3)]"
               style={{ top: `${((yr + 0.5) / rows) * 100}%`, transform: "translateY(-50%)" }}
             >
-              <span className="h-px w-[var(--px-5)] bg-white/40" />
-              <span
-                className="font-helvetica text-[length:var(--px-8)] tabular-nums text-white/75"
-                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.95)" }}
-              >
-                {lab}
-              </span>
+              <span className="font-helvetica text-[length:var(--px-8)] tabular-nums opacity-55">{lab}</span>
+              <span className="h-px w-[var(--px-4)] bg-white/40" />
             </div>
           );
         })}
       </div>
-    </TimeAxis>
+
+      <div className="min-w-0 flex-1">
+        <TimeAxis
+          durationMs={durationMs}
+          currentMs={currentMs ?? null}
+          onSeek={onSeek}
+          tooltip={(frac) => (
+            <TipRows rows={chromaAt(frac).slice(0, 4).map((t) => ({ label: t.label, value: `${(t.v * 100).toFixed(0)}%` }))} />
+          )}
+        >
+          <Heatmap matrix={matrix} height={height} />
+        </TimeAxis>
+      </div>
+    </div>
   );
 }
 
