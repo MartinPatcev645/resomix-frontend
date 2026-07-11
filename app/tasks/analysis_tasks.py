@@ -168,3 +168,139 @@ def generate_track_analysis(
     except Exception as exc:  # transient (analysis service blip) → retry a couple of times
         logger.error("ANALYSIS SIBLING: task for %s failed: %s", analysis_id, exc, exc_info=True)
         raise self.retry(exc=exc)
+
+
+# --------------------------------------------------------------------------- #
+# Foreground-analysis path (the analysis-upload endpoint): the analysis was already
+# CREATED foreground under `analysis_id`, so here we only wait for completion + persist the
+# summary row (no create, no audio).
+# --------------------------------------------------------------------------- #
+async def _async_persist_analysis_summary(
+    *,
+    analysis_id: str,
+    track_id: Optional[int],
+    user_id: Optional[int],
+    partner_id: Optional[int],
+) -> None:
+    client = AnalysisService()
+    if not client.is_configured:
+        logger.info("ANALYSIS PERSIST: analysis service not configured — skipping %s", analysis_id)
+        return
+    outcome = await client.wait_for_result(analysis_id, timeout=_ANALYSIS_TIMEOUT_S)
+    if outcome.get("status") != "success":
+        logger.warning(
+            "ANALYSIS PERSIST: %s did not complete: %s (%s)",
+            analysis_id, outcome.get("status"), outcome.get("message"),
+        )
+        return
+    if partner_id is not None:
+        set_current_partner_id(partner_id)
+        set_admin_context(False)
+    else:
+        set_admin_context(True)
+    await _persist_summary(
+        analysis_id=analysis_id,
+        result=outcome.get("result") or {},
+        track_id=track_id,
+        user_id=user_id,
+        partner_id=partner_id,
+    )
+
+
+@celery_app.task(bind=True, max_retries=2, default_retry_delay=60)
+def persist_analysis_summary(
+    self,
+    analysis_id: str,
+    track_id: Optional[int] = None,
+    user_id: Optional[int] = None,
+    partner_id: Optional[int] = None,
+) -> None:
+    """Wait for a foreground-created analysis to finish, then fill in its summary row."""
+    try:
+        run_async_task(
+            _async_persist_analysis_summary(
+                analysis_id=analysis_id, track_id=track_id, user_id=user_id, partner_id=partner_id
+            )
+        )
+    except Exception as exc:
+        logger.error("ANALYSIS PERSIST: task for %s failed: %s", analysis_id, exc, exc_info=True)
+        raise self.retry(exc=exc)
+
+
+# --------------------------------------------------------------------------- #
+# The similarity sibling for the analysis-upload path: generate the similarity playlist for a
+# just-uploaded track in the background (best-effort; needs the similarity server configured).
+# --------------------------------------------------------------------------- #
+async def _async_generate_similarity_sibling(
+    *,
+    audio_spool_path: str,
+    track_uuid: str,
+    original_filename: str,
+    user_id: Optional[int],
+    partner_id: Optional[int],
+    top_k: int = 20,
+) -> None:
+    try:
+        try:
+            with open(audio_spool_path, "rb") as fh:
+                audio_bytes = fh.read()
+        except OSError as exc:
+            logger.error("SIMILARITY SIBLING: could not read spool %s: %s", audio_spool_path, exc)
+            return
+        if not audio_bytes:
+            return
+
+        from app.services.similarity_service import SimilarityService
+
+        if partner_id is not None:
+            set_current_partner_id(partner_id)
+            set_admin_context(False)
+        else:
+            set_admin_context(True)
+
+        async with AsyncSessionLocal() as db:
+            result = await SimilarityService().calculate_similarity_for_upload(
+                db=db,
+                audio_bytes=audio_bytes,
+                original_filename=original_filename,
+                track_uuid=track_uuid,
+                top_k=top_k,
+                similarity_duplication_threshold=0,
+                user_id=user_id,
+                partner_id=partner_id,
+            )
+        if isinstance(result, dict) and result.get("success") is False:
+            logger.warning("SIMILARITY SIBLING: %s failed: %s", track_uuid, result.get("error"))
+        else:
+            logger.info("SIMILARITY SIBLING: generated similarity playlist for track %s", track_uuid)
+    finally:
+        try:
+            if audio_spool_path and os.path.exists(audio_spool_path):
+                os.remove(audio_spool_path)
+        except OSError as exc:
+            logger.warning("SIMILARITY SIBLING: could not remove spool %s: %s", audio_spool_path, exc)
+
+
+@celery_app.task(bind=True, max_retries=1, default_retry_delay=60)
+def generate_similarity_sibling(
+    self,
+    audio_spool_path: str,
+    track_uuid: str,
+    original_filename: str,
+    user_id: Optional[int] = None,
+    partner_id: Optional[int] = None,
+) -> None:
+    """Generate the similarity playlist for an analysis-uploaded track (best-effort sibling)."""
+    try:
+        run_async_task(
+            _async_generate_similarity_sibling(
+                audio_spool_path=audio_spool_path,
+                track_uuid=track_uuid,
+                original_filename=original_filename,
+                user_id=user_id,
+                partner_id=partner_id,
+            )
+        )
+    except Exception as exc:
+        logger.error("SIMILARITY SIBLING: task for %s failed: %s", track_uuid, exc, exc_info=True)
+        raise self.retry(exc=exc)

@@ -2,9 +2,13 @@
 Analysis API Router (consumer-facing)
 =====================================
 
-Return-visit access to a previously generated analysis (see
+Upload + return-visit access for analysis-as-an-artifact (see
 ``docs/UPLOADS_AND_SEARCH_LIMITS_PLAN.md`` §4):
 
+  * ``POST /analysis/upload``                 — upload a track, foreground its analysis (login-only,
+                                                counts vs uploads_per_month), enqueue the sibling.
+  * ``GET  /analysis/{id}/status``            — poll job status (owner-or-public).
+  * ``GET  /analysis/{id}/result``            — the partial/full canonical result (owner-or-public).
   * ``GET  /analysis/{analysis_uuid}``        — the single-value summary (owner-or-public).
   * ``POST /analysis/{analysis_uuid}/token``  — mint a retrieval token for the full cached JSON
                                                 on the Hetzner served cache (owner-or-public).
@@ -17,7 +21,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,6 +40,37 @@ router = APIRouter(
 )
 
 controller = AnalysisResultController()
+
+
+@router.post("/upload", status_code=200, summary="Upload a track and analyze it")
+async def upload_and_analyze(
+    request: Request,
+    file: UploadFile = File(..., description="Audio file to analyze (max 100MB)."),
+    db: AsyncSession = Depends(get_database_session),
+    partner: Partner = Depends(get_public_partner),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+) -> JSONResponse:
+    return await controller.upload_and_analyze(db, request, file, current_user, partner.id)
+
+
+@router.get("/{analysis_id}/status", status_code=200, summary="Poll analysis job status")
+async def get_analysis_status(
+    analysis_id: str,
+    db: AsyncSession = Depends(get_database_session),
+    partner: Partner = Depends(get_public_partner),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+) -> JSONResponse:
+    return await controller.get_status(db, analysis_id, current_user)
+
+
+@router.get("/{analysis_id}/result", status_code=200, summary="Get the analysis result (partial/full)")
+async def get_analysis_result(
+    analysis_id: str,
+    db: AsyncSession = Depends(get_database_session),
+    partner: Partner = Depends(get_public_partner),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+) -> JSONResponse:
+    return await controller.get_result(db, analysis_id, current_user)
 
 
 @router.get("/{analysis_uuid}", status_code=200, summary="Get an analysis summary")

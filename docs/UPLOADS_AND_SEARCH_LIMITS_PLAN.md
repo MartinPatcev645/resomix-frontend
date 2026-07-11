@@ -32,19 +32,49 @@
     Hetzner box), NOT the production similarity/HLS media server — avoids touching that sensitive
     prod surface while still satisfying "`GET https://<hetzner>/analysis/{id}?token=`". The served
     cache is the same `var/results/{id}.json` the worker writes, so no extra write step is needed.
-- Phase D (frontend) — api-client layer DONE; UI wiring pending browser verification.
-  - **DONE (compile-verified):** `@resomix/api-client` `analysis.ts` — `getAnalysisSummary(uuid)`
-    + `mintAnalysisToken(uuid)` (typed `AnalysisSummary`/`AnalysisRetrievalToken`), `ANALYSIS`
-    endpoint in `config.ts`, exported from `index.ts`, package rebuilt. The mint returns
-    `{token, expires_in, retrieval_path}`; the webapp composes
-    `${analysisMediaBase}${retrieval_path}?token=${token}` to fetch the full cached JSON.
-  - **PENDING (needs the browser, per the standing "don't drive the frontend" rule — hand off):**
-    (1) route both upload intents through Alwyzon in `useTrackAnalysis.ts` (retire the direct
-    `VITE_ANALYSIS_ENDPOINT` for prod behind a dev flag; poll Alwyzon for fresh results);
-    (2) library "Show playlist" + "Get analysis" buttons reading generated results via the
-    summary + token→cache flow; (3) show the summary in lists, full page from the cached JSON;
-    (4) separated upload-vs-search quota messaging using `uploadsPerMonth`/`searchPlaylistsPerMonth`
-    from `useEntitlements`.
+- Phase D (frontend) — core loop DONE + compile-verified; browser verification handed to the user.
+  - **Alwyzon upload front-door (NEW):** `POST /analysis/upload` (login-only, gates
+    `can_similarity_upload` + `uploads_per_month`, foregrounds the analysis on the analysis
+    service under an Alwyzon-owned id, writes a PENDING summary row, records the upload, enqueues
+    the persist + similarity-sibling jobs) + `GET /analysis/{id}/status` + `GET /analysis/{id}/result`
+    (owner-or-public proxies). Two new Celery tasks: `persist_analysis_summary` (wait+fill the row)
+    and `generate_similarity_sibling` (best-effort similarity playlist for the analysis-uploaded
+    track). All in `analysis_result_controller.py` / `analysis.py` router / `analysis_tasks.py`.
+  - **api-client:** `analysis.ts` — `uploadForAnalysis` + `getAnalysisStatus` + `getAnalysisResult`
+    (+ `getAnalysisSummary`/`mintAnalysisToken` from before), rebuilt.
+  - **webapp:** `useTrackAnalysis.ts` now routes through Alwyzon by default (`VITE_ANALYSIS_VIA_ALWYZON`,
+    default true; dev-direct fallback kept), polling Alwyzon's status/result proxy; upload denials
+    surface the gate reason (`login_required` / `upgrade_required`) as user copy. `tsc -b` clean.
+  - **PENDING (small, optional):** a Library list UI with "Get analysis" (link to
+    `/analysis?id=<analysis_uuid>` — already works via `loadById`→Alwyzon proxy) + "Show playlist";
+    plus surfacing `uploadsPerMonth` remaining in the UI chrome. The retrieval plumbing is done.
+
+---
+
+## 10. Run & test end-to-end (local)
+
+**Config (add to your live `.env` — see the updated `.env.example` files):**
+- Alwyzon `.env`: `ANALYSIS_SERVER_URL=http://localhost:8010` and
+  `ANALYSIS_INTERNAL_API_KEY=<pick-a-secret>`.
+- Analysis service `.env`: `RESOMIX_INTERNAL_API_KEY=<same secret>` and
+  `RESOMIX_EDGE_JWT_SECRET=<Alwyzon's EDGE_JWT_SECRET value>` (for return-visit token retrieval).
+- Frontend: `VITE_ANALYSIS_VIA_ALWYZON=true` (default; the `@resomix/api-client` dist is rebuilt).
+
+**Processes:** Alwyzon API (:8001) · analysis service API (:8010) + its Celery worker (analysis
+pipeline) · GPU/embedding server (:8006) · (optional) similarity server (:8004) for the sibling ·
+Redis · **Alwyzon Celery worker** (only needed to FILL the summary row + run the similarity
+sibling — the analysis itself displays without it via the status/result proxy) · webapp dev server.
+
+**What to test:**
+- **Upload counts as an upload:** log in → Analysis page → upload a track → it routes through
+  Alwyzon, analysis renders (part 1 then full). Each upload decrements `uploads_per_month`.
+- **Upload limit:** upload up to the plan cap → next upload returns *"You've used all your uploads
+  this month. Upgrade to analyze more."* Same limit is shared with the similarity upload.
+- **Login-only:** as a guest, uploading for analysis says *"Please log in to analyze a track."*
+- **Search vs upload are separate:** creating catalog/search playlists decrements
+  `search_playlists_per_month`, NOT `uploads_per_month`.
+- **Return visit:** reopen `/analysis?id=<analysis_uuid>` → loads via the Alwyzon proxy.
+- **Fork disabled:** `POST /playlists/fork/...` returns `feature_unavailable`.
 **Part of:** the frontend plans/entitlements initiative — companion to
 `docs/FRONTEND_PLANS_AND_GUEST_ENFORCEMENT_IMPLEMENTATION.md` (add a Progress row there).
 **Rule (unchanged):** frontend/consumer (System Partner 1 + guests) only — **never touch B2B**.

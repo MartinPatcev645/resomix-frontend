@@ -10,12 +10,14 @@ other consumer-endpoint tests.
 """
 
 import uuid
+from unittest.mock import AsyncMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.core.config import settings
 from app.core.context import admin_context
+from app.services.operation_limit_evaluator import OperationLimitResult
 from app.services.track_analysis_result_service import TrackAnalysisResultService
 from app.utils.edge_auth import decode_edge_token
 from database.connection import AsyncSessionLocal
@@ -117,4 +119,115 @@ async def test_mint_token_forbidden_for_other_user() -> None:
     aid = await _seed_analysis(user_id=owner.id, track_id=track.id)
     async with await _client() as ac:
         res = await ac.post(f"/api/v1/analysis/{aid}/token", headers={**auth_headers(other), "X-API-KEY": settings.api_key})
+    assert res.status_code == 403, res.text
+
+
+# --- upload front-door + poll proxy ----------------------------------------- #
+_FILE = {"file": ("track.mp3", b"fake-audio-bytes", "audio/mpeg")}
+
+
+async def test_upload_guest_denied() -> None:
+    """Guests can't upload for analysis (login-only, can_similarity_upload=False)."""
+    async with await _client() as ac:
+        res = await ac.post(
+            "/api/v1/analysis/upload",
+            files=_FILE,
+            headers={"X-API-KEY": settings.api_key, "X-Device-Hash": "dev-" + uuid.uuid4().hex},
+        )
+    assert res.status_code == 403, res.text
+    assert res.json().get("reason") == "login_required"
+
+
+async def test_upload_over_limit_denied(monkeypatch) -> None:
+    from app.api.routers.analysis import controller
+
+    user = await create_user()
+    monkeypatch.setattr(
+        controller.operation_limit_evaluator, "check",
+        AsyncMock(return_value=OperationLimitResult(
+            allowed=False, status_code=403, message="You've used all your uploads this month.",
+            reason="upgrade_required",
+        )),
+    )
+    async with await _client() as ac:
+        res = await ac.post("/api/v1/analysis/upload", files=_FILE, headers={**auth_headers(user), "X-API-KEY": settings.api_key})
+    assert res.status_code == 403, res.text
+    assert res.json().get("reason") == "upgrade_required"
+
+
+async def test_upload_happy_path_returns_id_and_writes_pending_row(monkeypatch) -> None:
+    from app.api.routers.analysis import controller
+
+    user = await create_user()
+    track = await create_track(user_id=user.id, partner_id=1)
+
+    # Isolate the orchestration from AV / metadata extraction / the external analysis service.
+    monkeypatch.setattr(controller.antivirus_service, "scan_bytes", lambda *a, **k: {"success": True, "clean": True})
+    monkeypatch.setattr(
+        controller.track_upload_service, "upload_track_to_database",
+        AsyncMock(return_value={"success": True, "uuid": track.uuid, "track_id": track.id}),
+    )
+    monkeypatch.setattr(controller.analysis_client, "base_url", "http://analysis")  # -> is_configured
+    monkeypatch.setattr(controller.analysis_client, "create_analysis", AsyncMock(return_value={"analysis_id": "svc", "status_url": "/x"}))
+    monkeypatch.setattr(controller, "_enqueue_background", lambda **k: None)  # no celery
+
+    async with await _client() as ac:
+        res = await ac.post("/api/v1/analysis/upload", files=_FILE, headers={**auth_headers(user), "X-API-KEY": settings.api_key})
+    assert res.status_code == 200, res.text
+    data = res.json()["data"]
+    analysis_id = data["analysis_id"]
+    assert len(analysis_id) == 32 and data["track_uuid"] == track.uuid
+
+    # A pending summary row now links the analysis id to the owner (authorizes polling).
+    token = admin_context.set(True)
+    try:
+        async with AsyncSessionLocal() as db:
+            row = await TrackAnalysisResultService().get_by_analysis_uuid(db, analysis_id)
+            assert row is not None and row.user_id == user.id and row.track_id == track.id
+            assert row.bpm is None  # pending: summary not filled until completion
+    finally:
+        admin_context.reset(token)
+
+
+async def test_upload_service_unavailable_when_unconfigured(monkeypatch) -> None:
+    from app.api.routers.analysis import controller
+
+    user = await create_user()
+    monkeypatch.setattr(controller.antivirus_service, "scan_bytes", lambda *a, **k: {"success": True, "clean": True})
+    monkeypatch.setattr(controller.analysis_client, "base_url", None)  # -> not configured
+    async with await _client() as ac:
+        res = await ac.post("/api/v1/analysis/upload", files=_FILE, headers={**auth_headers(user), "X-API-KEY": settings.api_key})
+    assert res.status_code == 503, res.text
+    assert res.json().get("reason") == "service_unavailable"
+
+
+async def test_status_and_result_proxy_owner_ok(monkeypatch) -> None:
+    from app.api.routers.analysis import controller
+
+    user = await create_user()
+    track = await create_track(user_id=user.id, partner_id=1)
+    aid = await _seed_analysis(user_id=user.id, track_id=track.id)
+
+    monkeypatch.setattr(controller.analysis_client, "base_url", "http://analysis")
+    monkeypatch.setattr(controller.analysis_client, "get_status", AsyncMock(return_value={"state": "running", "part1_ready": False, "progress": {"percent": 40}}))
+    monkeypatch.setattr(controller.analysis_client, "get_result", AsyncMock(return_value={"analysis_id": aid, "rhythm": {"bpm": 120}}))
+
+    async with await _client() as ac:
+        st = await ac.get(f"/api/v1/analysis/{aid}/status", headers={**auth_headers(user), "X-API-KEY": settings.api_key})
+        rs = await ac.get(f"/api/v1/analysis/{aid}/result", headers={**auth_headers(user), "X-API-KEY": settings.api_key})
+    assert st.status_code == 200 and st.json()["data"]["state"] == "running"
+    assert rs.status_code == 200 and rs.json()["data"]["rhythm"]["bpm"] == 120
+
+
+async def test_status_proxy_forbidden_for_other_user(monkeypatch) -> None:
+    from app.api.routers.analysis import controller
+
+    owner = await create_user()
+    other = await create_user()
+    track = await create_track(user_id=owner.id, partner_id=1)
+    aid = await _seed_analysis(user_id=owner.id, track_id=track.id)
+    monkeypatch.setattr(controller.analysis_client, "base_url", "http://analysis")
+    monkeypatch.setattr(controller.analysis_client, "get_status", AsyncMock(return_value={"state": "running"}))
+    async with await _client() as ac:
+        res = await ac.get(f"/api/v1/analysis/{aid}/status", headers={**auth_headers(other), "X-API-KEY": settings.api_key})
     assert res.status_code == 403, res.text
