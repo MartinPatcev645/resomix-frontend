@@ -8,7 +8,7 @@ export type PlanEntitlementValue = boolean | number | string;
 
 /** Feature catalog entry (a limit/flag that plans assign values to). */
 export interface AdminFeature {
-  key: string;                 // e.g. "playlists_per_month"
+  key: string;                 // e.g. "search_playlists_per_month"
   name: string;
   value_type: "int" | "bool" | "enum" | "csv" | string;
   window: string | null;      // e.g. "monthly" | null

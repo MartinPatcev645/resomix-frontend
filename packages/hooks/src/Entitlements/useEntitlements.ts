@@ -63,8 +63,12 @@ export interface UseEntitlements {
   dropdownMaxTracks: number;
   /** How many result tracks are unlocked in a created playlist; the rest are teased. */
   maxTracksPerPlaylist: number;
-  /** Playlists creatable per monthly period (resets on the subject's billing anchor). */
-  playlistsPerMonth: number;
+  /** SEARCH (catalog) playlists creatable per monthly period (resets on the billing anchor). */
+  searchPlaylistsPerMonth: number;
+  /** Uploads per monthly period — one upload = analysis + similarity, counted once. */
+  uploadsPerMonth: number;
+  /** Whether the plan allows similarity-by-upload at all (upload feature availability). */
+  canSimilarityUpload: boolean;
   /** Force a refetch (call after login/logout/upgrade). */
   refresh: () => Promise<void>;
 }
@@ -128,7 +132,9 @@ export function useEntitlements(): UseEntitlements {
     can: getBool,
     dropdownMaxTracks: getInt(FEATURE_KEYS.DROPDOWN_MAX_TRACKS, 20),
     maxTracksPerPlaylist: getInt(FEATURE_KEYS.MAX_TRACKS_PER_PLAYLIST, 10),
-    playlistsPerMonth: getInt(FEATURE_KEYS.PLAYLISTS_PER_MONTH, 5),
+    searchPlaylistsPerMonth: getInt(FEATURE_KEYS.SEARCH_PLAYLISTS_PER_MONTH, 5),
+    uploadsPerMonth: getInt(FEATURE_KEYS.UPLOADS_PER_MONTH, 0),
+    canSimilarityUpload: getBool(FEATURE_KEYS.CAN_SIMILARITY_UPLOAD),
     refresh,
   };
 }

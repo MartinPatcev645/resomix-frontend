@@ -29,6 +29,7 @@ export interface ApiConfig {
     // Beta endpoints
     SIMILARITY: string;
     SELECTION_SIMILARITY: string;
+    ANALYSIS: string;
     SEARCH: string;
     FEEDBACK: string;
     CONTACT: string;
@@ -236,6 +237,8 @@ export const API_CONFIG: ApiConfig = {
     // Beta endpoints
     SIMILARITY: "/api/v1/similarity/upload",
     SELECTION_SIMILARITY: "/api/v1/similarity/search",
+    // Analysis-as-an-artifact (return-visit retrieval via Alwyzon; base + {analysis_uuid})
+    ANALYSIS: "/api/v1/analysis",
     SEARCH: "/api/v1/search_tracks/",
     FEEDBACK: "/api/v1/feedback/",
     CONTACT: "/api/v1/contact/",
