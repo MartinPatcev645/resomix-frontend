@@ -299,15 +299,12 @@ class SimilarityService:
                     if filtered_queried_tracks:
                         response_data["queried_track"] = filtered_queried_tracks[0]
 
-                # Record a successful playlist creation against the daily entitlement counter.
-                if user_id:
-                    try:
-                        await OperationLimitEvaluator().record_success(
-                            db, user_id=user_id, operation_code="playlist_create"
-                        )
-                        print(f"SIMILARITY UPLOAD: Recorded playlist use for user_id={user_id}")
-                    except Exception as inc_err:
-                        print(f"SIMILARITY UPLOAD: Failed to record playlist use: {str(inc_err)}")
+                # NOTE: An upload counts against `uploads_per_month`, NOT `search_playlists_per_month`.
+                # The upload controller (get_similarity_upload) owns that recording — it calls
+                # record_success(operation_code="upload_create") on success. We must NOT record a
+                # playlist_create here or a single upload would wrongly burn a search-playlist quota
+                # on top of the upload quota. (The search path in get_similarity_by_path still records
+                # playlist_create, which is correct there.)
 
                 await db.commit()
 

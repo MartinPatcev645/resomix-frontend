@@ -192,5 +192,7 @@ async def test_evaluator_seam_resolves_from_entitlements():
         u = await _reload_user(db, user.id)
         # free user → playlist_create maps to search_playlists_per_month = 15
         assert await ev.resolve_effective_limit(db, u, "playlist_create") == 15
+        # free user → upload_create maps to uploads_per_month = 5
+        assert await ev.resolve_effective_limit(db, u, "upload_create") == 5
         # unmapped operation → None (no behavior change)
         assert await ev.resolve_effective_limit(db, u, "some_unmapped_op") is None

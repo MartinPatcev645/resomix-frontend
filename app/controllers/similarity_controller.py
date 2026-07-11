@@ -28,6 +28,7 @@ from app.services.playlist_service import PlaylistService
 from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.core.config import settings
 from app.services.similarity_service import SimilarityService
+from app.services.analysis_service import AnalysisService
 from app.services.audio_service import AudioService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
 from app.services.antivirus_service import AntivirusService
@@ -47,6 +48,7 @@ logger = logging.getLogger(__name__)
 class SimilarityController:
     def __init__(self):
         self.similarity_service = SimilarityService()
+        self.analysis_service = AnalysisService()
         self.playlist_service = PlaylistService()
         self.audio_service = AudioService()
         self.track_upload_service = TrackUploadService()
@@ -115,6 +117,61 @@ class SimilarityController:
         )
         apply_demo_mode_redaction(similarity_results, visible_count=visible)
 
+    def _maybe_enqueue_analysis_sibling(
+        self,
+        *,
+        audio_bytes: bytes,
+        original_filename: str,
+        track_id: Optional[int],
+        user_id: Optional[int],
+        partner_id: Optional[int],
+    ) -> None:
+        """Enqueue the analysis sibling for a successful consumer upload (fire-and-forget).
+
+        Every upload yields BOTH a similarity playlist (foregrounded above) and an analysis
+        result. The analysis runs on the Hetzner box, so we spool the audio to disk and hand the
+        path to a Celery task that ships it under an Alwyzon-owned ``analysis_id`` before the
+        audio is discarded. Guarded so it is inert until the analysis service is deployed:
+          * consumer surface only (System Partner 1) + logged-in (uploads are login-only);
+          * the analysis service URL must be configured.
+        Never raises — analysis is best-effort and must not affect the similarity response. The
+        sibling does NOT re-count against ``uploads_per_month`` (the endpoint already recorded it).
+        """
+        try:
+            if not user_id or partner_id != settings.system_partner_id:
+                return
+            if not self.analysis_service.is_configured:
+                return
+
+            analysis_id = self.analysis_service.new_analysis_id()
+
+            # Spool the audio next to the other upload temp files; the worker (same host) reads
+            # + deletes it. Keep the real extension so the service detects the format.
+            _, ext = os.path.splitext(original_filename or "")
+            if not ext:
+                ext = ".mp3"
+            os.makedirs(settings.temp_dir, exist_ok=True)
+            spool_path = os.path.join(settings.temp_dir, f"analysis_{analysis_id}{ext}")
+            with open(spool_path, "wb") as fh:
+                fh.write(audio_bytes)
+
+            from app.tasks.analysis_tasks import generate_track_analysis
+
+            generate_track_analysis.delay(
+                analysis_id=analysis_id,
+                audio_spool_path=spool_path,
+                original_filename=original_filename or f"upload{ext}",
+                track_id=track_id,
+                user_id=user_id,
+                partner_id=partner_id,
+            )
+            logger.info(
+                "SIMILARITY UPLOAD: enqueued analysis sibling %s for track_id=%s user_id=%s",
+                analysis_id, track_id, user_id,
+            )
+        except Exception as exc:  # never let analysis wiring break the similarity response
+            logger.error("SIMILARITY UPLOAD: failed to enqueue analysis sibling: %s", exc)
+
     async def get_similarity_upload(
         self,
         db: AsyncSession,
@@ -178,13 +235,14 @@ class SimilarityController:
             if not await self._frontend_rate_ok(request):
                 return self._rate_limited_response()
 
-        # Check operation limits before processing - only if user is logged in
+        # Upload allowance (monthly) — one upload = analysis + similarity, counted once. Peeked here,
+        # recorded on success below. Only logged-in users (uploads are login-only); B2B has no user_id.
         user_id = current_user.id if current_user else None
         if user_id:
             limit_check = await self.operation_limit_evaluator.check(
                 db,
                 user_id=user_id,
-                operation_code="playlist_create",
+                operation_code="upload_create",
             )
             if not limit_check.allowed:
                 response_content = format_response(
@@ -619,6 +677,24 @@ class SimilarityController:
                     except Exception as redis_err:
                         logger.error(f"SIMILARITY UPLOAD (Anon): Failed to set Redis cleanup key: {str(redis_err)}")
 
+                # Count this successful upload against the caller's monthly upload allowance
+                # (peeked at the gate above). Best-effort; never fails the request.
+                if user_id:
+                    await self.operation_limit_evaluator.record_success(
+                        db, user_id=user_id, operation_code="upload_create"
+                    )
+
+                # The upload also produces an analysis result (the sibling artifact). Generate it
+                # in the background before the audio is discarded; no re-count (self-guarded/inert
+                # until the analysis service is configured).
+                self._maybe_enqueue_analysis_sibling(
+                    audio_bytes=audio_bytes,
+                    original_filename=original_filename,
+                    track_id=int(upload_result["track_id"]) if upload_result.get("track_id") else None,
+                    user_id=user_id,
+                    partner_id=partner_id,
+                )
+
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000
                 await self._apply_frontend_unlock_redaction(
@@ -936,6 +1012,23 @@ class SimilarityController:
                         logger.info(f"SIMILARITY UPLOAD (Fallback-Anon): Set cleanup TTL for track {upload_result['uuid']} ({settings.anonymous_track_ttl}s)")
                     except Exception as redis_err:
                         logger.error(f"SIMILARITY UPLOAD (Fallback-Anon): Failed to set Redis cleanup key: {str(redis_err)}")
+
+                # Count this successful upload against the caller's monthly upload allowance
+                # (peeked at the gate above). Best-effort; never fails the request.
+                if user_id:
+                    await self.operation_limit_evaluator.record_success(
+                        db, user_id=user_id, operation_code="upload_create"
+                    )
+
+                # Sibling analysis artifact (background, before the audio is discarded; no
+                # re-count; inert until the analysis service is configured).
+                self._maybe_enqueue_analysis_sibling(
+                    audio_bytes=audio_bytes,
+                    original_filename=file.filename or "upload.mp3",
+                    track_id=int(upload_result["track_id"]) if upload_result.get("track_id") else None,
+                    user_id=user_id,
+                    partner_id=partner_id,
+                )
 
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000

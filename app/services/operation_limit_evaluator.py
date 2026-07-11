@@ -27,8 +27,18 @@ from app.services.entitlement_service import EntitlementService
 from app.services.entitlement_gate import EntitlementGate
 
 # Bridge the legacy OperationType.code space to the new entitlement feature keys.
+# Both are per-subject MONTHLY entitlement counters (peek in check(), record in
+# record_success()). ``playlist_create`` = catalog/search playlists; ``upload_create`` =
+# a track upload (one upload = analysis + similarity, counted once).
 OPERATION_TO_FEATURE = {
     "playlist_create": FeatureKey.SEARCH_PLAYLISTS_PER_MONTH,
+    "upload_create": FeatureKey.UPLOADS_PER_MONTH,
+}
+
+# Per-operation soft-deny copy (``{lim}`` is filled with the numeric cap when known).
+_LIMIT_DENY_MSG = {
+    "playlist_create": "You've reached this month's search-playlist limit{lim}. Upgrade your plan to create more.",
+    "upload_create": "You've used all your uploads this month{lim}. Upgrade your plan to upload more.",
 }
 
 
@@ -75,12 +85,12 @@ class OperationLimitEvaluator:
         if not user_id:
             return OperationLimitResult(allowed=True, status_code=200)
 
-        # --- playlist_create: per-plan MONTHLY limit via the entitlement gate (T1) -------------
-        # Logged-in frontend users are governed by their plan's PLAYLISTS_PER_MONTH (Redis counter,
-        # per-subject monthly window), the same mechanism guests use — replacing the legacy
-        # lifetime-total limit. (B2B partners never reach here: no user_id, short-circuited above.)
-        if operation_code == "playlist_create":
-            return await self._check_playlist_monthly(db, user_id)
+        # --- entitlement MONTHLY limits (playlist_create / upload_create) via the gate (T1) ----
+        # Logged-in frontend users are governed by their plan's monthly Redis counter (per-subject
+        # window), the same mechanism guests use — replacing the legacy lifetime-total limit. (B2B
+        # partners never reach here: no user_id, short-circuited above.)
+        if operation_code in OPERATION_TO_FEATURE:
+            return await self._check_monthly(db, user_id, operation_code)
 
         # --- legacy per-user operation limits (e.g. spotify_transfer) — unchanged -------------
         operation = await db.execute(
@@ -133,18 +143,22 @@ class OperationLimitEvaluator:
             await db.execute(select(User).where(User.id == user_id))
         ).scalar_one_or_none()
 
-    async def _check_playlist_monthly(self, db: AsyncSession, user_id: int) -> OperationLimitResult:
-        """Peek the caller's monthly playlist allowance (does not consume). Soft-denies with an
-        upgrade nudge when at limit. Fails open (allowed) if Redis is unavailable."""
+    async def _check_monthly(
+        self, db: AsyncSession, user_id: int, operation_code: str
+    ) -> OperationLimitResult:
+        """Peek the caller's monthly allowance for a mapped operation (does not consume). Soft-denies
+        with an upgrade nudge when at limit. Fails open (allowed) if Redis is unavailable."""
         user = await self._load_user(db, user_id)
-        gate = await self._gate.peek_allowed(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=user)
+        feature_key = OPERATION_TO_FEATURE[operation_code]
+        gate = await self._gate.peek_allowed(db, feature_key, user=user)
         if gate.allowed:
             return OperationLimitResult(allowed=True, status_code=200)
         limit_txt = f" ({gate.limit})" if gate.limit else ""
+        template = _LIMIT_DENY_MSG.get(operation_code, "You've reached this month's limit{lim}.")
         return OperationLimitResult(
             allowed=False,
             status_code=403,
-            message=f"You've reached this month's playlist limit{limit_txt}. Upgrade your plan to create more.",
+            message=template.format(lim=limit_txt),
             reason=gate.reason,
         )
 
@@ -157,10 +171,11 @@ class OperationLimitEvaluator:
         if not user_id:
             return
         try:
-            if operation_code == "playlist_create":
+            feature_key = OPERATION_TO_FEATURE.get(operation_code)
+            if feature_key is not None:
                 user = await self._load_user(db, user_id)
                 if user is not None:
-                    await self._gate.record_use(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=user)
+                    await self._gate.record_use(db, feature_key, user=user)
                 return
             await self._op_repo.async_increment_usage(
                 db, user_id=user_id, operation_code=operation_code

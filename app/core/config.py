@@ -85,6 +85,16 @@ class Settings(BaseModel):
         default=None,
         description="Internal API key for securely deleting tracks on the Hetzner Audio Processing Server",
     )
+    # Analysis microservice (runs on the Hetzner box; Alwyzon is its only caller). Leave unset
+    # until the service is deployed — the upload orchestration treats an unset URL as "analysis
+    # not available yet" and skips it (similarity still works). Mirrors the similarity wiring.
+    analysis_server_url: Optional[str] = Field(
+        default=None, description="Public base URL of the analysis microservice (e.g. https://<hetzner-ip>:8010)"
+    )
+    analysis_internal_api_key: Optional[str] = Field(
+        default=None,
+        description="Shared secret sent as X-Internal-Key so only Alwyzon can trigger analyses",
+    )
     hetzner_sftp_provision_url: Optional[str] = Field(
         default=None,
         description="URL of the internal provisioning script on Hetzner",
@@ -526,6 +536,8 @@ class Settings(BaseModel):
             "MONGODB_URI": "mongodb_uri",
             "SIMILARITY_SERVER_URL": "similarity_server_url",
             "HETZNER_INTERNAL_API_KEY": "hetzner_internal_api_key",
+            "ANALYSIS_SERVER_URL": "analysis_server_url",
+            "ANALYSIS_INTERNAL_API_KEY": "analysis_internal_api_key",
             "HETZNER_SFTP_PROVISION_URL": "hetzner_sftp_provision_url",
             "SFTP_SERVER_HOST": "sftp_server_host",
             "SFTP_SERVER_PORT": "sftp_server_port",

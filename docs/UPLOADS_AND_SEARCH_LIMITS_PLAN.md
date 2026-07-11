@@ -1,6 +1,19 @@
 # Uploads, Search Limits & Analysis-as-an-Artifact — Plan
 
-**Status:** DRAFT (design agreed 2026-07). Implementing Phases A–D together.
+**Status:** IN PROGRESS (design agreed 2026-07). Implementing Phases A–D together.
+**Progress:**
+- Phase A ✅ DONE (rename + split counting + fork disabled + migration `a2b3c4d5e6f7`; backend
+  suite 454 passed / 3 pre-existing playback failures; frontend api-client + hooks renamed &
+  typecheck-clean). Also fixed an upload double-count (removed the stray `playlist_create`
+  record in `similarity_service.calculate_similarity_for_upload`).
+- Phase B ✅ DONE. Analysis service: optional caller-owned `analysis_id` + `X-Internal-Key`
+  guard on the create route (`internal_api_key`, open when unset). Alwyzon: `analysis_server_url`
+  + `analysis_internal_api_key` settings; `app/services/analysis_service.py` client
+  (create/status/result/wait, structured errors, `is_configured`); `app/tasks/analysis_tasks.py`
+  sibling job (spool → ship → wait → Phase-C persist hook); upload orchestration enqueues the
+  sibling on both success paths (guarded: consumer + logged-in + configured; no re-count). Inert
+  until `analysis_server_url` is set. Tests added on both sides.
+- Phase C in progress.
 **Part of:** the frontend plans/entitlements initiative — companion to
 `docs/FRONTEND_PLANS_AND_GUEST_ENFORCEMENT_IMPLEMENTATION.md` (add a Progress row there).
 **Rule (unchanged):** frontend/consumer (System Partner 1 + guests) only — **never touch B2B**.

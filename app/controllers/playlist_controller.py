@@ -799,6 +799,17 @@ class PlaylistController:
         Returns:
             JSON response with forked playlist data or error message
         """
+        # Forking is DISABLED for now (kept for a possible future rework — do NOT delete the
+        # logic below). Return a clear "feature unavailable" before any processing/limit check.
+        return JSONResponse(
+            status_code=403,
+            content=format_response(
+                success=False,
+                error="Playlist forking is currently unavailable.",
+                reason="feature_unavailable",
+            ),
+        )
+
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
 

@@ -57,33 +57,29 @@ async def test_rbac_scope_enforcement(clean_overrides):
                 assert res.status_code == 403
 
 @pytest.mark.asyncio
-async def test_user_operation_limits_enforcement(clean_overrides):
+async def test_fork_endpoint_disabled(clean_overrides):
     """
-    Validate that user-specific limits (e.g., playlist creation) are enforced.
+    Playlist fork is DISABLED for now: the endpoint short-circuits to 403 'feature unavailable'
+    before any processing/limit check (the fork logic is retained for a future rework). The
+    monthly-limit mechanism itself is covered by the entitlement gate/evaluator unit tests
+    (see test_entitlement_service / test_usage_and_gate).
     """
     mock_user = User(id=1, partner_id=1, email="test@test.com")
     mock_user.uuid = str(uuid.uuid4())
-    
-    from app.services.operation_limit_evaluator import OperationLimitEvaluator
-    mock_evaluator = MagicMock(spec=OperationLimitEvaluator)
-    mock_evaluator.check = AsyncMock(return_value=OperationLimitResult(
-        allowed=False, status_code=403, message="Playlist limit reached (5). Please upgrade."
-    ))
-    
+
     from app.api.dependencies.auth import get_current_user
     from app.api.dependencies.partner import get_current_partner
     from app.core.context import set_current_partner_id
-    
+
     app.dependency_overrides[get_current_user] = lambda: mock_user
     # Ensure partner_id is set in context to pass failsafe
     app.dependency_overrides[get_current_partner] = lambda: (set_current_partner_id(1), Partner(id=1))[1]
-    
-    from app.api.routers.playlists import playlist_controller
-    with patch.object(playlist_controller, "operation_limit_evaluator", mock_evaluator):
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            res = await ac.post("/api/v1/playlists/fork/dummy-uuid", headers={"Authorization": "Bearer jwt"})
-            assert res.status_code == 403
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        res = await ac.post("/api/v1/playlists/fork/dummy-uuid", headers={"Authorization": "Bearer jwt"})
+    assert res.status_code == 403
+    assert res.json().get("reason") == "feature_unavailable"
 
 @pytest.mark.asyncio
 async def test_spotify_transfer_limits_enforcement(clean_overrides):
