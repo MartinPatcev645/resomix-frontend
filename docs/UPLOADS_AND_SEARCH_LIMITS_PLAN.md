@@ -32,7 +32,19 @@
     Hetzner box), NOT the production similarity/HLS media server — avoids touching that sensitive
     prod surface while still satisfying "`GET https://<hetzner>/analysis/{id}?token=`". The served
     cache is the same `var/results/{id}.json` the worker writes, so no extra write step is needed.
-- Phase D (frontend) in progress.
+- Phase D (frontend) — api-client layer DONE; UI wiring pending browser verification.
+  - **DONE (compile-verified):** `@resomix/api-client` `analysis.ts` — `getAnalysisSummary(uuid)`
+    + `mintAnalysisToken(uuid)` (typed `AnalysisSummary`/`AnalysisRetrievalToken`), `ANALYSIS`
+    endpoint in `config.ts`, exported from `index.ts`, package rebuilt. The mint returns
+    `{token, expires_in, retrieval_path}`; the webapp composes
+    `${analysisMediaBase}${retrieval_path}?token=${token}` to fetch the full cached JSON.
+  - **PENDING (needs the browser, per the standing "don't drive the frontend" rule — hand off):**
+    (1) route both upload intents through Alwyzon in `useTrackAnalysis.ts` (retire the direct
+    `VITE_ANALYSIS_ENDPOINT` for prod behind a dev flag; poll Alwyzon for fresh results);
+    (2) library "Show playlist" + "Get analysis" buttons reading generated results via the
+    summary + token→cache flow; (3) show the summary in lists, full page from the cached JSON;
+    (4) separated upload-vs-search quota messaging using `uploadsPerMonth`/`searchPlaylistsPerMonth`
+    from `useEntitlements`.
 **Part of:** the frontend plans/entitlements initiative — companion to
 `docs/FRONTEND_PLANS_AND_GUEST_ENFORCEMENT_IMPLEMENTATION.md` (add a Progress row there).
 **Rule (unchanged):** frontend/consumer (System Partner 1 + guests) only — **never touch B2B**.
