@@ -11,7 +11,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
 import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
-import { CamelotWheel, ChromaView, Donut, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
+import { CamelotWheel, ChromaView, Donut, keyFromCamelot, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
 
 const shortGenre = (l: string) => l.split("---").pop() ?? l;
 const fmtDuration = (ms: number) => {
@@ -75,6 +75,10 @@ export default function AnalysisPage() {
   // Stem show/hide selection, shared by the stacked area + the donut.
   const stemNames = data ? Object.keys(data.composition.stems) : [];
   const { hidden: stemsHidden, toggle: toggleStem } = useToggleSet(stemNames.length);
+
+  // Canonical, MIK-correct key label derived from the Camelot code (single source of truth for the
+  // Key stat + Harmony subtitle, always matching the wheel — never the sharp-normalized raw key).
+  const keyLabel = data ? keyFromCamelot(data.tonality.camelot) : null;
 
   const activeSection = data?.energy.structureSegments.find(
     (s) => currentMs >= s.startMs && currentMs < s.endMs,
@@ -352,7 +356,7 @@ export default function AnalysisPage() {
               />
               <StatCard
                 label="Key"
-                value={data.tonality.key == null ? <Spinner size={20} /> : `${data.tonality.key} ${data.tonality.scale === "major" ? "maj" : "min"}`}
+                value={data.tonality.key == null ? <Spinner size={20} /> : keyLabel ? `${keyLabel.name} ${keyLabel.scale === "major" ? "maj" : "min"}` : "—"}
                 sub={data.tonality.key == null ? "analyzing…" : `Camelot ${data.tonality.camelot}`}
                 hint="Estimated musical key & scale (Essentia EDMA profile, tuned for electronic music), plus its Camelot code for harmonic mixing."
               />
@@ -507,7 +511,7 @@ export default function AnalysisPage() {
             </Panel>
 
             {/* harmony — Camelot wheel */}
-            <Panel title="Harmony" subtitle={data.tonality.key == null ? "analyzing key…" : `${data.tonality.key} ${data.tonality.scale} · ${(data.tonality.strength * 100).toFixed(0)}% strength`}>
+            <Panel title="Harmony" subtitle={data.tonality.key == null ? "analyzing key…" : keyLabel ? `${keyLabel.name} ${keyLabel.scale} · ${(data.tonality.strength * 100).toFixed(0)}% strength` : "—"}>
               {data.tonality.key == null ? (
                 <div className="flex items-center justify-center gap-[var(--px-8)] font-helvetica text-[length:var(--px-11)] opacity-60" style={{ minHeight: 160 }}>
                   <Spinner size={16} /> analyzing…

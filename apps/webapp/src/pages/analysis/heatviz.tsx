@@ -443,6 +443,24 @@ const WHEEL = [
   { b: "A", major: "A", minor: "F#m" },
   { b: "E", major: "E", minor: "C#m" },
 ];
+
+// Single source of truth for the human key name: derive it from the Camelot code so the Key stat,
+// the Harmony subtitle, and the wheel caption ALWAYS agree, using MIK-correct enharmonic spelling
+// (flats for the flat keys — e.g. 3A -> "Bb minor", never "A# minor"). The backend `key` string is
+// sharp-normalized and must NOT be rendered directly.
+export function keyFromCamelot(
+  camelot: string | null | undefined,
+): { name: string; scale: "major" | "minor" } | null {
+  if (!camelot) return null;
+  const num = parseInt(camelot, 10);
+  const side = camelot.slice(-1).toUpperCase();
+  const slot = WHEEL[num - 1];
+  if (!slot || (side !== "A" && side !== "B")) return null;
+  return side === "B"
+    ? { name: slot.major, scale: "major" }
+    : { name: slot.minor.replace(/m$/, ""), scale: "minor" };
+}
+
 export function CamelotWheel({ camelot }: { camelot: string }) {
   const num = parseInt(camelot, 10); // 1..12
   const side = camelot.slice(-1).toUpperCase(); // "A" | "B"

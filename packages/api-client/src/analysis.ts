@@ -16,7 +16,7 @@
  */
 
 import authClient from "./authClient";
-import { axiosWrapper, handleApiError } from "./utils";
+import { axiosWrapper, handleApiError, validateAudioFile } from "./utils";
 import { API_CONFIG } from "./config";
 
 /** Single-value analysis summary (mirror of the backend `to_dict`). */
@@ -86,6 +86,109 @@ export const mintAnalysisToken = async (analysisUuid: string) => {
   try {
     return await axiosWrapper<AnalysisTokenEnvelope>(
       authClient.post(`${analysisPath(analysisUuid)}/token`),
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+// ---------------------------------------------------------------------------- //
+// Fresh upload → analyze (routed through Alwyzon; login-only, counts vs uploads_per_month)
+// ---------------------------------------------------------------------------- //
+
+export interface AnalysisUploadResult {
+  analysis_id: string;
+  track_uuid: string;
+}
+export interface AnalysisUploadEnvelope {
+  success: boolean;
+  data: AnalysisUploadResult;
+}
+
+/** Live job status document proxied from the analysis service. */
+export interface AnalysisJobStatus {
+  state?: "queued" | "running" | "succeeded" | "failed";
+  part1_ready?: boolean;
+  progress?: { percent?: number; stage?: string };
+  error?: string;
+  result_available?: boolean;
+}
+export interface AnalysisStatusEnvelope {
+  success: boolean;
+  data: AnalysisJobStatus;
+}
+
+/** The canonical result (partial or full) proxied from the analysis service. */
+export interface AnalysisResultEnvelope {
+  success: boolean;
+  data: Record<string, unknown>;
+}
+
+/**
+ * Upload a track for analysis through Alwyzon (the single upload front-door). Login-only; counts
+ * against `uploads_per_month`. Returns `{ analysis_id, track_uuid }`; poll `getAnalysisStatus` /
+ * `getAnalysisResult` for progressive delivery. A denied upload surfaces `reason`
+ * (`login_required` / `upgrade_required`) for the gate CTA.
+ */
+export const uploadForAnalysis = async (
+  file: File,
+  progressCallback?: (progress: number) => void,
+) => {
+  const validation = validateAudioFile(file);
+  if (!validation.valid) {
+    return { success: false as const, error: validation.error };
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    // Pre-emptively refresh the token before the (potentially large) upload.
+    try {
+      const { getMyProfile } = await import("./auth");
+      await getMyProfile();
+    } catch (e) {
+      console.warn("Pre-upload token check failed:", e);
+    }
+
+    const data = await axiosWrapper<AnalysisUploadEnvelope>(
+      authClient.post(`${API_CONFIG.ENDPOINTS.ANALYSIS}/upload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (evt) => {
+          if (evt.total && progressCallback) {
+            progressCallback((evt.loaded / evt.total) * 100);
+          }
+        },
+        timeout: 900_000,
+      }),
+    );
+    if (data.success === true) return data;
+    return {
+      success: false as const,
+      error: (data as { error?: string }).error || "Upload failed.",
+      reason: (data as { reason?: string }).reason,
+    };
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/** Poll the analysis job status (owner-or-public via Alwyzon). */
+export const getAnalysisStatus = async (analysisId: string) => {
+  try {
+    return await axiosWrapper<AnalysisStatusEnvelope>(
+      authClient.get(`${analysisPath(analysisId)}/status`),
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/** Fetch the partial/full canonical result (owner-or-public via Alwyzon). */
+export const getAnalysisResult = async (analysisId: string) => {
+  try {
+    return await axiosWrapper<AnalysisResultEnvelope>(
+      authClient.get(`${analysisPath(analysisId)}/result`),
     );
   } catch (error) {
     return handleApiError(error as Error);

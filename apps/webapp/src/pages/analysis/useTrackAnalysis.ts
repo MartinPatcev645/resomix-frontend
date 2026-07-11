@@ -1,26 +1,34 @@
 /**
  * useTrackAnalysis — upload → analyze → result state machine.
  *
- * Talks directly to the resomix-analysis-service async job API:
- *   POST /v1/analyses            -> { analysis_id }
- *   GET  /v1/analyses/{id}       -> { state, progress:{percent}, error }   (poll)
- *   GET  /v1/analyses/{id}/result-> canonical analysis JSON (once succeeded)
- * Part 1 (fast local DSP) is rendered as soon as the backend checkpoints it; the
- * semantic/GPU part 2 fills in when the full result lands (progressive delivery).
- * The snake_case canonical result is adapted to the camelCase `AnalysisData` the
- * dashboard renders via `mapCanonicalToAnalysisData`. We deliberately do NOT use
- * `@resomix/api-client` here — this page owns its service contract.
+ * Default (prod): routes through **Alwyzon** (the single upload front-door), so the upload is
+ * login-only and counts against `uploads_per_month`, and every upload also yields a similarity
+ * playlist (generated as a background sibling). Alwyzon foregrounds the analysis on the
+ * resomix-analysis-service and proxies status/result back:
+ *   POST /api/v1/analysis/upload         -> { analysis_id, track_uuid }
+ *   GET  /api/v1/analysis/{id}/status    -> { state, part1_ready, progress:{percent}, error }
+ *   GET  /api/v1/analysis/{id}/result    -> canonical analysis JSON (partial then full)
+ *
+ * Dev fallback (VITE_ANALYSIS_VIA_ALWYZON=false): talks DIRECTLY to the analysis service
+ * (`VITE_ANALYSIS_ENDPOINT`) — only usable when that service has no internal key set.
+ *
+ * Part 1 (fast local DSP) renders as soon as the backend checkpoints it; the semantic/GPU part 2
+ * fills in when the full result lands (progressive delivery). The snake_case canonical result is
+ * adapted to the camelCase `AnalysisData` the dashboard renders via `mapCanonicalToAnalysisData`.
  */
 
 import { useCallback, useRef, useState } from "react";
+import { uploadForAnalysis, getAnalysisStatus, getAnalysisResult } from "@resomix/api-client";
 import type { AnalysisData } from "./data.js";
 import { mapCanonicalToAnalysisData } from "./mapCanonical.js";
 import { makePlayableUrl } from "./audioPlayable.js";
 
-/** resomix-analysis-service (FastAPI) base URL. Set VITE_ANALYSIS_ENDPOINT per
- *  environment (local dev vs deployed); falls back to the local dev server. */
+/** resomix-analysis-service (FastAPI) base URL — used ONLY by the dev-direct fallback. */
 export const ANALYSIS_ENDPOINT =
   import.meta.env.VITE_ANALYSIS_ENDPOINT ?? "http://localhost:8010";
+
+/** Route uploads through Alwyzon (default). Set VITE_ANALYSIS_VIA_ALWYZON=false for dev-direct. */
+const VIA_ALWYZON = (import.meta.env.VITE_ANALYSIS_VIA_ALWYZON ?? "true") !== "false";
 
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 10 * 60 * 1000; // give a full-track analysis up to 10 minutes
@@ -28,6 +36,16 @@ const POLL_TIMEOUT_MS = 10 * 60 * 1000; // give a full-track analysis up to 10 m
 export type AnalysisStatus = "idle" | "uploading" | "analyzing" | "done" | "error";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Normalized status document shared by both transports. */
+interface StatusDoc {
+  state?: string;
+  part1_ready?: boolean;
+  percent: number;
+  error?: string;
+}
+type StatusFetcher = (id: string) => Promise<StatusDoc>;
+type ResultFetcher = (id: string) => Promise<unknown>;
 
 async function errText(res: Response, fallback: string): Promise<string> {
   try {
@@ -39,10 +57,8 @@ async function errText(res: Response, fallback: string): Promise<string> {
 }
 
 /**
- * POST the file with a REAL upload-progress callback. `fetch` can't report
- * request-body progress, so we use XHR: `onProgress` gets 0→100 as bytes leave
- * the browser. Resolves with the parsed JSON body (or rejects with the server's
- * error detail).
+ * POST the file with a REAL upload-progress callback via XHR (dev-direct path only).
+ * Resolves with the parsed JSON body (or rejects with the server's error detail).
  */
 function uploadWithProgress(
   url: string,
@@ -56,7 +72,7 @@ function uploadWithProgress(
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
     };
-    xhr.upload.onload = () => onProgress(100); // bytes done; server now processing
+    xhr.upload.onload = () => onProgress(100);
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve(xhr.response ?? {});
@@ -71,40 +87,65 @@ function uploadWithProgress(
   });
 }
 
+// --- transport-specific fetchers ------------------------------------------- //
+
+const directStatus: StatusFetcher = async (id) => {
+  const res = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}`);
+  if (res.status === 404) throw new Error("Analysis not found");
+  if (!res.ok) throw new Error(await errText(res, "Status check failed"));
+  const st = (await res.json()) as StatusDoc & { progress?: { percent?: number } };
+  return { state: st.state, part1_ready: st.part1_ready, percent: st.progress?.percent ?? 0, error: st.error };
+};
+const directResult: ResultFetcher = async (id) => {
+  const res = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}/result`);
+  if (!res.ok) throw new Error(await errText(res, "Result fetch failed"));
+  return res.json();
+};
+
+const alwyzonStatus: StatusFetcher = async (id) => {
+  const res = await getAnalysisStatus(id);
+  if (!res || (res as { success?: boolean }).success === false) {
+    throw new Error((res as { error?: string })?.error || "Status check failed");
+  }
+  const d = (res as { data: { state?: string; part1_ready?: boolean; progress?: { percent?: number }; error?: string } }).data;
+  return { state: d.state, part1_ready: d.part1_ready, percent: d.progress?.percent ?? 0, error: d.error };
+};
+const alwyzonResult: ResultFetcher = async (id) => {
+  const res = await getAnalysisResult(id);
+  if (!res || (res as { success?: boolean }).success === false) {
+    throw new Error((res as { error?: string })?.error || "Result fetch failed");
+  }
+  return (res as { data: unknown }).data;
+};
+
 /**
- * Poll a job to completion: surface part-1 as soon as it's ready, then the full
- * result. Shared by a fresh upload and by loading an existing id from the URL.
- * Checks status first (so an already-finished analysis returns immediately).
+ * Poll a job to completion: surface part-1 as soon as it's ready, then the full result. Shared
+ * by a fresh upload and by loading an existing id from the URL, over either transport.
  */
 async function pollAnalysis(
   id: string,
   isLive: () => boolean,
   onProgress: (pct: number) => void,
   onResult: (data: AnalysisData, done: boolean) => void,
+  fetchStatus: StatusFetcher,
+  fetchResult: ResultFetcher,
 ): Promise<void> {
   const startedAt = Date.now();
   let part1Shown = false;
   for (;;) {
     if (!isLive()) return;
     if (Date.now() - startedAt > POLL_TIMEOUT_MS) throw new Error("Analysis timed out");
-    const stRes = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}`);
-    if (stRes.status === 404) throw new Error("Analysis not found");
-    if (!stRes.ok) throw new Error(await errText(stRes, "Status check failed"));
-    const st = (await stRes.json()) as {
-      state?: string;
-      part1_ready?: boolean;
-      progress?: { percent?: number };
-      error?: string;
-    };
-    onProgress(Math.min(95, Math.max(10, st.progress?.percent ?? 0)));
+    const st = await fetchStatus(id);
+    onProgress(Math.min(95, Math.max(10, st.percent)));
 
     if (st.part1_ready && !part1Shown) {
       part1Shown = true;
-      const p1 = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}/result`);
-      if (p1.ok) {
-        const raw = await p1.json();
+      try {
+        const raw = await fetchResult(id);
         if (!isLive()) return;
         onResult(mapCanonicalToAnalysisData(raw), false);
+      } catch {
+        /* part-1 not fetchable yet — keep polling */
       }
     }
     if (st.state === "succeeded") break;
@@ -112,9 +153,7 @@ async function pollAnalysis(
     await delay(POLL_INTERVAL_MS);
   }
 
-  const resRes = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}/result`);
-  if (!resRes.ok) throw new Error(await errText(resRes, "Result fetch failed"));
-  const raw = await resRes.json();
+  const raw = await fetchResult(id);
   if (!isLive()) return;
   onResult(mapCanonicalToAnalysisData(raw), true);
 }
@@ -125,17 +164,10 @@ export function useTrackAnalysis() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
-  // True once the fast local-DSP "part 1" result is loaded and shown, while the
-  // semantic/GPU "part 2" keeps computing (progressive delivery).
   const [part1Ready, setPart1Ready] = useState(false);
-  // The server-side id of the current analysis; mirrored into the URL (?id=) so a
-  // refresh or shared link re-opens the same result.
   const [analysisId, setAnalysisId] = useState<string | null>(null);
-  // Object URL of the uploaded file, so the page can play the actual track
-  // locally (later this will be swapped for the HLS stream).
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
-  // Guards against a stale in-flight run updating the UI after reset / re-upload.
   const runId = useRef(0);
   const audioUrlRef = useRef<string | null>(null);
 
@@ -164,8 +196,6 @@ export function useTrackAnalysis() {
     };
 
     setFileName(file.name);
-    // Resolve a playable URL (transcodes AIFF -> WAV so it plays too); async, so
-    // guard against a stale run replacing the current track.
     void makePlayableUrl(file).then((url) => live(() => setTrackUrl(url)));
     setError(null);
     setData(null);
@@ -173,17 +203,35 @@ export function useTrackAnalysis() {
     setPart1Ready(false);
 
     try {
-      // 1) upload -> enqueue (real byte-level upload progress via XHR)
+      // 1) upload -> enqueue (real byte-level upload progress)
       live(() => setStatus("uploading"));
       live(() => setProgress(0));
-      const form = new FormData();
-      form.append("file", file);
-      const created = await uploadWithProgress(
-        `${ANALYSIS_ENDPOINT}/v1/analyses`,
-        form,
-        (pct) => live(() => setProgress(pct)),
-      );
-      const id = created.analysis_id;
+
+      let id: string | undefined;
+      if (VIA_ALWYZON) {
+        const up = await uploadForAnalysis(file, (pct) => live(() => setProgress(pct)));
+        if (!up || (up as { success?: boolean }).success === false) {
+          const reason = (up as { reason?: string })?.reason;
+          const serverMsg = (up as { error?: string })?.error;
+          const msg =
+            reason === "login_required"
+              ? "Please log in to analyze a track."
+              : reason === "upgrade_required"
+                ? serverMsg || "You've used all your uploads this month. Upgrade to analyze more."
+                : serverMsg || "Upload failed";
+          throw new Error(msg);
+        }
+        id = (up as { data: { analysis_id?: string } }).data.analysis_id;
+      } else {
+        const form = new FormData();
+        form.append("file", file);
+        const created = await uploadWithProgress(
+          `${ANALYSIS_ENDPOINT}/v1/analyses`,
+          form,
+          (pct) => live(() => setProgress(pct)),
+        );
+        id = created.analysis_id;
+      }
       if (!id) throw new Error("Server did not return an analysis id");
       live(() => setAnalysisId(id)); // -> the page mirrors this into ?id=
 
@@ -203,6 +251,8 @@ export function useTrackAnalysis() {
               setPart1Ready(true);
             }
           }),
+        VIA_ALWYZON ? alwyzonStatus : directStatus,
+        VIA_ALWYZON ? alwyzonResult : directResult,
       );
     } catch (e) {
       live(() => setError(e instanceof Error ? e.message : "Analysis failed"));
@@ -210,8 +260,7 @@ export function useTrackAnalysis() {
     }
   }, [setTrackUrl]);
 
-  // Open an existing analysis by id (refresh / shared ?id= link). No local file,
-  // so there's no audio to play until we swap in the HLS stream.
+  // Open an existing analysis by id (refresh / shared ?id= link).
   const loadById = useCallback(async (id: string) => {
     const myRun = ++runId.current;
     const live = (fn: () => void) => {
@@ -244,6 +293,8 @@ export function useTrackAnalysis() {
               setPart1Ready(true);
             }
           }),
+        VIA_ALWYZON ? alwyzonStatus : directStatus,
+        VIA_ALWYZON ? alwyzonResult : directResult,
       );
     } catch (e) {
       live(() => setError(e instanceof Error ? e.message : "Could not load analysis"));
