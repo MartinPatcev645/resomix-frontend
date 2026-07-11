@@ -13,7 +13,26 @@
   sibling job (spool → ship → wait → Phase-C persist hook); upload orchestration enqueues the
   sibling on both success paths (guarded: consumer + logged-in + configured; no re-count). Inert
   until `analysis_server_url` is set. Tests added on both sides.
-- Phase C in progress.
+- Phase C ✅ DONE.
+  - **C1 (Alwyzon DB):** `track_analysis_results` model + migration `b3c4d5e6f7a8` (round-trip
+    tested; the key column is `music_key`, and `partner_id` was ADDED so the tenancy failsafe
+    scopes it). `TrackAnalysisResultRepository` + `TrackAnalysisResultService` (canonical→summary
+    mapping, idempotent upsert keyed on `analysis_uuid`, read helpers). The sibling task's
+    `_persist_summary` now writes the row on completion.
+  - **C2 (retrieval + token):** `generate_analysis_token`/`verify_analysis_token` in
+    `edge_auth.py` (scope="analysis", embeds `analysis`, IP-locked). Consumer endpoints
+    `GET /analysis/{id}` (summary, owner-or-public) + `POST /analysis/{id}/token` (mint,
+    owner-or-public) via `AnalysisResultController` + `app/api/routers/analysis.py`. On the
+    analysis service (co-located on Hetzner, owns the result cache): a **dependency-free stdlib
+    HS256 verifier** (`app/utils/edge_token.py`) + public **`GET /analysis/{id}?token=…`**
+    (`analysis_retrieval.py`) that serves the cached JSON. Cross-verified: an Alwyzon jose-minted
+    token validates with the stdlib verifier (and all rejection cases hold).
+  - **Retrieval-placement decision:** the tokenized `GET /analysis/{id}?token=` was implemented on
+    the **analysis service** (which already owns/serves the `ResultStore` cache and runs on the
+    Hetzner box), NOT the production similarity/HLS media server — avoids touching that sensitive
+    prod surface while still satisfying "`GET https://<hetzner>/analysis/{id}?token=`". The served
+    cache is the same `var/results/{id}.json` the worker writes, so no extra write step is needed.
+- Phase D (frontend) in progress.
 **Part of:** the frontend plans/entitlements initiative — companion to
 `docs/FRONTEND_PLANS_AND_GUEST_ENFORCEMENT_IMPLEMENTATION.md` (add a Progress row there).
 **Rule (unchanged):** frontend/consumer (System Partner 1 + guests) only — **never touch B2B**.
