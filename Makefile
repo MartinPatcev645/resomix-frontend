@@ -1,4 +1,4 @@
-.PHONY: up down logs db migrate seed clear-db api worker test fmt lint help seed-plans
+.PHONY: up down logs db migrate seed clear-db api worker run test fmt lint help seed-plans
 
 up:
 	docker compose up -d mariadb redis
@@ -29,6 +29,11 @@ api:
 
 worker:
 	celery -A app.tasks.celery_app worker --loglevel=info
+
+# API + supervised Celery worker in one command (worker stops with the API). Prefer this over
+# running `api` and `worker` separately. Set ALWYZON_EMBED_WORKER=0 to run the worker elsewhere.
+run:
+	python run_alwyzon.py
 
 test:
 	pytest -q

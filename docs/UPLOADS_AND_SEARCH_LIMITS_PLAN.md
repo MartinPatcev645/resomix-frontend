@@ -45,9 +45,26 @@
   - **webapp:** `useTrackAnalysis.ts` now routes through Alwyzon by default (`VITE_ANALYSIS_VIA_ALWYZON`,
     default true; dev-direct fallback kept), polling Alwyzon's status/result proxy; upload denials
     surface the gate reason (`login_required` / `upgrade_required`) as user copy. `tsc -b` clean.
-  - **PENDING (small, optional):** a Library list UI with "Get analysis" (link to
-    `/analysis?id=<analysis_uuid>` — already works via `loadById`→Alwyzon proxy) + "Show playlist";
-    plus surfacing `uploadsPerMonth` remaining in the UI chrome. The retrieval plumbing is done.
+  - **Library UI DONE:** `my-tracks` now returns `has_analysis` + `analysis_uuid`
+    (`track_service` + `TrackAnalysisResultRepository.async_get_analysis_map` + `UserTrackSummary`
+    schema). `LibraryPage` Tracks tab: "Get Analysis" → `/analysis?id=<analysis_uuid>` (was a
+    mislabeled placeholder) and "Sonic Discovery" → the similarity playlist ("Show playlist"). Hook
+    + store types carry `analysis_uuid`.
+  - **Upload-flow bugfix:** the pending `track_analysis_results` row is now written AFTER the
+    analysis-service create succeeds (was before), so a failed create no longer orphans a row that
+    made the library show "Get analysis" for a non-existent analysis. Existing orphans cleaned.
+  - **Direct-cache retrieval DONE + verified** (see §10): completed result fetched from the served
+    cache via token, proxy fallback. Poll backoff added.
+  - **Deferred (optional):** an `uploadsPerMonth`-remaining indicator needs a usage-count endpoint
+    (entitlements/me returns limits, not current usage) — not wired.
+
+### Single-command run (staging/prod)
+`run_alwyzon.py` (a.k.a. `make run`) now starts the API **and** supervises the Celery worker as a
+child (mirrors the analysis service's `run_analysis.py`): SIGTERM/Ctrl+C stops both, no orphan
+worker (verified). Toggles: `ALWYZON_EMBED_WORKER=0` (run the worker as a separate service — the
+right call on k8s/compose; there's a `celery_worker` compose profile), `ALWYZON_HOST/PORT/
+LOG_LEVEL/RELOAD/WORKER_CONCURRENCY`. Sets `OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES` for the worker
+(macOS fork safety; harmless on Linux). **Redis is a shared Docker container — always up.**
 
 ---
 
@@ -62,8 +79,23 @@
 
 **Processes:** Alwyzon API (:8001) · analysis service API (:8010) + its Celery worker (analysis
 pipeline) · GPU/embedding server (:8006) · (optional) similarity server (:8004) for the sibling ·
-Redis · **Alwyzon Celery worker** (only needed to FILL the summary row + run the similarity
-sibling — the analysis itself displays without it via the status/result proxy) · webapp dev server.
+Redis · **Alwyzon Celery worker (`make worker`)** — REQUIRED to FILL the summary row + run the
+similarity sibling (the analysis itself displays without it via the status/result proxy, but the
+`track_analysis_results` row stays PENDING). NOTE: the Alwyzon tasks are registered by importing
+them in `app/tasks/__init__.py` (autodiscover looks for `app.tasks.tasks`, which doesn't exist);
+`analysis_tasks` is now imported there — without that, `.delay()` messages are dropped as
+"unregistered" and rows never fill.
+
+**Polling / caching optimizations:**
+- Frontend poll uses a backoff (1.5s→5s) to cut request volume for concurrent analyses.
+- Return-visit + completed-result retrieval SHOULD fetch the full JSON DIRECTLY from the served
+  cache via the token flow (`POST /analysis/{id}/token` → `GET {analysisBase}/analysis/{id}?token=`)
+  instead of re-proxying the heavy payload through Alwyzon's `/result`. The token/cache path exists
+  (api-client `mintAnalysisToken` + the analysis-service retrieval route) but `useTrackAnalysis`
+  still uses the Alwyzon proxy — wiring the direct fetch is the remaining optimization (note the
+  token IP-lock must line up between the mint and the direct fetch in prod).
+- Bigger wins if needed: long-poll on Alwyzon `/status` (hold until state changes) or SSE/WebSocket
+  push instead of polling.
 
 **What to test:**
 - **Upload counts as an upload:** log in → Analysis page → upload a track → it routes through

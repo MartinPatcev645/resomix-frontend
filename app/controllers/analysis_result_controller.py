@@ -236,16 +236,9 @@ class AnalysisResultController:
         track_uuid = upload.get("uuid") or track_uuid
         analysis_id = self.analysis_client.new_analysis_id()
 
-        # 7) Pending summary row (owner-links the analysis id immediately → authorizes polling +
-        #    shows in the library while it computes). The background task fills in the values.
-        if track_id is not None:
-            await self.service.repo.async_upsert(
-                db, analysis_uuid=analysis_id, track_id=track_id,
-                user_id=user_id, partner_id=partner_id, fields={},
-            )
-            await db.commit()
-
-        # 8) Foreground: enqueue the analysis on the analysis service under our id.
+        # 7) Foreground: enqueue the analysis on the analysis service under our id. Do this BEFORE
+        #    writing the summary row, so a failed create leaves NO orphan row (which would make the
+        #    library show "Get analysis" for a track whose analysis was never created).
         created = await self.analysis_client.create_analysis(
             audio_bytes=audio_bytes,
             original_filename=file.filename or "upload.mp3",
@@ -261,6 +254,15 @@ class AnalysisResultController:
                     reason="upstream_error",
                 ),
             )
+
+        # 8) Pending summary row (owner-links the analysis id → authorizes polling + shows in the
+        #    library while it computes). The background task fills in the values on completion.
+        if track_id is not None:
+            await self.service.repo.async_upsert(
+                db, analysis_uuid=analysis_id, track_id=track_id,
+                user_id=user_id, partner_id=partner_id, fields={},
+            )
+            await db.commit()
 
         # 9) Count the upload (once), then enqueue the background persist + similarity sibling.
         await self.operation_limit_evaluator.record_success(

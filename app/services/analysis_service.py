@@ -86,7 +86,14 @@ class AnalysisService:
         _, ext = os.path.splitext(original_filename or "")
         if not ext:
             ext = ".mp3"
-        files = {"file": (f"upload_{analysis_id}{ext}", audio_bytes, "application/octet-stream")}
+        # Send the REAL filename so the analysis records `identity.input_filename` correctly (the
+        # UI shows it). Fall back to a synthetic name only if none was provided, and ensure an
+        # extension is present for the service's format detection. The name is metadata only — the
+        # analysis service writes the audio to its own path, never using this as a filesystem path.
+        send_name = (original_filename or "").strip() or f"upload_{analysis_id}{ext}"
+        if not os.path.splitext(send_name)[1]:
+            send_name = f"{send_name}{ext}"
+        files = {"file": (send_name, audio_bytes, "application/octet-stream")}
         data = {"analysis_id": analysis_id}
         return await self._request("POST", "/v1/analyses", data=data, files=files)
 

@@ -12,9 +12,9 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 
-from sqlalchemy import desc, select
+from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import TrackAnalysisResult
@@ -22,6 +22,30 @@ from app.models import TrackAnalysisResult
 
 class TrackAnalysisResultRepository:
     """CRUD for the analysis summary rows (upsert keyed by the Alwyzon-owned analysis_uuid)."""
+
+    async def async_get_analysis_map(
+        self, db: AsyncSession, track_ids: List[int], partner_id: Optional[int] = None
+    ) -> Dict[int, str]:
+        """Map each track id -> the UUID of its (latest) analysis. Used to tell the library which
+        uploaded tracks already have an analysis (mirrors the similarity playlist map). Tracks with
+        no analysis are simply absent from the map.
+        """
+        if not track_ids:
+            return {}
+        conditions = [TrackAnalysisResult.track_id.in_(track_ids)]
+        if partner_id is not None:
+            conditions.append(TrackAnalysisResult.partner_id == partner_id)
+        stmt = (
+            select(TrackAnalysisResult.track_id, TrackAnalysisResult.analysis_uuid)
+            .where(and_(*conditions))
+            .order_by(desc(TrackAnalysisResult.created_at), desc(TrackAnalysisResult.id))
+        )
+        result = await db.execute(stmt)
+        mapping: Dict[int, str] = {}
+        for track_id, analysis_uuid in result.all():
+            if track_id not in mapping:  # rows are newest-first; keep the latest per track
+                mapping[track_id] = analysis_uuid
+        return mapping
 
     async def async_get_by_analysis_uuid(
         self, db: AsyncSession, analysis_uuid: str

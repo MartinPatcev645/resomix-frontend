@@ -115,3 +115,27 @@ async def test_record_read_and_idempotent_upsert() -> None:
     async with AsyncSessionLocal() as db:
         latest = await svc.get_latest_for_track(db, track.id)
         assert latest is not None and latest.analysis_uuid == analysis_uuid
+
+
+async def test_library_tracks_expose_has_analysis_and_uuid() -> None:
+    """The library list (get_user_tracks) reports has_analysis + analysis_uuid from the row."""
+    from app.services.track_service import TrackService
+
+    user = await create_user()
+    analysed = await create_track(user_id=user.id, partner_id=1, title="Analysed Track")
+    plain = await create_track(user_id=user.id, partner_id=1, title="Plain Track")
+    aid = uuid.uuid4().hex
+    set_admin_context(True)
+    async with AsyncSessionLocal() as db:
+        await TrackAnalysisResultService().record_from_canonical(
+            db, analysis_uuid=aid, result=_canonical(),
+            track_id=analysed.id, user_id=user.id, partner_id=1,
+        )
+
+    async with AsyncSessionLocal() as db:
+        res = await TrackService().get_user_tracks(db, user_id=user.id, page=1, page_size=20, partner_id=1)
+    by_uuid = {t["uuid"]: t for t in res["data"]}
+    assert by_uuid[analysed.uuid]["has_analysis"] is True
+    assert by_uuid[analysed.uuid]["analysis_uuid"] == aid
+    assert by_uuid[plain.uuid]["has_analysis"] is False
+    assert by_uuid[plain.uuid]["analysis_uuid"] is None

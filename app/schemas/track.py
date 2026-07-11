@@ -116,7 +116,10 @@ class UserTrackSummary(BaseModel):
         False, description="Whether a similarity playlist has been generated for this track"
     )
     has_analysis: bool = Field(
-        False, description="Whether audio analysis has completed (always false for now — not yet implemented)"
+        False, description="Whether an analysis has been generated for this track"
+    )
+    analysis_uuid: Optional[str] = Field(
+        None, description="UUID of the (latest) analysis generated from this track, or null"
     )
 
 

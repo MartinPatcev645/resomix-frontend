@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.track import Track
 from app.repositories.playlist_repository import PlaylistRepository
+from app.repositories.track_analysis_result_repository import TrackAnalysisResultRepository
 from app.repositories.track_repository import TrackRepository
 
 
@@ -34,6 +35,7 @@ class TrackService:
     def __init__(self):
         self.track_repository = TrackRepository()
         self.playlist_repository = PlaylistRepository()
+        self.analysis_repository = TrackAnalysisResultRepository()
 
     # ------------------------------------------------------------------ #
     # Serialization helpers
@@ -41,7 +43,9 @@ class TrackService:
 
     @staticmethod
     def _serialize_track_summary(
-        track: Track, playlist_uuid: Optional[str] = None
+        track: Track,
+        playlist_uuid: Optional[str] = None,
+        analysis_uuid: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Lightweight representation for the library list view.
 
@@ -49,8 +53,8 @@ class TrackService:
         this is safe to call on rows fetched without eager-loading lazy collections.
 
         ``playlist_uuid`` is the UUID of the similarity playlist generated from this track
-        (or None). It drives the ``has_similarity`` flag. ``has_analysis`` is always False
-        for now — audio analysis is not implemented yet and will be wired in later.
+        (or None) → drives ``has_similarity``; ``analysis_uuid`` is the UUID of the analysis
+        generated from this track (or None) → drives ``has_analysis`` (opens ``/analysis?id=``).
         """
         return {
             "uuid": track.uuid,
@@ -75,12 +79,16 @@ class TrackService:
             # Library dropdown state
             "playlist_uuid": playlist_uuid,
             "has_similarity": playlist_uuid is not None,
-            "has_analysis": False,  # analysis not implemented yet — always False for now
+            "analysis_uuid": analysis_uuid,
+            "has_analysis": analysis_uuid is not None,
         }
 
     @classmethod
     def _serialize_track_detail(
-        cls, track: Track, playlist_uuid: Optional[str] = None
+        cls,
+        track: Track,
+        playlist_uuid: Optional[str] = None,
+        analysis_uuid: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Full metadata for the single-track view.
 
@@ -88,7 +96,7 @@ class TrackService:
         to be eager-loaded. Internal-only fields such as the storage ``stored_path`` and
         file checksums are deliberately not exposed to the client.
         """
-        detail = cls._serialize_track_summary(track, playlist_uuid)
+        detail = cls._serialize_track_summary(track, playlist_uuid, analysis_uuid)
         detail.update(
             {
                 "key_signature": track.key_signature,
@@ -152,12 +160,17 @@ class TrackService:
             tracks, total = await self.track_repository.async_get_user_uploaded_tracks(
                 db, user_id, page, page_size, partner_id=partner_id
             )
-            # One batch query to tell which tracks already have a generated similarity playlist.
+            # One batch query each to tell which tracks already have a similarity playlist / analysis.
+            track_ids = [t.id for t in tracks]
             playlist_map = await self.playlist_repository.async_get_similarity_playlist_map(
-                db, [t.id for t in tracks], partner_id=partner_id
+                db, track_ids, partner_id=partner_id
+            )
+            analysis_map = await self.analysis_repository.async_get_analysis_map(
+                db, track_ids, partner_id=partner_id
             )
             data: List[Dict[str, Any]] = [
-                self._serialize_track_summary(t, playlist_map.get(t.id)) for t in tracks
+                self._serialize_track_summary(t, playlist_map.get(t.id), analysis_map.get(t.id))
+                for t in tracks
             ]
             return {"success": True, "data": data, "total": total}
         except Exception as e:
@@ -190,9 +203,14 @@ class TrackService:
             playlist_map = await self.playlist_repository.async_get_similarity_playlist_map(
                 db, [track.id], partner_id=partner_id
             )
+            analysis_map = await self.analysis_repository.async_get_analysis_map(
+                db, [track.id], partner_id=partner_id
+            )
             return {
                 "success": True,
-                "data": self._serialize_track_detail(track, playlist_map.get(track.id)),
+                "data": self._serialize_track_detail(
+                    track, playlist_map.get(track.id), analysis_map.get(track.id)
+                ),
             }
         except Exception as e:
             print(f"Error getting user track detail: {e}")
