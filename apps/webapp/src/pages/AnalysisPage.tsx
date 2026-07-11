@@ -42,6 +42,7 @@ export default function AnalysisPage() {
   const [currentMs, setCurrentMs] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(1);
+  const [showBeats, setShowBeats] = useState(false);
 
   const durationMs = data?.identity.durationMs ?? 0;
 
@@ -415,8 +416,33 @@ export default function AnalysisPage() {
                   bassEntryMs={data.energy.bassEntryMs}
                   voiceRegions={data.timeline.voiceRegions}
                   durationMs={data.identity.durationMs}
+                  showBeats={showBeats}
                 />
               </TimeAxis>
+              <div className="mt-[var(--px-8)] flex">
+                <button
+                  type="button"
+                  onClick={() => setShowBeats((v) => !v)}
+                  aria-pressed={showBeats}
+                  className={
+                    "flex items-center gap-[var(--px-6)] rounded-full border px-[var(--px-10)] py-[var(--px-3)] font-helvetica text-[length:var(--px-10)] transition-all hover:brightness-125 " +
+                    (showBeats ? "" : "opacity-45")
+                  }
+                  style={{ borderColor: showBeats ? ACCENT : "var(--opacity-30)", background: showBeats ? "rgba(238,74,38,0.14)" : "transparent" }}
+                >
+                  <span
+                    className="grid h-[var(--px-11)] w-[var(--px-11)] place-items-center rounded-[3px] border"
+                    style={{ borderColor: showBeats ? ACCENT : "var(--opacity-40)", background: showBeats ? ACCENT : "transparent" }}
+                  >
+                    {showBeats && (
+                      <svg viewBox="0 0 10 10" className="h-[var(--px-8)] w-[var(--px-8)]">
+                        <path d="M1.5 5 L4 7.5 L8.5 2.5" fill="none" stroke="#000" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </span>
+                  Beats
+                </button>
+              </div>
             </Panel>
 
             {/* loudness / dynamics — full width */}

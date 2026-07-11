@@ -539,6 +539,7 @@ export function WaveTimeline({
   voiceRegions = [],
   durationMs,
   height = 120,
+  showBeats = false,
 }: {
   energy: number[];
   beatTimes: number[];
@@ -549,6 +550,7 @@ export function WaveTimeline({
   voiceRegions?: { startMs: number; endMs: number; meanScore: number }[];
   durationMs: number;
   height?: number;
+  showBeats?: boolean;
 }) {
   const W = 1000;
   const H = height;
@@ -565,11 +567,13 @@ export function WaveTimeline({
     .reverse();
   const poly = [...top, ...bottom].join(" ");
   const xOf = (t: number) => (t / durS) * W;
+  // Bar grid: detected downbeats if present, else every 4th beat.
+  const gridTimes = downbeats.length ? downbeats : beatTimes.filter((_, i) => i % 4 === 0);
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full" style={{ height }}>
-      {/* bar grid: detected downbeats if present, else every 4th beat */}
-      {(downbeats.length ? downbeats : beatTimes.filter((_, i) => i % 4 === 0)).map((t, i) => (
+      {/* faint bar grid behind the waveform (default view) */}
+      {!showBeats && gridTimes.map((t, i) => (
         <line key={`b${i}`} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="currentColor" strokeOpacity={0.06} vectorEffect="non-scaling-stroke" />
       ))}
       {/* phrase boundaries (stronger) */}
@@ -584,6 +588,10 @@ export function WaveTimeline({
         </g>
       ))}
       <polygon points={poly} fill={ACCENT} fillOpacity={0.75} />
+      {/* bright beat grid ON TOP of the waveform (toggled on) */}
+      {showBeats && gridTimes.map((t, i) => (
+        <line key={`bb${i}`} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="#fff" strokeOpacity={0.6} vectorEffect="non-scaling-stroke" />
+      ))}
       {/* onsets on the centre line */}
       {onsetTimes.map((t, i) => (
         <circle key={`o${i}`} cx={xOf(t)} cy={mid} r={1.1} fill="currentColor" opacity={0.3} />
