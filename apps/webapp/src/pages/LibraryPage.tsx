@@ -460,16 +460,16 @@ export default function LibraryPage() {
                       onClick: () => navigate(`/playlist?id=${track.playlist_uuid}`, { state: { from: "library" } }),
                     });
                   }
-                  if (track.has_analysis) {
+                  if (track.has_analysis && track.analysis_uuid) {
                     trackDropdownItems.push({
-                      id: `track-discovery-${track.id}`,
-                      label: "Get Sonic Discovery",
+                      id: `track-analysis-${track.id}`,
+                      label: "Get Analysis",
                       icon: (
                         <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M12 2v20M17 5v14M22 9v6M7 7v10M2 10v4" />
                         </svg>
                       ),
-                      onClick: () => navigate(`/?id=${track.id}`),
+                      onClick: () => navigate(`/analysis?id=${track.analysis_uuid}`),
                     });
                   } else {
                     trackDropdownItems.push({

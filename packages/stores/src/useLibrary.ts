@@ -8,6 +8,7 @@ export interface LibraryTrack {
   label: string;
   duration: string;
   playlist_uuid?: string | null;
+  analysis_uuid?: string | null;
   has_analysis?: boolean;
   has_similarity?: boolean;
 }

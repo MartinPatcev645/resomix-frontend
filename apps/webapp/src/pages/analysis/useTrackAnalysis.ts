@@ -18,19 +18,35 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import { uploadForAnalysis, getAnalysisStatus, getAnalysisResult } from "@resomix/api-client";
+import {
+  uploadForAnalysis,
+  getAnalysisStatus,
+  getAnalysisResult,
+  mintAnalysisToken,
+} from "@resomix/api-client";
 import type { AnalysisData } from "./data.js";
 import { mapCanonicalToAnalysisData } from "./mapCanonical.js";
 import { makePlayableUrl } from "./audioPlayable.js";
 
-/** resomix-analysis-service (FastAPI) base URL — used ONLY by the dev-direct fallback. */
+/** resomix-analysis-service (FastAPI) public base URL. Used by the dev-direct fallback AND by the
+ *  direct-from-cache result fetch below (the served cache lives on the analysis service). */
 export const ANALYSIS_ENDPOINT =
   import.meta.env.VITE_ANALYSIS_ENDPOINT ?? "http://localhost:8010";
 
 /** Route uploads through Alwyzon (default). Set VITE_ANALYSIS_VIA_ALWYZON=false for dev-direct. */
 const VIA_ALWYZON = (import.meta.env.VITE_ANALYSIS_VIA_ALWYZON ?? "true") !== "false";
 
-const POLL_INTERVAL_MS = 1500;
+/** Fetch the completed result DIRECTLY from the served cache via an Alwyzon-minted token, so the
+ *  heavy JSON bypasses Alwyzon's proxy. Default on; set VITE_ANALYSIS_DIRECT_CACHE=false to disable.
+ *  Always falls back to the proxy on any failure (e.g. token IP-lock mismatch behind a proxy). */
+const DIRECT_CACHE = (import.meta.env.VITE_ANALYSIS_DIRECT_CACHE ?? "true") !== "false";
+
+// Poll with a gentle backoff: quick at first (part 1 lands in a few seconds), then slower while
+// the GPU part 2 runs (often 1-2 min). Halves the request volume vs a fixed 1.5s interval — which
+// matters at scale (each concurrent analysis is its own polling client through Alwyzon).
+const POLL_INTERVAL_START_MS = 1500;
+const POLL_INTERVAL_MAX_MS = 5000;
+const POLL_INTERVAL_STEP_MS = 500;
 const POLL_TIMEOUT_MS = 10 * 60 * 1000; // give a full-track analysis up to 10 minutes
 
 export type AnalysisStatus = "idle" | "uploading" | "analyzing" | "done" | "error";
@@ -118,6 +134,32 @@ const alwyzonResult: ResultFetcher = async (id) => {
   return (res as { data: unknown }).data;
 };
 
+/** Direct-from-served-cache fetch of the FULL result: mint a token via Alwyzon, then GET the JSON
+ *  straight from the analysis service (bypasses Alwyzon's proxy for the heavy payload). */
+const fetchResultFromCache: ResultFetcher = async (id) => {
+  const tok = await mintAnalysisToken(id);
+  if (!tok || (tok as { success?: boolean }).success === false) {
+    throw new Error((tok as { error?: string })?.error || "Token mint failed");
+  }
+  const { token, retrieval_path } = (tok as { data: { token: string; retrieval_path: string } }).data;
+  const res = await fetch(`${ANALYSIS_ENDPOINT}${retrieval_path}?token=${encodeURIComponent(token)}`);
+  if (!res.ok) throw new Error(`Cache fetch failed (${res.status})`);
+  return res.json();
+};
+
+/** The FINAL (completed) result fetcher for the Alwyzon transport: prefer the served cache, fall
+ *  back to the proxy on any failure so a misconfigured cache path can never break the flow. */
+const alwyzonFinalResult: ResultFetcher = async (id) => {
+  if (DIRECT_CACHE) {
+    try {
+      return await fetchResultFromCache(id);
+    } catch {
+      /* fall back to the Alwyzon proxy below */
+    }
+  }
+  return alwyzonResult(id);
+};
+
 /**
  * Poll a job to completion: surface part-1 as soon as it's ready, then the full result. Shared
  * by a fresh upload and by loading an existing id from the URL, over either transport.
@@ -129,9 +171,11 @@ async function pollAnalysis(
   onResult: (data: AnalysisData, done: boolean) => void,
   fetchStatus: StatusFetcher,
   fetchResult: ResultFetcher,
+  fetchFinal: ResultFetcher = fetchResult,
 ): Promise<void> {
   const startedAt = Date.now();
   let part1Shown = false;
+  let interval = POLL_INTERVAL_START_MS;
   for (;;) {
     if (!isLive()) return;
     if (Date.now() - startedAt > POLL_TIMEOUT_MS) throw new Error("Analysis timed out");
@@ -141,7 +185,7 @@ async function pollAnalysis(
     if (st.part1_ready && !part1Shown) {
       part1Shown = true;
       try {
-        const raw = await fetchResult(id);
+        const raw = await fetchResult(id); // part-1 (partial) via the proxy
         if (!isLive()) return;
         onResult(mapCanonicalToAnalysisData(raw), false);
       } catch {
@@ -150,10 +194,11 @@ async function pollAnalysis(
     }
     if (st.state === "succeeded") break;
     if (st.state === "failed") throw new Error(st.error || "Analysis failed on the server");
-    await delay(POLL_INTERVAL_MS);
+    await delay(interval);
+    interval = Math.min(interval + POLL_INTERVAL_STEP_MS, POLL_INTERVAL_MAX_MS);
   }
 
-  const raw = await fetchResult(id);
+  const raw = await fetchFinal(id); // full result — prefer the served cache
   if (!isLive()) return;
   onResult(mapCanonicalToAnalysisData(raw), true);
 }
@@ -253,6 +298,7 @@ export function useTrackAnalysis() {
           }),
         VIA_ALWYZON ? alwyzonStatus : directStatus,
         VIA_ALWYZON ? alwyzonResult : directResult,
+        VIA_ALWYZON ? alwyzonFinalResult : directResult,
       );
     } catch (e) {
       live(() => setError(e instanceof Error ? e.message : "Analysis failed"));
@@ -295,6 +341,7 @@ export function useTrackAnalysis() {
           }),
         VIA_ALWYZON ? alwyzonStatus : directStatus,
         VIA_ALWYZON ? alwyzonResult : directResult,
+        VIA_ALWYZON ? alwyzonFinalResult : directResult,
       );
     } catch (e) {
       live(() => setError(e instanceof Error ? e.message : "Could not load analysis"));

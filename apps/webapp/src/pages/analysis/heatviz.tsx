@@ -289,12 +289,14 @@ export function ChromaView({
   currentMs,
   onSeek,
   height = 130,
+  labels = CHROMA_LABELS,
 }: {
   matrix: Matrix;
   durationMs: number;
   currentMs?: number | null;
   onSeek?: (ms: number) => void;
   height?: number;
+  labels?: string[];
 }) {
   const rows = matrix.data.length;
   const cols = rows ? matrix.data[0].length : 0;
@@ -306,7 +308,7 @@ export function ChromaView({
   const chromaAt = (frac: number) => {
     const f = Math.min(cols - 1, Math.max(0, Math.round(frac * (cols - 1))));
     return matrix.data
-      .map((row, i) => ({ label: CHROMA_LABELS[i] ?? String(i), v: row[f] ?? 0 }))
+      .map((row, i) => ({ label: labels[i] ?? String(i), v: row[f] ?? 0 }))
       .sort((a, b) => b.v - a.v);
   };
 
@@ -314,7 +316,7 @@ export function ChromaView({
     <div className="flex">
       {/* pitch-class axis — OUTSIDE the plot (C at the bottom … B at the top) */}
       <div className="relative shrink-0 w-[var(--px-24)]" style={{ height }}>
-        {CHROMA_LABELS.slice(0, rows).map((lab, i) => {
+        {labels.slice(0, rows).map((lab, i) => {
           const yr = rows - 1 - i; // pitch-class 0 (C) at the bottom
           return (
             <div
@@ -538,6 +540,98 @@ export function CamelotWheel({ camelot }: { camelot: string }) {
       </svg>
       <div className="h-[var(--px-12)] text-center font-helvetica text-[length:var(--px-9)] opacity-70">
         {hover ?? (side === "B" ? `${camelot} · ${WHEEL[num - 1]?.major ?? ""} major` : `${camelot} · ${WHEEL[num - 1]?.minor ?? ""}`)}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------- key-aware chroma spelling + summary */
+// Flat spelling of the 12 pitch classes (C-first), used for flat keys so an F-major track shows
+// "Bb", not "A#". Camelot slots 3..7 are the flat keys (Db/Ab/Eb/Bb/F majors + their minors),
+// matching WHEEL / Mixed In Key.
+const CHROMA_LABELS_FLAT = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+const NOTE_INDEX: Record<string, number> = {
+  C: 0, "C#": 1, Db: 1, D: 2, "D#": 3, Eb: 3, E: 4, F: 5, "F#": 6, Gb: 6,
+  G: 7, "G#": 8, Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11,
+};
+const MAJOR_STEPS = [0, 2, 4, 5, 7, 9, 11];
+const MINOR_STEPS = [0, 2, 3, 5, 7, 8, 10]; // natural minor
+
+// The 12 pitch-class labels spelled for the detected key (flats for flat keys, else sharps).
+export function chromaLabelsForKey(camelot: string | null | undefined): string[] {
+  if (!camelot) return CHROMA_LABELS;
+  const num = parseInt(camelot, 10);
+  return num >= 3 && num <= 7 ? CHROMA_LABELS_FLAT : CHROMA_LABELS;
+}
+
+function keyContext(camelot: string | null | undefined) {
+  const k = keyFromCamelot(camelot);
+  if (!k) return null;
+  const labels = chromaLabelsForKey(camelot);
+  const tonicIdx = NOTE_INDEX[k.name] ?? 0;
+  const steps = k.scale === "major" ? MAJOR_STEPS : MINOR_STEPS;
+  const scaleTones = new Set(steps.map((s) => (tonicIdx + s) % 12));
+  return { tonicIdx, scale: k.scale, labels, scaleTones, tonicName: labels[tonicIdx] };
+}
+
+// Global pitch-class energy (mean over the whole track) as a 12-bin bar, with the detected key's
+// scale tones highlighted and the tonic accented. Explains WHY a key was chosen even when a
+// non-tonic (e.g. the dominant) is the single loudest row in the heatmap, and warns when the tonic
+// is not among the 4 loudest bins (a genuine-ambiguity / possible fifth-error signal).
+export function ChromaSummary({ matrix, camelot }: { matrix: Matrix; camelot: string | null | undefined }) {
+  const rows = matrix.data.length;
+  const cols = rows ? matrix.data[0].length : 0;
+  if (!rows || !cols) return null;
+
+  const means = matrix.data.map((row) => row.reduce((a, b) => a + b, 0) / row.length);
+  const max = Math.max(...means, 1e-9);
+  const norm = means.map((m) => m / max);
+
+  const ctx = keyContext(camelot);
+  const labels = ctx?.labels ?? CHROMA_LABELS;
+
+  const order = means.map((m, i) => [m, i] as const).sort((a, b) => b[0] - a[0]);
+  const top4 = new Set(order.slice(0, 4).map(([, i]) => i));
+  const tonicInTop4 = ctx ? top4.has(ctx.tonicIdx) : true;
+  const brightest = order[0]?.[1] ?? 0;
+
+  return (
+    <div>
+      <div className="flex items-end gap-[var(--px-4)]" style={{ height: 72 }}>
+        {norm.map((v, i) => {
+          const inScale = ctx ? ctx.scaleTones.has(i) : true;
+          const isTonic = ctx ? i === ctx.tonicIdx : false;
+          return (
+            <div key={i} className="flex flex-1 flex-col items-center justify-end gap-[var(--px-3)]" style={{ height: "100%" }}>
+              <div
+                className="w-full rounded-[var(--px-2)]"
+                style={{
+                  height: `${Math.max(2, v * 100)}%`,
+                  background: isTonic ? ACCENT : inScale ? "rgba(238,74,38,0.45)" : "var(--opacity-10)",
+                  opacity: inScale ? 1 : 0.5,
+                }}
+                title={`${labels[i]} · ${(v * 100).toFixed(0)}%${isTonic ? " · tonic" : inScale ? " · in key" : ""}`}
+              />
+              <span className={`font-helvetica text-[length:var(--px-8)] tabular-nums ${isTonic ? "font-semibold opacity-100" : inScale ? "opacity-80" : "opacity-40"}`}>
+                {labels[i]}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-[var(--px-8)] font-helvetica text-[length:var(--px-9)] leading-[var(--px-13)] opacity-70">
+        {ctx ? (
+          <>
+            Global note energy · <span style={{ color: ACCENT }}>■</span> tonic ({ctx.tonicName}) · in-key tones highlighted, the rest dimmed.
+            {!tonicInTop4 && (
+              <span className="opacity-90">
+                {" "}⚠ Loudest note is {labels[brightest]}, not the tonic — key may be ambiguous (check the relative / dominant).
+              </span>
+            )}
+          </>
+        ) : (
+          <>Global pitch-class energy across the track.</>
+        )}
       </div>
     </div>
   );

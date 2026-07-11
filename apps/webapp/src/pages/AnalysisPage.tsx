@@ -11,7 +11,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
 import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
-import { CamelotWheel, ChromaView, Donut, keyFromCamelot, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
+import { CamelotWheel, chromaLabelsForKey, ChromaSummary, ChromaView, Donut, keyFromCamelot, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
 
 const shortGenre = (l: string) => l.split("---").pop() ?? l;
 const fmtDuration = (ms: number) => {
@@ -79,6 +79,9 @@ export default function AnalysisPage() {
   // Canonical, MIK-correct key label derived from the Camelot code (single source of truth for the
   // Key stat + Harmony subtitle, always matching the wheel — never the sharp-normalized raw key).
   const keyLabel = data ? keyFromCamelot(data.tonality.camelot) : null;
+  // Secondary key candidate (from the numpy cross-check) — shown only when the detection is flagged
+  // ambiguous, spelled through the same Camelot source so it reads consistently (e.g. "6B · Bb major").
+  const altLabel = data ? keyFromCamelot(data.tonality.altCamelot) : null;
 
   const activeSection = data?.energy.structureSegments.find(
     (s) => currentMs >= s.startMs && currentMs < s.endMs,
@@ -517,8 +520,25 @@ export default function AnalysisPage() {
                   <Spinner size={16} /> analyzing…
                 </div>
               ) : (
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-[var(--px-8)]">
                   <CamelotWheel camelot={data.tonality.camelot ?? ""} />
+                  {data.tonality.tuningHz != null && (
+                    <div
+                      className="text-center font-helvetica text-[length:var(--px-10)] leading-[var(--px-14)] opacity-70"
+                      title="Estimated tuning of the note A (concert pitch = 440 Hz). Off-440 masters are common in vinyl-era catalogue; the chromagram is tuning-corrected before analysis so notes land in the right bins."
+                    >
+                      Tuning: A = {Math.round(data.tonality.tuningHz)} Hz
+                      {data.tonality.tuningCents != null && ` (${data.tonality.tuningCents > 0 ? "+" : ""}${Math.round(data.tonality.tuningCents)}¢)`}
+                      {data.tonality.tuningCents != null && Math.abs(data.tonality.tuningCents) > 25 && (
+                        <span className="ml-[var(--px-6)] font-semibold text-[#ee4a26]">· pitched</span>
+                      )}
+                    </div>
+                  )}
+                  {data.tonality.ambiguous && altLabel && (
+                    <div className="text-center font-helvetica text-[length:var(--px-10)] leading-[var(--px-14)] opacity-80">
+                      ⚠ Key may be ambiguous — or possibly {altLabel.name} {altLabel.scale} ({data.tonality.altCamelot}).
+                    </div>
+                  )}
                 </div>
               )}
             </Panel>
@@ -537,7 +557,19 @@ export default function AnalysisPage() {
                   <Spinner size={16} /> analyzing…
                 </div>
               ) : (
-                <ChromaView matrix={data.tonality.chromagram} durationMs={durationMs} currentMs={currentMs} onSeek={seek} height={170} />
+                <div className="flex flex-col gap-[var(--px-16)]">
+                  <ChromaView
+                    matrix={data.tonality.chromagram}
+                    durationMs={durationMs}
+                    currentMs={currentMs}
+                    onSeek={seek}
+                    height={170}
+                    labels={chromaLabelsForKey(data.tonality.camelot)}
+                  />
+                  {/* Global note-energy summary — explains why the key won even when a non-tonic
+                      (e.g. the dominant) is the loudest row, and flags genuine ambiguity. */}
+                  <ChromaSummary matrix={data.tonality.chromagram} camelot={data.tonality.camelot} />
+                </div>
               )}
             </Panel>
 

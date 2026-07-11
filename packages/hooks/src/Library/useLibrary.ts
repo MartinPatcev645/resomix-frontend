@@ -113,6 +113,7 @@ export function useLibrary() {
           label: t.version_title || "Independent",
           duration: t.duration ? `${Math.floor(t.duration / 60)}:${String(Math.floor(t.duration % 60)).padStart(2, "0")}` : "0:00",
           playlist_uuid: t.playlist_uuid || null,
+          analysis_uuid: t.analysis_uuid || null,
           has_analysis: !!t.has_analysis,
           has_similarity: !!t.has_similarity,
         }));

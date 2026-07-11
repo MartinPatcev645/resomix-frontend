@@ -109,6 +109,13 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
       strength: num(ton.strength),
       camelot: ton.camelot ?? null,
       chromagram: matrix(ton.chromagram),
+      altCamelot: ton.alt_camelot ?? null,
+      ambiguous: typeof ton.ambiguous === "boolean" ? ton.ambiguous : null,
+      keyMargin: typeof ton.key_margin === "number" ? ton.key_margin : null,
+      tonicInTopChroma: typeof ton.tonic_in_top_chroma === "boolean" ? ton.tonic_in_top_chroma : null,
+      tuningHz: typeof ton.tuning_hz === "number" ? ton.tuning_hz : null,
+      tuningCents: typeof ton.tuning_cents === "number" ? ton.tuning_cents : null,
+      meanChroma: arr<number>(ton.mean_chroma),
     },
     spectral: {
       centroidCurve: series(spec.centroid_curve),
