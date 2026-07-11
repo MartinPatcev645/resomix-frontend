@@ -95,11 +95,11 @@ async def test_seeded_entitlement_values_typed():
     async with AsyncSessionLocal() as db:
         guest = await create_user()  # placeholder, guest uses user=None
         # guest plan (monthly)
-        assert await svc.get_int(db, FeatureKey.PLAYLISTS_PER_MONTH, user=None) == 5
+        assert await svc.get_int(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=None) == 5
         assert await svc.get_bool(db, FeatureKey.CAN_EXPORT, user=None) is False
         # free plan (user with NULL plan_id → free)
         u = await _reload_user(db, guest.id)
-        assert await svc.get_int(db, FeatureKey.PLAYLISTS_PER_MONTH, user=u) == 15
+        assert await svc.get_int(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=u) == 15
         assert await svc.get_bool(db, FeatureKey.CAN_SIMILARITY_UPLOAD, user=u) is True
         assert "private" == await svc.get_str(db, FeatureKey.DEFAULT_PLAYLIST_VISIBILITY, user=u)
 
@@ -109,13 +109,13 @@ async def test_override_beats_plan():
     user = await create_user()
     set_admin_context(True)
     async with AsyncSessionLocal() as db:
-        feat = (await db.execute(select(Feature).where(Feature.key == FeatureKey.PLAYLISTS_PER_MONTH))).scalar_one()
+        feat = (await db.execute(select(Feature).where(Feature.key == FeatureKey.SEARCH_PLAYLISTS_PER_MONTH))).scalar_one()
         db.add(EntitlementOverride(subject_type="user", subject_id=str(user.id),
                                    feature_id=feat.id, int_value=99, reason="test comp"))
         await db.commit()
         u = await _reload_user(db, user.id)
         # plan (free) says 15, override says 99 → override wins
-        assert await svc.get_int(db, FeatureKey.PLAYLISTS_PER_MONTH, user=u) == 99
+        assert await svc.get_int(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=u) == 99
 
 
 @pytest.mark.asyncio
@@ -190,7 +190,7 @@ async def test_evaluator_seam_resolves_from_entitlements():
     set_admin_context(True)
     async with AsyncSessionLocal() as db:
         u = await _reload_user(db, user.id)
-        # free user → playlist_create maps to playlists_per_month = 15
+        # free user → playlist_create maps to search_playlists_per_month = 15
         assert await ev.resolve_effective_limit(db, u, "playlist_create") == 15
         # unmapped operation → None (no behavior change)
         assert await ev.resolve_effective_limit(db, u, "some_unmapped_op") is None

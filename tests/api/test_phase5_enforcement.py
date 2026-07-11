@@ -208,7 +208,7 @@ async def test_guest_similarity_monthly_limit_clamp_and_tagging():
     )
     set_admin_context(True)
     async with AsyncSessionLocal() as db:
-        feat = (await db.execute(select(Feature).where(Feature.key == FeatureKey.PLAYLISTS_PER_MONTH))).scalar_one()
+        feat = (await db.execute(select(Feature).where(Feature.key == FeatureKey.SEARCH_PLAYLISTS_PER_MONTH))).scalar_one()
         db.add(EntitlementOverride(subject_type="visitor", subject_id=visitor_id,
                                    feature_id=feat.id, int_value=1, reason="e2e-test"))
         await db.commit()

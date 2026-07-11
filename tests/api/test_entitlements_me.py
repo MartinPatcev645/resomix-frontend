@@ -37,7 +37,7 @@ async def test_guest_entitlements():
     data = res.json()["data"]
     assert data["is_frontend"] is True and data["is_guest"] is True
     assert data["plan"]["code"] == "guest"
-    assert data["entitlements"][FeatureKey.PLAYLISTS_PER_MONTH] == 5   # guest seed (monthly)
+    assert data["entitlements"][FeatureKey.SEARCH_PLAYLISTS_PER_MONTH] == 5   # guest seed (monthly)
     assert data["entitlements"][FeatureKey.DROPDOWN_MAX_TRACKS] == 20
     # Never leak the server-derived identity.
     assert "visitor_id" not in data
@@ -52,14 +52,14 @@ async def test_logged_in_free_user_entitlements():
     data = res.json()["data"]
     assert data["is_guest"] is False
     assert data["plan"]["code"] == "free"
-    assert data["entitlements"][FeatureKey.PLAYLISTS_PER_MONTH] == 15   # free seed (monthly)
+    assert data["entitlements"][FeatureKey.SEARCH_PLAYLISTS_PER_MONTH] == 15   # free seed (monthly)
 
 
 @pytest.mark.asyncio
 async def test_override_is_overlaid():
     user = await create_user()
     async with AsyncSessionLocal() as db:
-        feat = (await db.execute(select(Feature).where(Feature.key == FeatureKey.PLAYLISTS_PER_MONTH))).scalar_one()
+        feat = (await db.execute(select(Feature).where(Feature.key == FeatureKey.SEARCH_PLAYLISTS_PER_MONTH))).scalar_one()
         db.add(EntitlementOverride(subject_type="user", subject_id=str(user.id),
                                    feature_id=feat.id, int_value=99, reason="test"))
         await db.commit()
@@ -67,4 +67,4 @@ async def test_override_is_overlaid():
     async with await _client() as ac:
         res = await ac.get(ME, headers={**auth_headers(user), "X-API-KEY": settings.api_key})
     assert res.status_code == 200
-    assert res.json()["data"]["entitlements"][FeatureKey.PLAYLISTS_PER_MONTH] == 99
+    assert res.json()["data"]["entitlements"][FeatureKey.SEARCH_PLAYLISTS_PER_MONTH] == 99

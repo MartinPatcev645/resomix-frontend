@@ -1097,7 +1097,7 @@ class SimilarityController:
             # Guests: enforce the monthly playlist limit (peek now, record on success below).
             if current_user is None:
                 pg = await self.entitlement_gate.peek_allowed(
-                    db, FeatureKey.PLAYLISTS_PER_MONTH, visitor_id=gate_visitor_id
+                    db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, visitor_id=gate_visitor_id
                 )
                 if not pg.allowed:
                     return JSONResponse(
@@ -1302,7 +1302,7 @@ class SimilarityController:
             # visitor_id so it can be reparented to the user on login (and counted).
             if is_frontend and current_user is None and generated_playlist_uuid and gate_visitor_id:
                 await self.entitlement_gate.record_use(
-                    db, FeatureKey.PLAYLISTS_PER_MONTH, visitor_id=gate_visitor_id
+                    db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, visitor_id=gate_visitor_id
                 )
                 try:
                     from sqlalchemy import text as _sql_text

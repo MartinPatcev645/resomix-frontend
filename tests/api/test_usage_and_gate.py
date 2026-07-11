@@ -101,12 +101,12 @@ async def test_gate_counted_guest_denies_at_limit():
     set_admin_context(True)
     async with AsyncSessionLocal() as db:
         vid = _vid()
-        first = await gate.try_consume(db, FeatureKey.PLAYLISTS_PER_MONTH, visitor_id=vid)
+        first = await gate.try_consume(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, visitor_id=vid)
         assert first.allowed is True and first.count == 1
         limit = first.limit or 0
         for _ in range(max(limit - 1, 0)):  # exhaust the remaining allowance
-            assert (await gate.try_consume(db, FeatureKey.PLAYLISTS_PER_MONTH, visitor_id=vid)).allowed
-        over = await gate.try_consume(db, FeatureKey.PLAYLISTS_PER_MONTH, visitor_id=vid)
+            assert (await gate.try_consume(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, visitor_id=vid)).allowed
+        over = await gate.try_consume(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, visitor_id=vid)
         assert over.allowed is False and over.reason == REASON_LOGIN and over.limit == limit
 
 
@@ -116,10 +116,10 @@ async def test_gate_counted_user_denies_at_limit_with_upgrade():
     set_admin_context(True)
     user = await create_user()
     async with AsyncSessionLocal() as db:
-        await _override(db, user, FeatureKey.PLAYLISTS_PER_MONTH, 2)
-        a = await gate.try_consume(db, FeatureKey.PLAYLISTS_PER_MONTH, user=user)
-        b = await gate.try_consume(db, FeatureKey.PLAYLISTS_PER_MONTH, user=user)
-        c = await gate.try_consume(db, FeatureKey.PLAYLISTS_PER_MONTH, user=user)
+        await _override(db, user, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, 2)
+        a = await gate.try_consume(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=user)
+        b = await gate.try_consume(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=user)
+        c = await gate.try_consume(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=user)
         assert a.allowed and b.allowed
         assert c.allowed is False and c.reason == REASON_UPGRADE and c.limit == 2
 
@@ -129,11 +129,11 @@ async def test_gate_refund_frees_a_slot():
     set_admin_context(True)
     user = await create_user()
     async with AsyncSessionLocal() as db:
-        await _override(db, user, FeatureKey.PLAYLISTS_PER_MONTH, 1)  # pin to 1 for a clean deny
-        assert (await gate.try_consume(db, FeatureKey.PLAYLISTS_PER_MONTH, user=user)).allowed
-        assert not (await gate.try_consume(db, FeatureKey.PLAYLISTS_PER_MONTH, user=user)).allowed
-        await gate.refund(db, FeatureKey.PLAYLISTS_PER_MONTH, user=user)
-        assert (await gate.try_consume(db, FeatureKey.PLAYLISTS_PER_MONTH, user=user)).allowed
+        await _override(db, user, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, 1)  # pin to 1 for a clean deny
+        assert (await gate.try_consume(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=user)).allowed
+        assert not (await gate.try_consume(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=user)).allowed
+        await gate.refund(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=user)
+        assert (await gate.try_consume(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=user)).allowed
 
 
 @pytest.mark.asyncio
@@ -142,10 +142,10 @@ async def test_gate_override_changes_effective_limit():
     set_admin_context(True)
     user = await create_user()
     async with AsyncSessionLocal() as db:
-        await _override(db, user, FeatureKey.PLAYLISTS_PER_MONTH, 3)
+        await _override(db, user, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, 3)
         allowed_count = 0
         for _ in range(5):
-            r = await gate.try_consume(db, FeatureKey.PLAYLISTS_PER_MONTH, user=user)
+            r = await gate.try_consume(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=user)
             if r.allowed:
                 allowed_count += 1
         assert allowed_count == 3  # the override limit of 3

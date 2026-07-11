@@ -172,5 +172,5 @@ class EntitlementGate:
         if amount <= 0:
             return 0
         period_key, ttl = await self._period(db, user, None)
-        await self._usage.grant_bonus("user", str(user.id), FeatureKey.PLAYLISTS_PER_MONTH, amount, period_key, ttl)
+        await self._usage.grant_bonus("user", str(user.id), FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, amount, period_key, ttl)
         return amount

@@ -50,7 +50,7 @@ async def test_signup_bonus_extends_allowance_this_period():
         pytest.skip("Redis unavailable — bonus seeds a Redis counter")
     user = await create_user()
     async with AsyncSessionLocal() as db:
-        await _override(db, user.id, FeatureKey.PLAYLISTS_PER_MONTH, 2)
+        await _override(db, user.id, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, 2)
         await _override(db, user.id, FeatureKey.SIGNUP_BONUS_PLAYLISTS, 3)
         u = (await db.execute(select(User).where(User.id == user.id))).scalar_one()
 
@@ -59,9 +59,9 @@ async def test_signup_bonus_extends_allowance_this_period():
 
         # limit 2 + bonus 3 = 5 allowed creations, then denied.
         for _ in range(5):
-            assert (await gate.peek_allowed(db, FeatureKey.PLAYLISTS_PER_MONTH, user=u)).allowed
-            await gate.record_use(db, FeatureKey.PLAYLISTS_PER_MONTH, user=u)
-        assert (await gate.peek_allowed(db, FeatureKey.PLAYLISTS_PER_MONTH, user=u)).allowed is False
+            assert (await gate.peek_allowed(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=u)).allowed
+            await gate.record_use(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=u)
+        assert (await gate.peek_allowed(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=u)).allowed is False
 
 
 @pytest.mark.asyncio
@@ -73,7 +73,7 @@ async def test_signup_bonus_does_not_recur_next_period():
         pytest.skip("Redis unavailable — bonus seeds a Redis counter")
     usage = UsageCounterService()
     subject_id = "bonus-recur-" + uuid.uuid4().hex  # isolated subject so runs never collide
-    feature = FeatureKey.PLAYLISTS_PER_MONTH
+    feature = FeatureKey.SEARCH_PLAYLISTS_PER_MONTH
     this_period, next_period = "20260101000000", "20260201000000"
     ttl = 3600
 

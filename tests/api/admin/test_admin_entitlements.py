@@ -76,11 +76,11 @@ async def test_list_plans_and_features():
     codes = {p["code"] for p in plans.json()["data"]["plans"]}
     assert {"guest", "free"} <= codes
     a_plan = next(p for p in plans.json()["data"]["plans"] if p["code"] == "free")
-    assert FeatureKey.PLAYLISTS_PER_MONTH in a_plan["entitlements"]
+    assert FeatureKey.SEARCH_PLAYLISTS_PER_MONTH in a_plan["entitlements"]
 
     assert feats.status_code == 200
     fkeys = {f["key"] for f in feats.json()["data"]["features"]}
-    assert FeatureKey.PLAYLISTS_PER_MONTH in fkeys and FeatureKey.CAN_EXPORT in fkeys
+    assert FeatureKey.SEARCH_PLAYLISTS_PER_MONTH in fkeys and FeatureKey.CAN_EXPORT in fkeys
 
 
 @pytest.mark.asyncio
@@ -101,7 +101,7 @@ async def test_user_effective_plan_and_404():
     assert ok.status_code == 200, ok.text
     body = ok.json()["data"]
     assert body["user_uuid"] == user.uuid
-    assert FeatureKey.PLAYLISTS_PER_MONTH in body["entitlements"]
+    assert FeatureKey.SEARCH_PLAYLISTS_PER_MONTH in body["entitlements"]
     assert missing.status_code == 404
 
 
@@ -115,19 +115,19 @@ async def test_set_entitlement_typed_validation():
     code, _ = await _make_temp_plan()
     async with await _client() as ac:
         # int OK
-        good = await ac.put(f"{BASE}/plans/{code}/entitlements/{FeatureKey.PLAYLISTS_PER_MONTH}",
+        good = await ac.put(f"{BASE}/plans/{code}/entitlements/{FeatureKey.SEARCH_PLAYLISTS_PER_MONTH}",
                             headers=ADMIN, json={"value": 7})
         # bool OK on a boolean feature
         good_bool = await ac.put(f"{BASE}/plans/{code}/entitlements/{FeatureKey.CAN_EXPORT}",
                                  headers=ADMIN, json={"value": True})
         # int feature given a non-numeric string → 400
-        bad_type = await ac.put(f"{BASE}/plans/{code}/entitlements/{FeatureKey.PLAYLISTS_PER_MONTH}",
+        bad_type = await ac.put(f"{BASE}/plans/{code}/entitlements/{FeatureKey.SEARCH_PLAYLISTS_PER_MONTH}",
                                 headers=ADMIN, json={"value": "abc"})
         # unknown feature → 404
         bad_feature = await ac.put(f"{BASE}/plans/{code}/entitlements/not_a_feature",
                                    headers=ADMIN, json={"value": 1})
         # unknown plan → 404
-        bad_plan = await ac.put(f"{BASE}/plans/nope/entitlements/{FeatureKey.PLAYLISTS_PER_MONTH}",
+        bad_plan = await ac.put(f"{BASE}/plans/nope/entitlements/{FeatureKey.SEARCH_PLAYLISTS_PER_MONTH}",
                                 headers=ADMIN, json={"value": 1})
 
     assert good.status_code == 200 and good.json()["data"]["value"] == 7
@@ -139,7 +139,7 @@ async def test_set_entitlement_typed_validation():
     # The int edit persisted + is visible on read-back.
     async with await _client() as ac:
         detail = await ac.get(f"{BASE}/plans/{code}", headers=ADMIN)
-    assert detail.json()["data"]["entitlements"][FeatureKey.PLAYLISTS_PER_MONTH] == 7
+    assert detail.json()["data"]["entitlements"][FeatureKey.SEARCH_PLAYLISTS_PER_MONTH] == 7
 
 
 @pytest.mark.asyncio
@@ -153,19 +153,19 @@ async def test_edit_busts_cache_and_changes_enforcement():
         await db.commit()
 
     es = EntitlementService()
-    # Baseline: temp plan has no entitlement row → feature default (playlists_per_month default = 0).
+    # Baseline: temp plan has no entitlement row → feature default (search_playlists_per_month default = 0).
     async with AsyncSessionLocal() as db:
         u = (await db.execute(select(User).where(User.id == user.id))).scalar_one()
-        before = await es.get_int(db, FeatureKey.PLAYLISTS_PER_MONTH, user=u)  # warms the v1 cache
+        before = await es.get_int(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=u)  # warms the v1 cache
 
     async with await _client() as ac:
-        res = await ac.put(f"{BASE}/plans/{code}/entitlements/{FeatureKey.PLAYLISTS_PER_MONTH}",
+        res = await ac.put(f"{BASE}/plans/{code}/entitlements/{FeatureKey.SEARCH_PLAYLISTS_PER_MONTH}",
                            headers=ADMIN, json={"value": 9})
     assert res.status_code == 200
 
     async with AsyncSessionLocal() as db:
         u = (await db.execute(select(User).where(User.id == user.id))).scalar_one()
-        after = await es.get_int(db, FeatureKey.PLAYLISTS_PER_MONTH, user=u)
+        after = await es.get_int(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=u)
 
     assert before == 0
     assert after == 9, "Entitlement edit did not bust the cache / take effect."
@@ -215,7 +215,7 @@ async def test_non_admin_is_rejected():
     async with await _client() as ac:
         # A plain user JWT (no admin permission) must not read or write the admin API.
         r_read = await ac.get(f"{BASE}/plans", headers=auth_headers(user))
-        r_write = await ac.put(f"{BASE}/plans/free/entitlements/{FeatureKey.PLAYLISTS_PER_MONTH}",
+        r_write = await ac.put(f"{BASE}/plans/free/entitlements/{FeatureKey.SEARCH_PLAYLISTS_PER_MONTH}",
                                headers=auth_headers(user), json={"value": 999})
     assert r_read.status_code in (401, 403)
     assert r_write.status_code in (401, 403)

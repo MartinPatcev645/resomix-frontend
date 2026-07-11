@@ -65,7 +65,7 @@ async def _set_daily_override(user_id: int, value: int) -> None:
     """Pin a user's PLAYLISTS_PER_DAY via an entitlement override (deterministic cap)."""
     async with AsyncSessionLocal() as db:
         feat = (
-            await db.execute(select(Feature).where(Feature.key == FeatureKey.PLAYLISTS_PER_MONTH))
+            await db.execute(select(Feature).where(Feature.key == FeatureKey.SEARCH_PLAYLISTS_PER_MONTH))
         ).scalar_one()
         db.add(
             EntitlementOverride(

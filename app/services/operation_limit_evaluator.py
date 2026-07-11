@@ -28,7 +28,7 @@ from app.services.entitlement_gate import EntitlementGate
 
 # Bridge the legacy OperationType.code space to the new entitlement feature keys.
 OPERATION_TO_FEATURE = {
-    "playlist_create": FeatureKey.PLAYLISTS_PER_MONTH,
+    "playlist_create": FeatureKey.SEARCH_PLAYLISTS_PER_MONTH,
 }
 
 
@@ -137,7 +137,7 @@ class OperationLimitEvaluator:
         """Peek the caller's monthly playlist allowance (does not consume). Soft-denies with an
         upgrade nudge when at limit. Fails open (allowed) if Redis is unavailable."""
         user = await self._load_user(db, user_id)
-        gate = await self._gate.peek_allowed(db, FeatureKey.PLAYLISTS_PER_MONTH, user=user)
+        gate = await self._gate.peek_allowed(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=user)
         if gate.allowed:
             return OperationLimitResult(allowed=True, status_code=200)
         limit_txt = f" ({gate.limit})" if gate.limit else ""
@@ -160,7 +160,7 @@ class OperationLimitEvaluator:
             if operation_code == "playlist_create":
                 user = await self._load_user(db, user_id)
                 if user is not None:
-                    await self._gate.record_use(db, FeatureKey.PLAYLISTS_PER_MONTH, user=user)
+                    await self._gate.record_use(db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, user=user)
                 return
             await self._op_repo.async_increment_usage(
                 db, user_id=user_id, operation_code=operation_code
