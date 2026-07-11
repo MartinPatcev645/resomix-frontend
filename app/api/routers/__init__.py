@@ -12,6 +12,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 from .similarity import router as similarity_router
+from .analysis import router as analysis_router
 from .metadata import router as metadata_router
 from .search import router as search_router
 from .feedback import router as feedback_router
@@ -61,6 +62,7 @@ V1_PREFIX = "/api/v1"
 # so we handle it specially in main.py or keep it here without prefix duplication.
 v1_routers = [
     (similarity_router, V1_PREFIX),
+    (analysis_router, V1_PREFIX),
     (metadata_router, V1_PREFIX),
     (search_router, V1_PREFIX),
     (feedback_router, V1_PREFIX),

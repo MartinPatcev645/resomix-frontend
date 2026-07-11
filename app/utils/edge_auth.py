@@ -125,6 +125,62 @@ def generate_playback_token(partner_id: int, client_ip: str) -> dict:
     return {"token": token, "expires_in": ttl}
 
 
+def generate_analysis_token(analysis_id: str, client_ip: str) -> dict:
+    """Mint a short-lived "boarding pass" to fetch a cached analysis JSON from the Hetzner
+    served cache.
+
+    Same model as :func:`generate_edge_token`: the token embeds the ``analysis`` id it is minted
+    for plus ``scope="analysis"``, ip and exp. Authorization happens at MINT time (Alwyzon only
+    signs when the requester owns the analysis or it is public); the Hetzner node then enforces
+    that the ``{id}`` in the request path equals the ``analysis`` claim in the token — so a token
+    minted for analysis X can't be replayed to fetch analysis Y.
+
+    Args:
+        analysis_id: The analysis UUID this token authorizes (and only this one).
+        client_ip: The requesting client's IP (token is locked to this network).
+
+    Returns:
+        ``{"token": <jwt>, "expires_in": <ttl_seconds>}``
+    """
+    ttl = settings.edge_token_ttl_seconds
+    payload = {
+        "scope": "analysis",
+        "analysis": analysis_id,
+        "ip": client_ip,
+        "exp": int(time.time()) + ttl,
+    }
+    token = jwt.encode(payload, settings.edge_jwt_secret, algorithm="HS256")
+    return {"token": token, "expires_in": ttl}
+
+
+def verify_analysis_token(token: str, analysis_id: str, client_ip: str) -> bool:
+    """Verify an analysis retrieval token (mirrors :func:`verify_edge_token`).
+
+    Checks the signature + expiry (via ``jwt.decode``), that ``scope == "analysis"``, that the
+    embedded ``analysis`` id equals the requested ``analysis_id`` (the replay guard), and the IP
+    lock. Returns True only if all hold. (Reference implementation of the check the Hetzner edge
+    performs — also usable server-side/in tests.)
+    """
+    try:
+        payload = jwt.decode(token, settings.edge_jwt_secret, algorithms=["HS256"])
+        if payload.get("scope") != "analysis":
+            logger.warning("Analysis token scope mismatch: %s", payload.get("scope"))
+            return False
+        if payload.get("analysis") != analysis_id:
+            logger.warning(
+                "Analysis token id mismatch: expected %s, got %s",
+                analysis_id, payload.get("analysis"),
+            )
+            return False
+        if payload.get("ip") != client_ip:
+            logger.warning("Analysis token IP mismatch: expected %s, got %s", client_ip, payload.get("ip"))
+            return False
+        return True
+    except Exception as e:
+        logger.warning(f"Analysis token verification failed: {e}")
+        return False
+
+
 def verify_edge_token(token: str, playlist_id: str, client_ip: str) -> bool:
     """
     Verify a cryptographic Edge Authorization JWT.

@@ -25,6 +25,7 @@ from typing import Optional
 
 from app.core.context import set_admin_context, set_current_partner_id
 from app.services.analysis_service import AnalysisService
+from database.connection import AsyncSessionLocal
 from .async_runner import run_async_task
 from .celery_app import celery_app
 
@@ -117,9 +118,29 @@ async def _persist_summary(
     user_id: Optional[int],
     partner_id: Optional[int],
 ) -> None:
-    """Persist the single-value analysis summary (Phase C: writes ``track_analysis_results``)."""
-    # Phase C hook — the DB table + repository/service land there; wired in that phase.
-    logger.debug("ANALYSIS SIBLING: summary persistence pending (Phase C) for %s", analysis_id)
+    """Persist the single-value analysis summary into ``track_analysis_results`` (idempotent)."""
+    if track_id is None:
+        logger.warning("ANALYSIS SIBLING: no track_id for %s — skipping summary persistence", analysis_id)
+        return
+    from app.services.track_analysis_result_service import TrackAnalysisResultService
+
+    async with AsyncSessionLocal() as db:
+        # Re-assert tenancy context for THIS session's failsafe (contextvars set by the caller
+        # cover the same coroutine, but re-setting is cheap and explicit).
+        if partner_id is not None:
+            set_current_partner_id(partner_id)
+            set_admin_context(False)
+        else:
+            set_admin_context(True)
+        await TrackAnalysisResultService().record_from_canonical(
+            db,
+            analysis_uuid=analysis_id,
+            result=result,
+            track_id=track_id,
+            user_id=user_id,
+            partner_id=partner_id if partner_id is not None else 1,
+        )
+    logger.info("ANALYSIS SIBLING: persisted analysis summary for %s (track %s)", analysis_id, track_id)
 
 
 @celery_app.task(bind=True, max_retries=2, default_retry_delay=60)
