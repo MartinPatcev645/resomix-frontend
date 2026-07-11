@@ -572,26 +572,41 @@ export function WaveTimeline({
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full" style={{ height }}>
-      {/* faint bar grid behind the waveform (default view) */}
-      {!showBeats && gridTimes.map((t, i) => (
-        <line key={`b${i}`} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="currentColor" strokeOpacity={0.06} vectorEffect="non-scaling-stroke" />
-      ))}
-      {/* phrase boundaries (stronger) */}
-      {phraseBoundaries.map((t, i) => (
-        <line key={`p${i}`} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="currentColor" strokeOpacity={0.18} vectorEffect="non-scaling-stroke" />
-      ))}
-      {/* vocal-activity regions (behind the waveform) */}
-      {voiceRegions.map((r, i) => (
-        <g key={`v${i}`}>
-          <rect x={xOf(r.startMs / 1000)} y={0} width={xOf(r.endMs / 1000) - xOf(r.startMs / 1000)} height={H} fill="#7fb0ff" fillOpacity={0.16} />
-          <text x={xOf(r.startMs / 1000) + 3} y={H - 4} className="font-helvetica" fontSize="8" fill="#7fb0ff">vox</text>
-        </g>
-      ))}
+      {/* DEFAULT (beats off): faint bar grid + phrase lines + vox shade, all BEHIND the waveform */}
+      {!showBeats && (
+        <>
+          {gridTimes.map((t, i) => (
+            <line key={`b${i}`} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="currentColor" strokeOpacity={0.06} vectorEffect="non-scaling-stroke" />
+          ))}
+          {phraseBoundaries.map((t, i) => (
+            <line key={`p${i}`} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="currentColor" strokeOpacity={0.18} vectorEffect="non-scaling-stroke" />
+          ))}
+          {voiceRegions.map((r, i) => (
+            <g key={`v${i}`}>
+              <rect x={xOf(r.startMs / 1000)} y={0} width={xOf(r.endMs / 1000) - xOf(r.startMs / 1000)} height={H} fill="#7fb0ff" fillOpacity={0.16} />
+              <text x={xOf(r.startMs / 1000) + 3} y={H - 4} className="font-helvetica" fontSize="8" fill="#7fb0ff">vox</text>
+            </g>
+          ))}
+        </>
+      )}
       <polygon points={poly} fill={ACCENT} fillOpacity={0.75} />
-      {/* bright beat grid ON TOP of the waveform (toggled on) */}
-      {showBeats && gridTimes.map((t, i) => (
-        <line key={`bb${i}`} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="#fff" strokeOpacity={0.6} vectorEffect="non-scaling-stroke" />
-      ))}
+      {/* BEATS ON: brighter vox shade + a light bar grid + brighter phrase lines, all ON TOP of the waveform */}
+      {showBeats && (
+        <>
+          {voiceRegions.map((r, i) => (
+            <g key={`vt${i}`}>
+              <rect x={xOf(r.startMs / 1000)} y={0} width={xOf(r.endMs / 1000) - xOf(r.startMs / 1000)} height={H} fill="#7fb0ff" fillOpacity={0.32} />
+              <text x={xOf(r.startMs / 1000) + 3} y={H - 4} className="font-helvetica" fontSize="8" fill="#cfe0ff">vox</text>
+            </g>
+          ))}
+          {gridTimes.map((t, i) => (
+            <line key={`bt${i}`} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="#fff" strokeOpacity={0.2} vectorEffect="non-scaling-stroke" />
+          ))}
+          {phraseBoundaries.map((t, i) => (
+            <line key={`pt${i}`} x1={xOf(t)} x2={xOf(t)} y1={0} y2={H} stroke="#fff" strokeOpacity={0.55} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+          ))}
+        </>
+      )}
       {/* onsets on the centre line */}
       {onsetTimes.map((t, i) => (
         <circle key={`o${i}`} cx={xOf(t)} cy={mid} r={1.1} fill="currentColor" opacity={0.3} />

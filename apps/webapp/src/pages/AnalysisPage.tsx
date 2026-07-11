@@ -420,28 +420,38 @@ export default function AnalysisPage() {
                 />
               </TimeAxis>
               <div className="mt-[var(--px-8)] flex">
-                <button
-                  type="button"
-                  onClick={() => setShowBeats((v) => !v)}
-                  aria-pressed={showBeats}
-                  className={
-                    "flex items-center gap-[var(--px-6)] rounded-full border px-[var(--px-10)] py-[var(--px-3)] font-helvetica text-[length:var(--px-10)] transition-all hover:brightness-125 " +
-                    (showBeats ? "" : "opacity-45")
-                  }
-                  style={{ borderColor: showBeats ? ACCENT : "var(--opacity-30)", background: showBeats ? "rgba(238,74,38,0.14)" : "transparent" }}
-                >
-                  <span
-                    className="grid h-[var(--px-11)] w-[var(--px-11)] place-items-center rounded-[3px] border"
-                    style={{ borderColor: showBeats ? ACCENT : "var(--opacity-40)", background: showBeats ? ACCENT : "transparent" }}
-                  >
-                    {showBeats && (
-                      <svg viewBox="0 0 10 10" className="h-[var(--px-8)] w-[var(--px-8)]">
-                        <path d="M1.5 5 L4 7.5 L8.5 2.5" fill="none" stroke="#000" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
+                {data.rhythm.bpm == null ? (
+                  // beats come from the GPU (Essentia) — loader until they land
+                  <span className="flex items-center gap-[var(--px-6)] rounded-full border border-white/15 px-[var(--px-10)] py-[var(--px-3)] font-helvetica text-[length:var(--px-10)] text-white/45">
+                    <Spinner size={12} /> Beats
                   </span>
-                  Beats
-                </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowBeats((v) => !v)}
+                    aria-pressed={showBeats}
+                    className={
+                      "flex items-center gap-[var(--px-6)] rounded-full border px-[var(--px-10)] py-[var(--px-3)] font-helvetica text-[length:var(--px-10)] transition-colors " +
+                      (showBeats
+                        ? "border-[#EE4A26] bg-[rgba(238,74,38,0.14)] text-white"
+                        : "border-white/20 text-white/55 hover:border-white/45 hover:bg-white/5 hover:text-white/90")
+                    }
+                  >
+                    <span
+                      className={
+                        "grid h-[var(--px-11)] w-[var(--px-11)] place-items-center rounded-[3px] border " +
+                        (showBeats ? "border-[#EE4A26] bg-[#EE4A26]" : "border-white/35")
+                      }
+                    >
+                      {showBeats && (
+                        <svg viewBox="0 0 10 10" className="h-[var(--px-8)] w-[var(--px-8)]">
+                          <path d="M1.5 5 L4 7.5 L8.5 2.5" fill="none" stroke="#000" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </span>
+                    Beats
+                  </button>
+                )}
               </div>
             </Panel>
 
