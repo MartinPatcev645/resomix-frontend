@@ -58,6 +58,10 @@ class Track(Base):
     # Fields
     resource_ref: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     proprietary_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    # Original file location on the SOURCE server (e.g. the Electrobuzz catalogue) — the only
+    # reference back to the master when the master isn't in our storage. Distinct from
+    # audio_files.stored_path (which is a path in OUR storage).
+    source_file_path: Mapped[Optional[str]] = mapped_column(String(600), nullable=True)
     isrc: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(1024), nullable=False, index=True)
     version_title: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)

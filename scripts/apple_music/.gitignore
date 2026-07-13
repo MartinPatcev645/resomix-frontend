@@ -2,7 +2,11 @@
 # At full scale (2.35M) they are ~1.5 GB+ and will bloat the repo.
 tracks_input.jsonl
 apple_matches.jsonl
+apple_matches.migrate.jsonl
 *.jsonl
+
+# migration old->new uuid map (Script 1 output; ~165 MB at full scale)
+uuid_map.tsv
 
 # run logs and checkpoints
 run_*.log

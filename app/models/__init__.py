@@ -63,6 +63,7 @@ from .track_processing_status import TrackProcessingStatus
 from .partner_processing_job import PartnerProcessingJob
 from .partner_notification import PartnerNotification
 from .track_analysis_result import TrackAnalysisResult
+from .apple_music import AppleMusicTrack
 
 # Make models available at package level
 __all__ = [
@@ -135,4 +136,5 @@ __all__ = [
     "PartnerProcessingJob",
     "PartnerNotification",
     "TrackAnalysisResult",
+    "AppleMusicTrack",
 ]
