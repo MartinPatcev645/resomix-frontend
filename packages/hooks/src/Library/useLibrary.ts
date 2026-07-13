@@ -98,8 +98,10 @@ export function useLibrary() {
     }
   }, [setFavoritesLoading, setError, setFavorites, setFavoritesPagination]);
 
-  const loadTracks = useCallback(async (page = 1, pageSize = 20) => {
-    setTracksLoading(true);
+  // `silent` refetches in place (for the 10s artifact poll) without toggling the tracks spinner,
+  // so the list doesn't flash while we wait for a sibling analysis/playlist to finish generating.
+  const loadTracks = useCallback(async (page = 1, pageSize = 20, opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setTracksLoading(true);
     setError(null);
     try {
       const limitPageSize = Math.min(pageSize, 20);
@@ -116,6 +118,7 @@ export function useLibrary() {
           analysis_uuid: t.analysis_uuid || null,
           has_analysis: !!t.has_analysis,
           has_similarity: !!t.has_similarity,
+          created_at: t.created_at || null,
         }));
         setTracks(formattedTracks);
         const total = (resp as any).total || 0;
@@ -127,7 +130,7 @@ export function useLibrary() {
     } catch (err: any) {
       setError(err.message || "Failed to load tracks");
     } finally {
-      setTracksLoading(false);
+      if (!opts?.silent) setTracksLoading(false);
     }
   }, [setTracksLoading, setError, setTracks, setTracksPagination]);
 

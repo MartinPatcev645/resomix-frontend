@@ -11,6 +11,9 @@ export interface LibraryTrack {
   analysis_uuid?: string | null;
   has_analysis?: boolean;
   has_similarity?: boolean;
+  // Upload timestamp (ISO). Used by the Library to decide whether a still-missing sibling
+  // artifact (analysis / playlist) is likely still generating and should be polled for.
+  created_at?: string | null;
 }
 
 export interface LibraryPlaylist {

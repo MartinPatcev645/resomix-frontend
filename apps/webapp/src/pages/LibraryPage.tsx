@@ -4,6 +4,7 @@ import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon } from
 import { useAuthStore } from "@resomix/stores";
 import { useLibrary } from "@resomix/hooks";
 import TrackSvg from "@/assets/icons/track_2.svg";
+import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
 
 export default function LibraryPage() {
   const navigate = useNavigate();
@@ -108,6 +109,20 @@ export default function LibraryPage() {
     loadTracks(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
+
+  // Every upload spawns BOTH a similarity playlist and an analysis; the sibling runs in the
+  // background and lands a minute or two later. While the Tracks tab shows a just-uploaded row whose
+  // sibling artifact hasn't arrived yet, silently re-poll my-tracks every 10s so its capsule flips
+  // from "generating" to a live link the moment it's ready — no manual refresh, both directions.
+  // Self-terminating: re-arms only while something is still pending (see trackHasPendingArtifact).
+  useEffect(() => {
+    if (activeTab !== "tracks") return;
+    if (!tracks.some(trackHasPendingArtifact)) return;
+    const timer = setTimeout(() => {
+      loadTracks(tracksPage, 20, { silent: true });
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [activeTab, tracks, tracksPage, loadTracks]);
 
   // Refresh only the currently-selected tab (keeps the others as-is).
   const handleRefresh = () => {
@@ -442,47 +457,9 @@ export default function LibraryPage() {
             ) : (
               <div className="flex flex-col gap-[var(--px-12)] w-full">
                 {tracks.map((track) => {
+                  // Sonic Discovery + Analysis are surfaced as capsules on the row (see
+                  // <TrackArtifactChips/> below); the 3-dot menu keeps just the destructive action.
                   const trackDropdownItems = [];
-                  if (track.playlist_uuid) {
-                    trackDropdownItems.push({
-                      id: `track-view-playlist-${track.id}`,
-                      label: "Sonic Discovery",
-                      icon: (
-                        <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="8" y1="6" x2="21" y2="6" />
-                          <line x1="8" y1="12" x2="21" y2="12" />
-                          <line x1="8" y1="18" x2="21" y2="18" />
-                          <line x1="3" y1="6" x2="3.01" y2="6" />
-                          <line x1="3" y1="12" x2="3.01" y2="12" />
-                          <line x1="3" y1="18" x2="3.01" y2="18" />
-                        </svg>
-                      ),
-                      onClick: () => navigate(`/playlist?id=${track.playlist_uuid}`, { state: { from: "library" } }),
-                    });
-                  }
-                  if (track.has_analysis && track.analysis_uuid) {
-                    trackDropdownItems.push({
-                      id: `track-analysis-${track.id}`,
-                      label: "Get Analysis",
-                      icon: (
-                        <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 2v20M17 5v14M22 9v6M7 7v10M2 10v4" />
-                        </svg>
-                      ),
-                      onClick: () => navigate(`/analysis?id=${track.analysis_uuid}`),
-                    });
-                  } else {
-                    trackDropdownItems.push({
-                      id: `track-analyze-${track.id}`,
-                      label: "Analyze Track",
-                      icon: (
-                        <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 2v20M17 5v14M22 9v6M7 7v10M2 10v4" />
-                        </svg>
-                      ),
-                      onClick: () => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon"),
-                    });
-                  }
                   trackDropdownItems.push({
                     id: `track-delete-${track.id}`,
                     label: "Delete Track",
@@ -577,10 +554,20 @@ export default function LibraryPage() {
                       </div>
 
                       <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0 align-middle" onClick={e => e.stopPropagation()}>
-                        <span className="text-[length:var(--px-10)] font-light font-fira text-white/40">
+                        {/* Artifact capsules: reach the track's Sonic Discovery playlist and its
+                            analysis straight from the row; a still-generating sibling shows a live
+                            "…generating" pill that the 10s poll flips to a link when it lands. */}
+                        <TrackArtifactChips
+                          track={track}
+                          onOpenPlaylist={(uuid) => navigate(`/playlist?id=${uuid}`, { state: { from: "library" } })}
+                          onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`)}
+                          onComingSoon={() => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon")}
+                        />
+
+                        <span className="hidden md:inline text-[length:var(--px-10)] font-light font-fira text-white/40">
                           {track.duration}
                         </span>
-                        
+
                         {/* Dropdown Actions */}
                         <div className="relative">
                           <button
