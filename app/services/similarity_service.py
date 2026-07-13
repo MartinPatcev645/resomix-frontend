@@ -13,6 +13,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 import os
+import logging
 import httpx
 import asyncio
 from typing import Dict, Any, Optional
@@ -33,6 +34,8 @@ from app.utils.similarity_utils import (
 )
 from app.utils.similarity_filters import filter_track_title, apply_response_filtering
 from app.models.constants import PlaylistType
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
