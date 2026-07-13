@@ -271,8 +271,20 @@ async def _async_generate_similarity_sibling(
             )
         if isinstance(result, dict) and result.get("success") is False:
             logger.warning("SIMILARITY SIBLING: %s failed: %s", track_uuid, result.get("error"))
+        elif isinstance(result, dict) and result.get("playlist"):
+            logger.info(
+                "SIMILARITY SIBLING: created similarity playlist %s for track %s",
+                (result.get("playlist") or {}).get("id"), track_uuid,
+            )
         else:
-            logger.info("SIMILARITY SIBLING: generated similarity playlist for track %s", track_uuid)
+            # The similarity query succeeded but no playlist row was written (no resolvable
+            # similar catalog tracks, or the seed couldn't be resolved). Do NOT claim success —
+            # the [upload-sim] line in the similarity_service logs has the exact counts/reason.
+            logger.warning(
+                "SIMILARITY SIBLING: no playlist created for track %s — see the '[upload-sim]' "
+                "log line for the reason (usually: the partner has no searchable catalog/index).",
+                track_uuid,
+            )
     finally:
         try:
             if audio_spool_path and os.path.exists(audio_spool_path):

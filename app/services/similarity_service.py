@@ -236,17 +236,33 @@ class SimilarityService:
                                 )
                             break
 
+                # Surface exactly what the upload similarity produced, so a "no playlist"
+                # outcome is never silent again (raw = returned by the similarity server,
+                # enriched = resolvable in our catalog, dedup = final playlist members).
+                logger.info(
+                    "[upload-sim] track=%s partner=%s user=%s: raw=%d enriched=%d dedup=%d",
+                    track_uuid, partner_id, user_id,
+                    len(raw_results), len(enriched_similar_tracks), len(deduplicated_track_ids),
+                )
+
                 # Always create the similarity playlist — for anonymous frontend users too.
                 # Anonymous frontend playlists are PUBLIC (so the limited preview can be shared/
                 # shown); authenticated-user and B2B playlists stay PRIVATE.
                 playlist_info = None
                 anon_frontend = is_anonymous_frontend(user_id is not None, partner_id, settings.system_partner_id)
                 if deduplicated_track_ids:
-                    # Get the uploaded track's database ID
+                    # Resolve the uploaded (seed) track's DB id. Prefer the partner-scoped,
+                    # active-only lookup; fall back to a plain uuid→id resolve so a partner /
+                    # is_active edge on the freshly-created upload can't silently drop its own
+                    # playlist (we're only resolving the uploader's own just-created track).
                     uploaded_track = await self.track_repository.async_get_by_uuid(
                         db, track_uuid, partner_id=partner_id
                     )
-                    if uploaded_track:
+                    seed_track_id = (
+                        uploaded_track.id if uploaded_track
+                        else await self.track_repository.async_get_id_by_uuid(db, track_uuid)
+                    )
+                    if seed_track_id:
                         # Generate playlist name based on uploaded track details
                         playlist_name = generate_playlist_name_from_seed_track(
                             uploaded_track_details
@@ -254,7 +270,7 @@ class SimilarityService:
 
                         playlist_info = await self.playlist_repository.async_create_similarity_playlist(
                             db=db,
-                            seed_track_id=uploaded_track.id,
+                            seed_track_id=seed_track_id,
                             track_ids=deduplicated_track_ids,
                             track_scores=deduplicated_track_scores,
                             name=playlist_name,
@@ -263,6 +279,18 @@ class SimilarityService:
                             partner_id=partner_id,
                             is_public=anon_frontend,
                         )
+                    else:
+                        logger.warning(
+                            "[upload-sim] track=%s: seed track could not be resolved to a DB id — "
+                            "playlist NOT created", track_uuid,
+                        )
+                else:
+                    logger.warning(
+                        "[upload-sim] track=%s partner=%s: no similar catalog tracks resolved "
+                        "(raw=%d, enriched=%d) — playlist NOT created. Most likely partner %s has no "
+                        "searchable catalog/FAISS index on the media server.",
+                        track_uuid, partner_id, len(raw_results), len(enriched_similar_tracks), partner_id,
+                    )
 
                 # Format response like similarity by ID
                 response_data = {
