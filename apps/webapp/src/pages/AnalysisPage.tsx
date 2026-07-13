@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
 import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
 import { CamelotWheel, chromaLabelsForKey, ChromaSummary, ChromaView, Donut, keyFromCamelot, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
@@ -36,8 +36,17 @@ const ribbonTip =
 export default function AnalysisPage() {
   const { status, data, error, progress, fileName, audioUrl, part1Ready, analysisId, analyze, loadById, reset } = useTrackAnalysis();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Stop the local <audio> when leaving the page so it never keeps playing in the background
+  // (belt-and-suspenders: the element also unmounts, but an explicit pause is immediate). Read the
+  // ref inside cleanup so we get the live element at unmount, not null captured at mount.
+  useEffect(() => {
+    return () => { try { audioRef.current?.pause(); } catch { /* noop */ } };
+  }, []);
   const [dragOver, setDragOver] = useState(false);
   const [currentMs, setCurrentMs] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -138,6 +147,22 @@ export default function AnalysisPage() {
   return (
     <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-[var(--px-56)] lg:px-[var(--px-80)] pb-[var(--px-80)] tracking-[var(--px-1)]">
       <div className="mx-auto w-full max-w-6xl text-[var(--color-primary)]">
+        {/* Back nav — return to wherever the user came from: Library when the analysis was opened
+            from a track, otherwise the upload landing. Mirrors the playlist page's back link. */}
+        <div className="mb-[var(--px-16)]">
+          <button
+            type="button"
+            onClick={() => navigate(location.state?.from === "library" ? "/library" : "/")}
+            aria-label={location.state?.from === "library" ? "Back to Library" : "Back to Upload"}
+            className="inline-flex items-center gap-[var(--px-8)] text-[length:var(--px-10)] font-light font-fira uppercase tracking-wide opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
+          >
+            <svg className="w-[var(--px-12)] h-[var(--px-12)] fill-none stroke-current" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            {location.state?.from === "library" ? "Back to Library" : "Back to Upload"}
+          </button>
+        </div>
+
         <header className="mb-[var(--px-28)] text-center">
           <h1 className="font-helvetica text-[length:var(--px-52)] leading-[var(--px-60)] font-medium uppercase">
             Analysis

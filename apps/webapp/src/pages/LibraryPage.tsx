@@ -560,7 +560,7 @@ export default function LibraryPage() {
                         <TrackArtifactChips
                           track={track}
                           onOpenPlaylist={(uuid) => navigate(`/playlist?id=${uuid}`, { state: { from: "library" } })}
-                          onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`)}
+                          onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`, { state: { from: "library" } })}
                           onComingSoon={() => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon")}
                         />
 
