@@ -38,6 +38,10 @@ export default function AnalysisPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  // Capture the origin ONCE at mount: the effect below rewrites the URL via
+  // setSearchParams({ replace: true }), which drops location.state — so reading it later would
+  // always look like a non-library visit and mislabel the back button.
+  const [cameFromLibrary] = useState(() => location.state?.from === "library");
   const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -152,14 +156,14 @@ export default function AnalysisPage() {
         <div className="mb-[var(--px-16)]">
           <button
             type="button"
-            onClick={() => navigate(location.state?.from === "library" ? "/library" : "/")}
-            aria-label={location.state?.from === "library" ? "Back to Library" : "Back to Upload"}
+            onClick={() => navigate(cameFromLibrary ? "/library" : "/")}
+            aria-label={cameFromLibrary ? "Back to Library" : "Back to Upload"}
             className="inline-flex items-center gap-[var(--px-8)] text-[length:var(--px-10)] font-light font-fira uppercase tracking-wide opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
           >
             <svg className="w-[var(--px-12)] h-[var(--px-12)] fill-none stroke-current" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            {location.state?.from === "library" ? "Back to Library" : "Back to Upload"}
+            {cameFromLibrary ? "Back to Library" : "Back to Upload"}
           </button>
         </div>
 
