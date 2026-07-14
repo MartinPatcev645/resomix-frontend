@@ -316,9 +316,9 @@ class SimilarityService:
                             )
                         )
                     except Exception as e:
-                        # If enrichment fails, ensure defaults are set
+                        # If enrichment fails, ensure defaults are set (is_following intentionally
+                        # omitted — unused by the frontend, see docs/PLAYBACK_APPLE_MUSIC_PLAN.md).
                         playlist_info.setdefault("is_favorite", False)
-                        playlist_info.setdefault("is_following", False)
                         print(f"Error enriching playlist with engagement: {e}")
                     response_data["playlist"] = playlist_info
 
@@ -329,6 +329,10 @@ class SimilarityService:
                     )
                     if filtered_queried_tracks:
                         response_data["queried_track"] = filtered_queried_tracks[0]
+
+                # Join Apple Music preview/metadata onto the seed + members (playback layer).
+                from app.services.apple_music_enrichment import enrich_similarity_data_with_apple
+                await enrich_similarity_data_with_apple(db, response_data)
 
                 # NOTE: An upload counts against `uploads_per_month`, NOT `search_playlists_per_month`.
                 # The upload controller (get_similarity_upload) owns that recording — it calls
@@ -536,9 +540,9 @@ class SimilarityService:
                             )
                         )
                     except Exception as e:
-                        # If enrichment fails, ensure defaults are set
+                        # If enrichment fails, ensure defaults are set (is_following intentionally
+                        # omitted — unused by the frontend, see docs/PLAYBACK_APPLE_MUSIC_PLAN.md).
                         playlist_info.setdefault("is_favorite", False)
-                        playlist_info.setdefault("is_following", False)
                         print(f"Error enriching playlist with engagement: {e}")
                     response_data["playlist"] = playlist_info
 
@@ -549,6 +553,10 @@ class SimilarityService:
                     )
                     if filtered_queried_tracks:
                         response_data["queried_track"] = filtered_queried_tracks[0]
+
+                # Join Apple Music preview/metadata onto the seed + members (playback layer).
+                from app.services.apple_music_enrichment import enrich_similarity_data_with_apple
+                await enrich_similarity_data_with_apple(db, response_data)
 
                 # Record a successful playlist creation against the daily entitlement counter.
                 if user_id:

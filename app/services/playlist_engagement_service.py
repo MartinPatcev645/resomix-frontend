@@ -46,10 +46,10 @@ class PlaylistEngagementService:
         Returns:
             Dictionary with added is_favorite and is_following fields (defaults to False if user not logged in)
         """
-        # Always include engagement fields, defaulting to False if user not logged in
+        # `is_following` is intentionally not exposed on the playlist response (unused by the
+        # frontend — see docs/PLAYBACK_APPLE_MUSIC_PLAN.md); the favorite field is kept.
         playlist_dict["is_favorite"] = False
-        playlist_dict["is_following"] = False
-        
+
         # Only fetch engagement if user is logged in
         if user_id and playlist_dict.get("id"):
             try:
@@ -60,7 +60,6 @@ class PlaylistEngagementService:
                     )
                     if engagement:
                         playlist_dict["is_favorite"] = engagement.is_favorite
-                        playlist_dict["is_following"] = engagement.is_following
             except Exception as e:
                 # If engagement lookup fails, just use defaults (False)
                 print(f"Error enriching playlist with engagement: {e}")

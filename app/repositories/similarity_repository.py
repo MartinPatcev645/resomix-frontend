@@ -65,6 +65,7 @@ class SimilarityRepository(BaseRepository[Track]):
             query = text(
                 """
                 SELECT 
+                    t.id as track_id,
                     t.uuid as id,
                     t.title,
                     t.p_line_year as year,
@@ -90,6 +91,7 @@ class SimilarityRepository(BaseRepository[Track]):
 
             if row:
                 return {
+                    "track_id": row.track_id,
                     "id": row.id,
                     "title": row.title or "Unknown",
                     "year": row.year,
@@ -122,6 +124,7 @@ class SimilarityRepository(BaseRepository[Track]):
             query = text(
                 """
                 SELECT 
+                    t.id as track_id,
                     t.uuid as id,
                     t.title,
                     t.p_line_year as year,
@@ -146,6 +149,7 @@ class SimilarityRepository(BaseRepository[Track]):
 
             if row:
                 return {
+                    "track_id": row.track_id,
                     "id": row.id,
                     "title": row.title or "Unknown",
                     "year": row.year,

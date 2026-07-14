@@ -274,6 +274,11 @@ class PlaylistService:
                     "error": "Playlist is not public. Only public playlists can be accessed.",
                 }
             else:
+                # Join Apple Music preview/metadata onto the seed + members (playback layer).
+                # Must run BEFORE redaction so hidden tracks get their Apple fields stripped too.
+                from app.services.apple_music_enrichment import enrich_similarity_data_with_apple
+                await enrich_similarity_data_with_apple(db, similarity_data)
+
                 filtered_data = self._apply_playlist_response_filtering(similarity_data)
                 if is_anonymous_frontend(user_id is not None, partner_id, settings.system_partner_id):
                     apply_demo_mode_redaction(filtered_data, visible_count=ANON_VISIBLE_COUNT)

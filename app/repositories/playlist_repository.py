@@ -134,21 +134,16 @@ class PlaylistRepository(BaseRepository[Playlist]):
             db.add_all(playlist_tracks)
             await db.flush()
 
-            # Only show fork_id if the user owns this forked playlist
-            fork_id_value = ""
-            if user_id and playlist.user_id == user_id and playlist.fork_id:
-                fork_id_value = playlist.fork_id
-
             # NOTE: never expose the internal integer primary key (playlist.id) on a
             # user-facing response — only the UUID. If an admin path ever needs the pk,
             # add it in that admin-scoped serializer, not here.
+            # `fork_id` / `is_following` are intentionally omitted from the playlist response
+            # (unused by the frontend — see docs/PLAYBACK_APPLE_MUSIC_PLAN.md); favorites are kept.
             return {
                 "id": playlist.uuid,  # UUID for external use
                 "name": playlist.name,
                 "is_public": playlist.is_public,
-                "fork_id": fork_id_value,
                 "is_favorite": False,  # Will be enriched by service layer if user logged in
-                "is_following": False,  # Will be enriched by service layer if user logged in
             }
 
         except Exception as e:
@@ -717,7 +712,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
             if playlist.seed_track_id:
                 seed_query = text(
                     """
-                    SELECT 
+                    SELECT
+                        t.id as track_id,
                         t.uuid as id,
                         t.title,
                         t.p_line_year as year,
@@ -751,6 +747,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     queried_track = {
                         "rank": 0,
                         "score": 1.0,
+                        "track_id": seed_row.track_id,
                         "id": seed_row.id,
                         "title": seed_row.title or "Unknown",
                         "year": seed_row.year,
@@ -807,6 +804,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         track_info = {
                             "rank": float(pt.position),
                             "score": float(pt.score) if pt.score else 0.0,
+                            "track_id": track_data.track_id,
                             "id": track_data.id,
                             "title": track_data.title or "Unknown",
                             "year": track_data.year,
@@ -825,19 +823,14 @@ class PlaylistRepository(BaseRepository[Playlist]):
             else:
                 similar_tracks = []
 
-            # Format response like similarity endpoints
-            # Only show fork_id if the logged-in user owns this forked playlist
-            fork_id_value = ""
-            if user_id and playlist.user_id == user_id and playlist.fork_id:
-                fork_id_value = playlist.fork_id
-
+            # Format response like similarity endpoints. `fork_id` and `is_following` are
+            # intentionally omitted — the frontend doesn't use them (see
+            # docs/PLAYBACK_APPLE_MUSIC_PLAN.md). The favorite fields are kept.
             playlist_dict = {
                 "id": playlist.uuid,
                 "name": playlist.name,
                 "is_public": playlist.is_public,
-                "fork_id": fork_id_value,
                 "is_favorite": False,
-                "is_following": False,
             }
 
             # Enrich with engagement data if user is logged in
@@ -853,7 +846,6 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     )
                     if engagement:
                         playlist_dict["is_favorite"] = engagement.is_favorite
-                        playlist_dict["is_following"] = engagement.is_following
                 except Exception as e:
                     # If engagement lookup fails, just use defaults (False)
                     print(f"Error enriching playlist with engagement: {e}")

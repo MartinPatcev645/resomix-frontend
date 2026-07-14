@@ -68,6 +68,12 @@ def _redact_tracks(tracks: List[MutableMapping[str, Any]], visible_count: int) -
 
         track["year"] = 2025
 
+        # Hidden tracks must not leak their Apple preview/artwork/deep-link — playback is gated
+        # behind login. Null the Apple playback fields so the UI shows "log in to unlock".
+        for key in ("preview_url", "artwork_url", "deep_link_url", "apple_song_id"):
+            if key in track:
+                track[key] = None
+
 
 def apply_demo_mode_redaction(payload: Dict[str, Any], visible_count: int = REDACTION_LIMIT) -> Dict[str, Any]:
     """
