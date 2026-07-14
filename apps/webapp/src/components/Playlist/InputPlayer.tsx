@@ -10,6 +10,7 @@ import { useWaveformControls, formatTime } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 import { WaveformLoader } from "@resomix/ui";
 import { DEMO_MODE } from "@resomix/config";
+import { PreviewProgressBar } from "@/components/Playlist/PreviewProgressBar.tsx";
 
 interface InputPlayerProps {
   trackId?: string;
@@ -101,7 +102,10 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
         </div>
 
         <div className="flex flex-col w-full gap-[var(--px-5)]">
-          <div className="relative h-[var(--px-50)] w-[var(--px-280)] max-w-[var(--px-280)] lg:w-[var(--px-444)] lg:max-w-[var(--px-444)]">
+          <div className="relative h-[var(--px-50)] w-[var(--px-280)] max-w-[var(--px-280)] lg:w-[var(--px-444)] lg:max-w-[var(--px-444)] flex items-center">
+            {ctl.isPreview ? (
+              <PreviewProgressBar currentTime={ctl.uiTime} duration={ctl.getPlayableDuration()} onSeek={ctl.seekTo} />
+            ) : (
             <div
               ref={ctl.containerRef}
               className={`w-full h-full overflow-y-hidden ${ctl.wfLoading ? "invisible" : "visible"}`}
@@ -109,7 +113,8 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
             >
               {/* Peaks will append canvas here */}
             </div>
-            {ctl.wfLoading && (
+            )}
+            {!ctl.isPreview && ctl.wfLoading && (
               <div className="absolute inset-0 flex items-center justify-center z-50">
                 <WaveformLoader />
               </div>
@@ -201,7 +206,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({ trackId, totalDuration, playB
             {/* Time Display */}
             <div className="flex items-center gap-2">
               <time className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
-                {formatTime(ctl.uiTime)} / {formatTime(totalDuration)}
+                {formatTime(ctl.uiTime)} / {formatTime(ctl.isPreview ? ctl.getPlayableDuration() : totalDuration)}
               </time>
               {networkError && (
                 <div className="absolute bottom-6 left-40 flex items-center gap-[var(--px-3)] text-yellow-200">

@@ -7,6 +7,7 @@ import NetworkSvg from "@/assets/icons/network-aleft.svg";
 import { useWaveformControls, formatTime } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 import { WaveformLoader } from "@resomix/ui";
+import { PreviewProgressBar } from "@/components/Playlist/PreviewProgressBar.tsx";
 
 
 interface SimilarityPlayerProps {
@@ -29,18 +30,24 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
 
   return (
     <div className="flex flex-col w-full gap-[var(--px-5)]">
-      <div className="h-[var(--px-50)] overflow-y-hidden relative">
-        <div 
-          ref={ctl.containerRef} 
-          className={`w-full h-full ${ctl.wfLoading ? "invisible" : "visible"}`}
-        >
-        </div>
-        {ctl.wfLoading && (
-          <div className="absolute inset-0 flex items-center justify-center z-50">
-            <WaveformLoader />
-          </div>
+      <div className="h-[var(--px-50)] overflow-y-hidden relative flex items-center">
+        {ctl.isPreview ? (
+          <PreviewProgressBar currentTime={ctl.uiTime} duration={ctl.getPlayableDuration()} onSeek={ctl.seekTo} />
+        ) : (
+          <>
+            <div
+              ref={ctl.containerRef}
+              className={`w-full h-full ${ctl.wfLoading ? "invisible" : "visible"}`}
+            >
+            </div>
+            {ctl.wfLoading && (
+              <div className="absolute inset-0 flex items-center justify-center z-50">
+                <WaveformLoader />
+              </div>
+            )}
+            {ctl.wfError && <div className="text-center text-sm text-red-500 absolute inset-0 flex items-center justify-center">Error: {ctl.wfError}</div>}
+          </>
         )}
-        {ctl.wfError && <div className="text-center text-sm text-red-500 absolute inset-0 flex items-center justify-center">Error: {ctl.wfError}</div>}
       </div>
 
       <div className="flex items-center justify-between w-full">
@@ -95,7 +102,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
         </div>
 
         <time className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
-          {formatTime(ctl.uiTime)} / {formatTime(totalDuration)}
+          {formatTime(ctl.uiTime)} / {formatTime(ctl.isPreview ? ctl.getPlayableDuration() : totalDuration)}
         </time>
         {networkError && (
           <div className="absolute bottom-2 left-32 flex items-center gap-[var(--px-3)] text-yellow-200">

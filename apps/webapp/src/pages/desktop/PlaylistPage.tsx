@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AudioProvider, usePlaylistLoader } from "@resomix/hooks";
 import { PlaylistHero, PlaylistTable } from "@/sections/desktop/index.ts";
+import { AppleMusicBanner } from "@/components/Playlist/AppleMusicBanner.tsx";
 import { usePlaylistStore } from "@resomix/stores";
 import { BASE_BETA_URL } from "@resomix/config";
 
@@ -68,6 +69,7 @@ export function PlaylistPage() {
       ) : (
         <>
           <PlaylistHero />
+          <AppleMusicBanner />
           <PlaylistTable />
         </>
       )}

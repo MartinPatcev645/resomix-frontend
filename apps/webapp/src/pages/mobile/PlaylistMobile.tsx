@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { PlaylistHero, PlaylistTable } from "@/sections/mobile/index.ts";
 import MoreMenu from "@/sections/mobile/Playlist/MoreMenu.tsx";
+import { AppleMusicBanner } from "@/components/Playlist/AppleMusicBanner.tsx";
 import { BASE_BETA_URL } from "@resomix/config";
 import { usePlaylistStore } from "@resomix/stores";
 import { AudioProvider, usePlaylistLoader } from "@resomix/hooks";
@@ -66,6 +67,7 @@ export function PlaylistMobile() {
       ) : (
         <div className="">
           <PlaylistHero onMoreClick={handleMoreMenuOpen} />
+          <AppleMusicBanner />
 
           {/* Content Table */}
           <div className="relative z-20">
