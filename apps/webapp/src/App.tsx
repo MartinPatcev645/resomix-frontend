@@ -2,8 +2,8 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useSilktide, useTelemetry } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
-import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise } from "@resomix/ui";
-import { useFeedbackStore } from "@resomix/stores";
+import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise, GoogleOneTap } from "@resomix/ui";
+import { useFeedbackStore, useAuthStore } from "@resomix/stores";
 import { ProtectedRoute, GuestRoute, WebLayout } from "@/components/index.ts";
 import { MetricsOverlay } from "@/components/metrics/MetricsOverlay.js";
 
@@ -63,6 +63,10 @@ function App() {
 
   const location = useLocation();
   const showMetrics = new URLSearchParams(location.search).get("metrics") === "true";
+  // Google One Tap: only prompt logged-out visitors, and never on the /auth page (the full button
+  // lives there — running both would clash over the single GIS config).
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const onAuthRoute = location.pathname.startsWith("/auth");
 
   // Show loading during auth initialization (prevent flash)
   if (isLoading || !isInitialized) {
@@ -92,6 +96,11 @@ function App() {
 
   return (
     <>
+      <GoogleOneTap
+        clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+        disabled={isAuthenticated || onAuthRoute}
+      />
+
       {showMetrics && <MetricsOverlay />}
 
       {/* <DevMobileConsole /> */}

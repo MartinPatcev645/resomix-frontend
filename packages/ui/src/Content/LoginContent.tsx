@@ -4,6 +4,7 @@ import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { FormInput } from "../Elements/FormInput";
 import { PasswordInput } from "../Elements/PasswordInput";
+import { GoogleSignInButton } from "../Auth/GoogleSignInButton";
 
 interface LoginContentProps {
   baseUrl?: string;
@@ -11,6 +12,8 @@ interface LoginContentProps {
   onNavigateRegister?: () => void;
   onNavigateForgotPassword?: () => void;
   onNavigate2FA?: (userId: number) => void;
+  /** When provided, shows the "Continue with Google" button above the email/password form. */
+  googleClientId?: string;
 }
 
 export default function LoginContent({
@@ -19,6 +22,7 @@ export default function LoginContent({
   onNavigateRegister,
   onNavigateForgotPassword,
   onNavigate2FA,
+  googleClientId,
 }: LoginContentProps) {
   // Form validation hook
   const {
@@ -70,6 +74,27 @@ export default function LoginContent({
 
   const handleBlur = (name: keyof typeof form) => {
     setFieldTouched(name);
+  };
+
+  // Google sign-in already populated the auth store (in the shared credential handler); here we just
+  // surface the same success/redirect UX as a password login.
+  const handleGoogleSuccess = (data: any) => {
+    setStatusType("success");
+    setStatusTitle("Login successful");
+    setStatusMessage("Login successful! Redirecting...");
+    setShowResendCTA(false);
+    setShowStatus(true);
+    setTimeout(() => {
+      onLoginSuccess?.(data);
+    }, 1500);
+  };
+
+  const handleGoogleError = (message: string) => {
+    setStatusType("error");
+    setStatusTitle("Google sign-in failed");
+    setStatusMessage(message || "We couldn't sign you in with Google. Please try again.");
+    setShowResendCTA(false);
+    setShowStatus(true);
   };
 
   const handleSubmit = async (e?: FormEvent) => {
@@ -221,6 +246,21 @@ export default function LoginContent({
               ← Back to Home
             </a>
           </div>
+
+          {googleClientId && (
+            <div className="mb-[var(--px-20)] flex flex-col items-center gap-[var(--px-16)]">
+              <GoogleSignInButton
+                clientId={googleClientId}
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+              />
+              <div className="flex items-center w-full gap-[var(--px-12)] opacity-60">
+                <span className="h-px flex-1 bg-current" />
+                <span className="text-[length:var(--px-10)] font-light font-helvetica uppercase">or</span>
+                <span className="h-px flex-1 bg-current" />
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="flex flex-col w-full gap-[var(--px-20)]">
             <FormInput

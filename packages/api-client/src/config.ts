@@ -7,6 +7,7 @@ export interface ApiConfig {
   ENDPOINTS: {
     // Auth & User endpoints
     AUTH_LOGIN: string;
+    AUTH_GOOGLE: string;
     AUTH_LOGOUT: string;
     AUTH_LOGOUT_ALL: string;
     AUTH_REGISTER: string;
@@ -217,6 +218,7 @@ export const API_CONFIG: ApiConfig = {
   ENDPOINTS: {
     // Auth & User endpoints
     AUTH_LOGIN: "/api/v1/auth/login",
+    AUTH_GOOGLE: "/api/v1/auth/google",
     AUTH_LOGOUT: "/api/v1/auth/logout",
     AUTH_LOGOUT_ALL: "/api/v1/auth/logout-all",
     AUTH_REGISTER: "/api/v1/auth/register",

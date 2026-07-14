@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_ANALYSIS_VIA_ALWYZON?: string;
   /** Fetch the completed result from the served cache via token (default "true"). "false" = proxy. */
   readonly VITE_ANALYSIS_DIRECT_CACHE?: string;
+  /** Google OAuth Web Client ID for "Continue with Google" (public; same as backend GOOGLE_CLIENT_ID). */
+  readonly VITE_GOOGLE_CLIENT_ID?: string;
 }
 
 interface ImportMeta {

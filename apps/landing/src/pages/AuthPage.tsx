@@ -177,6 +177,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
           onNavigateRegister={handleNavigateRegister}
           onNavigateForgotPassword={handleNavigateForgotPassword}
           onNavigate2FA={handleNavigate2FA}
+          googleClientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
         />
       )}
       {mode === "register" && (

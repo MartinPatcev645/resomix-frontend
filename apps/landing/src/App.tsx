@@ -1,9 +1,9 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { useFirstVisit, useResponsive, useAuthInit, useSilktide } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
-import { WelcomeMessage, FeedbackForm, SineWaves } from "@resomix/ui";
-import { useFeedbackStore } from "@resomix/stores";
+import { WelcomeMessage, FeedbackForm, SineWaves, GoogleOneTap } from "@resomix/ui";
+import { useFeedbackStore, useAuthStore } from "@resomix/stores";
 import { ProtectedRoute, GuestRoute, LandingLayout } from "@/components/index.ts";
 // Lazy-load pages directly for proper code-splitting
 const HomePage = lazy(() => import("@/pages/desktop/HomePage.tsx").then(m => ({ default: m.HomePage })));
@@ -47,6 +47,11 @@ function App() {
   // Initialize authentication
   const { isInitialized, isLoading } = useAuthInit();
 
+  // Google One Tap: prompt logged-out visitors, but not on the /auth page (button lives there).
+  const location = useLocation();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const onAuthRoute = location.pathname.startsWith("/auth");
+
 
   // Show simple loading during auth initialization to avoid flashes
   if (isLoading || !isInitialized) {
@@ -61,6 +66,11 @@ function App() {
 
   return (
     <>
+      <GoogleOneTap
+        clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+        disabled={isAuthenticated || onAuthRoute}
+      />
+
       {showWelcome &&
         <WelcomeMessage
           onClose={dismiss}
