@@ -366,6 +366,13 @@ class PlaylistService:
             if not tracks:
                 return {"success": False, "error": "Playlist has no tracks"}
 
+            # Playback split (see docs/PLAYBACK_APPLE_MUSIC_PLAN.md): catalogue tracks play from Apple
+            # Music previews client-side, so the HLS manifest carries ONLY the HLS-playable tracks —
+            # the user's own uploads (typically just the seed). Everything else has no segments.
+            tracks = [t for t in tracks if t.get("type") == "upload"]
+            if not tracks:
+                return {"success": False, "error": "Playlist has no HLS-playable tracks"}
+
             # Extract ordered UUIDs (seed track first, then similar tracks by position)
             uuid_list = [track.get("uuid") for track in tracks if track.get("uuid")]
 
