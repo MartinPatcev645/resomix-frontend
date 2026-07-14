@@ -16,11 +16,14 @@ we serialize for the frontend and merges metadata per the locked rule:
 Each track dict must carry a numeric ``track_id`` for the join (left in the payload; the frontend
 ignores it). Enrichment is idempotent-safe: it runs once per response, before demo redaction.
 """
+import logging
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.apple_music_repository import AppleMusicRepository
+
+logger = logging.getLogger(__name__)
 
 _apple_repo = AppleMusicRepository()
 
@@ -62,7 +65,14 @@ async def enrich_tracks_with_apple(db: AsyncSession, tracks: List[Dict[str, Any]
     if not tracks:
         return
     track_ids = [t.get("track_id") for t in tracks if isinstance(t, dict) and t.get("track_id") is not None]
-    apple_map = await _apple_repo.async_get_by_track_ids(db, track_ids) if track_ids else {}
+    # Best-effort: an Apple preview lookup must never break the similarity/playlist response. On any
+    # failure we fall back to an empty map, so tracks degrade to the HLS/segment player (playback="hls").
+    apple_map: Dict[int, Dict[str, Any]] = {}
+    if track_ids:
+        try:
+            apple_map = await _apple_repo.async_get_by_track_ids(db, track_ids)
+        except Exception as exc:  # noqa: BLE001 - non-critical enrichment
+            logger.warning("Apple Music enrichment failed (%s tracks) — falling back to HLS: %s", len(track_ids), exc)
     for t in tracks:
         if isinstance(t, dict):
             _merge_apple_into_track(t, apple_map.get(t.get("track_id")))

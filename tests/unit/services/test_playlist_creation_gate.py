@@ -50,7 +50,13 @@ def _patch_internal_singletons(playlist_info=None):
         "app.services.similarity_service.OperationLimitEvaluator"
     ) as mock_olr_cls, patch(
         "app.services.playlist_engagement_service.PlaylistEngagementService"
-    ) as mock_eng_cls:
+    ) as mock_eng_cls, patch(
+        # Apple Music playback enrichment does a db.execute against the mock session; stub it so it
+        # doesn't leave an unawaited coroutine. (Enrichment behavior has its own unit suite.)
+        "app.services.apple_music_enrichment._apple_repo.async_get_by_track_ids",
+        new_callable=AsyncMock,
+        return_value={},
+    ):
         olr_instance = AsyncMock()
         mock_olr_cls.return_value = olr_instance
 

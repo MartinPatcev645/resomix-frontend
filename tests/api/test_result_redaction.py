@@ -76,6 +76,41 @@ async def test_b2b_partner_never_redacted():
 
 
 @pytest.mark.asyncio
+async def test_masked_tracks_do_not_leak_apple_preview():
+    """Locked catalogue tracks must not expose their Apple preview/artwork/deep-link — playback is
+    login-gated. Visible tracks keep their Apple fields; masked tracks have them nulled."""
+    user = await create_user()  # free → 20 visible
+    payload = {
+        "similar_tracks": [
+            {
+                "id": f"real-{i:04d}-aaaa-bbbb-cccc-dddddddddddd",
+                "title": "Real Title", "artist": "Real Artist", "label": "Real Label",
+                "year": 1999, "rank": i + 1, "score": 0.9,
+                "playback": "preview",
+                "preview_url": f"https://apple/preview/{i}.m4a",
+                "artwork_url": f"https://apple/art/{i}.jpg",
+                "deep_link_url": f"https://music.apple.com/{i}",
+                "apple_song_id": str(1000 + i),
+            }
+            for i in range(30)
+        ]
+    }
+    async with AsyncSessionLocal() as db:
+        u = (await db.execute(select(User).where(User.id == user.id))).scalar_one()
+        await ctrl._apply_frontend_unlock_redaction(
+            db, payload, request=None, current_user=u, partner_id=settings.system_partner_id
+        )
+    tracks = payload["similar_tracks"]
+    # Visible track keeps its real Apple preview.
+    assert tracks[0]["preview_url"] == "https://apple/preview/0.m4a"
+    assert tracks[19]["artwork_url"] == "https://apple/art/19.jpg"
+    # Masked tracks have every Apple playback field stripped.
+    for masked in (tracks[20], tracks[29]):
+        for key in ("preview_url", "artwork_url", "deep_link_url", "apple_song_id"):
+            assert masked[key] is None
+
+
+@pytest.mark.asyncio
 async def test_override_widens_unlock():
     """A per-user override on max_tracks_per_playlist changes how many tracks stay unlocked."""
     from app.core.entitlement_keys import FeatureKey
