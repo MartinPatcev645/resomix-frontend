@@ -16,6 +16,8 @@ import logging
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
 
 from app.models.user import User
 from app.models.plan import Plan
@@ -39,6 +41,60 @@ from app.core.security import (
     generate_2fa_code,
 )
 from app.core.config import settings
+
+# Redis-backed per-account login-failure tracking for brute-force lockout. This complements the
+# IP-based rate limiter (which an attacker can dodge with rotating IPs). It fails OPEN when Redis
+# is unavailable so a cache outage can never lock every user out of the platform.
+import redis.asyncio as aioredis
+from app.db.redis import _redis_pool
+
+_LOGIN_FAIL_PREFIX = "login:fail:"
+
+
+async def _login_fail_count(user_id: int) -> int:
+    """Current consecutive failed-login count for a user (0 if none, or if Redis is down)."""
+    try:
+        if not _redis_pool:
+            return 0
+        client = aioredis.Redis(connection_pool=_redis_pool)
+        try:
+            val = await client.get(f"{_LOGIN_FAIL_PREFIX}{user_id}")
+        finally:
+            await client.close()
+        return int(val) if val else 0
+    except Exception as exc:  # fail open
+        logger.warning("Login lockout: could not read fail count (%s); failing open", exc)
+        return 0
+
+
+async def _register_login_failure(user_id: int) -> None:
+    """Increment the failure counter and (re)arm the lockout window on each wrong password."""
+    try:
+        if not _redis_pool:
+            return
+        client = aioredis.Redis(connection_pool=_redis_pool)
+        try:
+            key = f"{_LOGIN_FAIL_PREFIX}{user_id}"
+            await client.incr(key)
+            await client.expire(key, settings.login_lockout_minutes * 60)
+        finally:
+            await client.close()
+    except Exception as exc:  # fail open
+        logger.warning("Login lockout: could not record failure (%s)", exc)
+
+
+async def _clear_login_failures(user_id: int) -> None:
+    """Reset the counter once the correct password is supplied."""
+    try:
+        if not _redis_pool:
+            return
+        client = aioredis.Redis(connection_pool=_redis_pool)
+        try:
+            await client.delete(f"{_LOGIN_FAIL_PREFIX}{user_id}")
+        finally:
+            await client.close()
+    except Exception as exc:  # fail open
+        logger.warning("Login lockout: could not clear failures (%s)", exc)
 
 
 class AuthService:
@@ -254,11 +310,36 @@ class AuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
             )
 
+        # Social-login-only accounts (e.g. Google) have no local password yet. Give a clear,
+        # actionable message instead of a generic "invalid credentials". (400 so the frontend's
+        # 401→refresh interceptor doesn't fire, and it's not mistaken for the 403 "unverified" case.)
+        if not user.password_hash:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This account was created with Google sign-in and has no password yet. "
+                "Please continue with Google, or use “Forgot password” to set one.",
+            )
+
+        # Brute-force lockout: block if this account has too many recent failed attempts.
+        if await _login_fail_count(user.id) >= settings.login_max_failed_attempts:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=(
+                    "Account temporarily locked due to too many failed login attempts. "
+                    f"Please try again in about {settings.login_lockout_minutes} minutes, "
+                    "or reset your password."
+                ),
+            )
+
         # Verify password
         if not verify_password(password, user.password_hash):
+            await _register_login_failure(user.id)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
             )
+
+        # Correct password — clear the failed-attempt counter for this account.
+        await _clear_login_failures(user.id)
 
         # Require verified email before issuing tokens
         if not user.is_email_verified:
@@ -348,6 +429,120 @@ class AuthService:
             guest_visitor_id=guest_visitor_id,
         )
 
+    # ------------------------------------------------------------------ #
+    # Social login — Google (Google Identity Services, ID-token flow)
+    # ------------------------------------------------------------------ #
+
+    async def login_with_google(
+        self,
+        db: AsyncSession,
+        credential: str,
+        user_agent: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        guest_visitor_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Verify a Google ID token and sign the user in, creating/linking the account as needed.
+
+        Google is only the front door: after verification we mint OUR normal session via
+        ``_create_user_session`` (identical access token + HttpOnly refresh cookie as password
+        login), so refresh rotation, cross-subdomain sharing, plans and RBAC are all unchanged.
+        """
+        claims = self._verify_google_credential(credential)
+
+        provider_uid = claims["sub"]
+        email = (claims.get("email") or "").strip().lower()
+        email_verified = bool(claims.get("email_verified", False))
+        name = claims.get("name")
+        picture = claims.get("picture")
+
+        # Never auto-create/link on an unverified email — that would let an attacker claim someone
+        # else's address via a fake provider account.
+        if not email or not email_verified:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Google account email is not verified.",
+            )
+
+        # 1) Already linked (by Google's stable 'sub') → sign that user in.
+        user = await self.user_repo.async_get_by_provider(db, "google", provider_uid)
+
+        # 2) Not linked, but an account already exists with this verified email → link Google to it.
+        if user is None:
+            user = await self.user_repo.async_get_by_email(db, email)
+            if user is not None:
+                await self.user_repo.async_link_provider(db, user.id, "google", provider_uid)
+
+        # 3) Brand new → create the account, link it, and put it on the default (free) plan.
+        if user is None:
+            username = await self._generate_unique_username(db, email)
+            user = await self.user_repo.async_create_oauth_user(
+                db, email=email, username=username, name=name, profile_picture=picture,
+            )
+            await self.user_repo.async_link_provider(db, user.id, "google", provider_uid)
+            await self._assign_default_plan(db, user)
+
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="User account is deactivated."
+            )
+
+        return await self._create_user_session(
+            db=db, user=user, user_agent=user_agent, ip_address=ip_address,
+            guest_visitor_id=guest_visitor_id,
+        )
+
+    def _verify_google_credential(self, credential: str) -> Dict[str, Any]:
+        """Verify a Google ID token's signature, audience, issuer and expiry; return its claims."""
+        if not settings.google_client_id:
+            logger.error("Google login attempted but GOOGLE_CLIENT_ID is not configured")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Google sign-in is not configured.",
+            )
+        try:
+            # Checks the RS256 signature against Google's public keys, and validates
+            # aud == our client id, iss, and exp.
+            claims = google_id_token.verify_oauth2_token(
+                credential,
+                google_requests.Request(),
+                settings.google_client_id,
+            )
+        except ValueError as exc:  # bad signature / wrong audience / expired / malformed
+            logger.warning("Google ID token verification failed: %s", exc)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid Google credential.",
+            )
+        if claims.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid Google credential issuer.",
+            )
+        if not claims.get("sub"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid Google credential.",
+            )
+        return claims
+
+    async def _generate_unique_username(self, db: AsyncSession, email: str) -> str:
+        """Derive a valid, unique username from an email local-part (policy: starts with a letter,
+        3–50 chars, alphanumeric/underscore/hyphen)."""
+        import re as _re
+
+        base = _re.sub(r"[^a-zA-Z0-9_-]", "", email.split("@", 1)[0]) or "user"
+        if not base[0].isalpha():
+            base = "u" + base
+        base = base[:40]
+        if len(base) < 3:
+            base = (base + "user")[:40]
+        candidate = base
+        suffix = 0
+        while await self.user_repo.async_get_by_username(db, candidate) is not None:
+            suffix += 1
+            candidate = f"{base[:34]}{suffix}"
+        return candidate
+
     async def _create_user_session(
         self,
         db: AsyncSession,
@@ -400,6 +595,8 @@ class AuthService:
                 "is_email_verified": user.is_email_verified,
                 "is_two_factor_enabled": user.is_two_factor_enabled,
                 "two_factor_method": user.two_factor_method,
+                # Lets the frontend show "Set password" vs "Change password", and explain login options.
+                "has_password": bool(user.password_hash),
                 "created_at": user.created_at.isoformat() if user.created_at else None,
             },
         }

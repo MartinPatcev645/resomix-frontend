@@ -364,6 +364,18 @@ class Settings(BaseModel):
         default=30, description="Refresh token expiration in days"
     )
 
+    # Social login — Google (Google Identity Services / ID-token flow)
+    google_client_id: str = Field(
+        default="",
+        description="Google OAuth Web Client ID; used as the expected audience when verifying "
+        "Google ID tokens. Same value as the frontend VITE_GOOGLE_CLIENT_ID (not secret).",
+    )
+    google_client_secret: str = Field(
+        default="",
+        description="Google OAuth client secret; only needed for the server-side code flow, "
+        "not for ID-token verification.",
+    )
+
     # Cookie Configuration
     cookie_domain: str = Field(
         default=".resomix.com",
@@ -404,6 +416,15 @@ class Settings(BaseModel):
     )
     two_factor_code_length: int = Field(
         default=6, description="2FA code length (digits)"
+    )
+
+    # Account Lockout (brute-force protection, per-account, complements the IP rate limiter)
+    login_max_failed_attempts: int = Field(
+        default=10,
+        description="Consecutive failed password attempts before the account is temporarily locked",
+    )
+    login_lockout_minutes: int = Field(
+        default=15, description="How long an account stays locked after too many failed logins"
     )
 
     # Rate Limiting
@@ -583,6 +604,8 @@ class Settings(BaseModel):
             "COOKIE_DOMAIN": "cookie_domain",
             "COOKIE_SECURE": "cookie_secure",
             "COOKIE_SAMESITE": "cookie_samesite",
+            "GOOGLE_CLIENT_ID": "google_client_id",
+            "GOOGLE_CLIENT_SECRET": "google_client_secret",
             "SMTP_HOST": "smtp_host",
             "SMTP_PORT": "smtp_port",
             "SMTP_USER": "smtp_user",
@@ -623,6 +646,8 @@ class Settings(BaseModel):
             "LOGIN_RATE_LIMIT": "login_rate_limit",
             "REGISTER_RATE_LIMIT": "register_rate_limit",
             "PASSWORD_RESET_RATE_LIMIT": "password_reset_rate_limit",
+            "LOGIN_MAX_FAILED_ATTEMPTS": "login_max_failed_attempts",
+            "LOGIN_LOCKOUT_MINUTES": "login_lockout_minutes",
             # CORS allowed origins (value may be a JSON array or comma-separated)
             "RESOMIX_ALLOWED_ORIGINS_PRODUCTION": "allowed_origins_production",
             "RESOMIX_ALLOWED_ORIGINS_DEVELOPMENT": "allowed_origins_development",
@@ -655,6 +680,8 @@ class Settings(BaseModel):
                     "telemetry_worker_pop_size",
                     "edge_token_ttl_seconds",
                     "system_partner_id",
+                    "login_max_failed_attempts",
+                    "login_lockout_minutes",
                 ]:
                     try:
                         env_overrides[config_key] = int(env_value)
@@ -766,3 +793,53 @@ class Settings(BaseModel):
 
 # Create a global settings instance
 settings = Settings()
+
+
+# ---------------------------------------------------------------------------
+# Fail-fast guard for signing secrets
+# ---------------------------------------------------------------------------
+# These fields ship with obvious placeholder defaults so local dev works out of the box.
+# In production, running with a placeholder (or too-short) signing secret would leave every
+# JWT forgeable by anyone who knows the well-known default — full account/admin takeover.
+_PLACEHOLDER_SIGNING_SECRETS = {
+    "jwt_secret_key": "your-secret-key-change-in-production-min-32-chars",
+    "edge_jwt_secret": "YOUR_SUPER_SECURE_SHARED_SECRET",
+}
+
+
+def validate_critical_secrets(settings_obj: Optional[Settings] = None) -> None:
+    """
+    Refuse to start in production if a signing secret is still the placeholder default or is
+    shorter than 32 bytes. In non-production environments this only logs a warning so local/dev
+    and CI keep booting. Call this once at application startup (see the FastAPI lifespan).
+    """
+    import logging
+
+    logger = logging.getLogger(__name__)
+    s = settings_obj or settings
+    is_production = str(getattr(s, "environment", "production")).strip().lower() == "production"
+
+    problems = []
+    for field, placeholder in _PLACEHOLDER_SIGNING_SECRETS.items():
+        value = getattr(s, field, None) or ""
+        if value == placeholder:
+            problems.append(f"{field.upper()} is still the placeholder default")
+        elif len(value.encode("utf-8")) < 32:
+            problems.append(f"{field.upper()} is too short (must be at least 32 bytes)")
+
+    if not problems:
+        return
+
+    detail = "; ".join(problems)
+    if is_production:
+        raise RuntimeError(
+            "Refusing to start: insecure signing secret(s) in production — "
+            f"{detail}. Set a strong, random value (>= 32 bytes) for each via environment "
+            "variables (JWT_SECRET_KEY, EDGE_JWT_SECRET) before deploying."
+        )
+    logger.warning(
+        "Insecure signing secret(s) detected (%s). Allowed because environment=%r, "
+        "but these MUST be set to strong random values before production.",
+        detail,
+        getattr(s, "environment", "unknown"),
+    )

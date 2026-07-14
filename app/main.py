@@ -30,7 +30,7 @@ from sqlalchemy import text
 from starlette.exceptions import HTTPException
 
 # Import configuration and core components
-from app.core.config import settings
+from app.core.config import settings, validate_critical_secrets
 
 # Import middleware setup
 from app.api.middlewares.cors import setup_cors
@@ -154,6 +154,8 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
     Initializes external services on startup and cleans up on shutdown.
     """
     app_instance.state.start_time = time.time()
+    # Fail fast if signing secrets are placeholders/too short in production (forgeable tokens).
+    validate_critical_secrets()
     print("Application startup: Initializing external services via lifespan...")
 
     # Test MariaDB database connection

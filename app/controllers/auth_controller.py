@@ -306,6 +306,77 @@ class AuthController:
 
             return JSONResponse(status_code=e.status_code, content=response_data)
 
+    async def google_login(
+        self, db: AsyncSession, request: Request, credential: str
+    ) -> JSONResponse:
+        """Handle 'Continue with Google': verify the Google ID token and issue our own session
+        (access token in the body + refresh token in the HttpOnly cookie), exactly like /login."""
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        client_info = self._get_client_info(request)
+
+        try:
+            result = await self.auth_service.login_with_google(
+                db=db,
+                credential=credential,
+                user_agent=client_info["user_agent"],
+                ip_address=client_info["ip_address"],
+                guest_visitor_id=self._guest_visitor_id(request),
+            )
+
+            duration_ms = (time.time() - start_time) * 1000
+            refresh_token = result.pop("refresh_token")
+            response_data = format_response(success=True, data=result)
+
+            self.logging_service.log(
+                async_db=db,
+                level="INFO",
+                category="AUTH",
+                action="login_google_success",
+                message=f"User logged in via Google: {result['user']['email']}",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=200,
+                duration_ms=duration_ms,
+                metadata={
+                    "user_uuid": result["user"]["uuid"],
+                    "email": result["user"]["email"],
+                },
+            )
+
+            response = JSONResponse(
+                status_code=status.HTTP_200_OK, content=response_data
+            )
+            response.set_cookie(
+                key="refresh_token",
+                value=refresh_token,
+                max_age=settings.jwt_refresh_token_expire_days * 24 * 60 * 60,
+                httponly=True,
+                secure=settings.cookie_secure,
+                samesite=settings.cookie_samesite,
+                domain=settings.safe_cookie_domain,
+                path="/",
+            )
+            return response
+
+        except HTTPException as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(success=False, error=e.detail)
+
+            self.logging_service.log(
+                async_db=db,
+                level="WARNING",
+                category="AUTH",
+                action="login_google_failed",
+                message=f"Google login failed: {e.detail}",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=e.status_code,
+                duration_ms=duration_ms,
+                metadata={"error": e.detail},
+            )
+            return JSONResponse(status_code=e.status_code, content=response_data)
+
     async def verify_2fa(
         self, db: AsyncSession, request: Request, verification_data: Dict[str, Any]
     ) -> JSONResponse:

@@ -144,6 +144,8 @@ class UserController:
                     "is_email_verified": user.is_email_verified,
                     "is_two_factor_enabled": user.is_two_factor_enabled,
                     "two_factor_method": user.two_factor_method,
+                    # Drives "Set password" vs "Change password" in the UI (Google-only accounts).
+                    "has_password": bool(user.password_hash),
                     "created_at": (
                         user.created_at.isoformat() if user.created_at else None
                     ),

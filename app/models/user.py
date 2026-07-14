@@ -208,7 +208,8 @@ class User(Base):
     # Authentication
     username: Mapped[str] = mapped_column(String(50), nullable=False, unique=True, index=True)
     email: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Nullable: social-login (e.g. Google) accounts have no local password until the user sets one.
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     # Profile
     name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)

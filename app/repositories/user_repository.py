@@ -20,6 +20,7 @@ from app.models.user import (
     User,
     UserToken,
     UserSession,
+    UserAuthProvider,
     Role
 )
 from app.repositories.base_repository import BaseRepository
@@ -160,7 +161,70 @@ class UserRepository(BaseRepository[User]):
         await db.commit()
         await db.refresh(user)
         return user
-    
+
+    async def async_create_oauth_user(
+        self,
+        db: AsyncSession,
+        email: str,
+        username: str,
+        name: Optional[str] = None,
+        profile_picture: Optional[str] = None,
+    ) -> User:
+        """Create a user that authenticates via a social provider (no local password yet).
+
+        The provider (e.g. Google) has already verified the email, so the account starts
+        email-verified. ``password_hash`` stays NULL until the user opts into a password.
+        """
+        user = User(
+            email=email,
+            username=username,
+            password_hash=None,
+            name=name,
+            profile_picture=profile_picture,
+            is_email_verified=True,
+            is_two_factor_enabled=False,
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+        return user
+
+    # === OAuth / social identity links (user_auth_providers) ===
+
+    async def async_get_by_provider(
+        self, db: AsyncSession, provider: str, provider_uid: str
+    ) -> Optional[User]:
+        """Return the user linked to a provider identity (e.g. Google ``sub``), or None."""
+        stmt = (
+            select(User)
+            .join(UserAuthProvider, UserAuthProvider.user_id == User.id)
+            .where(
+                UserAuthProvider.provider == provider,
+                UserAuthProvider.provider_uid == provider_uid,
+            )
+        )
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def async_link_provider(
+        self, db: AsyncSession, user_id: int, provider: str, provider_uid: str
+    ) -> None:
+        """Link a provider identity to a user (idempotent for the same (user, provider))."""
+        existing = await db.execute(
+            select(UserAuthProvider).where(
+                UserAuthProvider.user_id == user_id,
+                UserAuthProvider.provider == provider,
+            )
+        )
+        if existing.scalar_one_or_none() is not None:
+            return
+        db.add(
+            UserAuthProvider(
+                user_id=user_id, provider=provider, provider_uid=provider_uid
+            )
+        )
+        await db.commit()
+
     async def async_update_email_verified(
         self,
         db: AsyncSession,

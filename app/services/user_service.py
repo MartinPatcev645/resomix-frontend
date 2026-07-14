@@ -118,20 +118,25 @@ class UserService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
-        # Verify current password
-        if not verify_password(current_password, user.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Current password is incorrect",
-            )
+        # Social-login accounts (e.g. Google) start with no local password. This same endpoint then
+        # doubles as "set a password": require the current password ONLY when one already exists.
+        has_existing_password = bool(user.password_hash)
+        if has_existing_password:
+            # 400 (not 401): the user is authenticated; a wrong value here must not trip the
+            # frontend's 401→refresh→logout interceptor.
+            if not verify_password(current_password, user.password_hash):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Current password is incorrect",
+                )
 
         # Validate new password strength
         is_valid, error = validate_password_strength(new_password)
         if not is_valid:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
 
-        # Check if new password is same as current
-        if verify_password(new_password, user.password_hash):
+        # Must differ from an existing password (only meaningful when one exists).
+        if has_existing_password and verify_password(new_password, user.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="New password must be different from current password",
@@ -143,8 +148,10 @@ class UserService:
             db=db, user_id=user_id, new_password_hash=password_hash
         )
 
-        # Revoke all sessions (force re-login on all devices)
-        await self.session_repo.async_revoke_all_user_sessions(db, user_id)
+        # Force re-login everywhere only when CHANGING an existing password (security). Setting a
+        # first password on a social account keeps the current session alive.
+        if has_existing_password:
+            await self.session_repo.async_revoke_all_user_sessions(db, user_id)
 
         return user
 

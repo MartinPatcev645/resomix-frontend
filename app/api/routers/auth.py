@@ -23,6 +23,7 @@ from app.schemas.auth import (
     RegisterResponse,
     LoginRequest,
     LoginResponse,
+    GoogleLoginRequest,
     TwoFactorRequiredResponse,
     TwoFactorVerifyRequest,
     TokenRefreshResponse,
@@ -113,6 +114,33 @@ async def login(
     """
     login_data = login_request.dict()
     return await auth_controller.login(db, request, login_data)
+
+
+@router.post(
+    "/google",
+    response_model=LoginResponse,
+    status_code=200,
+    summary="Continue with Google",
+    description="Sign in (or sign up) with a Google ID token from Google Identity Services.",
+    response_description="Login successful, returns access token; refresh token set in HttpOnly cookie",
+    responses={401: {"model": ErrorResponse, "description": "Invalid or unverified Google credential"}},
+)
+@limiter.limit(auth_rate_limit("login"))
+async def google_login(
+    request: Request,
+    google_request: GoogleLoginRequest,
+    db: AsyncSession = Depends(get_database_session),
+):
+    """
+    Authenticate with Google (Google Identity Services, ID-token flow).
+
+    - **credential**: the Google ID token (JWT) returned by the "Sign in with Google" button
+      or One Tap on the frontend.
+
+    The backend verifies the token, then finds-or-creates-and-links the account and issues the
+    same session as a password login (access token in the body, refresh token in an HttpOnly cookie).
+    """
+    return await auth_controller.google_login(db, request, google_request.credential)
 
 
 @router.post(

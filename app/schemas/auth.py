@@ -118,6 +118,15 @@ class LoginResponse(BaseModel):
         }
 
 
+class GoogleLoginRequest(BaseModel):
+    """'Continue with Google' request — the ID token issued by Google Identity Services."""
+
+    credential: str = Field(..., description="Google ID token (JWT) from the GIS button / One Tap")
+
+    class Config:
+        json_schema_extra = {"example": {"credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6..."}}
+
+
 class TwoFactorRequiredResponse(BaseModel):
     """2FA required response"""
 
@@ -258,9 +267,14 @@ class PasswordResetConfirmRequest(BaseModel):
 
 
 class ChangePasswordRequest(BaseModel):
-    """Change password request (authenticated user)"""
+    """Change (or first-time set) password request for an authenticated user.
 
-    current_password: str = Field(..., description="Current password")
+    `current_password` is optional: social-login accounts (e.g. Google) have no password yet, so
+    this same endpoint sets the first one. When a password already exists the server still requires
+    the correct current password.
+    """
+
+    current_password: Optional[str] = Field(default="", description="Current password (omit when setting the first one)")
     new_password: str = Field(..., min_length=8, description="New password")
 
     class Config:
