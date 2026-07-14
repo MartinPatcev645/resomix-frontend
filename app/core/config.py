@@ -163,6 +163,18 @@ class Settings(BaseModel):
         default="price_mock_enterprise_y", description="Stripe Price ID for Enterprise Annual"
     )
 
+    # Consumer subscription billing (separate from the B2B tier price IDs above). Consumer prices
+    # are data in the plan_prices table; these fields only bootstrap the seed / hosted flow.
+    stripe_price_pro_monthly_eur: str = Field(
+        default="", description="Bootstrap: Stripe Price ID for consumer Pro monthly (EUR)"
+    )
+    stripe_billing_portal_config_id: str = Field(
+        default="", description="Stripe Customer Portal configuration ID (bpc_...); Stripe default used if empty"
+    )
+    stripe_automatic_tax_enabled: bool = Field(
+        default=False, description="Enable Stripe Tax (automatic_tax) on consumer checkout/subscriptions"
+    )
+
     # Apple Music Configuration
     apple_team_id: str = Field(
         default="", description="Apple Developer Team ID for MusicKit"
@@ -638,6 +650,9 @@ class Settings(BaseModel):
             "STRIPE_PRICE_GROWTH_ANNUAL": "stripe_price_growth_annual",
             "STRIPE_PRICE_ENTERPRISE_MONTHLY": "stripe_price_enterprise_monthly",
             "STRIPE_PRICE_ENTERPRISE_ANNUAL": "stripe_price_enterprise_annual",
+            "STRIPE_PRICE_PRO_MONTHLY_EUR": "stripe_price_pro_monthly_eur",
+            "STRIPE_BILLING_PORTAL_CONFIG_ID": "stripe_billing_portal_config_id",
+            "STRIPE_AUTOMATIC_TAX_ENABLED": "stripe_automatic_tax_enabled",
             # Partner API
             "PARTNER_API_KEY_SIGNING_SECRET": "partner_api_key_signing_secret",
             "PARTNER_API_KEY_HASH_ALGORITHM": "partner_api_key_hash_algorithm",
@@ -657,7 +672,7 @@ class Settings(BaseModel):
             env_value = os.getenv(env_key)
             if env_value is not None:
                 # Handle boolean conversion
-                if config_key in ["demo_mode", "similarity_auth_required", "rate_limit_enabled"]:
+                if config_key in ["demo_mode", "similarity_auth_required", "rate_limit_enabled", "stripe_automatic_tax_enabled"]:
                     env_overrides[config_key] = env_value.lower() in (
                         "true",
                         "1",

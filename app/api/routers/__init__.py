@@ -50,6 +50,7 @@ from .open_tracks_pipeline import router as open_tracks_pipeline_router
 from .tracks import router as tracks_router
 from .telemetry import router as telemetry_router
 from .purchases import router as purchases_router
+from .billing import router as billing_router
 from .entitlements import router as entitlements_router
 from .webhooks import router as webhooks_router
 from .internal.sftp import router as sftp_internal_router
@@ -72,6 +73,7 @@ v1_routers = [
     (preview_router, V1_PREFIX),
     (telemetry_router, V1_PREFIX),
     (purchases_router, V1_PREFIX),
+    (billing_router, V1_PREFIX),
     (entitlements_router, V1_PREFIX),
     (playlists_router, V1_PREFIX),
     (playlist_engagement_router, V1_PREFIX),
