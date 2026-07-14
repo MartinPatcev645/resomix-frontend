@@ -3,7 +3,8 @@ import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, HeartStr
 import { formatDuration, useEntitlements, useFavoritePlaylist } from "@resomix/hooks";
 import { FEATURE_KEYS } from "@resomix/api-client";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
-import { InputPlayer, PlaylistRating, PlaylistRename, CCLicenseGroup } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistRename } from "@/components/index.ts";
+import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
@@ -279,10 +280,10 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               </button>
             </div>
             
-            {/* Creative Commons License Icons - Bottom Right */}
+            {/* Apple Music attribution — the reference track links to Apple Music. */}
             {!playlistData?.isUpload && (
               <div className="absolute right-[var(--px-5)] bottom-[var(--px-5)]">
-                <CCLicenseGroup size={8} />
+                <AppleMusicBadge deepLinkUrl={playlistData?.queried_track?.deep_link_url} playing />
               </div>
             )}
           </div>

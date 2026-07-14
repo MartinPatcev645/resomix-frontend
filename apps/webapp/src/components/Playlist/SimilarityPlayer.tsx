@@ -8,15 +8,18 @@ import { useWaveformControls, formatTime } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 import { WaveformLoader } from "@resomix/ui";
 import { PreviewProgressBar } from "@/components/Playlist/PreviewProgressBar.tsx";
+import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 
 
 interface SimilarityPlayerProps {
   trackId: string;
   totalDuration: number;
   isPlaying?: boolean;
+  /** When set, the "Listen on Apple Music" lockup renders inline, between the volume and the timer. */
+  appleDeepLinkUrl?: string | null;
 }
 
-const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration }) => {
+const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration, appleDeepLinkUrl }) => {
   const volume = usePlayerStore((s) => s.volume);
   const networkError = usePlayerStore((s) => s.networkError);
   const ctl = useWaveformControls({ id: trackId, totalDuration });
@@ -100,6 +103,10 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
             />
           </div>
         </div>
+
+        {appleDeepLinkUrl && (
+          <AppleMusicBadge deepLinkUrl={appleDeepLinkUrl} playing fullHeightClass="h-[var(--px-30)]" />
+        )}
 
         <time className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
           {formatTime(ctl.uiTime)} / {formatTime(ctl.isPreview ? ctl.getPlayableDuration() : totalDuration)}

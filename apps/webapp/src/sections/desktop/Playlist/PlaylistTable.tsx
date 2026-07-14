@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SimilarityPlayer, ThumbIcon, CCLicenseGroup } from "@/components/index.ts";
+import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
+import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
+import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import { IconComp, Tooltip, ButtonSleek } from "@resomix/ui";
 import { formatDuration, formatPercentage, useGlobalAudioController, useEntitlements } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore, useAuthStore } from "@resomix/stores";
@@ -114,14 +116,16 @@ const PlaylistTable: React.FC = () => {
             <h2 className="sr-only">Similar Tracks</h2>
             <div className="flex tracking-[var(--px-0-1)] text-[length:var(--px-9)] font-light font-fira leading-[var(--px-14)] items-center w-full uppercase px-[var(--px-12)] mb-[var(--px-20)]" role="row">
                 <div className="" role="columnheader">#</div>
+                {/* Spacer matching the per-row artwork thumbnail (34px + 6px gap) so headers stay aligned with values. */}
+                <div aria-hidden="true" className="w-[var(--px-34)] mr-[var(--px-6)] shrink-0"></div>
                 <div className="mx-[var(--px-85)]" role="columnheader">Artist</div>
-                <div className="mx-[var(--px-30)]" role="columnheader">Title</div>
-                <div className="ml-[var(--px-85)] flex flex-col items-center" role="columnheader">
+                <div className="mx-[var(--px-20)]" role="columnheader">Title</div>
+                <div className="ml-[var(--px-105)] flex flex-col items-center" role="columnheader">
                     <span className="text-[var(--color-primary-hover)]">Label</span>
                     Year
                 </div>
-                <div className="ml-[var(--px-60)]" role="columnheader">Duration</div>
-                <div className="ml-[var(--px-20)]" role="columnheader">Score</div>
+                <div className="ml-[var(--px-40)]" role="columnheader">Duration</div>
+                <div className="ml-[var(--px-10)]" role="columnheader">Score</div>
                 <div className="ml-[var(--px-50)]" role="columnheader">Feedback</div>
                 <div className="ml-[var(--px-30)]" role="columnheader">Chain Discover</div>
             </div>
@@ -198,13 +202,22 @@ const PlaylistTable: React.FC = () => {
                                                 }}
                                             />
                                         </div>
+                                        <TrackArtwork artworkUrl={track.artwork_url} className="w-[var(--px-34)] h-[var(--px-34)] mr-[var(--px-6)] rounded-xs" />
                                         <div className="select-none text-[length:var(--px-10)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-120)]" role="cell">
                                             {track.artist}
                                         </div>
                                         <div className="select-none text-[length:var(--px-10)] font-helvetica font-light tracking-[var(--px-0-1)] uppercase text-center mx-[var(--px-5)] w-[var(--px-140)]" role="cell">
                                             {track.title}
                                         </div>
-                                        <div className="text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-130)] flex flex-col items-center gap-[var(--px-3)]" role="cell">
+                                        {/* Apple Music icon at rest — fixed slot between Title and Year (right-aligned toward the
+                                            year), so its position never depends on title length. Hidden while playing (the full
+                                            lockup then shows inside the player); the slot keeps its width so the row stays put. */}
+                                        <div className="flex items-center justify-end w-[var(--px-30)] mx-[var(--px-5)]" role="cell">
+                                            {track.deep_link_url && !(currentTrackId === track.id && isPlaying) && (
+                                                <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
+                                            )}
+                                        </div>
+                                        <div className="text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-90)] flex flex-col items-center gap-[var(--px-3)]" role="cell">
                                             <span className="text-[var(--color-primary-hover)] text-[length:var(--px-9)]">
                                                 {resolveLabel(track.label) || null}
                                             </span>
@@ -285,13 +298,10 @@ const PlaylistTable: React.FC = () => {
                                             trackId={track.id}
                                             isPlaying={currentTrackId === track.id && isPlaying}
                                             totalDuration={track.duration}
+                                            appleDeepLinkUrl={track.deep_link_url}
                                         />
                                     )}
                                 </div>
-                            </div>
-                            {/* Creative Commons License Icons - Bottom Right */}
-                            <div className="absolute right-[var(--px-5)] bottom-[var(--px-3)]">
-                                <CCLicenseGroup size={7} />
                             </div>
                         </div>
                     </div>

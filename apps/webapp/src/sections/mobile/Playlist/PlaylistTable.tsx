@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { SimilarityPlayer, CCLicenseGroup } from "@/components/index.ts";
+import { SimilarityPlayer } from "@/components/index.ts";
+import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
+import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import { formatDuration, formatPercentage, useGlobalAudioController, useEntitlements } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { HoverFlow, ButtonSleek } from "@resomix/ui";
@@ -156,6 +158,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                 />
                                             )}
                                         </div>
+                                        <TrackArtwork artworkUrl={track.artwork_url} className="w-[var(--px-40)] h-[var(--px-40)] rounded-md mr-[var(--px-6)]" />
                                         <div className="flex flex-col w-[var(--px-290)] gap-[var(--px-2)]" role="cell">
                                             <div className="w-full">
                                                 <div className="select-none text-[length:var(--px-13)] lg:text-[length:var(--px-11)] font-helvetica font-light tracking-[var(--px-0-1)] leading-[var(--px-14)] uppercase text-left truncate max-w-[var(--px-250)]">
@@ -204,7 +207,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                     </button>
                                     {currentTrackId === track.id && isPlaying && (
                                         <div>
-                                            <SimilarityPlayer trackId={track.id} isPlaying={currentTrackId === track.id} totalDuration={track.duration} />
+                                            <SimilarityPlayer trackId={track.id} isPlaying={currentTrackId === track.id} totalDuration={track.duration} appleDeepLinkUrl={track.deep_link_url} />
                                         </div>
                                     )}
                                 </div>
@@ -230,10 +233,12 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 >
                                     <img src={MoreSvg} draggable={false} aria-label="More" alt="More" className="w-[var(--px-19)] h-[var(--px-14)]" />
                                 </button>
-                                {/* Creative Commons License Icons - Bottom Right */}
-                                <div className="absolute right-[var(--px-5)] bottom-[var(--px-3)]">
-                                    <CCLicenseGroup size={7} />
-                                </div>
+                                {/* Apple Music icon at rest; full lockup shows while playing. */}
+                                {!(currentTrackId === track.id && isPlaying) && (
+                                    <div className="absolute right-[var(--px-8)] bottom-[var(--px-6)]">
+                                        <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

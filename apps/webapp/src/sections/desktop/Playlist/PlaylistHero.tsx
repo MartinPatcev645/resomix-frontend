@@ -17,7 +17,7 @@ import StarSvg from "@/assets/icons/star.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
-import { CCLicenseGroup } from "@/components/index.ts";
+import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 
 const InputTrackStatus = "Loading..."
 
@@ -187,7 +187,7 @@ const PlaylistHero: React.FC = () => {
       <svg
         viewBox="0 0 1152 628"
         preserveAspectRatio="none"
-        className="absolute inset-0 w-full h-[length:var(--px-628)] pointer-events-none z-10"
+        className="absolute inset-0 w-full h-[length:var(--px-628)] pointer-events-none z-10 overflow-visible"
       >
         <defs>
           <clipPath id="heroClip" clipPathUnits="objectBoundingBox">
@@ -451,10 +451,10 @@ const PlaylistHero: React.FC = () => {
                   </div>
                 </Tooltip>
               </div>
-              {/* Creative Commons License Icons - Bottom Right */}
+              {/* Apple Music attribution — the reference track links to Apple Music. */}
               {playlistData?.queried_track?.type === 'internal' && (
                 <div className="absolute right-[var(--px-5)] bottom-[var(--px-0-1)]">
-                  <CCLicenseGroup size={9} />
+                  <AppleMusicBadge deepLinkUrl={playlistData?.queried_track?.deep_link_url} playing />
                 </div>
               )}
             </div>
