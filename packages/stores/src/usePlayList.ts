@@ -11,16 +11,27 @@ export interface Track {
   label: string
   artist: string
   type: 'upload' | 'internal'
+  // Playback engine for this track (see docs PLAYBACK_APPLE_MUSIC_PLAN.md):
+  //   'hls'     → the user's own upload; streamed via hls.js from our media server (with peaks).
+  //   'preview' → a catalogue track; played from the Apple Music `preview_url` (a plain <audio> src).
+  // Absent on older responses → treat as 'hls' for uploads, 'preview' otherwise.
+  playback?: 'hls' | 'preview'
+  // Apple Music fields (present when playback === 'preview'). `artist`/`title` stay in-house;
+  // album/genre come from Apple with an in-house fallback (merged server-side).
+  preview_url?: string | null
+  artwork_url?: string | null
+  deep_link_url?: string | null
+  apple_song_id?: string | null
+  album?: string | null
+  genre?: string | null
 }
 
 export interface Playlist {
   id: string
   name: string
   is_public: boolean
-  fork_id?: string
   // Caller's engagement with this playlist (present for logged-in users; guests always see false).
   is_favorite?: boolean
-  is_following?: boolean
 }
 
 export interface PlaylistData {
