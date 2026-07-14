@@ -722,7 +722,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         COALESCE(l.label_name, '') as label,
                         COALESCE(
                             GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
-                            ''
+                            COALESCE(t.display_artist, '')
                         ) as artist
                     FROM tracks t
                     LEFT JOIN release_tracks rt ON t.id = rt.track_id
@@ -776,7 +776,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         COALESCE(l.label_name, '') as label,
                         COALESCE(
                             GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
-                            ''
+                            COALESCE(t.display_artist, '')
                         ) as artist
                     FROM tracks t
                     LEFT JOIN release_tracks rt ON t.id = rt.track_id
