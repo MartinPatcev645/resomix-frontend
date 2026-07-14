@@ -43,10 +43,15 @@ class UserSubscription(Base):
     # Stripe (consumer account — NOT the B2B Stripe integration)
     stripe_subscription_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     stripe_customer_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    # The active Stripe price + its currency (currency is fixed for the life of the subscription).
+    stripe_price_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    currency: Mapped[Optional[str]] = mapped_column(String(3), nullable=True)
 
     current_period_start: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
     current_period_end: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="0")
+    canceled_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    trial_end: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
 
     # Timestamps
     subscribed_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())

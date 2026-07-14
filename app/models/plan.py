@@ -100,9 +100,51 @@ class Plan(Base):
     entitlements: Mapped[List["PlanEntitlement"]] = relationship(
         "PlanEntitlement", back_populates="plan", cascade="all, delete-orphan"
     )
+    prices: Mapped[List["PlanPrice"]] = relationship(
+        "PlanPrice", back_populates="plan", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Plan(code='{self.code}', active={self.is_active})>"
+
+
+class PlanPrice(Base):
+    """A Stripe price for a plan, per (interval, currency). Data-driven so activating a plan or
+    adding a currency/interval is an admin/data action — not a code change. A plan is *purchasable*
+    when the plan is active AND it has an active PlanPrice for the buyer's resolved currency.
+    Keeps the Stripe price/product IDs out of code/env (the B2B side hardcodes them; this doesn't)."""
+
+    __tablename__ = "plan_prices"
+    __table_args__ = (
+        UniqueConstraint("plan_id", "interval", "currency", name="uq_plan_price_cycle_ccy"),
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
+
+    id: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), primary_key=True, autoincrement=True)
+    plan_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("plans.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    interval: Mapped[str] = mapped_column(String(10), nullable=False, default="month")  # month|year
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
+    unit_amount_cents: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), nullable=False, default=0)
+
+    stripe_price_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    stripe_product_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
+
+    updated_by: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.current_timestamp(), onupdate=func.current_timestamp()
+    )
+
+    plan: Mapped["Plan"] = relationship("Plan", back_populates="prices")
+
+    def __repr__(self) -> str:
+        return f"<PlanPrice(plan_id={self.plan_id}, {self.interval}/{self.currency}, price='{self.stripe_price_id}')>"
 
 
 class PlanEntitlement(Base):
