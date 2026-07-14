@@ -7,21 +7,38 @@ interface GoogleSignInButtonProps {
   /** Called after a successful sign-in (auth store is already populated). */
   onSuccess?: (data: any) => void;
   onError?: (message: string) => void;
-  /** Button label variant. */
-  text?: 'signin_with' | 'signup_with' | 'continue_with';
+  /** Visible label. */
+  label?: string;
+}
+
+// Width shared by the visible pill and the invisible GIS button behind it (they must match so the
+// real Google button reliably catches the click). Google caps rendered-button width at 400.
+const BUTTON_WIDTH = 320;
+
+/** Official multi-colour Google "G". */
+function GoogleGIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+      <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z" />
+      <path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z" />
+      <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.47.9 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z" />
+    </svg>
+  );
 }
 
 /**
- * Official Google "Sign in with Google" button (rendered by GIS). Renders nothing if Google isn't
- * configured or the script is blocked, so the password form is never left in a broken state.
+ * Minimal, on-theme "Continue with Google" pill. The visible pill is our own styling; Google's real
+ * button is rendered on top at 0 opacity to catch the click and return the ID token (the supported
+ * way to get a fully custom look while staying compliant). Renders nothing if Google isn't configured.
  */
 export function GoogleSignInButton({
   clientId,
   onSuccess,
   onError,
-  text = 'continue_with',
+  label = 'Continue with Google',
 }: GoogleSignInButtonProps) {
-  const ref = useRef<HTMLDivElement | null>(null);
+  const gsiRef = useRef<HTMLDivElement | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const resolvedClientId = clientId || (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
 
@@ -33,7 +50,7 @@ export function GoogleSignInButton({
     }
     loadGoogleGsi()
       .then(() => {
-        if (cancelled || !ref.current) return;
+        if (cancelled || !gsiRef.current) return;
         const google = (window as any).google;
         if (!google?.accounts?.id) {
           setUnavailable(true);
@@ -48,25 +65,38 @@ export function GoogleSignInButton({
           },
           use_fedcm_for_prompt: true,
         });
-        ref.current.innerHTML = '';
-        google.accounts.id.renderButton(ref.current, {
+        gsiRef.current.innerHTML = '';
+        google.accounts.id.renderButton(gsiRef.current, {
           type: 'standard',
           theme: 'outline',
           size: 'large',
-          text,
+          text: 'continue_with',
           shape: 'pill',
-          logo_alignment: 'left',
-          width: 320,
+          width: BUTTON_WIDTH,
         });
       })
       .catch(() => setUnavailable(true));
     return () => {
       cancelled = true;
     };
-  }, [resolvedClientId, text]);
+  }, [resolvedClientId]);
 
   if (unavailable) return null;
-  return <div ref={ref} className="flex justify-center" />;
+
+  return (
+    <div className="relative group mx-auto" style={{ width: BUTTON_WIDTH }}>
+      {/* Visible pill (what the user sees). pointer-events-none so the click reaches the real button. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-[var(--px-10)] rounded-full border border-dotted border-slate-300/60 bg-transparent text-[length:var(--px-12)] font-light font-helvetica tracking-[var(--px-0-25)] text-[var(--color-primary)] transition-colors duration-150 group-hover:border-slate-200 group-hover:bg-white/5"
+      >
+        <GoogleGIcon />
+        <span>{label}</span>
+      </div>
+      {/* Real Google button on top, invisible — catches the click and returns the ID token. */}
+      <div ref={gsiRef} className="opacity-0" />
+    </div>
+  );
 }
 
 export default GoogleSignInButton;

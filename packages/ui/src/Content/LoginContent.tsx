@@ -247,21 +247,6 @@ export default function LoginContent({
             </a>
           </div>
 
-          {googleClientId && (
-            <div className="mb-[var(--px-20)] flex flex-col items-center gap-[var(--px-16)]">
-              <GoogleSignInButton
-                clientId={googleClientId}
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-              />
-              <div className="flex items-center w-full gap-[var(--px-12)] opacity-60">
-                <span className="h-px flex-1 bg-current" />
-                <span className="text-[length:var(--px-10)] font-light font-helvetica uppercase">or</span>
-                <span className="h-px flex-1 bg-current" />
-              </div>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="flex flex-col w-full gap-[var(--px-20)]">
             <FormInput
               label="Email or Username"
@@ -325,6 +310,23 @@ export default function LoginContent({
               </button>
             </div>
           </form>
+
+          {googleClientId && (
+            <div className="mt-[var(--px-24)] flex flex-col items-center gap-[var(--px-18)]">
+              <div className="flex items-center w-full gap-[var(--px-12)] opacity-50">
+                <span className="h-px flex-1 bg-current" />
+                <span className="text-[length:var(--px-9)] font-light font-helvetica uppercase tracking-[var(--px-1)]">
+                  or continue with
+                </span>
+                <span className="h-px flex-1 bg-current" />
+              </div>
+              <GoogleSignInButton
+                clientId={googleClientId}
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+              />
+            </div>
+          )}
 
           <StatusMessage
             isOpen={showStatus}
