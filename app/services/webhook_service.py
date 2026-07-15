@@ -22,6 +22,7 @@ from app.core.config import settings
 from app.models.log import SystemLog
 from app.repositories.log_repository import LogRepository
 from app.services.purchase_service import PurchaseService
+from app.services.billing_sync_service import BillingSyncService
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ class WebhookService:
 
     def __init__(self) -> None:
         self.purchase_service = PurchaseService()
+        self.billing_sync = BillingSyncService()
         self.log_repo = LogRepository()
         stripe.api_key = settings.stripe_secret_key
 
@@ -104,11 +106,31 @@ class WebhookService:
         try:
             if event.type == "checkout.session.completed":
                 session = sanitize_for_json(event.data.object.to_dict())
-                await self.purchase_service.fulfill_order(db, session)
-            
+                # Only the one-time track cart uses fulfill_order (it needs internal_order_id).
+                # Subscription checkouts are applied via the customer.subscription.* events below.
+                if (session.get("metadata") or {}).get("internal_order_id"):
+                    await self.purchase_service.fulfill_order(db, session)
+
             elif event.type == "charge.dispute.created":
                 dispute = sanitize_for_json(event.data.object.to_dict())
                 await self.purchase_service.handle_dispute(db, dispute)
+
+            # --- Consumer subscription billing ---
+            elif event.type in (
+                "customer.subscription.created",
+                "customer.subscription.updated",
+                "customer.subscription.deleted",
+            ):
+                sub = sanitize_for_json(event.data.object.to_dict())
+                await self.billing_sync.sync_subscription(db, sub, event.type, stripe_event_id)
+
+            elif event.type in ("invoice.paid", "invoice.payment_succeeded"):
+                invoice = sanitize_for_json(event.data.object.to_dict())
+                await self.billing_sync.record_invoice(db, invoice)
+
+            elif event.type == "invoice.payment_failed":
+                invoice = sanitize_for_json(event.data.object.to_dict())
+                await self.billing_sync.mark_payment_failed(db, invoice, stripe_event_id)
 
             # Commit the audit log and fulfillment changes atomically
             await db.commit()

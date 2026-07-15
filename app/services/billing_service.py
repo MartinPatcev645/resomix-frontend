@@ -19,12 +19,18 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.entitlement_keys import ACTIVE_SUBSCRIPTION_STATUSES, PlanCode
+from app.core.entitlement_keys import ACTIVE_SUBSCRIPTION_STATUSES, PlanCode, FeatureKey
+from app.models.billing import BillingInvoice
 from app.models.plan import Plan, PlanPrice
 from app.models.purchase import UserSubscription
 from app.models.user import User
+from app.services.entitlement_service import EntitlementService
+from app.services.entitlement_gate import EntitlementGate
 
 logger = logging.getLogger(__name__)
+
+# Counted features surfaced in the "Plan & Billing" usage meters.
+_USAGE_FEATURES = (FeatureKey.UPLOADS_PER_MONTH, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH)
 
 # Countries billed in USD (everything else → EUR). Extend as needed; USD prices must exist in
 # plan_prices for these to actually resolve to USD (otherwise we fall back to EUR).
@@ -36,6 +42,8 @@ class BillingService:
 
     def __init__(self) -> None:
         stripe.api_key = settings.stripe_secret_key
+        self.entitlements = EntitlementService()
+        self.gate = EntitlementGate()
 
     # ------------------------------------------------------------------ #
     # currency
@@ -205,3 +213,59 @@ class BillingService:
                 }
             )
         return {"currency": currency, "current_plan_code": current_plan_code, "plans": out}
+
+    # ------------------------------------------------------------------ #
+    # Subscription summary + invoices (profile "Plan & Billing")
+    # ------------------------------------------------------------------ #
+    async def get_subscription_summary(self, db: AsyncSession, user: User) -> Dict[str, Any]:
+        """Effective plan + the raw subscription row (status/renewal/cancel) + this period's usage."""
+        plan = await self.entitlements.get_effective_plan(db, user)
+        row = (
+            await db.execute(select(UserSubscription).where(UserSubscription.user_id == user.id))
+        ).scalar_one_or_none()
+
+        usage: List[Dict[str, Any]] = []
+        for fk in _USAGE_FEATURES:
+            r = await self.gate.peek_allowed(db, fk, user=user)
+            usage.append({"feature": fk, "used": r.count or 0, "limit": r.limit})
+
+        subscription = None
+        if row is not None:
+            subscription = {
+                "status": row.status,
+                "currency": row.currency,
+                "current_period_end": row.current_period_end.isoformat() if row.current_period_end else None,
+                "cancel_at_period_end": bool(row.cancel_at_period_end),
+                "canceled_at": row.canceled_at.isoformat() if row.canceled_at else None,
+                "trial_end": row.trial_end.isoformat() if row.trial_end else None,
+            }
+        return {
+            "plan": {"code": plan.code, "name": plan.name} if plan else None,
+            "subscription": subscription,
+            "usage": usage,
+        }
+
+    async def list_invoices(self, db: AsyncSession, user: User, limit: int = 24) -> List[Dict[str, Any]]:
+        rows = (
+            await db.execute(
+                select(BillingInvoice)
+                .where(BillingInvoice.user_id == user.id)
+                .order_by(BillingInvoice.created_at.desc())
+                .limit(limit)
+            )
+        ).scalars().all()
+        return [
+            {
+                "stripe_invoice_id": r.stripe_invoice_id,
+                "amount_paid_cents": r.amount_paid_cents,
+                "currency": r.currency,
+                "status": r.status,
+                "period_start": r.period_start.isoformat() if r.period_start else None,
+                "period_end": r.period_end.isoformat() if r.period_end else None,
+                "hosted_invoice_url": r.hosted_invoice_url,
+                "invoice_pdf": r.invoice_pdf,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "paid_at": r.paid_at.isoformat() if r.paid_at else None,
+            }
+            for r in rows
+        ]

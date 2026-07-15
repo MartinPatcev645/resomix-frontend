@@ -1,0 +1,216 @@
+"""
+Consumer Billing Sync (Stripe webhook write-back)
+=================================================
+
+Mirrors Stripe consumer-subscription state into our DB. Called from WebhookService for
+``customer.subscription.*`` and ``invoice.*`` events. Methods do NOT commit — the webhook handler
+owns the transaction (add/flush only). Idempotency is handled upstream (dedupe by Stripe event id).
+
+The effective plan is resolved live from ``user_subscriptions`` (EntitlementService), so writing the
+row here is all that's needed — no cache bust.
+"""
+
+import logging
+from datetime import datetime
+from typing import Any, Dict, Optional
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.billing import BillingInvoice, SubscriptionEvent
+from app.models.plan import PlanPrice
+from app.models.purchase import UserSubscription
+from app.models.user import User
+
+logger = logging.getLogger(__name__)
+
+
+def _ts(value: Optional[int]) -> Optional[datetime]:
+    """Unix epoch → UTC-naive datetime (matches the timezone-naive billing columns)."""
+    if not value:
+        return None
+    try:
+        return datetime.utcfromtimestamp(int(value))
+    except (ValueError, TypeError, OSError):
+        return None
+
+
+class BillingSyncService:
+    """Applies Stripe subscription/invoice events to user_subscriptions / billing_invoices /
+    subscription_events."""
+
+    async def _user_by_id(self, db: AsyncSession, user_id: Any) -> Optional[User]:
+        try:
+            uid = int(user_id)
+        except (TypeError, ValueError):
+            return None
+        return (await db.execute(select(User).where(User.id == uid))).scalar_one_or_none()
+
+    async def _user_by_customer(self, db: AsyncSession, customer_id: Optional[str]) -> Optional[User]:
+        if not customer_id:
+            return None
+        return (
+            await db.execute(select(User).where(User.stripe_customer_id == customer_id))
+        ).scalar_one_or_none()
+
+    async def _plan_id_for_price(self, db: AsyncSession, stripe_price_id: Optional[str]) -> Optional[int]:
+        if not stripe_price_id:
+            return None
+        row = (
+            await db.execute(select(PlanPrice.plan_id).where(PlanPrice.stripe_price_id == stripe_price_id))
+        ).first()
+        return row[0] if row else None
+
+    async def _get_subscription_row(self, db: AsyncSession, user_id: int) -> Optional[UserSubscription]:
+        return (
+            await db.execute(select(UserSubscription).where(UserSubscription.user_id == user_id))
+        ).scalar_one_or_none()
+
+    # ------------------------------------------------------------------ #
+    # customer.subscription.created / updated / deleted
+    # ------------------------------------------------------------------ #
+    async def sync_subscription(
+        self, db: AsyncSession, sub: Dict[str, Any], event_type: str, stripe_event_id: Optional[str]
+    ) -> None:
+        customer_id = sub.get("customer")
+        metadata = sub.get("metadata") or {}
+
+        user = await self._user_by_id(db, metadata.get("user_id"))
+        if user is None:
+            user = await self._user_by_customer(db, customer_id)
+        if user is None:
+            logger.warning("Subscription webhook: no matching user (sub=%s customer=%s)", sub.get("id"), customer_id)
+            return
+
+        items = ((sub.get("items") or {}).get("data")) or []
+        price = (items[0].get("price") if items else {}) or {}
+        stripe_price_id = price.get("id")
+        currency = (price.get("currency") or "").upper() or None
+
+        plan_id = await self._plan_id_for_price(db, stripe_price_id)
+        if plan_id is None and metadata.get("plan_id"):
+            try:
+                plan_id = int(metadata["plan_id"])
+            except (TypeError, ValueError):
+                plan_id = None
+
+        deleted = event_type.endswith("deleted")
+        # A deleted subscription no longer grants a plan (falls back to free).
+        new_status = "canceled" if deleted else (sub.get("status") or "active")
+
+        row = await self._get_subscription_row(db, user.id)
+        prev_plan_id = row.plan_id if row else None
+
+        if row is None:
+            row = UserSubscription(user_id=user.id, stripe_subscription_id=sub.get("id"))
+            db.add(row)
+        row.stripe_subscription_id = sub.get("id") or row.stripe_subscription_id
+        row.stripe_customer_id = customer_id
+        row.stripe_price_id = stripe_price_id
+        row.currency = currency
+        row.plan_id = plan_id
+        row.status = new_status
+        row.current_period_start = _ts(sub.get("current_period_start"))
+        row.current_period_end = _ts(sub.get("current_period_end"))
+        row.cancel_at_period_end = bool(sub.get("cancel_at_period_end"))
+        row.canceled_at = _ts(sub.get("canceled_at"))
+        row.trial_end = _ts(sub.get("trial_end"))
+
+        ev_type = "canceled" if deleted else ("created" if event_type.endswith("created") else "updated")
+        db.add(
+            SubscriptionEvent(
+                user_id=user.id,
+                stripe_event_id=stripe_event_id,
+                type=ev_type,
+                from_plan_id=prev_plan_id,
+                to_plan_id=None if deleted else plan_id,
+                currency=currency,
+                effective_at=datetime.utcnow(),
+            )
+        )
+        await db.flush()
+        logger.info("Synced subscription for user %s → plan=%s status=%s (%s)", user.id, plan_id, new_status, ev_type)
+
+    # ------------------------------------------------------------------ #
+    # invoice.paid / invoice.payment_failed
+    # ------------------------------------------------------------------ #
+    async def record_invoice(self, db: AsyncSession, inv: Dict[str, Any]) -> None:
+        stripe_invoice_id = inv.get("id")
+        if not stripe_invoice_id:
+            return
+        customer_id = inv.get("customer")
+        subscription_id = inv.get("subscription")
+
+        user = await self._user_by_customer(db, customer_id)
+        if user is None and subscription_id:
+            row = (
+                await db.execute(
+                    select(UserSubscription).where(UserSubscription.stripe_subscription_id == subscription_id)
+                )
+            ).scalar_one_or_none()
+            if row:
+                user = await self._user_by_id(db, row.user_id)
+        if user is None:
+            logger.warning("Invoice webhook: no matching user (invoice=%s customer=%s)", stripe_invoice_id, customer_id)
+            return
+
+        lines = ((inv.get("lines") or {}).get("data")) or []
+        line = lines[0] if lines else {}
+        line_price = (line.get("price") or {}) if isinstance(line, dict) else {}
+        period = (line.get("period") or {}) if isinstance(line, dict) else {}
+        period_start = _ts(period.get("start") or inv.get("period_start"))
+        period_end = _ts(period.get("end") or inv.get("period_end"))
+
+        plan_id = await self._plan_id_for_price(db, line_price.get("id"))
+        if plan_id is None and subscription_id:
+            row = (
+                await db.execute(
+                    select(UserSubscription).where(UserSubscription.stripe_subscription_id == subscription_id)
+                )
+            ).scalar_one_or_none()
+            plan_id = row.plan_id if row else None
+
+        existing = (
+            await db.execute(select(BillingInvoice).where(BillingInvoice.stripe_invoice_id == stripe_invoice_id))
+        ).scalar_one_or_none()
+        if existing is None:
+            existing = BillingInvoice(user_id=user.id, stripe_invoice_id=stripe_invoice_id)
+            db.add(existing)
+
+        existing.user_id = user.id
+        existing.stripe_subscription_id = subscription_id
+        existing.plan_id = plan_id
+        existing.amount_paid_cents = int(inv.get("amount_paid") or 0)
+        existing.currency = (inv.get("currency") or "eur").upper()
+        existing.status = inv.get("status") or "open"
+        existing.period_start = period_start
+        existing.period_end = period_end
+        existing.hosted_invoice_url = inv.get("hosted_invoice_url")
+        existing.invoice_pdf = inv.get("invoice_pdf")
+        existing.paid_at = _ts((inv.get("status_transitions") or {}).get("paid_at"))
+        await db.flush()
+
+    async def mark_payment_failed(self, db: AsyncSession, inv: Dict[str, Any], stripe_event_id: Optional[str]) -> None:
+        await self.record_invoice(db, inv)
+        subscription_id = inv.get("subscription")
+        if not subscription_id:
+            return
+        row = (
+            await db.execute(
+                select(UserSubscription).where(UserSubscription.stripe_subscription_id == subscription_id)
+            )
+        ).scalar_one_or_none()
+        if row:
+            row.status = "past_due"
+            db.add(
+                SubscriptionEvent(
+                    user_id=row.user_id,
+                    stripe_event_id=stripe_event_id,
+                    type="payment_failed",
+                    from_plan_id=row.plan_id,
+                    to_plan_id=row.plan_id,
+                    currency=row.currency,
+                    effective_at=datetime.utcnow(),
+                )
+            )
+            await db.flush()

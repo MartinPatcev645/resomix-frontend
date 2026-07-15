@@ -99,3 +99,25 @@ async def plans(
         current_code = plan.code if plan else None
     data = await billing_service.get_plans_for_display(db, _country(request), current_code)
     return JSONResponse(status_code=200, content=format_response(success=True, data=data))
+
+
+@router.get("/subscription", summary="Current plan, subscription status + this period's usage")
+@limiter.limit("60/minute")
+async def subscription(
+    request: Request,
+    db: AsyncSession = Depends(get_database_session),
+    current_user: User = Depends(get_current_user),
+):
+    data = await billing_service.get_subscription_summary(db, current_user)
+    return JSONResponse(status_code=200, content=format_response(success=True, data=data))
+
+
+@router.get("/invoices", summary="Billing history (Stripe invoices)")
+@limiter.limit("60/minute")
+async def invoices(
+    request: Request,
+    db: AsyncSession = Depends(get_database_session),
+    current_user: User = Depends(get_current_user),
+):
+    data = await billing_service.list_invoices(db, current_user)
+    return JSONResponse(status_code=200, content=format_response(success=True, data={"invoices": data}))
