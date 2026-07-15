@@ -118,9 +118,9 @@ const PlaylistTable: React.FC = () => {
                 <div className="" role="columnheader">#</div>
                 {/* Spacer matching the per-row artwork thumbnail (34px + 6px gap) so headers stay aligned with values. */}
                 <div aria-hidden="true" className="w-[var(--px-34)] mr-[var(--px-6)] shrink-0"></div>
-                <div className="mx-[var(--px-85)]" role="columnheader">Artist</div>
-                <div className="mx-[var(--px-20)]" role="columnheader">Title</div>
-                <div className="ml-[var(--px-105)] flex flex-col items-center" role="columnheader">
+                <div className="ml-[var(--px-120)] mr-[var(--px-85)]" role="columnheader">Artist</div>
+                <div className="ml-[var(--px-25)]" role="columnheader">Title</div>
+                <div className="ml-[var(--px-80)] flex flex-col items-center" role="columnheader">
                     <span className="text-[var(--color-primary-hover)]">Label</span>
                     Year
                 </div>
@@ -203,12 +203,6 @@ const PlaylistTable: React.FC = () => {
                                             />
                                         </div>
                                         <TrackArtwork artworkUrl={track.artwork_url} className="w-[var(--px-34)] h-[var(--px-34)] mr-[var(--px-6)] rounded-xs" />
-                                        <div className="select-none text-[length:var(--px-10)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-120)]" role="cell">
-                                            {track.artist}
-                                        </div>
-                                        <div className="select-none text-[length:var(--px-10)] font-helvetica font-light tracking-[var(--px-0-1)] uppercase text-center mx-[var(--px-5)] w-[var(--px-140)]" role="cell">
-                                            {track.title}
-                                        </div>
                                         {/* Apple Music icon at rest — fixed slot between Title and Year (right-aligned toward the
                                             year), so its position never depends on title length. Hidden while playing (the full
                                             lockup then shows inside the player); the slot keeps its width so the row stays put. */}
@@ -216,6 +210,12 @@ const PlaylistTable: React.FC = () => {
                                             {track.deep_link_url && !(currentTrackId === track.id && isPlaying) && (
                                                 <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
                                             )}
+                                        </div>
+                                        <div className="select-none text-[length:var(--px-10)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-120)]" role="cell">
+                                            {track.artist}
+                                        </div>
+                                        <div className="select-none text-[length:var(--px-10)] font-helvetica font-light tracking-[var(--px-0-1)] uppercase text-center mx-[var(--px-5)] w-[var(--px-140)]" role="cell">
+                                            {track.title}
                                         </div>
                                         <div className="text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-90)] flex flex-col items-center gap-[var(--px-3)]" role="cell">
                                             <span className="text-[var(--color-primary-hover)] text-[length:var(--px-9)]">

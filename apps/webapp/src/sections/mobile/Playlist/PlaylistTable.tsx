@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SimilarityPlayer } from "@/components/index.ts";
-import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import { formatDuration, formatPercentage, useGlobalAudioController, useEntitlements } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
@@ -233,12 +232,6 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 >
                                     <img src={MoreSvg} draggable={false} aria-label="More" alt="More" className="w-[var(--px-19)] h-[var(--px-14)]" />
                                 </button>
-                                {/* Apple Music icon at rest; full lockup shows while playing. */}
-                                {!(currentTrackId === track.id && isPlaying) && (
-                                    <div className="absolute right-[var(--px-8)] bottom-[var(--px-6)]">
-                                        <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>
