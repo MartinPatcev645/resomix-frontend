@@ -149,8 +149,8 @@ class BillingService:
             "metadata": metadata,
             "subscription_data": {"metadata": metadata},
             "allow_promotion_codes": True,
-            "success_url": f"{settings.frontend_url}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
-            "cancel_url": f"{settings.frontend_url}/pricing",
+            "success_url": f"{settings.frontend_url}/profile?checkout=success",
+            "cancel_url": f"{settings.frontend_url}/profile?checkout=cancelled",
         }
         if settings.stripe_automatic_tax_enabled:
             kwargs["automatic_tax"] = {"enabled": True}
