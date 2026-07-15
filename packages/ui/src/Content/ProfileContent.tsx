@@ -5,6 +5,7 @@ import { InputModal } from "../Modals/InputModal";
 import { FormInput } from "../Elements/FormInput";
 import { SineWaves } from "../Animations/SineWaves";
 import { ProfileIcon } from "../Vectors/ProfileIcon";
+import { PlanBillingCard } from "../Billing/PlanBillingCard";
 
 interface ProfileContentProps {
   baseUrl?: string;
@@ -506,6 +507,8 @@ export default function ProfileContent({
             </aside>
 
             <main className="space-y-[var(--px-20)]">
+              <PlanBillingCard />
+
               <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
                 <div className="flex justify-between items-center mb-[var(--px-10)]">
                   <h2 className="text-[length:var(--px-14)] font-medium font-helvetica">

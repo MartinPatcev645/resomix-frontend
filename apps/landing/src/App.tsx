@@ -14,6 +14,7 @@ const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
 const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
 const PartnersPage = lazy(() => import("@/pages/PartnersPage.tsx"));
 const PricingPage = lazy(() => import("@/pages/PricingPage.tsx"));
+const SubscribePage = lazy(() => import("@/pages/SubscribePage.tsx"));
 // const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
@@ -106,6 +107,7 @@ function App() {
             <Route path="/about" element={<UsedAboutPage />} />
             <Route path="/partners" element={<PartnersPage />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/subscribe" element={<SubscribePage />} />
 
             {/* Info Pages */}
             <Route path="/contact" element={<InfoPage mode="contact" />} />

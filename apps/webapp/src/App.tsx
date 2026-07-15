@@ -14,6 +14,7 @@ const PlaylistPage = lazy(() => import("@/pages/desktop/PlaylistPage.tsx").then(
 const PlaylistMobile = lazy(() => import("@/pages/mobile/PlaylistMobile.tsx").then(m => ({ default: m.PlaylistMobile })));
 const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
 const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
+const SubscribePage = lazy(() => import("@/pages/SubscribePage.tsx"));
 // const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
 // const TestTwo = lazy(() => import("@/pages/TestTwo.tsx"));
 // const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
@@ -124,6 +125,7 @@ function App() {
             <Route path="/" element={<UploadLanding />} />
             <Route path="/playlist" element={<PlaylistLanding />} />
             <Route path="/sonic-discovery" element={<PlaylistLanding />} />
+            <Route path="/subscribe" element={<SubscribePage />} />
 
             {/* Protected Auth Routes */}
             <Route element={<ProtectedRoute />}>

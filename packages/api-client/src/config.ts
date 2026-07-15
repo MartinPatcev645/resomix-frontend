@@ -26,6 +26,11 @@ export interface ApiConfig {
 
     // Entitlements (frontend plans/guest enforcement)
     ENTITLEMENTS_ME: string;
+    BILLING_PLANS: string;
+    BILLING_SUBSCRIPTION: string;
+    BILLING_INVOICES: string;
+    BILLING_CHECKOUT: string;
+    BILLING_PORTAL: string;
 
     // Beta endpoints
     SIMILARITY: string;
@@ -236,6 +241,11 @@ export const API_CONFIG: ApiConfig = {
     USER_DELETE: "/api/v1/users/me",
     // Entitlements (frontend plans/guest enforcement)
     ENTITLEMENTS_ME: "/api/v1/entitlements/me",
+    BILLING_PLANS: "/api/v1/billing/plans",
+    BILLING_SUBSCRIPTION: "/api/v1/billing/subscription",
+    BILLING_INVOICES: "/api/v1/billing/invoices",
+    BILLING_CHECKOUT: "/api/v1/billing/checkout",
+    BILLING_PORTAL: "/api/v1/billing/portal",
     // Beta endpoints
     SIMILARITY: "/api/v1/similarity/upload",
     SELECTION_SIMILARITY: "/api/v1/similarity/search",

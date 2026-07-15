@@ -10,6 +10,7 @@ export * from "./peaks";
 export * from "./waitlist";
 export * from "./telemetry";
 export * from "./cart";
+export * from "./billing";
 export * from "./ratings";
 export * from "./metadata";
 export * from "./tracks";
