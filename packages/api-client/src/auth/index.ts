@@ -7,6 +7,8 @@ export { verifyEmail, resendVerification } from './verifyEmail';
 export { requestPasswordReset, confirmPasswordReset } from './passwordReset';
 export { logout, logoutAll } from './logout';
 export { refreshAccessToken } from './refresh';
+export { verifySession } from './session';
+export type { SessionStatus } from './session';
 export {
   getMyProfile,
   updateProfile,

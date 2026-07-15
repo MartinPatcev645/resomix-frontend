@@ -182,7 +182,12 @@ async function pollAnalysis(
     const st = await fetchStatus(id);
     onProgress(Math.min(95, Math.max(10, st.percent)));
 
-    if (st.part1_ready && !part1Shown) {
+    // Stream the interim part-1 result early — BUT skip it when the job is already complete on this
+    // very poll (e.g. opening an existing/finished analysis via ?id= or the library). In that case
+    // the single final fetch below returns the whole thing, so fetching here too would download the
+    // heavy result JSON twice. Fresh uploads still get part-1 early because `part1_ready` lands while
+    // the job is still running (state !== "succeeded").
+    if (st.part1_ready && !part1Shown && st.state !== "succeeded") {
       part1Shown = true;
       try {
         const raw = await fetchResult(id); // part-1 (partial) via the proxy
