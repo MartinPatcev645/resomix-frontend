@@ -7,9 +7,9 @@
  *   - guests  → the login page (with a redirect back);
  *   - logged-in users → the subscription flow.
  *
- * The consumer subscription flow doesn't exist yet, so `subscribe` is wired behind
- * `SUBSCRIPTION_ENABLED`. Flip that flag (and set `SUBSCRIBE_ROUTE`) the moment billing ships and
- * every "Subscribe" CTA in the app starts working — no per-component changes needed.
+ * Billing has shipped, so `subscribe` is live: `SUBSCRIPTION_ENABLED` is on and every "Subscribe"
+ * CTA routes to the unified pricing page (`SUBSCRIBE_ROUTE`). Set the flag back to false to mute
+ * all subscribe CTAs at once (e.g. if billing is temporarily pulled).
  */
 
 import { useCallback } from "react";
@@ -17,8 +17,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 export type EntitlementCtaAction = "login" | "subscribe" | null;
 
-// TODO(subscription): set to true + point SUBSCRIBE_ROUTE at the real page when billing ships.
-export const SUBSCRIPTION_ENABLED = false;
+export const SUBSCRIPTION_ENABLED = true;
 export const SUBSCRIBE_ROUTE = "/subscribe";
 
 export function useEntitlementCta() {

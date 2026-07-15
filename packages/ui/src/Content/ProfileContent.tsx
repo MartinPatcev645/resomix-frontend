@@ -94,6 +94,15 @@ export default function ProfileContent({
   const [showDisable2FAModal, setShowDisable2FAModal] = useState(false);
   const [timezones, setTimezones] = useState<TimezoneOption[]>([]);
   const [resendingVerification, setResendingVerification] = useState(false);
+  const [activeTab, setActiveTab] = useState<"personal" | "billing" | "account">(() => {
+    // Returning from Stripe Checkout (?checkout=success|cancelled) lands on the Billing tab so the
+    // updated plan + confirmation banner are what the user sees first.
+    try {
+      return new URLSearchParams(window.location.search).get("checkout") ? "billing" : "personal";
+    } catch {
+      return "personal";
+    }
+  });
 
   useEffect(() => {
     setTimezones(buildTimezones());
@@ -451,7 +460,7 @@ export default function ProfileContent({
             </a>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[clamp(320px,26vw,480px)_1fr] gap-[var(--px-20)] px-[var(--px-20)] lg:px-0">
+          <div className="grid grid-cols-1 lg:grid-cols-[clamp(260px,22vw,340px)_1fr] gap-[var(--px-24)] px-[var(--px-20)] lg:px-0 items-start">
             <aside className="space-y-[var(--px-20)] lg:sticky lg:top-[var(--px-120)] h-max">
               <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
                 <div className="flex items-center gap-[var(--px-12)]">
@@ -486,29 +495,45 @@ export default function ProfileContent({
                 </div>
               </div>
 
-              <nav className="space-y-[var(--px-10)] p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
-                <button
-                  onClick={onNavigateChangePassword}
-                  className="group w-full flex justify-between items-center p-[var(--px-10)] border border-slate-200 border-dotted hover:bg-gray-50 hover:text-[var(--color-secondary)] transition-colors cursor-pointer rounded"
-                >
-                  <span className="text-[length:var(--px-11)] font-light font-helvetica text-left">
-                    Change Password
-                  </span>
-                  <span className="text-[var(--color-primary)] group-hover:text-[var(--color-secondary)] transition-colors">→</span>
-                </button>
-
-                <button
-                  onClick={handleLogout}
-                  className="w-full px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 hover:text-[var(--color-secondary)] transition-colors cursor-pointer rounded"
-                >
-                  Logout
-                </button>
+              <nav className="p-[var(--px-12)] border border-slate-200 border-dotted rounded-lg space-y-[var(--px-8)]">
+                {([
+                  { id: "personal", label: "Personal Information", hint: "Profile, password & security" },
+                  { id: "billing", label: "Billing & Subscription", hint: "Plan, usage & invoices" },
+                  { id: "account", label: "Account", hint: "Delete account" },
+                ] as const).map((t) => {
+                  const active = activeTab === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setActiveTab(t.id)}
+                      aria-current={active ? "page" : undefined}
+                      className={`group w-full flex items-center justify-between gap-[var(--px-8)] text-left p-[var(--px-10)] rounded border transition-colors cursor-pointer ${
+                        active
+                          ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10"
+                          : "border-slate-200 border-dotted hover:bg-gray-50 hover:text-[var(--color-secondary)]"
+                      }`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-[length:var(--px-12)] font-medium font-helvetica truncate">{t.label}</span>
+                        <span className="block text-[length:var(--px-10)] font-helvetica opacity-60 truncate">{t.hint}</span>
+                      </span>
+                      <span className={active ? "text-[var(--color-primary)]" : "opacity-40 group-hover:opacity-100 transition-opacity"}>→</span>
+                    </button>
+                  );
+                })}
               </nav>
+
+              <button
+                onClick={handleLogout}
+                className="w-full px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 hover:text-[var(--color-secondary)] transition-colors cursor-pointer rounded"
+              >
+                Logout
+              </button>
             </aside>
 
-            <main className="space-y-[var(--px-20)]">
-              <PlanBillingCard />
-
+            <main className="space-y-[var(--px-20)] min-w-0">
+              {activeTab === "personal" && (
+              <>
               <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
                 <div className="flex justify-between items-center mb-[var(--px-10)]">
                   <h2 className="text-[length:var(--px-14)] font-medium font-helvetica">
@@ -611,6 +636,22 @@ export default function ProfileContent({
                   <div className="flex justify-between items-center p-[var(--px-10)] border border-slate-200 border-dotted rounded">
                     <div>
                       <div className="text-[length:var(--px-11)] font-light font-helvetica">
+                        Password
+                      </div>
+                      <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80">
+                        Change your account password
+                      </div>
+                    </div>
+                    <button
+                      onClick={onNavigateChangePassword}
+                      className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
+                    >
+                      Change →
+                    </button>
+                  </div>
+                  <div className="flex justify-between items-center p-[var(--px-10)] border border-slate-200 border-dotted rounded">
+                    <div>
+                      <div className="text-[length:var(--px-11)] font-light font-helvetica">
                         Two-Factor Authentication
                       </div>
                       <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80">
@@ -626,7 +667,13 @@ export default function ProfileContent({
                   </div>
                 </div>
               </div>
+              </>
+              )}
 
+              {activeTab === "billing" && <PlanBillingCard />}
+
+              {activeTab === "account" && (
+              <>
               <div className="p-[var(--px-16)] border border-[var(--color-neon-orange)] border-dotted rounded-lg">
                 <h3 className="text-[length:var(--px-14)] font-medium font-helvetica mb-[var(--px-10)] text-[var(--color-neon-orange)]">
                   Danger Zone
@@ -673,6 +720,8 @@ export default function ProfileContent({
                   )}
                 </div>
               </div>
+              </>
+              )}
             </main>
           </div>
         </div>
