@@ -1,8 +1,11 @@
 import React from "react";
-import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration } from "@resomix/hooks";
+import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
+import { formatDuration, useEntitlements, useFavoritePlaylist } from "@resomix/hooks";
+import { FEATURE_KEYS } from "@resomix/api-client";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
-import { InputPlayer, PlaylistRating, PlaylistRename, CCLicenseGroup } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistRename } from "@/components/index.ts";
+import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
+import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import AngleLeftSvg from "@/assets/icons/angle_left.svg";
@@ -38,6 +41,14 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [statusTitle, setStatusTitle] = React.useState('');
 
   const { playlistData } = usePlaylistStore();
+  const { can, isGuest } = useEntitlements();
+  const canRename = can(FEATURE_KEYS.CAN_RENAME);
+  // Favorite/unfavorite the current playlist (heart top-right of the card). Guests are prompted to
+  // log in; a guest-created playlist is rejected by the backend and that message is surfaced.
+  const { isFavorite, toggleFavorite } = useFavoritePlaylist();
+  // Login/upgrade prompt for actions the tier can't do (rename stays visible; guests are
+  // intercepted with a "log in" modal rather than opening the rename form that would then fail).
+  const [gate, setGate] = React.useState<{ reason: string; title: string; body: string } | null>(null);
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -47,6 +58,15 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
     setStatusMessage(message);
     setStatusTitle(title || '');
     setShowStatus(true);
+  };
+
+  const handleFavoriteClick = async () => {
+    const res = await toggleFavorite();
+    if (res.gated) {
+      setGate({ reason: "login_required", title: "Log in to save favorites", body: "Create a free account or log in to add playlists to your favorites." });
+    } else if (!res.ok && res.error) {
+      handleStatusChange('error', res.error, 'Favorites');
+    }
   };
 
   const handleRenameClose = () => {
@@ -98,7 +118,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   transparent={true}
                   customWidth="min-w-[var(--px-70)]"
                   mobile={true}
-                  onClick={() => setShowRename(true)}
+                  onClick={() => canRename ? setShowRename(true) : setGate({ reason: isGuest ? "login_required" : "upgrade_required", title: "Log in to rename", body: "Create a free account or log in to rename your playlists." })}
                   icon={<img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                   hoverIcon={<img src={RenameBlackSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                   className="playlist-action-button"
@@ -228,7 +248,20 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 />
               </div>
             </div>
-            <div className="absolute right-[var(--px-16)] top-[var(--px-16)] select-none text-[#5C5C5C]">
+            <div className="absolute right-[var(--px-16)] top-[var(--px-16)] select-none text-[#5C5C5C] flex items-center gap-[var(--px-10)]">
+              <button
+                type="button"
+                onClick={handleFavoriteClick}
+                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                className="cursor-pointer bg-transparent border-0 p-0 flex items-center justify-center playlist-favorite-button"
+                id="playlist-hero-favorite-button"
+              >
+                {isFavorite ? (
+                  <HeartFilledIcon customWidth="20" customHeight="20" className="text-white" disableHover={true} />
+                ) : (
+                  <HeartStrokeIcon customWidth="20" customHeight="20" className="text-white/70" />
+                )}
+              </button>
               <button
                 type="button"
                 onClick={() => onMoreClick?.(
@@ -247,10 +280,10 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               </button>
             </div>
             
-            {/* Creative Commons License Icons - Bottom Right */}
+            {/* Apple Music attribution — the reference track links to Apple Music. */}
             {!playlistData?.isUpload && (
               <div className="absolute right-[var(--px-5)] bottom-[var(--px-5)]">
-                <CCLicenseGroup size={8} />
+                <AppleMusicBadge deepLinkUrl={playlistData?.queried_track?.deep_link_url} playing />
               </div>
             )}
           </div>
@@ -260,6 +293,12 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
       </div>
 
       {/* Modals */}
+      <GateCtaModal
+        reason={gate?.reason ?? null}
+        title={gate?.title}
+        body={gate?.body}
+        onClose={() => setGate(null)}
+      />
       <PlaylistRating
         isOpen={showRating}
         onClose={handleRatingClose}

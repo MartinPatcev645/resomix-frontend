@@ -26,8 +26,19 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
   // 1. Resolve the effective track ID (InputPlayer may not yet have a server uuid)
   const effectiveId = id ?? "uploaded-local";
 
-  // 2. Peaks waveform hook
-  const { loading: wfLoading, error: wfError, setTime, attachOverviewElement, setRestrictedRange } = useCustomPeaks(id || "", usePlayerStore(s => !!s.deletedTracks[effectiveId]));
+  // 1a. Resolve the track + its playback engine up-front. Catalogue tracks (playback === 'preview')
+  //     stream from the Apple Music preview URL and have NO server peaks — so we skip the peaks fetch
+  //     and the components render a simple progress line instead of a waveform.
+  const playlistData = usePlaylistStore((s: any) => s.playlistData);
+  const track = useMemo(() => {
+    if (playlistData?.queried_track?.id === effectiveId) return playlistData.queried_track;
+    return playlistData?.similar_tracks?.find((t: any) => t.id === effectiveId);
+  }, [playlistData, effectiveId]);
+  const isPreview = track?.playback === 'preview';
+  const isUpload = track?.type === 'upload';
+
+  // 2. Peaks waveform hook — empty uuid (skips the fetch) for preview tracks.
+  const { loading: wfLoading, error: wfError, setTime, attachOverviewElement, setRestrictedRange } = useCustomPeaks(isPreview ? "" : (id || ""), usePlayerStore(s => !!s.deletedTracks[effectiveId]));
 
   // 3. Global audio controller
   const hlsController = useGlobalAudioController();
@@ -41,14 +52,8 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
   const setVolume = usePlayerStore((s) => s.setVolume);
   const restrictedRange = usePlayerStore((s) => (s.snippetMetadata ? s.snippetMetadata[effectiveId] : null) || null);
   const isDeleted = usePlayerStore((s) => !!s.deletedTracks[effectiveId]);
-  const playlistData = usePlaylistStore((s: any) => s.playlistData);
-  
-  // 4a. Detection for "Upload" tracks that are still loading their manifest to determine range
-  const isUpload = useMemo(() => {
-    if (playlistData?.queried_track?.id === effectiveId) return playlistData.queried_track.type === 'upload';
-    return playlistData?.similar_tracks?.find((t: any) => t.id === effectiveId)?.type === 'upload';
-  }, [playlistData, effectiveId]);
 
+  // 4a. Uploads await their manifest snippet range before the waveform is meaningful.
   const isSnippetWaiting = isUpload && !restrictedRange && !isDeleted;
 
   // 4b. We treat the track as loading if the snippet metadata is awaited, 
@@ -149,5 +154,11 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
     volume,
     handleVolumeChange,
     toggleMute,
+    // preview (Apple Music) mode: no waveform — components render a simple progress line instead.
+    isPreview,
+    // The preview's OWN length (what the scrubber spans); the full track length is shown as metadata.
+    getPlayableDuration: () => (hlsController?.getDuration?.() || 0),
+    // Seek to an absolute time (used by the simple line's click-to-seek).
+    seekTo: (t: number) => requestSeek(t),
   } as const;
 }

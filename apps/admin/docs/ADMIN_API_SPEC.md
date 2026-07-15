@@ -6,7 +6,7 @@
 
 ## 📋 Overview
 
-This document specifies the backend API endpoints required for the Admin Dashboard. All endpoints require authentication via `api_key` query parameter (handled automatically by the client).
+This document specifies the backend API endpoints required for the Admin Dashboard. All endpoints require authentication via an **admin-role JWT** (the static `api_key` super-key has been retired).
 
 **Base URL**: Configured via `VITE_SERVER_BACKEND` environment variable.
 
@@ -14,12 +14,16 @@ This document specifies the backend API endpoints required for the Admin Dashboa
 
 ## 🔐 Authentication
 
-All requests must include the API key as a query parameter:
+Admins sign in via `POST /admin/auth/login` (email + password), which returns an access token whose
+payload carries a `role: admin` claim. The admin client stores it and sends it as a Bearer header on
+every request:
 ```
-?api_key=bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ
+Authorization: Bearer <admin_access_token>
 ```
 
-This is handled automatically by the API client.
+The backend enforces `require_admin`: the JWT must carry the `role: admin` claim **and** the user must
+hold the `admin` role in the database (RBAC). The old `?api_key=` query-param / static super-key is no
+longer accepted.
 
 ---
 
@@ -390,17 +394,17 @@ Default sort: `submitted_at DESC` (newest first)
 
 **1. Get all feedback (first page)**:
 ```bash
-GET /admin/feedback/?api_key=xxx&page=1&page_size=30
+GET /admin/feedback/?page=1&page_size=30
 ```
 
 **2. Search for "bug" in messages**:
 ```bash
-GET /admin/feedback/?api_key=xxx&search=bug&search_column=message
+GET /admin/feedback/?search=bug&search_column=message
 ```
 
 **3. Get open feedback from last 7 days**:
 ```bash
-GET /admin/feedback/?api_key=xxx&status=open&date_from=2025-09-24&date_to=2025-10-01
+GET /admin/feedback/?status=open&date_from=2025-09-24&date_to=2025-10-01
 ```
 
 **4. Delete multiple items**:

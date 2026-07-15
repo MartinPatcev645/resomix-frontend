@@ -2,12 +2,12 @@ export interface ApiConfig {
   BASE_URL: string;
   BASE_URL_LOCAL: string;
   MEDIA_URL: string;
-  API_KEY: string;
   MAX_FILE_SIZE: number;
   ALLOWED_AUDIO_TYPES: string[];
   ENDPOINTS: {
     // Auth & User endpoints
     AUTH_LOGIN: string;
+    AUTH_GOOGLE: string;
     AUTH_LOGOUT: string;
     AUTH_LOGOUT_ALL: string;
     AUTH_REGISTER: string;
@@ -24,9 +24,18 @@ export interface ApiConfig {
     USER_DISABLE_2FA: string;
     USER_DELETE: string;
 
+    // Entitlements (frontend plans/guest enforcement)
+    ENTITLEMENTS_ME: string;
+    BILLING_PLANS: string;
+    BILLING_SUBSCRIPTION: string;
+    BILLING_INVOICES: string;
+    BILLING_CHECKOUT: string;
+    BILLING_PORTAL: string;
+
     // Beta endpoints
     SIMILARITY: string;
     SELECTION_SIMILARITY: string;
+    ANALYSIS: string;
     SEARCH: string;
     FEEDBACK: string;
     CONTACT: string;
@@ -86,6 +95,9 @@ export interface ApiConfig {
     ADMIN_OPERATION_TYPES: string;
     ADMIN_OPERATION_LIMITS: string;
     ADMIN_OPERATION_LIMIT_DETAIL: string;
+    ADMIN_PLANS: string;
+    ADMIN_FEATURES: string;
+    ADMIN_ENTITLEMENT_METRICS: string;
     ADMIN_SPOTIFY_APPS: string;
     ADMIN_SPOTIFY_APP_USERS: string;
     ADMIN_USER_SEARCH: string;
@@ -193,7 +205,6 @@ export const API_CONFIG: ApiConfig = {
   BASE_URL: getEnv("VITE_SERVER_BACKEND", "https://bserver.resomix.com"),
   BASE_URL_LOCAL: getEnv("VITE_BASE_BETA_URL", "https://beta.resomix.com"), // used by desktop apps for direct calls
   MEDIA_URL: getEnv("VITE_SERVER_MEDIA", "https://media.resomix.com"),
-  API_KEY: getEnv("VITE_API_KEY", "bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"),
   MAX_FILE_SIZE: 100 * 1024 * 1024, // 100 MB
   ALLOWED_AUDIO_TYPES: [
     "audio/mpeg",
@@ -212,6 +223,7 @@ export const API_CONFIG: ApiConfig = {
   ENDPOINTS: {
     // Auth & User endpoints
     AUTH_LOGIN: "/api/v1/auth/login",
+    AUTH_GOOGLE: "/api/v1/auth/google",
     AUTH_LOGOUT: "/api/v1/auth/logout",
     AUTH_LOGOUT_ALL: "/api/v1/auth/logout-all",
     AUTH_REGISTER: "/api/v1/auth/register",
@@ -227,9 +239,18 @@ export const API_CONFIG: ApiConfig = {
     USER_ENABLE_2FA: "/api/v1/users/me/enable-2fa",
     USER_DISABLE_2FA: "/api/v1/users/me/disable-2fa",
     USER_DELETE: "/api/v1/users/me",
+    // Entitlements (frontend plans/guest enforcement)
+    ENTITLEMENTS_ME: "/api/v1/entitlements/me",
+    BILLING_PLANS: "/api/v1/billing/plans",
+    BILLING_SUBSCRIPTION: "/api/v1/billing/subscription",
+    BILLING_INVOICES: "/api/v1/billing/invoices",
+    BILLING_CHECKOUT: "/api/v1/billing/checkout",
+    BILLING_PORTAL: "/api/v1/billing/portal",
     // Beta endpoints
     SIMILARITY: "/api/v1/similarity/upload",
     SELECTION_SIMILARITY: "/api/v1/similarity/search",
+    // Analysis-as-an-artifact (return-visit retrieval via Alwyzon; base + {analysis_uuid})
+    ANALYSIS: "/api/v1/analysis",
     SEARCH: "/api/v1/search_tracks/",
     FEEDBACK: "/api/v1/feedback/",
     CONTACT: "/api/v1/contact/",
@@ -301,6 +322,9 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_OPERATION_TYPES: "/api/v1/admin/operation-limits/operation-types",
     ADMIN_OPERATION_LIMITS: "/api/v1/admin/operation-limits/",
     ADMIN_OPERATION_LIMIT_DETAIL: "/api/v1/admin/operation-limits/",
+    ADMIN_PLANS: "/api/v1/admin/plans",                       // GET list | GET /{code} | PATCH /{code} | PUT /{code}/entitlements/{feature_key}
+    ADMIN_FEATURES: "/api/v1/admin/features",                 // GET feature catalog
+    ADMIN_ENTITLEMENT_METRICS: "/api/v1/admin/entitlements/metrics",  // GET gate/cache metrics
     ADMIN_SPOTIFY_APPS: "/api/v1/admin/spotify-apps/",
     ADMIN_SPOTIFY_APP_USERS: "/api/v1/admin/spotify-apps/users",
     ADMIN_USER_SEARCH: "/api/v1/users/search",

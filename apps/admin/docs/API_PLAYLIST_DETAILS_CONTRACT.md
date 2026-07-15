@@ -28,7 +28,7 @@ Content-Type: application/json
 ### Example Request
 ```http
 GET /admin/playlist/44e77239-b716-4c82-9cd6-7175a152a750
-Authorization: Bearer bearer-resomix-api-V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ
+Authorization: Bearer <admin_access_token>   # admin-role JWT from POST /admin/auth/login
 ```
 
 ---

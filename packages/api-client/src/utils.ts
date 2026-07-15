@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { API_CONFIG } from "./config";
+import { getDeviceHash } from "./deviceId";
 import type { ApiResponse } from "./types/api";
 
 
@@ -10,40 +11,26 @@ const axiosInstance: AxiosInstance = axios.create({
   withCredentials: true, // Include cookies with all requests
 });
 
-// Interceptor to append `api_key` for every request
+// Request interceptor. The retired static api_key is no longer sent: guests are anonymous
+// (→ System Partner 1) and logged-in users are identified by their JWT (attached by authClient).
+// This base instance only attaches the guest device signal and any idempotency key.
 axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const isAdminRoute = config.url?.includes('admin') || config.url?.includes('/admin/');
 
-  if (isAdminRoute) {
-    // Administrative endpoints MUST strictly enforce header-only authorization.
-    // Query parameter is deleted to prevent proxy/browser logs leakage.
-    if (config.params) {
-      delete (config.params as Record<string, unknown>).api_key;
-    }
-  } else {
-    // Public/Partner endpoints fallback support for query parameter
-    if (!config.params) {
-      config.params = {};
-    }
-    if (!config.params.api_key) {
-      (config.params as Record<string, unknown>).api_key = API_CONFIG.API_KEY;
+  // Guest device signal for server-side visitor_id derivation (never sent on admin/B2B routes).
+  if (!isAdminRoute) {
+    const deviceHash = getDeviceHash();
+    if (deviceHash) {
+      config.headers['X-Device-Hash'] = deviceHash;
     }
   }
-  
-  // Enforce secure HTTP headers (Format B and Format A fallback)
-  if (API_CONFIG.API_KEY) {
-    config.headers['X-API-KEY'] = API_CONFIG.API_KEY;
-    if (isAdminRoute && !config.headers.Authorization) {
-      config.headers.Authorization = `Bearer ${API_CONFIG.API_KEY}`;
-    }
-  }
-  
+
   // Support for Idempotency-Key
   const customConfig = config as any;
   if (customConfig.idempotencyKey) {
     config.headers['Idempotency-Key'] = customConfig.idempotencyKey;
   }
-  
+
   return config;
 });
 
@@ -71,6 +58,8 @@ export const handleApiError = (error: AxiosError | Error): {
   error: string;
   details?: unknown;
   status?: number;
+  /** Soft-gate reason from the entitlement layer: "login_required" | "upgrade_required". */
+  reason?: string | null;
 } => {
   console.error("API Error:", error);
 
@@ -101,6 +90,7 @@ export const handleApiError = (error: AxiosError | Error): {
         error: errorMessage,
         details: apiError.data?.details || apiError.details || null,
         status,
+        reason: apiError.reason ?? null,
       };
     }
 
@@ -129,14 +119,11 @@ export const handleApiError = (error: AxiosError | Error): {
   };
 };
 
-// Helper to construct full URL including path (for cases where we need absolute link)
+// Helper to construct full URL including path (for cases where we need absolute link).
+// No api_key is appended — public media/streaming URLs are reached anonymously (→ Partner 1).
 export const getUrl = (endpoint: string, queryParams: Record<string, unknown> = {}): string => {
   const base = API_CONFIG.BASE_URL || (typeof window !== "undefined" ? window.location.origin : "");
   const url = new URL(`${base}${endpoint}`);
-  const isAdminRoute = endpoint.includes('admin') || endpoint.includes('/admin/');
-  if (!isAdminRoute) {
-    url.searchParams.append("api_key", API_CONFIG.API_KEY);
-  }
   Object.entries(queryParams).forEach(([k, v]) => {
     if (v !== undefined && v !== null) {
       url.searchParams.append(k, String(v));

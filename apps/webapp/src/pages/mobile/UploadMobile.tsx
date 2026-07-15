@@ -6,9 +6,10 @@ import { usePlaylistStore } from "@resomix/stores";
 import { useNavigate } from "react-router-dom";
 import React from "react";
 import { useTrackSimilarity } from "@resomix/hooks";
+import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 
 export function UploadMobile() {
-  const { response, error, setError, isFileUpload } = useUploadStore();
+  const { response, error, setError, gateReason, gateTitle, gateBody, setGateReason, isFileUpload } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
   const processedId = React.useRef<string | null>(null);
@@ -80,6 +81,8 @@ export function UploadMobile() {
           onClose={() => setError(null)}
         />
       )}
+
+      <GateCtaModal reason={gateReason} title={gateTitle ?? undefined} body={gateBody ?? undefined} onClose={() => setGateReason(null)} />
     </div>
   );
 }

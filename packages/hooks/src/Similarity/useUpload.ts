@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef } from "react";
 import { getSimilarTracks, API_CONFIG } from "@resomix/api-client";
 // import { waitForSegmentation } from "@resomix/api-client"; // Commented out - segmentation polling no longer needed
-import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
+import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { create } from "zustand";
 import { extractCoverArt } from "../meta/useMetatags";
 import { useTermsAcceptance } from "../useTermsAcceptance";
@@ -32,6 +32,13 @@ interface UploadStoreState {
     showOverlay: boolean;
     response: UploadResult | null;
     isFileUpload: boolean;
+    /** Soft entitlement-gate reason ("login_required" | "upgrade_required") when a create is
+     *  blocked by a plan limit — drives a login/subscribe CTA instead of a generic error. */
+    gateReason: string | null;
+    /** Optional message overrides for the gate modal (e.g. the login-only upload prompt vs the
+     *  monthly-limit prompt — same reason, different copy). Null → the modal's defaults. */
+    gateTitle: string | null;
+    gateBody: string | null;
     setUploading: (isUploading: boolean) => void;
     setProgress: (progress: number) => void;
     setError: (error: string | null) => void;
@@ -39,6 +46,9 @@ interface UploadStoreState {
     setOverlay: (visible: boolean) => void;
     setResponse: (response: UploadResult | null) => void;
     setIsFileUpload: (isFileUpload: boolean) => void;
+    setGateReason: (reason: string | null) => void;
+    /** Set the gate reason plus custom copy in one call. */
+    setGate: (reason: string | null, title?: string | null, body?: string | null) => void;
     reset: () => void;
 }
 
@@ -50,6 +60,9 @@ export const useUploadStore = create<UploadStoreState>((set) => ({
     showOverlay: false,
     response: null,
     isFileUpload: false,
+    gateReason: null,
+    gateTitle: null,
+    gateBody: null,
     setUploading: (isUploading) => set({ isUploading }),
     setProgress: (progress) => set({ progress }),
     setError: (error) => set({ error }),
@@ -57,7 +70,9 @@ export const useUploadStore = create<UploadStoreState>((set) => ({
     setOverlay: (visible) => set({ showOverlay: visible }),
     setResponse: (response) => set({ response }),
     setIsFileUpload: (isFileUpload) => set({ isFileUpload }),
-    reset: () => set({ isUploading: false, progress: 0, error: null, file: null, showOverlay: false, response: null, isFileUpload: false })
+    setGateReason: (reason) => set({ gateReason: reason, gateTitle: null, gateBody: null }),
+    setGate: (reason, title = null, body = null) => set({ gateReason: reason, gateTitle: title, gateBody: body }),
+    reset: () => set({ isUploading: false, progress: 0, error: null, file: null, showOverlay: false, response: null, isFileUpload: false, gateReason: null, gateTitle: null, gateBody: null })
 }));
 
 /**
@@ -69,7 +84,7 @@ export const useUploadStore = create<UploadStoreState>((set) => ({
 export function useUpload(options?: UseUploadOptions) {
     const onAnalysis = options?.onAnalysis;
     const inputRef = useRef<HTMLInputElement | null>(null);
-    const { setUploading, setProgress, setError, setFile, setOverlay, setResponse, setIsFileUpload, reset } = useUploadStore();
+    const { setUploading, setProgress, setError, setFile, setOverlay, setResponse, setIsFileUpload, setGateReason, setGate, reset } = useUploadStore();
     const { setPlaylistResponse } = usePlaylistStore();
     const { topSk, setUploadedCoverArt } = usePlayerStore();
     const { checkTermsAcceptance } = useTermsAcceptance();
@@ -109,6 +124,19 @@ export function useUpload(options?: UseUploadOptions) {
 
     const handleUpload = useCallback(async (file: File | null | undefined) => {
         if (!file) return;
+
+        // Similarity-by-upload is login-only. Intercept guests BEFORE any file work / network call
+        // so they never upload the file just to hit a server rejection — show the login gate instead,
+        // with copy about the feature (not a "limit reached" message).
+        if (!useAuthStore.getState().isAuthenticated) {
+            setGate(
+                "login_required",
+                "Log in to upload your own track",
+                "Uploading your own audio to find matches needs an account. Log in or create a free account to use it.",
+            );
+            return;
+        }
+
         const isValid = validateFile(file);
         if (!isValid.valid) {
             setError(isValid.error || "Invalid file.");
@@ -138,6 +166,7 @@ export function useUpload(options?: UseUploadOptions) {
 
         setProgress(0);
         setError(null);
+        setGateReason(null);
         setResponse(null);
         setUploading(true);
         setOverlay(true);
@@ -186,20 +215,28 @@ export function useUpload(options?: UseUploadOptions) {
                     }
                 }
             } else {
-                // API indicated failure
-                setError(mapPlaylistErrorMessage(result?.error, "Upload failed."));
+                // API indicated failure. A soft entitlement gate drives a login/subscribe CTA.
+                const reason = (result as { reason?: string } | null)?.reason;
+                if (reason === "login_required" || reason === "upgrade_required") {
+                    setGateReason(reason);
+                } else {
+                    setError(mapPlaylistErrorMessage(result?.error, "Upload failed."));
+                }
                 setUploading(false);
                 setOverlay(false);
             }
         } catch (err: any) {
             // Reset file upload flag on error
             setIsFileUpload(false);
-            const mappedError = mapPlaylistErrorMessage(err?.error || err?.message, "Upload failed.");
-            setError(mappedError);
+            if (err?.reason === "login_required" || err?.reason === "upgrade_required") {
+                setGateReason(err.reason);
+            } else {
+                setError(mapPlaylistErrorMessage(err?.error || err?.message, "Upload failed."));
+            }
             setUploading(false);
             setOverlay(false);
         }
-    }, [setError, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload, topSk, setUploadedCoverArt, onAnalysis]);
+    }, [setError, setGateReason, setGate, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload, topSk, setUploadedCoverArt, onAnalysis]);
 
     const onInputChange = useCallback<React.ChangeEventHandler<HTMLInputElement>>((e) => {
         const file = e.target.files && e.target.files[0];

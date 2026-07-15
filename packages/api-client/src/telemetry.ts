@@ -60,8 +60,8 @@ export interface TelemetryBatch {
 /**
  * Fire-and-forget POST of a batch of telemetry events.
  *
- * Uses the shared Axios instance (which already appends `api_key` and
- * `withCredentials`). Returns true if the request was successful (200 OK),
+ * Uses the shared Axios instance (`withCredentials`, guest device hash). The telemetry endpoint
+ * is public (guest beacons → System Partner 1); no api_key is sent. Returns true on 200 OK,
  * allowing the caller to safely clear the queue.
  */
 export async function syncTelemetry(events: TelemetryEvent[]): Promise<boolean> {
@@ -96,7 +96,7 @@ export function beaconTelemetry(events: TelemetryEvent[]): void {
   const payload: TelemetryBatch = { events };
   const baseUrl = API_CONFIG.BASE_URL ? API_CONFIG.BASE_URL.replace(/\/$/, "") : "";
   const endpoint = API_CONFIG.ENDPOINTS.TELEMETRY_SYNC;
-  const url = `${baseUrl}${endpoint}?api_key=${encodeURIComponent(API_CONFIG.API_KEY)}`;
+  const url = `${baseUrl}${endpoint}`;  // public endpoint — no api_key
 
   if (typeof fetch !== "undefined") {
     fetch(url, {

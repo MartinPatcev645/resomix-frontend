@@ -2,6 +2,7 @@ import { useState, FormEvent, ChangeEvent } from "react";
 import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { PasswordInput } from "../Elements/PasswordInput";
+import { useAuthStore } from "@resomix/stores";
 
 interface ChangePasswordContentProps {
   baseUrl?: string;
@@ -14,6 +15,9 @@ export default function ChangePasswordContent({
   onSuccess,
   onCancel,
 }: ChangePasswordContentProps) {
+  // Social-login (e.g. Google) accounts have no password yet — this screen then becomes "Set
+  // password" (no current-password field). `undefined` (older sessions) is treated as "has password".
+  const hasPassword = useAuthStore((s) => s.user?.has_password) !== false;
   const [form, setForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -72,8 +76,8 @@ export default function ChangePasswordContent({
   const validate = (): boolean => {
     const newErrors: typeof errors = {};
 
-    // Current password validation
-    if (!form.currentPassword) {
+    // Current password validation (only when the account already has one)
+    if (hasPassword && !form.currentPassword) {
       newErrors.currentPassword = "Current password is required";
     }
 
@@ -84,7 +88,7 @@ export default function ChangePasswordContent({
       newErrors.newPassword = "Password must be at least 8 characters";
     } else if (!/\d/.test(form.newPassword)) {
       newErrors.newPassword = "Password must contain at least one digit";
-    } else if (form.newPassword === form.currentPassword) {
+    } else if (hasPassword && form.newPassword === form.currentPassword) {
       newErrors.newPassword = "New password must be different from current password";
     }
 
@@ -107,19 +111,24 @@ export default function ChangePasswordContent({
     setSubmitting(true);
     setStatusType("loading");
     setShowStatus(true);
-    setStatusMessage("Changing password...");
+    setStatusMessage(hasPassword ? "Changing password..." : "Setting password...");
 
     try {
       const { changePassword } = await import("@resomix/api-client");
 
       const result = await changePassword({
-        current_password: form.currentPassword,
+        current_password: hasPassword ? form.currentPassword : "",
         new_password: form.newPassword,
       });
 
       if (result.success) {
+        // Reflect that the account now has a local password (enables password login going forward).
+        try {
+          const currentUser = useAuthStore.getState().user;
+          if (currentUser) useAuthStore.getState().setUser({ ...currentUser, has_password: true });
+        } catch { /* noop */ }
         setStatusType("success");
-        setStatusMessage("Password changed successfully!");
+        setStatusMessage(hasPassword ? "Password changed successfully!" : "Password set successfully!");
 
         // Clear form
         setForm({
@@ -151,10 +160,12 @@ export default function ChangePasswordContent({
       <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
         <header className="mb-[var(--px-28)] text-center">
           <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
-            Change Password
+            {hasPassword ? "Change Password" : "Set Password"}
           </h1>
           <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica">
-            Update your account password
+            {hasPassword
+              ? "Update your account password"
+              : "Add a password so you can also sign in with email — your Google sign-in keeps working"}
           </p>
         </header>
 
@@ -169,17 +180,19 @@ export default function ChangePasswordContent({
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col w-full gap-[var(--px-20)]">
-            <PasswordInput
-              label="Current Password"
-              name="currentPassword"
-              value={form.currentPassword}
-              onChange={handleChange}
-              placeholder="Enter your current password"
-              required
-              autoFocus
-              autoComplete="current-password"
-              error={errors.currentPassword}
-            />
+            {hasPassword && (
+              <PasswordInput
+                label="Current Password"
+                name="currentPassword"
+                value={form.currentPassword}
+                onChange={handleChange}
+                placeholder="Enter your current password"
+                required
+                autoFocus
+                autoComplete="current-password"
+                error={errors.currentPassword}
+              />
+            )}
 
             <PasswordInput
               label="New Password"
@@ -188,6 +201,7 @@ export default function ChangePasswordContent({
               onChange={handleChange}
               placeholder="Create a strong password"
               required
+              autoFocus={!hasPassword}
               autoComplete="new-password"
               error={errors.newPassword}
               showStrength={true}
@@ -228,7 +242,15 @@ export default function ChangePasswordContent({
 
             <div className="flex gap-[var(--px-10)] mt-[var(--px-10)]">
               <ButtonSleek
-                text={submitting ? "Changing Password..." : "Change Password"}
+                text={
+                  submitting
+                    ? hasPassword
+                      ? "Changing Password..."
+                      : "Setting Password..."
+                    : hasPassword
+                      ? "Change Password"
+                      : "Set Password"
+                }
                 onClick={handleSubmit}
               />
               <button

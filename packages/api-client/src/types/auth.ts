@@ -11,6 +11,8 @@ export interface User {
   language: string | null;
   timezone: string | null;
   profile_picture: string | null;
+  /** False for social-login (e.g. Google) accounts that haven't set a local password yet. */
+  has_password?: boolean;
   created_at: string;
 }
 

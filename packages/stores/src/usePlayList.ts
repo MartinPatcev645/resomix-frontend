@@ -11,13 +11,27 @@ export interface Track {
   label: string
   artist: string
   type: 'upload' | 'internal'
+  // Playback engine for this track (see docs PLAYBACK_APPLE_MUSIC_PLAN.md):
+  //   'hls'     → the user's own upload; streamed via hls.js from our media server (with peaks).
+  //   'preview' → a catalogue track; played from the Apple Music `preview_url` (a plain <audio> src).
+  // Absent on older responses → treat as 'hls' for uploads, 'preview' otherwise.
+  playback?: 'hls' | 'preview'
+  // Apple Music fields (present when playback === 'preview'). `artist`/`title` stay in-house;
+  // album/genre come from Apple with an in-house fallback (merged server-side).
+  preview_url?: string | null
+  artwork_url?: string | null
+  deep_link_url?: string | null
+  apple_song_id?: string | null
+  album?: string | null
+  genre?: string | null
 }
 
 export interface Playlist {
   id: string
   name: string
   is_public: boolean
-  fork_id?: string
+  // Caller's engagement with this playlist (present for logged-in users; guests always see false).
+  is_favorite?: boolean
 }
 
 export interface PlaylistData {
@@ -48,6 +62,27 @@ const ensurePlaylistObject = (data: PlaylistData): PlaylistData => {
   return data;
 };
 
+// --- Demo/anon redaction detection ----------------------------------------
+// The backend scrambles similar-track metadata past the anonymous preview limit: track ids become a
+// repeating "dEm0" pattern and text fields become "demo…". We must never persist or reuse that
+// scrambled copy — otherwise a user who later logs in (and would receive the FULL playlist) keeps
+// seeing the cached teaser. Detect it deterministically via the id mask.
+const REDACTION_ID_PATTERN = 'dEm0';
+
+const isMaskedTrackId = (id: unknown): boolean => {
+  if (typeof id !== 'string' || id.length < REDACTION_ID_PATTERN.length) return false;
+  for (let i = 0; i < id.length; i++) {
+    if (id[i] !== REDACTION_ID_PATTERN[i % REDACTION_ID_PATTERN.length]) return false;
+  }
+  return true;
+};
+
+const isRedactedResponse = (response?: PlaylistResponse | null): boolean => {
+  const tracks = response?.data?.similar_tracks;
+  if (!Array.isArray(tracks)) return false;
+  return tracks.some((t) => isMaskedTrackId(t?.id));
+};
+
 // Cache helper functions
 const saveResponseToCache = (response: PlaylistResponse): void => {
   // Check if we're in a browser environment
@@ -59,6 +94,12 @@ const saveResponseToCache = (response: PlaylistResponse): void => {
     const playlistId = response.data?.playlist?.id || response.data?.queried_track?.id;
     if (!playlistId) {
       console.warn('Cannot cache playlist response: missing playlist ID');
+      return;
+    }
+
+    // Never cache a redacted (anonymous preview) response — it would shadow the full playlist the
+    // user receives after logging in. Any existing full cache entry for this id is left untouched.
+    if (isRedactedResponse(response)) {
       return;
     }
 
@@ -143,6 +184,12 @@ const loadCachedResponse = (id?: string): PlaylistResponse | null => {
       return null
     }
 
+    // Defensive: ignore any redacted entry cached before this guard existed so a logged-in user
+    // gets a fresh (full) playlist from the backend instead of the stale anonymous teaser.
+    if (foundResponse && isRedactedResponse(foundResponse)) {
+      return null
+    }
+
     return foundResponse || null
   } catch (error) {
     console.warn('Failed to load playlist from cache:', error)
@@ -194,6 +241,8 @@ interface PlaylistStore {
   validateCurrentData: () => boolean
   // Update is_public flag in both state and cache
   updatePlaylistPublicStatus: (isPublic: boolean) => void
+  // Update is_favorite flag in both state and cache
+  updatePlaylistFavoriteStatus: (isFavorite: boolean) => void
 }
 
 // Create the Zustand store
@@ -310,6 +359,52 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         console.warn('Failed to update is_public in cache:', error)
       }
     }
+  },
+
+  // Update is_favorite flag in both Zustand state and the localStorage cache, so the heart stays
+  // correct across the current view and any later navigation back to this playlist.
+  updatePlaylistFavoriteStatus: (isFavorite: boolean) => {
+    const state = get()
+    if (!state.playlistData || !state.playlistData.playlist) return
+
+    const playlistId = state.playlistData.playlist.id
+
+    set({
+      playlistData: {
+        ...state.playlistData,
+        playlist: {
+          ...state.playlistData.playlist,
+          is_favorite: isFavorite,
+        },
+      },
+    })
+
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const cachedPlaylistsStr = window.localStorage.getItem('playlistsBackup')
+        if (cachedPlaylistsStr) {
+          const cachedPlaylists: PlaylistResponse[] = JSON.parse(cachedPlaylistsStr)
+          const updatedPlaylists = cachedPlaylists.map(p => {
+            if (p?.data?.playlist?.id === playlistId) {
+              return {
+                ...p,
+                data: {
+                  ...p.data,
+                  playlist: {
+                    ...p.data.playlist,
+                    is_favorite: isFavorite,
+                  },
+                },
+              }
+            }
+            return p
+          })
+          window.localStorage.setItem('playlistsBackup', JSON.stringify(updatedPlaylists))
+        }
+      } catch (error) {
+        console.warn('Failed to update is_favorite in cache:', error)
+      }
+    }
   }
 }))
 
@@ -317,5 +412,44 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
 // This prevents stale data from showing up when users navigate to new playlists
 // Instead, the cache is only used when explicitly requested via loadCachedResponse()
 
+/**
+ * Remove ALL cached playlist responses (both localStorage keys). Called on auth transitions
+ * (login / logout) so a previous identity's — or a guest's — cached playlists never leak to the
+ * next user on the same browser. Fresh data is refetched from the backend on demand.
+ */
+export const clearAllPlaylistCache = (): void => clearCache();
+
+export const clearPlaylistFromCache = (playlistId: string): void => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return;
+  }
+
+  try {
+    const lastAccessed = window.localStorage.getItem('lastAccessedPlaylist');
+    if (lastAccessed === playlistId) {
+      window.localStorage.removeItem('lastAccessedPlaylist');
+    }
+
+    const cachedPlaylistsStr = window.localStorage.getItem('playlistsBackup');
+    if (cachedPlaylistsStr) {
+      let cachedPlaylists: PlaylistResponse[] = JSON.parse(cachedPlaylistsStr);
+      if (Array.isArray(cachedPlaylists)) {
+        cachedPlaylists = cachedPlaylists.filter(p => {
+          const id = p?.data?.playlist?.id || p?.data?.queried_track?.id;
+          return id !== playlistId;
+        });
+
+        if (cachedPlaylists.length === 0) {
+          window.localStorage.removeItem('playlistsBackup');
+        } else {
+          window.localStorage.setItem('playlistsBackup', JSON.stringify(cachedPlaylists));
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to clear playlist from cache:', error);
+  }
+};
+
 // Export default store for convenience
-export default usePlaylistStore
+export default usePlaylistStore;

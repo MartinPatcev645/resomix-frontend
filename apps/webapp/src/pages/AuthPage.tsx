@@ -15,6 +15,7 @@ import { BASE_BETA_URL } from "@resomix/config";
 interface LocationState {
   from?: string;
   userId?: number;
+  email?: string;
 }
 
 interface AuthPageProps {
@@ -85,13 +86,13 @@ export default function AuthPage({ mode }: AuthPageProps) {
     navigate(from, { replace: true });
   };
 
-  const handleRegisterSuccess = () => {
+  const handleRegisterSuccess = (email?: string) => {
     const fromState = (location.state as LocationState)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
     const redirectTo = fromState || fromQuery;
 
     navigate("/auth/verify-email", {
-      state: redirectTo ? { from: redirectTo } : undefined,
+      state: { ...(redirectTo ? { from: redirectTo } : {}), email },
       replace: true
     });
   };
@@ -168,6 +169,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
           onNavigateRegister={handleNavigateRegister}
           onNavigateForgotPassword={handleNavigateForgotPassword}
           onNavigate2FA={handleNavigate2FA}
+          googleClientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
         />
       )}
       {mode === "register" && (
@@ -195,6 +197,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
       {mode === "verify-email" && (
         <VerifyEmailContent
           baseUrl={BASE_BETA_URL}
+          email={(location.state as LocationState)?.email}
           onSuccess={handleVerifyEmailSuccess}
           onNavigateLogin={handleNavigateLogin}
         />

@@ -2,8 +2,8 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useSilktide, useTelemetry } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
-import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise } from "@resomix/ui";
-import { useFeedbackStore } from "@resomix/stores";
+import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise, GoogleOneTap } from "@resomix/ui";
+import { useFeedbackStore, useAuthStore } from "@resomix/stores";
 import { ProtectedRoute, GuestRoute, WebLayout } from "@/components/index.ts";
 import { MetricsOverlay } from "@/components/metrics/MetricsOverlay.js";
 
@@ -14,6 +14,7 @@ const PlaylistPage = lazy(() => import("@/pages/desktop/PlaylistPage.tsx").then(
 const PlaylistMobile = lazy(() => import("@/pages/mobile/PlaylistMobile.tsx").then(m => ({ default: m.PlaylistMobile })));
 const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
 const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
+const SubscribePage = lazy(() => import("@/pages/SubscribePage.tsx"));
 // const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
 // const TestTwo = lazy(() => import("@/pages/TestTwo.tsx"));
 // const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
@@ -63,6 +64,10 @@ function App() {
 
   const location = useLocation();
   const showMetrics = new URLSearchParams(location.search).get("metrics") === "true";
+  // Google One Tap: only prompt logged-out visitors, and never on the /auth page (the full button
+  // lives there — running both would clash over the single GIS config).
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const onAuthRoute = location.pathname.startsWith("/auth");
 
   // Show loading during auth initialization (prevent flash)
   if (isLoading || !isInitialized) {
@@ -92,6 +97,11 @@ function App() {
 
   return (
     <>
+      <GoogleOneTap
+        clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+        disabled={isAuthenticated || onAuthRoute}
+      />
+
       {showMetrics && <MetricsOverlay />}
 
       {/* <DevMobileConsole /> */}
@@ -115,6 +125,7 @@ function App() {
             <Route path="/" element={<UploadLanding />} />
             <Route path="/playlist" element={<PlaylistLanding />} />
             <Route path="/sonic-discovery" element={<PlaylistLanding />} />
+            <Route path="/subscribe" element={<SubscribePage />} />
 
             {/* Protected Auth Routes */}
             <Route element={<ProtectedRoute />}>

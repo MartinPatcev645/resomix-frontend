@@ -48,6 +48,13 @@ const useAuthStore = create<AuthState>()(
 
             // Set full authentication
             setAuth: (user, accessToken) => {
+                // A fresh login: drop any playlist cache from the prior (guest / other-user) session
+                // so cached playlists can't leak across identities. Fresh data is refetched on demand.
+                try {
+                    const playlistModule = require('./usePlayList');
+                    playlistModule.clearAllPlaylistCache();
+                } catch { /* noop if playlist store not loaded */ }
+
                 set({
                     user,
                     accessToken,
@@ -114,6 +121,13 @@ const useAuthStore = create<AuthState>()(
                     const cartModule = require('./useCart');
                     cartModule.useCartStore.getState().reset();
                 } catch { /* noop if cart store not loaded */ }
+
+                // Clear the playlist cache on logout so a previous user's (or guest's) cached
+                // playlists are never shown to whoever logs in next on this browser.
+                try {
+                    const playlistModule = require('./usePlayList');
+                    playlistModule.clearAllPlaylistCache();
+                } catch { /* noop if playlist store not loaded */ }
 
                 set({
                     user: null,

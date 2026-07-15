@@ -3,9 +3,10 @@ import { ButtonSleek, HoverFlow } from "@resomix/ui";
 import MenuSeparator from "@/assets/icons/menu_separator.svg";
 import { ThumbIcon } from "@/components/index.ts";
 import { rateTrack } from "@resomix/api-client";
-import { usePlaylistStore } from "@resomix/stores";
+import { usePlaylistStore, useAuthStore } from "@resomix/stores";
 import { BASE_BETA_URL } from "@resomix/config";
 import { formatDuration, formatPercentage, usePlaylistExport } from "@resomix/hooks";
+import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import { getTrackRating, saveTrackRating } from "@/utils/trackRatingsStorage.js";
 
 interface MoreMenuProps {
@@ -21,6 +22,9 @@ interface MoreMenuProps {
 const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, name, label, duration, score = null }) => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
     const { exportAndDownloadPlaylist, canExport } = usePlaylistExport();
+    // Per-track rating + export are gated: guests can click but get a login prompt (no API call).
+    const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+    const [gate, setGate] = React.useState<{ reason: string; title: string; body: string } | null>(null);
     const [exportButtonText, setExportButtonText] = React.useState("Export to TXT");
 
     React.useEffect(() => {
@@ -33,7 +37,10 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
 
     const handleTrackRating = async (rating: number) => {
         if (!trackId) return;
-
+        if (!isAuthenticated) {
+            setGate({ reason: "login_required", title: "Log in to rate tracks", body: "Rating individual tracks needs an account. Log in or create a free account to rate." });
+            return;
+        }
         try {
             const playlistId = playlistData?.playlist?.id || null;
             setTrackRating(trackId, rating);
@@ -45,7 +52,10 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
     };
 
     const handleExportPlaylist = async () => {
-        if (!canExport) return;
+        if (!canExport) {
+            setGate({ reason: isAuthenticated ? "upgrade_required" : "login_required", title: "Log in to export", body: "Create a free account or log in to export your playlists." });
+            return;
+        }
 
         try {
             const result = await exportAndDownloadPlaylist();
@@ -185,6 +195,12 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                     </div>
                 </div>
             </div>
+            <GateCtaModal
+                reason={gate?.reason ?? null}
+                title={gate?.title}
+                body={gate?.body}
+                onClose={() => setGate(null)}
+            />
         </div >
     );
 };

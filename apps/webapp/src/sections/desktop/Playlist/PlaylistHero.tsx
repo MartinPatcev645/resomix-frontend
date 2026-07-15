@@ -1,11 +1,13 @@
 import React, { useEffect } from "react";
-import { IconButton, HoverFlow, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, usePlaylistExport } from "@resomix/hooks";
+import { IconButton, HoverFlow, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
+import { formatDuration, usePlaylistExport, useEntitlements, useFavoritePlaylist } from "@resomix/hooks";
+import { FEATURE_KEYS } from "@resomix/api-client";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
 import { useNavigate, useLocation } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport } from "@/components/index.ts";
+import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ExportSvg from "@/assets/icons/export.svg";
@@ -15,7 +17,7 @@ import StarSvg from "@/assets/icons/star.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
-import { CCLicenseGroup } from "@/components/index.ts";
+import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 
 const InputTrackStatus = "Loading..."
 
@@ -38,6 +40,19 @@ const PlaylistHero: React.FC = () => {
   const { playlistData, isLoading, error } = usePlaylistStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
+  // Entitlement gating (server is the guard; this hides actions the plan doesn't grant).
+  // Rename is logged-in-owner-only; the overall "Rate These Results" (playlist rating + feedback)
+  // stays open to guests (visitor_id), so it is NOT gated here.
+  const { can, isGuest } = useEntitlements();
+  const canRename = can(FEATURE_KEYS.CAN_RENAME);
+  // Favorite/unfavorite the current playlist (heart top-right of the card). Guests are prompted to
+  // log in; the backend rejects favoriting a guest-created playlist and that message is surfaced.
+  const { isFavorite, toggleFavorite } = useFavoritePlaylist();
+  // Login/upgrade gate prompt for actions the current tier can't do (guests see rename/export but
+  // are intercepted with a "log in" modal rather than the button being hidden).
+  const [gate, setGate] = React.useState<{ reason: string; title: string; body: string } | null>(null);
+  const gateFor = (title: string, body: string) =>
+    setGate({ reason: isGuest ? "login_required" : "upgrade_required", title, body });
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -57,6 +72,15 @@ const PlaylistHero: React.FC = () => {
     setShowStatus(true);
   };
 
+  const handleFavoriteClick = async () => {
+    const res = await toggleFavorite();
+    if (res.gated) {
+      gateFor("Log in to save favorites", "Create a free account or log in to add playlists to your favorites.");
+    } else if (!res.ok && res.error) {
+      handleStatusChange('error', res.error, 'Favorites');
+    }
+  };
+
   const handleRenameClose = () => setShowRename(false);
   const handleRatingClose = () => setShowRating(false);
   const handleDownloadExportClose = () => setShowDownloadExport(false);
@@ -70,6 +94,10 @@ const PlaylistHero: React.FC = () => {
 
   const handleExportButtonClick = () => {
     if (isExporting) return;
+    if (!canExport) {
+      gateFor("Log in to export", "Create a free account or log in to export your playlists.");
+      return;
+    }
     setShowExportMenu((v) => !v);
   };
 
@@ -159,7 +187,7 @@ const PlaylistHero: React.FC = () => {
       <svg
         viewBox="0 0 1152 628"
         preserveAspectRatio="none"
-        className="absolute inset-0 w-full h-[length:var(--px-628)] pointer-events-none z-10"
+        className="absolute inset-0 w-full h-[length:var(--px-628)] pointer-events-none z-10 overflow-visible"
       >
         <defs>
           <clipPath id="heroClip" clipPathUnits="objectBoundingBox">
@@ -227,17 +255,17 @@ const PlaylistHero: React.FC = () => {
                   />
                 </Tooltip>
                 <Tooltip message="Rename your Playlist">
-                  <IconButton
-                    text="Rename"
-                    transparent={true}
-                    customWidth="min-w-[var(--px-100)]"
-                    onClick={() => setShowRename(true)}
-                    icon={<img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    hoverIcon={<img src={RenameBlackSvg} aria-label="Rename" draggable={false} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    className="playlist-action-button"
-                    id="playlist-hero-rename-button"
-                  />
-                </Tooltip>
+                    <IconButton
+                      text="Rename"
+                      transparent={true}
+                      customWidth="min-w-[var(--px-100)]"
+                      onClick={() => canRename ? setShowRename(true) : gateFor("Log in to rename", "Create a free account or log in to rename your playlists.")}
+                      icon={<img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                      hoverIcon={<img src={RenameBlackSvg} aria-label="Rename" draggable={false} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                      className="playlist-action-button"
+                      id="playlist-hero-rename-button"
+                    />
+                  </Tooltip>
 
                 <div ref={exportButtonWrapRef} className="relative">
                   <Tooltip message="Export Playlist to TXT file">
@@ -392,21 +420,21 @@ const PlaylistHero: React.FC = () => {
                 </div>
               </div>
               <div className="absolute right-[var(--px-10)] top-[var(--px-10)] flex items-center gap-[var(--px-8)]">
-                {/* {DEMO_MODE ? ( */}
-                <Tooltip message="Add to favorites coming soon!">
-                  <HeartStrokeIcon
-                    customWidth="24"
-                    customHeight="24"
-                    className="text-white/60 mt-[var(--px-6)] cursor-not-allowed"
-                  />
+                <Tooltip message={isFavorite ? "Remove from favorites" : "Add to favorites"}>
+                  <button
+                    type="button"
+                    onClick={handleFavoriteClick}
+                    aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                    className="mt-[var(--px-6)] cursor-pointer bg-transparent border-0 p-0 flex items-center justify-center transition-transform hover:scale-110 active:scale-90 playlist-favorite-button"
+                    id="playlist-hero-favorite-button"
+                  >
+                    {isFavorite ? (
+                      <HeartFilledIcon customWidth="24" customHeight="24" className="text-white" disableHover={true} />
+                    ) : (
+                      <HeartStrokeIcon customWidth="24" customHeight="24" className="text-white/60 hover:text-white" />
+                    )}
+                  </button>
                 </Tooltip>
-                {/* ) : isForked ? (
-                  <HeartFilledIcon customWidth="24" customHeight="24" className="text-white" disableHover={true} />
-                ) : (
-                  <Tooltip message="Fork this playlist as your own">
-                    <HeartStrokeIcon customWidth="24" customHeight="24" className="text-white mt-[var(--px-6)]" onClick={handleForkClick} />
-                  </Tooltip>
-                )} */}
                 <Tooltip message={playlistData?.playlist?.is_public ? "Playlist is Public" : "Playlist is Private!"}>
                   <div className={`px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase cursor-pointer ${playlistData?.playlist?.is_public ? 'text-[#5C5C5C]' : 'text-white'}`}>
                     {playlistData?.playlist?.is_public ? (
@@ -423,10 +451,10 @@ const PlaylistHero: React.FC = () => {
                   </div>
                 </Tooltip>
               </div>
-              {/* Creative Commons License Icons - Bottom Right */}
+              {/* Apple Music attribution — the reference track links to Apple Music. */}
               {playlistData?.queried_track?.type === 'internal' && (
                 <div className="absolute right-[var(--px-5)] bottom-[var(--px-0-1)]">
-                  <CCLicenseGroup size={9} />
+                  <AppleMusicBadge deepLinkUrl={playlistData?.queried_track?.deep_link_url} playing />
                 </div>
               )}
             </div>
@@ -436,6 +464,12 @@ const PlaylistHero: React.FC = () => {
       </div>
 
       {/* Modals */}
+      <GateCtaModal
+        reason={gate?.reason ?? null}
+        title={gate?.title}
+        body={gate?.body}
+        onClose={() => setGate(null)}
+      />
       <PlaylistRating
         isOpen={showRating}
         onClose={handleRatingClose}

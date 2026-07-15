@@ -80,6 +80,15 @@ function isAuthError(err: unknown): boolean {
   return err instanceof HttpError && (err.status === 401 || err.status === 403);
 }
 
+/**
+ * A 4xx that won't be fixed by retrying (bad request / unprocessable). We must NOT retry-storm
+ * these (e.g. a local "Missing partner_id" 400 on an uploaded track). 404 is deliberately excluded
+ * — peaks may still be generating for a just-created track, so it gets a few bounded retries.
+ */
+function isPermanentClientError(err: unknown): boolean {
+  return err instanceof HttpError && (err.status === 400 || err.status === 422);
+}
+
 async function fetchJson(url: string): Promise<any> {
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) {
@@ -130,7 +139,8 @@ export const loadPeaksData = async (
     return activeLoads.get(uuid)!;
   }
 
-  const maxRetries = options?.maxRetries ?? Infinity;
+  // Bounded by default so a persistent failure can never retry-storm (was Infinity).
+  const maxRetries = options?.maxRetries ?? 6;
   const retryIntervalMs = options?.retryIntervalMs ?? 2000;
   // An explicit token (if passed) overrides the managed token and disables re-minting.
   const explicitToken = options?.token;
@@ -173,8 +183,14 @@ export const loadPeaksData = async (
           throw err;
         }
 
-        const canRetry = attempt < maxRetries || maxRetries === Infinity;
-        console.warn(`Failed to load peaks (attempt ${attempt})`, err);
+        // Permanent client errors (400/422) will never succeed on retry — stop immediately.
+        if (isPermanentClientError(err)) {
+          console.warn(`Peaks request failed (${(err as HttpError).status}) — permanent, not retrying`, err);
+          throw err;
+        }
+
+        const canRetry = attempt < maxRetries;
+        console.warn(`Failed to load peaks (attempt ${attempt}/${maxRetries})`, err);
 
         if (!canRetry) {
           throw err;

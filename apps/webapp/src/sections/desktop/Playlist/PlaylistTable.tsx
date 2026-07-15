@@ -1,9 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SimilarityPlayer, ThumbIcon, CCLicenseGroup } from "@/components/index.ts";
+import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
+import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
+import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import { IconComp, Tooltip, ButtonSleek } from "@resomix/ui";
-import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
+import { formatDuration, formatPercentage, useGlobalAudioController, useEntitlements } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore, useAuthStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
+import { useEntitlementCta } from "@/utils/entitlementCta.ts";
+import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import PlaySvg from "@/assets/icons/play.svg";
 import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
@@ -19,7 +23,15 @@ const PlaylistTable: React.FC = () => {
     const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
     const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
+
+    // Result-unlock teasing: how many tracks this plan reveals; the rest are blurred + upsold.
+    const { maxTracksPerPlaylist, isGuest, loading: entitlementsLoading } = useEntitlements();
+    // Per-track rating is login-required: guests can click but get a login prompt (no API call).
     const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+    const [rateLoginPrompt, setRateLoginPrompt] = useState(false);
+    const { trigger: triggerCta } = useEntitlementCta();
+    const maxUnlocked = entitlementsLoading ? Number.POSITIVE_INFINITY : maxTracksPerPlaylist;
+    const ctaCardRank = entitlementsLoading ? -1 : maxTracksPerPlaylist + 2; // card sits 2 rows into the locked zone
 
     const handlePlayButtonClick = useCallback((trackId: string) => {
         if (!DEMO_MODE) {
@@ -83,6 +95,12 @@ const PlaylistTable: React.FC = () => {
     }, [trackIdsKey, setTrackRating, trackRatings, tracks]);
 
     const handleTrackRating = async (trackId: string, rating: number) => {
+        // Track rating requires a logged-in user (always sent with a user id). Guests can click but
+        // get a login prompt instead of an API call.
+        if (!isAuthenticated) {
+            setRateLoginPrompt(true);
+            return;
+        }
         try {
             const playlistId = playlistData?.playlist?.id || null;
             setTrackRating(trackId, rating);
@@ -98,35 +116,45 @@ const PlaylistTable: React.FC = () => {
             <h2 className="sr-only">Similar Tracks</h2>
             <div className="flex tracking-[var(--px-0-1)] text-[length:var(--px-9)] font-light font-fira leading-[var(--px-14)] items-center w-full uppercase px-[var(--px-12)] mb-[var(--px-20)]" role="row">
                 <div className="" role="columnheader">#</div>
-                <div className="mx-[var(--px-85)]" role="columnheader">Artist</div>
-                <div className="mx-[var(--px-30)]" role="columnheader">Title</div>
-                <div className="ml-[var(--px-85)] flex flex-col items-center" role="columnheader">
+                {/* Spacer matching the per-row artwork thumbnail (34px + 6px gap) so headers stay aligned with values. */}
+                <div aria-hidden="true" className="w-[var(--px-34)] mr-[var(--px-6)] shrink-0"></div>
+                <div className="ml-[var(--px-120)] mr-[var(--px-85)]" role="columnheader">Artist</div>
+                <div className="ml-[var(--px-25)]" role="columnheader">Title</div>
+                <div className="ml-[var(--px-80)] flex flex-col items-center" role="columnheader">
                     <span className="text-[var(--color-primary-hover)]">Label</span>
                     Year
                 </div>
-                <div className="ml-[var(--px-60)]" role="columnheader">Duration</div>
-                <div className="ml-[var(--px-20)]" role="columnheader">Score</div>
+                <div className="ml-[var(--px-40)]" role="columnheader">Duration</div>
+                <div className="ml-[var(--px-10)]" role="columnheader">Score</div>
                 <div className="ml-[var(--px-50)]" role="columnheader">Feedback</div>
                 <div className="ml-[var(--px-30)]" role="columnheader">Chain Discover</div>
             </div>
             {tracks.map((track) => {
-                const isRestricted = !isAuthenticated && track.rank > 10;
+                const isRestricted = track.rank > maxUnlocked;
 
                 return (
                     <div key={track.id} className={`relative w-full py-[var(--px-5)] ${isRestricted ? "pointer-events-none select-none" : "select-text"}`}>
-                        {/* Check if the rank is 12 and isRestricted is true, display a text here on top of the usual track details */}
-                        {track.rank === 12 && isRestricted && (
+                        {/* Upsell card sits 2 rows into the locked zone, on top of the blurred tracks. */}
+                        {track.rank === ctaCardRank && isRestricted && (
                             <div className="absolute z-50 left-0 w-full flex flex-col items-center justify-center px-[var(--px-20)] pt-[var(--px-40)] pointer-events-auto">
                                 <div className="bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-40)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center max-w-[var(--px-450)] w-full">
                                     <h3 className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)] text-center">
                                         Unlock all matching tracks
                                     </h3>
                                     <p className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] text-center text-white mb-[var(--px-20)]">
-                                        Guest access includes the first 10 results. Create a free account or log in to view the complete similarity list and save your playlist.
+                                        {isGuest
+                                            ? `Guest access includes the first ${maxTracksPerPlaylist} results. Create a free account or log in to view the complete similarity list and save your playlist.`
+                                            : `Your plan includes the first ${maxTracksPerPlaylist} results. Subscribe to unlock the complete similarity list.`}
                                     </p>
                                     <div className="flex gap-[var(--px-15)] justify-center items-center">
-                                        <ButtonSleek text="Create Free Account" href="/auth/register" onClick={() => {}} />
-                                        <ButtonSleek text="Log In" href="/auth/login" onClick={() => {}} transparent />
+                                        {isGuest ? (
+                                            <>
+                                                <ButtonSleek text="Create Free Account" href="/auth/register" onClick={() => {}} />
+                                                <ButtonSleek text="Log In" href="/auth/login" onClick={() => {}} transparent />
+                                            </>
+                                        ) : (
+                                            <ButtonSleek text="Subscribe" onClick={() => triggerCta("subscribe")} />
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -174,13 +202,22 @@ const PlaylistTable: React.FC = () => {
                                                 }}
                                             />
                                         </div>
-                                        <div className="text-[length:var(--px-10)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-120)]" role="cell">
+                                        <TrackArtwork artworkUrl={track.artwork_url} className="w-[var(--px-34)] h-[var(--px-34)] mr-[var(--px-6)] rounded-xs" />
+                                        {/* Apple Music icon at rest — fixed slot between Title and Year (right-aligned toward the
+                                            year), so its position never depends on title length. Hidden while playing (the full
+                                            lockup then shows inside the player); the slot keeps its width so the row stays put. */}
+                                        <div className="flex items-center justify-end w-[var(--px-30)] mx-[var(--px-5)]" role="cell">
+                                            {track.deep_link_url && !(currentTrackId === track.id && isPlaying) && (
+                                                <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
+                                            )}
+                                        </div>
+                                        <div className="select-none text-[length:var(--px-10)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-120)]" role="cell">
                                             {track.artist}
                                         </div>
-                                        <div className="text-[length:var(--px-10)] font-helvetica font-light tracking-[var(--px-0-1)] uppercase text-center mx-[var(--px-5)] w-[var(--px-140)]" role="cell">
+                                        <div className="select-none text-[length:var(--px-10)] font-helvetica font-light tracking-[var(--px-0-1)] uppercase text-center mx-[var(--px-5)] w-[var(--px-140)]" role="cell">
                                             {track.title}
                                         </div>
-                                        <div className="text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-130)] flex flex-col items-center gap-[var(--px-3)]" role="cell">
+                                        <div className="text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-90)] flex flex-col items-center gap-[var(--px-3)]" role="cell">
                                             <span className="text-[var(--color-primary-hover)] text-[length:var(--px-9)]">
                                                 {resolveLabel(track.label) || null}
                                             </span>
@@ -261,13 +298,10 @@ const PlaylistTable: React.FC = () => {
                                             trackId={track.id}
                                             isPlaying={currentTrackId === track.id && isPlaying}
                                             totalDuration={track.duration}
+                                            appleDeepLinkUrl={track.deep_link_url}
                                         />
                                     )}
                                 </div>
-                            </div>
-                            {/* Creative Commons License Icons - Bottom Right */}
-                            <div className="absolute right-[var(--px-5)] bottom-[var(--px-3)]">
-                                <CCLicenseGroup size={7} />
                             </div>
                         </div>
                     </div>
@@ -278,6 +312,12 @@ const PlaylistTable: React.FC = () => {
                     Matched by PYXIS-1 : {footerResultCount} results{footerTopMatch ? ` | Top match: ${footerTopMatch}` : ''}{footerAnalysisTime ? ` | Analysis: ${footerAnalysisTime}` : ''}
                 </div>
             </div>
+            <GateCtaModal
+                reason={rateLoginPrompt ? "login_required" : null}
+                title="Log in to rate tracks"
+                body="Rating individual tracks needs an account. Log in or create a free account to rate."
+                onClose={() => setRateLoginPrompt(false)}
+            />
         </div>
     );
 };

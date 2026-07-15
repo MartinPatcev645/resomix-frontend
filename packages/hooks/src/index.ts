@@ -8,10 +8,13 @@ export * from "./Similarity/useUpload";
 export * from "./Similarity/useSelection";
 export * from './useFirstVisit';
 export * from './useTermsAcceptance';
+export * from './Entitlements/useEntitlements';
+export * from './Entitlements/useTrackCountOptions';
 export { useCustomPeaks } from "./Waveform/useCustomPeaks";
 export { loadPeaksData } from "./Waveform/peaksCache";
 export * from './Playlist/usePlaylistLoader';
 export * from './Playlist/usePlaylistFork';
+export * from './Playlist/useFavoritePlaylist';
 export * from './Player/AudioProvider';
 export * from './Feedback/useFeedbackSubmit'
 export * from './Contact/useContactSubmit'

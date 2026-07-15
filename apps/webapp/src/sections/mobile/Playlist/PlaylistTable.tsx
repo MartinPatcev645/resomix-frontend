@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { SimilarityPlayer, CCLicenseGroup } from "@/components/index.ts";
-import { formatDuration, formatPercentage, useGlobalAudioController } from "@resomix/hooks";
-import { usePlayerStore, usePlaylistStore, useAuthStore } from "@resomix/stores";
+import { SimilarityPlayer } from "@/components/index.ts";
+import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
+import { formatDuration, formatPercentage, useGlobalAudioController, useEntitlements } from "@resomix/hooks";
+import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { HoverFlow, ButtonSleek } from "@resomix/ui";
+import { useEntitlementCta } from "@/utils/entitlementCta.ts";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import MoreSvg from "@/assets/icons/more.svg";
 import { DEMO_MODE } from "@resomix/config";
@@ -16,7 +18,12 @@ interface PlaylistTableProps {
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const { playlistData } = usePlaylistStore();
     const tracks = playlistData?.similar_tracks ?? [];
-    const { isAuthenticated } = useAuthStore();
+
+    // Result-unlock teasing: reveal the plan's quota, blur + upsell the rest.
+    const { maxTracksPerPlaylist, isGuest, loading: entitlementsLoading } = useEntitlements();
+    const { trigger: triggerCta } = useEntitlementCta();
+    const maxUnlocked = entitlementsLoading ? Number.POSITIVE_INFINITY : maxTracksPerPlaylist;
+    const ctaCardRank = entitlementsLoading ? -1 : maxTracksPerPlaylist + 2;
 
     // --- Analysis footer stats ---
     const playlistId = playlistData?.playlist?.id;
@@ -72,21 +79,29 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
         <div className="flex flex-col items-center justify-start w-full gap-[var(--px-10)] mt-[var(--px-25)]" role="table" aria-label="Similar tracks">
             <h2 className="sr-only">Similar Tracks</h2>
             {tracks.map((track) => {
-                const isRestricted = !isAuthenticated && track.rank > 10;
+                const isRestricted = track.rank > maxUnlocked;
                 return (
                     <div key={track.id} className="relative w-full">
-                        {track.rank === 12 && isRestricted && (
+                        {track.rank === ctaCardRank && isRestricted && (
                             <div className="absolute z-50 left-0 w-full flex flex-col items-center justify-center px-[var(--px-20)] pt-[var(--px-20)] pointer-events-auto">
                                 <div className="bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-30)] pb-[var(--px-30)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center max-w-[var(--px-350)] w-full">
                                     <h3 className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)] text-center">
                                         Unlock all matching tracks
                                     </h3>
                                     <p className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] text-center text-white mb-[var(--px-20)]">
-                                        Guest access includes the first 10 results. Create a free account or log in to view the complete similarity list and save your playlist.
+                                        {isGuest
+                                            ? `Guest access includes the first ${maxTracksPerPlaylist} results. Create a free account or log in to view the complete similarity list and save your playlist.`
+                                            : `Your plan includes the first ${maxTracksPerPlaylist} results. Subscribe to unlock the complete similarity list.`}
                                     </p>
                                     <div className="flex flex-col gap-[var(--px-10)] items-center w-full">
-                                        <ButtonSleek text="Create Free Account" href="/auth/register" onClick={() => {}} />
-                                        <ButtonSleek text="Log In" href="/auth/login" onClick={() => {}} transparent />
+                                        {isGuest ? (
+                                            <>
+                                                <ButtonSleek text="Create Free Account" href="/auth/register" onClick={() => {}} />
+                                                <ButtonSleek text="Log In" href="/auth/login" onClick={() => {}} transparent />
+                                            </>
+                                        ) : (
+                                            <ButtonSleek text="Subscribe" onClick={() => triggerCta("subscribe")} />
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -142,9 +157,10 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                 />
                                             )}
                                         </div>
+                                        <TrackArtwork artworkUrl={track.artwork_url} className="w-[var(--px-40)] h-[var(--px-40)] rounded-md mr-[var(--px-6)]" />
                                         <div className="flex flex-col w-[var(--px-290)] gap-[var(--px-2)]" role="cell">
                                             <div className="w-full">
-                                                <div className="text-[length:var(--px-13)] lg:text-[length:var(--px-11)] font-helvetica font-light tracking-[var(--px-0-1)] leading-[var(--px-14)] uppercase text-left truncate max-w-[var(--px-250)]">
+                                                <div className="select-none text-[length:var(--px-13)] lg:text-[length:var(--px-11)] font-helvetica font-light tracking-[var(--px-0-1)] leading-[var(--px-14)] uppercase text-left truncate max-w-[var(--px-250)]">
                                                     {currentTrackId === track.id && isPlaying ? (
                                                         <HoverFlow
                                                             text={track.title}
@@ -161,7 +177,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                 </div>
                                             </div>
                                             <div className="w-full" role="cell">
-                                                <div className="text-[length:var(--px-8)] font-helvetica font-light tracking-[var(--px-0-1)] text-left leading-[var(--px-9)] truncate max-w-[var(--px-250)]">
+                                                <div className="select-none text-[length:var(--px-8)] font-helvetica font-light tracking-[var(--px-0-1)] text-left leading-[var(--px-9)] truncate max-w-[var(--px-250)]">
                                                     {track.artist}
                                                 </div>
                                             </div>
@@ -190,7 +206,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                     </button>
                                     {currentTrackId === track.id && isPlaying && (
                                         <div>
-                                            <SimilarityPlayer trackId={track.id} isPlaying={currentTrackId === track.id} totalDuration={track.duration} />
+                                            <SimilarityPlayer trackId={track.id} isPlaying={currentTrackId === track.id} totalDuration={track.duration} appleDeepLinkUrl={track.deep_link_url} />
                                         </div>
                                     )}
                                 </div>
@@ -216,10 +232,6 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 >
                                     <img src={MoreSvg} draggable={false} aria-label="More" alt="More" className="w-[var(--px-19)] h-[var(--px-14)]" />
                                 </button>
-                                {/* Creative Commons License Icons - Bottom Right */}
-                                <div className="absolute right-[var(--px-5)] bottom-[var(--px-3)]">
-                                    <CCLicenseGroup size={7} />
-                                </div>
                             </div>
                         </div>
                     </div>

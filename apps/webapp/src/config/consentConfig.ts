@@ -14,16 +14,16 @@ export const consentConfig = {
     {
       id: 'essential',
       label: 'Essential',
-      description: 'Strictly necessary for the application to function. This includes resomix-auth-storage (login sync) and refresh_token (session management).',
+      description: 'Strictly necessary for the application to function and to prevent abuse. This includes resomix-auth-storage (login sync), refresh_token (session management), and a privacy-preserving device signal (a one-way hash) used solely to enforce fair-usage limits and prevent abuse. This is processed under legitimate interest — it is not advertising or analytics, and works regardless of your Analytics choice below.',
       required: true,
       defaultValue: true,
     },
     {
       id: 'analytics',
       label: 'Analytics & Tracking',
-      description: 'Used for Posthog (feature tracking), Google Analytics, and Google Tag Manager to help us improve the experience.',
+      description: 'Used for Posthog (feature tracking), Google Analytics, and Google Tag Manager to help us improve the experience. Optional — declining this does not affect fair-usage/abuse-prevention (see Essential).',
       defaultValue: true,
-      gtag: 'analytics_storage', 
+      gtag: 'analytics_storage',
     },
     {
       id: 'functional',

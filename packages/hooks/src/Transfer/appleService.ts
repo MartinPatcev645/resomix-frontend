@@ -139,8 +139,7 @@ export const transferPlaylistToAppleMusic = async (
     ): string => {
       const url = new URL(`${API_CONFIG.BASE_URL}${endpoint}`);
 
-      // Add API key
-      url.searchParams.append("api_key", API_CONFIG.API_KEY);
+      // No api_key: transfer endpoints authenticate via the user's JWT (attached by the client).
 
       // Add any additional query params
       Object.entries(queryParams).forEach(([key, value]) => {

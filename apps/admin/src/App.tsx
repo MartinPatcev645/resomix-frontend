@@ -6,6 +6,7 @@ import ContactPage from '@/pages/ContactPage.tsx'
 import WaitlistPage from '@/pages/WaitlistPage.tsx'
 import PipelinePage from '@/pages/PipelinePage.tsx'
 import AnalyticsPage from '@/pages/AnalyticsPage.tsx'
+import PlansPage from '@/pages/PlansPage.tsx'
 import PlaylistsPage from '@/pages/PlaylistsPage.tsx'
 import PlaylistDetailsPage from '@/pages/PlaylistDetailsPage.tsx'
 import TracksPage from '@/pages/TracksPage.tsx'
@@ -85,6 +86,7 @@ function App() {
               <Route path="jobs" element={<Navigate to="/pipeline" replace />} />
               <Route path="processing-jobs" element={<Navigate to="/pipeline" replace />} />
               <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="plans" element={<PlansPage />} />
               <Route path="playlists" element={<PlaylistsPage />} />
               <Route path="playlists/:uuid" element={<PlaylistDetailsPage />} />
               <Route path="tracks" element={<TracksPage />} />

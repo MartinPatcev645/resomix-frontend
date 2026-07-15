@@ -64,6 +64,10 @@ import { DemoStageBanner } from "./Elements/DemoStageBanner";
 import { CartIcon } from "./Elements/CartIcon";
 import { ProfileDropdown } from "./Elements/ProfileDropdown";
 import LoginContent from "./Content/LoginContent";
+import { GoogleSignInButton } from "./Auth/GoogleSignInButton";
+import { GoogleOneTap } from "./Auth/GoogleOneTap";
+import { PlanBillingCard } from "./Billing/PlanBillingCard";
+import { ConsumerPricingContent } from "./Billing/ConsumerPricingContent";
 import RegisterContent from "./Content/RegisterContent";
 import ForgotPasswordContent from "./Content/ForgotPasswordContent";
 import ResetPasswordContent from "./Content/ResetPasswordContent";
@@ -135,6 +139,10 @@ export {
   AuthStatusBanner,
   DemoStageBanner,
   LoginContent,
+  GoogleSignInButton,
+  GoogleOneTap,
+  PlanBillingCard,
+  ConsumerPricingContent,
   RegisterContent,
   ForgotPasswordContent,
   ResetPasswordContent,
