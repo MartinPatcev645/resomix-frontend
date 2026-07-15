@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '@resomix/stores';
-import { getMyProfile, refreshAccessToken } from '@resomix/api-client';
+import { getMyProfile, refreshAccessToken, verifySession } from '@resomix/api-client';
 
 // Global flag to ensure initialization only happens once across the entire app
 // This persists across route navigations since App.tsx doesn't remount
@@ -139,19 +139,32 @@ export const useAuthInit = () => {
           return;
         }
 
-        // If we have a user but no token, try to get it from other tabs first.
-        // Do NOT call refreshAccessToken() here — just initialize with user data.
-        // The interceptor will handle getting a fresh token on the first API call.
+        // If we have a persisted user but no token, first try to borrow one from another open tab.
         if (!token && hasUser) {
           const sharedToken = await requestTokenFromOtherTabs();
-          
+
           if (sharedToken) {
             store.setAccessToken(sharedToken);
+            setIsInitialized(true);
+            setIsLoading(false);
+            return;
           }
 
-          // Initialize immediately — we have user data from persist,
-          // so the UI shows logged-in state. Token will be acquired
-          // lazily by the interceptor on the first API call if needed.
+          // No local token and no other tab has one — so the persisted "logged in" flag can't be
+          // trusted (classic case: the app is reopened from cache after the session expired). Ask
+          // the server BEFORE showing a logged-in UI, so a dead session never lets the user onto a
+          // protected page only to fail on their first action (upload, etc.). This runs while the
+          // init loader is up (no pages mounted yet), so it can't race the axios refresh interceptor.
+          const session = await verifySession();
+          if (session.status === 'valid') {
+            store.setAccessToken(session.accessToken);
+          } else if (session.status === 'invalid') {
+            // Session is genuinely dead → clear the stale persisted auth. The navbar then reflects
+            // logged-out and ProtectedRoute redirects any protected page to login.
+            store.logout({ broadcast: false });
+          }
+          // 'network' (server unreachable) → leave the optimistic state as-is; the interceptor
+          // re-checks on the first real API call rather than logging the user out on a connectivity blip.
           setIsInitialized(true);
           setIsLoading(false);
           return;

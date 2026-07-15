@@ -1,6 +1,6 @@
-import { ConsumerPricingContent } from "@resomix/ui";
+import { PricingContent } from "@resomix/ui";
 
-/** Consumer plans / subscribe page (distinct from the B2B /pricing page). */
+/** Unified pricing page (consumer section + B2B section). Also served at /pricing. */
 export default function SubscribePage() {
-  return <ConsumerPricingContent baseUrl="/" />;
+  return <PricingContent baseUrl="/" />;
 }

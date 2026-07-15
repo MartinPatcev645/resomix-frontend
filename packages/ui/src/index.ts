@@ -68,6 +68,8 @@ import { GoogleSignInButton } from "./Auth/GoogleSignInButton";
 import { GoogleOneTap } from "./Auth/GoogleOneTap";
 import { PlanBillingCard } from "./Billing/PlanBillingCard";
 import { ConsumerPricingContent } from "./Billing/ConsumerPricingContent";
+import { PartnerPricingContent } from "./Billing/PartnerPricingContent";
+import { PricingContent } from "./Billing/PricingContent";
 import RegisterContent from "./Content/RegisterContent";
 import ForgotPasswordContent from "./Content/ForgotPasswordContent";
 import ResetPasswordContent from "./Content/ResetPasswordContent";
@@ -143,6 +145,8 @@ export {
   GoogleOneTap,
   PlanBillingCard,
   ConsumerPricingContent,
+  PartnerPricingContent,
+  PricingContent,
   RegisterContent,
   ForgotPasswordContent,
   ResetPasswordContent,
