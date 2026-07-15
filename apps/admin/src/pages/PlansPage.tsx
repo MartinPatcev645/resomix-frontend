@@ -3,10 +3,12 @@ import {
   App,
   Button,
   Card,
+  Collapse,
   Descriptions,
   Empty,
   Input,
   InputNumber,
+  Popconfirm,
   Select,
   Space,
   Spin,
@@ -17,13 +19,17 @@ import {
   Typography,
 } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { RotateCw, Search, Layers, Info, Save, Undo2 } from 'lucide-react'
+import { RotateCw, Search, Layers, Info, Save, Undo2, CreditCard, Plus, Trash2 } from 'lucide-react'
 import { usePlans } from '@/hooks/usePlans.ts'
 import {
   setPlanEntitlement,
   updateAdminPlan,
   getUserEffectivePlan,
+  addPlanPrice,
+  setPlanPriceActive,
+  deletePlanPrice,
   type AdminPlan,
+  type AdminPlanPrice,
   type AdminFeature,
   type PlanEntitlementValue,
   type AdminUserEffectivePlan,
@@ -229,6 +235,220 @@ function UserLookup() {
   )
 }
 
+// ── Stripe price management for one plan (data-driven price mapping) ─────────────────────────
+const INTERVAL_OPTIONS = [
+  { value: 'month', label: 'Monthly' },
+  { value: 'year', label: 'Yearly' },
+]
+
+function formatAmount(cents: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format((cents ?? 0) / 100)
+  } catch {
+    return `${((cents ?? 0) / 100).toFixed(2)} ${currency}`
+  }
+}
+
+function PlanPriceEditor({
+  plan,
+  onChanged,
+}: {
+  plan: AdminPlan
+  onChanged: () => void | Promise<void>
+}) {
+  const { message } = App.useApp()
+  const [priceId, setPriceId] = useState('')
+  const [intervalSel, setIntervalSel] = useState('month')
+  const [adding, setAdding] = useState(false)
+  const [busyId, setBusyId] = useState<number | null>(null)
+
+  const prices = plan.prices ?? []
+
+  const add = async () => {
+    const id = priceId.trim()
+    if (!id) {
+      message.warning('Paste a Stripe price ID first')
+      return
+    }
+    setAdding(true)
+    const res = await addPlanPrice(plan.code, id, intervalSel)
+    setAdding(false)
+    if (res.success) {
+      message.success('Price attached')
+      setPriceId('')
+      await onChanged()
+    } else {
+      message.error(res.error || 'Could not attach price')
+    }
+  }
+
+  const toggle = async (row: AdminPlanPrice, active: boolean) => {
+    setBusyId(row.id)
+    const res = await setPlanPriceActive(plan.code, row.id, active)
+    setBusyId(null)
+    if (res.success) {
+      message.success(active ? 'Price is now offered' : 'Price hidden')
+      await onChanged()
+    } else {
+      message.error(res.error || 'Could not update price')
+    }
+  }
+
+  const remove = async (row: AdminPlanPrice) => {
+    setBusyId(row.id)
+    const res = await deletePlanPrice(plan.code, row.id)
+    setBusyId(null)
+    if (res.success) {
+      message.success('Price removed')
+      await onChanged()
+    } else {
+      message.error(res.error || 'Could not remove price')
+    }
+  }
+
+  const columns: TableColumnsType<AdminPlanPrice> = [
+    {
+      title: 'Amount',
+      key: 'amount',
+      render: (_, r) => <span className="font-medium">{formatAmount(r.unit_amount_cents, r.currency)}</span>,
+    },
+    {
+      title: 'Interval',
+      dataIndex: 'interval',
+      key: 'interval',
+      render: (v: string) => <Tag className="!m-0">{v}</Tag>,
+    },
+    { title: 'Currency', dataIndex: 'currency', key: 'currency' },
+    {
+      title: 'Stripe price ID',
+      dataIndex: 'stripe_price_id',
+      key: 'stripe_price_id',
+      render: (v: string) => (
+        <Text copyable={{ text: v }} className="font-mono !text-xs">
+          {v}
+        </Text>
+      ),
+    },
+    {
+      title: 'Offered',
+      key: 'is_active',
+      align: 'center',
+      render: (_, r) => (
+        <Switch size="small" checked={r.is_active} loading={busyId === r.id} onChange={(c) => void toggle(r, c)} />
+      ),
+    },
+    {
+      title: '',
+      key: 'actions',
+      align: 'right',
+      render: (_, r) => (
+        <Popconfirm
+          title="Remove this price?"
+          description="Existing subscriptions are unaffected — this only stops offering it."
+          okText="Remove"
+          okButtonProps={{ danger: true }}
+          onConfirm={() => void remove(r)}
+        >
+          <Button size="small" type="text" danger icon={<Trash2 size={14} />} loading={busyId === r.id} />
+        </Popconfirm>
+      ),
+    },
+  ]
+
+  return (
+    <div className="space-y-3">
+      {prices.length > 0 ? (
+        <Table<AdminPlanPrice>
+          columns={columns}
+          dataSource={prices}
+          rowKey="id"
+          size="small"
+          pagination={false}
+        />
+      ) : (
+        <Text type="secondary" className="!text-xs">
+          No Stripe prices attached yet — paste a Price ID below to enable checkout for this plan.
+        </Text>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          placeholder="Stripe price ID (price_…)"
+          value={priceId}
+          onChange={(e) => setPriceId(e.target.value)}
+          onPressEnter={() => void add()}
+          style={{ maxWidth: 300 }}
+          allowClear
+        />
+        <Select value={intervalSel} onChange={setIntervalSel} options={INTERVAL_OPTIONS} style={{ width: 130 }} />
+        <Button type="primary" icon={<Plus size={16} />} loading={adding} onClick={() => void add()}>
+          Add price
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ── Stripe pricing card: one collapse panel per purchasable plan ─────────────────────────────
+function PlanPricing({
+  plans,
+  onChanged,
+}: {
+  plans: AdminPlan[]
+  onChanged: () => void | Promise<void>
+}) {
+  // Prices only apply to purchasable tiers — guests and the free tier never carry a Stripe price.
+  const priced = plans.filter((p) => !['guest', 'free'].includes(p.code))
+  if (priced.length === 0) return null
+
+  const defaultActive = priced.filter((p) => (p.prices ?? []).length > 0).map((p) => p.code)
+
+  return (
+    <Card
+      className="!border-default mb-6"
+      title={
+        <span className="flex items-center gap-2">
+          <CreditCard size={16} /> Stripe pricing
+        </span>
+      }
+    >
+      <div className="flex items-start gap-2 mb-4 text-xs text-gray-500">
+        <Info size={14} className="mt-0.5 shrink-0" />
+        <span>
+          Attach a Stripe <strong>Price ID</strong> to a plan — the amount, currency and product are pulled from
+          Stripe automatically. Checkout offers the active price matching the buyer's currency. Toggle{' '}
+          <strong>Offered</strong> to show or hide a price without deleting it. A plan needs at least one active
+          price before it can be purchased.
+        </span>
+      </div>
+      <Collapse
+        defaultActiveKey={defaultActive}
+        items={priced.map((p) => {
+          const activeCount = (p.prices ?? []).filter((pr) => pr.is_active).length
+          return {
+            key: p.code,
+            label: (
+              <span className="flex items-center gap-2">
+                <span className="font-medium">{p.name}</span>
+                <Text type="secondary" className="font-mono !text-xs">
+                  {p.code}
+                </Text>
+                {activeCount > 0 ? (
+                  <Tag color="green" className="!m-0">
+                    {activeCount} active price{activeCount > 1 ? 's' : ''}
+                  </Tag>
+                ) : (
+                  <Tag className="!m-0">no active price</Tag>
+                )}
+              </span>
+            ),
+            children: <PlanPriceEditor plan={p} onChanged={onChanged} />,
+          }
+        })}
+      />
+    </Card>
+  )
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────────────────────
 interface FeatureRow {
   key: string
@@ -369,6 +589,8 @@ export default function PlansPage() {
           />
         </div>
       )}
+
+      <PlanPricing plans={plans} onChanged={refresh} />
 
       <UserLookup />
     </div>

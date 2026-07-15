@@ -16,6 +16,17 @@ export interface AdminFeature {
   description: string | null;
 }
 
+/** A Stripe price attached to a plan (the data-driven price mapping). */
+export interface AdminPlanPrice {
+  id: number;
+  interval: string;            // month | year
+  currency: string;            // EUR | USD | …
+  unit_amount_cents: number;
+  stripe_price_id: string;
+  stripe_product_id: string | null;
+  is_active: boolean;
+}
+
 /** A plan with its fully-resolved entitlement values (per feature key). */
 export interface AdminPlan {
   code: string;               // guest | free | basic | pro | max
@@ -29,6 +40,7 @@ export interface AdminPlan {
   sort_order: number;
   entitlements_version: number;
   entitlements: Record<string, PlanEntitlementValue>;
+  prices?: AdminPlanPrice[];
 }
 
 /** A per-user entitlement override row. */
@@ -207,6 +219,58 @@ export const updateAdminPlan = async (
     );
     if (res.success) return res;
     return { success: false, error: res.error || "Failed to update plan." };
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+// ─── Plan prices (Stripe price mapping; plans:manage) ──────
+
+/** POST /admin/plans/{code}/prices — attach a Stripe price by ID.
+ *  Amount/currency/product are pulled from Stripe server-side; upserted by (plan, interval, currency). */
+export const addPlanPrice = async (
+  code: string,
+  stripePriceId: string,
+  interval = "month",
+): Promise<Envelope<AdminPlanPrice>> => {
+  try {
+    const url = `${API_CONFIG.ENDPOINTS.ADMIN_PLANS}/${encodeURIComponent(code)}/prices`;
+    const res = await axiosWrapper<Envelope<AdminPlanPrice>>(
+      authClient.post(url, { stripe_price_id: stripePriceId.trim(), interval }),
+    );
+    if (res.success) return res;
+    return { success: false, error: res.error || "Failed to add price." };
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/** PATCH /admin/plans/{code}/prices/{priceId} — toggle a price active/inactive. */
+export const setPlanPriceActive = async (
+  code: string,
+  priceId: number,
+  isActive: boolean,
+): Promise<SimpleAdminResponse> => {
+  try {
+    const url = `${API_CONFIG.ENDPOINTS.ADMIN_PLANS}/${encodeURIComponent(code)}/prices/${priceId}`;
+    const res = await axiosWrapper<SimpleAdminResponse>(authClient.patch(url, { is_active: isActive }));
+    if (res.success) return res;
+    return { success: false, error: res.error || "Failed to update price." };
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/** DELETE /admin/plans/{code}/prices/{priceId} — remove a price mapping. */
+export const deletePlanPrice = async (
+  code: string,
+  priceId: number,
+): Promise<SimpleAdminResponse> => {
+  try {
+    const url = `${API_CONFIG.ENDPOINTS.ADMIN_PLANS}/${encodeURIComponent(code)}/prices/${priceId}`;
+    const res = await axiosWrapper<SimpleAdminResponse>(authClient.delete(url));
+    if (res.success) return res;
+    return { success: false, error: res.error || "Failed to delete price." };
   } catch (error) {
     return handleApiError(error as Error);
   }
