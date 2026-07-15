@@ -20,10 +20,12 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Union
 
+import stripe
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.plan import Feature, Plan, PlanEntitlement, EntitlementOverride
+from app.core.config import settings
+from app.models.plan import Feature, Plan, PlanEntitlement, EntitlementOverride, PlanPrice
 from app.models.user import User
 from app.services.entitlement_service import EntitlementService, _cast_raw, _entitlement_value
 
@@ -84,6 +86,28 @@ class AdminEntitlementService:
         }
 
     @staticmethod
+    def _price_meta(price: PlanPrice) -> Dict[str, Any]:
+        return {
+            "id": price.id,
+            "interval": price.interval,
+            "currency": price.currency,
+            "unit_amount_cents": price.unit_amount_cents,
+            "stripe_price_id": price.stripe_price_id,
+            "stripe_product_id": price.stripe_product_id,
+            "is_active": price.is_active,
+        }
+
+    async def _prices_for_plan(self, db: AsyncSession, plan: Plan) -> List[Dict[str, Any]]:
+        rows = (
+            await db.execute(
+                select(PlanPrice)
+                .where(PlanPrice.plan_id == plan.id)
+                .order_by(PlanPrice.interval, PlanPrice.currency)
+            )
+        ).scalars().all()
+        return [self._price_meta(p) for p in rows]
+
+    @staticmethod
     def _feature_meta(feat: Feature) -> Dict[str, Any]:
         return {
             "key": feat.key,
@@ -116,6 +140,7 @@ class AdminEntitlementService:
         for plan in plans:
             meta = self._plan_meta(plan)
             meta["entitlements"] = await self._entitlements_for_plan(db, plan)
+            meta["prices"] = await self._prices_for_plan(db, plan)
             out.append(meta)
         return out
 
@@ -125,6 +150,7 @@ class AdminEntitlementService:
             return None
         meta = self._plan_meta(plan)
         meta["entitlements"] = await self._entitlements_for_plan(db, plan)
+        meta["prices"] = await self._prices_for_plan(db, plan)
         return meta
 
     async def get_user_effective(self, db: AsyncSession, user: User) -> Dict[str, Any]:
@@ -241,3 +267,104 @@ class AdminEntitlementService:
         plan.updated_by = updated_by
         await db.commit()
         return self._plan_meta(plan)
+
+    # ------------------------------------------------------------------ #
+    # Plan prices (Stripe price mapping — data, not code)
+    # ------------------------------------------------------------------ #
+
+    async def add_or_update_price(
+        self,
+        db: AsyncSession,
+        *,
+        code: str,
+        stripe_price_id: str,
+        interval: str = "month",
+        updated_by: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Attach/refresh a Stripe price for a plan. Amount/currency/product are pulled from Stripe
+        (source of truth) and upserted by (plan, interval, currency). Raises ``KeyError`` (→404) for
+        an unknown plan and ``ValueError`` (→400) if the Stripe price can't be retrieved."""
+        plan = (await db.execute(select(Plan).where(Plan.code == code))).scalar_one_or_none()
+        if plan is None:
+            raise KeyError(f"Unknown plan: {code}")
+
+        stripe_price_id = (stripe_price_id or "").strip()
+        if not stripe_price_id:
+            raise ValueError("stripe_price_id is required.")
+
+        stripe.api_key = settings.stripe_secret_key
+        try:
+            price = stripe.Price.retrieve(stripe_price_id)
+        except Exception as exc:  # invalid id / network / wrong mode
+            raise ValueError(f"Could not retrieve Stripe price '{stripe_price_id}': {exc}")
+
+        currency = (getattr(price, "currency", None) or "eur").upper()
+        amount = int(getattr(price, "unit_amount", 0) or 0)
+        product = getattr(price, "product", None)
+        recurring = getattr(price, "recurring", None)
+        resolved_interval = (getattr(recurring, "interval", None) or interval or "month")
+
+        existing = (
+            await db.execute(
+                select(PlanPrice).where(
+                    PlanPrice.plan_id == plan.id,
+                    PlanPrice.interval == resolved_interval,
+                    PlanPrice.currency == currency,
+                )
+            )
+        ).scalar_one_or_none()
+
+        if existing is not None:
+            existing.stripe_price_id = stripe_price_id
+            existing.stripe_product_id = product
+            existing.unit_amount_cents = amount
+            existing.is_active = True
+            existing.updated_by = updated_by
+            row = existing
+        else:
+            row = PlanPrice(
+                plan_id=plan.id,
+                interval=resolved_interval,
+                currency=currency,
+                unit_amount_cents=amount,
+                stripe_price_id=stripe_price_id,
+                stripe_product_id=product,
+                is_active=True,
+                updated_by=updated_by,
+            )
+            db.add(row)
+
+        await db.commit()
+        await db.refresh(row)
+        return self._price_meta(row)
+
+    async def set_price_active(
+        self, db: AsyncSession, *, code: str, price_id: int, is_active: bool, updated_by: Optional[int] = None
+    ) -> Dict[str, Any]:
+        row = (
+            await db.execute(
+                select(PlanPrice)
+                .join(Plan, Plan.id == PlanPrice.plan_id)
+                .where(Plan.code == code, PlanPrice.id == price_id)
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            raise KeyError(f"Price {price_id} not found for plan '{code}'.")
+        row.is_active = bool(is_active)
+        row.updated_by = updated_by
+        await db.commit()
+        await db.refresh(row)
+        return self._price_meta(row)
+
+    async def delete_price(self, db: AsyncSession, *, code: str, price_id: int) -> None:
+        row = (
+            await db.execute(
+                select(PlanPrice)
+                .join(Plan, Plan.id == PlanPrice.plan_id)
+                .where(Plan.code == code, PlanPrice.id == price_id)
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            raise KeyError(f"Price {price_id} not found for plan '{code}'.")
+        await db.delete(row)
+        await db.commit()

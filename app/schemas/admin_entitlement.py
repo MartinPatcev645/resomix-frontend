@@ -34,3 +34,23 @@ class UpdatePlanRequest(BaseModel):
 
     class Config:
         json_schema_extra = {"example": {"is_active": True}}
+
+
+class AddPlanPriceRequest(BaseModel):
+    """Attach a Stripe price to a plan. The amount/currency/product are pulled from Stripe by ID
+    (source of truth); ``interval`` is a fallback if the price isn't recurring."""
+
+    stripe_price_id: str = Field(..., description="Stripe Price ID, e.g. price_123...")
+    interval: str = Field("month", description="Billing interval fallback (month|year).")
+
+    class Config:
+        json_schema_extra = {"example": {"stripe_price_id": "price_123", "interval": "month"}}
+
+
+class UpdatePlanPriceRequest(BaseModel):
+    """Toggle a plan price active/inactive."""
+
+    is_active: bool = Field(..., description="Whether this price is offered.")
+
+    class Config:
+        json_schema_extra = {"example": {"is_active": False}}

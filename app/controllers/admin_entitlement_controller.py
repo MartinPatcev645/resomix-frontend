@@ -90,6 +90,55 @@ class AdminEntitlementController:
         logger.info("Plan updated: code=%s by=%s", code, current_admin.id)
         return JSONResponse(status_code=200, content=format_response(success=True, data=result))
 
+    async def add_price(
+        self, db: AsyncSession, code: str, stripe_price_id: str, interval: str, current_admin: User
+    ) -> JSONResponse:
+        try:
+            result = await self.service.add_or_update_price(
+                db, code=code, stripe_price_id=stripe_price_id, interval=interval,
+                updated_by=self._actor_id(current_admin),
+            )
+        except KeyError as e:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content=format_response(success=False, error=str(e).strip("\"'")),
+            )
+        except ValueError as e:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content=format_response(success=False, error=str(e)),
+            )
+        logger.info("Plan price upserted: plan=%s price=%s by=%s", code, stripe_price_id, current_admin.id)
+        return JSONResponse(status_code=200, content=format_response(success=True, data=result))
+
+    async def set_price_active(
+        self, db: AsyncSession, code: str, price_id: int, is_active: bool, current_admin: User
+    ) -> JSONResponse:
+        try:
+            result = await self.service.set_price_active(
+                db, code=code, price_id=price_id, is_active=is_active,
+                updated_by=self._actor_id(current_admin),
+            )
+        except KeyError as e:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content=format_response(success=False, error=str(e).strip("\"'")),
+            )
+        return JSONResponse(status_code=200, content=format_response(success=True, data=result))
+
+    async def delete_price(
+        self, db: AsyncSession, code: str, price_id: int, current_admin: User
+    ) -> JSONResponse:
+        try:
+            await self.service.delete_price(db, code=code, price_id=price_id)
+        except KeyError as e:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content=format_response(success=False, error=str(e).strip("\"'")),
+            )
+        logger.info("Plan price deleted: plan=%s price=%s by=%s", code, price_id, current_admin.id)
+        return JSONResponse(status_code=200, content=format_response(success=True, data={"deleted": price_id}))
+
     async def get_metrics(self) -> JSONResponse:
         """In-process entitlement observability counters (gate allow/deny, fail-open, cache hit/miss)."""
         from app.services import entitlement_metrics

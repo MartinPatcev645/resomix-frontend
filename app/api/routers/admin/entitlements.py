@@ -20,7 +20,12 @@ from app.api.dependencies.auth import require_admin, require_permission
 from app.api.dependencies.database import get_database_session
 from app.controllers.admin_entitlement_controller import AdminEntitlementController
 from app.models.user import User
-from app.schemas.admin_entitlement import SetEntitlementRequest, UpdatePlanRequest
+from app.schemas.admin_entitlement import (
+    SetEntitlementRequest,
+    UpdatePlanRequest,
+    AddPlanPriceRequest,
+    UpdatePlanPriceRequest,
+)
 from app.schemas.common import ErrorResponse
 
 router = APIRouter(
@@ -99,6 +104,42 @@ async def update_plan(
         name=payload.name, is_active=payload.is_active, is_default=payload.is_default,
         current_admin=current_admin,
     )
+
+
+@router.post("/plans/{code}/prices", status_code=200, summary="Attach a Stripe price to a plan")
+async def add_plan_price(
+    payload: AddPlanPriceRequest,
+    code: str = Path(..., description="Plan code"),
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("plans:manage")),
+) -> JSONResponse:
+    return await controller.add_price(db, code, payload.stripe_price_id, payload.interval, current_admin)
+
+
+@router.patch(
+    "/plans/{code}/prices/{price_id}", status_code=200, summary="Toggle a plan price active/inactive"
+)
+async def update_plan_price(
+    payload: UpdatePlanPriceRequest,
+    code: str = Path(..., description="Plan code"),
+    price_id: int = Path(..., description="plan_prices row id"),
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("plans:manage")),
+) -> JSONResponse:
+    return await controller.set_price_active(db, code, price_id, payload.is_active, current_admin)
+
+
+@router.delete("/plans/{code}/prices/{price_id}", status_code=200, summary="Remove a plan price")
+async def delete_plan_price(
+    code: str = Path(..., description="Plan code"),
+    price_id: int = Path(..., description="plan_prices row id"),
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+    _: User = Depends(require_permission("plans:manage")),
+) -> JSONResponse:
+    return await controller.delete_price(db, code, price_id, current_admin)
 
 
 @router.get(
