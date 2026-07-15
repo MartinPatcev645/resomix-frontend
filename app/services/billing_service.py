@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.entitlement_keys import ACTIVE_SUBSCRIPTION_STATUSES, PlanCode, FeatureKey
-from app.models.billing import BillingInvoice
+from app.models.billing import BillingInvoice, UsagePeriodHistory
 from app.models.plan import Plan, PlanPrice
 from app.models.purchase import UserSubscription
 from app.models.user import User
@@ -269,3 +269,36 @@ class BillingService:
             }
             for r in rows
         ]
+
+    async def get_usage_history(
+        self, db: AsyncSession, user: User, limit_periods: int = 12
+    ) -> List[Dict[str, Any]]:
+        """Past-period usage (uploads / similarity) per billing period, newest first."""
+        rows = (
+            await db.execute(
+                select(UsagePeriodHistory)
+                .where(
+                    UsagePeriodHistory.subject_type == "user",
+                    UsagePeriodHistory.subject_id == str(user.id),
+                )
+                .order_by(UsagePeriodHistory.period_start.desc())
+            )
+        ).scalars().all()
+
+        periods: Dict[str, Dict[str, Any]] = {}
+        for r in rows:
+            key = r.period_start.isoformat() if r.period_start else "?"
+            bucket = periods.setdefault(
+                key,
+                {
+                    "period_start": r.period_start.isoformat() if r.period_start else None,
+                    "period_end": r.period_end.isoformat() if r.period_end else None,
+                    "features": [],
+                },
+            )
+            bucket["features"].append(
+                {"feature": r.feature_key, "used": r.used_count, "limit": r.limit_value}
+            )
+
+        ordered = sorted(periods.values(), key=lambda p: p["period_start"] or "", reverse=True)
+        return ordered[:limit_periods]

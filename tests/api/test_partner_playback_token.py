@@ -13,7 +13,7 @@ from jose import jwt
 
 from app.main import app
 from app.core.config import settings
-from app.api.dependencies.partner import get_current_partner
+from app.api.dependencies.partner import get_public_partner
 
 
 class _FakePartner:
@@ -28,16 +28,16 @@ class _SearchOnlyPartner:
 
 @pytest.fixture
 def override_partner():
-    app.dependency_overrides[get_current_partner] = lambda: _FakePartner()
+    app.dependency_overrides[get_public_partner] = lambda: _FakePartner()
     yield
-    app.dependency_overrides.pop(get_current_partner, None)
+    app.dependency_overrides.pop(get_public_partner, None)
 
 
 @pytest.fixture
 def override_partner_search_only():
-    app.dependency_overrides[get_current_partner] = lambda: _SearchOnlyPartner()
+    app.dependency_overrides[get_public_partner] = lambda: _SearchOnlyPartner()
     yield
-    app.dependency_overrides.pop(get_current_partner, None)
+    app.dependency_overrides.pop(get_public_partner, None)
 
 
 @pytest.mark.asyncio
@@ -75,9 +75,14 @@ async def test_playback_token_403_for_similarity_only(override_partner_search_on
 
 
 @pytest.mark.asyncio
-async def test_playback_token_requires_auth():
-    """Without an overridden partner / valid key, the endpoint must reject (401)."""
+async def test_public_frontend_mints_playback_token():
+    """This endpoint is now the FRONTEND playback surface (get_public_partner): with no B2B
+    ``rmx_`` key it resolves to System Partner 1 (playback-enabled) and mints a token, so
+    anonymous / logged-in frontend users can stream. (A ``rmx_`` B2B key still wins.)"""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         resp = await ac.post("/api/v1/partner/playback-token")
-    assert resp.status_code in (401, 403)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body.get("success") is True
+    assert body["data"]["scope"] == "playback"

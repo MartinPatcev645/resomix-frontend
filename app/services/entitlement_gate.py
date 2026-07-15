@@ -29,6 +29,7 @@ from app.models.user import User
 from app.services.billing_period_service import BillingPeriodService
 from app.services.entitlement_service import EntitlementService
 from app.services.usage_counter_service import UsageCounterService
+from app.services.usage_history_service import UsageHistoryService
 from app.services import entitlement_metrics
 
 REASON_LOGIN = "login_required"      # guest → sign up for more
@@ -57,6 +58,7 @@ class EntitlementGate:
         self._entitlements = EntitlementService()
         self._usage = UsageCounterService()
         self._periods = BillingPeriodService()
+        self._history = UsageHistoryService()
 
     @staticmethod
     def _subject(user: Optional[User], visitor_id: Optional[str]) -> Optional[Tuple[str, str]]:
@@ -71,6 +73,12 @@ class EntitlementGate:
         if user is not None:
             return await self._periods.resolve_for_user(db, user)
         return self._periods.resolve_for_guest()
+
+    async def _window(self, db, user: Optional[User], visitor_id: Optional[str]):
+        """Full current window (start, end, period_key, ttl) for the subject."""
+        if user is not None:
+            return await self._periods.resolve_window_for_user(db, user)
+        return self._periods.resolve_window_for_guest()
 
     async def check_boolean(
         self, db: AsyncSession, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
@@ -157,9 +165,20 @@ class EntitlementGate:
     ) -> None:
         """Record one successful use of a counted feature (after the operation succeeded)."""
         subject = self._subject(user, visitor_id)
-        if subject is not None:
-            period_key, ttl = await self._period(db, user, visitor_id)
-            await self._usage.increment(subject[0], subject[1], feature_key, period_key, ttl)
+        if subject is None:
+            return
+        start, end, period_key, ttl = await self._window(db, user, visitor_id)
+        await self._usage.increment(subject[0], subject[1], feature_key, period_key, ttl)
+        # Durable write-through so this period's usage survives the Redis TTL (best-effort; a
+        # failure here must never break the upload / playlist creation that just succeeded).
+        try:
+            limit = await self._entitlements.get_int(db, feature_key, user=user, visitor_id=visitor_id)
+            plan = await self._entitlements.get_effective_plan(db, user)
+            await self._history.record(
+                subject[0], subject[1], plan.id if plan else None, feature_key, start, end, limit
+            )
+        except Exception:
+            pass
 
     async def grant_playlist_signup_bonus(self, db, user: User) -> int:
         """One-time signup bonus: grant ``signup_bonus_playlists`` EXTRA playlist creations for the

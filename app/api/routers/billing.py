@@ -121,3 +121,14 @@ async def invoices(
 ):
     data = await billing_service.list_invoices(db, current_user)
     return JSONResponse(status_code=200, content=format_response(success=True, data={"invoices": data}))
+
+
+@router.get("/usage", summary="Usage history per billing period")
+@limiter.limit("60/minute")
+async def usage(
+    request: Request,
+    db: AsyncSession = Depends(get_database_session),
+    current_user: User = Depends(get_current_user),
+):
+    data = await billing_service.get_usage_history(db, current_user)
+    return JSONResponse(status_code=200, content=format_response(success=True, data={"history": data}))

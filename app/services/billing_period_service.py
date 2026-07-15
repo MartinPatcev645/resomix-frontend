@@ -69,7 +69,10 @@ class BillingPeriodService:
         ttl = int((end - now).total_seconds()) + _TTL_BUFFER_SECONDS
         return period_key, max(ttl, _TTL_BUFFER_SECONDS)
 
-    async def resolve_for_user(self, db: AsyncSession, user: User) -> Tuple[str, int]:
+    async def resolve_window_for_user(
+        self, db: AsyncSession, user: User
+    ) -> Tuple[datetime, datetime, str, int]:
+        """Full window: (period_start, period_end, period_key, ttl_seconds)."""
         now = _now()
         sub = (await db.execute(
             select(UserSubscription).where(
@@ -88,9 +91,19 @@ class BillingPeriodService:
             anchor = user.created_at or now
             start, end = monthly_period_from_anchor(anchor, now)
 
-        return self._key_and_ttl(start, end, now)
+        key, ttl = self._key_and_ttl(start, end, now)
+        return start, end, key, ttl
 
-    def resolve_for_guest(self) -> Tuple[str, int]:
+    async def resolve_for_user(self, db: AsyncSession, user: User) -> Tuple[str, int]:
+        _start, _end, key, ttl = await self.resolve_window_for_user(db, user)
+        return key, ttl
+
+    def resolve_window_for_guest(self) -> Tuple[datetime, datetime, str, int]:
         now = _now()
         start, end = calendar_month_period(now)
-        return self._key_and_ttl(start, end, now)
+        key, ttl = self._key_and_ttl(start, end, now)
+        return start, end, key, ttl
+
+    def resolve_for_guest(self) -> Tuple[str, int]:
+        _start, _end, key, ttl = self.resolve_window_for_guest()
+        return key, ttl

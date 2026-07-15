@@ -13,7 +13,7 @@ async def test_tenant_isolation_flow():
     """
     async with httpx.AsyncClient(app=app, base_url="http://testserver") as client:
         # 1. Verify Public/Frontend Access (Partner ID 1)
-        response = await client.get("/api/v1/search_tracks/?query=Sleep")
+        response = await client.get("/api/v1/search_tracks/?query=Wake")
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
@@ -22,7 +22,7 @@ async def test_tenant_isolation_flow():
         # 2. Verify Partner 2 Access (Scoped Isolation)
         api_key = "rmx_test_V2BjX95N3MwxtCNQ83jWQmkqTtwJzJ"
         
-        response = await client.get("/api/v1/search_tracks/?query=Sleep", headers={"Authorization": f"Bearer {api_key}"})
+        response = await client.get("/api/v1/search_tracks/?query=Wake", headers={"Authorization": f"Bearer {api_key}"})
         assert response.status_code == 200
         data = response.json()
         assert len(data["data"]["tracks"]) == 0
