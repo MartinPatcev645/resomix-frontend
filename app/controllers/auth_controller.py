@@ -483,18 +483,25 @@ class AuthController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         try:
-            user = await self.auth_service.verify_email(db=db, token=token)
+            user, newly_verified = await self.auth_service.verify_email(db=db, token=token)
 
-            # Send welcome email
-            await self.email_service.send_welcome_email(
-                email=user.email, username=user.username
-            )
+            # Send the welcome email only on the FIRST verification. This endpoint is idempotent
+            # (a refresh / prefetch / mail-scanner re-hits it), so gating this avoids sending a
+            # duplicate welcome email on every repeat call.
+            if newly_verified:
+                await self.email_service.send_welcome_email(
+                    email=user.email, username=user.username
+                )
 
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=True,
                 data={
-                    "message": "Email verified successfully! Your welcome bonus playlists have been added to your account.",
+                    "message": (
+                        "Email verified successfully! Your welcome bonus playlists have been added to your account."
+                        if newly_verified
+                        else "Your email is already verified. You can sign in."
+                    ),
                     "user_uuid": user.uuid,
                 },
             )

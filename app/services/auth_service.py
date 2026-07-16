@@ -601,21 +601,24 @@ class AuthService:
             },
         }
 
-    async def verify_email(self, db: AsyncSession, token: str) -> User:
+    async def verify_email(self, db: AsyncSession, token: str) -> Tuple[User, bool]:
         """
-        Verify email with token.
+        Verify email with token. **Idempotent** — clicking the link more than once (a page refresh,
+        a browser/email prefetch, or a mail-security scanner that follows links) returns success
+        instead of a scary "expired" error, as long as the token has not expired by time.
 
         Args:
             db: Database session
             token: Verification token from email
 
         Returns:
-            Verified user
+            Tuple of (verified user, newly_verified). ``newly_verified`` is True only on the FIRST
+            successful verification so the caller can gate one-time side effects (welcome email).
 
         Raises:
             HTTPException: If token is invalid or expired
         """
-        # Get token
+        # Get token (async_get_by_token already excludes rows whose expires_at has passed).
         verification_token = await self.user_token_repo.async_get_by_token(
             db, token, "email_verification"
         )
@@ -626,25 +629,29 @@ class AuthService:
                 detail="Invalid or expired verification token",
             )
 
-        # Was the account already verified before this call? Used as the one-time guard for the
-        # signup bonus (verification is effectively one-time — token consumed + resend blocked once
-        # verified — but this makes the bonus robust even if two tokens ever coexist).
+        # Was the account already verified before this call? Drives both the one-time signup bonus
+        # AND the caller's one-time side effects. Email clients / security scanners routinely GET the
+        # link (the frontend auto-fires verification on load) and users refresh the page, so this
+        # method IS hit more than once for the same token and must stay idempotent.
         existing = await self.user_repo.async_get_by_id(db, verification_token.user_id)
         already_verified = bool(existing and existing.is_email_verified)
 
-        # Mark email as verified
+        # Mark email as verified (idempotent no-op when it already was).
         user = await self.user_repo.async_update_email_verified(
             db=db, user_id=verification_token.user_id, is_verified=True
         )
 
-        # Delete token (fetch-validate-delete pattern)
-        await self.user_token_repo.async_delete_token(
-            db, verification_token.user_id, "email_verification"
-        )
+        # NOTE: we deliberately do NOT delete the token here. Deleting it made this endpoint
+        # non-idempotent — the first hit consumed the token and any second hit (refresh / prefetch /
+        # scanner) then 400'd "Invalid or expired" even though the account was already verified. The
+        # token only ever flips is_email_verified (an idempotent action), so leaving it valid until
+        # its natural expiry is safe: async_cleanup_expired prunes it, and a resend replaces it
+        # (async_create_token deletes same-type tokens before issuing a new one).
+        newly_verified = not already_verified
 
         # Signup bonus: granted once, only on the FIRST verification (best-effort — never blocks
         # verification). Extra playlists are added to the user's current monthly period.
-        if not already_verified:
+        if newly_verified:
             try:
                 granted = await self.entitlement_gate.grant_playlist_signup_bonus(db, user)
                 if granted:
@@ -652,7 +659,7 @@ class AuthService:
             except Exception as exc:
                 logger.warning("Signup bonus grant failed for user %s: %s", user.id, exc)
 
-        return user
+        return user, newly_verified
 
     async def resend_verification_email(
         self, db: AsyncSession, email: str
