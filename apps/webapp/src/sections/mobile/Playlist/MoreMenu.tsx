@@ -17,9 +17,11 @@ interface MoreMenuProps {
     label?: string;
     duration?: number; // in seconds
     score?: number | null;
+    /** Open the share modal (owned by the parent so it survives this menu closing). */
+    onShare?: () => void;
 }
 
-const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, name, label, duration, score = null }) => {
+const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, name, label, duration, score = null, onShare }) => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
     const { exportAndDownloadPlaylist, canExport } = usePlaylistExport();
     // Per-track rating + export are gated: guests can click but get a login prompt (no API call).
@@ -187,6 +189,13 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                         {isInput && (
                             <div className="w-full flex gap-2 flex-col">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
+                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-share-button" text="Share" customWidth="w-full" onClick={() => {
+                                    if (!isAuthenticated) {
+                                        setGate({ reason: "login_required", title: "Log in to share", body: "Create a free account or log in to share your playlists." });
+                                        return;
+                                    }
+                                    onShare?.();
+                                }} id={`playlist-hero-share-button`} />
                             </div>
                         )}
                         <div className="w-full flex flex-col">

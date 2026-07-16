@@ -177,6 +177,8 @@ export default function AuthPage({ mode }: AuthPageProps) {
           baseUrl={BASE_BETA_URL}
           onRegisterSuccess={handleRegisterSuccess}
           onNavigateLogin={handleNavigateLogin}
+          googleClientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+          onGoogleSuccess={handleLoginSuccess}
         />
       )}
       {mode === "forgot-password" && (
