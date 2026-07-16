@@ -9,6 +9,8 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import { attachHls } from "@resomix/hooks";
+import { getPlaylistPlaybackSession } from "@resomix/api-client";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
 import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
 import { CamelotWheel, chromaLabelsForKey, ChromaSummary, ChromaView, Donut, keyFromCamelot, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
@@ -34,7 +36,7 @@ const ribbonTip =
   );
 
 export default function AnalysisPage() {
-  const { status, data, error, progress, fileName, audioUrl, part1Ready, analysisId, analyze, loadById, reset } = useTrackAnalysis();
+  const { status, data, error, progress, fileName, audioUrl, part1Ready, analysisId, playlistUuid, analyze, loadById, reset } = useTrackAnalysis();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -84,6 +86,29 @@ export default function AnalysisPage() {
     setCurrentMs(0);
     setPlaying(false);
   }, [audioUrl]);
+
+  // Server-side playback for the uploaded track when there's no local blob (opened from the
+  // library, a shared/refreshed ?id= link, or after a page reload): reuse the upload's sibling
+  // similarity playlist's seed-only HLS manifest — the same media-server segments the playlist
+  // page streams — and attach hls.js to this same <audio>. Fresh uploads keep the instant local
+  // blob (audioUrl) and skip this; if there's no sibling playlist yet, playback stays silent.
+  useEffect(() => {
+    if (audioUrl) return;                 // fresh upload → native blob src already plays it
+    const a = audioRef.current;
+    if (!a || !playlistUuid) return;
+    let detach: (() => void) | null = null;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { playback_url } = await getPlaylistPlaybackSession(playlistUuid);
+        if (cancelled || !audioRef.current) return;
+        detach = attachHls(audioRef.current, playback_url);
+      } catch {
+        /* no server audio available (session/playlist missing) — leave the player silent */
+      }
+    })();
+    return () => { cancelled = true; if (detach) detach(); };
+  }, [audioUrl, playlistUuid]);
 
   // Stem show/hide selection, shared by the stacked area + the donut.
   const stemNames = data ? Object.keys(data.composition.stems) : [];

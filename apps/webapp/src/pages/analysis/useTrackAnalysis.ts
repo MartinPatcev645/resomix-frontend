@@ -59,6 +59,12 @@ interface StatusDoc {
   part1_ready?: boolean;
   percent: number;
   error?: string;
+  // Alwyzon enriches status/result with the uploaded track's uuid and its sibling similarity
+  // playlist's uuid (owner-gated). The analysis screen plays the upload over HLS by reusing that
+  // playlist's seed-only manifest. Absent on the dev-direct transport (the analysis service doesn't
+  // know either id) and until the async sibling playlist exists.
+  track_uuid?: string;
+  playlist_uuid?: string;
 }
 type StatusFetcher = (id: string) => Promise<StatusDoc>;
 type ResultFetcher = (id: string) => Promise<unknown>;
@@ -110,7 +116,10 @@ const directStatus: StatusFetcher = async (id) => {
   if (res.status === 404) throw new Error("Analysis not found");
   if (!res.ok) throw new Error(await errText(res, "Status check failed"));
   const st = (await res.json()) as StatusDoc & { progress?: { percent?: number } };
-  return { state: st.state, part1_ready: st.part1_ready, percent: st.progress?.percent ?? 0, error: st.error };
+  return {
+    state: st.state, part1_ready: st.part1_ready, percent: st.progress?.percent ?? 0, error: st.error,
+    track_uuid: st.track_uuid, playlist_uuid: st.playlist_uuid,
+  };
 };
 const directResult: ResultFetcher = async (id) => {
   const res = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}/result`);
@@ -123,8 +132,11 @@ const alwyzonStatus: StatusFetcher = async (id) => {
   if (!res || (res as { success?: boolean }).success === false) {
     throw new Error((res as { error?: string })?.error || "Status check failed");
   }
-  const d = (res as { data: { state?: string; part1_ready?: boolean; progress?: { percent?: number }; error?: string } }).data;
-  return { state: d.state, part1_ready: d.part1_ready, percent: d.progress?.percent ?? 0, error: d.error };
+  const d = (res as { data: { state?: string; part1_ready?: boolean; progress?: { percent?: number }; error?: string; track_uuid?: string; playlist_uuid?: string } }).data;
+  return {
+    state: d.state, part1_ready: d.part1_ready, percent: d.progress?.percent ?? 0, error: d.error,
+    track_uuid: d.track_uuid, playlist_uuid: d.playlist_uuid,
+  };
 };
 const alwyzonResult: ResultFetcher = async (id) => {
   const res = await getAnalysisResult(id);
@@ -172,6 +184,7 @@ async function pollAnalysis(
   fetchStatus: StatusFetcher,
   fetchResult: ResultFetcher,
   fetchFinal: ResultFetcher = fetchResult,
+  onMeta: (meta: { trackUuid?: string; playlistUuid?: string }) => void = () => {},
 ): Promise<void> {
   const startedAt = Date.now();
   let part1Shown = false;
@@ -180,6 +193,11 @@ async function pollAnalysis(
     if (!isLive()) return;
     if (Date.now() - startedAt > POLL_TIMEOUT_MS) throw new Error("Analysis timed out");
     const st = await fetchStatus(id);
+    // Surface the upload's track uuid + its sibling playlist uuid as soon as they appear (the
+    // playlist is created async, so it may land on a later poll). Drives the HLS playback wiring.
+    if (st.track_uuid || st.playlist_uuid) {
+      onMeta({ trackUuid: st.track_uuid, playlistUuid: st.playlist_uuid });
+    }
     onProgress(Math.min(95, Math.max(10, st.percent)));
 
     // Stream the interim part-1 result early — BUT skip it when the job is already complete on this
@@ -217,6 +235,8 @@ export function useTrackAnalysis() {
   const [part1Ready, setPart1Ready] = useState(false);
   const [analysisId, setAnalysisId] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [trackUuid, setTrackUuid] = useState<string | null>(null);
+  const [playlistUuid, setPlaylistUuid] = useState<string | null>(null);
 
   const runId = useRef(0);
   const audioUrlRef = useRef<string | null>(null);
@@ -237,6 +257,8 @@ export function useTrackAnalysis() {
     setPart1Ready(false);
     setFileName(null);
     setAnalysisId(null);
+    setTrackUuid(null);
+    setPlaylistUuid(null);
   }, [setTrackUrl]);
 
   const analyze = useCallback(async (file: File) => {
@@ -251,6 +273,8 @@ export function useTrackAnalysis() {
     setData(null);
     setProgress(0);
     setPart1Ready(false);
+    setTrackUuid(null);
+    setPlaylistUuid(null);
 
     try {
       // 1) upload -> enqueue (real byte-level upload progress)
@@ -304,6 +328,10 @@ export function useTrackAnalysis() {
         VIA_ALWYZON ? alwyzonStatus : directStatus,
         VIA_ALWYZON ? alwyzonResult : directResult,
         VIA_ALWYZON ? alwyzonFinalResult : directResult,
+        (meta) => live(() => {
+          if (meta.trackUuid) setTrackUuid(meta.trackUuid);
+          if (meta.playlistUuid) setPlaylistUuid(meta.playlistUuid);
+        }),
       );
     } catch (e) {
       live(() => setError(e instanceof Error ? e.message : "Analysis failed"));
@@ -326,6 +354,8 @@ export function useTrackAnalysis() {
       setPart1Ready(false);
       setAnalysisId(id);
       setStatus("analyzing");
+      setTrackUuid(null);
+      setPlaylistUuid(null);
     });
 
     try {
@@ -347,6 +377,10 @@ export function useTrackAnalysis() {
         VIA_ALWYZON ? alwyzonStatus : directStatus,
         VIA_ALWYZON ? alwyzonResult : directResult,
         VIA_ALWYZON ? alwyzonFinalResult : directResult,
+        (meta) => live(() => {
+          if (meta.trackUuid) setTrackUuid(meta.trackUuid);
+          if (meta.playlistUuid) setPlaylistUuid(meta.playlistUuid);
+        }),
       );
     } catch (e) {
       live(() => setError(e instanceof Error ? e.message : "Could not load analysis"));
@@ -354,5 +388,5 @@ export function useTrackAnalysis() {
     }
   }, [setTrackUrl]);
 
-  return { status, data, error, progress, fileName, audioUrl, part1Ready, analysisId, analyze, loadById, reset };
+  return { status, data, error, progress, fileName, audioUrl, part1Ready, analysisId, trackUuid, playlistUuid, analyze, loadById, reset };
 }
