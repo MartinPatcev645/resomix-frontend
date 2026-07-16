@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { PlaylistHero, PlaylistTable } from "@/sections/mobile/index.ts";
 import MoreMenu from "@/sections/mobile/Playlist/MoreMenu.tsx";
+import { PlaylistShare } from "@/components/index.ts";
 import { BASE_BETA_URL } from "@resomix/config";
 import { usePlaylistStore } from "@resomix/stores";
 import { AudioProvider, usePlaylistLoader } from "@resomix/hooks";
@@ -8,6 +9,7 @@ import { StatusMessage, Error404 } from "@resomix/ui";
 
 export function PlaylistMobile() {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<{ id: string; name: string; label: string; duration: number; score?: number | null; isInput: boolean } | null>(null);
 
   // Scroll to top when component mounts
@@ -83,9 +85,18 @@ export function PlaylistMobile() {
                 duration={selectedTrack?.duration}
                 score={selectedTrack?.score ?? undefined}
                 isInput={selectedTrack?.isInput || false}
+                onShare={() => { handleMoreMenuClose(); setShowShare(true); }}
               />
             </div>
           )}
+
+          {/* Share modal — opened from the reference track's three-dots menu. Owned here (not inside
+              MoreMenu) so it survives the menu closing and isn't trapped under the menu's z-index. */}
+          <PlaylistShare
+            isOpen={showShare}
+            onClose={() => setShowShare(false)}
+            id={playlistData?.playlist?.id ?? ""}
+          />
         </div>
       )}
     </AudioProvider>

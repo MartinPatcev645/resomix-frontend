@@ -13,11 +13,17 @@ import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { FormInput } from "../Elements/FormInput";
 import { PasswordInput } from "../Elements/PasswordInput";
+import { GoogleSignInButton } from "../Auth/GoogleSignInButton";
 
 interface RegisterContentProps {
   baseUrl?: string;
   onRegisterSuccess?: (email?: string) => void;
   onNavigateLogin?: () => void;
+  /** When provided, shows the "Continue with Google" button below the register form. */
+  googleClientId?: string;
+  /** Called after a successful Google sign-in (auth store already populated). Google users are
+   *  authenticated immediately, so this should redirect like a login — not go to verify-email. */
+  onGoogleSuccess?: (data: any) => void;
 }
 
 // Define form type
@@ -33,6 +39,8 @@ export default function RegisterContent({
     baseUrl = "https://resomix.com",
     onRegisterSuccess,
     onNavigateLogin,
+    googleClientId,
+    onGoogleSuccess,
   }: RegisterContentProps) {
   // Form validation hook
   const initialValues: RegisterForm = {
@@ -102,6 +110,24 @@ export default function RegisterContent({
 
   const handleBlur = (name: keyof typeof form) => {
     setFieldTouched(name);
+  };
+
+  // Google sign-in already populated the auth store (in the shared credential handler); here we just
+  // surface a success message and redirect via onGoogleSuccess (a Google account is already verified,
+  // so it skips the email-verification step a password registration goes through).
+  const handleGoogleSuccess = (data: any) => {
+    setStatusType("success");
+    setStatusMessage("Sign-in successful! Redirecting...");
+    setShowStatus(true);
+    setTimeout(() => {
+      onGoogleSuccess?.(data);
+    }, 1500);
+  };
+
+  const handleGoogleError = (message: string) => {
+    setStatusType("error");
+    setStatusMessage(message || "We couldn't sign you in with Google. Please try again.");
+    setShowStatus(true);
   };
 
   const validate = (): boolean => {
@@ -373,6 +399,23 @@ export default function RegisterContent({
               </button>
             </div>
           </form>
+
+          {googleClientId && (
+            <div className="mt-[var(--px-24)] flex flex-col items-center gap-[var(--px-18)]">
+              <div className="flex items-center w-full gap-[var(--px-12)] opacity-50">
+                <span className="h-px flex-1 bg-current" />
+                <span className="text-[length:var(--px-9)] font-light font-helvetica uppercase tracking-[var(--px-1)]">
+                  or continue with
+                </span>
+                <span className="h-px flex-1 bg-current" />
+              </div>
+              <GoogleSignInButton
+                clientId={googleClientId}
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+              />
+            </div>
+          )}
 
           <StatusMessage
             isOpen={showStatus}

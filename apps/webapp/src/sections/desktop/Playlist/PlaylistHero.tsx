@@ -6,12 +6,14 @@ import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
 import { useNavigate, useLocation } from "react-router-dom";
-import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport } from "@/components/index.ts";
+import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport, PlaylistShare } from "@/components/index.ts";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ExportSvg from "@/assets/icons/export.svg";
 import ExportBlackSvg from "@/assets/icons/export_black.svg";
+import ShareSvg from "@/assets/icons/share.svg";
+import ShareBlackSvg from "@/assets/icons/share_black.svg";
 import AngleLeftSvg from "@/assets/icons/angle_left.svg";
 import StarSvg from "@/assets/icons/star.svg";
 import TrackSvg from "@/assets/icons/track_2.svg";
@@ -25,6 +27,7 @@ const PlaylistHero: React.FC = () => {
   const [showMeta, setShowMeta] = React.useState(false);
   const [showRating, setShowRating] = React.useState(false);
   const [showRename, setShowRename] = React.useState(false);
+  const [showShare, setShowShare] = React.useState(false);
 
   const [showExportMenu, setShowExportMenu] = React.useState(false);
   const [showDownloadExport, setShowDownloadExport] = React.useState(false);
@@ -82,6 +85,7 @@ const PlaylistHero: React.FC = () => {
   };
 
   const handleRenameClose = () => setShowRename(false);
+  const handleShareClose = () => setShowShare(false);
   const handleRatingClose = () => setShowRating(false);
   const handleDownloadExportClose = () => setShowDownloadExport(false);
 
@@ -299,6 +303,19 @@ const PlaylistHero: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                <Tooltip message="Share your Playlist">
+                  <IconButton
+                    text="Share"
+                    transparent={true}
+                    customWidth="min-w-[var(--px-100)]"
+                    onClick={() => !isGuest ? setShowShare(true) : gateFor("Log in to share", "Create a free account or log in to share your playlists.")}
+                    icon={<img src={ShareSvg} draggable={false} alt="Share" aria-label="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    hoverIcon={<img src={ShareBlackSvg} aria-label="Share" draggable={false} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                    className="playlist-action-button"
+                    id="playlist-hero-share-button"
+                  />
+                </Tooltip>
               </div>
             </div>
 
@@ -479,6 +496,12 @@ const PlaylistHero: React.FC = () => {
         isOpen={showRename}
         onClose={handleRenameClose}
         onStatusChange={handleStatusChange}
+      />
+
+      <PlaylistShare
+        isOpen={showShare}
+        onClose={handleShareClose}
+        id={playlistData?.playlist?.id ?? ""}
       />
 
       <PlaylistExport
