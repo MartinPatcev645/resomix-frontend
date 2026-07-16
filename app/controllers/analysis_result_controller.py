@@ -30,6 +30,8 @@ from app.core.config import settings
 from app.core.entitlement_keys import FeatureKey
 from app.models.track_analysis_result import TrackAnalysisResult
 from app.models.user import User
+from app.repositories.playlist_repository import PlaylistRepository
+from app.repositories.track_repository import TrackRepository
 from app.services.analysis_service import AnalysisService
 from app.services.antivirus_service import AntivirusService
 from app.services.entitlement_gate import EntitlementGate
@@ -61,6 +63,8 @@ class AnalysisResultController:
         self.operation_limit_evaluator = OperationLimitEvaluator()
         self.antivirus_service = AntivirusService()
         self.track_upload_service = TrackUploadService()
+        self.track_repository = TrackRepository()
+        self.playlist_repository = PlaylistRepository()
 
     @staticmethod
     def _authorized(row: TrackAnalysisResult, current_user: Optional[User]) -> bool:
@@ -68,6 +72,34 @@ class AnalysisResultController:
         if row.is_public:
             return True
         return bool(current_user and row.user_id and row.user_id == current_user.id)
+
+    async def _attach_playback_refs(
+        self, db: AsyncSession, row: TrackAnalysisResult, doc: object
+    ) -> object:
+        """Enrich a status/result doc with the uploaded track's ``track_uuid`` and its sibling
+        similarity playlist's ``playlist_uuid``.
+
+        The analysis screen plays the uploaded track over HLS by reusing that sibling playlist's
+        seed-only manifest (same media-server segments) — carrying both ids on the status/result the
+        client already polls avoids a second lookup round-trip. Best-effort: never fails the response;
+        ``playlist_uuid`` is simply absent until the (async, best-effort) sibling playlist exists.
+        """
+        if not isinstance(doc, dict) or row is None:
+            return doc
+        try:
+            track_uuid = await self.track_repository.async_get_uuid_by_id(db, row.track_id)
+            if track_uuid:
+                doc["track_uuid"] = track_uuid
+            playlist_uuid = await self.playlist_repository.async_get_latest_similarity_playlist_uuid_by_seed(
+                db, row.track_id, partner_id=row.partner_id
+            )
+            if playlist_uuid:
+                doc["playlist_uuid"] = playlist_uuid
+        except Exception as exc:  # pragma: no cover — enrichment must never break the proxy
+            logger.warning(
+                "ANALYSIS: could not attach playback refs for %s: %s", row.analysis_uuid, exc
+            )
+        return doc
 
     async def get_summary(
         self,
@@ -294,6 +326,7 @@ class AnalysisResultController:
         status_doc = await self.analysis_client.get_status(analysis_id)
         if status_doc.get("status") == "error":
             return self._reject(502, status_doc.get("message") or "Status check failed.", reason="upstream_error")
+        status_doc = await self._attach_playback_refs(db, row, status_doc)
         return JSONResponse(status_code=200, content=format_response(success=True, data=status_doc))
 
     async def get_result(
@@ -308,6 +341,7 @@ class AnalysisResultController:
         result = await self.analysis_client.get_result(analysis_id)
         if isinstance(result, dict) and result.get("status") == "error":
             return self._reject(502, result.get("message") or "Result fetch failed.", reason="upstream_error")
+        result = await self._attach_playback_refs(db, row, result)
         return JSONResponse(status_code=200, content=format_response(success=True, data=result))
 
     # ------------------------------------------------------------------ #

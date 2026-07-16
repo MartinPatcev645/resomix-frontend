@@ -484,6 +484,32 @@ class PlaylistRepository(BaseRepository[Playlist]):
 
         return None
 
+    async def async_get_latest_similarity_playlist_uuid_by_seed(
+        self, db: AsyncSession, seed_track_id: int, partner_id: Optional[int] = None,
+    ) -> Optional[str]:
+        """Return the UUID of the most recent, non-deleted similarity playlist seeded by a track.
+
+        An analysis-upload spawns exactly one similarity playlist seeded by the just-uploaded track
+        (``seed_track_id``), and that playlist's HLS manifest is that single upload. The analysis
+        screen uses this to reuse the sibling playlist for HLS playback instead of a separate
+        single-track session. Returns None if none exists yet (sibling not finished / not created).
+        """
+        conditions = [
+            self.model.type == PlaylistType.SIMILARITY,
+            self.model.seed_track_id == seed_track_id,
+            self.model.deleted_at.is_(None),
+        ]
+        if partner_id is not None:
+            conditions.append(self.model.partner_id == partner_id)
+        stmt = (
+            select(self.model.uuid)
+            .where(and_(*conditions))
+            .order_by(self.model.created_at.desc())
+            .limit(1)
+        )
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def async_get_playlist_by_uuid(
         self, db: AsyncSession, playlist_uuid: str, partner_id: Optional[int] = None,
         include_deleted: bool = False,
