@@ -1374,7 +1374,7 @@ CREATE TABLE IF NOT EXISTS consumption_events (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     event_category ENUM('stream_start', 'stream_complete', 'stream_skip', 'download_success') NOT NULL,
     track_id INT UNSIGNED,
-    isrc VARCHAR(15) COMMENT 'Denormalized heavily for rapid DSRF generation indexing',
+    isrc VARCHAR(30) COMMENT 'Denormalized heavily for rapid DSRF generation indexing',
     label_id INT UNSIGNED,
     user_id INT UNSIGNED,
     country_code CHAR(2) COMMENT 'Geolocated user state from start IP',
