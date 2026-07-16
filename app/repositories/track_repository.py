@@ -157,12 +157,20 @@ class TrackRepository(BaseRepository[Track]):
         Excludes soft-deleted / deactivated tracks (``is_active = False``) by default so a
         user can never fetch the playback path of a deleted track. Admin/internal callers
         pass ``include_inactive=True``.
+
+        Prefers the ``Master`` audio file, but falls back to any audio file the track has
+        (e.g. catalogue tracks that only carry a ``StreamingProfile`` preview, not a raw
+        Master). This keeps Master-backed tracks behaving exactly as before while letting
+        similarity-by-id resolve preview-only tracks instead of 404-ing. The returned path
+        is only used as a DB lookup key downstream (the actual query is by uuid).
         """
         stmt = (
             select(AudioFile.stored_path)
             .join(Track, AudioFile.track_id == Track.id)
             .where(Track.uuid == uuid)
-            .where(AudioFile.asset_class == 'Master')
+            # Master first; fall back to whatever audio file exists.
+            .order_by((AudioFile.asset_class == 'Master').desc())
+            .limit(1)
         )
         if partner_id is not None:
             stmt = stmt.where(Track.partner_id == partner_id)
@@ -170,7 +178,7 @@ class TrackRepository(BaseRepository[Track]):
             stmt = stmt.where(Track.is_active.isnot(False))
 
         result = await db.execute(stmt)
-        path = result.scalar_one_or_none()
+        path = result.scalars().first()
         return path
     
     def get_with_relationships(self, db: Session, uuid: str, partner_id: Optional[int] = None) -> Optional[Track]:
