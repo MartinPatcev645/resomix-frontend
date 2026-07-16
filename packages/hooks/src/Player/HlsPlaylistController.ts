@@ -78,6 +78,13 @@ class HlsPlaylistController implements AudioController {
   private sessionPromise: Promise<any> | null = null;
   private lastRestartTime = 0;
 
+  // One-shot <audio> listeners we may need to tear down on a track/mode switch, so a handler queued
+  // for a superseded source can't fire against the new one (a stale 'seeked' from a prior HLS
+  // goToTrack, a stale 'canplay' from a prior preview load) and a missed 'seeked' can't wedge us.
+  private pendingCanPlay: (() => void) | null = null;
+  private pendingSeeked: (() => void) | null = null;
+  private goToSeekTimer: number | null = null;
+
   constructor() {
     this.audio = new Audio();
     this.audio.preload = 'auto';
@@ -119,6 +126,11 @@ class HlsPlaylistController implements AudioController {
     if (DEMO_MODE) return;
     setNetworkErrorFlag(false);
     this.clearRetry();
+    // Fresh load intent — tear down any one-shot handler from the previous track/mode and clear a
+    // possibly-stuck seek flag, so the new track starts from a clean state (prevents the "wedged
+    // after seeking" freeze on mixed HLS-seed + preview playlists).
+    this.clearOneShotHandlers();
+    this.resetSeekState();
 
     if (!this.tracks.length) this.initPlaylist();
 
@@ -328,11 +340,10 @@ class HlsPlaylistController implements AudioController {
     }
     this.isPlaylistLoaded = false;
 
-    // Drop any pending HLS 'loadedmetadata' handler so it can't fire against the preview source.
-    if (this.pendingOnReady) {
-      this.audio.removeEventListener('loadedmetadata', this.pendingOnReady);
-      this.pendingOnReady = null;
-    }
+    // Drop any one-shot handler (a pending HLS 'loadedmetadata'/'seeked', or a prior preview
+    // 'canplay') and clear a possibly-stuck seek flag, so none of them fire against this new source.
+    this.clearOneShotHandlers();
+    this.resetSeekState();
 
     this.currentTrackId = track.id;
     this.wantPlaying = isPlayAfter;
@@ -346,11 +357,13 @@ class HlsPlaylistController implements AudioController {
 
     const onCanPlay = () => {
       this.audio.removeEventListener('canplay', onCanPlay);
+      this.pendingCanPlay = null;
       if (this.wantPlaying) {
         msSetPlaybackState('playing');
         this.audio.play().catch(() => { /* autoplay policy — user can press play */ });
       }
     };
+    this.pendingCanPlay = onCanPlay;
     this.audio.addEventListener('canplay', onCanPlay);
   }
 
@@ -1034,6 +1047,15 @@ class HlsPlaylistController implements AudioController {
   }
 
   private goToTrack(trackId: string, autoplay = false, preRollOnZero = false) {
+    // The HLS <audio> stream holds ONLY the upload seed. A preview member must never be reached by
+    // seeking this stream (it would seek past the seed's end and wedge) — hand it to the preview
+    // loader instead. Also covers the media-session next/prev buttons on a mixed playlist.
+    const targetTrack = this.resolveTrack(trackId);
+    if (targetTrack && targetTrack.playback === 'preview' && targetTrack.preview_url) {
+      this.loadPreview(targetTrack, autoplay);
+      return;
+    }
+
     if (!this.isPlaylistLoaded) this.ensureHlsLoaded();
     if (!this.tracksIds.length) return;
 
@@ -1048,7 +1070,7 @@ class HlsPlaylistController implements AudioController {
     // Position relative to manifest start (0..snipDur)
     const localAudibleOffset = Math.max(0, savedLocal - audibleStart);
     let target = startOffset + localAudibleOffset;
-    
+
     if (preRollOnZero && localAudibleOffset === 0) {
       target = Math.max(0, startOffset - AUTOSWITCH_PREROLL);
     }
@@ -1060,13 +1082,25 @@ class HlsPlaylistController implements AudioController {
       this.wantPlaying = true; // start offline retries before play
     }
 
-    this.isSeeking = true;
-    if (Hls.isSupported()) {
-      this.audio.pause();
+    // Arm a fresh seek completion path; clear any prior one so it can't double-fire.
+    if (this.pendingSeeked) {
+      this.audio.removeEventListener('seeked', this.pendingSeeked);
+      this.pendingSeeked = null;
+    }
+    if (this.goToSeekTimer !== null) {
+      clearTimeout(this.goToSeekTimer);
+      this.goToSeekTimer = null;
     }
 
-    const onSeeked = () => {
-      this.audio.removeEventListener('seeked', onSeeked);
+    const finishSeek = () => {
+      if (this.pendingSeeked) {
+        this.audio.removeEventListener('seeked', this.pendingSeeked);
+        this.pendingSeeked = null;
+      }
+      if (this.goToSeekTimer !== null) {
+        clearTimeout(this.goToSeekTimer);
+        this.goToSeekTimer = null;
+      }
       this.isSeeking = false;
 
       if (!Hls.isSupported()) {
@@ -1090,7 +1124,25 @@ class HlsPlaylistController implements AudioController {
       }
     };
 
+    this.isSeeking = true;
+    if (Hls.isSupported()) {
+      this.audio.pause();
+    }
+
+    // If the target is essentially where we already are, no 'seeking'/'seeked' pair fires — run the
+    // completion path directly so isSeeking can't stick true and freeze onTimeUpdate.
+    const needsSeek = Math.abs((this.audio.currentTime || 0) - target) > 0.05;
+    if (!needsSeek) {
+      finishSeek();
+      return;
+    }
+
+    const onSeeked = () => finishSeek();
+    this.pendingSeeked = onSeeked;
     this.audio.addEventListener('seeked', onSeeked);
+    // Safety net: a browser may not emit 'seeked' if the target range isn't buffered yet — force the
+    // completion path after a short delay so a missed event can't leave us stuck seeking.
+    this.goToSeekTimer = window.setTimeout(finishSeek, 1500);
     this.audio.currentTime = target;
   }
 
@@ -1173,15 +1225,24 @@ class HlsPlaylistController implements AudioController {
 
     const newId = this.findTrackByGlobalTime(globalT);
     if (newId && newId !== this.currentTrackId) {
-      usePlayerStore.getState().setTrackTime(this.currentTrackId, 0);
-      const { autoplay } = usePlayerStore.getState();
-      if (autoplay) {
-        const shouldAutoplay = !this.audio.paused;
-        this.goToTrack(newId, shouldAutoplay, true);
-        this.wantPlaying = true;
-      } else {
-        this.pause();
-        this.seek(0, this.currentTrackId);
+      // In the per-track-queue model the HLS <audio> holds ONLY the upload seed (the backend manifest
+      // is seed-only), so globalT never truly crosses into a member's slot during normal playback —
+      // and if it grazes past the seed's computed end near the tail, the "next" track is a preview
+      // that must NOT be reached by seeking this stream. Cross-track advance to a preview happens on
+      // the real `ended` event → load()/loadPreview(). Only advance in-stream if the next track is
+      // itself HLS (kept for a hypothetical multi-upload manifest; never today).
+      const nextTrack = this.resolveTrack(newId);
+      if (nextTrack && nextTrack.playback === 'hls') {
+        usePlayerStore.getState().setTrackTime(this.currentTrackId, 0);
+        const { autoplay } = usePlayerStore.getState();
+        if (autoplay) {
+          const shouldAutoplay = !this.audio.paused;
+          this.goToTrack(newId, shouldAutoplay, true);
+          this.wantPlaying = true;
+        } else {
+          this.pause();
+          this.seek(0, this.currentTrackId);
+        }
       }
     }
   };
@@ -1209,6 +1270,37 @@ class HlsPlaylistController implements AudioController {
 
   private inSeekGrace() { return Date.now() < this.seekGraceUntil; }
   private startSeekGrace(ms = 1000) { this.seekGraceUntil = Date.now() + ms; }
+
+  // =============== Private: transition cleanup ===============
+
+  // Tear down every one-shot <audio> listener/timer we may have armed for the previous track/mode,
+  // so nothing queued for a superseded source fires against the new one after a track/mode switch.
+  private clearOneShotHandlers() {
+    if (this.pendingOnReady) {
+      this.audio.removeEventListener('loadedmetadata', this.pendingOnReady);
+      this.pendingOnReady = null;
+    }
+    if (this.pendingCanPlay) {
+      this.audio.removeEventListener('canplay', this.pendingCanPlay);
+      this.pendingCanPlay = null;
+    }
+    if (this.pendingSeeked) {
+      this.audio.removeEventListener('seeked', this.pendingSeeked);
+      this.pendingSeeked = null;
+    }
+    if (this.goToSeekTimer !== null) {
+      clearTimeout(this.goToSeekTimer);
+      this.goToSeekTimer = null;
+    }
+  }
+
+  // isSeeking gates onTimeUpdate (progress + advance). If a 'seeked' event never arrives (a no-op
+  // seek, or a source swap mid-seek), the flag would stick true and freeze the UI until a refresh.
+  // Reset it (and the seek grace window) on every fresh load so a new track starts clean.
+  private resetSeekState() {
+    this.isSeeking = false;
+    this.seekGraceUntil = 0;
+  }
 }
 
 // ================== Factory / Global cache ==================

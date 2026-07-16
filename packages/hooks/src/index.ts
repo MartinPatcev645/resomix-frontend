@@ -16,6 +16,7 @@ export * from './Playlist/usePlaylistLoader';
 export * from './Playlist/usePlaylistFork';
 export * from './Playlist/useFavoritePlaylist';
 export * from './Player/AudioProvider';
+export { attachHls } from './Player/attachHls';
 export * from './Feedback/useFeedbackSubmit'
 export * from './Contact/useContactSubmit'
 export * from './meta/useMetatags'
