@@ -258,14 +258,22 @@ async def _async_generate_similarity_sibling(
         else:
             set_admin_context(True)
 
+        # Over-fetch + de-dup exactly like the interactive similarity-by-upload path so the sibling
+        # playlist lands on a solid `top_k` (e.g. 20) instead of however few survive de-dup. The
+        # similarity server returns `actual_top_k` (= top_k + cushion, e.g. 50) candidates and we
+        # keep `top_k` after removing duplicate Apple matches. Previously it fetched exactly `top_k`
+        # with no cushion → thin 2–15-track playlists (see the `[upload-sim] raw=/dedup=` logs).
+        from app.core.config import settings
+        actual_top_k = settings.calculate_actual_top_k(top_k)
+        duplication_threshold = settings.get_duplication_threshold_for_top_sk(top_k)
         async with AsyncSessionLocal() as db:
             result = await SimilarityService().calculate_similarity_for_upload(
                 db=db,
                 audio_bytes=audio_bytes,
                 original_filename=original_filename,
                 track_uuid=track_uuid,
-                top_k=top_k,
-                similarity_duplication_threshold=0,
+                top_k=actual_top_k,
+                similarity_duplication_threshold=duplication_threshold,
                 user_id=user_id,
                 partner_id=partner_id,
             )
