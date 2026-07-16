@@ -105,6 +105,12 @@ class HlsPlaylistController implements AudioController {
     window.addEventListener('focus', this.onWindowFocus);
 
     this.wireGlobalOnlineOffline();
+    // Bind the core <audio> events (timeupdate/ended/canplay/…) up-front. Previously this only ran
+    // inside ensureHlsLoaded() (the HLS path), so an all-preview playlist (every catalogue track plays
+    // from an Apple preview, never touching HLS) never bound `timeupdate` → onTimeUpdate never fired →
+    // progress/elapsed/duration/seek stayed dead while audio still played. Idempotent (wiredAudioEvents
+    // guard); onTimeUpdate no-ops until a track is loaded.
+    this.wireAudioEvents();
   }
 
   // =============== Public API ===============
