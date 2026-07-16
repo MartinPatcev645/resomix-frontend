@@ -87,6 +87,13 @@ export default function AnalysisPage() {
     setPlaying(false);
   }, [audioUrl]);
 
+  // The <audio> element is only mounted once the dashboard renders (it needs `data`). On a refresh /
+  // library open, `playlistUuid` typically arrives from the status poll BEFORE the result renders,
+  // so the HLS-attach effect must ALSO re-run when the player mounts — otherwise it fires once with
+  // a null `audioRef.current` and never retries. This boolean flips false→true exactly when the
+  // <audio> appears.
+  const playerMounted = !!(data && (part1Ready || status === "done"));
+
   // Server-side playback for the uploaded track when there's no local blob (opened from the
   // library, a shared/refreshed ?id= link, or after a page reload): reuse the upload's sibling
   // similarity playlist's seed-only HLS manifest — the same media-server segments the playlist
@@ -95,7 +102,7 @@ export default function AnalysisPage() {
   useEffect(() => {
     if (audioUrl) return;                 // fresh upload → native blob src already plays it
     const a = audioRef.current;
-    if (!a || !playlistUuid) return;
+    if (!a || !playlistUuid) return;      // player not mounted yet, or no sibling playlist → wait
     let detach: (() => void) | null = null;
     let cancelled = false;
     void (async () => {
@@ -108,7 +115,7 @@ export default function AnalysisPage() {
       }
     })();
     return () => { cancelled = true; if (detach) detach(); };
-  }, [audioUrl, playlistUuid]);
+  }, [audioUrl, playlistUuid, playerMounted]);
 
   // Stem show/hide selection, shared by the stacked area + the donut.
   const stemNames = data ? Object.keys(data.composition.stems) : [];
