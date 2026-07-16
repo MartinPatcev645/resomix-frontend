@@ -394,7 +394,10 @@ class PlaylistService:
             # partner_id is passed as a query param so the Hetzner edge-auth
             # middleware (which reads from request.query_params) can resolve
             # the partner-scoped assets correctly.
-            hls_endpoint = "/signed-audio/hls-m3u8/"
+            # NB: hls_media_base_url already ends in ".../signed-audio/" (config default; also what
+            # hls_utils appends to), so this endpoint is relative to it — do NOT re-prefix
+            # "/signed-audio/" here or the URL doubles to /signed-audio/signed-audio/hls-m3u8/ (404).
+            hls_endpoint = "/hls-m3u8/"
             if partner_id is not None:
                 hls_endpoint = f"{hls_endpoint}?partner_id={partner_id}"
             m3u8_content = await self._call_media_server(
