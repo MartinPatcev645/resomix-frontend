@@ -53,6 +53,11 @@ const useAuthStore = create<AuthState>()(
                 try {
                     const playlistModule = require('./usePlayList');
                     playlistModule.clearAllPlaylistCache();
+                    // Also drop the IN-MEMORY playlist view. Clearing only localStorage left a guest's
+                    // redacted "demo" copy sitting in the store, and usePlaylistLoader short-circuits
+                    // (`if (playlistData) return`) on it — so after logging in the user kept seeing the
+                    // anonymous teaser instead of a fresh, full refetch. Resetting forces the reload.
+                    playlistModule.usePlaylistStore.getState().reset();
                 } catch { /* noop if playlist store not loaded */ }
 
                 set({
@@ -127,6 +132,11 @@ const useAuthStore = create<AuthState>()(
                 try {
                     const playlistModule = require('./usePlayList');
                     playlistModule.clearAllPlaylistCache();
+                    // Also drop the IN-MEMORY playlist view. Clearing only localStorage left a guest's
+                    // redacted "demo" copy sitting in the store, and usePlaylistLoader short-circuits
+                    // (`if (playlistData) return`) on it — so after logging in the user kept seeing the
+                    // anonymous teaser instead of a fresh, full refetch. Resetting forces the reload.
+                    playlistModule.usePlaylistStore.getState().reset();
                 } catch { /* noop if playlist store not loaded */ }
 
                 set({
