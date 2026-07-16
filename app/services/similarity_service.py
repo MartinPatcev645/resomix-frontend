@@ -165,6 +165,9 @@ class SimilarityService:
                                 "rank": res_item.get("rank"),
                                 "score": res_item.get("score"),
                                 "id": details.get("id"),
+                                # numeric PK — needed by the Apple-preview enrichment join;
+                                # _merge_apple_into_track pops it before the response goes out.
+                                "track_id": details.get("track_id"),
                                 "label": details.get("label"),
                                 "duration": details.get("duration"),
                                 "artist": details.get("artist"),
@@ -450,6 +453,9 @@ class SimilarityService:
                                 "rank": res_item.get("rank"),
                                 "score": res_item.get("score"),
                                 "id": details.get("id"),
+                                # numeric PK — needed by the Apple-preview enrichment join;
+                                # _merge_apple_into_track pops it before the response goes out.
+                                "track_id": details.get("track_id"),
                                 "label": details.get("label"),
                                 "duration": details.get("duration"),
                                 "artist": details.get("artist"),
