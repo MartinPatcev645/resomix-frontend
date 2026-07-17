@@ -9,6 +9,10 @@ interface GoogleSignInButtonProps {
   onError?: (message: string) => void;
   /** Visible label. */
   label?: string;
+  /** Pixel width of the pill (and the invisible GIS button behind it). Google enforces 200–400. */
+  width?: number;
+  /** Overrides the wrapper's default `mx-auto` — pass "" (or "mx-0") to place it inline in a flex row. */
+  className?: string;
 }
 
 // Width shared by the visible pill and the invisible GIS button behind it (they must match so the
@@ -37,6 +41,8 @@ export function GoogleSignInButton({
   onSuccess,
   onError,
   label = 'Continue with Google',
+  width = BUTTON_WIDTH,
+  className,
 }: GoogleSignInButtonProps) {
   const gsiRef = useRef<HTMLDivElement | null>(null);
   const [unavailable, setUnavailable] = useState(false);
@@ -72,7 +78,7 @@ export function GoogleSignInButton({
           size: 'large',
           text: 'continue_with',
           shape: 'pill',
-          width: BUTTON_WIDTH,
+          width: width,
         });
       })
       .catch(() => setUnavailable(true));
@@ -84,7 +90,7 @@ export function GoogleSignInButton({
   if (unavailable) return null;
 
   return (
-    <div className="relative group mx-auto" style={{ width: BUTTON_WIDTH }}>
+    <div className={`relative group ${className ?? 'mx-auto'}`} style={{ width }}>
       {/* Visible pill (what the user sees). pointer-events-none so the click reaches the real button. */}
       <div
         aria-hidden="true"
