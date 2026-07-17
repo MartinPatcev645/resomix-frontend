@@ -18,6 +18,7 @@ Email: usman.naeem2212@gmail.com
 from typing import Dict, Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.contact_repository import ContactRepository
+from app.services.email_service import EmailService
 from app.models.contact import Contact
 import math
 import csv
@@ -29,9 +30,10 @@ from app.core.config import settings
 
 class ContactService:
     """Service for contact operations."""
-    
+
     def __init__(self):
         self.contact_repository = ContactRepository()
+        self.email_service = EmailService()
     
     async def process_contact_submission(
         self,
@@ -49,22 +51,33 @@ class ContactService:
             Processing result
         """
         try:
-            # Validate required fields
+            # Validate required fields. name + email are required; message is OPTIONAL (a B2B partner
+            # request can be valid without a free-text use case — the structured fields carry intent).
             name = contact_data.get('name')
             email = contact_data.get('email')
             message = contact_data.get('message')
-            
-            if not name or not email or not message:
+
+            if not name or not email:
                 return {
                     "success": False,
-                    "error": "Name, email, and message are required fields"
+                    "error": "Name and email are required fields"
                 }
-            
-            # Extract optional fields
+
+            # Extract optional + partner fields
             subject = contact_data.get('subject')
             phone = contact_data.get('phone')
             user_id = contact_data.get('user_id')
-            
+            contact_type = contact_data.get('contact_type') or 'consumer'
+            if contact_type not in ('consumer', 'partner'):
+                contact_type = 'consumer'
+            company_name = contact_data.get('company_name')
+            catalog_size = contact_data.get('catalog_size')
+            estimated_calls = contact_data.get('estimated_calls')
+
+            # Give partner requests a useful default subject for the admin list.
+            if contact_type == 'partner' and not subject:
+                subject = f"B2B Partner Request: {company_name or name}"
+
             # Create contact record
             contact = await self.contact_repository.create_contact(
                 db=db,
@@ -73,9 +86,24 @@ class ContactService:
                 email=email,
                 subject=subject,
                 phone=phone,
-                message=message
+                message=message,
+                contact_type=contact_type,
+                company_name=company_name,
+                catalog_size=catalog_size,
+                estimated_calls=estimated_calls,
             )
-            
+
+            # Send the acknowledgement email to the submitter. Best-effort — a mail hiccup must never
+            # fail the submission (the record is already saved).
+            try:
+                await self.email_service.send_contact_confirmation(
+                    email=email,
+                    name=name,
+                    contact_type=contact_type,
+                )
+            except Exception as email_exc:
+                print(f"Contact confirmation email failed (non-fatal): {email_exc}")
+
             return {
                 "success": True,
                 "message": "Contact form submitted successfully and saved to database.",
@@ -261,10 +289,13 @@ class ContactService:
             
             with open(os.path.join(export_dir, filename), 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
-                writer.writerow(['ID', 'User ID', 'Name', 'Email', 'Phone', 'Subject', 'Message', 'Status', 'Submitted At'])
+                writer.writerow(['ID', 'Type', 'User ID', 'Name', 'Email', 'Phone', 'Subject', 'Message',
+                                 'Company', 'Catalog Size', 'Est. Monthly Calls', 'Status', 'Submitted At'])
                 for c in contact_list:
-                    writer.writerow([c.id, c.user_id or '', c.name or '', c.email or '', c.phone or '', 
-                                   c.subject or '', c.message or '', c.status, 
+                    writer.writerow([c.id, getattr(c, 'contact_type', '') or '', c.user_id or '', c.name or '',
+                                   c.email or '', c.phone or '', c.subject or '', c.message or '',
+                                   getattr(c, 'company_name', '') or '', getattr(c, 'catalog_size', '') or '',
+                                   getattr(c, 'estimated_calls', '') or '', c.status,
                                    c.submitted_at.isoformat() if c.submitted_at else ''])
             
             base_url = settings.resomix_server_url

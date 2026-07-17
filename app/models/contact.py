@@ -52,7 +52,20 @@ class Contact(Base):
     subject: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     message: Mapped[Optional[str]] = mapped_column(TEXT, nullable=True)
-    
+
+    # Which form the submission came from — drives the admin consumer/partner categorization.
+    contact_type: Mapped[str] = mapped_column(
+        Enum('consumer', 'partner', name='contact_type'),
+        nullable=False,
+        default='consumer',
+        server_default='consumer',
+        index=True,
+    )
+    # B2B partner-request fields (the /partners developer form). NULL for consumer contacts.
+    company_name: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
+    catalog_size: Mapped[Optional[str]] = mapped_column(String(60), nullable=True)      # est. catalog tracks (free text)
+    estimated_calls: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)  # est. monthly API calls / tier
+
     status: Mapped[str] = mapped_column(
         Enum('open', 'resolved', name='contact_status'), 
         nullable=False, 

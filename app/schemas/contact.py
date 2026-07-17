@@ -21,13 +21,31 @@ from app.schemas.common import StatusEnum
 
 
 class ContactRequest(BaseModel):
-    """Request schema for contact form submission."""
+    """Request schema for contact form submission (both the consumer contact form and the B2B
+    /partners developer form — distinguished by ``contact_type``)."""
     name: str = Field(..., description="Contact person's name", min_length=1, max_length=100)
     email: EmailStr = Field(..., description="Contact person's email address")
-    message: str = Field(..., description="Contact message", min_length=1, max_length=2000)
+    # Optional: consumer contact messages are typically required client-side, but a B2B partner
+    # request can be valid without a free-text use-case (the structured fields carry the intent).
+    message: Optional[str] = Field(None, description="Contact message / use case", max_length=2000)
     subject: Optional[str] = Field(None, description="Optional subject line", max_length=150)
     phone: Optional[str] = Field(None, description="Optional phone number", max_length=20)
     user_id: Optional[str] = Field(None, description="Optional user ID for authenticated users")
+
+    # Which form this came from — drives admin categorization + which confirmation copy is sent.
+    contact_type: Optional[str] = Field("consumer", description="'consumer' or 'partner'")
+    # B2B partner-request fields (ignored for consumer contacts).
+    company_name: Optional[str] = Field(None, description="Legal / company name (B2B)", max_length=150)
+    catalog_size: Optional[str] = Field(None, description="Estimated catalog size in tracks (B2B)", max_length=60)
+    estimated_calls: Optional[str] = Field(None, description="Estimated monthly API calls / tier (B2B)", max_length=120)
+
+    @validator('contact_type')
+    def validate_contact_type(cls, v):
+        if v is None:
+            return "consumer"
+        if v not in ("consumer", "partner"):
+            raise ValueError("contact_type must be 'consumer' or 'partner'")
+        return v
 
     @validator('phone')
     def validate_phone(cls, v):
@@ -101,6 +119,10 @@ class ContactEntity(BaseModel):
     subject: Optional[str] = Field(None, description="Contact subject")
     phone: Optional[str] = Field(None, description="Contact phone")
     message: Optional[str] = Field(None, description="Contact message")
+    contact_type: Optional[str] = Field("consumer", description="'consumer' or 'partner'")
+    company_name: Optional[str] = Field(None, description="Legal / company name (B2B)")
+    catalog_size: Optional[str] = Field(None, description="Estimated catalog size in tracks (B2B)")
+    estimated_calls: Optional[str] = Field(None, description="Estimated monthly API calls / tier (B2B)")
     status: StatusEnum = Field(StatusEnum.OPEN, description="Contact status")
     submitted_at: Optional[str] = Field(None, description="Submission timestamp")
 

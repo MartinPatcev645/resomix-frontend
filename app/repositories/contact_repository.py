@@ -56,7 +56,11 @@ class ContactRepository(BaseRepository[Contact]):
         email: str,
         subject: Optional[str],
         phone: Optional[str],
-        message: str
+        message: Optional[str],
+        contact_type: str = "consumer",
+        company_name: Optional[str] = None,
+        catalog_size: Optional[str] = None,
+        estimated_calls: Optional[str] = None,
     ) -> Contact:
         """
         Create a new contact submission.
@@ -80,6 +84,10 @@ class ContactRepository(BaseRepository[Contact]):
             subject=subject,
             phone=phone,
             message=message,
+            contact_type=contact_type if contact_type in ("consumer", "partner") else "consumer",
+            company_name=company_name,
+            catalog_size=catalog_size,
+            estimated_calls=estimated_calls,
             status='open'
         )
         

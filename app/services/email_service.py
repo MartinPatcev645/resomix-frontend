@@ -274,3 +274,47 @@ class EmailService:
                 error=e,
             )
             return False
+
+    async def send_contact_confirmation(
+        self, email: EmailStr, name: str, contact_type: str = "consumer"
+    ) -> bool:
+        """Acknowledge a contact / B2B partner-request submission back to the person who submitted it.
+
+        Confirms we received it, sets the 2–5 business-day expectation, and invites them to try the
+        app (a few free playlists + uploads) at the canonical app URL (beta.resomix.com).
+        """
+        is_partner = contact_type == "partner"
+        template = jinja_env.get_template("contact_confirmation.html")
+        html = template.render(
+            name=(name or "there"),
+            is_partner=is_partner,
+            app_url=settings.app_url,
+        )
+
+        message = MessageSchema(
+            subject=(
+                "We received your partner request — Resomix"
+                if is_partner
+                else "We received your message — Resomix"
+            ),
+            recipients=[email],
+            body=html,
+            subtype=MessageType.html,
+        )
+
+        try:
+            await self.fast_mail.send_message(message)
+            return True
+        except Exception as e:
+            self.logging_service.log(
+                level="ERROR",
+                category="EMAIL",
+                action="contact_confirmation_send_failed",
+                message="Failed to send contact confirmation email",
+                metadata={
+                    "email": str(email),
+                    "contact_type": contact_type,
+                },
+                error=e,
+            )
+            return False
