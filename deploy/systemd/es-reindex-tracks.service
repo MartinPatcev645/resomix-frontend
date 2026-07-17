@@ -1,0 +1,28 @@
+# Full rebuild of the electrobuzz Elasticsearch search index.
+# Oneshot: started by es-reindex-tracks.timer (every ~15 days). Reads MariaDB and
+# rebuilds the `tracks_search` alias with zero downtime. Idempotent + safe to re-run.
+#
+# EDIT the three paths marked <<< to match the Alwyzon deployment, then:
+#   sudo cp deploy/systemd/es-reindex-tracks.* /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now es-reindex-tracks.timer
+#   sudo systemctl start es-reindex-tracks.service    # optional: run once now
+#
+[Unit]
+Description=Resomix — rebuild electrobuzz Elasticsearch search index
+After=network-online.target elasticsearch.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=alwyzon                                                   # <<< service user
+WorkingDirectory=/home/alwyzon/basic_fastapi_server_resomix    # <<< backend repo path
+EnvironmentFile=/home/alwyzon/basic_fastapi_server_resomix/.env # <<< provides MARIA_DB_* + ES_* creds
+ExecStart=/home/alwyzon/basic_fastapi_server_resomix/.venv/bin/python -m scripts.es_reindex_tracks
+# Keep the job from ever starving the box (ES itself does the heavy lifting).
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=3600
+
+[Install]
+WantedBy=multi-user.target

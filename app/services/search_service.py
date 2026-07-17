@@ -25,6 +25,7 @@ from app.core.config import settings
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.track_repository import TrackRepository
+from app.utils.elasticsearch_utils import get_es_client
 
 
 class SearchService:
@@ -120,103 +121,98 @@ class SearchService:
                 return {"tracks": []}
 
 
-        # NORMAL MODE (Elasticsearch) - COMMENTED OUT - Using DB search instead
-        # tokens_list = query_clean.split()
-        # tokens_lower = [t.lower() for t in tokens_list if t]
+        # NORMAL MODE
+        # When Elasticsearch is disabled (ELASTICSEARCH_ENABLED=false), or if any ES
+        # error occurs, we transparently fall back to the MariaDB LIKE search so search
+        # never hard-fails. Flip ELASTICSEARCH_ENABLED=true once the index is built.
+        if not settings.elasticsearch_enabled:
+            return await self._db_search(db, query_clean, limit, partner_id)
 
-        # es_client = get_es_client()
-        # overall_start = time.perf_counter()
-
-        # # Build ES body based on mode
-        # if mode == "artist":
-        #     es_body = self.build_artist_query(query_clean, tokens_lower, limit)
-        # elif mode == "title":
-        #     es_body = self.build_title_query(query_clean, tokens_lower, limit)
-        # else:  # mode == "auto" (default)
-        #     # Use existing logic for "auto" mode
-        #     if len(tokens_list) <= 2:
-        #         es_body = self.build_short_query_es_body(query_clean, tokens_lower, limit)
-        #     else:
-        #         es_body = self.build_long_query_es_body(query_clean, tokens_lower, limit)
-
-        # es_failed = False
-        # try:
-        #     es_resp = es_client.search(index="tracks-*", body=es_body)
-        #     hits = es_resp.get("hits", {}).get("hits", [])
-        #     # Collect uuid, dedupe, and score for deduplication
-        #     hit_items = [
-        #         {
-        #             "uuid": h.get("_source", {}).get("uuid"),
-        #             "dedupe": h.get("fields", {}).get("dedupe", "")[0],
-        #             "score": h.get("_score", 0.0),
-        #         }
-        #         for h in hits if h.get("_source")
-        #     ]
-        #     # Deduplicate based on punctuation-stripped dedupe
-        #     uuids = self.deduplicate_results_punctuation(hit_items)
-        # except Exception as e:
-        #     print(f"Elasticsearch query failed: {e}. Will fallback to DB-only search.")
-        #     es_failed = True
-        #     uuids = []
-
-        # formatted_results: List[Dict[str, Any]] = []
-
-        # if uuids:
-        #     tracks = await self.track_repository.async_get_tracks_by_uuids(db, uuids)
-        #     # Map uuid -> track object for quick lookup to retain ES order
-        #     track_map = {t.uuid: t for t in tracks}
-
-        #     for uuid in uuids:
-        #         track_obj = track_map.get(uuid)
-        #         if not track_obj:
-        #             continue
-
-        #         # Get all artist names
-        #         artist_names = [ta.artist.full_name for ta in track_obj.track_artists]
-        #         artist_display = ", ".join(artist_names) if artist_names else "N/A"
-        #         
-        #         formatted_results.append({
-        #             "id": uuid,
-        #             "artist": artist_display,
-        #             "duration": float(track_obj.duration_sec) if track_obj.duration_sec is not None else 0.0,
-        #             "title": track_obj.title
-        #         })
-        # elif es_failed:
-        #     # Fallback only when ES errored out
-        #     db_fallback_start = time.perf_counter()
-        #     db_results = await self.track_repository.async_search_tracks(db, query_clean, limit)
-        #     print(f"[Timing] Fallback DB text search took {(time.perf_counter()-db_fallback_start):.3f}s and returned {len(db_results)} tracks")
-        #     for track_data in db_results:
-        #         formatted_results.append({
-        #             "id": track_data.get("id"),
-        #             "artist": track_data.get("artist", "N/A"),
-        #             "duration": track_data.get("duration", 0.0),
-        #             "title": track_data.get("title", "N/A")
-        #         })
-        # else:
-        #     # No ES hits and ES succeeded: return empty results
-        #     print(f"[Timing] Elasticsearch returned 0 hits for mode '{mode}'; not falling back to DB.")
-
-        # print(f"[Timing] Total search_tracks execution time: {(time.perf_counter()-overall_start):.3f}s")
-        # return {"tracks": formatted_results}
-
-        # USING DIRECT DB SEARCH INSTEAD
         overall_start = time.perf_counter()
+
+        # Keyword tokens are folded/lowercased the same way the `artists` field's
+        # `lower_kw` normalizer folds values at index time, so term/terms_set match.
+        tokens_kw = self.normalize_for_keyword(raw_q)
+        tokens_list = query_clean.split()
+
+        # Build ES body based on the requested mode (artist / title / auto).
+        if mode == "artist":
+            es_body = self.build_artist_query(query_clean, tokens_kw, limit)
+        elif mode == "title":
+            es_body = self.build_title_query(query_clean, tokens_kw, limit)
+        else:  # "auto": short queries lean on artist/phrase; long queries on precise title
+            if len(tokens_list) <= 2:
+                es_body = self.build_short_query_es_body(query_clean, tokens_kw, limit)
+            else:
+                es_body = self.build_long_query_es_body(query_clean, tokens_kw, limit)
+
+        try:
+            es_client = get_es_client()
+            es_resp = es_client.search(index=settings.es_index_alias, body=es_body)
+            hits = es_resp.get("hits", {}).get("hits", [])
+            hit_items = [
+                {
+                    "uuid": h.get("_source", {}).get("uuid"),
+                    "dedupe": (h.get("fields", {}).get("dedupe") or [""])[0],
+                    "score": h.get("_score", 0.0),
+                }
+                for h in hits if h.get("_source")
+            ]
+            uuids = self.deduplicate_results_punctuation(hit_items)
+        except Exception as e:
+            print(f"[SEARCH] Elasticsearch query failed ({e}); falling back to DB search.")
+            return await self._db_search(db, query_clean, limit, partner_id)
+
+        # ES succeeded with zero hits is a real answer — don't fall back.
+        if not uuids:
+            print(f"[SEARCH] ES returned 0 hits for '{query_clean}' (mode={mode}) in "
+                  f"{(time.perf_counter()-overall_start):.3f}s")
+            return {"tracks": []}
+
+        # Hydrate the winning UUIDs from MariaDB for fresh, authoritative display data.
+        # async_get_tracks_by_uuids re-applies partner scoping + hides inactive/uploaded
+        # tracks, so a stale ES doc (e.g. since-retired track) can never surface.
+        tracks = await self.track_repository.async_get_tracks_by_uuids(
+            db, uuids, partner_id=partner_id, exclude_uploads=True
+        )
+        track_map = {t.uuid: t for t in tracks}
+
         formatted_results: List[Dict[str, Any]] = []
-        
-        db_results = await self.track_repository.async_search_tracks(db, query_clean, limit, partner_id=partner_id)
-        print(f"[DB Search] Found {len(db_results)} tracks in {(time.perf_counter()-overall_start):.3f}s")
-        
-        for track_data in db_results:
+        for uuid in uuids:  # preserve ES relevance ordering
+            track = track_map.get(uuid)
+            if not track:
+                continue
             formatted_results.append({
-                "id": track_data.get("id"),
-                "artist": track_data.get("artist", "N/A"),
-                "duration": track_data.get("duration", 0.0),
-                "title": track_data.get("title", "N/A")
+                "id": track.uuid,
+                "artist": track.display_artist or "N/A",
+                "duration": float(track.duration_ms) / 1000.0 if track.duration_ms is not None else 0.0,
+                "title": track.title,
             })
-        
+
+        print(f"[SEARCH] ES found {len(formatted_results)} tracks for '{query_clean}' "
+              f"(mode={mode}) in {(time.perf_counter()-overall_start):.3f}s")
         return {"tracks": formatted_results}
-    
+
+    async def _db_search(self, db: AsyncSession, query_clean: str, limit: int,
+                         partner_id: Optional[int]) -> Dict[str, Any]:
+        """MariaDB LIKE search — used when ES is disabled or unavailable."""
+        overall_start = time.perf_counter()
+        db_results = await self.track_repository.async_search_tracks(
+            db, query_clean, limit, partner_id=partner_id
+        )
+        print(f"[DB Search] Found {len(db_results)} tracks in {(time.perf_counter()-overall_start):.3f}s")
+        return {
+            "tracks": [
+                {
+                    "id": r.get("id"),
+                    "artist": r.get("artist", "N/A"),
+                    "duration": r.get("duration", 0.0),
+                    "title": r.get("title", "N/A"),
+                }
+                for r in db_results
+            ]
+        }
+
     def build_short_query_es_body(self, query_text: str, tokens_kw: list[str], limit: int = 20):
         # Require 1 token if 1 given, else require both tokens when 2 are given
         msm_script = {"source": "params.num_terms <= 1 ? 1 : 2"}
@@ -296,6 +292,7 @@ class SearchService:
                     "boost_mode": "sum"
                 }
             },
+            "docvalue_fields": ["dedupe"],
             "_source": ["uuid", "type", "artists", "title"],
             "size": limit
         }
@@ -358,6 +355,7 @@ class SearchService:
                     "boost_mode": "sum"
                 }
             },
+            "docvalue_fields": ["dedupe"],
             "_source": ["uuid", "type", "artists", "title"],
             "size": limit
         }
@@ -405,6 +403,7 @@ class SearchService:
                     "boost_mode": "sum"
                 }
             },
+            "docvalue_fields": ["dedupe"],
             "_source": ["uuid", "type", "artists", "title"],
             "size": limit
         }
@@ -437,6 +436,7 @@ class SearchService:
                     "boost_mode": "sum"
                 }
             },
+            "docvalue_fields": ["dedupe"],
             "_source": ["uuid", "type", "artists", "title"],
             "size": limit
         }

@@ -1,0 +1,13 @@
+# Fires the electrobuzz ES reindex roughly every 15 days (1st and 16th, 03:00).
+# Persistent=true => if the box was off at the scheduled time, it runs on next boot.
+[Unit]
+Description=Resomix — schedule electrobuzz ES reindex (~every 15 days)
+
+[Timer]
+OnCalendar=*-*-01,16 03:00:00
+Persistent=true
+RandomizedDelaySec=300
+Unit=es-reindex-tracks.service
+
+[Install]
+WantedBy=timers.target

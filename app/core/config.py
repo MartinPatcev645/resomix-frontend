@@ -361,6 +361,10 @@ class Settings(BaseModel):
         default=20, description="Timeout in seconds for ES requests"
     )
     es_search_limit: int = Field(default=20, description="Default limit for ES search")
+    es_index_alias: str = Field(
+        default="tracks_search",
+        description="Stable alias the app searches; concrete indices are tracks_search_v<stamp>",
+    )
 
     # === NEW: JWT & Auth Configuration ===
     # JWT Settings
@@ -616,6 +620,7 @@ class Settings(BaseModel):
             "ES_CA_CERTS": "es_ca_certs",
             "ES_REQUEST_TIMEOUT": "es_request_timeout",
             "ES_SEARCH_LIMIT": "es_search_limit",
+            "ES_INDEX_ALIAS": "es_index_alias",
             # JWT & Auth
             "JWT_SECRET_KEY": "jwt_secret_key",
             "JWT_ALGORITHM": "jwt_algorithm",
