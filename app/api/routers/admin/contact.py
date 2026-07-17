@@ -62,6 +62,7 @@ async def get_contact_list(
     search: Optional[str] = Query(None, description="Search term"),
     search_column: Optional[str] = Query("message", description="Column to search in: id, user_id, name, email, message"),
     status: Optional[str] = Query(None, description="Filter by status: open, resolved"),
+    contact_type: Optional[str] = Query(None, description="Filter by type: consumer, partner"),
     date_from: Optional[str] = Query(None, description="Start date filter (YYYY-MM-DD)"),
     date_to: Optional[str] = Query(None, description="End date filter (YYYY-MM-DD)"),
     sort_by: str = Query("id", description="Column to sort by"),
@@ -76,16 +77,22 @@ async def get_contact_list(
         return JSONResponse(status_code=400, content={
             "success": False, "error": f"Invalid search_column. Allowed values: {', '.join(ALLOWED_SEARCH_COLUMNS)}"
         })
-    
+
     # Validate status
     if status and status not in ['open', 'resolved']:
         return JSONResponse(status_code=400, content={
             "success": False, "error": "Invalid status. Must be 'open' or 'resolved'."
         })
-    
+
+    # Validate contact_type
+    if contact_type and contact_type not in ['consumer', 'partner']:
+        return JSONResponse(status_code=400, content={
+            "success": False, "error": "Invalid contact_type. Must be 'consumer' or 'partner'."
+        })
+
     filters = {
         "page": page, "page_size": page_size, "search": search,
-        "search_column": search_column, "status": status,
+        "search_column": search_column, "status": status, "contact_type": contact_type,
         "date_from": date_from, "date_to": date_to,
         "sort_by": sort_by, "sort_order": sort_order
     }

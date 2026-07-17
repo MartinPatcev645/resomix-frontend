@@ -194,6 +194,7 @@ class ContactRepository(BaseRepository[Contact]):
         search: Optional[str] = None,
         search_column: Optional[str] = None,
         status: Optional[str] = None,
+        contact_type: Optional[str] = None,
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
         sort_by: str = "id",
@@ -203,10 +204,14 @@ class ContactRepository(BaseRepository[Contact]):
         query = select(Contact)
         count_query = select(func.count(Contact.id))
         filters = []
-        
+
         # Status filter
         if status:
             filters.append(Contact.status == status)
+
+        # Type filter (consumer / partner)
+        if contact_type in ("consumer", "partner"):
+            filters.append(Contact.contact_type == contact_type)
         
         # Search filter - support: id, user_id, name, email, message
         if search and search_column:
