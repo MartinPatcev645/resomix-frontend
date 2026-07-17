@@ -301,6 +301,7 @@ class ContactRepository(BaseRepository[Contact]):
         search: Optional[str] = None,
         search_column: Optional[str] = None,
         status: Optional[str] = None,
+        contact_type: Optional[str] = None,
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
         sort_by: str = "id",
@@ -309,10 +310,14 @@ class ContactRepository(BaseRepository[Contact]):
         """Get all contacts for export (no pagination)."""
         query = select(Contact)
         filters = []
-        
+
         # Status filter
         if status:
             filters.append(Contact.status == status)
+
+        # Type filter (consumer / partner)
+        if contact_type in ("consumer", "partner"):
+            filters.append(Contact.contact_type == contact_type)
         
         # Search filter
         if search and search_column:

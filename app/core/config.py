@@ -492,6 +492,14 @@ class Settings(BaseModel):
         description="Admin/ops inbox that receives a copy of every partner operation notification",
     )
 
+    # Inbox that receives a heads-up email whenever a contact / B2B partner form is submitted
+    # (with the full submission details + who submitted it). Set via ADMIN_SUPPORT_EMAIL; if unset,
+    # no admin notification is sent (the submitter still gets their acknowledgement).
+    admin_support_email: Optional[str] = Field(
+        default=None,
+        description="Inbox notified on every contact/partner form submission",
+    )
+
     # SCP Configuration (for Open Tracks Pipeline)
     scp_private_key_path: str = Field(
         default="creds/resomix22tbserver-key.pem",
@@ -634,6 +642,7 @@ class Settings(BaseModel):
             "FRONTEND_URL": "frontend_url",
             "APP_URL": "app_url",
             "ADMIN_NOTIFICATION_EMAIL": "admin_notification_email",
+            "ADMIN_SUPPORT_EMAIL": "admin_support_email",
             # SCP Configuration
             "SCP_PRIVATE_KEY_PATH": "scp_private_key_path",
             "SCP_REMOTE_USER": "scp_remote_user",

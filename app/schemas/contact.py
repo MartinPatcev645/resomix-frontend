@@ -208,6 +208,7 @@ class AdminContactExportRequest(BaseModel):
     search: Optional[str] = Field(None, description="Search term")
     search_column: Optional[str] = Field("message", description="Column to search in")
     status: Optional[str] = Field(None, description="Filter by status")
+    contact_type: Optional[str] = Field(None, description="Filter by type: consumer, partner")
     date_from: Optional[str] = Field(None, description="Start date filter (YYYY-MM-DD)")
     date_to: Optional[str] = Field(None, description="End date filter (YYYY-MM-DD)")
     sort_by: str = Field("id", description="Column to sort by")
