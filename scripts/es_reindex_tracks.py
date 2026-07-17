@@ -120,12 +120,36 @@ def _quiet_transport_logs() -> None:
         pass
 
 
+def _get_writer_client():
+    """Elasticsearch client for the rebuild (needs write/manage on tracks_search*).
+
+    Uses the dedicated least-privilege writer creds (ES_WRITE_USERNAME /
+    ES_WRITE_PASSWORD) when set, so the internet-facing API can keep read-only creds
+    (ES_USERNAME/ES_PASSWORD). Falls back to the default client when they're unset.
+    """
+    import os
+    from dotenv import load_dotenv
+    load_dotenv()
+    from app.core.config import settings
+    from app.utils.elasticsearch_utils import get_es_client
+
+    wu, wp = os.getenv("ES_WRITE_USERNAME"), os.getenv("ES_WRITE_PASSWORD")
+    if wu and wp:
+        from elasticsearch import Elasticsearch
+        kwargs = {"basic_auth": (wu, wp), "verify_certs": settings.es_verify_certs,
+                  "ssl_show_warn": False}
+        if settings.es_verify_certs and settings.es_ca_certs:
+            kwargs["ca_certs"] = settings.es_ca_certs
+        _log(f"using writer user '{wu}'")
+        return Elasticsearch(settings.es_url, request_timeout=settings.es_request_timeout, **kwargs)
+    _log("ES_WRITE_* not set; using default ES creds")
+    return get_es_client()
+
+
 def run(limit: Optional[int], batch: int, dry_run: bool, no_swap: bool,
         keep_old: bool) -> int:
     _quiet_transport_logs()
-    # Lazy imports so --help works without a live ES/DB.
-    from app.utils.elasticsearch_utils import get_es_client
-    from database.connection import engine
+    from database.connection import engine  # lazy so --help works without a live DB
 
     with engine.connect() as conn:
         total = conn.execute(COUNT_QUERY).scalar() or 0
@@ -145,7 +169,7 @@ def run(limit: Optional[int], batch: int, dry_run: bool, no_swap: bool,
             _log("  " + json.dumps(d, ensure_ascii=False))
         return 0
 
-    es = get_es_client()
+    es = _get_writer_client()
     if not es.ping():
         _log("ERROR: cannot reach Elasticsearch (ping failed). Check ES_URL/creds.")
         return 2
