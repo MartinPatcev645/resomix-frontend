@@ -212,6 +212,7 @@ export const exportContact = async (
     if (params.search) requestBody.search = params.search;
     if (params.search_column) requestBody.search_column = params.search_column;
     if (params.status && params.status !== 'all') requestBody.status = params.status;
+    if (params.contact_type && params.contact_type !== 'all') requestBody.contact_type = params.contact_type;
     if (params.date_from) requestBody.date_from = params.date_from;
     if (params.date_to) requestBody.date_to = params.date_to;
     if (params.sort_by) requestBody.sort_by = params.sort_by;

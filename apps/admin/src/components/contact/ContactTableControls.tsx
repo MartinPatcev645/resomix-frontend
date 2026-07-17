@@ -17,6 +17,7 @@ interface ContactTableControlsProps {
   onSearchColumnChange: (column: ContactSearchColumn) => void
   onDateRangeChange: (dates: [string, string] | null) => void
   onStatusFilter: (status: 'all' | 'open' | 'resolved') => void
+  onTypeFilter: (type: 'all' | 'consumer' | 'partner') => void
   onRefresh: () => void
   onClearFilters: () => void
   onExport: (format: 'csv') => void
@@ -34,30 +35,39 @@ function ContactTableControls({
   onSearchColumnChange,
   onDateRangeChange,
   onStatusFilter,
+  onTypeFilter,
   onRefresh,
   onClearFilters,
   onExport,
   onDeleteSelected,
 }: ContactTableControlsProps) {
   const [statusFilter, setStatusFilter] = React.useState<'all' | 'open' | 'resolved'>('all')
-  
-  const hasActiveFilters = searchText.trim() !== '' || dateRange !== null || statusFilter !== 'all'
-  
+  const [typeFilter, setTypeFilter] = React.useState<'all' | 'consumer' | 'partner'>('all')
+
+  const hasActiveFilters = searchText.trim() !== '' || dateRange !== null || statusFilter !== 'all' || typeFilter !== 'all'
+
   const searchColumns = [
     { label: 'Message', value: 'message' },
     { label: 'ID', value: 'id' },
     { label: 'Email', value: 'email' },
     { label: 'Name', value: 'name' },
   ]
-  
+
   const statusOptions = [
     { label: 'All Status', value: 'all' },
     { label: <Tag color="orange">Open</Tag>, value: 'open' },
     { label: <Tag color="green">Resolved</Tag>, value: 'resolved' },
   ]
-  
+
+  const typeOptions = [
+    { label: 'All Types', value: 'all' },
+    { label: <Tag color="blue">Partner</Tag>, value: 'partner' },
+    { label: <Tag>Consumer</Tag>, value: 'consumer' },
+  ]
+
   const handleClearFiltersClick = () => {
     setStatusFilter('all')
+    setTypeFilter('all')
     onClearFilters()
   }
 
@@ -109,7 +119,7 @@ function ContactTableControls({
           />
           
           {/* Status filter */}
-          <Select 
+          <Select
             id="status-filter-select"
             aria-label="Status filter"
             value={statusFilter}
@@ -120,6 +130,20 @@ function ContactTableControls({
             options={statusOptions}
             style={{ width: 150 }}
             placeholder="Filter by status"
+          />
+
+          {/* Type filter (consumer / partner) */}
+          <Select
+            id="type-filter-select"
+            aria-label="Type filter"
+            value={typeFilter}
+            onChange={(value) => {
+              setTypeFilter(value)
+              onTypeFilter(value)
+            }}
+            options={typeOptions}
+            style={{ width: 150 }}
+            placeholder="Filter by type"
           />
 
           {/* Total Count */}

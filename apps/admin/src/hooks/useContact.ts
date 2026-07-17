@@ -139,7 +139,7 @@ export function useContact(options?: UseContactOptions) {
     } finally {
       setLoading(false)
     }
-  }, [pagination.current, pagination.pageSize, searchText, searchColumn, dateRange, statusFilter, sortBy, sortOrder, onError])
+  }, [pagination.current, pagination.pageSize, searchText, searchColumn, dateRange, statusFilter, typeFilter, sortBy, sortOrder, onError])
 
   // Load data on mount and when filters change
   useEffect(() => {
@@ -155,6 +155,7 @@ export function useContact(options?: UseContactOptions) {
     setSearchColumn('message')
     setDateRange(null)
     setStatusFilter('all')
+    setTypeFilter('all')
     setSelectedRowKeys([])
     setSortBy(undefined)
     setSortOrder(undefined)
@@ -163,6 +164,11 @@ export function useContact(options?: UseContactOptions) {
 
   const handleStatusFilter = (status: 'all' | 'open' | 'resolved') => {
     setStatusFilter(status)
+    setPagination(prev => ({ ...prev, current: 1 }))
+  }
+
+  const handleTypeFilter = (type: 'all' | 'consumer' | 'partner') => {
+    setTypeFilter(type)
     setPagination(prev => ({ ...prev, current: 1 }))
   }
 
@@ -292,6 +298,7 @@ export function useContact(options?: UseContactOptions) {
         search: searchText.trim() || undefined,
         search_column: searchColumn,
         status: statusFilter !== 'all' ? statusFilter : undefined,
+        contact_type: typeFilter !== 'all' ? typeFilter : undefined,
         date_from: dateRange?.[0],
         date_to: dateRange?.[1],
         sort_by: sortBy,
@@ -372,6 +379,7 @@ export function useContact(options?: UseContactOptions) {
     searchColumn,
     dateRange,
     statusFilter,
+    typeFilter,
     selectedRowKeys,
     pagination,
     sortBy,
@@ -383,6 +391,7 @@ export function useContact(options?: UseContactOptions) {
     handleSearchColumnChange,
     handleDateRangeChange,
     handleStatusFilter,
+    handleTypeFilter,
     handleDelete,
     handleMarkStatus,
     handlePageChange,
