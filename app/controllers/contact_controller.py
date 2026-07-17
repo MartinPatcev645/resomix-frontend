@@ -66,7 +66,7 @@ class ContactController:
                 contact_data['user_id'] = current_user.id  # Use integer ID, not UUID
             
             # Process contact submission
-            result = await self.contact_service.process_contact_submission(db, contact_data)
+            result = await self.contact_service.process_contact_submission(db, contact_data, current_user=current_user)
             
             if result.get("success"):
                 await db.commit()

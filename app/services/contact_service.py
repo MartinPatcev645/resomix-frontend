@@ -38,7 +38,8 @@ class ContactService:
     async def process_contact_submission(
         self,
         db: AsyncSession,
-        contact_data: Dict[str, Any]
+        contact_data: Dict[str, Any],
+        current_user: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """
         Process a contact form submission.
@@ -103,6 +104,32 @@ class ContactService:
                 )
             except Exception as email_exc:
                 print(f"Contact confirmation email failed (non-fatal): {email_exc}")
+
+            # Notify the support inbox (ADMIN_SUPPORT_EMAIL) with the full details + who submitted it
+            # (signed-in user or anonymous). Best-effort — never fail the submission on email trouble;
+            # no-op if ADMIN_SUPPORT_EMAIL isn't configured.
+            try:
+                admin_details = {
+                    "contact_id": contact.id,
+                    "contact_type": contact_type,
+                    "name": name,
+                    "email": email,
+                    "phone": phone,
+                    "subject": subject,
+                    "message": message,
+                    "company_name": company_name,
+                    "catalog_size": catalog_size,
+                    "estimated_calls": estimated_calls,
+                    "is_signed_in": bool(current_user),
+                    "user_id": (getattr(current_user, "id", None) if current_user else contact_data.get("user_id")),
+                    "user_email": (getattr(current_user, "email", None) if current_user else None),
+                    "user_username": (getattr(current_user, "username", None) if current_user else None),
+                    "user_name": (getattr(current_user, "name", None) if current_user else None),
+                    "submitted_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
+                }
+                await self.email_service.send_contact_admin_notification(admin_details)
+            except Exception as admin_exc:
+                print(f"Contact admin notification failed (non-fatal): {admin_exc}")
 
             return {
                 "success": True,

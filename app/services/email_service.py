@@ -318,3 +318,45 @@ class EmailService:
                 error=e,
             )
             return False
+
+    async def send_contact_admin_notification(self, details: dict) -> bool:
+        """Notify the support inbox (``ADMIN_SUPPORT_EMAIL``) of a new contact / B2B partner
+        submission, with the full form details + who submitted it (signed-in user or anonymous).
+
+        No-op (returns False) if ``ADMIN_SUPPORT_EMAIL`` is not configured — the submitter still
+        gets their acknowledgement regardless.
+        """
+        admin_email = settings.admin_support_email
+        if not admin_email:
+            return False
+
+        is_partner = details.get("contact_type") == "partner"
+        template = jinja_env.get_template("contact_admin_notification.html")
+        html = template.render(**details)
+
+        message = MessageSchema(
+            subject=(
+                f"[Resomix] New {'partner request' if is_partner else 'contact'} "
+                f"from {details.get('name') or 'someone'}"
+            ),
+            recipients=[admin_email],
+            body=html,
+            subtype=MessageType.html,
+        )
+
+        try:
+            await self.fast_mail.send_message(message)
+            return True
+        except Exception as e:
+            self.logging_service.log(
+                level="ERROR",
+                category="EMAIL",
+                action="contact_admin_notification_send_failed",
+                message="Failed to send contact admin notification email",
+                metadata={
+                    "admin_email": str(admin_email),
+                    "contact_type": details.get("contact_type"),
+                },
+                error=e,
+            )
+            return False

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New {{ 'partner request' if contact_type == 'partner' else 'contact' }} — Resomix</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background-color: #fafafa; }
+        .container { max-width: 640px; margin: 40px auto; background-color: #ffffff; border: 2px solid #222222; overflow: hidden; }
+        .header { padding: 24px 20px; text-align: center; border-bottom: 1px dotted #cccccc; }
+        .header h1 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: #1a1a1a; }
+        .content { padding: 28px 24px; }
+        .content h2 { font-size: 16px; font-weight: 500; margin: 0 0 6px 0; color: #1a1a1a; }
+        .badge { display: inline-block; font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; padding: 3px 10px; border-radius: 4px; }
+        .badge-partner { background: #e6f1fb; color: #0c447c; }
+        .badge-consumer { background: #f1efe8; color: #444441; }
+        table.details { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 13px; }
+        table.details td { padding: 8px 10px; border-bottom: 1px dotted #dddddd; vertical-align: top; }
+        table.details td.k { color: #666666; font-weight: 400; width: 190px; white-space: nowrap; }
+        table.details td.v { color: #1a1a1a; font-weight: 300; }
+        .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #666666; margin: 22px 0 4px; font-weight: 500; }
+        .msg { white-space: pre-wrap; border: 1px dotted #cccccc; padding: 12px; font-size: 13px; font-weight: 300; }
+        .footer { padding: 20px; text-align: center; color: #666666; font-size: 11px; font-weight: 300; border-top: 1px dotted #cccccc; }
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #0a0a0a; }
+            .container { background-color: #1a1a1a; border-color: #333333; }
+            .header h1, .content h2, table.details td.v { color: #ffffff !important; }
+            .header { border-bottom-color: #666666; }
+            table.details td { border-bottom-color: #444444; }
+            table.details td.k, .section-title, .footer { color: #999999 !important; }
+            .msg { border-color: #666666; color: #dddddd; }
+            .badge-partner { background: #0c447c; color: #b5d4f4; }
+            .badge-consumer { background: #2c2c2a; color: #d3d1c7; }
+            .footer { border-top-color: #666666; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>RESOMIX — New {{ 'partner request' if contact_type == 'partner' else 'contact' }}</h1>
+        </div>
+        <div class="content">
+            <h2>{{ name or 'Unknown' }}
+                {% if contact_type == 'partner' %}<span class="badge badge-partner">Partner</span>{% else %}<span class="badge badge-consumer">Consumer</span>{% endif %}
+            </h2>
+
+            <table class="details">
+                <tr><td class="k">Contact ID</td><td class="v">#{{ contact_id }}</td></tr>
+                <tr><td class="k">Name</td><td class="v">{{ name or '—' }}</td></tr>
+                <tr><td class="k">Email</td><td class="v">{{ email or '—' }}</td></tr>
+                {% if phone %}<tr><td class="k">Phone</td><td class="v">{{ phone }}</td></tr>{% endif %}
+                {% if subject %}<tr><td class="k">Subject</td><td class="v">{{ subject }}</td></tr>{% endif %}
+                {% if contact_type == 'partner' %}
+                <tr><td class="k">Company / legal name</td><td class="v">{{ company_name or '—' }}</td></tr>
+                <tr><td class="k">Estimated catalog size</td><td class="v">{{ catalog_size or 'Not specified' }}</td></tr>
+                <tr><td class="k">Estimated monthly calls</td><td class="v">{{ estimated_calls or 'Not specified' }}</td></tr>
+                {% endif %}
+                <tr><td class="k">Submitted at</td><td class="v">{{ submitted_at }}</td></tr>
+            </table>
+
+            <div class="section-title">Submitted by</div>
+            <table class="details">
+                {% if is_signed_in %}
+                <tr><td class="k">Account</td><td class="v">Signed-in user</td></tr>
+                <tr><td class="k">User ID</td><td class="v">#{{ user_id }}</td></tr>
+                {% if user_username %}<tr><td class="k">Username</td><td class="v">{{ user_username }}</td></tr>{% endif %}
+                {% if user_name %}<tr><td class="k">Account name</td><td class="v">{{ user_name }}</td></tr>{% endif %}
+                {% if user_email %}<tr><td class="k">Account email</td><td class="v">{{ user_email }}</td></tr>{% endif %}
+                {% else %}
+                <tr><td class="k">Account</td><td class="v">Not signed in (anonymous)</td></tr>
+                {% endif %}
+            </table>
+
+            <div class="section-title">Message</div>
+            <div class="msg">{{ message or 'No message provided.' }}</div>
+        </div>
+        <div class="footer">
+            <p>Automated notification · Resomix contact form</p>
+        </div>
+    </div>
+</body>
+
+</html>
