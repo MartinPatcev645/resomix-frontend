@@ -476,6 +476,14 @@ class Settings(BaseModel):
         description="Frontend URL for email verification/reset links",
     )
 
+    # Canonical APP url — the actual web app (playlist/analysis/profile live here). Distinct from
+    # `frontend_url` (marketing/email host). Used for Stripe billing redirects so a user who
+    # subscribes always lands back on the app, not the marketing site. Set via APP_URL in prod.
+    app_url: str = Field(
+        default="https://beta.resomix.com",
+        description="Canonical web-app URL (billing return/success/cancel redirects land here)",
+    )
+
     # Where operational notifications (ingestion/embedding/etc. outcomes) are CC'd
     # for the company. Falls back to smtp_from_email if unset so we never silently
     # drop the admin copy.
@@ -624,6 +632,7 @@ class Settings(BaseModel):
             "SMTP_PASSWORD": "smtp_password",
             "SMTP_FROM_EMAIL": "smtp_from_email",
             "FRONTEND_URL": "frontend_url",
+            "APP_URL": "app_url",
             "ADMIN_NOTIFICATION_EMAIL": "admin_notification_email",
             # SCP Configuration
             "SCP_PRIVATE_KEY_PATH": "scp_private_key_path",

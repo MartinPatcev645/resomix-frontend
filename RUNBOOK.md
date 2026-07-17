@@ -76,7 +76,7 @@ pip install -r requirements.txt        # only if requirements changed
 # PYTHONPATH="$PWD" .venv/bin/python scripts/seed_consumer_pro_price.py   # only when (re)seeding billing
 sudo systemctl restart alwyzon
 sudo systemctl status alwyzon
-journalctl -u alwyzon -n 50 --no-pager
+journalctl -u alwyzon -n 200 --no-pager
 ```
 
 ## Notes / gotchas

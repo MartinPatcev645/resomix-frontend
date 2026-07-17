@@ -149,8 +149,11 @@ class BillingService:
             "metadata": metadata,
             "subscription_data": {"metadata": metadata},
             "allow_promotion_codes": True,
-            "success_url": f"{settings.frontend_url}/profile?checkout=success",
-            "cancel_url": f"{settings.frontend_url}/profile?checkout=cancelled",
+            # Return to the APP (beta.resomix.com), not the marketing host — a user who subscribes
+            # from the app must land back in the app (same login session), not on resomix.com where
+            # a different account may be signed in. See settings.app_url.
+            "success_url": f"{settings.app_url}/profile?checkout=success",
+            "cancel_url": f"{settings.app_url}/profile?checkout=cancelled",
         }
         if settings.stripe_automatic_tax_enabled:
             kwargs["automatic_tax"] = {"enabled": True}
@@ -170,7 +173,7 @@ class BillingService:
             )
         kwargs: Dict[str, Any] = {
             "customer": user.stripe_customer_id,
-            "return_url": f"{settings.frontend_url}/profile",
+            "return_url": f"{settings.app_url}/profile",
         }
         if settings.stripe_billing_portal_config_id:
             kwargs["configuration"] = settings.stripe_billing_portal_config_id

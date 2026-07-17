@@ -35,6 +35,23 @@ def _ts(value: Optional[int]) -> Optional[datetime]:
         return None
 
 
+def _invoice_subscription_id(inv: Dict[str, Any]) -> Optional[str]:
+    """The subscription id an invoice belongs to, across API versions.
+
+    Stripe "Basil" (2025-03-31) deprecated the top-level ``invoice.subscription`` field and moved it
+    to ``invoice.parent.subscription_details.subscription`` (see
+    docs.stripe.com/changelog/basil/2025-03-31/adds-new-parent-field-to-invoicing-objects). We read
+    the new location first (it can be an id string OR an expanded object), then fall back to the
+    legacy field so both old and new API versions work.
+    """
+    parent = inv.get("parent") or {}
+    sub_details = (parent.get("subscription_details") or {}) if isinstance(parent, dict) else {}
+    sub = sub_details.get("subscription") if isinstance(sub_details, dict) else None
+    if isinstance(sub, dict):
+        sub = sub.get("id")
+    return sub or inv.get("subscription")
+
+
 class BillingSyncService:
     """Applies Stripe subscription/invoice events to user_subscriptions / billing_invoices /
     subscription_events."""
@@ -110,8 +127,14 @@ class BillingSyncService:
         row.currency = currency
         row.plan_id = plan_id
         row.status = new_status
-        row.current_period_start = _ts(sub.get("current_period_start"))
-        row.current_period_end = _ts(sub.get("current_period_end"))
+        # Stripe "Basil" (2025-03-31) moved current_period_start/end OFF the Subscription object and
+        # ONTO each SubscriptionItem — our account's API version (2026-xx dahlia) no longer returns
+        # them at the subscription level, which is why they were landing NULL. Read them from the
+        # (single) item, with a fallback to the legacy subscription-level fields for older API versions.
+        # See docs.stripe.com/changelog/basil/2025-03-31/deprecate-subscription-current-period-start-and-end
+        item0 = items[0] if items else {}
+        row.current_period_start = _ts(item0.get("current_period_start") or sub.get("current_period_start"))
+        row.current_period_end = _ts(item0.get("current_period_end") or sub.get("current_period_end"))
         row.cancel_at_period_end = bool(sub.get("cancel_at_period_end"))
         row.canceled_at = _ts(sub.get("canceled_at"))
         row.trial_end = _ts(sub.get("trial_end"))
@@ -139,7 +162,7 @@ class BillingSyncService:
         if not stripe_invoice_id:
             return
         customer_id = inv.get("customer")
-        subscription_id = inv.get("subscription")
+        subscription_id = _invoice_subscription_id(inv)
 
         user = await self._user_by_customer(db, customer_id)
         if user is None and subscription_id:
@@ -192,7 +215,7 @@ class BillingSyncService:
 
     async def mark_payment_failed(self, db: AsyncSession, inv: Dict[str, Any], stripe_event_id: Optional[str]) -> None:
         await self.record_invoice(db, inv)
-        subscription_id = inv.get("subscription")
+        subscription_id = _invoice_subscription_id(inv)
         if not subscription_id:
             return
         row = (
