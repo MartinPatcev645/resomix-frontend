@@ -48,6 +48,10 @@ export function usePlaylistLoader() {
       return;
     }
 
+    // Committing to (re)load this id — clear any stale error from a PREVIOUS playlist so the page
+    // shows the loader (not the prior "private" screen) while this one resolves.
+    setError(null);
+
     // Store is empty for this id → load it (cache first, then API).
     let cancelled = false;
     (async () => {

@@ -17,20 +17,17 @@ export function PlaylistMobile() {
     window.scrollTo(0, 0);
   }, []);
 
-  const { playlistData, isLoading } = usePlaylistStore();
-  const [expired, setExpired] = useState(false);
+  const { playlistData, isLoading, error } = usePlaylistStore();
 
   // Load from ?id= if store empty
   usePlaylistLoader();
 
-  // Handle expired fallback
-  useEffect(() => {
-    if (!isLoading && !playlistData) {
-      setExpired(true);
-    } else {
-      setExpired(false);
-    }
-  }, [isLoading, playlistData]);
+  // Derive the view directly from the store (no lagging state). While an id is still resolving — no
+  // data and no error yet, INCLUDING the brief window on mount/refresh before the loader effect flips
+  // `isLoading` — we treat it as loading, so we never flash the "Playlist is Private" screen. That
+  // screen shows only once the load has definitively failed (errored) or there's simply no id.
+  const hasId = typeof window !== 'undefined' && !!new URLSearchParams(window.location.search).get('id');
+  const isResolving = isLoading || (hasId && !playlistData && !error);
 
   const handleMoreMenuOpen = (
     trackId: string,
@@ -51,21 +48,7 @@ export function PlaylistMobile() {
 
   return (
     <AudioProvider>
-      {isLoading ? (
-        <StatusMessage
-          isOpen={true}
-          status="loading"
-          message="Loading playlist..."
-          onClose={() => { }}
-        />
-      ) : expired ? (
-        <Error404
-          baseUrl={BASE_BETA_URL}
-          title="Playlist is Private"
-          description="This playlist is private. Make it public or share it to view, or go back to safety."
-          buttonText="Go Back to Safety"
-        />
-      ) : (
+      {playlistData ? (
         <div className="">
           <PlaylistHero onMoreClick={handleMoreMenuOpen} />
 
@@ -98,6 +81,20 @@ export function PlaylistMobile() {
             id={playlistData?.playlist?.id ?? ""}
           />
         </div>
+      ) : isResolving ? (
+        <StatusMessage
+          isOpen={true}
+          status="loading"
+          message="Loading playlist..."
+          onClose={() => { }}
+        />
+      ) : (
+        <Error404
+          baseUrl={BASE_BETA_URL}
+          title="Playlist is Private"
+          description="This playlist is private. Make it public or share it to view, or go back to safety."
+          buttonText="Go Back to Safety"
+        />
       )}
     </AudioProvider>
   );
