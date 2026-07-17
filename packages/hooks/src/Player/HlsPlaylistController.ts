@@ -638,6 +638,16 @@ class HlsPlaylistController implements AudioController {
 
     el.addEventListener('ended', () => {
       if (!active()) return;
+      // The uploaded reference track (HLS seed) is its OWN <audio>. When it plays fully to the end,
+      // park its SAVED position back at the audible start so replaying it later starts fresh —
+      // otherwise it stays parked at the end and 'ends' again the instant you press play, jumping
+      // straight to the next track. Only the HLS seed needs this (preview members reload their src
+      // from scratch each time, so they already replay correctly), hence the mode guard.
+      if (this.mode === 'hls' && this.currentTrackId) {
+        const meta = usePlayerStore.getState().snippetMetadata;
+        const snippet = meta ? meta[this.currentTrackId] : null;
+        usePlayerStore.getState().setTrackTime(this.currentTrackId, snippet ? snippet.start : 0);
+      }
       // Advance the queue on autoplay — seed → member1 → member2 …, regardless of engine.
       const nextId = this.getNextTrackId();
       if (usePlayerStore.getState().autoplay && nextId) {
