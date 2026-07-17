@@ -109,8 +109,20 @@ def build_action(index_name: str, row: Dict[str, Any]) -> Dict[str, Any]:
     return {"_index": index_name, "_id": doc["uuid"], "_source": doc}
 
 
+def _quiet_transport_logs() -> None:
+    """Silence per-request INFO spam + the self-signed TLS warning (verify off)."""
+    import logging
+    logging.getLogger("elastic_transport").setLevel(logging.WARNING)
+    try:
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    except Exception:
+        pass
+
+
 def run(limit: Optional[int], batch: int, dry_run: bool, no_swap: bool,
         keep_old: bool) -> int:
+    _quiet_transport_logs()
     # Lazy imports so --help works without a live ES/DB.
     from app.utils.elasticsearch_utils import get_es_client
     from database.connection import engine
