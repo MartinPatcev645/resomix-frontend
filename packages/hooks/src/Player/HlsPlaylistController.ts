@@ -17,6 +17,10 @@ const GAP_BETWEEN_TRACKS = 2.005; // sec silent segment
 const AUTOSWITCH_PREROLL = 0.5;   // sec preroll between new track start
 const MIN_BUFFER_BEFORE_PLAY = 3; // sec in buffer before play
 const PLAY_FALLBACK_AFTER_MS = 3000;
+// How long a playback problem must PERSIST (while the user actually wants to play) before we surface
+// the "Network" badge. This suppresses the initial-load / passive-preload window and transient
+// buffering hiccups — the badge only appears for a real, sustained failure the user can perceive.
+const NET_ERROR_GRACE_MS = 12000;
 
 // ================== Helpers ==================
 function setNetworkErrorFlag(on: boolean, reason?: string) {
@@ -42,12 +46,19 @@ export interface AudioController {
 
 // ================== Controller ==================
 class HlsPlaylistController implements AudioController {
-  private readonly audio: HTMLAudioElement;
+  // TWO dedicated <audio> elements — one per playback engine — so we never swap a source on a single
+  // element (the old single-element swap raced badly under rapid play/pause and forced crossOrigin
+  // toggling → CORS breakage). `hlsAudio` is hls.js-owned and always crossOrigin='anonymous' (peaks /
+  // Web-Audio need CORS); `previewAudio` plays Apple Music preview URLs with NO crossOrigin (Apple's
+  // preview CDN sends no CORS headers, and we never read its samples). Only one plays at a time.
+  private readonly hlsAudio: HTMLAudioElement;
+  private readonly previewAudio: HTMLAudioElement;
   private hls: Hls | null = null;
 
   private playlistUrl = '';
   private retryTimer: number | null = null;
   private coldRetryTimer: number | null = null;
+  private netErrTimer: number | null = null;
 
   private wantPlaying = false;
   private playAfterLoad = false;
@@ -62,12 +73,17 @@ class HlsPlaylistController implements AudioController {
   private totalDuration = 0;
 
   private currentTrackId: string | null = null;
-  // Playback engine for the current track: 'hls' (the user's upload seed, streamed via hls.js) or
-  // 'preview' (a catalogue track, a plain <audio> src from the Apple Music preview_url). This guards
-  // the HLS-only machinery (timeline mapping, retry, resume) so previews use the <audio> directly.
+  // Playback engine for the current track: 'hls' (the user's upload seed, streamed via hls.js on
+  // `hlsAudio`) or 'preview' (a catalogue track, a plain <audio> src from the Apple Music preview_url
+  // on `previewAudio`). Drives which element `audio` (below) resolves to.
   private mode: 'hls' | 'preview' = 'hls';
   private isPlaylistLoaded = false;
   private pendingOnReady: (() => void) | null = null;
+
+  // Monotonic load generation. Every load()/loadPreview() bumps it; any async continuation captures
+  // its seq and bails if a newer load has since superseded it — so rapid switching can't let a stale
+  // callback act on the wrong track/element.
+  private loadSeq = 0;
 
   private isSeeking = false;
   private isMediaSessionInit = false;
@@ -78,32 +94,45 @@ class HlsPlaylistController implements AudioController {
   private sessionPromise: Promise<any> | null = null;
   private lastRestartTime = 0;
 
-  // One-shot <audio> listeners we may need to tear down on a track/mode switch, so a handler queued
-  // for a superseded source can't fire against the new one (a stale 'seeked' from a prior HLS
-  // goToTrack, a stale 'canplay' from a prior preview load) and a missed 'seeked' can't wedge us.
+  // One-shot listeners we may need to tear down on a track/mode switch, so a handler queued for a
+  // superseded source can't fire against the new one. pendingOnReady/pendingSeeked live on hlsAudio;
+  // pendingCanPlay lives on previewAudio.
   private pendingCanPlay: (() => void) | null = null;
   private pendingSeeked: (() => void) | null = null;
   private goToSeekTimer: number | null = null;
 
-  constructor() {
-    this.audio = new Audio();
-    this.audio.preload = 'auto';
-    this.audio.crossOrigin = 'anonymous';
+  // The element currently in use, resolved from `mode`. Reads and property-sets (e.g.
+  // `this.audio.currentTime = x`) act on the active element; the HLS lifecycle methods use
+  // `this.hlsAudio` explicitly and the preview path uses `this.previewAudio` explicitly.
+  private get audio(): HTMLAudioElement {
+    return this.mode === 'preview' ? this.previewAudio : this.hlsAudio;
+  }
 
-    // volume sync once per controller lifetime
+  constructor() {
+    this.hlsAudio = new Audio();
+    this.hlsAudio.preload = 'auto';
+    this.hlsAudio.crossOrigin = 'anonymous'; // peaks / Web-Audio need CORS on the HLS element
+
+    this.previewAudio = new Audio();
+    this.previewAudio.preload = 'auto'; // Apple preview CDN — deliberately no crossOrigin
+
+    // volume sync once per controller lifetime — applied to BOTH elements
     let lastVolume = usePlayerStore.getState().volume;
-    this.audio.volume = lastVolume;
+    this.hlsAudio.volume = lastVolume;
+    this.previewAudio.volume = lastVolume;
     this.volumeUnsubscribe = usePlayerStore.subscribe(() => {
       const volume = usePlayerStore.getState().volume;
       if (volume !== lastVolume) {
         lastVolume = volume;
-        this.audio.volume = volume;
+        this.hlsAudio.volume = volume;
+        this.previewAudio.volume = volume;
       }
     });
 
-    // media hiccup watcher
+    // media hiccup watcher — only the HLS element needs the retry machinery (Apple previews recover
+    // on their own; onMediaHiccup also early-returns in preview mode).
     ['stalled','suspend','waiting','emptied','error','abort'].forEach((ev) => {
-      this.audio.addEventListener(ev, this.onMediaHiccup);
+      this.hlsAudio.addEventListener(ev, this.onMediaHiccup);
     });
 
     // global visibility/focus signals
@@ -112,11 +141,8 @@ class HlsPlaylistController implements AudioController {
     window.addEventListener('focus', this.onWindowFocus);
 
     this.wireGlobalOnlineOffline();
-    // Bind the core <audio> events (timeupdate/ended/canplay/…) up-front. Previously this only ran
-    // inside ensureHlsLoaded() (the HLS path), so an all-preview playlist (every catalogue track plays
-    // from an Apple preview, never touching HLS) never bound `timeupdate` → onTimeUpdate never fired →
-    // progress/elapsed/duration/seek stayed dead while audio still played. Idempotent (wiredAudioEvents
-    // guard); onTimeUpdate no-ops until a track is loaded.
+    // Bind the core <audio> events (timeupdate/ended/canplay/…) to BOTH elements up-front. Each
+    // handler acts only when its element is the active one. Idempotent (wiredAudioEvents guard).
     this.wireAudioEvents();
   }
 
@@ -124,31 +150,37 @@ class HlsPlaylistController implements AudioController {
 
   load = (trackId: string, isPlayAfter: boolean = false) => {
     if (DEMO_MODE) return;
-    setNetworkErrorFlag(false);
+    const seq = ++this.loadSeq;
+    this.clearNetworkError();
     this.clearRetry();
     // Fresh load intent — tear down any one-shot handler from the previous track/mode and clear a
-    // possibly-stuck seek flag, so the new track starts from a clean state (prevents the "wedged
-    // after seeking" freeze on mixed HLS-seed + preview playlists).
+    // possibly-stuck seek flag, so the new track starts from a clean state.
     this.clearOneShotHandlers();
     this.resetSeekState();
 
     if (!this.tracks.length) this.initPlaylist();
 
-    // Catalogue tracks play from their Apple Music preview URL — a plain <audio> source, no HLS,
-    // no media-server hop, no auth. Only the user's own upload seed uses the HLS path below.
+    // Catalogue tracks play from their Apple Music preview URL on the dedicated previewAudio element.
     const track = this.resolveTrack(trackId);
     if (track && track.playback === 'preview' && track.preview_url) {
       this.loadPreview(track, isPlayAfter);
       return;
     }
     this.mode = 'hls';
-    this.audio.crossOrigin = 'anonymous';  // restored for HLS (peaks/Web-Audio need it)
+    // Switching to the seed: make sure the preview element is silent so both never play at once.
+    try { this.previewAudio.pause(); } catch { /* noop */ }
 
     if (!navigator.onLine) {
       this.scheduleColdRetry('offline');
     }
 
     const continueLoading = () => {
+      if (seq !== this.loadSeq) return; // superseded by a newer load/preview
+      // Resume the HLS loader if we had stopped it while a preview was playing (hls is kept alive).
+      if (this.hls && this.isPlaylistLoaded) {
+        try { this.hls.startLoad(this.hlsAudio.currentTime || -1); } catch { /* noop */ }
+      }
+
       if (isPlayAfter) {
         this.wantPlaying = true;
         this.msInitSession(trackId);
@@ -159,27 +191,28 @@ class HlsPlaylistController implements AudioController {
 
       // Remove any pending loadedmetadata handler to prevent stacking
       if (this.pendingOnReady) {
-        this.audio.removeEventListener('loadedmetadata', this.pendingOnReady);
+        this.hlsAudio.removeEventListener('loadedmetadata', this.pendingOnReady);
         this.pendingOnReady = null;
       }
 
       const onReady = () => {
-        this.audio.removeEventListener('loadedmetadata', onReady);
+        this.hlsAudio.removeEventListener('loadedmetadata', onReady);
         this.pendingOnReady = null;
+        if (seq !== this.loadSeq) return;
         this.goToTrack(trackId, this.playAfterLoad, true);
         this.playAfterLoad = false;
       };
 
-      if (this.audio.readyState >= 1) {
+      if (this.hlsAudio.readyState >= 1) {
         this.goToTrack(trackId, isPlayAfter, true);
       } else {
         this.pendingOnReady = onReady;
-        this.audio.addEventListener('loadedmetadata', onReady);
+        this.hlsAudio.addEventListener('loadedmetadata', onReady);
       }
     };
 
     if (!this.isPlaylistLoaded) {
-      this.ensureHlsLoaded().then(continueLoading).catch(() => {});
+      this.ensureHlsLoaded().then(() => { if (seq === this.loadSeq) continueLoading(); }).catch(() => {});
     } else {
       continueLoading();
     }
@@ -197,8 +230,12 @@ class HlsPlaylistController implements AudioController {
     usePlayerStore.getState().setIsPlaying(true);
     msSetPlaybackState('playing');
     if (this.mode === 'preview') {
-      this.audio.play().catch(() => { /* autoplay policy — user can press play */ });
+      this.previewAudio.play().catch(() => { /* autoplay policy — user can press play */ });
       return;
+    }
+    // Resume the HLS loader if it was paused while a preview played.
+    if (this.hls && this.isPlaylistLoaded) {
+      try { this.hls.startLoad(this.hlsAudio.currentTime || -1); } catch { /* noop */ }
     }
     this.playWhenBuffered().catch(() => this.scheduleRetry());
   };
@@ -208,16 +245,19 @@ class HlsPlaylistController implements AudioController {
     this.clearRetry();
     usePlayerStore.getState().setIsPlaying(false);
     msSetPlaybackState('paused');
-    this.audio.pause();
+    // Pause both engines defensively so nothing can keep playing in the background.
+    try { this.hlsAudio.pause(); } catch { /* noop */ }
+    try { this.previewAudio.pause(); } catch { /* noop */ }
   };
 
   stop = () => {
     this.wantPlaying = false;
     this.clearRetry();
-    setNetworkErrorFlag(false);
+    this.clearNetworkError();
     usePlayerStore.getState().setIsPlaying(false);
     msSetPlaybackState('none');
-    this.audio.pause();
+    try { this.hlsAudio.pause(); } catch { /* noop */ }
+    try { this.previewAudio.pause(); } catch { /* noop */ }
   };
 
   seek = (seconds: number, trackId?: string) => {
@@ -228,9 +268,9 @@ class HlsPlaylistController implements AudioController {
     // Preview: the <audio> holds only this track, so `seconds` maps straight to currentTime
     // (clamped to the preview's own length — which is what the scrubber spans).
     if (this.mode === 'preview') {
-      const dur = this.audio.duration || 0;
+      const dur = this.previewAudio.duration || 0;
       const clamped = dur ? Math.max(0, Math.min(seconds, dur)) : Math.max(0, seconds);
-      this.audio.currentTime = clamped;
+      this.previewAudio.currentTime = clamped;
       usePlayerStore.getState().setTrackTime(id, clamped);
       usePlayerStore.setState({ inputCurrentTime: clamped });
       return;
@@ -244,19 +284,19 @@ class HlsPlaylistController implements AudioController {
     // seconds is the absolute time in the original file (0 to original_duration)
     // We want to map this to the audible snippet range
     const audibleStart = snippet ? snippet.start : 0;
-    
+
     // Position within the snippet (0 to snippetDuration)
     const localAudibleOffset = Math.min(Math.max(0, seconds - audibleStart), d);
     const audioTargetTime = startOffset + localAudibleOffset;
 
-    this.audio.currentTime = audioTargetTime;
+    this.hlsAudio.currentTime = audioTargetTime;
     usePlayerStore.getState().setTrackTime(id, seconds);
 
     if (this.isMediaSessionInit) {
       msUpdatePositionState({
         position: seconds,
         duration: d,
-        playbackRate: this.audio.paused ? 0 : 1
+        playbackRate: this.hlsAudio.paused ? 0 : 1
       }, true);
     }
     usePlayerStore.setState({ inputCurrentTime: seconds });
@@ -266,16 +306,19 @@ class HlsPlaylistController implements AudioController {
     this.wantPlaying = false;
     this.clearRetry();
     this.clearColdRetry();
-    setNetworkErrorFlag(false);
-    this.audio.pause();
+    this.clearNetworkError();
+    try { this.hlsAudio.pause(); } catch { /* noop */ }
+    try { this.previewAudio.pause(); } catch { /* noop */ }
 
     if (this.hls) {
       try { this.hls.destroy(); } catch { /* noop */ }
       this.hls = null;
     }
 
-    this.audio.removeAttribute('src');
-    this.audio.load();
+    this.hlsAudio.removeAttribute('src');
+    this.hlsAudio.load();
+    this.previewAudio.removeAttribute('src');
+    this.previewAudio.load();
 
     this.isPlaylistLoaded = false;
     this.currentTrackId = null;
@@ -294,21 +337,21 @@ class HlsPlaylistController implements AudioController {
 
   getCurrentTime = () => {
     if (!this.currentTrackId) return 0;
-    if (this.mode === 'preview') return this.audio.currentTime || 0;
+    if (this.mode === 'preview') return this.previewAudio.currentTime || 0;
     const meta = usePlayerStore.getState().snippetMetadata;
     const snippet = meta ? meta[this.currentTrackId] : null;
     const audioOffset = this.offsets.get(this.currentTrackId) || 0;
 
     // (audio.currentTime - audioOffset) is the time relative to the snippet start in the manifest (0..snipDur)
     // We add snippet.start to get the absolute time in the original file (audibleStart..audibleEnd)
-    return (this.audio.currentTime - audioOffset) + (snippet ? snippet.start : 0);
+    return (this.hlsAudio.currentTime - audioOffset) + (snippet ? snippet.start : 0);
   };
 
   getDuration = () => {
     if (!this.currentTrackId) return 0;
     // Preview: the scrubber spans the preview's OWN length (not the full track); the full length is
     // shown separately as metadata.
-    if (this.mode === 'preview') return this.audio.duration || 0;
+    if (this.mode === 'preview') return this.previewAudio.duration || 0;
     return this.durations.get(this.currentTrackId) || 0;
   };
 
@@ -325,23 +368,21 @@ class HlsPlaylistController implements AudioController {
     return data.similar_tracks?.find((t) => t.id === trackId);
   }
 
-  // Play a catalogue track from its Apple Music preview_url on the shared <audio>. No HLS, no
-  // media-server hop. `crossOrigin` is cleared (Apple's preview CDN doesn't send CORS headers and we
-  // don't read the samples for previews), then restored to 'anonymous' when the HLS path runs again.
+  // Play a catalogue track from its Apple Music preview_url on the dedicated previewAudio element.
+  // The HLS engine is KEPT ALIVE (attached + loaded) — we only pause the seed element and stop its
+  // segment loading — so returning to the seed is instant (no session re-fetch, no re-attach) and we
+  // never destroy/recreate hls per switch. No crossOrigin toggling (previewAudio never sets it).
   private loadPreview(track: Track, isPlayAfter: boolean) {
+    const seq = ++this.loadSeq;
     this.mode = 'preview';
     this.clearRetry();
     this.clearColdRetry();
-    setNetworkErrorFlag(false);
+    this.clearNetworkError();
 
-    if (this.hls) {
-      try { this.hls.destroy(); } catch { /* noop */ }
-      this.hls = null;
-    }
-    this.isPlaylistLoaded = false;
+    try { this.hlsAudio.pause(); } catch { /* noop */ }
+    try { this.hls?.stopLoad(); } catch { /* noop */ }
 
-    // Drop any one-shot handler (a pending HLS 'loadedmetadata'/'seeked', or a prior preview
-    // 'canplay') and clear a possibly-stuck seek flag, so none of them fire against this new source.
+    // Drop any one-shot handler and clear a possibly-stuck seek flag.
     this.clearOneShotHandlers();
     this.resetSeekState();
 
@@ -351,20 +392,20 @@ class HlsPlaylistController implements AudioController {
     this.selectCurrent(track.id);
     if (isPlayAfter) usePlayerStore.getState().setIsPlaying(true);
 
-    this.audio.removeAttribute('crossorigin');
-    this.audio.src = track.preview_url as string;
-    this.audio.load();
+    this.previewAudio.src = track.preview_url as string;
+    this.previewAudio.load();
 
     const onCanPlay = () => {
-      this.audio.removeEventListener('canplay', onCanPlay);
+      this.previewAudio.removeEventListener('canplay', onCanPlay);
       this.pendingCanPlay = null;
+      if (seq !== this.loadSeq) return;
       if (this.wantPlaying) {
         msSetPlaybackState('playing');
-        this.audio.play().catch(() => { /* autoplay policy — user can press play */ });
+        this.previewAudio.play().catch(() => { /* autoplay policy — user can press play */ });
       }
     };
     this.pendingCanPlay = onCanPlay;
-    this.audio.addEventListener('canplay', onCanPlay);
+    this.previewAudio.addEventListener('canplay', onCanPlay);
   }
 
   // =============== Private: playlist/timeline ===============
@@ -411,7 +452,7 @@ class HlsPlaylistController implements AudioController {
   private getSavedLocalTime(trackId: string) {
     const d = this.durations.get(trackId) || 0;
     const saved = usePlayerStore.getState().getTrackTime(trackId);
-    
+
     const meta = usePlayerStore.getState().snippetMetadata;
     const snippet = meta ? meta[trackId] : null;
 
@@ -437,7 +478,8 @@ class HlsPlaylistController implements AudioController {
       await this.fetchPlaybackSession();
     } catch (e) {
       console.error("[HLS] Failed to pre-flight playlist session", e);
-      setNetworkErrorFlag(true, "session-failed");
+      // Deferred + play-gated: a failure during the passive pre-load never flashes the badge.
+      this.flagNetworkError("session-failed");
       return;
     }
 
@@ -472,21 +514,15 @@ class HlsPlaylistController implements AudioController {
             xhr.open('GET', finalUrl, true);
           }
         }
-        // only for testing
-        /*
-        maxBufferLength: 1,
-        maxMaxBufferLength: 1,
-        maxBufferSize: 1,
-        /**/
       });
       this.hls.loadSource(this.playlistUrl);
-      this.hls.attachMedia(this.audio);
+      this.hls.attachMedia(this.hlsAudio);
       this.wireHlsErrorHandlers();
       try { this.hls.startLoad(-1); } catch { /* noop */ }
     } else {
       // Safari / native HLS
-      this.audio.src = this.playlistUrl;
-      this.audio.load();
+      this.hlsAudio.src = this.playlistUrl;
+      this.hlsAudio.load();
     }
 
     this.wireAudioEvents();
@@ -500,9 +536,10 @@ class HlsPlaylistController implements AudioController {
   private async restartHls() {
     if (!this.playlistUrl) return;
 
-    // Rate-limit restarts to prevent infinite loops (e.g. hundreds of requests quickly)
+    // Rate-limit restarts to prevent infinite loops — BUT never drop a restart when the engine is
+    // actually gone (this.hls === null), since that's exactly when recovery is required.
     const now = Date.now();
-    if (now - this.lastRestartTime < 2000) {
+    if (this.hls && now - this.lastRestartTime < 2000) {
       console.warn("[HLS] Restart requested too soon, skipping to avoid infinite loop.");
       return;
     }
@@ -552,7 +589,7 @@ class HlsPlaylistController implements AudioController {
           }
         }
       });
-      this.hls.attachMedia(this.audio);
+      this.hls.attachMedia(this.hlsAudio);
       this.hls.loadSource(this.playlistUrl);
       this.wireHlsErrorHandlers();
     }
@@ -565,44 +602,43 @@ class HlsPlaylistController implements AudioController {
   private wireAudioEvents() {
     if (this.wiredAudioEvents) return;
     this.wiredAudioEvents = true;
+    this.bindAudioEvents(this.hlsAudio);
+    this.bindAudioEvents(this.previewAudio);
+  }
 
-    this.audio.addEventListener('play', () => {
-      msSetPlaybackState('playing');
-    });
-    this.audio.addEventListener('pause', () => {
-      // keep silent
-    });
+  // Bind the shared media events to one element. Every handler acts ONLY when that element is the
+  // currently-active one (`el === this.audio`), so an event from the paused/inactive element (e.g. a
+  // stray 'seeked'/'canplay' during a switch) can never mutate playback state for the other engine.
+  private bindAudioEvents(el: HTMLAudioElement) {
+    const active = () => el === this.audio;
 
-    this.audio.addEventListener('canplaythrough', () => {
-      setNetworkErrorFlag(false);
+    el.addEventListener('play', () => { if (active()) msSetPlaybackState('playing'); });
+    el.addEventListener('pause', () => { /* keep silent */ });
+
+    const onReadyish = () => {
+      if (!active()) return;
+      this.clearNetworkError();
       this.clearColdRetry();
       this.clearRetry();
-    });
+    };
+    el.addEventListener('canplaythrough', onReadyish);
+    el.addEventListener('canplay', onReadyish);
+    el.addEventListener('playing', onReadyish);
 
-    this.audio.addEventListener('canplay', () => {
-      setNetworkErrorFlag(false);
-      this.clearColdRetry();
-      this.clearRetry();
-    });
-
-    this.audio.addEventListener('playing', () => {
-      setNetworkErrorFlag(false);
-      this.clearColdRetry();
-      this.clearRetry();
-    });
-
-    this.audio.addEventListener('seeking', () => {
+    el.addEventListener('seeking', () => {
+      if (!active()) return;
       this.isSeeking = true;
       this.startSeekGrace(1200);
     });
-    this.audio.addEventListener('seeked', () => {
+    el.addEventListener('seeked', () => {
+      if (!active()) return;
       this.isSeeking = false;
       this.startSeekGrace(800);
     });
 
-    this.audio.addEventListener('ended', () => {
-      // Advance the queue on autoplay — seed → member1 → member2 …, regardless of engine (the seed's
-      // HLS manifest is now single-track, so 'ended' fires at the end of each track).
+    el.addEventListener('ended', () => {
+      if (!active()) return;
+      // Advance the queue on autoplay — seed → member1 → member2 …, regardless of engine.
       const nextId = this.getNextTrackId();
       if (usePlayerStore.getState().autoplay && nextId) {
         this.load(nextId, true);
@@ -615,7 +651,7 @@ class HlsPlaylistController implements AudioController {
       usePlayerStore.getState().setCurrentTrack(null);
     });
 
-    this.audio.addEventListener('timeupdate', this.onTimeUpdate);
+    el.addEventListener('timeupdate', this.onTimeUpdate);
   }
 
   private wireGlobalOnlineOffline() {
@@ -623,12 +659,12 @@ class HlsPlaylistController implements AudioController {
     this.wiredGlobalEvents = true;
 
     window.addEventListener('online', () => {
-      // console.log('--return window online');
-      setNetworkErrorFlag(false);
+      this.clearNetworkError();
       this.attemptResume(true, true);
     });
     window.addEventListener('offline', () => {
-      setNetworkErrorFlag(true, 'offline');
+      // A genuine connectivity loss is a clear, real signal — surface it immediately.
+      this.flagNetworkError('offline', true);
       this.scheduleRetry();
     });
   }
@@ -700,19 +736,19 @@ class HlsPlaylistController implements AudioController {
         if (code === 403) {
           // eslint-disable-next-line no-console
           console.warn("[HLS] Token expired (403). Refreshing Edge Auth session...");
-          const savedTime = this.audio.currentTime;
+          const savedTime = this.hlsAudio.currentTime;
 
           getPlaylistPlaybackSession(this.playlistId).then((res) => {
             this.playlistUrl = res.playback_url;
             this.restartHls().then(() => {
-              this.audio.currentTime = savedTime;
-              if (this.wantPlaying) {
-                this.audio.play();
+              this.hlsAudio.currentTime = savedTime;
+              if (this.wantPlaying && this.mode === 'hls') {
+                this.hlsAudio.play().catch(() => { /* noop */ });
               }
             });
           }).catch((err) => {
             console.error("[HLS] Failed to refresh token", err);
-            setNetworkErrorFlag(true, '403-refresh-failed');
+            this.flagNetworkError('403-refresh-failed');
           });
 
           return; // Prevent standard error/retry logic
@@ -730,14 +766,15 @@ class HlsPlaylistController implements AudioController {
         }
 
         if (isSeriousNetworkError(data)) {
-          setNetworkErrorFlag(true, data?.details || (navigator.onLine ? 'network-error' : 'offline'));
+          // offline → immediate; otherwise deferred + play-gated (transient buffering won't flash).
+          this.flagNetworkError(data?.details || (navigator.onLine ? 'network-error' : 'offline'), !navigator.onLine);
           if (this.wantPlaying) {
             this.scheduleRetry(true, data?.details);
           } else {
             this.scheduleColdRetry(data?.details);
           }
         } else {
-          this.attemptResume(true, !this.wantPlaying /* allowCold если не играем */);
+          this.attemptResume(true, !this.wantPlaying /* allowCold if not playing */);
         }
         return;
       }
@@ -748,7 +785,7 @@ class HlsPlaylistController implements AudioController {
             try { this.hls?.recoverMediaError(); } catch {}
             break;
           default:
-            setNetworkErrorFlag(true, 'fatal-error');
+            this.flagNetworkError('fatal-error');
             this.restartHls().then(() => {
               if (this.wantPlaying) {
                 this.scheduleRetry(true, 'fatal-error');
@@ -771,7 +808,7 @@ class HlsPlaylistController implements AudioController {
       // Intercept the "uuid=deleted" 0.000s discontinuity stub generated by backend
       const firstFragUrl = frags[0].url || '';
       const firstFragRelUrl = frags[0].relurl || '';
-      
+
       if (firstFragUrl.includes('uuid=deleted') || firstFragRelUrl.includes('uuid=deleted')) {
         usePlayerStore.getState().setTrackDeleted(queriedTrack.id, true);
         this.pause();
@@ -788,7 +825,7 @@ class HlsPlaylistController implements AudioController {
       let totalCCDuration = 0;
       let lastFragDuration = 0;
       let ccFragCount = 0;
-      
+
       for (const f of frags) {
         if (f.cc !== firstCC) break;
         totalCCDuration += f.duration;
@@ -802,7 +839,6 @@ class HlsPlaylistController implements AudioController {
       let snippetDuration = totalCCDuration;
       if (ccFragCount > 1 && Math.abs(lastFragDuration - 2.0) < 0.5) {
         snippetDuration -= lastFragDuration;
-        // console.log(`[HLS] Detected 2s gap at end of snippet, excluding from audible duration. New dur: ${snippetDuration}`);
       }
 
       // Detect snippet start from the first segment's index
@@ -812,14 +848,14 @@ class HlsPlaylistController implements AudioController {
       // Try to parse index from filename if it looks like segment_123.ts or index123.ts or similar
       const url = frags[0].url || '';
       const relUrl = frags[0].relurl || '';
-      
+
       // The segment number is at the end: ...&seg=0 or ...?seg=0
       // We also fallback to common patterns like segment_20 or index20
-      const match = url.match(/[?&]seg=(\d+)/i) || 
+      const match = url.match(/[?&]seg=(\d+)/i) ||
                    relUrl.match(/[?&]seg=(\d+)/i) ||
-                   url.match(/(?:segment|index)[_-]?(\d+)/i) || 
+                   url.match(/(?:segment|index)[_-]?(\d+)/i) ||
                    relUrl.match(/(?:segment|index)[_-]?(\d+)/i);
-      
+
       if (match) {
         const segIdx = parseInt(match[1], 10);
         // If SN is 0 but we found a segment number in the filename/url, trust it
@@ -866,7 +902,7 @@ class HlsPlaylistController implements AudioController {
     }
 
     if (Hls.isSupported()) {
-      const t = this.audio.currentTime || 0;
+      const t = this.hlsAudio.currentTime || 0;
 
       if (!this.hls) {
         await this.restartHls();
@@ -878,14 +914,14 @@ class HlsPlaylistController implements AudioController {
         } catch { /* noop */ }
       } else {
         const bufAhead = this.getBufferedAhead();
-        const isStalled = this.audio.readyState <= HTMLMediaElement.HAVE_CURRENT_DATA || bufAhead < 0.25;
+        const isStalled = this.hlsAudio.readyState <= HTMLMediaElement.HAVE_CURRENT_DATA || bufAhead < 0.25;
 
         try { if (isStalled) this.hls.stopLoad(); } catch { /* noop */ }
         try {
-          this.hls.startLoad(this.audio.currentTime || -1);
+          this.hls.startLoad(this.hlsAudio.currentTime || -1);
         } catch {
           await this.restartHls();
-          try { this.hls?.startLoad(this.audio.currentTime || -1); } catch { /* noop */ }
+          try { this.hls?.startLoad(this.hlsAudio.currentTime || -1); } catch { /* noop */ }
         }
       }
 
@@ -894,11 +930,11 @@ class HlsPlaylistController implements AudioController {
       }
     } else {
       // Safari / native HLS
-      const t = this.audio.currentTime || 0;
+      const t = this.hlsAudio.currentTime || 0;
       const wasPlaying = this.wantPlaying;
-      this.audio.src = this.playlistUrl + (this.playlistUrl.includes('?') ? '&' : '?') + 'r=' + Date.now();
-      this.audio.load();
-      this.audio.currentTime = t;
+      this.hlsAudio.src = this.playlistUrl + (this.playlistUrl.includes('?') ? '&' : '?') + 'r=' + Date.now();
+      this.hlsAudio.load();
+      this.hlsAudio.currentTime = t;
       if (wasPlaying) this.playWhenBuffered().catch(() => {});
     }
   }
@@ -907,7 +943,7 @@ class HlsPlaylistController implements AudioController {
     if (!this.wantPlaying) return;
     if (this.retryTimer !== null) return;
     if (showFlag) {
-      setNetworkErrorFlag(true, reason || (navigator.onLine ? 'retrying' : 'offline'));
+      this.flagNetworkError(reason || (navigator.onLine ? 'retrying' : 'offline'), !navigator.onLine);
     }
     this.attemptResume(true);
     this.retryTimer = window.setInterval(() => {
@@ -917,7 +953,7 @@ class HlsPlaylistController implements AudioController {
 
   private scheduleColdRetry(reason?: string) {
     if (this.coldRetryTimer !== null) return;
-    setNetworkErrorFlag(true, reason || (navigator.onLine ? 'retrying' : 'offline'));
+    this.flagNetworkError(reason || (navigator.onLine ? 'retrying' : 'offline'), !navigator.onLine);
     this.attemptResume(true, true);
     this.coldRetryTimer = window.setInterval(() => {
       this.attemptResume(false, true);
@@ -936,6 +972,32 @@ class HlsPlaylistController implements AudioController {
       clearInterval(this.retryTimer);
       this.retryTimer = null;
     }
+    this.clearNetworkError();
+  }
+
+  // =============== Private: network-error surfacing (deferred + play-gated) ===============
+
+  // Only surface the "Network" badge for a problem the user can actually perceive: it must PERSIST
+  // for NET_ERROR_GRACE_MS AND the user must actually want playback. Passive pre-loads (rendering the
+  // reference waveform on refresh) and short buffering blips therefore never flash the badge.
+  // `immediate` bypasses the grace for genuinely clear signals (a real 'offline' event).
+  private flagNetworkError(reason?: string, immediate = false) {
+    if (DEMO_MODE) return;
+    if (immediate) {
+      if (this.netErrTimer !== null) { clearTimeout(this.netErrTimer); this.netErrTimer = null; }
+      setNetworkErrorFlag(true, reason);
+      return;
+    }
+    if (!this.wantPlaying) return;             // suppress during passive / initial load
+    if (this.netErrTimer !== null) return;     // already armed
+    this.netErrTimer = window.setTimeout(() => {
+      this.netErrTimer = null;
+      if (this.wantPlaying) setNetworkErrorFlag(true, reason);
+    }, NET_ERROR_GRACE_MS);
+  }
+
+  private clearNetworkError() {
+    if (this.netErrTimer !== null) { clearTimeout(this.netErrTimer); this.netErrTimer = null; }
     setNetworkErrorFlag(false);
   }
 
@@ -988,8 +1050,8 @@ class HlsPlaylistController implements AudioController {
   // =============== Private: time helpers ===============
 
   private getBufferedAhead(): number {
-    const t = this.audio.currentTime || 0;
-    const buf = this.audio.buffered;
+    const t = this.hlsAudio.currentTime || 0;
+    const buf = this.hlsAudio.buffered;
     for (let i = 0; i < buf.length; i++) {
       const start = buf.start(i);
       const end = buf.end(i);
@@ -1004,15 +1066,20 @@ class HlsPlaylistController implements AudioController {
     return new Promise((resolve, reject) => {
       if (!this.wantPlaying) return resolve();
 
+      const el = this.hlsAudio;
+
       const tryPlay = () => {
-        if (!this.wantPlaying) {
+        // Abort if the user paused OR switched to a preview meanwhile — otherwise a seed buffer that
+        // fills AFTER the user tapped a catalogue track would start the seed on top of the preview
+        // (two elements can both play). The mode guard is what keeps exactly one engine audible.
+        if (!this.wantPlaying || this.mode !== 'hls') {
           cleanup();
           return resolve();
         }
         const ahead = this.getBufferedAhead();
         if (ahead >= minSec) {
           cleanup();
-          this.audio.play().then(resolve).catch(reject);
+          el.play().then(resolve).catch(reject);
         }
       };
 
@@ -1023,23 +1090,25 @@ class HlsPlaylistController implements AudioController {
       const onBufferAppended = () => tryPlay();
 
       const cleanup = () => {
-        this.audio.removeEventListener('progress', onProgress);
-        this.audio.removeEventListener('timeupdate', onTimeUpdate);
-        this.audio.removeEventListener('canplay', onCanPlay);
-        this.audio.removeEventListener('canplaythrough', onCanPlayThrough);
+        el.removeEventListener('progress', onProgress);
+        el.removeEventListener('timeupdate', onTimeUpdate);
+        el.removeEventListener('canplay', onCanPlay);
+        el.removeEventListener('canplaythrough', onCanPlayThrough);
         try { this.hls?.off(Hls.Events.BUFFER_APPENDED as any, onBufferAppended as any); } catch { /* noop */ }
         if (timer) clearTimeout(timer);
       };
 
       const timer = window.setTimeout(() => {
         cleanup();
-        this.audio.play().then(resolve).catch(reject);
+        // Same guard as tryPlay: never force the seed to play if we've paused or switched to preview.
+        if (!this.wantPlaying || this.mode !== 'hls') return resolve();
+        el.play().then(resolve).catch(reject);
       }, PLAY_FALLBACK_AFTER_MS);
 
-      this.audio.addEventListener('progress', onProgress);
-      this.audio.addEventListener('timeupdate', onTimeUpdate);
-      this.audio.addEventListener('canplay', onCanPlay);
-      this.audio.addEventListener('canplaythrough', onCanPlayThrough);
+      el.addEventListener('progress', onProgress);
+      el.addEventListener('timeupdate', onTimeUpdate);
+      el.addEventListener('canplay', onCanPlay);
+      el.addEventListener('canplaythrough', onCanPlayThrough);
       try { this.hls?.on(Hls.Events.BUFFER_APPENDED as any, onBufferAppended as any); } catch { /* noop */ }
 
       tryPlay();
@@ -1048,8 +1117,7 @@ class HlsPlaylistController implements AudioController {
 
   private goToTrack(trackId: string, autoplay = false, preRollOnZero = false) {
     // The HLS <audio> stream holds ONLY the upload seed. A preview member must never be reached by
-    // seeking this stream (it would seek past the seed's end and wedge) — hand it to the preview
-    // loader instead. Also covers the media-session next/prev buttons on a mixed playlist.
+    // seeking this stream — hand it to the preview loader instead (also covers media-session next/prev).
     const targetTrack = this.resolveTrack(trackId);
     if (targetTrack && targetTrack.playback === 'preview' && targetTrack.preview_url) {
       this.loadPreview(targetTrack, autoplay);
@@ -1084,7 +1152,7 @@ class HlsPlaylistController implements AudioController {
 
     // Arm a fresh seek completion path; clear any prior one so it can't double-fire.
     if (this.pendingSeeked) {
-      this.audio.removeEventListener('seeked', this.pendingSeeked);
+      this.hlsAudio.removeEventListener('seeked', this.pendingSeeked);
       this.pendingSeeked = null;
     }
     if (this.goToSeekTimer !== null) {
@@ -1094,7 +1162,7 @@ class HlsPlaylistController implements AudioController {
 
     const finishSeek = () => {
       if (this.pendingSeeked) {
-        this.audio.removeEventListener('seeked', this.pendingSeeked);
+        this.hlsAudio.removeEventListener('seeked', this.pendingSeeked);
         this.pendingSeeked = null;
       }
       if (this.goToSeekTimer !== null) {
@@ -1105,7 +1173,7 @@ class HlsPlaylistController implements AudioController {
 
       if (!Hls.isSupported()) {
         try {
-          this.audio.currentTime = this.audio.currentTime + 0.001;
+          this.hlsAudio.currentTime = this.hlsAudio.currentTime + 0.001;
         } catch { /* noop */ }
       }
 
@@ -1126,12 +1194,12 @@ class HlsPlaylistController implements AudioController {
 
     this.isSeeking = true;
     if (Hls.isSupported()) {
-      this.audio.pause();
+      this.hlsAudio.pause();
     }
 
     // If the target is essentially where we already are, no 'seeking'/'seeked' pair fires — run the
     // completion path directly so isSeeking can't stick true and freeze onTimeUpdate.
-    const needsSeek = Math.abs((this.audio.currentTime || 0) - target) > 0.05;
+    const needsSeek = Math.abs((this.hlsAudio.currentTime || 0) - target) > 0.05;
     if (!needsSeek) {
       finishSeek();
       return;
@@ -1139,11 +1207,11 @@ class HlsPlaylistController implements AudioController {
 
     const onSeeked = () => finishSeek();
     this.pendingSeeked = onSeeked;
-    this.audio.addEventListener('seeked', onSeeked);
+    this.hlsAudio.addEventListener('seeked', onSeeked);
     // Safety net: a browser may not emit 'seeked' if the target range isn't buffered yet — force the
     // completion path after a short delay so a missed event can't leave us stuck seeking.
     this.goToSeekTimer = window.setTimeout(finishSeek, 1500);
-    this.audio.currentTime = target;
+    this.hlsAudio.currentTime = target;
   }
 
   private findTrackByGlobalTime(t: number): string | null {
@@ -1185,34 +1253,34 @@ class HlsPlaylistController implements AudioController {
 
   // =============== Private: event handlers ===============
 
-  private onTimeUpdate = () => {
+  private onTimeUpdate = (e?: Event) => {
+    // Ignore a timeupdate from the paused/inactive element (the other engine mid-switch).
+    if (e && e.target !== this.audio) return;
     if (!this.currentTrackId || this.isSeeking) return;
 
     // Preview: the <audio> holds a single track, so time is reported straight through (no global
     // offset map, no cross-track advance — the queue advances on the 'ended' event).
     if (this.mode === 'preview') {
-      const t = this.audio.currentTime || 0;
+      const t = this.previewAudio.currentTime || 0;
       usePlayerStore.setState({ inputCurrentTime: t });
       usePlayerStore.getState().setTrackTime(this.currentTrackId, t);
       if (this.isMediaSessionInit) {
         msUpdatePositionState(
-          { position: t, duration: this.audio.duration || 0, playbackRate: this.audio.paused ? 0 : 1 },
+          { position: t, duration: this.previewAudio.duration || 0, playbackRate: this.previewAudio.paused ? 0 : 1 },
           false,
         );
       }
       return;
     }
 
-    const globalT = this.audio.currentTime || 0;
+    const globalT = this.hlsAudio.currentTime || 0;
     const startOffset = this.offsets.get(this.currentTrackId) || 0;
     const meta = usePlayerStore.getState().snippetMetadata;
     const snippet = meta ? meta[this.currentTrackId] : null;
-    
+
     // (globalT - startOffset) is position in snippet (0..snipDur)
     // Adding snippet.start gives us the absolute time in the original file
     const localT = Math.max(0, globalT - startOffset + (snippet ? snippet.start : 0));
-
-    // console.log(`[HLS] onTimeUpdate: globalT=${globalT}, startOffset=${startOffset}, snipStart=${snippet?.start}, localT=${localT}`);
 
     usePlayerStore.setState({ inputCurrentTime: localT });
     usePlayerStore.getState().setTrackTime(this.currentTrackId, localT);
@@ -1220,23 +1288,21 @@ class HlsPlaylistController implements AudioController {
     msUpdatePositionState({
       position: localT,
       duration: this.durations.get(this.currentTrackId) || 0,
-      playbackRate: this.audio.paused ? 0 : 1
+      playbackRate: this.hlsAudio.paused ? 0 : 1
     }, false);
 
     const newId = this.findTrackByGlobalTime(globalT);
     if (newId && newId !== this.currentTrackId) {
-      // In the per-track-queue model the HLS <audio> holds ONLY the upload seed (the backend manifest
-      // is seed-only), so globalT never truly crosses into a member's slot during normal playback —
-      // and if it grazes past the seed's computed end near the tail, the "next" track is a preview
-      // that must NOT be reached by seeking this stream. Cross-track advance to a preview happens on
-      // the real `ended` event → load()/loadPreview(). Only advance in-stream if the next track is
-      // itself HLS (kept for a hypothetical multi-upload manifest; never today).
+      // The HLS <audio> holds ONLY the upload seed (backend manifest is seed-only), so globalT never
+      // truly crosses into a member's slot during normal playback. Cross-track advance to a preview
+      // happens on the real `ended` event → load()/loadPreview(). Only advance in-stream if the next
+      // track is itself HLS (kept for a hypothetical multi-upload manifest; never today).
       const nextTrack = this.resolveTrack(newId);
       if (nextTrack && nextTrack.playback === 'hls') {
         usePlayerStore.getState().setTrackTime(this.currentTrackId, 0);
         const { autoplay } = usePlayerStore.getState();
         if (autoplay) {
-          const shouldAutoplay = !this.audio.paused;
+          const shouldAutoplay = !this.hlsAudio.paused;
           this.goToTrack(newId, shouldAutoplay, true);
           this.wantPlaying = true;
         } else {
@@ -1253,7 +1319,7 @@ class HlsPlaylistController implements AudioController {
     if (this.isSeeking || this.inSeekGrace()) return;
 
     if (!navigator.onLine) {
-      setNetworkErrorFlag(true, 'offline');
+      this.flagNetworkError('offline', true);
       this.scheduleRetry(true, 'offline');
       return;
     }
@@ -1273,19 +1339,20 @@ class HlsPlaylistController implements AudioController {
 
   // =============== Private: transition cleanup ===============
 
-  // Tear down every one-shot <audio> listener/timer we may have armed for the previous track/mode,
-  // so nothing queued for a superseded source fires against the new one after a track/mode switch.
+  // Tear down every one-shot listener/timer we may have armed for the previous track/mode, so nothing
+  // queued for a superseded source fires against the new one. pendingOnReady/pendingSeeked live on
+  // hlsAudio; pendingCanPlay on previewAudio.
   private clearOneShotHandlers() {
     if (this.pendingOnReady) {
-      this.audio.removeEventListener('loadedmetadata', this.pendingOnReady);
+      this.hlsAudio.removeEventListener('loadedmetadata', this.pendingOnReady);
       this.pendingOnReady = null;
     }
     if (this.pendingCanPlay) {
-      this.audio.removeEventListener('canplay', this.pendingCanPlay);
+      this.previewAudio.removeEventListener('canplay', this.pendingCanPlay);
       this.pendingCanPlay = null;
     }
     if (this.pendingSeeked) {
-      this.audio.removeEventListener('seeked', this.pendingSeeked);
+      this.hlsAudio.removeEventListener('seeked', this.pendingSeeked);
       this.pendingSeeked = null;
     }
     if (this.goToSeekTimer !== null) {
