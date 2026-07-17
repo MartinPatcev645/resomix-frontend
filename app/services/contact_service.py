@@ -105,9 +105,9 @@ class ContactService:
             except Exception as email_exc:
                 print(f"Contact confirmation email failed (non-fatal): {email_exc}")
 
-            # Notify the support inbox (ADMIN_SUPPORT_EMAIL) with the full details + who submitted it
-            # (signed-in user or anonymous). Best-effort — never fail the submission on email trouble;
-            # no-op if ADMIN_SUPPORT_EMAIL isn't configured.
+            # Notify the admin inbox (ADMIN_NOTIFICATION_EMAIL) with the full details + who submitted
+            # it (signed-in user or anonymous). Best-effort — never fail the submission on email
+            # trouble; no-op if ADMIN_NOTIFICATION_EMAIL isn't configured.
             try:
                 admin_details = {
                     "contact_id": contact.id,

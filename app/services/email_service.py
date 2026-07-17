@@ -320,13 +320,13 @@ class EmailService:
             return False
 
     async def send_contact_admin_notification(self, details: dict) -> bool:
-        """Notify the support inbox (``ADMIN_SUPPORT_EMAIL``) of a new contact / B2B partner
+        """Notify the admin inbox (``ADMIN_NOTIFICATION_EMAIL``) of a new contact / B2B partner
         submission, with the full form details + who submitted it (signed-in user or anonymous).
 
-        No-op (returns False) if ``ADMIN_SUPPORT_EMAIL`` is not configured — the submitter still
+        No-op (returns False) if ``ADMIN_NOTIFICATION_EMAIL`` is not configured — the submitter still
         gets their acknowledgement regardless.
         """
-        admin_email = settings.admin_support_email
+        admin_email = settings.admin_notification_email
         if not admin_email:
             return False
 
