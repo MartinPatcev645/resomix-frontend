@@ -19,6 +19,10 @@ export interface ContactItem {
   subject: string | null
   phone: string | null
   message: string | null
+  contact_type: 'consumer' | 'partner'
+  company_name: string | null
+  catalog_size: string | null
+  estimated_calls: string | null
   status: 'open' | 'resolved'
   submitted_at: string
   user_id: string | null
@@ -34,6 +38,10 @@ const convertApiContact = (apiData: ApiContactItem): ContactItem => ({
   subject: apiData.subject,
   phone: apiData.phone,
   message: apiData.message,
+  contact_type: apiData.contact_type === 'partner' ? 'partner' : 'consumer',
+  company_name: apiData.company_name ?? null,
+  catalog_size: apiData.catalog_size ?? null,
+  estimated_calls: apiData.estimated_calls ?? null,
   status: apiData.status,
   submitted_at: apiData.submitted_at,
   user_id: apiData.user_id,
@@ -51,6 +59,7 @@ export function useContact(options?: UseContactOptions) {
   const [searchColumn, setSearchColumn] = useState<ContactListParams['search_column']>('message')
   const [dateRange, setDateRange] = useState<[string, string] | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'resolved'>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'consumer' | 'partner'>('all')
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({
@@ -86,6 +95,11 @@ export function useContact(options?: UseContactOptions) {
       // Add status filter if not 'all'
       if (statusFilter !== 'all') {
         params.status = statusFilter
+      }
+
+      // Add type filter if not 'all'
+      if (typeFilter !== 'all') {
+        params.contact_type = typeFilter
       }
 
       // Add sorting if present

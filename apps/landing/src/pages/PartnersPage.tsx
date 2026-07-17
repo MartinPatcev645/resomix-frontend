@@ -325,9 +325,9 @@ function PartnersDesktop() {
           {isSuccess ? (
             <div className="bg-[var(--color-secondary)] border border-slate-200 border-dotted rounded-[var(--px-10)] p-[var(--px-30)] text-center max-w-[var(--px-450)] mx-auto space-y-[var(--px-16)]">
               <div className="w-[var(--px-40)] h-[var(--px-40)] bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full flex items-center justify-center mx-auto text-[length:var(--px-16)] font-bold">✓</div>
-              <h4 className="text-[length:var(--px-18)] font-medium font-helvetica uppercase">Request Generated</h4>
+              <h4 className="text-[length:var(--px-18)] font-medium font-helvetica uppercase">Request Received</h4>
               <p className="text-[length:var(--px-13)] font-extralight font-helvetica leading-[var(--px-17)] opacity-80">
-                Your B2B Partner API request was successfully generated! If your native email client did not launch, please send your details to <a href="mailto:partners@resomix.com" className="text-[var(--color-primary-hover)] hover:underline">partners@resomix.com</a>.
+                Thanks — your partner request has been submitted. We've sent a confirmation to your email, and our team will get back to you within 2&ndash;5 business days. Questions? <a href="mailto:partners@resomix.com" className="text-[var(--color-primary-hover)] hover:underline">partners@resomix.com</a>.
               </p>
               <ButtonSleek
                 text="Submit Another Request"
@@ -669,9 +669,9 @@ function PartnersMobile() {
           {isSuccess ? (
             <div className="bg-[var(--color-secondary)] border border-slate-200 border-dotted rounded-[var(--px-8)] p-[var(--px-20)] text-center space-y-[var(--px-12)]">
               <div className="w-[var(--px-32)] h-[var(--px-32)] bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full flex items-center justify-center mx-auto text-[length:var(--px-14)] font-bold">✓</div>
-              <h4 className="text-[length:var(--px-15)] font-medium font-helvetica uppercase">Request Generated</h4>
+              <h4 className="text-[length:var(--px-15)] font-medium font-helvetica uppercase">Request Received</h4>
               <p className="text-[length:var(--px-12)] font-extralight font-helvetica leading-[var(--px-16)] opacity-80">
-                Email launch triggered! Or send to <a href="mailto:partners@resomix.com" className="text-[var(--color-primary-hover)] hover:underline">partners@resomix.com</a>.
+                Thanks — your request was submitted. Check your email for confirmation; we'll get back to you in 2&ndash;5 business days.
               </p>
               <ButtonSleek
                 text="Submit Another Request"

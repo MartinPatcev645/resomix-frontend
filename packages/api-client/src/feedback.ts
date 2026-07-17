@@ -39,10 +39,16 @@ export const submitFeedback = async (
 interface ContactData {
   name: string;
   email: string;
-  message: string;
+  message?: string;
   subject?: string;
   phone?: string;
   user_id?: string;
+  /** Which form this came from — 'consumer' (default) or 'partner' (the /partners developer form). */
+  contact_type?: "consumer" | "partner";
+  /** B2B partner-request fields (ignored for consumer contacts). */
+  company_name?: string;
+  catalog_size?: string;
+  estimated_calls?: string;
 }
 
 export const submitContactForm = async (

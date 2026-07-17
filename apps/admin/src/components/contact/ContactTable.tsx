@@ -149,6 +149,17 @@ function ContactTable({
       ),
     },
     {
+      title: 'Type',
+      dataIndex: 'contact_type',
+      key: 'contact_type',
+      width: 110,
+      render: (t: 'consumer' | 'partner') => (
+        <Tag color={t === 'partner' ? 'blue' : 'default'}>
+          {t === 'partner' ? 'Partner' : 'Consumer'}
+        </Tag>
+      ),
+    },
+    {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
@@ -303,6 +314,30 @@ function ContactTable({
                 <div className="col-span-2">
                   <p className="text-sm text-secondary">Subject</p>
                   <p className="text-primary">{viewingContact.subject}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-sm text-secondary">Type</p>
+                <Tag color={viewingContact.contact_type === 'partner' ? 'blue' : 'default'}>
+                  {viewingContact.contact_type === 'partner' ? 'Partner' : 'Consumer'}
+                </Tag>
+              </div>
+              {viewingContact.company_name && (
+                <div>
+                  <p className="text-sm text-secondary">Company</p>
+                  <p className="text-primary">{viewingContact.company_name}</p>
+                </div>
+              )}
+              {viewingContact.catalog_size && (
+                <div>
+                  <p className="text-sm text-secondary">Estimated catalog size</p>
+                  <p className="text-primary">{viewingContact.catalog_size}</p>
+                </div>
+              )}
+              {viewingContact.estimated_calls && (
+                <div>
+                  <p className="text-sm text-secondary">Estimated monthly calls</p>
+                  <p className="text-primary">{viewingContact.estimated_calls}</p>
                 </div>
               )}
               {viewingContact.submitted_at && (

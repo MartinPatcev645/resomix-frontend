@@ -44,6 +44,7 @@ export const useContactSubmit = () => {
     setSubmitting(true);
     try {
       const res = await submitContactForm({
+        contact_type: "consumer",
         name: form.name.trim(),
         email: form.email.trim(),
         subject: form.subject.trim() || undefined,

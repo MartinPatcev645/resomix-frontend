@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { submitContactForm } from "@resomix/api-client";
 
 export interface B2BFormState {
   companyName: string;
@@ -46,7 +47,7 @@ export function usePartners() {
       });
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMessage("");
@@ -69,39 +70,31 @@ export function usePartners() {
     }
 
     try {
-      // Compose Mailto url
-      const subject = encodeURIComponent(`B2B Resomix Partner Request: ${formData.companyName}`);
-      const body = encodeURIComponent(
-        `Dear Resomix Team,
+      // Submit to the backend contact endpoint (saved as a `partner` contact; the submitter also
+      // gets an acknowledgement email). No more opening the user's mail client.
+      const result: any = await submitContactForm({
+        contact_type: "partner",
+        name: formData.contactName.trim(),
+        email: formData.contactEmail.trim(),
+        message: formData.message.trim() || undefined,
+        company_name: formData.companyName.trim(),
+        catalog_size: formData.estimatedTracks.trim() || undefined,
+        estimated_calls: formData.estimatedCalls.trim() || undefined,
+      });
 
-I would like to request a B2B Production API Key for Resomix.
-
-Here are our details:
----------------------------------------------
-Legal/Company Name: ${formData.companyName}
-Contact Name: ${formData.contactName}
-Contact Email: ${formData.contactEmail}
-Estimated Catalog Size (Tracks): ${formData.estimatedTracks || "Not specified"}
-Estimated Monthly API Calls: ${formData.estimatedCalls || "Not specified"}
-
-Use Case / Message:
-${formData.message || "Not specified"}
-
----------------------------------------------
-Thank you,
-${formData.contactName}
-`
-      );
-
-      const mailtoUrl = `mailto:partners@resomix.com?subject=${subject}&body=${body}`;
-      
-      // Open the user's default email client
-      window.location.href = mailtoUrl;
-
-      setIsSuccess(true);
-      setFormData(initialFormState);
+      if (result?.success) {
+        setIsSuccess(true);
+        setFormData(initialFormState);
+      } else {
+        setErrorMessage(
+          result?.error ||
+            "Could not submit your request. Please try again, or email partners@resomix.com."
+        );
+      }
     } catch (err: any) {
-      setErrorMessage("Could not open mail client. Please send details to partners@resomix.com");
+      setErrorMessage(
+        "Could not submit your request. Please try again, or email partners@resomix.com."
+      );
     } finally {
       setIsSubmitting(false);
     }
