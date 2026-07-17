@@ -213,6 +213,37 @@ class SearchService:
             ]
         }
 
+    def es_health(self) -> Dict[str, Any]:
+        """Report the app↔Elasticsearch wiring — for deploy verification.
+
+        Confirms the *application* (using its own configured URL/creds) can reach ES
+        and that the search alias exists + is populated. ``active_backend`` is what
+        ``search_tracks`` would actually use right now. Never raises.
+        """
+        alias = settings.es_index_alias
+        info: Dict[str, Any] = {
+            "elasticsearch_enabled": settings.elasticsearch_enabled,
+            "alias": alias,
+            "reachable": False,
+            "alias_exists": False,
+            "doc_count": None,
+            "active_backend": "mariadb",
+            "error": None,
+        }
+        if not settings.elasticsearch_enabled:
+            return info  # search uses MariaDB regardless of ES state
+        try:
+            es = get_es_client()
+            info["reachable"] = bool(es.ping())
+            if info["reachable"] and es.indices.exists_alias(name=alias):
+                info["alias_exists"] = True
+                info["doc_count"] = es.count(index=alias).get("count")
+            info["active_backend"] = "elasticsearch" if info["reachable"] else "mariadb (es unreachable)"
+        except Exception as e:  # noqa: BLE001 — health check must never raise
+            info["error"] = f"{type(e).__name__}: {e}"
+            info["active_backend"] = "mariadb (es error)"
+        return info
+
     def build_short_query_es_body(self, query_text: str, tokens_kw: list[str], limit: int = 20):
         # Require 1 token if 1 given, else require both tokens when 2 are given
         msm_script = {"source": "params.num_terms <= 1 ? 1 : 2"}

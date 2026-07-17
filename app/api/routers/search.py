@@ -71,3 +71,14 @@ async def search_tracks_endpoint(
     - **mode**: Search mode - 'artist' for artist-only search, 'title' for title-only search, 'auto' for both (default)
     """
     return await search_controller.search_tracks(db, query, mode, partner_id=partner.id)
+
+
+@router.get(
+    "/search_health/",
+    summary="Search backend health",
+    description="Reports whether the app can reach Elasticsearch and which backend (Elasticsearch or MariaDB) currently serves search. Use to verify the ES deploy.",
+)
+async def search_health_endpoint(
+    partner: Partner = Depends(get_public_partner),
+) -> JSONResponse:
+    return await search_controller.es_health()

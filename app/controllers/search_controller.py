@@ -53,3 +53,14 @@ class SearchController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred.")
             )
+
+    async def es_health(self) -> JSONResponse:
+        """Report whether the app can reach Elasticsearch and which backend serves search."""
+        log_request("search_es_health", "GET", {})
+        data = self.search_service.es_health()
+        # Healthy = ES disabled (MariaDB path is fine) OR ES reachable with a populated alias.
+        healthy = (not data["elasticsearch_enabled"]) or (data["reachable"] and data["alias_exists"])
+        return JSONResponse(
+            status_code=status.HTTP_200_OK if healthy else status.HTTP_503_SERVICE_UNAVAILABLE,
+            content=format_response(success=healthy, data=data),
+        )
