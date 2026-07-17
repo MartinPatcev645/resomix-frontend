@@ -19,6 +19,10 @@ export interface ContactItem {
   subject: string | null
   phone: string | null
   message: string | null
+  contact_type: 'consumer' | 'partner'
+  company_name: string | null
+  catalog_size: string | null
+  estimated_calls: string | null
   status: 'open' | 'resolved'
   submitted_at: string
   user_id: string | null
@@ -34,6 +38,10 @@ const convertApiContact = (apiData: ApiContactItem): ContactItem => ({
   subject: apiData.subject,
   phone: apiData.phone,
   message: apiData.message,
+  contact_type: apiData.contact_type === 'partner' ? 'partner' : 'consumer',
+  company_name: apiData.company_name ?? null,
+  catalog_size: apiData.catalog_size ?? null,
+  estimated_calls: apiData.estimated_calls ?? null,
   status: apiData.status,
   submitted_at: apiData.submitted_at,
   user_id: apiData.user_id,

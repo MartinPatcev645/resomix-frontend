@@ -14,6 +14,10 @@ export interface ContactItem {
   subject: string | null;
   phone: string | null;
   message: string | null;
+  contact_type?: 'consumer' | 'partner';
+  company_name?: string | null;
+  catalog_size?: string | null;
+  estimated_calls?: string | null;
   status: 'open' | 'resolved';
   submitted_at: string; // ISO datetime string
 }
