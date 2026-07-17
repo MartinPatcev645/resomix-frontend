@@ -613,6 +613,7 @@ class Settings(BaseModel):
             "HLS_SIGNING_SECRET": "hls_signing_secret",
             "HLS_URL_EXPIRES_SECONDS": "hls_url_expires_seconds",
             # Elasticsearch
+            "ELASTICSEARCH_ENABLED": "elasticsearch_enabled",
             "ES_URL": "es_url",
             "ES_USERNAME": "es_username",
             "ES_PASSWORD": "es_password",
@@ -686,7 +687,7 @@ class Settings(BaseModel):
             env_value = os.getenv(env_key)
             if env_value is not None:
                 # Handle boolean conversion
-                if config_key in ["demo_mode", "similarity_auth_required", "rate_limit_enabled", "stripe_automatic_tax_enabled"]:
+                if config_key in ["demo_mode", "similarity_auth_required", "rate_limit_enabled", "stripe_automatic_tax_enabled", "elasticsearch_enabled", "es_verify_certs"]:
                     env_overrides[config_key] = env_value.lower() in (
                         "true",
                         "1",
