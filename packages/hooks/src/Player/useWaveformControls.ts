@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCustomPeaks } from "../Waveform/useCustomPeaks";
 import { useDebouncedWaveformSeek } from "../Waveform/useDebouncedWaveformSeek";
 import { useGlobalAudioController } from "./AudioProvider";
@@ -53,10 +53,21 @@ export function useWaveformControls({ id, totalDuration, withPlayPause = false }
   const restrictedRange = usePlayerStore((s) => (s.snippetMetadata ? s.snippetMetadata[effectiveId] : null) || null);
   const isDeleted = usePlayerStore((s) => !!s.deletedTracks[effectiveId]);
 
-  // 4a. Uploads await their manifest snippet range before the waveform is meaningful.
-  const isSnippetWaiting = isUpload && !restrictedRange && !isDeleted;
+  // 4a. Uploads await their manifest snippet range (which shades the non-audible part of the track)
+  //     before the waveform is fully meaningful. But we cap that wait: after a grace window we show
+  //     the peaks anyway so a slow/failed HLS manifest can NEVER leave the loader spinning forever —
+  //     the restricted-range shading simply fills in whenever the snippet arrives.
+  const [snippetGraceElapsed, setSnippetGraceElapsed] = useState(false);
+  useEffect(() => {
+    setSnippetGraceElapsed(false);
+    if (!isUpload) return;
+    const t = setTimeout(() => setSnippetGraceElapsed(true), 8000);
+    return () => clearTimeout(t);
+  }, [effectiveId, isUpload]);
 
-  // 4b. We treat the track as loading if the snippet metadata is awaited, 
+  const isSnippetWaiting = isUpload && !restrictedRange && !isDeleted && !snippetGraceElapsed;
+
+  // 4b. We treat the track as loading if the snippet metadata is awaited (bounded by the grace above),
   // or if the underlying peaks are still fetching.
   const isActuallyLoading = wfLoading || isSnippetWaiting;
 
