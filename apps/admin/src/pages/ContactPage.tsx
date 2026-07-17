@@ -38,6 +38,7 @@ function ContactPage() {
     handleSearchColumnChange,
     handleDateRangeChange,
     handleStatusFilter,
+    handleTypeFilter,
     handleDelete,
     handleMarkStatus,
     handlePageChange,
@@ -85,6 +86,7 @@ function ContactPage() {
           onSearchColumnChange={handleSearchColumnChange}
           onDateRangeChange={handleDateRangeChange}
           onStatusFilter={handleStatusFilter}
+          onTypeFilter={handleTypeFilter}
           onRefresh={handleRefresh}
           onClearFilters={handleClearFilters}
           onExport={handleExport}
