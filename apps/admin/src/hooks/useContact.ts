@@ -59,6 +59,7 @@ export function useContact(options?: UseContactOptions) {
   const [searchColumn, setSearchColumn] = useState<ContactListParams['search_column']>('message')
   const [dateRange, setDateRange] = useState<[string, string] | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'resolved'>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'consumer' | 'partner'>('all')
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({
@@ -94,6 +95,11 @@ export function useContact(options?: UseContactOptions) {
       // Add status filter if not 'all'
       if (statusFilter !== 'all') {
         params.status = statusFilter
+      }
+
+      // Add type filter if not 'all'
+      if (typeFilter !== 'all') {
+        params.contact_type = typeFilter
       }
 
       // Add sorting if present

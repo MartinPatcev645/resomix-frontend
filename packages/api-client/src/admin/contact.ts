@@ -28,6 +28,7 @@ export interface ContactListParams {
   search?: string;
   search_column?: 'user_id' | 'name' | 'email' | 'message' | 'id';
   status?: 'open' | 'resolved' | 'all';
+  contact_type?: 'consumer' | 'partner' | 'all';
   date_from?: string; // YYYY-MM-DD
   date_to?: string; // YYYY-MM-DD
   sort_by?: 'id' | 'submitted_at';
@@ -89,6 +90,7 @@ export const getContactList = async (params: ContactListParams = {}) => {
     if (params.search) queryParams.search = params.search;
     if (params.search_column) queryParams.search_column = params.search_column;
     if (params.status && params.status !== 'all') queryParams.status = params.status;
+    if (params.contact_type && params.contact_type !== 'all') queryParams.contact_type = params.contact_type;
     if (params.date_from) queryParams.date_from = params.date_from;
     if (params.date_to) queryParams.date_to = params.date_to;
     if (params.sort_by) queryParams.sort_by = params.sort_by;
