@@ -1,4 +1,4 @@
-import { StatusMessage, Error404 } from "@resomix/ui";
+import { Error404 } from "@resomix/ui";
 import { useEffect } from "react";
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AudioProvider, usePlaylistLoader } from "@resomix/hooks";
@@ -55,16 +55,12 @@ export function PlaylistPage() {
           <PlaylistHero />
           <PlaylistTable />
         </>
-      ) : isResolving ? (
-        <StatusMessage
-          isOpen={true}
-          status="loading"
-          message="Loading playlist..."
-          onClose={() => { }}
-        />
       ) : (
+        // Render the page frame immediately (never a black screen): a loader while the id is still
+        // resolving, then the real "private" message only once the load has definitively failed.
         <Error404
           baseUrl={BASE_BETA_URL}
+          loading={isResolving}
           title="Playlist is Private"
           description="This playlist is private. Make it public or share it to view, or go back to safety."
           buttonText="Go Back to Safety"

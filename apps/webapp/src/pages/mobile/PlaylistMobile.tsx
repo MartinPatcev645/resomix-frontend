@@ -5,7 +5,7 @@ import { PlaylistShare } from "@/components/index.ts";
 import { BASE_BETA_URL } from "@resomix/config";
 import { usePlaylistStore } from "@resomix/stores";
 import { AudioProvider, usePlaylistLoader } from "@resomix/hooks";
-import { StatusMessage, Error404 } from "@resomix/ui";
+import { Error404 } from "@resomix/ui";
 
 export function PlaylistMobile() {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -81,16 +81,12 @@ export function PlaylistMobile() {
             id={playlistData?.playlist?.id ?? ""}
           />
         </div>
-      ) : isResolving ? (
-        <StatusMessage
-          isOpen={true}
-          status="loading"
-          message="Loading playlist..."
-          onClose={() => { }}
-        />
       ) : (
+        // Render the page frame immediately (never a black screen): a loader while the id is still
+        // resolving, then the real "private" message only once the load has definitively failed.
         <Error404
           baseUrl={BASE_BETA_URL}
+          loading={isResolving}
           title="Playlist is Private"
           description="This playlist is private. Make it public or share it to view, or go back to safety."
           buttonText="Go Back to Safety"
