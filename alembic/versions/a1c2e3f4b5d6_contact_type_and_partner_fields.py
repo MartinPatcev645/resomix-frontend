@@ -5,16 +5,16 @@ catalog size, estimated monthly calls) so the /partners developer form can submi
 (instead of a mailto:) and land in the same `contacts` table the consumer form uses. Idempotent:
 each column is only added if missing, so re-running is safe.
 
-Revision ID: b3c4d5e6f7a8
-Revises: a2b3c4d5e6f7
+Revision ID: a1c2e3f4b5d6
+Revises: f7a8b9c0d1e2
 Create Date: 2026-07-17
 """
 from alembic import op
 import sqlalchemy as sa
 
 
-revision = "b3c4d5e6f7a8"
-down_revision = "a2b3c4d5e6f7"
+revision = "a1c2e3f4b5d6"
+down_revision = "f7a8b9c0d1e2"
 branch_labels = None
 depends_on = None
 
