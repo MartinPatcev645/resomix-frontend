@@ -80,6 +80,7 @@ export function LandingLayout() {
             onProfileClick={() => handleNavigate(`${BASE_BETA_URL}/profile`)}
             onNavigate={handleNavigate}
             currentPath={location.pathname}
+            showAppLinks={false}
         />
     );
 

@@ -69,31 +69,9 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
               >
                 [{t('general.menu.profile', { defaultValue: 'Profile' })}]
               </a>
-              <a 
-                href={`${BASE_BETA_URL}/library`}
-                className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" 
-                id="menu-library-link"
-                aria-label="Library"
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.location.href = `${BASE_BETA_URL}/library`;
-                }}
-              >
-                [{t('general.menu.library', { defaultValue: 'Library' })}]
-              </a>
-              <a 
-                href={`${BASE_BETA_URL}/analysis`}
-                className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" 
-                id="menu-analysis-link"
-                aria-label="Analysis"
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.location.href = `${BASE_BETA_URL}/analysis`;
-                }}
-              >
-                [{t('general.menu.analysis', { defaultValue: 'Analysis' })}]
-              </a>
-              <button 
+              {/* Library / Analysis are app-only — they live on the app (beta.resomix.com), reached
+                  via Profile. The marketing site's menu shows just Profile + Logout. */}
+              <button
                 type="button"
                 onClick={async () => {
                   try {

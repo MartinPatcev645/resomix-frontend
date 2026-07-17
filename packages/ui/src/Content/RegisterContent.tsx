@@ -379,11 +379,28 @@ export default function RegisterContent({
               )}
             </fieldset>
 
-            <div className="mt-2 flex justify-center">
+            {/* Primary action + Google, side-by-side on wider screens (a vertical divider between),
+                stacked on mobile — keeps "Continue with Google" above the fold instead of below it. */}
+            <div className="mt-2 flex flex-col sm:flex-row items-center justify-center gap-[var(--px-14)]">
               <ButtonSleek
                 text={submitting ? "Creating Account..." : "Create Account"}
                 onClick={handleSubmit}
               />
+              {googleClientId && (
+                <>
+                  <span aria-hidden="true" className="hidden sm:block h-[var(--px-32)] w-px bg-current opacity-30" />
+                  <span aria-hidden="true" className="sm:hidden text-[length:var(--px-9)] font-light font-helvetica uppercase tracking-[var(--px-1)] opacity-50">
+                    or
+                  </span>
+                  <GoogleSignInButton
+                    clientId={googleClientId}
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    width={240}
+                    className=""
+                  />
+                </>
+              )}
             </div>
 
             <div className="text-center mt-2">
@@ -399,23 +416,6 @@ export default function RegisterContent({
               </button>
             </div>
           </form>
-
-          {googleClientId && (
-            <div className="mt-[var(--px-24)] flex flex-col items-center gap-[var(--px-18)]">
-              <div className="flex items-center w-full gap-[var(--px-12)] opacity-50">
-                <span className="h-px flex-1 bg-current" />
-                <span className="text-[length:var(--px-9)] font-light font-helvetica uppercase tracking-[var(--px-1)]">
-                  or continue with
-                </span>
-                <span className="h-px flex-1 bg-current" />
-              </div>
-              <GoogleSignInButton
-                clientId={googleClientId}
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-              />
-            </div>
-          )}
 
           <StatusMessage
             isOpen={showStatus}

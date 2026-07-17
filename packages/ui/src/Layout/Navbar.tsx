@@ -16,9 +16,13 @@ interface NavbarProps {
   onProfileClick?: () => void;
   onNavigate?: (path: string) => void;
   currentPath?: string; // Current page path for redirect after login
+  /** Show the app-only profile links (Library, Analysis). Default true (the web app). The marketing
+   *  site (resomix.com) passes false so its dropdown only shows Profile + Logout — app features live
+   *  on the app (beta.resomix.com), which Profile links to. */
+  showAppLinks?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass, baseUrl = "https://resomix.com", baseBetaUrl = "https://beta.resomix.com", onProfileClick, currentPath, onNavigate }) => {
+export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass, baseUrl = "https://resomix.com", baseBetaUrl = "https://beta.resomix.com", onProfileClick, currentPath, onNavigate, showAppLinks = true }) => {
   const { showFeedbackForm } = useFeedbackStore();
   const { isAuthenticated } = useAuthStore();
 
@@ -52,6 +56,8 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
         }
       },
     },
+    // App-only links (Library, Analysis) — hidden on the marketing site (showAppLinks=false).
+    ...(showAppLinks ? [
     {
       label: "Library",
       id: "navbar-library-menu-item",
@@ -72,6 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
       ),
       onClick: () => onNavigate?.(`${baseBetaUrl}/analysis`),
     },
+    ] : []),
     {
       label: "Logout",
       id: "navbar-logout-menu-item",

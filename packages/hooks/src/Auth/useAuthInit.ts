@@ -6,6 +6,44 @@ import { getMyProfile, refreshAccessToken, verifySession } from '@resomix/api-cl
 // This persists across route navigations since App.tsx doesn't remount
 let globalHasInitialized = false;
 
+/** Decode the `sub` (user uuid) claim from a JWT access token, or null if unavailable/malformed. */
+const tokenSubject = (token: string | null): string | null => {
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return typeof payload?.sub === 'string' ? payload.sub : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Guard against a stale cross-subdomain identity. Access tokens live in per-origin sessionStorage
+ * and the persisted user in per-origin localStorage, but the refresh-token cookie is shared across
+ * `*.resomix.com` — so a login on one subdomain can leave another subdomain holding a token that
+ * belongs to a DIFFERENT user than the one it hydrated from its own storage. When the token's `sub`
+ * (uuid) disagrees with the persisted user's uuid, the server session is the source of truth: fetch
+ * the real profile and adopt it, dropping the previous identity's cached data (`setAuth` clears the
+ * playlist/cart caches). It's a no-op — and issues NO request — when the token and persisted user
+ * already agree, so the fast init path is untouched in the overwhelmingly common case.
+ */
+const reconcileIdentityIfMismatch = (): void => {
+  const state = useAuthStore.getState();
+  const sub = tokenSubject(state.accessToken);
+  const persistedUuid = state.user?.uuid;
+  if (!sub || !persistedUuid || sub === persistedUuid) return;
+  getMyProfile()
+    .then((res) => {
+      if (!res.success) return;
+      const actual: any = res.data && typeof res.data === 'object' && 'user' in res.data ? (res.data as any).user : res.data;
+      const current = useAuthStore.getState();
+      if (actual?.uuid && actual.uuid !== current.user?.uuid && current.accessToken) {
+        useAuthStore.getState().setAuth(actual, current.accessToken);
+      }
+    })
+    .catch(() => { /* non-blocking — the axios interceptor still guards each real request */ });
+};
+
 /**
  * Initialize authentication state on app load
  * Only checks for existing token/user - does NOT proactively refresh tokens
@@ -98,9 +136,14 @@ export const useAuthInit = () => {
                 // Let the interceptor handle it on the next API call
                 console.warn('[useAuthInit] Background token refresh failed');
               }
+              // The (possibly refreshed) token may belong to a different user than the one we
+              // hydrated from this origin's storage — verify and correct (cross-subdomain guard).
+              reconcileIdentityIfMismatch();
             }).catch((error) => {
               console.warn('[useAuthInit] Background token refresh error:', error);
             });
+          } else {
+            reconcileIdentityIfMismatch();
           }
           setIsInitialized(true);
           setIsLoading(false);
@@ -145,6 +188,9 @@ export const useAuthInit = () => {
 
           if (sharedToken) {
             store.setAccessToken(sharedToken);
+            // A token borrowed from another tab may be a different user than this origin's persisted
+            // one (cross-subdomain) — verify and correct.
+            reconcileIdentityIfMismatch();
             setIsInitialized(true);
             setIsLoading(false);
             return;
@@ -158,6 +204,9 @@ export const useAuthInit = () => {
           const session = await verifySession();
           if (session.status === 'valid') {
             store.setAccessToken(session.accessToken);
+            // The verified session (from the shared refresh cookie) may belong to a different user
+            // than this origin's persisted one — verify and correct.
+            reconcileIdentityIfMismatch();
           } else if (session.status === 'invalid') {
             // Session is genuinely dead → clear the stale persisted auth. The navbar then reflects
             // logged-out and ProtectedRoute redirects any protected page to login.
