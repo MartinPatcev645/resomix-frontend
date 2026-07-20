@@ -29,6 +29,7 @@ export default defineConfig({
       '@resomix/ui':        path.resolve(__dirname, '../../packages/ui/src'),
       '@resomix/hooks':     path.resolve(__dirname, '../../packages/hooks/src'),
       '@resomix/api-client':path.resolve(__dirname, '../../packages/api-client/src'),
+      '@resomix/stores':    path.resolve(__dirname, '../../packages/stores/src'),
       '@resomix/config':     path.resolve(__dirname, '../../packages/config/src')
     },
     dedupe: ['react', 'react-dom']
