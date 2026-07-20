@@ -8,7 +8,7 @@ import { useEntitlementCta } from "@/utils/entitlementCta.ts";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import MoreSvg from "@/assets/icons/more.svg";
 import { DEMO_MODE } from "@resomix/config";
-import { resolveLabel } from "@/utils/trackUtils.ts";
+import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 
 interface PlaylistTableProps {
@@ -163,7 +163,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                 <div className="select-none text-[length:var(--px-13)] lg:text-[length:var(--px-11)] font-helvetica font-light tracking-[var(--px-0-1)] leading-[var(--px-14)] uppercase text-left truncate max-w-[var(--px-250)]">
                                                     {currentTrackId === track.id && isPlaying ? (
                                                         <HoverFlow
-                                                            text={track.title}
+                                                            text={displayOrNA(track.title)}
                                                             maxChars={32}
                                                             delay={800}
                                                             speed={40}
@@ -172,18 +172,18 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                             flowAlways={true}
                                                         />
                                                     ) : (
-                                                        track.title
+                                                        displayOrNA(track.title)
                                                     )}
                                                 </div>
                                             </div>
                                             <div className="w-full" role="cell">
                                                 <div className="select-none text-[length:var(--px-8)] font-helvetica font-light tracking-[var(--px-0-1)] text-left leading-[var(--px-9)] truncate max-w-[var(--px-250)]">
-                                                    {track.artist}
+                                                    {displayOrNA(track.artist)}
                                                 </div>
                                             </div>
                                             <div className="w-full flex items-center justify-between">
                                                 <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-9)] flex items-center gap-[var(--px-3)]" role="cell">
-                                                    {resolveLabel(track.label) || ''} {resolveLabel(track.label) && track.year ? `- ${track.year}` : track.year ?? ''}
+                                                    {track.year ?? ''}
                                                 </div>
                                                 <div className="flex items-center justify-between" role="cell">
                                                     <div className="flex items-center">
@@ -200,6 +200,22 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                     <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)] ml-[var(--px-60)]" role="cell">
                                                         {formatDuration(track.duration)}
                                                     </div>
+                                                </div>
+                                            </div>
+                                            {/* Genre (left) + Label (right). Both capped and truncated so a long value can
+                                                never push the row wider than the fixed-width track column. */}
+                                            <div className="w-full flex items-center justify-between gap-[var(--px-8)] text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-5)] leading-[var(--px-9)]">
+                                                <div className="flex items-center gap-[var(--px-3)] min-w-0" role="cell">
+                                                    <span className="text-[var(--color-primary-hover)] opacity-70 shrink-0">GENRE</span>
+                                                    <span className="text-[var(--color-primary)] truncate max-w-[var(--px-90)]" title={firstGenre(track.genre) || undefined}>
+                                                        {firstGenre(track.genre) || '—'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-[var(--px-3)] min-w-0" role="cell">
+                                                    <span className="text-[var(--color-primary-hover)] opacity-70 shrink-0">LABEL</span>
+                                                    <span className="text-[var(--color-primary)] truncate max-w-[var(--px-90)]" title={resolveLabel(track.label) || undefined}>
+                                                        {resolveLabel(track.label) || '—'}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>

@@ -13,7 +13,7 @@ import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { loadAllTrackRatings, saveTrackRating } from "@/utils/trackRatingsStorage.js";
-import { resolveLabel, firstGenre } from "@/utils/trackUtils.ts";
+import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 
 const PlaylistTable: React.FC = () => {
@@ -216,15 +216,18 @@ const PlaylistTable: React.FC = () => {
                                                 <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
                                             )}
                                         </div>
-                                        <div className="select-none text-[length:var(--px-10)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-120)]" role="cell">
-                                            {track.artist}
+                                        <div className="select-none text-[length:var(--px-10)] font-helvetica text-[var(--color-primary-hover)] font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-120)]" role="cell" title={displayOrNA(track.artist)}>
+                                            {displayOrNA(track.artist)}
                                         </div>
-                                        <div className="select-none text-[length:var(--px-10)] font-helvetica font-light tracking-[var(--px-0-1)] uppercase text-center mx-[var(--px-5)] w-[var(--px-140)]" role="cell">
-                                            {track.title}
+                                        <div className="select-none text-[length:var(--px-10)] font-helvetica font-light tracking-[var(--px-0-1)] uppercase text-center mx-[var(--px-5)] w-[var(--px-140)]" role="cell" title={displayOrNA(track.title)}>
+                                            {displayOrNA(track.title)}
                                         </div>
                                         {/* Label / Year — the label moves into the player row while this track plays. */}
                                         <div className="text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-90)] flex flex-col items-center gap-[var(--px-3)]" role="cell">
-                                            <span className="text-[var(--color-primary-hover)] text-[length:var(--px-9)] max-w-full truncate">
+                                            <span
+                                                className="text-[var(--color-primary-hover)] text-[length:var(--px-9)] max-w-full line-clamp-2"
+                                                title={resolveLabel(track.label) || undefined}
+                                            >
                                                 {!isTrackPlaying && (resolveLabel(track.label) || null)}
                                             </span>
                                             {track.year}
@@ -232,7 +235,7 @@ const PlaylistTable: React.FC = () => {
                                         {/* Genre / Duration — mirrors Label / Year; genre also moves into the player row. */}
                                         <div className="text-[length:var(--px-9)] font-fira font-light tracking-[var(--px-0-1)] text-center ml-[var(--px-5)] mr-[var(--px-5)] w-[var(--px-40)] flex flex-col items-center gap-[var(--px-3)]" role="cell">
                                             <span
-                                                className="text-[var(--color-primary-hover)] text-[length:var(--px-7)] max-w-full truncate"
+                                                className="text-[var(--color-primary-hover)] text-[length:var(--px-7)] max-w-full line-clamp-2"
                                                 title={firstGenre(track.genre) || undefined}
                                             >
                                                 {!isTrackPlaying && (firstGenre(track.genre) || null)}

@@ -11,6 +11,20 @@ export function resolveLabel(label: string | null | undefined): string | undefin
 }
 
 /**
+ * Display-safe text for the always-present metadata fields (title, artist).
+ *
+ * The backend's own "Unknown"/"N/A" placeholder can still be bypassed — e.g. an empty contributor
+ * name overwrites it — so a track can arrive with "" or a whitespace-only value. Render "N/A"
+ * rather than a blank cell.
+ *
+ * NB: do NOT use this for label/genre/album — those are legitimately optional and stay empty.
+ */
+export function displayOrNA(value: string | null | undefined): string {
+  if (!value || !value.trim()) return 'N/A';
+  return value;
+}
+
+/**
  * Returns the primary genre for display.
  *
  * The backend sends the Apple Music genre verbatim as a pipe list ("House | Afro"); the in-house
