@@ -9,3 +9,17 @@ export function resolveLabel(label: string | null | undefined): string | undefin
   if (EMPTY_LABEL_VALUES.has(label.trim())) return undefined;
   return label;
 }
+
+/**
+ * Returns the primary genre for display.
+ *
+ * The backend sends the Apple Music genre verbatim as a pipe list ("House | Afro"); the in-house
+ * fallback is a single name. The table column and the player row are both tight, so we show only
+ * the first entry ("House"). Change this one function to show the full list instead.
+ */
+export function firstGenre(genre: string | null | undefined): string | undefined {
+  if (!genre) return undefined;
+  const first = genre.split('|')[0].trim();
+  if (!first || EMPTY_LABEL_VALUES.has(first)) return undefined;
+  return first;
+}

@@ -13,7 +13,7 @@ import PauseSvg from "@/assets/icons/pause.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { loadAllTrackRatings, saveTrackRating } from "@/utils/trackRatingsStorage.js";
-import { resolveLabel } from "@/utils/trackUtils.ts";
+import { resolveLabel, firstGenre } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 
 const PlaylistTable: React.FC = () => {
@@ -124,13 +124,18 @@ const PlaylistTable: React.FC = () => {
                     <span className="text-[var(--color-primary-hover)]">Label</span>
                     Year
                 </div>
-                <div className="ml-[var(--px-40)]" role="columnheader">Duration</div>
+                <div className="ml-[var(--px-40)] flex flex-col items-center" role="columnheader">
+                    <span className="text-[var(--color-primary-hover)]">Genre</span>
+                    Duration
+                </div>
                 <div className="ml-[var(--px-10)]" role="columnheader">Score</div>
                 <div className="ml-[var(--px-50)]" role="columnheader">Feedback</div>
                 <div className="ml-[var(--px-30)]" role="columnheader">Chain Discover</div>
             </div>
             {tracks.map((track) => {
                 const isRestricted = track.rank > maxUnlocked;
+                // While a track plays, its label + genre move out of their columns into the player row.
+                const isTrackPlaying = currentTrackId === track.id && isPlaying;
 
                 return (
                     <div key={track.id} className={`relative w-full py-[var(--px-5)] ${isRestricted ? "pointer-events-none select-none" : "select-text"}`}>
@@ -207,7 +212,7 @@ const PlaylistTable: React.FC = () => {
                                             year), so its position never depends on title length. Hidden while playing (the full
                                             lockup then shows inside the player); the slot keeps its width so the row stays put. */}
                                         <div className="flex items-center justify-end w-[var(--px-30)] mx-[var(--px-5)]" role="cell">
-                                            {track.deep_link_url && !(currentTrackId === track.id && isPlaying) && (
+                                            {track.deep_link_url && !isTrackPlaying && (
                                                 <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
                                             )}
                                         </div>
@@ -217,13 +222,21 @@ const PlaylistTable: React.FC = () => {
                                         <div className="select-none text-[length:var(--px-10)] font-helvetica font-light tracking-[var(--px-0-1)] uppercase text-center mx-[var(--px-5)] w-[var(--px-140)]" role="cell">
                                             {track.title}
                                         </div>
+                                        {/* Label / Year — the label moves into the player row while this track plays. */}
                                         <div className="text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-1)] text-center mx-[var(--px-5)] w-[var(--px-90)] flex flex-col items-center gap-[var(--px-3)]" role="cell">
-                                            <span className="text-[var(--color-primary-hover)] text-[length:var(--px-9)]">
-                                                {resolveLabel(track.label) || null}
+                                            <span className="text-[var(--color-primary-hover)] text-[length:var(--px-9)] max-w-full truncate">
+                                                {!isTrackPlaying && (resolveLabel(track.label) || null)}
                                             </span>
                                             {track.year}
                                         </div>
-                                        <div className="text-[length:var(--px-9)] font-fira font-light tracking-[var(--px-0-1)] text-center ml-[var(--px-5)] mr-[var(--px-5)] w-[var(--px-40)]" role="cell">
+                                        {/* Genre / Duration — mirrors Label / Year; genre also moves into the player row. */}
+                                        <div className="text-[length:var(--px-9)] font-fira font-light tracking-[var(--px-0-1)] text-center ml-[var(--px-5)] mr-[var(--px-5)] w-[var(--px-40)] flex flex-col items-center gap-[var(--px-3)]" role="cell">
+                                            <span
+                                                className="text-[var(--color-primary-hover)] text-[length:var(--px-7)] max-w-full truncate"
+                                                title={firstGenre(track.genre) || undefined}
+                                            >
+                                                {!isTrackPlaying && (firstGenre(track.genre) || null)}
+                                            </span>
                                             {formatDuration(track.duration)}
                                         </div>
                                         <div className="flex flex-col items-center" role="cell">
@@ -293,12 +306,14 @@ const PlaylistTable: React.FC = () => {
                                             </Tooltip>
                                         </div>
                                     </div>
-                                    {currentTrackId === track.id && isPlaying && (
+                                    {isTrackPlaying && (
                                         <SimilarityPlayer
                                             trackId={track.id}
-                                            isPlaying={currentTrackId === track.id && isPlaying}
+                                            isPlaying={isTrackPlaying}
                                             totalDuration={track.duration}
                                             appleDeepLinkUrl={track.deep_link_url}
+                                            label={resolveLabel(track.label)}
+                                            genre={firstGenre(track.genre)}
                                         />
                                     )}
                                 </div>
