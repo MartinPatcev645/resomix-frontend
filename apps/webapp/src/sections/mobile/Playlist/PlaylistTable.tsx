@@ -202,22 +202,36 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            {/* Genre (left) + Label (right). Both capped and truncated so a long value can
-                                                never push the row wider than the fixed-width track column. */}
-                                            <div className="w-full flex items-center justify-between gap-[var(--px-8)] text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-5)] leading-[var(--px-9)]">
-                                                <div className="flex items-center gap-[var(--px-3)] min-w-0" role="cell">
-                                                    <span className="text-[var(--color-primary-hover)] opacity-70 shrink-0">GENRE</span>
-                                                    <span className="text-[var(--color-primary)] truncate max-w-[var(--px-90)]" title={firstGenre(track.genre) || undefined}>
-                                                        {firstGenre(track.genre) || '—'}
-                                                    </span>
+                                            {/* Genre (left) + Label (right).
+                                                A 2-column grid rather than justify-between: each side owns a fixed half, so
+                                                the label stays right-aligned even when the genre is missing, and a long
+                                                value truncates inside its own half instead of pushing the other across.
+                                                The caption is rendered only when there is a value — an absent field shows
+                                                nothing at all. The whole row is skipped when both are absent. */}
+                                            {(firstGenre(track.genre) || resolveLabel(track.label)) && (
+                                                <div className="w-full grid grid-cols-2 gap-[var(--px-8)] text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-5)] leading-[var(--px-9)]">
+                                                    <div className="flex items-center gap-[var(--px-3)] min-w-0" role="cell">
+                                                        {firstGenre(track.genre) && (
+                                                            <>
+                                                                <span className="text-[var(--color-primary-hover)] opacity-70 shrink-0">GENRE</span>
+                                                                <span className="text-[var(--color-primary)] truncate" title={firstGenre(track.genre)}>
+                                                                    {firstGenre(track.genre)}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center justify-end gap-[var(--px-3)] min-w-0" role="cell">
+                                                        {resolveLabel(track.label) && (
+                                                            <>
+                                                                <span className="text-[var(--color-primary-hover)] opacity-70 shrink-0">LABEL</span>
+                                                                <span className="text-[var(--color-primary)] truncate" title={resolveLabel(track.label)}>
+                                                                    {resolveLabel(track.label)}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-[var(--px-3)] min-w-0" role="cell">
-                                                    <span className="text-[var(--color-primary-hover)] opacity-70 shrink-0">LABEL</span>
-                                                    <span className="text-[var(--color-primary)] truncate max-w-[var(--px-90)]" title={resolveLabel(track.label) || undefined}>
-                                                        {resolveLabel(track.label) || '—'}
-                                                    </span>
-                                                </div>
-                                            </div>
+                                            )}
                                         </div>
                                     </button>
                                     {currentTrackId === track.id && isPlaying && (

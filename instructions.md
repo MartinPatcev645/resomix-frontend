@@ -357,4 +357,9 @@ and add keys to `src/locales`. Strings may contain markup and are rendered with
 - [ ] If desktop/mobile files are split, **both** updated
 - [ ] Route registered, guard correct, layout `mode` updated
 - [ ] New env var? added to `env.example` **and** the §1b table — and it holds no secret
-- [ ] `pnpm --filter <app> build` passes (`tsc -b && vite build`)
+- [ ] `pnpm build` (or `pnpm --filter <app> build`) passes
+
+> ⚠️ **Never verify with `tsc --noEmit -p apps/<app>/tsconfig.json`.** Each app's root `tsconfig.json`
+> is a *solution* file — `"files": []` plus `references` to `tsconfig.app.json` / `tsconfig.node.json`.
+> Pointing `-p` at it typechecks **nothing** and exits 0 while real errors sit in your code. The build
+> script uses `tsc -b`, which follows the references. Use `pnpm build`, or `tsc -b apps/<app>`.
