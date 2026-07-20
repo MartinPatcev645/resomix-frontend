@@ -15,7 +15,7 @@ interface SimilarityPlayerProps {
   trackId: string;
   totalDuration: number;
   isPlaying?: boolean;
-  /** When set, the "Listen on Apple Music" lockup renders inline, between the volume and the timer. */
+  /** When set, the "Listen on Apple Music" lockup renders inline on mobile, and pinned above the timer on desktop. */
   appleDeepLinkUrl?: string | null;
 }
 
@@ -53,7 +53,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
         )}
       </div>
 
-      <div className="flex items-center justify-between w-full">
+      <div className="relative flex items-center justify-between w-full">
         <div className="flex items-center gap-[var(--px-10)] justify-between lg:justify-start">
           <button
             type="button"
@@ -104,8 +104,15 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
           </div>
         </div>
 
+        {/* Desktop: lifted out of the flex flow and pinned above the timer (bottom-right of the
+            control row), so it no longer squeezes the row. Mobile keeps the original inline slot. */}
         {appleDeepLinkUrl && (
-          <AppleMusicBadge deepLinkUrl={appleDeepLinkUrl} playing fullHeightClass="h-[var(--px-30)]" />
+          <AppleMusicBadge
+            deepLinkUrl={appleDeepLinkUrl}
+            playing
+            fullHeightClass="h-[var(--px-20)]"
+            className="lg:absolute lg:right-0 lg:bottom-full lg:z-10"
+          />
         )}
 
         <time className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
