@@ -23,9 +23,14 @@ export function AppleMusicBadge({
   className = "",
   fullHeightClass = "h-[var(--px-26)]",
 }: AppleMusicBadgeProps) {
+  // No deep link → no badge. Uploaded tracks never carry Apple fields, so this is the last line of
+  // defence against showing Apple branding on a user's own upload (and against a badge that would
+  // otherwise link to Apple Music's generic homepage instead of the track).
+  if (!deepLinkUrl) return null;
+
   return (
     <a
-      href={deepLinkUrl || "https://music.apple.com"}
+      href={deepLinkUrl}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Listen on Apple Music"

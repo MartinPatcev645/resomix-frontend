@@ -280,8 +280,11 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               </button>
             </div>
             
-            {/* Apple Music attribution — the reference track links to Apple Music. */}
-            {!playlistData?.isUpload && (
+            {/* Apple Music attribution — only for a CATALOGUE reference track that actually has a
+                deep link. Gated on the per-track, server-provided `type`, which is the single source
+                of truth for upload-vs-catalogue and is correct however the playlist was loaded
+                (fresh upload/search response, cache, or re-opened from the Library). */}
+            {playlistData?.queried_track?.type === 'internal' && playlistData?.queried_track?.deep_link_url && (
               <div className="absolute right-[var(--px-5)] bottom-[var(--px-5)]">
                 <AppleMusicBadge deepLinkUrl={playlistData?.queried_track?.deep_link_url} playing />
               </div>

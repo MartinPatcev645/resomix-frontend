@@ -468,8 +468,9 @@ const PlaylistHero: React.FC = () => {
                   </div>
                 </Tooltip>
               </div>
-              {/* Apple Music attribution — the reference track links to Apple Music. */}
-              {playlistData?.queried_track?.type === 'internal' && (
+              {/* Apple Music attribution — only for a CATALOGUE reference track that actually has a
+                  deep link (an 'internal' track with no deep_link_url must not show the badge). */}
+              {playlistData?.queried_track?.type === 'internal' && playlistData?.queried_track?.deep_link_url && (
                 <div className="absolute right-[var(--px-5)] bottom-[var(--px-0-1)]">
                   <AppleMusicBadge deepLinkUrl={playlistData?.queried_track?.deep_link_url} playing />
                 </div>
