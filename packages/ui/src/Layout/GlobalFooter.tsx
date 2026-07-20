@@ -84,11 +84,6 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
               text="© 2026 Resomix // Demo Stage"
               multiline={true}
             />
-            <CodeTyping
-              speed={70}
-              text="All tracks CC BY 4.0 licensed Non-commercial prototype | licensing@resomix.com"
-              multiline={true}
-            />
           </div>
           <div className="flex flex-col text-[length:var(--px-7)] text-right font-light font-fira tracking-[var(--px-2)] items-end">
             <a href="https://support.resomix.com" target="_blank" aria-label="Resomix Support" className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link" id="footer-support-link">

@@ -100,11 +100,6 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
               text="© 2026 Resomix<br />// Demo Stage"
               multiline={true}
             />
-            <CodeTyping
-              speed={70}
-              text="All tracks CC BY 4.0<br />licensed Non-commercial prototype<br />licensing@resomix.com"
-              multiline={true}
-            />
           </div>
         </div>
       </div>
