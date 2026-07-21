@@ -394,6 +394,7 @@ export const APPLE_CONFIG = {
   REDIRECT_URI: `${getEnv("VITE_BASE_BETA_URL", "https://beta.resomix.com")}/apple-redirect`,
   APPLE_AUTH_TOKEN: '/api/v1/apple-music/developer-token/',
   APPLE_TRANSFER: "/api/v1/apple-music/transfer-playlist/",
+  APPLE_CONNECTION: "/api/v1/apple-music/connection/",
   APP_NAME:  "ResomiX",
   APP_BUILD: "1.0.0",
 };

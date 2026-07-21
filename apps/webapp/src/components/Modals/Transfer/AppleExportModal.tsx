@@ -37,19 +37,20 @@ const AppleExportModal: React.FC<AppleExportModalProps> = ({
       onClose={onClose}
       iconSrc={SuccessSvg}
       iconAlt="Apple Music"
-      title="Transfer to Apple Music"
-      subtitle="Connect and transfer your playlist to Apple Music."
+      title="Export to Apple Music"
+      subtitle="Send this playlist to your Apple Music library."
     >
       <AppleExportPanel
-        isAuthenticated={s.isAuthenticated}
+        connected={s.connected}
+        storefront={s.storefront}
+        statusLoading={s.statusLoading}
         connectLoading={s.connectLoading}
         transferLoading={s.transferLoading}
-        message={s.message}
-        error={s.error}
+        notice={s.notice}
+        hasPlaylist={!!s.playlistId?.trim()}
         onConnect={s.connect}
         onTransfer={s.transfer}
         onDisconnect={s.disconnect}
-        playlistId={s.playlistId}
       />
 
       <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)] w-full">
