@@ -1,7 +1,7 @@
 import React from "react";
 import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, useAccess, useFavoritePlaylist, type AccessAction } from "@resomix/hooks";
-import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
+import { formatDuration, useAccess, useFavoritePlaylist, usePlaylistVisibility, type AccessAction } from "@resomix/hooks";
+import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistRename } from "@/components/index.ts";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
@@ -59,6 +59,11 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   // Dim gated controls until the verdicts are real.
   const accessDim = access.ready ? "" : " opacity-60";
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
+  // Public/private toggle — logged-in owner only (logged-out sees a read-only badge, unchanged).
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { setVisibility } = usePlaylistVisibility();
+  const [visibilityConfirm, setVisibilityConfirm] = React.useState(false);
+  const [visibilityBusy, setVisibilityBusy] = React.useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -67,6 +72,21 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
     setStatusMessage(message);
     setStatusTitle(title || '');
     setShowStatus(true);
+  };
+
+  const handleConfirmVisibility = async () => {
+    const id = playlistData?.playlist?.id;
+    const isPublic = !!playlistData?.playlist?.is_public;
+    if (!id) return;
+    setVisibilityBusy(true);
+    const res = await setVisibility(id, !isPublic);
+    setVisibilityBusy(false);
+    setVisibilityConfirm(false);
+    if (res.ok) {
+      handleStatusChange('success', `Playlist is now ${!isPublic ? 'public' : 'private'}.`, 'Visibility Updated');
+    } else {
+      handleStatusChange('error', res.error || 'Failed to update visibility', 'Error');
+    }
   };
 
   const handleFavoriteClick = async () => {
@@ -220,8 +240,19 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               <div className={`gap-[var(--px-8)] mt-[var(--px-6)] ${showMeta ? 'flex' : 'hidden'}`}>
                 {/* Usage: Use playlistData?.queried_track.type === 'upload' to show an "Uploaded" badge */}
                 <div className="inline-flex py-[var(--px-4)] w-[var(--px-50)] rounded-3xl justify-center items-center bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-[#5C5C5C]">Input Track</div>
-                <div className="py-[var(--px-4)] px-[var(--px-8)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-4)] bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-white">
-                  {playlistData?.playlist?.is_public ? (
+                {React.createElement(
+                  isAuthenticated ? 'button' : 'div',
+                  {
+                    ...(isAuthenticated
+                      ? {
+                          type: 'button',
+                          onClick: () => setVisibilityConfirm(true),
+                          'aria-label': playlistData?.playlist?.is_public ? 'Make playlist private' : 'Make playlist public',
+                        }
+                      : {}),
+                    className: `py-[var(--px-4)] px-[var(--px-8)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-4)] bg-[var(--color-secondary-background)] text-[length:var(--px-6)] tracking-[var(--px-0-25)] font-light font-fira uppercase select-none text-white ${isAuthenticated ? 'cursor-pointer active:brightness-125' : ''}`,
+                  },
+                  playlistData?.playlist?.is_public ? (
                     <>
                       <PublicIcon customWidth="8" customHeight="8" className="text-white" disableHover={true} />
                       Public
@@ -231,8 +262,8 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                       <PrivateIcon customWidth="8" customHeight="8" className="text-white" disableHover={true} />
                       Private
                     </>
-                  )}
-                </div>
+                  )
+                )}
               </div>
               <div className="flex flex-col gap-[var(--px-10)]">
                 {/* Hidden Meta Info */}
@@ -333,6 +364,40 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
         message={statusMessage}
         title={statusTitle}
       />
+
+      {/* Public/private toggle confirmation */}
+      <StatusMessage
+        isOpen={visibilityConfirm}
+        onClose={() => setVisibilityConfirm(false)}
+        status="custom"
+      >
+        <div className="text-center w-full">
+          <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
+            {playlistData?.playlist?.is_public ? "Make Playlist Private" : "Make Playlist Public"}
+          </div>
+          <div className="text-[length:var(--px-11)] font-light font-fira leading-[var(--px-15)] mt-[var(--px-10)]">
+            {playlistData?.playlist?.is_public
+              ? "This playlist will no longer be reachable by its share link — only you can open it."
+              : "Anyone with the link will be able to open this playlist."}
+          </div>
+        </div>
+        <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)] w-full">
+          <button
+            onClick={() => setVisibilityConfirm(false)}
+            disabled={visibilityBusy}
+            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmVisibility}
+            disabled={visibilityBusy}
+            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-secondary)] hover:opacity-90 text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer flex justify-center items-center disabled:opacity-50"
+          >
+            {visibilityBusy ? "Updating…" : (playlistData?.playlist?.is_public ? "Make Private" : "Make Public")}
+          </button>
+        </div>
+      </StatusMessage>
     </div>
   );
 };

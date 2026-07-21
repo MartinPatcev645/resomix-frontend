@@ -1,4 +1,5 @@
 import type { LibraryTrack } from "@resomix/stores";
+import { shouldOpenInNewTab } from "@resomix/hooks";
 
 // A sibling artifact (analysis or similarity playlist) is generated in the background right after
 // upload and usually lands within a couple of minutes. While a just-uploaded track is still inside
@@ -52,6 +53,7 @@ function Capsule({
   icon,
   title,
   onClick,
+  href,
   fullWidth = false,
 }: {
   state: CapsuleState;
@@ -59,6 +61,8 @@ function Capsule({
   icon: React.ReactNode;
   title: string;
   onClick?: () => void;
+  /** When set, the capsule is a real anchor → right-click / ⌘-click opens the artifact in a new tab. */
+  href?: string;
   /** Stacked (mobile) variant: the capsule becomes a full-width row button. */
   fullWidth?: boolean;
 }) {
@@ -71,6 +75,33 @@ function Capsule({
     pending: "border-white/15 text-white/50 cursor-default animate-pulse",
     muted: "border-white/10 text-white/40 hover:text-white/60 cursor-pointer",
   };
+  const inner = (
+    <>
+      <span className="flex-shrink-0 flex items-center justify-center">{icon}</span>
+      <span className="leading-none">{label}</span>
+    </>
+  );
+
+  // Navigable (href) → anchor, so the browser handles ⌘/Ctrl-click + "Open in new tab"; a plain
+  // click is intercepted for SPA nav. Non-navigable states (pending/muted "Analyze") stay buttons.
+  if (href) {
+    return (
+      <a
+        href={href}
+        title={title}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (shouldOpenInNewTab(e)) return; // let the browser open a new tab/window
+          e.preventDefault();
+          onClick?.();
+        }}
+        className={`${base} ${byState[state]}`}
+      >
+        {inner}
+      </a>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -82,8 +113,7 @@ function Capsule({
       }}
       className={`${base} ${byState[state]}`}
     >
-      <span className="flex-shrink-0 flex items-center justify-center">{icon}</span>
-      <span className="leading-none">{label}</span>
+      {inner}
     </button>
   );
 }
@@ -132,6 +162,7 @@ export function TrackArtifactChips({
           label="Sonic Discovery"
           icon={<PlaylistIcon />}
           title="Open the similarity playlist for this track"
+          href={`/playlist?id=${track.playlist_uuid}`}
           onClick={() => onOpenPlaylist(track.playlist_uuid as string)}
           fullWidth={stacked}
         />
@@ -146,6 +177,7 @@ export function TrackArtifactChips({
           label="Analysis"
           icon={<AnalysisIcon />}
           title="Open the analysis for this track"
+          href={`/analysis?id=${track.analysis_uuid}`}
           onClick={() => onOpenAnalysis(track.analysis_uuid as string)}
           fullWidth={stacked}
         />

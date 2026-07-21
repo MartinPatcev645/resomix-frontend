@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { IconButton, HoverFlow, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, usePlaylistExport, useAccess, useFavoritePlaylist, type AccessAction } from "@resomix/hooks";
-import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
+import { formatDuration, usePlaylistExport, useAccess, useFavoritePlaylist, usePlaylistVisibility, type AccessAction } from "@resomix/hooks";
+import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -64,6 +64,13 @@ const PlaylistHero: React.FC = () => {
   };
   // Dim gated controls until the verdicts are real.
   const accessDim = access.ready ? "" : " opacity-60";
+  // Public/private toggle of the CURRENT playlist. Only a logged-in user can toggle (the owner);
+  // logged-out users see the badge as a read-only status (unchanged). The backend enforces
+  // owner-only and returns 403 for a non-owner, which is surfaced via the status message.
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { setVisibility } = usePlaylistVisibility();
+  const [visibilityConfirm, setVisibilityConfirm] = React.useState(false);
+  const [visibilityBusy, setVisibilityBusy] = React.useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -81,6 +88,21 @@ const PlaylistHero: React.FC = () => {
     setStatusMessage(message);
     setStatusTitle(title || '');
     setShowStatus(true);
+  };
+
+  const handleConfirmVisibility = async () => {
+    const id = playlistData?.playlist?.id;
+    const isPublic = !!playlistData?.playlist?.is_public;
+    if (!id) return;
+    setVisibilityBusy(true);
+    const res = await setVisibility(id, !isPublic);
+    setVisibilityBusy(false);
+    setVisibilityConfirm(false);
+    if (res.ok) {
+      handleStatusChange('success', `Playlist is now ${!isPublic ? 'public' : 'private'}.`, 'Visibility Updated');
+    } else {
+      handleStatusChange('error', res.error || 'Failed to update visibility', 'Error');
+    }
   };
 
   const handleFavoriteClick = async () => {
@@ -463,9 +485,25 @@ const PlaylistHero: React.FC = () => {
                     )}
                   </button>
                 </Tooltip>
-                <Tooltip message={playlistData?.playlist?.is_public ? "Playlist is Public" : "Playlist is Private!"}>
-                  <div className={`px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase cursor-pointer ${playlistData?.playlist?.is_public ? 'text-[#5C5C5C]' : 'text-white'}`}>
-                    {playlistData?.playlist?.is_public ? (
+                <Tooltip message={
+                  isAuthenticated
+                    ? (playlistData?.playlist?.is_public ? "Public — click to make private" : "Private — click to make public")
+                    : (playlistData?.playlist?.is_public ? "Playlist is Public" : "Playlist is Private!")
+                }>
+                  {/* Logged-in owner → clickable toggle; logged-out → read-only status badge. */}
+                  {React.createElement(
+                    isAuthenticated ? 'button' : 'div',
+                    {
+                      ...(isAuthenticated
+                        ? {
+                            type: 'button',
+                            onClick: () => setVisibilityConfirm(true),
+                            'aria-label': playlistData?.playlist?.is_public ? 'Make playlist private' : 'Make playlist public',
+                          }
+                        : {}),
+                      className: `px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase ${isAuthenticated ? 'cursor-pointer hover:brightness-125 transition-[filter]' : 'cursor-default'} ${playlistData?.playlist?.is_public ? 'text-[#5C5C5C]' : 'text-white'}`,
+                    },
+                    playlistData?.playlist?.is_public ? (
                       <>
                         <PublicIcon customWidth="10" customHeight="10" className="text-[#5C5C5C] mb-[var(--px-2)]" disableHover={true} />
                         Public
@@ -475,8 +513,8 @@ const PlaylistHero: React.FC = () => {
                         <PrivateIcon customWidth="12" customHeight="12" className="text-white" disableHover={true} />
                         Private
                       </>
-                    )}
-                  </div>
+                    )
+                  )}
                 </Tooltip>
               </div>
               {/* Apple Music attribution — only for a CATALOGUE reference track that actually has a
@@ -541,6 +579,40 @@ const PlaylistHero: React.FC = () => {
           disabled: false,
         } : undefined}
       />
+
+      {/* Public/private toggle confirmation */}
+      <StatusMessage
+        isOpen={visibilityConfirm}
+        onClose={() => setVisibilityConfirm(false)}
+        status="custom"
+      >
+        <div className="text-center w-full">
+          <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
+            {playlistData?.playlist?.is_public ? "Make Playlist Private" : "Make Playlist Public"}
+          </div>
+          <div className="text-[length:var(--px-11)] font-light font-fira leading-[var(--px-15)] mt-[var(--px-10)]">
+            {playlistData?.playlist?.is_public
+              ? "This playlist will no longer be reachable by its share link — only you can open it."
+              : "Anyone with the link will be able to open this playlist."}
+          </div>
+        </div>
+        <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)] w-full">
+          <button
+            onClick={() => setVisibilityConfirm(false)}
+            disabled={visibilityBusy}
+            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmVisibility}
+            disabled={visibilityBusy}
+            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-secondary)] hover:opacity-90 text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer flex justify-center items-center disabled:opacity-50"
+          >
+            {visibilityBusy ? "Updating…" : (playlistData?.playlist?.is_public ? "Make Private" : "Make Public")}
+          </button>
+        </div>
+      </StatusMessage>
     </div>
   );
 };

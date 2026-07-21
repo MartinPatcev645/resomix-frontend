@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon } from "@resomix/ui";
 import { useAuthStore } from "@resomix/stores";
-import { useLibrary, formatDuration } from "@resomix/hooks";
+import { useLibrary, shouldOpenInNewTab } from "@resomix/hooks";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
 import { TrackMetaRow } from "@/components/index.ts";
@@ -37,6 +37,7 @@ export default function LibraryPage() {
     removePlaylist,
     removeFavoritePlaylist,
     sharePlaylist,
+    setPlaylistVisibility,
   } = useLibrary();
 
   // Derived view of whichever tab is selected (each section has its own slice / paging / loading).
@@ -59,6 +60,24 @@ export default function LibraryPage() {
 
   // Playlist deletion confirmation state
   const [playlistToDelete, setPlaylistToDelete] = useState<string | null>(null);
+
+  // Visibility (public/private) toggle confirmation — holds the playlist + its CURRENT state.
+  const [visibilityFor, setVisibilityFor] = useState<{ uuid: string; isPublic: boolean } | null>(null);
+  const [visibilityBusy, setVisibilityBusy] = useState(false);
+
+  const handleConfirmVisibility = async () => {
+    if (!visibilityFor) return;
+    const { uuid, isPublic } = visibilityFor;
+    setVisibilityBusy(true);
+    const result = await setPlaylistVisibility(uuid, !isPublic);
+    setVisibilityBusy(false);
+    setVisibilityFor(null);
+    if (result.success) {
+      handleStatusChange("success", `Playlist is now ${!isPublic ? "public" : "private"}.`, "Visibility Updated");
+    } else {
+      handleStatusChange("error", result.error || "Failed to update visibility", "Error");
+    }
+  };
 
   // Remove a playlist from favorites (Favorites tab). All items in that tab are favorites, so the
   // heart is filled and clicking it un-favorites — the row then drops out of the list.
@@ -303,10 +322,12 @@ export default function LibraryPage() {
                   >
                     {/* Aligned top content layout */}
                     <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow pr-[var(--px-15)]">
-                      {/* Clickable Image Link */}
+                      {/* Playlist link (image). Real <a> so right-click / ⌘-click open a new tab;
+                          a plain click is intercepted for SPA navigation. */}
                       <a
                         href={`/playlist?id=${playlist.uuid}`}
                         onClick={(e) => {
+                          if (shouldOpenInNewTab(e)) return;
                           e.preventDefault();
                           navigate(`/playlist?id=${playlist.uuid}`, { state: { from: "library" } });
                         }}
@@ -324,10 +345,11 @@ export default function LibraryPage() {
 
                       {/* Stacked Text Column */}
                       <div className="flex flex-col gap-[var(--px-4)] flex-grow">
-                        {/* Clickable Title Link */}
+                        {/* Playlist title link — same open-in-new-tab / SPA behaviour. */}
                         <a
                           href={`/playlist?id=${playlist.uuid}`}
                           onClick={(e) => {
+                            if (shouldOpenInNewTab(e)) return;
                             e.preventDefault();
                             navigate(`/playlist?id=${playlist.uuid}`, { state: { from: "library" } });
                           }}
@@ -358,14 +380,22 @@ export default function LibraryPage() {
                           </button>
                         </Tooltip>
                       ) : (
-                        <Tooltip message={playlist.is_public ? "Public Playlist" : "Private Playlist"}>
-                          <div className="text-white/60">
+                        <Tooltip message={playlist.is_public ? "Public — click to make private" : "Private — click to make public"}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setVisibilityFor({ uuid: playlist.uuid, isPublic: playlist.is_public });
+                            }}
+                            aria-label={playlist.is_public ? "Make playlist private" : "Make playlist public"}
+                            className="text-white/60 hover:text-white cursor-pointer flex items-center justify-center p-[var(--px-4)] hover:scale-110 active:scale-90 transition-all bg-transparent border-0 outline-none"
+                          >
                             {playlist.is_public ? (
                               <PublicIcon customWidth="14" customHeight="14" disableHover />
                             ) : (
                               <PrivateIcon customWidth="14" customHeight="14" disableHover />
                             )}
-                          </div>
+                          </button>
                         </Tooltip>
                       )}
 
@@ -479,103 +509,38 @@ export default function LibraryPage() {
                       key={track.id}
                       className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex flex-wrap justify-between items-center gap-y-[var(--px-10)] relative hover:bg-white/5 transition-colors"
                     >
-                      {/* Aligned top content layout — extra right padding on mobile clears the
-                          absolutely-positioned top-right kebab. */}
-                      <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow min-w-0 pr-[var(--px-32)] md:pr-[var(--px-15)]">
-                        {track.playlist_uuid ? (
-                          <>
-                            {/* Clickable Image Link */}
-                            <a
-                              href={`/playlist?id=${track.playlist_uuid}`}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                navigate(`/playlist?id=${track.playlist_uuid}`, { state: { from: "library" } });
-                              }}
-                              className="flex-shrink-0 cursor-pointer"
-                            >
-                              <div className="border border-dotted border-slate-200 p-[var(--px-6)] md:p-[var(--px-10)] bg-black/40 hover:border-[var(--color-primary-hover)] transition-colors">
-                                <img
-                                  src={TrackSvg}
-                                  draggable={false}
-                                  alt="Track Icon"
-                                  className="w-[var(--px-20)] h-[var(--px-20)] md:w-[var(--px-32)] md:h-[var(--px-32)]"
-                                />
-                              </div>
-                            </a>
-
-                            {/* Stacked Text Column */}
-                            <div className="flex flex-col gap-[var(--px-4)] flex-grow min-w-0">
-                              {/* Clickable Title Link — clamped (2 rows mobile / 1 desktop) so it
-                                  can never run under the top-right kebab or overflow the card. */}
-                              <a
-                                href={`/playlist?id=${track.playlist_uuid}`}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  navigate(`/playlist?id=${track.playlist_uuid}`, { state: { from: "library" } });
-                                }}
-                                title={track.title}
-                                className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer line-clamp-2 md:line-clamp-1 break-words"
-                              >
-                                {track.title}
-                              </a>
-
-                              {/* Labelled meta pairs (fixed order; absent fields skipped) */}
-                              <TrackMetaRow track={track} />
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            {/* Non-clickable Image */}
-                            <div className="flex-shrink-0">
-                              <div className="border border-dotted border-slate-200 p-[var(--px-6)] md:p-[var(--px-10)] bg-black/40">
-                                <img
-                                  src={TrackSvg}
-                                  draggable={false}
-                                  alt="Track Icon"
-                                  className="w-[var(--px-20)] h-[var(--px-20)] md:w-[var(--px-32)] md:h-[var(--px-32)]"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Stacked Text Column */}
-                            <div className="flex flex-col gap-[var(--px-4)] flex-grow min-w-0">
-                              <h3
-                                title={track.title}
-                                className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight line-clamp-2 md:line-clamp-1 break-words"
-                              >
-                                {track.title}
-                              </h3>
-
-                              {/* Labelled meta pairs (fixed order; absent fields skipped) */}
-                              <TrackMetaRow track={track} />
-                            </div>
-                          </>
-                        )}
-                      </div>
-
-                      {/* Actions cluster. On mobile only the kebab is visible and it pins to the
-                          card's TOP-RIGHT (was awkwardly below the text); desktop keeps the inline
-                          right-side cluster with capsules + duration. */}
-                      <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0 align-middle max-md:absolute max-md:top-[var(--px-8)] max-md:right-[var(--px-8)]" onClick={e => e.stopPropagation()}>
-                        {/* Artifact capsules: reach the track's Sonic Discovery playlist and its
-                            analysis straight from the row; a still-generating sibling shows a live
-                            "…generating" pill that the 10s poll flips to a link when it lands.
-                            Desktop only here — on mobile they overflowed the row, so they render as
-                            stacked full-width rows at the bottom of the card instead (below). */}
-                        <div className="hidden md:block">
-                          <TrackArtifactChips
-                            track={track}
-                            onOpenPlaylist={(uuid) => navigate(`/playlist?id=${uuid}`, { state: { from: "library" } })}
-                            onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`, { state: { from: "library" } })}
-                            onComingSoon={() => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon")}
-                          />
+                      {/* Track identity block. The track title/image are NOT links — the track's
+                          artifacts are reached via the capsules; the row itself doesn't navigate.
+                          Right padding clears the absolutely-positioned top-right kebab. */}
+                      <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow min-w-0 pr-[var(--px-32)]">
+                        {/* Non-clickable Image */}
+                        <div className="flex-shrink-0">
+                          <div className="border border-dotted border-slate-200 p-[var(--px-6)] md:p-[var(--px-10)] bg-black/40">
+                            <img
+                              src={TrackSvg}
+                              draggable={false}
+                              alt="Track Icon"
+                              className="w-[var(--px-20)] h-[var(--px-20)] md:w-[var(--px-32)] md:h-[var(--px-32)]"
+                            />
+                          </div>
                         </div>
 
-                        <span className="hidden md:inline text-[length:var(--px-10)] font-light font-fira text-white/40">
-                          {track.duration_ms ? formatDuration(track.duration_ms / 1000) : ""}
-                        </span>
+                        {/* Stacked Text Column — title + meta are display-only (not selectable). */}
+                        <div className="flex flex-col gap-[var(--px-4)] flex-grow min-w-0 select-none">
+                          <h3
+                            title={track.title}
+                            className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight line-clamp-2 md:line-clamp-1 break-words"
+                          >
+                            {track.title}
+                          </h3>
 
-                        {/* Dropdown Actions */}
+                          {/* Labelled meta pairs (fixed order; absent fields skipped) */}
+                          <TrackMetaRow track={track} />
+                        </div>
+                      </div>
+
+                      {/* Kebab — top-right on BOTH breakpoints. */}
+                      <div className="absolute top-[var(--px-8)] right-[var(--px-8)]" onClick={e => e.stopPropagation()}>
                         <div className="relative">
                           <button
                             onClick={() => setActiveMenuId(activeMenuId === track.id ? null : track.id)}
@@ -614,6 +579,17 @@ export default function LibraryPage() {
                             </div>
                           )}
                         </div>
+                      </div>
+
+                      {/* Desktop: capsules right-aligned in the row (right padding clears the
+                          top-right kebab). */}
+                      <div className="hidden md:flex items-center justify-end w-full pr-[var(--px-28)]" onClick={e => e.stopPropagation()}>
+                        <TrackArtifactChips
+                          track={track}
+                          onOpenPlaylist={(uuid) => navigate(`/playlist?id=${uuid}`, { state: { from: "library" } })}
+                          onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`, { state: { from: "library" } })}
+                          onComingSoon={() => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon")}
+                        />
                       </div>
 
                       {/* Mobile: the two capsules as full-width rows at the bottom of the card
@@ -702,8 +678,8 @@ export default function LibraryPage() {
         </div>
 
         <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)] w-full">
-          <button 
-            onClick={() => setPlaylistToDelete(null)} 
+          <button
+            onClick={() => setPlaylistToDelete(null)}
             className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer"
           >
             Cancel
@@ -713,6 +689,41 @@ export default function LibraryPage() {
             className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-red-500 text-red-500 hover:bg-red-500 hover:text-white text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer flex justify-center items-center"
           >
             Delete
+          </button>
+        </div>
+      </StatusMessage>
+
+      {/* Visibility (public/private) toggle confirmation */}
+      <StatusMessage
+        isOpen={!!visibilityFor}
+        onClose={() => setVisibilityFor(null)}
+        status="custom"
+      >
+        <div className="text-center w-full">
+          <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
+            {visibilityFor?.isPublic ? "Make Playlist Private" : "Make Playlist Public"}
+          </div>
+          <div className="text-[length:var(--px-11)] font-light font-fira leading-[var(--px-15)] mt-[var(--px-10)]">
+            {visibilityFor?.isPublic
+              ? "This playlist will no longer be reachable by its share link — only you can open it."
+              : "Anyone with the link will be able to open this playlist."}
+          </div>
+        </div>
+
+        <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)] w-full">
+          <button
+            onClick={() => setVisibilityFor(null)}
+            disabled={visibilityBusy}
+            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmVisibility}
+            disabled={visibilityBusy}
+            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-secondary)] hover:opacity-90 text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer flex justify-center items-center disabled:opacity-50"
+          >
+            {visibilityBusy ? "Updating…" : (visibilityFor?.isPublic ? "Make Private" : "Make Public")}
           </button>
         </div>
       </StatusMessage>

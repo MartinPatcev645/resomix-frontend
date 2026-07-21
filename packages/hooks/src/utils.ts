@@ -38,3 +38,16 @@ export function formatPercentage(percentage: number, decimals: number = 2): stri
 export function shortGenre(label: string): string {
   return label.split("---").pop() ?? label;
 }
+
+/**
+ * True when a click on an <a> should be left to the browser (open in a new tab / window) rather
+ * than intercepted for SPA navigation: a modifier key (⌘/Ctrl/Shift/Alt) or a non-primary button
+ * (middle-click). Use inside an anchor's onClick — return early when true, otherwise
+ * `e.preventDefault()` + `navigate(...)`. Keeps real `href`s so right-click "Open in new tab" and
+ * ⌘/Ctrl-click work, while a plain click stays an in-app transition.
+ */
+export function shouldOpenInNewTab(e: {
+  metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; altKey: boolean; button: number;
+}): boolean {
+  return e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
+}
