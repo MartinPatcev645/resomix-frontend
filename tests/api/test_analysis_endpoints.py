@@ -95,6 +95,38 @@ async def test_get_summary_404() -> None:
     assert res.status_code == 404, res.text
 
 
+async def test_status_upstream_404_maps_to_expired_not_502() -> None:
+    """An analysis the service has evicted (upstream 404) must surface as 404 "expired", not a 502 —
+    502 is reserved for a genuine upstream fault (regression: stale library links used to 502)."""
+    from app.api.routers.analysis import controller
+    user = await create_user()
+    track = await create_track(user_id=user.id, partner_id=1)
+    aid = await _seed_analysis(user_id=user.id, track_id=track.id)
+    # Analysis service reports the id gone (its transient store evicted it).
+    controller.analysis_client.get_status = AsyncMock(
+        return_value={"status": "error", "message": "No analysis with id.", "status_code": 404}
+    )
+    async with await _client() as ac:
+        res = await ac.get(f"/api/v1/analysis/{aid}/status", headers={**auth_headers(user), "X-API-KEY": settings.api_key})
+    assert res.status_code == 404, res.text
+    assert res.json().get("reason") == "expired"
+
+
+async def test_status_upstream_fault_still_502() -> None:
+    """A real upstream fault (connection error / 5xx) still maps to 502."""
+    from app.api.routers.analysis import controller
+    user = await create_user()
+    track = await create_track(user_id=user.id, partner_id=1)
+    aid = await _seed_analysis(user_id=user.id, track_id=track.id)
+    controller.analysis_client.get_status = AsyncMock(
+        return_value={"status": "error", "message": "Could not connect to analysis service."}
+    )
+    async with await _client() as ac:
+        res = await ac.get(f"/api/v1/analysis/{aid}/status", headers={**auth_headers(user), "X-API-KEY": settings.api_key})
+    assert res.status_code == 502, res.text
+    assert res.json().get("reason") == "upstream_error"
+
+
 # --- token mint ------------------------------------------------------------- #
 async def test_mint_token_owner_ok() -> None:
     user = await create_user()

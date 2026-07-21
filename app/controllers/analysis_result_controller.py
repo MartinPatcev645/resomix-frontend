@@ -325,6 +325,12 @@ class AnalysisResultController:
             return self._reject(403, "You don't have access to this analysis.", reason="forbidden")
         status_doc = await self.analysis_client.get_status(analysis_id)
         if status_doc.get("status") == "error":
+            # The analysis service only retains a job/result transiently. Once it evicts one, its
+            # /v1/analyses/{id} returns 404 — but OUR summary row (and the library's Analysis link)
+            # live forever. That's expected data expiry, NOT a bad gateway: report it as 404 "expired"
+            # so the UI can show "no longer available", and reserve 502 for a genuine upstream fault.
+            if status_doc.get("status_code") == 404:
+                return self._reject(404, "This analysis is no longer available.", reason="expired")
             return self._reject(502, status_doc.get("message") or "Status check failed.", reason="upstream_error")
         status_doc = await self._attach_playback_refs(db, row, status_doc)
         return JSONResponse(status_code=200, content=format_response(success=True, data=status_doc))
@@ -340,6 +346,9 @@ class AnalysisResultController:
             return self._reject(403, "You don't have access to this analysis.", reason="forbidden")
         result = await self.analysis_client.get_result(analysis_id)
         if isinstance(result, dict) and result.get("status") == "error":
+            # Same as get_status: an evicted analysis 404s upstream → report "expired", not 502.
+            if result.get("status_code") == 404:
+                return self._reject(404, "This analysis is no longer available.", reason="expired")
             return self._reject(502, result.get("message") or "Result fetch failed.", reason="upstream_error")
         result = await self._attach_playback_refs(db, row, result)
         return JSONResponse(status_code=200, content=format_response(success=True, data=result))
