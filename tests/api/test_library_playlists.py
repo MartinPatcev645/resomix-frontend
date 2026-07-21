@@ -318,3 +318,65 @@ async def test_similarity_data_messages_distinguish_deleted_vs_private():
         # Existing private playlist, non-owner → distinct "not public" message.
         private = await svc.get_playlist_similarity_data(db, private_pl.uuid, user_id=other.id, partner_id=1)
         assert private["success"] is False and "not public" in private["error"].lower()
+
+
+# --------------------------------------------------------------------------- #
+# List filters: search (name / uuid) + num_tracks minimum
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.asyncio
+async def test_search_matches_playlist_name():
+    """search matches playlist name (case-insensitive, partial)."""
+    user = await create_user()
+    hit = await create_playlist(user_id=user.id, name="Deep House Vibes")
+    await create_playlist(user_id=user.id, name="Techno Bunker")
+
+    async with _client() as ac:
+        res = await ac.get(PLAYLISTS_URL, params={"search": "deep"}, headers=auth_headers(user))
+
+    uuids = {p["uuid"] for p in res.json()["data"]}
+    assert uuids == {hit.uuid}
+
+
+@pytest.mark.asyncio
+async def test_search_matches_playlist_uuid():
+    """search matches a fragment of the playlist uuid."""
+    user = await create_user()
+    hit = await create_playlist(user_id=user.id, name="Whatever")
+    await create_playlist(user_id=user.id, name="Another")
+
+    frag = hit.uuid[:8]
+    async with _client() as ac:
+        res = await ac.get(PLAYLISTS_URL, params={"search": frag}, headers=auth_headers(user))
+
+    uuids = {p["uuid"] for p in res.json()["data"]}
+    assert hit.uuid in uuids
+
+
+@pytest.mark.asyncio
+async def test_num_tracks_is_a_minimum():
+    """num_tracks filters to playlists with AT LEAST that many tracks (>=)."""
+    user = await create_user()
+    small = await create_playlist(user_id=user.id, name="Small", num_tracks=10)
+    big = await create_playlist(user_id=user.id, name="Big", num_tracks=50)
+
+    async with _client() as ac:
+        at_least_50 = await ac.get(PLAYLISTS_URL, params={"num_tracks": 50}, headers=auth_headers(user))
+        at_least_10 = await ac.get(PLAYLISTS_URL, params={"num_tracks": 10}, headers=auth_headers(user))
+
+    assert {p["uuid"] for p in at_least_50.json()["data"]} == {big.uuid}
+    assert {p["uuid"] for p in at_least_10.json()["data"]} == {small.uuid, big.uuid}
+
+
+@pytest.mark.asyncio
+async def test_blank_search_is_ignored_playlists():
+    """A blank/whitespace search returns all the caller's playlists (no filter)."""
+    user = await create_user()
+    await create_playlist(user_id=user.id, name="One")
+    await create_playlist(user_id=user.id, name="Two")
+
+    async with _client() as ac:
+        res = await ac.get(PLAYLISTS_URL, params={"search": "  "}, headers=auth_headers(user))
+
+    assert len({p["uuid"] for p in res.json()["data"]}) == 2
