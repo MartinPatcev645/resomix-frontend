@@ -18,6 +18,7 @@ Requires the stack to be up (MariaDB + Redis). Run with:  pytest tests/api/test_
 """
 
 import uuid
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -414,3 +415,81 @@ async def test_delete_track_without_playlist_still_purges():
     assert res.status_code == 200
     assert res.json()["data"]["playlists_deleted"] == 0
     mock_purge.assert_called_once_with(1, track.uuid)
+
+
+# --------------------------------------------------------------------------- #
+# List: filters (search + upload-date range)
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.asyncio
+async def test_search_matches_title():
+    """search matches on track title (case-insensitive, partial)."""
+    user = await create_user()
+    hit = await create_track(user_id=user.id, title="Midnight Drive")
+    await create_track(user_id=user.id, title="Sunrise")
+
+    async with _client() as ac:
+        res = await ac.get(LIST_URL, params={"search": "midnight"}, headers=auth_headers(user))
+
+    uuids = {t["uuid"] for t in res.json()["data"]}
+    assert uuids == {hit.uuid}
+
+
+@pytest.mark.asyncio
+async def test_search_matches_uuid():
+    """search matches on a fragment of the track uuid."""
+    user = await create_user()
+    hit = await create_track(user_id=user.id, title="Anything")
+    await create_track(user_id=user.id, title="Other")
+
+    frag = hit.uuid[:8]
+    async with _client() as ac:
+        res = await ac.get(LIST_URL, params={"search": frag}, headers=auth_headers(user))
+
+    uuids = {t["uuid"] for t in res.json()["data"]}
+    assert hit.uuid in uuids
+
+
+@pytest.mark.asyncio
+async def test_search_matches_artist():
+    """search matches on the track's display_artist."""
+    user = await create_user()
+    hit = await create_track(user_id=user.id, title="A", display_artist="Aphex Twin")
+    await create_track(user_id=user.id, title="B", display_artist="Someone Else")
+
+    async with _client() as ac:
+        res = await ac.get(LIST_URL, params={"search": "aphex"}, headers=auth_headers(user))
+
+    uuids = {t["uuid"] for t in res.json()["data"]}
+    assert uuids == {hit.uuid}
+
+
+@pytest.mark.asyncio
+async def test_date_range_filters_by_upload_date():
+    """start_date/end_date bound the list by created_at; either bound may be omitted."""
+    user = await create_user()
+    old = await create_track(user_id=user.id, title="Old", created_at=datetime(2020, 1, 1, 12, 0, 0))
+    new = await create_track(user_id=user.id, title="New", created_at=datetime(2026, 6, 15, 12, 0, 0))
+
+    async with _client() as ac:
+        # Only-start bound: on/after 2026-01-01 → just the new one.
+        after = await ac.get(LIST_URL, params={"start_date": "2026-01-01"}, headers=auth_headers(user))
+        # Only-end bound: on/before 2020-12-31 → just the old one.
+        before = await ac.get(LIST_URL, params={"end_date": "2020-12-31"}, headers=auth_headers(user))
+
+    assert {t["uuid"] for t in after.json()["data"]} == {new.uuid}
+    assert {t["uuid"] for t in before.json()["data"]} == {old.uuid}
+
+
+@pytest.mark.asyncio
+async def test_blank_search_is_ignored():
+    """A blank/whitespace search returns everything (no filter applied)."""
+    user = await create_user()
+    await create_track(user_id=user.id, title="One")
+    await create_track(user_id=user.id, title="Two")
+
+    async with _client() as ac:
+        res = await ac.get(LIST_URL, params={"search": "   "}, headers=auth_headers(user))
+
+    assert res.json()["total"] == 2

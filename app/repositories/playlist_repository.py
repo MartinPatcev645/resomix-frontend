@@ -1693,7 +1693,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             Tuple of (list of playlist dictionaries, total count)
         """
         try:
-            from sqlalchemy import text, func, and_
+            from sqlalchemy import text, func, and_, or_
             from datetime import datetime, timedelta
             from app.models.playlist_engagement import UserPlaylistEngagement
 
@@ -1738,6 +1738,13 @@ class PlaylistRepository(BaseRepository[Playlist]):
 
             # Apply filters
             if filters:
+                # Free-text search: playlist name OR uuid (case-insensitive, partial).
+                if getattr(filters, "search", None):
+                    like = f"%{filters.search}%"
+                    conditions.append(
+                        or_(Playlist.name.ilike(like), Playlist.uuid.ilike(like))
+                    )
+
                 # play_time filter
                 if filters.play_time:
                     if filters.play_time == "lt1h":
@@ -1761,9 +1768,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     elif filters.play_time == "gt9h":
                         conditions.append(Playlist.play_time >= 32400)
 
-                # num_tracks filter (exact match)
+                # num_tracks filter (minimum: playlists with at least this many tracks)
                 if filters.num_tracks is not None:
-                    conditions.append(Playlist.num_tracks == filters.num_tracks)
+                    conditions.append(Playlist.num_tracks >= filters.num_tracks)
 
                 # Date filters
                 if filters.start_date:

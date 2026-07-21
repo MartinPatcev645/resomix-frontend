@@ -17,6 +17,7 @@ Email: usman.naeem2212@gmail.com
 """
 
 import time
+from typing import Optional
 
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
@@ -42,14 +43,18 @@ class TrackController:
         current_user: User,
         page: int = 1,
         page_size: int = 20,
+        search: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
     ) -> JSONResponse:
-        """List the authenticated user's own uploaded tracks (paginated)."""
+        """List the authenticated user's own uploaded tracks (paginated, filterable)."""
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         partner_id = getattr(request.state, "partner_id", None)
 
         result = await self.track_service.get_user_tracks(
-            db, current_user.id, page, page_size, partner_id=partner_id
+            db, current_user.id, page, page_size, partner_id=partner_id,
+            search=search, start_date=start_date, end_date=end_date,
         )
         duration_ms = (time.time() - start_time) * 1000
 

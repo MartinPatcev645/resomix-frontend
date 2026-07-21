@@ -174,11 +174,15 @@ class TrackService:
         page: int = 1,
         page_size: int = 20,
         partner_id: Optional[int] = None,
+        search: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """List the user's own uploaded tracks (paginated, newest first)."""
+        """List the user's own uploaded tracks (paginated, newest first, filterable)."""
         try:
             tracks, total = await self.track_repository.async_get_user_uploaded_tracks(
-                db, user_id, page, page_size, partner_id=partner_id
+                db, user_id, page, page_size, partner_id=partner_id,
+                search=search, start_date=start_date, end_date=end_date,
             )
             # One batch query each to tell which tracks already have a similarity playlist / analysis.
             track_ids = [t.id for t in tracks]

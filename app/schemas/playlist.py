@@ -218,24 +218,34 @@ class PlaylistForkResponse(BaseModel):
 
 class UserPlaylistsFilters(BaseModel):
     """Filter schema for user playlists query."""
+    search: Optional[str] = Field(None, description="Free-text search over playlist name OR uuid (case-insensitive, partial)")
     play_time: Optional[str] = Field(None, description="Play time filter: 'lt1h', '1-3h', '3-6h', '6-9h', 'gt9h'")
-    num_tracks: Optional[int] = Field(None, description="Number of tracks filter: 10, 20, 50, or 100")
+    num_tracks: Optional[int] = Field(None, description="Minimum number of tracks (>=): 10, 20, 50, or 100")
     start_date: Optional[str] = Field(None, description="Start date filter (YYYY-MM-DD)")
     end_date: Optional[str] = Field(None, description="End date filter (YYYY-MM-DD)")
     is_public: Optional[bool] = Field(None, description="Visibility filter: true for public, false for private")
     own_favorites: Optional[bool] = Field(None, description="Show only favorites owned by user (true/false)")
     all_favorites: Optional[bool] = Field(None, description="Show all favorited playlists including ones user doesn't own (true/false)")
-    
+
+    @validator('search')
+    def validate_search(cls, v):
+        """Trim search; treat blank as no filter."""
+        if v is not None:
+            v = v.strip()
+            if not v:
+                return None
+        return v
+
     @validator('play_time')
     def validate_play_time(cls, v):
         """Validate play_time filter value."""
         if v is not None and v not in ['lt1h', '1-3h', '3-6h', '6-9h', 'gt9h']:
             raise ValueError("play_time must be one of: 'lt1h', '1-3h', '3-6h', '6-9h', 'gt9h'")
         return v
-    
+
     @validator('num_tracks')
     def validate_num_tracks(cls, v):
-        """Validate num_tracks filter value."""
+        """Validate num_tracks filter value (used as a minimum: >= v)."""
         if v is not None and v not in [10, 20, 50, 100]:
             raise ValueError("num_tracks must be one of: 10, 20, 50, 100")
         return v

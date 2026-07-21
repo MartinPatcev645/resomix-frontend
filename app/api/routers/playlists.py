@@ -387,8 +387,9 @@ async def get_all_user_playlists_endpoint(
     current_user: User = Depends(get_current_user),  # REQUIRED auth
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    search: Optional[str] = Query(None, description="Search over playlist name OR uuid (case-insensitive, partial)"),
     play_time: Optional[str] = Query(None, description="Play time filter: 'lt1h', '1-3h', '3-6h', '6-9h', 'gt9h'"),
-    num_tracks: Optional[int] = Query(None, description="Number of tracks filter: 10, 20, 50, or 100"),
+    num_tracks: Optional[int] = Query(None, description="Minimum number of tracks (>=): 10, 20, 50, or 100"),
     start_date: Optional[str] = Query(None, description="Start date filter (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="End date filter (YYYY-MM-DD)"),
     is_public: Optional[bool] = Query(None, description="Visibility filter: true for public, false for private"),
@@ -405,8 +406,9 @@ async def get_all_user_playlists_endpoint(
     - User must be authenticated (JWT token required)
     
     **Filters** (all optional, can be stacked):
+    - **search**: Match playlist name OR uuid (case-insensitive, partial)
     - **play_time**: Filter by total play time ('lt1h', '1-3h', '3-6h', '6-9h', 'gt9h')
-    - **num_tracks**: Filter by number of tracks (10, 20, 50, 100)
+    - **num_tracks**: Minimum number of tracks (>=): 10, 20, 50, 100
     - **start_date**: Filter playlists created on or after this date (YYYY-MM-DD)
     - **end_date**: Filter playlists created on or before this date (YYYY-MM-DD)
     - **is_public**: Filter by visibility (true for public, false for private)
@@ -420,6 +422,7 @@ async def get_all_user_playlists_endpoint(
       - Favorite and following status
     """
     filters = UserPlaylistsFilters(
+        search=search,
         play_time=play_time,
         num_tracks=num_tracks,
         start_date=start_date,

@@ -16,6 +16,8 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -77,6 +79,11 @@ async def get_my_tracks_endpoint(
         le=MAX_PAGE_SIZE,
         description=f"Items per page (max {MAX_PAGE_SIZE})",
     ),
+    search: Optional[str] = Query(
+        None, description="Search over track title, artist, or uuid (case-insensitive, partial)"
+    ),
+    start_date: Optional[str] = Query(None, description="Uploaded on or after this date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Uploaded on or before this date (YYYY-MM-DD)"),
 ) -> JSONResponse:
     """
     Get the authenticated user's own uploaded tracks, newest first.
@@ -87,11 +94,15 @@ async def get_my_tracks_endpoint(
 
     **Requirements**: user must be authenticated (JWT token required).
 
+    **Filters** (all optional): `search` (title/artist/uuid, case-insensitive partial),
+    `start_date` / `end_date` (upload date range, YYYY-MM-DD; either bound may be omitted).
+
     **Pagination**: `page` (1-based) and `page_size` (max 20). The response includes
     `total`, `page`, `page_size`, and `total_pages`.
     """
     return await track_controller.get_user_tracks(
-        db, request, current_user, page, page_size
+        db, request, current_user, page, page_size,
+        search=search, start_date=start_date, end_date=end_date,
     )
 
 

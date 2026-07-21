@@ -277,6 +277,9 @@ class TrackRepository(BaseRepository[Track]):
         page: int = 1,
         page_size: int = 20,
         partner_id: Optional[int] = None,
+        search: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
     ) -> Tuple[List[Track], int]:
         """Get a page of the user's own uploaded tracks (newest first) with the total count.
 
@@ -285,16 +288,27 @@ class TrackRepository(BaseRepository[Track]):
         Genre relationships are eager-loaded via the model's ``lazy='joined'`` config, so
         the lightweight summary can be serialized without touching lazy collections.
 
+        Optional filters (all case-insensitive / inclusive):
+          - ``search``: matches track title, uuid, ``display_artist``, or any credited
+            contributor's ``full_name`` (partial).
+          - ``start_date`` / ``end_date`` (``YYYY-MM-DD``): upload-date range on
+            ``created_at``; either bound may be omitted.
+
         Args:
             db: Async database session
             user_id: ID of the authenticated user (uploader)
             page: 1-based page number
             page_size: Items per page
             partner_id: Optional partner ID for tenant scoping
+            search: Optional free-text query (title / uuid / artist)
+            start_date: Optional inclusive lower bound (YYYY-MM-DD)
+            end_date: Optional inclusive upper bound (YYYY-MM-DD)
 
         Returns:
             Tuple of (list of Track, total count)
         """
+        from datetime import datetime, timedelta
+
         conditions = [
             self.model.user_id == user_id,
             self.model.track_type == TrackType.UPLOAD,
@@ -302,6 +316,49 @@ class TrackRepository(BaseRepository[Track]):
         ]
         if partner_id is not None:
             conditions.append(self.model.partner_id == partner_id)
+
+        # Free-text search over title / uuid / display_artist / any contributor name.
+        if search and search.strip():
+            like = f"%{search.strip()}%"
+            # Correlated EXISTS (WHERE-clause only, so no GROUP-BY parser issues) to catch
+            # the artist even when it's sourced from credited contributors rather than the
+            # denormalized display_artist column.
+            artist_exists = (
+                select(TrackContributor.id)
+                .join(Contributor, Contributor.id == TrackContributor.person_id)
+                .where(
+                    TrackContributor.track_id == self.model.id,
+                    Contributor.full_name.ilike(like),
+                )
+                .exists()
+            )
+            conditions.append(
+                or_(
+                    self.model.title.ilike(like),
+                    self.model.uuid.ilike(like),
+                    self.model.display_artist.ilike(like),
+                    artist_exists,
+                )
+            )
+
+        # Upload-date range (either bound optional). end_date is expanded to end-of-day.
+        if start_date:
+            try:
+                conditions.append(
+                    self.model.created_at >= datetime.strptime(start_date, "%Y-%m-%d")
+                )
+            except ValueError:
+                pass
+        if end_date:
+            try:
+                end_dt = (
+                    datetime.strptime(end_date, "%Y-%m-%d")
+                    + timedelta(days=1)
+                    - timedelta(seconds=1)
+                )
+                conditions.append(self.model.created_at <= end_dt)
+            except ValueError:
+                pass
 
         count_stmt = select(func.count(self.model.id)).where(and_(*conditions))
         total = (await db.execute(count_stmt)).scalar() or 0
