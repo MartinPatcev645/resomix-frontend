@@ -16,6 +16,7 @@ export * from "./metadata";
 export * from "./tracks";
 export * from "./system";
 export * from "./entitlements";
+export * from "./apple";
 export { initDeviceHash, getDeviceHash } from "./deviceId";
 export * from "./partner";
 export * from "./playbackToken";
