@@ -129,11 +129,14 @@ class AppleMusicTransferService:
         
         private_key = self._load_private_key()
         now = int(time.time())
+        # Apple Music developer tokens must contain ONLY iss/iat/exp. Any extra claim (aud/sub)
+        # makes MusicKit's authorize() reject the token with ERROR_FAILED_TO_VERIFY_JWT. (The
+        # read-only catalog API tolerates extras — which is why the catalogue matcher worked with an
+        # `aud` present — but the user-authorization flow strictly verifies the claim set.)
         payload = {
             "iss": settings.apple_team_id,
             "iat": now,
             "exp": now + settings.apple_token_ttl,
-            "aud": APPLE_AUDIENCE,
         }
         headers = {
             "alg": "ES256",
