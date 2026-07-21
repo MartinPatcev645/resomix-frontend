@@ -117,8 +117,9 @@ async def test_record_read_and_idempotent_upsert() -> None:
         assert latest is not None and latest.analysis_uuid == analysis_uuid
 
 
-async def test_library_tracks_expose_has_analysis_and_uuid() -> None:
-    """The library list (get_user_tracks) reports has_analysis + analysis_uuid from the row."""
+async def test_library_tracks_expose_analysis_uuid_and_metrics() -> None:
+    """The library list (get_user_tracks) reports the analysis_uuid (its presence IS the
+    "has analysis" signal — no boolean) plus the analysis-derived display metrics block."""
     from app.services.track_service import TrackService
 
     user = await create_user()
@@ -135,7 +136,18 @@ async def test_library_tracks_expose_has_analysis_and_uuid() -> None:
     async with AsyncSessionLocal() as db:
         res = await TrackService().get_user_tracks(db, user_id=user.id, page=1, page_size=20, partner_id=1)
     by_uuid = {t["uuid"]: t for t in res["data"]}
-    assert by_uuid[analysed.uuid]["has_analysis"] is True
-    assert by_uuid[analysed.uuid]["analysis_uuid"] == aid
-    assert by_uuid[plain.uuid]["has_analysis"] is False
-    assert by_uuid[plain.uuid]["analysis_uuid"] is None
+
+    a = by_uuid[analysed.uuid]
+    assert a["analysis_uuid"] == aid
+    # Analysis-derived display metrics (values from the canonical fixture).
+    assert a["analysis"]["top_genre"] == "House"
+    assert a["analysis"]["bpm"] == pytest.approx(128.02)
+    assert a["analysis"]["music_key"] == "A"
+    assert a["analysis"]["scale"] == "minor"
+    assert a["analysis"]["camelot"] == "8A"
+
+    p = by_uuid[plain.uuid]
+    assert p["analysis_uuid"] is None
+    assert p["analysis"] is None
+    for removed in ("has_analysis", "has_similarity"):
+        assert removed not in a and removed not in p
