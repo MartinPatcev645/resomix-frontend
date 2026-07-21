@@ -96,19 +96,24 @@ export function useAppleTransfer({ active, initialPlaylistId, onStatusChange }: 
     setStatusLoading(false);
   }, []);
 
-  // On open: reset transient UI and load status. On close/unmount: stop any poll.
+  // Track true mount/unmount (so async callbacks don't setState after unmount).
   useEffect(() => {
     mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      stopPoll();
+    };
+  }, [stopPoll]);
+
+  // On open: reset transient UI and load the authoritative status. On close: stop any pending poll.
+  useEffect(() => {
     if (!active) return;
     setNotice(null);
     setResult(null);
     setConnectLoading(false);
     setTransferLoading(false);
     void refreshStatus();
-    return () => {
-      mountedRef.current = false;
-      stopPoll();
-    };
+    return () => stopPoll();
   }, [active, refreshStatus, stopPoll]);
 
   // Kick off the MusicKit sign-in popup, then wait for the returned token and persist it.
@@ -203,7 +208,13 @@ export function useAppleTransfer({ active, initialPlaylistId, onStatusChange }: 
         setNotice({ kind: 'success', text });
         onStatusChange?.('success', text, 'Apple Music');
       } else {
-        setNotice({ kind: 'error', text: MSG.transferFailed });
+        // Nothing added: either no track matched Apple's catalogue, or the add itself failed
+        // (most commonly no active subscription). Give the accurate message for each.
+        const matched = d.matched ?? 0;
+        setNotice({
+          kind: 'error',
+          text: matched === 0 ? 'None of these tracks were available on Apple Music.' : MSG.transferFailed,
+        });
       }
       return;
     }
