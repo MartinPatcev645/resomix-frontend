@@ -18,7 +18,7 @@ Requires the stack to be up (MariaDB + Redis). Run with:  pytest tests/api/test_
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest

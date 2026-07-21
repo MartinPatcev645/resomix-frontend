@@ -30,6 +30,7 @@ from app.core.config import settings
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
 from app.repositories.playlist_transfer_track_repository import PlaylistTransferTrackRepository
+from app.repositories.apple_music_repository import AppleMusicRepository
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -38,6 +39,31 @@ logger.setLevel(logging.INFO)
 # Apple Music API constants
 APPLE_API = "https://api.music.apple.com"
 APPLE_AUDIENCE = "https://music.apple.com"
+# Apple Music API allows ~20 req/s/user; add-tracks accepts up to 100 ids per call; the ISRC
+# lookup accepts up to 25 ISRCs per call.
+ADD_TRACKS_BATCH = 100
+ISRC_BATCH = 25
+
+
+def _http_request(method: str, url: str, *, headers, params=None, data=None,
+                  timeout: int = 30, max_retries: int = 3):
+    """Blocking HTTP call with simple 429/5xx back-off (honours Retry-After).
+
+    Kept sync on purpose — callers dispatch it via run_in_executor. Returns the final
+    Response (never raises for HTTP status); network errors propagate to the caller.
+    """
+    resp = None
+    for attempt in range(max_retries):
+        resp = requests.request(method, url, headers=headers, params=params, data=data, timeout=timeout)
+        if resp.status_code == 429 or 500 <= resp.status_code < 600:
+            if attempt == max_retries - 1:
+                break
+            retry_after = resp.headers.get("Retry-After")
+            delay = float(retry_after) if (retry_after and retry_after.isdigit()) else (2 ** attempt)
+            time.sleep(min(delay, 5))
+            continue
+        return resp
+    return resp
 
 # Token cache for developer tokens
 _token_cache: Dict[str, Any] = {
@@ -54,7 +80,8 @@ class AppleMusicTransferService:
         self.playlist_repository = PlaylistRepository()
         self.track_repository = TrackRepository()
         self.transfer_track_repository = PlaylistTransferTrackRepository()
-        self.max_concurrent_searches = 2  # Process 2 tracks at a time
+        self.apple_music_repository = AppleMusicRepository()  # curated apple_song_id per track
+        self.max_concurrent_searches = 2  # Process 2 tracks at a time (fallback search only)
         
         logger.info("AppleMusicTransferService initialized")
     
@@ -145,34 +172,39 @@ class AppleMusicTransferService:
         h = {
             "Authorization": f"Bearer {dev_token}",
             "Accept": "application/json",
-            "Content-Type": "application/json",
+            "Content-Type": "application/json; charset=utf-8",
         }
         if user_token:
             h["Music-User-Token"] = user_token
         return h
     
-    async def _search_song(self, dev_token: str, isrc: Optional[str] = None, 
-                          title: Optional[str] = None, artist: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    async def _search_song(self, dev_token: str, isrc: Optional[str] = None,
+                          title: Optional[str] = None, artist: Optional[str] = None,
+                          storefront: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
-        Search for a catalog song on Apple Music:
+        Fallback search for a catalog song on Apple Music (only for tracks with no stored
+        apple_song_id — e.g. an uploaded seed or an unmatched catalogue track):
           1) By ISRC (fast and accurate)
           2) By search term "title artist" (best effort)
-        
+
         Args:
             dev_token: Developer token
             isrc: ISRC code (optional)
             title: Track title (optional)
             artist: Artist name (optional)
-            
+            storefront: Apple storefront to search in (defaults to the catalogue storefront).
+                        Pass the *user's* storefront so the resulting id is valid for their library.
+
         Returns:
             First matched song object with id and type 'songs' or None
         """
         loop = asyncio.get_event_loop()
         session = requests.Session()
-        
+        sf = storefront or settings.apple_storefront
+
         # 1) ISRC filter
         if isrc:
-            url = f"{APPLE_API}/v1/catalog/{settings.apple_storefront}/songs"
+            url = f"{APPLE_API}/v1/catalog/{sf}/songs"
             params = {"filter[isrc]": isrc, "limit": 1}
             try:
                 r = await loop.run_in_executor(
@@ -186,7 +218,7 @@ class AppleMusicTransferService:
                         return items[0]
             except Exception as e:
                 logger.warning("ISRC search failed: %s", str(e))
-        
+
         # 2) Search by title+artist
         if title and artist:
             term = f"{title} {artist}"
@@ -194,9 +226,9 @@ class AppleMusicTransferService:
             term = title
         else:
             return None
-        
+
         if term:
-            url = f"{APPLE_API}/v1/catalog/{settings.apple_storefront}/search"
+            url = f"{APPLE_API}/v1/catalog/{sf}/search"
             params = {"term": term, "limit": 3, "types": "songs"}
             try:
                 r = await loop.run_in_executor(
@@ -213,29 +245,32 @@ class AppleMusicTransferService:
         
         return None
     
-    async def _search_tracks_concurrently(self, dev_token: str, 
-                                         track_data: List[Tuple[int, Optional[str], str, str]]) -> List[Tuple[int, Optional[str]]]:
+    async def _search_tracks_concurrently(self, dev_token: str,
+                                         track_data: List[Tuple[int, Optional[str], str, str]],
+                                         storefront: Optional[str] = None) -> List[Tuple[int, Optional[str]]]:
         """
-        Search for multiple tracks concurrently on Apple Music
-        
+        Fallback: search for multiple tracks concurrently on Apple Music (only tracks with no
+        stored apple_song_id).
+
         Args:
             dev_token: Developer token
             track_data: List of tuples (track_id, isrc, title, artist)
-            
+            storefront: Storefront to search in (the user's, so ids are library-valid)
+
         Returns:
             List of tuples (track_id, apple_music_id or None)
         """
-        logger.info("Searching %d tracks concurrently", len(track_data))
-        
+        logger.info("Searching %d tracks concurrently (fallback)", len(track_data))
+
         start_time = time.time()
-        
+
         def search_single_track(track_info):
             track_id, isrc, title, artist = track_info
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
                 result = loop.run_until_complete(
-                    self._search_song(dev_token, isrc=isrc, title=title, artist=artist)
+                    self._search_song(dev_token, isrc=isrc, title=title, artist=artist, storefront=storefront)
                 )
                 apple_music_id = result.get("id") if result else None
                 return (track_id, apple_music_id)
@@ -326,10 +361,10 @@ class AppleMusicTransferService:
         loop = asyncio.get_event_loop()
         r = await loop.run_in_executor(
             None,
-            lambda: requests.post(url, headers=self._apple_headers(dev_token, user_token), 
-                                data=json.dumps(payload), timeout=30)
+            lambda: _http_request("POST", url, headers=self._apple_headers(dev_token, user_token),
+                                  data=json.dumps(payload))
         )
-        
+
         if not r.ok:
             raise ValueError(f"Failed to create playlist: {r.text}")
         
@@ -360,26 +395,25 @@ class AppleMusicTransferService:
             return 0
         
         url = f"{APPLE_API}/v1/me/library/playlists/{playlist_id}/tracks"
-        batch_size = 100
         tracks_added = 0
         loop = asyncio.get_event_loop()
-        
-        for i in range(0, len(catalog_song_ids), batch_size):
-            batch = catalog_song_ids[i:i + batch_size]
+
+        for i in range(0, len(catalog_song_ids), ADD_TRACKS_BATCH):
+            batch = catalog_song_ids[i:i + ADD_TRACKS_BATCH]
             payload = {"data": [{"id": sid, "type": "songs"} for sid in batch]}
-            
+
             try:
                 r = await loop.run_in_executor(
                     None,
-                    lambda: requests.post(url, headers=self._apple_headers(dev_token, user_token), 
-                                        data=json.dumps(payload), timeout=30)
+                    lambda p=payload: _http_request("POST", url, headers=self._apple_headers(dev_token, user_token),
+                                                    data=json.dumps(p))
                 )
                 if not r.ok:
-                    logger.error("Failed to add tracks batch %d: %s", (i // batch_size) + 1, r.text)
+                    logger.error("Failed to add tracks batch %d: %s", (i // ADD_TRACKS_BATCH) + 1, r.text)
                     continue
                 tracks_added += len(batch)
             except Exception as e:
-                logger.error("Exception adding tracks batch %d: %s", (i // batch_size) + 1, str(e))
+                logger.error("Exception adding tracks batch %d: %s", (i // ADD_TRACKS_BATCH) + 1, str(e))
         
         logger.info("Successfully added %d tracks to playlist", tracks_added)
         return tracks_added
