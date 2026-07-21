@@ -33,20 +33,25 @@ export interface LibraryPlaylist {
   uuid: string;
   name: string;
   is_public: boolean;
+  // Favorite state is surfaced inline (heart toggle) on the Playlists tab — there's no separate
+  // Favorites tab. Toggling flips this optimistically.
+  is_favorite: boolean;
   trackCount: number;
   duration: string;
   createdAt: string;
 }
 
-/** Applied filters for a library section. `numTracks` is playlists/favorites only (ignored for tracks). */
+/** Applied filters for a library section. `numTracks` + `favoritesOnly` are playlists-only. */
 export interface LibraryFilters {
   /** Free-text: title/artist/uuid (tracks) or name/uuid (playlists). */
   search: string;
   /** Inclusive date range (YYYY-MM-DD); either bound may be empty. */
   startDate: string;
   endDate: string;
-  /** Minimum number of tracks (playlists/favorites); null = any. */
+  /** Minimum number of tracks (playlists only); null = any. */
   numTracks: number | null;
+  /** Playlists only: show only playlists the user has favorited. */
+  favoritesOnly: boolean;
 }
 
 export const EMPTY_LIBRARY_FILTERS: LibraryFilters = {
@@ -54,21 +59,20 @@ export const EMPTY_LIBRARY_FILTERS: LibraryFilters = {
   startDate: '',
   endDate: '',
   numTracks: null,
+  favoritesOnly: false,
 };
 
 export interface LibraryStore {
-  // Three independent sections, each kept in the store so switching tabs is instant and every
-  // tab's count stays visible. Favorites are held separately from the user's own playlists.
+  // Two sections (playlists, tracks), each kept in the store so switching tabs is instant and each
+  // tab's count stays visible. Favorites are surfaced inline on playlists (heart), not a tab.
   playlists: LibraryPlaylist[];
-  favorites: LibraryPlaylist[];
   tracks: LibraryTrack[];
 
   error: string | null;
-  activeTab: 'playlists' | 'favorites' | 'tracks';
+  activeTab: 'playlists' | 'tracks';
 
-  // Per-section loading so the active tab shows its own spinner while the others load in background.
+  // Per-section loading so the active tab shows its own spinner while the other loads in background.
   playlistsLoading: boolean;
-  favoritesLoading: boolean;
   tracksLoading: boolean;
 
   // Pagination & counts (per section)
@@ -76,36 +80,27 @@ export interface LibraryStore {
   playlistsTotalPages: number;
   playlistsTotal: number;
 
-  favoritesPage: number;
-  favoritesTotalPages: number;
-  favoritesTotal: number;
-
   tracksPage: number;
   tracksTotalPages: number;
   tracksTotal: number;
 
   // Applied filters (per section). Held here so pagination + Refresh re-apply the same query.
   playlistsFilters: LibraryFilters;
-  favoritesFilters: LibraryFilters;
   tracksFilters: LibraryFilters;
 
   setPlaylists: (playlists: LibraryPlaylist[]) => void;
-  setFavorites: (favorites: LibraryPlaylist[]) => void;
   setTracks: (tracks: LibraryTrack[]) => void;
 
   setPlaylistsLoading: (loading: boolean) => void;
-  setFavoritesLoading: (loading: boolean) => void;
   setTracksLoading: (loading: boolean) => void;
 
   setError: (error: string | null) => void;
-  setActiveTab: (tab: 'playlists' | 'favorites' | 'tracks') => void;
+  setActiveTab: (tab: 'playlists' | 'tracks') => void;
 
   setPlaylistsPagination: (page: number, totalPages: number, total: number) => void;
-  setFavoritesPagination: (page: number, totalPages: number, total: number) => void;
   setTracksPagination: (page: number, totalPages: number, total: number) => void;
 
   setPlaylistsFilters: (filters: LibraryFilters) => void;
-  setFavoritesFilters: (filters: LibraryFilters) => void;
   setTracksFilters: (filters: LibraryFilters) => void;
 
   reset: () => void;
@@ -113,37 +108,28 @@ export interface LibraryStore {
 
 export const useLibraryStore = create<LibraryStore>((set) => ({
   playlists: [],
-  favorites: [],
   tracks: [],
   error: null,
   activeTab: 'playlists',
 
   playlistsLoading: false,
-  favoritesLoading: false,
   tracksLoading: false,
 
   playlistsPage: 1,
   playlistsTotalPages: 1,
   playlistsTotal: 0,
 
-  favoritesPage: 1,
-  favoritesTotalPages: 1,
-  favoritesTotal: 0,
-
   tracksPage: 1,
   tracksTotalPages: 1,
   tracksTotal: 0,
 
   playlistsFilters: { ...EMPTY_LIBRARY_FILTERS },
-  favoritesFilters: { ...EMPTY_LIBRARY_FILTERS },
   tracksFilters: { ...EMPTY_LIBRARY_FILTERS },
 
   setPlaylists: (playlists) => set({ playlists }),
-  setFavorites: (favorites) => set({ favorites }),
   setTracks: (tracks) => set({ tracks }),
 
   setPlaylistsLoading: (playlistsLoading) => set({ playlistsLoading }),
-  setFavoritesLoading: (favoritesLoading) => set({ favoritesLoading }),
   setTracksLoading: (tracksLoading) => set({ tracksLoading }),
 
   setError: (error) => set({ error }),
@@ -151,35 +137,26 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
 
   setPlaylistsPagination: (playlistsPage, playlistsTotalPages, playlistsTotal) =>
     set({ playlistsPage, playlistsTotalPages, playlistsTotal }),
-  setFavoritesPagination: (favoritesPage, favoritesTotalPages, favoritesTotal) =>
-    set({ favoritesPage, favoritesTotalPages, favoritesTotal }),
   setTracksPagination: (tracksPage, tracksTotalPages, tracksTotal) =>
     set({ tracksPage, tracksTotalPages, tracksTotal }),
 
   setPlaylistsFilters: (playlistsFilters) => set({ playlistsFilters }),
-  setFavoritesFilters: (favoritesFilters) => set({ favoritesFilters }),
   setTracksFilters: (tracksFilters) => set({ tracksFilters }),
 
   reset: () => set({
     playlists: [],
-    favorites: [],
     tracks: [],
     error: null,
     activeTab: 'playlists',
     playlistsLoading: false,
-    favoritesLoading: false,
     tracksLoading: false,
     playlistsPage: 1,
     playlistsTotalPages: 1,
     playlistsTotal: 0,
-    favoritesPage: 1,
-    favoritesTotalPages: 1,
-    favoritesTotal: 0,
     tracksPage: 1,
     tracksTotalPages: 1,
     tracksTotal: 0,
     playlistsFilters: { ...EMPTY_LIBRARY_FILTERS },
-    favoritesFilters: { ...EMPTY_LIBRARY_FILTERS },
     tracksFilters: { ...EMPTY_LIBRARY_FILTERS },
   }),
 }));

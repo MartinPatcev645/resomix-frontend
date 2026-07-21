@@ -162,6 +162,15 @@ export function AppleRedirect() {
           <button style={btn} onClick={onAuthorize} id="apple-redirect-authorize">Sign in to Apple Music</button>
         </div>
       )}
+      {phase === "authorizing" && (
+        <div style={{ textAlign: "center" }}>
+          <div style={{ opacity: 0.7, fontSize: 13, marginBottom: 12 }}>
+            Finish signing in with Apple. If you don’t have an active Apple Music subscription, you can’t
+            connect — close this window and try an account that has Apple Music.
+          </div>
+          <button style={btn} onClick={() => window.close()}>Cancel</button>
+        </div>
+      )}
       {(phase === "error" || phase === "success") && (
         <div style={{ textAlign: "center" }}>
           <button style={btn} onClick={() => window.close()}>Close this window</button>
