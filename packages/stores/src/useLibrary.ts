@@ -1,16 +1,28 @@
 import { create } from 'zustand'
 
+/** Analysis-derived display metrics for an uploaded track (null until the analysis lands). */
+export interface LibraryTrackAnalysis {
+  top_genre: string | null;
+  bpm: number | null;
+  music_key: string | null;
+  scale: string | null;
+  camelot: string | null;
+}
+
 export interface LibraryTrack {
   id: string;
   title: string;
-  artist: string;
-  year: number;
-  label: string;
-  duration: string;
+  // Real values from the backend (contributors / release / label joins) — null when absent.
+  // No fabricated defaults ("Unknown Artist" / "Independent") — the UI skips missing fields.
+  artist: string | null;
+  album: string | null;
+  label: string | null;
+  genre: string | null;
+  duration_ms: number | null;
+  // A non-null artifact uuid IS the "exists" signal (the old has_* booleans are gone).
   playlist_uuid?: string | null;
   analysis_uuid?: string | null;
-  has_analysis?: boolean;
-  has_similarity?: boolean;
+  analysis?: LibraryTrackAnalysis | null;
   // Upload timestamp (ISO). Used by the Library to decide whether a still-missing sibling
   // artifact (analysis / playlist) is likely still generating and should be polled for.
   created_at?: string | null;
