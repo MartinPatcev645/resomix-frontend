@@ -4,7 +4,6 @@ import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon } from
 import { useAuthStore } from "@resomix/stores";
 import { useLibrary, shouldOpenInNewTab } from "@resomix/hooks";
 import TrackSvg from "@/assets/icons/track_2.svg";
-import RenameSvg from "@/assets/icons/rename.svg";
 import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
 import { TrackMetaRow, PlaylistRenameModal } from "@/components/index.ts";
 
@@ -392,7 +391,18 @@ export default function LibraryPage() {
                               aria-label="Rename playlist"
                               className="flex-shrink-0 text-white/50 hover:text-[var(--color-primary-hover)] cursor-pointer flex items-center justify-center p-[var(--px-2)] hover:scale-110 active:scale-90 transition-all bg-transparent border-0 outline-none"
                             >
-                              <img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-13)] h-[var(--px-13)] md:w-[var(--px-15)] md:h-[var(--px-15)]" />
+                              {/* Pencil-with-underline (edit) — currentColor so the button's hover drives it. */}
+                              <svg
+                                className="w-[var(--px-13)] h-[var(--px-13)] md:w-[var(--px-15)] md:h-[var(--px-15)] fill-none stroke-current"
+                                viewBox="0 0 24 24"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                              </svg>
                             </button>
                           </Tooltip>
                         </div>
