@@ -26,3 +26,15 @@ export function formatDuration(seconds: number): string {
 export function formatPercentage(percentage: number, decimals: number = 2): string {
   return `${(percentage * 100).toFixed(decimals)}%`;
 }
+
+/**
+ * Display form of a model genre/style label. The Discogs-400 model emits hierarchical labels
+ * joined by "---" (e.g. "Electronic---Ambient", "Electronic---House---Deep House"); we show only
+ * the most-specific leaf ("Ambient", "Deep House"). No-op for plain labels ("Afro House").
+ *
+ * Single source of truth for both the Analysis page's Top-genre field and the Library card's
+ * genre pill, so the two always read identically.
+ */
+export function shortGenre(label: string): string {
+  return label.split("---").pop() ?? label;
+}

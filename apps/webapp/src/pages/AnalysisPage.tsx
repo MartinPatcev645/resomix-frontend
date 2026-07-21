@@ -9,13 +9,12 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
-import { attachHls } from "@resomix/hooks";
+import { attachHls, shortGenre } from "@resomix/hooks";
 import { getPlaylistPlaybackSession } from "@resomix/api-client";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
 import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
 import { CamelotWheel, chromaLabelsForKey, ChromaSummary, ChromaView, Donut, keyFromCamelot, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
 
-const shortGenre = (l: string) => l.split("---").pop() ?? l;
 const fmtDuration = (ms: number) => {
   const s = Math.round(ms / 1000);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
