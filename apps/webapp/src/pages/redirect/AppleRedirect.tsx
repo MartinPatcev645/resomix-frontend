@@ -1,18 +1,18 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {checkGuardKey, setGuardKey} from "@resomix/hooks/Transfer/appleService.js";
 import { APPLE_CONFIG } from "@resomix/api-client";
 
-// Minimal MusicKit types for TS friendliness
+// Minimal MusicKit types. `configure` is typed to allow `await` so this works whether the loaded
+// SDK returns the instance synchronously (v1) or a promise (v3).
+type MusicKitInstance = { authorize(): Promise<string> };
 declare global {
   interface Window {
     MusicKit?: {
       configure(config: {
         developerToken: string;
         app?: { name: string; build: string };
-      }): void;
-      getInstance(): {
-        authorize(): Promise<string>;
-      };
+      }): MusicKitInstance | Promise<MusicKitInstance> | void;
+      getInstance(): MusicKitInstance;
     };
   }
 }
@@ -51,107 +51,108 @@ async function fetchDeveloperToken(): Promise<{ token: string; expires_at: numbe
   return json;
 }
 
+const errText = (e: unknown): string =>
+  e instanceof Error ? e.message : typeof e === "string" ? e : "Unexpected error";
+
 export function AppleRedirect() {
-  const [status, setStatus] = useState<"working" | "success" | "error">("working");
+  // MusicKit's authorize() must run from a USER GESTURE (a click) — browsers/content-blockers reject
+  // an auto-triggered auth popup. So we load + configure MusicKit on mount, then authorize on click.
+  const [phase, setPhase] = useState<"loading" | "ready" | "authorizing" | "success" | "error">("loading");
   const [detail, setDetail] = useState<string>("");
+  const musicRef = useRef<MusicKitInstance | null>(null);
+  const devTokenRef = useRef<{ token: string; expires_at: number } | null>(null);
+  const stateRef = useRef<string>("");
 
-  useEffect(() => {
-    (async () => {
-      const inParams = new URLSearchParams(window.location.search);
-      const state = inParams.get("state") || "";
-
-      const finish = (payload: { success: boolean; music_user_token?: string; error?: string; expires_in?: number }) => {
-        // Tokens are already in localStorage; the opener detects auth via the `storage` event + poll.
-        // Still post to the opener (harmless no-op under noopener) for instant feedback if available.
-        try {
-          window.opener?.postMessage({ type: "APPLE_MUSIC_AUTH_RESULT", ...payload }, window.location.origin);
-        } catch {
-          /* empty */
-        }
-        setStatus(payload.success ? "success" : "error");
-        setDetail(payload.success ? "Connected to Apple Music." : (payload.error || "Authentication failed."));
-        // Auto-close: give the opener a moment to observe the storage write, then close ourselves.
-        // window.close() works for script-opened windows even with noopener; if the browser blocks
-        // it, the fallback UI below lets the user close manually.
-        window.setTimeout(() => {
-          try { window.close(); } catch { /* blocked — fallback UI shown */ }
-        }, payload.success ? 900 : 2500);
-      };
-
-      if (!state) {
-        const errMsg = "Missing state parameter";
-        localStorage.setItem("apple_last_error", errMsg);
-        finish({ success: false, error: errMsg });
-        return;
-      }
-
-      // Guard against double-processing
-      if (checkGuardKey(state)) {
-        return;
-      }
-      setGuardKey(state);
-
-      try {
-        // Load SDK
-        await loadMusicKitSDK();
-
-        // Fetch developer token from backend
-        const { token: developerToken, expires_at } = await fetchDeveloperToken();
-
-        // Configure MusicKit
-        window.MusicKit?.configure({
-          developerToken,
-          app: {
-            name: APPLE_CONFIG.APP_NAME || "ResomiX",
-            build: APPLE_CONFIG.APP_BUILD || "1.0.0",
-          },
-        });
-
-        const music = window.MusicKit?.getInstance();
-
-        // Call authorize to get Apple Music User Token
-        const musicUserToken: string | undefined = await music?.authorize();
-
-        // Persist tokens locally
-        localStorage.setItem("apple_music_user_token", musicUserToken || '');
-        localStorage.setItem("apple_developer_token", developerToken);
-        localStorage.setItem("apple_developer_token_expiry", String(expires_at));
-        localStorage.setItem("apple_connected_at", String(Date.now()));
-
-        // Return result to opener
-        const ttlMs = Math.max(0, expires_at - Date.now());
-        const ttlSec = Math.floor(ttlMs / 1000);
-
-        finish({ success: true, music_user_token: musicUserToken, expires_in: ttlSec });
-        return;
-      } catch (e: unknown) {
-        const errMsg =
-          e instanceof Error
-            ? e.message
-            : typeof e === "string"
-              ? e
-              : "Unexpected error during Apple Music authorization";
-        localStorage.setItem("apple_last_error", errMsg);
-        finish({ success: false, error: errMsg });
-        return;
-      }
-    })();
+  const fail = useCallback((msg: string) => {
+    localStorage.setItem("apple_last_error", msg);
+    setDetail(msg);
+    setPhase("error");
+    try {
+      window.opener?.postMessage({ type: "APPLE_MUSIC_AUTH_RESULT", success: false, error: msg }, window.location.origin);
+    } catch { /* noopener */ }
   }, []);
 
-  const heading =
-    status === "success" ? "Connected to Apple Music"
-      : status === "error" ? "Apple Music connection failed"
-        : "Finishing Apple Music authentication…";
+  // Step 1 (on mount, no gesture): load SDK + developer token + configure MusicKit.
+  useEffect(() => {
+    (async () => {
+      const state = new URLSearchParams(window.location.search).get("state") || "";
+      stateRef.current = state;
+      if (!state) { fail("Missing state parameter"); return; }
+      if (checkGuardKey(state)) return; // a refresh of an already-completed redirect
 
-  return (
-    <div style={{ padding: 24, fontFamily: "system-ui, sans-serif", textAlign: "center" }}>
-      <div style={{ marginBottom: 8, fontWeight: 600 }}>{heading}</div>
-      {detail && <div style={{ marginBottom: 16, opacity: 0.75, fontSize: 14 }}>{detail}</div>}
-      {status !== "working" && (
-        <button onClick={() => window.close()} style={{ padding: "6px 16px", cursor: "pointer" }}>
-          Close this window
-        </button>
-      )}
-    </div>
-  );
+      try {
+        console.info("[apple-redirect] loading MusicKit SDK…");
+        await loadMusicKitSDK();
+        console.info("[apple-redirect] fetching developer token…");
+        devTokenRef.current = await fetchDeveloperToken();
+        console.info("[apple-redirect] configuring MusicKit…");
+        const configured = await window.MusicKit?.configure({
+          developerToken: devTokenRef.current.token,
+          app: { name: APPLE_CONFIG.APP_NAME || "ResomiX", build: APPLE_CONFIG.APP_BUILD || "1.0.0" },
+        });
+        musicRef.current = (configured as MusicKitInstance) || window.MusicKit?.getInstance() || null;
+        if (!musicRef.current) throw new Error("MusicKit unavailable after configure");
+        console.info("[apple-redirect] ready — waiting for user to authorize");
+        setPhase("ready");
+      } catch (e) {
+        console.error("[apple-redirect] setup failed:", e);
+        fail(errText(e));
+      }
+    })();
+  }, [fail]);
+
+  // Step 2 (USER GESTURE): authorize → persist the Music-User-Token → hand back to the opener.
+  const onAuthorize = useCallback(async () => {
+    const music = musicRef.current;
+    const dev = devTokenRef.current;
+    if (!music || !dev) return;
+    setPhase("authorizing");
+    setDetail("");
+    try {
+      console.info("[apple-redirect] authorize()…");
+      const mut = await music.authorize();
+      if (!mut) throw new Error("Apple did not return a user token");
+      setGuardKey(stateRef.current); // guard only a COMPLETED auth (so a failed one can be retried)
+      localStorage.setItem("apple_music_user_token", mut);
+      localStorage.setItem("apple_developer_token", dev.token);
+      localStorage.setItem("apple_developer_token_expiry", String(dev.expires_at));
+      localStorage.setItem("apple_connected_at", String(Date.now()));
+      console.info("[apple-redirect] authorized — token stored, notifying opener");
+      try {
+        window.opener?.postMessage({ type: "APPLE_MUSIC_AUTH_RESULT", success: true }, window.location.origin);
+      } catch { /* noopener */ }
+      setDetail("Connected to Apple Music. You can close this window.");
+      setPhase("success");
+      window.setTimeout(() => { try { window.close(); } catch { /* blocked */ } }, 1200);
+    } catch (e) {
+      console.error("[apple-redirect] authorize failed:", e);
+      fail(errText(e));
+    }
+  }, [fail]);
+
+  const wrap: React.CSSProperties = { padding: 24, fontFamily: "system-ui, sans-serif", textAlign: "center", maxWidth: 360, margin: "40px auto" };
+  const btn: React.CSSProperties = { padding: "8px 18px", cursor: "pointer", border: "1px solid #888", borderRadius: 6, background: "#fff" };
+
+  if (phase === "success") {
+    return <div style={wrap}><div style={{ fontWeight: 600, marginBottom: 8 }}>Connected to Apple Music ✓</div><div style={{ opacity: 0.7, fontSize: 14 }}>{detail}</div></div>;
+  }
+  if (phase === "error") {
+    return (
+      <div style={wrap}>
+        <div style={{ fontWeight: 600, marginBottom: 8 }}>Couldn’t connect to Apple Music</div>
+        <div style={{ opacity: 0.7, fontSize: 14, marginBottom: 16 }}>{detail}</div>
+        <button style={btn} onClick={() => window.close()}>Close this window</button>
+      </div>
+    );
+  }
+  if (phase === "ready") {
+    return (
+      <div style={wrap}>
+        <div style={{ fontWeight: 600, marginBottom: 8 }}>Connect Apple Music</div>
+        <div style={{ opacity: 0.7, fontSize: 14, marginBottom: 16 }}>You’ll be asked to sign in with your Apple ID. An active Apple Music subscription is required.</div>
+        <button style={btn} onClick={onAuthorize} id="apple-redirect-authorize">Sign in to Apple Music</button>
+      </div>
+    );
+  }
+  return <div style={wrap}><div style={{ opacity: 0.7, fontSize: 14 }}>{phase === "authorizing" ? "Opening Apple sign-in…" : "Preparing Apple Music…"}</div></div>;
 }
