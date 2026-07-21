@@ -6,6 +6,7 @@ import {
   deleteMyTrack,
   deleteMyPlaylist,
   changePlaylistVisibility,
+  renamePlaylist as apiRenamePlaylist,
   removeFavorite
 } from '@resomix/api-client';
 
@@ -235,6 +236,26 @@ export function useLibrary() {
     [setPlaylistVisibility]
   );
 
+  /** Rename an owned library playlist; optimistically updates the name in both lists on success. */
+  const renamePlaylist = useCallback(async (uuid: string, newName: string) => {
+    try {
+      const resp = await apiRenamePlaylist(uuid, newName);
+      if (resp.success) {
+        // Drop any cached copy so the playlist hero shows the new name on next open.
+        clearPlaylistFromCache(uuid);
+        const state = useLibraryStore.getState();
+        const rename = (list: LibraryPlaylist[]) =>
+          list.map(p => p.uuid === uuid ? { ...p, name: newName } : p);
+        setPlaylists(rename(state.playlists));
+        setFavorites(rename(state.favorites));
+        return { success: true };
+      }
+      return { success: false, error: (resp as any).error || "Failed to rename playlist" };
+    } catch (err: any) {
+      return { success: false, error: err.message || "Failed to rename playlist" };
+    }
+  }, [setPlaylists, setFavorites]);
+
   return {
     playlists,
     favorites,
@@ -262,6 +283,7 @@ export function useLibrary() {
     removeFavoritePlaylist,
     sharePlaylist,
     setPlaylistVisibility,
+    renamePlaylist,
     reset,
   };
 }

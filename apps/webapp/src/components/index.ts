@@ -17,6 +17,7 @@ import SimilarityPlayer from "./Playlist/SimilarityPlayer.tsx";
 import PlaylistRating from "./Modals/PlaylistRating.tsx";
 import PlaylistShare from "./Modals/PlaylistShare.tsx";
 import PlaylistRename from "./Modals/PlaylistRename.tsx";
+import PlaylistRenameModal from "./Modals/PlaylistRenameModal.tsx";
 import PlaylistExport from "./Modals/PlaylistExport.tsx";
 import StatusMessage from "../../../../packages/ui/src/Elements/StatusMessage.tsx";
 import UploadLoader from "./upload/UploadLoader.tsx";
@@ -50,6 +51,7 @@ export {
     PlaylistRating,
     PlaylistShare,
     PlaylistRename,
+    PlaylistRenameModal,
     PlaylistExport,
     StatusMessage,
     UploadLoader,

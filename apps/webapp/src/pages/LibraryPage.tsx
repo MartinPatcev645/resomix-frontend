@@ -4,8 +4,9 @@ import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon } from
 import { useAuthStore } from "@resomix/stores";
 import { useLibrary, shouldOpenInNewTab } from "@resomix/hooks";
 import TrackSvg from "@/assets/icons/track_2.svg";
+import RenameSvg from "@/assets/icons/rename.svg";
 import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
-import { TrackMetaRow } from "@/components/index.ts";
+import { TrackMetaRow, PlaylistRenameModal } from "@/components/index.ts";
 
 export default function LibraryPage() {
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ export default function LibraryPage() {
     removeFavoritePlaylist,
     sharePlaylist,
     setPlaylistVisibility,
+    renamePlaylist,
   } = useLibrary();
 
   // Derived view of whichever tab is selected (each section has its own slice / paging / loading).
@@ -64,6 +66,25 @@ export default function LibraryPage() {
   // Visibility (public/private) toggle confirmation — holds the playlist + its CURRENT state.
   const [visibilityFor, setVisibilityFor] = useState<{ uuid: string; isPublic: boolean } | null>(null);
   const [visibilityBusy, setVisibilityBusy] = useState(false);
+
+  // Rename modal — holds the playlist being renamed (same modal/flow as the playlist page).
+  const [renameFor, setRenameFor] = useState<{ uuid: string; name: string } | null>(null);
+  const [renameBusy, setRenameBusy] = useState(false);
+
+  const handleRenameSubmit = async (newName: string) => {
+    if (!renameFor) return;
+    const { uuid } = renameFor;
+    setRenameBusy(true);
+    handleStatusChange("loading", "Renaming playlist...", "Renaming");
+    const result = await renamePlaylist(uuid, newName);
+    setRenameBusy(false);
+    setRenameFor(null);
+    if (result.success) {
+      handleStatusChange("success", "", "Playlist renamed!");
+    } else {
+      handleStatusChange("error", result.error || "Failed to rename playlist", "Error");
+    }
+  };
 
   const handleConfirmVisibility = async () => {
     if (!visibilityFor) return;
@@ -344,20 +365,38 @@ export default function LibraryPage() {
                       </a>
 
                       {/* Stacked Text Column */}
-                      <div className="flex flex-col gap-[var(--px-4)] flex-grow">
-                        {/* Playlist title link — same open-in-new-tab / SPA behaviour. */}
-                        <a
-                          href={`/playlist?id=${playlist.uuid}`}
-                          onClick={(e) => {
-                            if (shouldOpenInNewTab(e)) return;
-                            e.preventDefault();
-                            navigate(`/playlist?id=${playlist.uuid}`, { state: { from: "library" } });
-                          }}
-                          className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
-                        >
-                          {playlist.name}
-                        </a>
-                        
+                      <div className="flex flex-col gap-[var(--px-4)] flex-grow min-w-0">
+                        {/* Title + rename pen on one row. min-w-0 + truncate keep a long name from
+                            pushing the pen off; the pen opens the same rename modal as the playlist page. */}
+                        <div className="flex items-center gap-[var(--px-8)] min-w-0">
+                          {/* Playlist title link — same open-in-new-tab / SPA behaviour. */}
+                          <a
+                            href={`/playlist?id=${playlist.uuid}`}
+                            onClick={(e) => {
+                              if (shouldOpenInNewTab(e)) return;
+                              e.preventDefault();
+                              navigate(`/playlist?id=${playlist.uuid}`, { state: { from: "library" } });
+                            }}
+                            className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer truncate min-w-0"
+                          >
+                            {playlist.name}
+                          </a>
+                          <Tooltip message="Rename playlist">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                setRenameFor({ uuid: playlist.uuid, name: playlist.name });
+                              }}
+                              aria-label="Rename playlist"
+                              className="flex-shrink-0 text-white/50 hover:text-[var(--color-primary-hover)] cursor-pointer flex items-center justify-center p-[var(--px-2)] hover:scale-110 active:scale-90 transition-all bg-transparent border-0 outline-none"
+                            >
+                              <img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-13)] h-[var(--px-13)] md:w-[var(--px-15)] md:h-[var(--px-15)]" />
+                            </button>
+                          </Tooltip>
+                        </div>
+
                         {/* Meta Info Row - always stacked below the title on right of image */}
                         <div className="text-[length:var(--px-10)] font-light font-fira text-white/60">
                           <p>
@@ -727,6 +766,15 @@ export default function LibraryPage() {
           </button>
         </div>
       </StatusMessage>
+
+      {/* Rename playlist — identical modal/flow to the playlist page (shared component). */}
+      <PlaylistRenameModal
+        isOpen={!!renameFor}
+        initialName={renameFor?.name || ""}
+        submitting={renameBusy}
+        onClose={() => setRenameFor(null)}
+        onSubmit={handleRenameSubmit}
+      />
     </section>
   );
 }
