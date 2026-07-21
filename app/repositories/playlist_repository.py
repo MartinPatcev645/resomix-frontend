@@ -747,13 +747,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         -- was never persisted, fall back to the analysis-measured length (the
                         -- upload's analysis sibling records identity.duration_ms). Recovers the
                         -- reference track's timeline/seek on playlists created before the
-                        -- duration-persist fix.
-                        (COALESCE(
-                            t.duration_ms,
-                            (SELECT tar.duration_ms FROM track_analysis_results tar
-                              WHERE tar.track_id = t.id
-                              ORDER BY tar.created_at DESC, tar.id DESC LIMIT 1)
-                        ) / 1000.0) as duration,
+                        -- duration-persist fix. Sourced via a derived-table join (one row per
+                        -- track) so it never multiplies rows or trips the parser.
+                        (COALESCE(t.duration_ms, MAX(tad.dur)) / 1000.0) as duration,
                         t.type as type,
                         COALESCE(l.label_name, '') as label,
                         -- In-house fallbacks for the Apple-first fields (see apple_music_enrichment):
@@ -772,6 +768,11 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN genres g ON t.genre_id = g.id
                     LEFT JOIN track_contributors tc ON t.id = tc.track_id
                     LEFT JOIN contributors c ON tc.person_id = c.id
+                    LEFT JOIN (
+                        SELECT track_id, MAX(duration_ms) AS dur
+                        FROM track_analysis_results
+                        GROUP BY track_id
+                    ) tad ON tad.track_id = t.id
                     WHERE t.id = :track_id
                     AND t.partner_id = :partner_id
                     AND COALESCE(t.is_active, 1) = 1
