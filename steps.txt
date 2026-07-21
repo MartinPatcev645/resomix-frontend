@@ -147,7 +147,7 @@ Guest user (not logged in):
 - Playlist is always public and anyone with url can access
 - Can only create up to 20 tracks playlist (rest dropdown options are grey)
 Analysis:
-- No analysis for guest
+- No analysis for guest as he cant see profile dropdown anyway, but if he opens the page then redirect him to login page.
 
 Logged in User:
 - Can create two playlists per day, if coming from guest and already has one today, we give one more
@@ -159,9 +159,9 @@ Logged in User:
 - He can perform one track analysis per day (We limit them to 5 features out of let's say 20)
 - He can perform similarity by upload
 - Playlist is private to user, unless he makes public and shares url
-- He can create up to 40 tracks playlist (rest dropdown options is grey)
+- He can create up to 50 tracks playlist (rest dropdown options is grey)
 Analysis:
-- DIsplay only 
+- Can do analysis by upload for a few tracks limited tracks which we allow (i.e. 5)
 
 
 Subscribed user:
@@ -286,5 +286,55 @@ sudo mysql resomix_db -e "
 UPDATE IGNORE track_artists SET artist_id = 226195 WHERE artist_id = 27004;
 DELETE FROM artists WHERE id = 27004;
 "
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+- When user is on mobile, sometimes due to cache user is able to go to analysis page from profile dropdown. But when try to upload it gives error that login first. And have to log in again.
+
+- Optimize analysis to delay only the long running model, not everything from the model response.
+
+- Create an ingestion pipeling for the last one year music gap. See if we can do this control using admin or not.
+
+
+
+
+Priority wise, TODO:
+- Apple music export
+- Check the deduplication again as still getting duplicate tracks.
+- compare similarity by search and upload in meeting together.
+- Create ingestion pipeline for last year tracks of electrobuzz.
+
+
+Done: 
+- Second, when the playlist is displayed after refresh, while the peaks is loading, or the initial segment load, it displays network message, showing network issue. We should not display that in the starting 15 seconds let's say. And after we get back the hls and start downloading segments then maybe yes afer the user actually starts playing the reference track. The peaks also sometimes keeps on loading and loading, means we keep on displaying the loader for reference track, and when user click on play then we actually display the peaks, and never before. I mean if user keeps on refreshing the page it breaks like this. Also not allowing to seek if it ends up playing after refreshes.
+- Thirdly, After a couple of going back and forth playing the playlist tracks from apple music and the uploaded track I mean user will play and pause repeatedly ofcourse to test. The hls playback breaks, and the user is not able to play the reference track anymore. If he refreshes he sees the above issues and still not able to play. If he opens a fresh tab or something then he may able to play.
+- Firstly when we open a playlist, or click refresh. Instead of displaying the loader, it displays the playlist is private, and after a few seconds the playlist pops up. This confuses the user. We should not have that! Please check and ensure we display the message only after we get the proper response.
+- move google login in login and register alongside the submit button, higher and in view.
+- Upload track issues.
+- When click subscribe from monthly limit reach message. It does not take effect, and takes back to resomix.com/profile rather than beta, we see the message success but the plan is still free no matter how much we refresh. When click subscribe from profile again second time then it works.
+- When submit the developer form. It takes to another browser. So update the contacts table and endpoint and properly add that submission to backend rather than just opening the email client. Also add admin notification on submission for both forms.
+- Update demo stage notice. Task KAN-1 from Jira
+- In playlist autoplay, when done playing cursor is stuck at the end for uploaded track, we need to seek it to play. It should reset the progress if track fully played.
+- Black screen rather than a loader displayed when we refresh the playlist.
+- Elastic search delete previous, use less ram by optimizing it, and also start a service to auto-sync with database twice a month.
+
 
 

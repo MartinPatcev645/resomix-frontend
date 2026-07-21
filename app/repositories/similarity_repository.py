@@ -18,7 +18,7 @@ Email: usman.naeem2212@gmail.com
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text
+from sqlalchemy import select, text, bindparam
 
 from ..models.track import Track
 from ..repositories.base_repository import BaseRepository
@@ -71,17 +71,25 @@ class SimilarityRepository(BaseRepository[Track]):
                     t.p_line_year as year,
                     t.duration_ms as duration,
                     t.type as type,
+                    -- In-house fallbacks for the Apple-first fields (see apple_music_enrichment).
+                    COALESCE(l.label_name, '') as label,
+                    g.name as genre,
+                    MIN(r.title) as album,
                     COALESCE(
                         GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
                         COALESCE(t.display_artist, '')
                     ) as artist
                 FROM tracks t
                 LEFT JOIN audio_files af ON t.id = af.track_id
+                LEFT JOIN release_tracks rt ON t.id = rt.track_id
+                LEFT JOIN releases r ON rt.release_id = r.id
+                LEFT JOIN labels l ON r.label_id = l.id
+                LEFT JOIN genres g ON t.genre_id = g.id
                 LEFT JOIN track_contributors tc ON t.id = tc.track_id
                 LEFT JOIN contributors c ON tc.person_id = c.id
                 WHERE af.stored_path = :track_path
                 AND t.partner_id = :partner_id
-                GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type
+                GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type, l.label_name, g.name
                 LIMIT 1
             """
             )
@@ -98,7 +106,9 @@ class SimilarityRepository(BaseRepository[Track]):
                     "duration": (
                         float(row.duration) / 1000.0 if row.duration is not None else 0.0
                     ),
-                    "label": "",  # Label is now on releases, not tracks
+                    "label": row.label or "",
+                    "genre": row.genre,
+                    "album": row.album,
                     "artist": row.artist or "Unknown",
                     "type": "upload" if row.type == "upload" else "internal",
                 }
@@ -130,16 +140,26 @@ class SimilarityRepository(BaseRepository[Track]):
                     t.p_line_year as year,
                     t.duration_ms as duration,
                     t.type as type,
+                    -- Label/genre/album live off the track: label + album come via the release,
+                    -- genre is 1:1 on the track. These are the in-house fallbacks used when the
+                    -- Apple match has no value for them (see apple_music_enrichment).
+                    COALESCE(l.label_name, '') as label,
+                    g.name as genre,
+                    MIN(r.title) as album,
                     COALESCE(
                         GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
                         COALESCE(t.display_artist, '')
                     ) as artist
                 FROM tracks t
+                LEFT JOIN release_tracks rt ON t.id = rt.track_id
+                LEFT JOIN releases r ON rt.release_id = r.id
+                LEFT JOIN labels l ON r.label_id = l.id
+                LEFT JOIN genres g ON t.genre_id = g.id
                 LEFT JOIN track_contributors tc ON t.id = tc.track_id
                 LEFT JOIN contributors c ON tc.person_id = c.id
                 WHERE t.uuid = :track_uuid
                 AND t.partner_id = :partner_id
-                GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type
+                GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type, l.label_name, g.name
                 LIMIT 1
             """
             )
@@ -156,7 +176,9 @@ class SimilarityRepository(BaseRepository[Track]):
                     "duration": (
                         float(row.duration) / 1000.0 if row.duration is not None else 0.0
                     ),
-                    "label": "",  # Label is now on releases, not tracks
+                    "label": row.label or "",
+                    "genre": row.genre,
+                    "album": row.album,
                     "artist": row.artist or "Unknown",
                     "type": "upload" if row.type == "upload" else "internal",
                 }
@@ -288,6 +310,33 @@ class SimilarityRepository(BaseRepository[Track]):
                 db, list(uuids_to_query), partner_id=partner_id, exclude_uploads=exclude_uploads
             )
 
+            # Label + album hang off the release, and `release_assocs` is NOT eager-loaded by
+            # async_get_tracks_by_uuids — touching it here would raise MissingGreenlet. So resolve
+            # them for the whole batch in one query. (`genre` needs no extra work: the Track model
+            # joins it with lazy="joined", so track.genre_name is already loaded.)
+            release_meta: Dict[int, Dict[str, Any]] = {}
+            track_pks = [t.id for t in tracks]
+            if track_pks:
+                meta_rows = await db.execute(
+                    text(
+                        """
+                        SELECT
+                            t.id                        as track_id,
+                            COALESCE(l.label_name, '')  as label,
+                            MIN(r.title)                as album
+                        FROM tracks t
+                        LEFT JOIN release_tracks rt ON t.id = rt.track_id
+                        LEFT JOIN releases r        ON rt.release_id = r.id
+                        LEFT JOIN labels l          ON r.label_id = l.id
+                        WHERE t.id IN :track_pks
+                        GROUP BY t.id, l.label_name
+                        """
+                    ).bindparams(bindparam("track_pks", expanding=True)),
+                    {"track_pks": track_pks},
+                )
+                for m in meta_rows.fetchall():
+                    release_meta[m.track_id] = {"label": m.label, "album": m.album}
+
             for track in tracks:
                 # Get primary artist from display_artist or first contributor
                 artist_name = track.display_artist or "N/A"
@@ -299,10 +348,14 @@ class SimilarityRepository(BaseRepository[Track]):
                     # Collect all artists for deduplication purposes
                     all_artists = [tc.contributor.full_name for tc in track.recording_contributors]
 
+                meta = release_meta.get(track.id, {})
                 track_data = {
                     "id": track.uuid,  # Use UUID for compatibility with existing API
                     "track_id": track.id,  # Add database ID for playlist creation
-                    "label": "",  # Label is now on releases, not tracks
+                    "label": meta.get("label") or "",
+                    # In-house fallbacks; Apple overrides these when it has a value.
+                    "genre": track.genre_name,
+                    "album": meta.get("album"),
                     "duration": (
                         float(track.duration_ms) / 1000.0
                         if track.duration_ms is not None

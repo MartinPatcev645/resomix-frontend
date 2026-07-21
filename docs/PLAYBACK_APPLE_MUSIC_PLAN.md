@@ -51,9 +51,29 @@ source. The HLS/peaks/segments code stays in place — just not requested for ca
    (from Apple's `duration_ms`).
 5. **Player UI** = play/pause + volume + progress bar + an **Apple Music attribution banner** shown while
    previews are playing.
-6. **Metadata merge:** `title` and `artist` come from in‑house `tracks`; `album`, `genre`, `year`,
-   `duration_ms`, `isrc`, `artwork` come from `apple_music_tracks`, **falling back to `tracks`** when the Apple
-   field is NULL.
+6. **Metadata merge — Apple Music is always preferred** *(revised 2026-07-20; previously `title` and
+   `artist` were pinned to in‑house `tracks`)*. For **every** track‑metadata response — the similarity
+   endpoints (upload + search), the playlist‑by‑id endpoint used for later/shared fetches, and any future
+   endpoint that serialises a track — the order is:
+
+   **`apple_music_tracks` → in‑house `tracks` → placeholder/empty.**
+
+   | Field | Apple source | Fallback when Apple is NULL | When both missing |
+   | --- | --- | --- | --- |
+   | `title` | `name` | `tracks.title` | `"Unknown"` / `"N/A"` |
+   | `artist` | `artist` | `tracks.display_artist` / contributors | `"Unknown"` / `"N/A"` |
+   | `duration` | `duration_ms` ÷ 1000 | `tracks.duration_ms` | `0.0` |
+   | `album` | `album` | release title | empty |
+   | `genre` | `genres` (pipe list) | `genres.name` via `tracks.genre_id` | empty |
+   | `year` | `release_date.year` | `tracks.p_line_year` | empty |
+   | `isrc` | `isrc` | `tracks.isrc` | empty |
+   | `artwork_url`, `preview_url`, `deep_link_url`, `apple_song_id` | Apple only | — | null |
+   | `label` | **none — Apple's song object has no record label** (it lives on the Album resource, which we do not fetch) | release → label join | empty |
+
+   Enforced in **one** place, `app/services/apple_music_enrichment.py::_merge_apple_into_track`, which every
+   enrichment call site funnels through (`similarity_service` ×2, `playlist_service` ×1). Apple values only
+   apply when the track actually has an Apple preview (`playback == "preview"`); uploads and unmatched tracks
+   keep the in‑house values and the HLS player.
 
 ---
 

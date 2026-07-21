@@ -54,10 +54,16 @@ def apply_response_filtering(tracks: List[Dict[str, Any]]) -> List[Dict[str, Any
         
         if "label" in filtered_track and filtered_track["label"]:
             filtered_track["label"] = MetadataService._filter_metadata_field(filtered_track["label"], "Label")
-        
-        # Note: Album and Genre are not typically returned in similarity responses,
-        # but we can add them if needed in the future
-        
+
+        # Album IS now returned in similarity responses and is free-text scraped metadata, so it
+        # gets the same URL/stopper sanitisation as label and artist.
+        if "album" in filtered_track and filtered_track["album"]:
+            filtered_track["album"] = MetadataService._filter_metadata_field(filtered_track["album"], "Album")
+
+        # Genre is deliberately NOT filtered: in-house it comes from the controlled `genres` table
+        # (never scraped free text), and the Apple value is a clean pipe list like "House | Afro" —
+        # running the stopper/URL filter over it could only truncate a legitimate value.
+
         filtered_tracks.append(filtered_track)
     
     return filtered_tracks

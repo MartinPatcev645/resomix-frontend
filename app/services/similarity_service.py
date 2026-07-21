@@ -169,6 +169,11 @@ class SimilarityService:
                                 # _merge_apple_into_track pops it before the response goes out.
                                 "track_id": details.get("track_id"),
                                 "label": details.get("label"),
+                                # In-house values; apple_music_enrichment overrides genre/album
+                                # when the Apple match has them (label is never on Apple's song
+                                # object, so it always stays in-house).
+                                "genre": details.get("genre"),
+                                "album": details.get("album"),
                                 "duration": details.get("duration"),
                                 "artist": details.get("artist"),
                                 "title": details.get("title"),
@@ -457,6 +462,11 @@ class SimilarityService:
                                 # _merge_apple_into_track pops it before the response goes out.
                                 "track_id": details.get("track_id"),
                                 "label": details.get("label"),
+                                # In-house values; apple_music_enrichment overrides genre/album
+                                # when the Apple match has them (label is never on Apple's song
+                                # object, so it always stays in-house).
+                                "genre": details.get("genre"),
+                                "album": details.get("album"),
                                 "duration": details.get("duration"),
                                 "artist": details.get("artist"),
                                 "title": details.get("title"),

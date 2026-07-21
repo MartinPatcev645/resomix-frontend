@@ -746,6 +746,11 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         (t.duration_ms / 1000.0) as duration,
                         t.type as type,
                         COALESCE(l.label_name, '') as label,
+                        -- In-house fallbacks for the Apple-first fields (see apple_music_enrichment):
+                        -- genre is 1:1 on the track; album is the release title (MIN so a track on
+                        -- several releases doesn't multiply rows).
+                        g.name as genre,
+                        MIN(r.title) as album,
                         COALESCE(
                             GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
                             COALESCE(t.display_artist, '')
@@ -754,12 +759,13 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN release_tracks rt ON t.id = rt.track_id
                     LEFT JOIN releases r ON rt.release_id = r.id
                     LEFT JOIN labels l ON r.label_id = l.id
+                    LEFT JOIN genres g ON t.genre_id = g.id
                     LEFT JOIN track_contributors tc ON t.id = tc.track_id
                     LEFT JOIN contributors c ON tc.person_id = c.id
                     WHERE t.id = :track_id
                     AND t.partner_id = :partner_id
                     AND COALESCE(t.is_active, 1) = 1
-                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type, l.label_name
+                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type, l.label_name, g.name
                     LIMIT 1
                 """
                 )
@@ -783,6 +789,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
                             else 0.0
                         ),
                         "label": seed_row.label,
+                        "genre": seed_row.genre,
+                        "album": seed_row.album,
                         "artist": seed_row.artist or "Unknown",
                         "type": "upload" if seed_row.type == "upload" else "internal",
                     }
@@ -800,6 +808,9 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         (t.duration_ms / 1000.0) as duration,
                         t.type as type,
                         COALESCE(l.label_name, '') as label,
+                        -- In-house fallbacks for the Apple-first fields (see apple_music_enrichment).
+                        g.name as genre,
+                        MIN(r.title) as album,
                         COALESCE(
                             GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
                             COALESCE(t.display_artist, '')
@@ -808,12 +819,13 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     LEFT JOIN release_tracks rt ON t.id = rt.track_id
                     LEFT JOIN releases r ON rt.release_id = r.id
                     LEFT JOIN labels l ON r.label_id = l.id
+                    LEFT JOIN genres g ON t.genre_id = g.id
                     LEFT JOIN track_contributors tc ON t.id = tc.track_id
                     LEFT JOIN contributors c ON tc.person_id = c.id
                     WHERE t.id IN :track_ids
                     AND t.partner_id = :partner_id
                     AND COALESCE(t.is_active, 1) = 1
-                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type, l.label_name
+                    GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type, l.label_name, g.name
                 """
                 )
 
@@ -840,6 +852,8 @@ class PlaylistRepository(BaseRepository[Playlist]):
                                 else 0.0
                             ),
                             "label": track_data.label,
+                            "genre": track_data.genre,
+                            "album": track_data.album,
                             "artist": track_data.artist or "Unknown",
                             "type": (
                                 "upload" if track_data.type == "upload" else "internal"
