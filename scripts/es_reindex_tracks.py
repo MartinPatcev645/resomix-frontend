@@ -15,7 +15,12 @@ What it does:
   1. Create a fresh, time-stamped index (`tracks_search_v<stamp>`) with strict
      mappings, 1 shard / 0 replicas, and refresh disabled for a fast load.
   2. Stream electrobuzz + active + partner-1 rows via keyset pagination (raw SQL,
-     Core connection — bypasses the ORM tenancy failsafe and is memory-flat).
+     Core connection — bypasses the ORM tenancy failsafe and is memory-flat),
+     LEFT JOINed to `apple_music_tracks`: the indexed title/artist are the
+     DISPLAY names (Apple `name`/`artist` win whenever the track plays from an
+     Apple preview, in-house otherwise — the same merge policy the playlist
+     responses use, see PLAYBACK_APPLE_MUSIC_PLAN.md §6). Differing in-house
+     spellings are kept as recall terms in `all_text`.
   3. Bulk-index them.
   4. Re-enable refresh, then atomically repoint the `tracks_search` alias to the
      new index and delete the old one(s).
@@ -49,19 +54,27 @@ from app.utils.es_index import (
     build_track_doc,
     index_body,
     new_index_name,
+    resolve_display_names,
     swap_alias,
 )
 
 # Electrobuzz catalogue filter — the only rows that belong in public search.
+# apple_music_tracks joins 1:1 (unique track_id), so no row multiplication; the Apple
+# name/artist become the indexed display fields whenever the track plays from an Apple
+# preview (same policy as the playlist responses — see resolve_display_names).
 ROW_QUERY = text(
     """
-    SELECT id, uuid, title, display_artist, type
-    FROM tracks
-    WHERE type = 'electrobuzz'
-      AND is_active = 1
-      AND partner_id = 1
-      AND id > :last_id
-    ORDER BY id
+    SELECT t.id, t.uuid, t.title, t.display_artist, t.type,
+           amt.name        AS apple_name,
+           amt.artist      AS apple_artist,
+           amt.preview_url AS apple_preview
+    FROM tracks t
+    LEFT JOIN apple_music_tracks amt ON amt.track_id = t.id
+    WHERE t.type = 'electrobuzz'
+      AND t.is_active = 1
+      AND t.partner_id = 1
+      AND t.id > :last_id
+    ORDER BY t.id
     LIMIT :batch
     """
 )
@@ -99,12 +112,27 @@ def iter_rows(engine, batch: int, limit: Optional[int]) -> Iterator[Dict[str, An
 
 
 def build_action(index_name: str, row: Dict[str, Any]) -> Dict[str, Any]:
-    """Wrap a track row as an ES bulk index action (doc _id = uuid)."""
+    """Wrap a track row as an ES bulk index action (doc _id = uuid).
+
+    The indexed title/artist are the DISPLAY names (Apple-first, same policy as the playlist
+    responses). When Apple wins and the in-house spelling differs, the in-house title/artist are
+    kept as extra recall terms in ``all_text`` so old spellings still match.
+    """
+    title, display_artist = resolve_display_names(
+        row["title"], row.get("display_artist"),
+        row.get("apple_name"), row.get("apple_artist"), row.get("apple_preview"),
+    )
+    extra_parts = []
+    if title != row["title"] and row["title"]:
+        extra_parts.append(row["title"])
+    if display_artist != row.get("display_artist") and row.get("display_artist"):
+        extra_parts.append(row["display_artist"])
     doc = build_track_doc(
         uuid=row["uuid"],
-        title=row["title"],
-        display_artist=row.get("display_artist"),
+        title=title,
+        display_artist=display_artist,
         track_type=row.get("type") or "electrobuzz",
+        extra_text=" ".join(extra_parts) or None,
     )
     return {"_index": index_name, "_id": doc["uuid"], "_source": doc}
 

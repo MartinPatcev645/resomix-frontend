@@ -482,12 +482,15 @@ class TrackRepository(BaseRepository[Track]):
             
             track_data = {
                 "id": track.uuid,
+                # Internal numeric PK — used by the search service's Apple display-name overlay
+                # join; stripped before the response goes out.
+                "track_id": track.id,
                 "artist": artist_name,
                 "duration": float(track.duration_ms) / 1000.0 if track.duration_ms is not None else 0.0,
                 "title": track.title,
             }
             results.append(track_data)
-        
+
         return results
     
     # --- Advanced search methods ---

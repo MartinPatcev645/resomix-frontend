@@ -37,6 +37,32 @@ class SearchService:
     def __init__(self):
         """Initialize search service."""
         self.track_repository = TrackRepository()
+
+    async def _overlay_apple_display_names(
+        self, db: AsyncSession, items: List[Dict[str, Any]], id_by_uuid: Dict[str, int]
+    ) -> None:
+        """Align search-result display with the playlist policy: Apple ``name``/``artist`` win
+        whenever the track plays from an Apple preview (PLAYBACK_APPLE_MUSIC_PLAN.md §6).
+
+        Best-effort by design — on any failure the in-house values simply stay. Mutates the
+        already-formatted result dicts in place (keys ``id``/``title``/``artist``).
+        """
+        ids = [tid for tid in id_by_uuid.values() if tid is not None]
+        if not items or not ids:
+            return
+        try:
+            from app.repositories.apple_music_repository import AppleMusicRepository
+            apple = await AppleMusicRepository().async_get_by_track_ids(db, ids)
+        except Exception as e:  # noqa: BLE001 — search must never break on the overlay
+            print(f"[SEARCH] Apple display-name overlay skipped: {e}")
+            return
+        for item in items:
+            row = apple.get(id_by_uuid.get(item.get("id")))
+            if row and row.get("preview_url"):
+                if row.get("name"):
+                    item["title"] = row["name"]
+                if row.get("artist"):
+                    item["artist"] = row["artist"]
     
     async def search_tracks(self, db: AsyncSession, query: str, mode: Optional[Literal["artist", "title", "auto"]] = "auto", partner_id: Optional[int] = None) -> Dict[str, Any]:
         """
@@ -189,6 +215,11 @@ class SearchService:
                 "title": track.title,
             })
 
+        # Display alignment: show the same title/artist the playlist will show (Apple-first).
+        await self._overlay_apple_display_names(
+            db, formatted_results, {t.uuid: t.id for t in tracks}
+        )
+
         print(f"[SEARCH] ES found {len(formatted_results)} tracks for '{query_clean}' "
               f"(mode={mode}) in {(time.perf_counter()-overall_start):.3f}s")
         return {"tracks": formatted_results}
@@ -201,17 +232,21 @@ class SearchService:
             db, query_clean, limit, partner_id=partner_id
         )
         print(f"[DB Search] Found {len(db_results)} tracks in {(time.perf_counter()-overall_start):.3f}s")
-        return {
-            "tracks": [
-                {
-                    "id": r.get("id"),
-                    "artist": r.get("artist", "N/A"),
-                    "duration": r.get("duration", 0.0),
-                    "title": r.get("title", "N/A"),
-                }
-                for r in db_results
-            ]
-        }
+        formatted = [
+            {
+                "id": r.get("id"),
+                "artist": r.get("artist", "N/A"),
+                "duration": r.get("duration", 0.0),
+                "title": r.get("title", "N/A"),
+            }
+            for r in db_results
+        ]
+        # Display alignment (same as the ES path): Apple-first title/artist. The repo includes the
+        # internal numeric `track_id` for exactly this join; it is never emitted in the response.
+        await self._overlay_apple_display_names(
+            db, formatted, {r["id"]: r.get("track_id") for r in db_results if r.get("id")}
+        )
+        return {"tracks": formatted}
 
     def es_health(self) -> Dict[str, Any]:
         """Report the app↔Elasticsearch wiring — for deploy verification.

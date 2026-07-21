@@ -143,15 +143,43 @@ def _norm_kw(s: str) -> str:
     return re.sub(r"\s+", " ", no_punct).strip()
 
 
+def resolve_display_names(
+    inhouse_title: Optional[str],
+    inhouse_artist: Optional[str],
+    apple_name: Optional[str],
+    apple_artist: Optional[str],
+    apple_preview_url: Optional[str],
+) -> tuple[Optional[str], Optional[str]]:
+    """The DISPLAY title/artist for a track — the same policy as
+    ``apple_music_enrichment._merge_apple_into_track`` (PLAYBACK_APPLE_MUSIC_PLAN.md §6):
+    Apple's ``name``/``artist`` win whenever the track actually plays from an Apple preview and the
+    Apple field is non-empty; otherwise the in-house value. Index-time and read-time both use this,
+    so what search matches/returns is exactly what the playlist UI shows.
+    """
+    if apple_preview_url:
+        return (apple_name or inhouse_title, apple_artist or inhouse_artist)
+    return (inhouse_title, inhouse_artist)
+
+
 def build_track_doc(uuid: str, title: str, display_artist: Optional[str],
-                    track_type: str = "electrobuzz") -> Dict[str, Any]:
-    """Build the ES document for one track row (matches the strict mappings)."""
+                    track_type: str = "electrobuzz",
+                    extra_text: Optional[str] = None) -> Dict[str, Any]:
+    """Build the ES document for one track row (matches the strict mappings).
+
+    ``extra_text`` — optional additional recall terms folded into ``all_text`` only (no mapping
+    change): when the indexed title/artist are the APPLE names, the caller passes the in-house
+    ones here so a user searching the old in-house spelling still finds the track.
+    """
     title = (title or "").strip()
     artists = split_artists(display_artist)
 
     norm_arts = [_norm_kw(a) for a in artists]
     dedupe = "|".join([p for p in norm_arts] + [title]).strip("|")
     all_text = " ".join(artists + [title]).strip()
+    if extra_text:
+        extra = extra_text.strip()
+        if extra and extra.lower() not in all_text.lower():
+            all_text = f"{all_text} {extra}".strip()
 
     return {
         "uuid": uuid,
