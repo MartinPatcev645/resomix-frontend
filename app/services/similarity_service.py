@@ -219,8 +219,12 @@ class SimilarityService:
                 )
                 uploaded_track_details["duration"] = final_duration
                 if final_duration is not None and final_duration > 0:
+                    # partner_id is REQUIRED: the UPDATE is scoped `WHERE uuid=… AND partner_id=…`,
+                    # and `partner_id = NULL` matches zero rows — so omitting it silently persisted
+                    # nothing, leaving the seed track's duration_ms NULL. That made the reference
+                    # track show 0:00 (and un-seekable) whenever the playlist was reopened later.
                     await self.similarity_repository.async_update_track_duration(
-                        db, track_uuid, final_duration
+                        db, track_uuid, final_duration, partner_id=partner_id
                     )
                     print(
                         f"Updated track {track_uuid} duration to {final_duration} seconds"

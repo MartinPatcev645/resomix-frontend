@@ -743,7 +743,17 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         t.uuid as id,
                         t.title,
                         t.p_line_year as year,
-                        (t.duration_ms / 1000.0) as duration,
+                        -- Seed duration: prefer the track row, but for uploads whose duration_ms
+                        -- was never persisted, fall back to the analysis-measured length (the
+                        -- upload's analysis sibling records identity.duration_ms). Recovers the
+                        -- reference track's timeline/seek on playlists created before the
+                        -- duration-persist fix.
+                        (COALESCE(
+                            t.duration_ms,
+                            (SELECT tar.duration_ms FROM track_analysis_results tar
+                              WHERE tar.track_id = t.id
+                              ORDER BY tar.created_at DESC, tar.id DESC LIMIT 1)
+                        ) / 1000.0) as duration,
                         t.type as type,
                         COALESCE(l.label_name, '') as label,
                         -- In-house fallbacks for the Apple-first fields (see apple_music_enrichment):
