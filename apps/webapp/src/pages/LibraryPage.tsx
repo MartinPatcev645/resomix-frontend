@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon } from "@resomix/ui";
 import { useAuthStore } from "@resomix/stores";
-import { useLibrary } from "@resomix/hooks";
+import { useLibrary, formatDuration } from "@resomix/hooks";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
+import { TrackMetaRow } from "@/components/index.ts";
 
 export default function LibraryPage() {
   const navigate = useNavigate();
@@ -478,8 +479,9 @@ export default function LibraryPage() {
                       key={track.id}
                       className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex flex-wrap justify-between items-center gap-y-[var(--px-10)] relative hover:bg-white/5 transition-colors"
                     >
-                      {/* Aligned top content layout */}
-                      <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow pr-[var(--px-15)]">
+                      {/* Aligned top content layout — extra right padding on mobile clears the
+                          absolutely-positioned top-right kebab. */}
+                      <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow min-w-0 pr-[var(--px-32)] md:pr-[var(--px-15)]">
                         {track.playlist_uuid ? (
                           <>
                             {/* Clickable Image Link */}
@@ -502,26 +504,23 @@ export default function LibraryPage() {
                             </a>
 
                             {/* Stacked Text Column */}
-                            <div className="flex flex-col gap-[var(--px-4)] flex-grow">
-                              {/* Clickable Title Link */}
+                            <div className="flex flex-col gap-[var(--px-4)] flex-grow min-w-0">
+                              {/* Clickable Title Link — clamped (2 rows mobile / 1 desktop) so it
+                                  can never run under the top-right kebab or overflow the card. */}
                               <a
                                 href={`/playlist?id=${track.playlist_uuid}`}
                                 onClick={(e) => {
                                   e.preventDefault();
                                   navigate(`/playlist?id=${track.playlist_uuid}`, { state: { from: "library" } });
                                 }}
-                                className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
+                                title={track.title}
+                                className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer line-clamp-2 md:line-clamp-1 break-words"
                               >
                                 {track.title}
                               </a>
 
-                              {/* Meta Info Row - to the right of image, below title */}
-                              <div className="flex flex-col md:flex-row md:items-center gap-[var(--px-4)] md:gap-[var(--px-20)] text-[length:var(--px-10)] font-light font-fira text-white/60">
-                                <span>{track.artist} | {track.year} | {track.label}</span>
-                                <span className="text-white/40 md:border-l md:border-white/20 md:pl-[var(--px-20)]">
-                                  Playlist UUID: {track.playlist_uuid}
-                                </span>
-                              </div>
+                              {/* Labelled meta pairs (fixed order; absent fields skipped) */}
+                              <TrackMetaRow track={track} />
                             </div>
                           </>
                         ) : (
@@ -539,21 +538,25 @@ export default function LibraryPage() {
                             </div>
 
                             {/* Stacked Text Column */}
-                            <div className="flex flex-col gap-[var(--px-4)] flex-grow">
-                              <h3 className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight">
+                            <div className="flex flex-col gap-[var(--px-4)] flex-grow min-w-0">
+                              <h3
+                                title={track.title}
+                                className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight line-clamp-2 md:line-clamp-1 break-words"
+                              >
                                 {track.title}
                               </h3>
 
-                              {/* Meta Info Row - to the right of image, below title */}
-                              <div className="flex flex-col md:flex-row md:items-center gap-[var(--px-4)] md:gap-[var(--px-20)] text-[length:var(--px-10)] font-light font-fira text-white/60">
-                                <span>{track.artist} | {track.year} | {track.label}</span>
-                              </div>
+                              {/* Labelled meta pairs (fixed order; absent fields skipped) */}
+                              <TrackMetaRow track={track} />
                             </div>
                           </>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0 align-middle" onClick={e => e.stopPropagation()}>
+                      {/* Actions cluster. On mobile only the kebab is visible and it pins to the
+                          card's TOP-RIGHT (was awkwardly below the text); desktop keeps the inline
+                          right-side cluster with capsules + duration. */}
+                      <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0 align-middle max-md:absolute max-md:top-[var(--px-8)] max-md:right-[var(--px-8)]" onClick={e => e.stopPropagation()}>
                         {/* Artifact capsules: reach the track's Sonic Discovery playlist and its
                             analysis straight from the row; a still-generating sibling shows a live
                             "…generating" pill that the 10s poll flips to a link when it lands.
@@ -569,7 +572,7 @@ export default function LibraryPage() {
                         </div>
 
                         <span className="hidden md:inline text-[length:var(--px-10)] font-light font-fira text-white/40">
-                          {track.duration}
+                          {track.duration_ms ? formatDuration(track.duration_ms / 1000) : ""}
                         </span>
 
                         {/* Dropdown Actions */}

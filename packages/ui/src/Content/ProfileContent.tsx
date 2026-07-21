@@ -1,4 +1,3 @@
-import { useState, FormEvent, ChangeEvent, useEffect } from "react";
 import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { InputModal } from "../Modals/InputModal";
@@ -6,6 +5,7 @@ import { FormInput } from "../Elements/FormInput";
 import { SineWaves } from "../Animations/SineWaves";
 import { ProfileIcon } from "../Vectors/ProfileIcon";
 import { PlanBillingCard } from "../Billing/PlanBillingCard";
+import { useProfileSettings } from "@resomix/hooks";
 
 interface ProfileContentProps {
   baseUrl?: string;
@@ -14,406 +14,45 @@ interface ProfileContentProps {
   onLogout?: () => void;
 }
 
-type TimezoneOption = {
-  value: string;
-  label: string;
-  offset: number;
-};
-
-const COMMON_TIMEZONES = [
-  "UTC",
-  "Europe/London",
-  "Europe/Berlin",
-  "Europe/Paris",
-  "Europe/Moscow",
-  "Asia/Dubai",
-  "Asia/Kolkata",
-  "Asia/Tokyo",
-  "Asia/Shanghai",
-  "Australia/Sydney",
-  "America/New_York",
-  "America/Chicago",
-  "America/Denver",
-  "America/Los_Angeles",
-  "America/Sao_Paulo",
-];
-
-function formatOffset(minutes: number) {
-  const sign = minutes >= 0 ? "+" : "-";
-  const abs = Math.abs(minutes);
-  const hh = String(Math.floor(abs / 60)).padStart(2, "0");
-  const mm = String(abs % 60).padStart(2, "0");
-  return `UTC${sign}${hh}:${mm}`;
-}
-
-function getOffsetMinutes(timeZone: string, date = new Date()): number {
-  const utc = new Date(date.toLocaleString("en-US", { timeZone: "UTC" }));
-  const zoned = new Date(date.toLocaleString("en-US", { timeZone }));
-  return Math.round((zoned.getTime() - utc.getTime()) / 60000);
-}
-
-function buildTimezones(): TimezoneOption[] {
-  const zones =
-    typeof (Intl as any).supportedValuesOf === "function"
-      ? ((Intl as any).supportedValuesOf("timeZone") as string[])
-      : COMMON_TIMEZONES;
-  const now = new Date();
-  const options = zones.map((tz) => {
-    const offset = getOffsetMinutes(tz, now);
-    return {
-      value: tz,
-      offset,
-      label: `(${formatOffset(offset)}) ${tz}`,
-    };
-  });
-  options.sort((a, b) => a.offset - b.offset || a.value.localeCompare(b.value));
-  return options;
-}
-
 export default function ProfileContent({
   baseUrl = "https://resomix.com",
   onNavigateChangePassword,
   onNavigateSessions,
   onLogout,
 }: ProfileContentProps) {
-  const [user, setUser] = useState<any>(null);
-  const [form, setForm] = useState({
-    name: "",
-    language: "",
-    timezone: "",
-  });
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [showStatus, setShowStatus] = useState(false);
-  const [statusType, setStatusType] = useState<"loading" | "success" | "error">("loading");
-  const [statusMessage, setStatusMessage] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deletePassword, setDeletePassword] = useState("");
-  const [showDisable2FAModal, setShowDisable2FAModal] = useState(false);
-  const [timezones, setTimezones] = useState<TimezoneOption[]>([]);
-  const [resendingVerification, setResendingVerification] = useState(false);
-  const [activeTab, setActiveTab] = useState<"personal" | "billing" | "account">(() => {
-    // Returning from Stripe Checkout (?checkout=success|cancelled) lands on the Billing tab so the
-    // updated plan + confirmation banner are what the user sees first.
-    try {
-      return new URLSearchParams(window.location.search).get("checkout") ? "billing" : "personal";
-    } catch {
-      return "personal";
-    }
-  });
-
-  useEffect(() => {
-    setTimezones(buildTimezones());
-  }, []);
-
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
-    setLoading(true);
-    try {
-      const { useAuthStore } = await import("@resomix/stores");
-      const store = useAuthStore.getState();
-      const { getMyProfile } = await import("@resomix/api-client");
-      
-      // Check if user exists and is authenticated
-      if (store.user && store.isAuthenticated) {
-        // If email is not verified, fetch latest data to check verification status
-        if (!store.user.is_email_verified) {
-          const result = await getMyProfile();
-          
-          if (result.success) {
-            const userData = "user" in result.data ? result.data.user : result.data;
-            setUser(userData);
-            setForm({
-              name: userData.name || "",
-              language: userData.language || "",
-              timezone: userData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-            });
-            setTwoFactorEnabled(userData.is_two_factor_enabled || false);
-            useAuthStore.getState().updateUser(userData);
-          } else {
-            // If API call fails, still use store data
-            setUser(store.user);
-            setForm({
-              name: store.user.name || "",
-              language: store.user.language || "",
-              timezone: store.user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-            });
-            setTwoFactorEnabled(store.user.is_two_factor_enabled || false);
-          }
-          setLoading(false);
-          return;
-        }
-        
-        // Email is verified - use store data without API call
-        setUser(store.user);
-        setForm({
-          name: store.user.name || "",
-          language: store.user.language || "",
-          timezone: store.user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-        });
-        setTwoFactorEnabled(store.user.is_two_factor_enabled || false);
-        setLoading(false);
-        return;
-      }
-
-      // No user data in store - fetch it
-      const result = await getMyProfile();
-
-      if (result.success) {
-        const userData = "user" in result.data ? result.data.user : result.data;
-        setUser(userData);
-        setForm({
-          name: userData.name || "",
-          language: userData.language || "",
-          timezone: userData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-        });
-        setTwoFactorEnabled(userData.is_two_factor_enabled || false);
-        useAuthStore.getState().updateUser(userData);
-      }
-    } catch (error) {
-      console.error("Profile load error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleUpdate = async (e?: FormEvent) => {
-    e?.preventDefault();
-    setSubmitting(true);
-    setStatusType("loading");
-    setShowStatus(true);
-    setStatusMessage("Updating profile...");
-
-    try {
-      const { updateProfile } = await import("@resomix/api-client");
-      const { useAuthStore } = await import("@resomix/stores");
-
-      const result = await updateProfile(form);
-
-      if (result.success) {
-        // Handle both possible response structures
-        const responseData = "user" in result.data ? result.data.user : result.data;
-
-        // Extract only the fields that should be updated (exclude 'message' and other non-user fields)
-        const fieldsToUpdate: Partial<typeof user> = {};
-
-        // Only update fields that are present in the response and are part of the user object
-        if (responseData.email !== undefined) fieldsToUpdate.email = responseData.email;
-        if (responseData.username !== undefined) fieldsToUpdate.username = responseData.username;
-        if (responseData.name !== undefined) fieldsToUpdate.name = responseData.name;
-        if (responseData.profile_picture !== undefined) fieldsToUpdate.profile_picture = responseData.profile_picture;
-        if (responseData.language !== undefined) fieldsToUpdate.language = responseData.language;
-        if (responseData.timezone !== undefined) fieldsToUpdate.timezone = responseData.timezone;
-
-        // Update only the specified fields in the store (preserves other fields like is_email_verified, etc.)
-        useAuthStore.getState().updateUser(fieldsToUpdate);
-
-        // Update local state with merged data from store
-        const updatedUser = useAuthStore.getState().user;
-        if (updatedUser) {
-          setUser(updatedUser);
-        }
-
-        setStatusType("success");
-        setStatusMessage("Profile updated successfully!");
-        setIsEditing(false);
-      } else {
-        const errorResult = result as { success: false; error: string };
-        setStatusType("error");
-        setStatusMessage(errorResult.error || "Failed to update profile");
-      }
-    } catch (error) {
-      console.error("Profile update error:", error);
-      setStatusType("error");
-      setStatusMessage("Network error. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDisable2FA = async (password: string) => {
-    setStatusType("loading");
-    setShowStatus(true);
-    setStatusMessage("Disabling 2FA...");
-
-    try {
-      const { disable2FA } = await import("@resomix/api-client");
-      const { useAuthStore } = await import("@resomix/stores");
-
-      const result = await disable2FA(password);
-
-      if (result.success) {
-        setTwoFactorEnabled(false);
-        setUser((prev: any) => {
-          const updated = prev ? { ...prev, is_two_factor_enabled: false } : prev;
-          if (updated) useAuthStore.getState().updateUser(updated);
-          return updated;
-        });
-        setStatusType("success");
-        setStatusMessage("Two-factor authentication disabled");
-      } else {
-        const errorResult = result as { success: false; error: string };
-        setStatusType("error");
-        setStatusMessage(errorResult.error || "Failed to disable 2FA");
-      }
-    } catch (error) {
-      console.error("Disable 2FA error:", error);
-      setStatusType("error");
-      setStatusMessage("Network error. Please try again.");
-    }
-  };
-
-  const handle2FAToggle = async () => {
-    if (twoFactorEnabled) {
-      setShowDisable2FAModal(true);
-    } else {
-      // Check email verification before enabling 2FA
-      const { useAuthStore } = await import("@resomix/stores");
-      const store = useAuthStore.getState();
-      const currentUser = store.user || user;
-
-      if (!currentUser?.is_email_verified) {
-        setStatusType("error");
-        setShowStatus(true);
-        setStatusMessage("Please verify your email address before enabling two-factor authentication.");
-        return;
-      }
-
-      setStatusType("loading");
-      setShowStatus(true);
-      setStatusMessage("Enabling 2FA...");
-
-      try {
-        const { enable2FA } = await import("@resomix/api-client");
-
-        const result = await enable2FA("email");
-
-        if (result.success) {
-          setTwoFactorEnabled(true);
-          setUser((prev: any) => {
-            const updated = prev ? { ...prev, is_two_factor_enabled: true } : prev;
-            if (updated) useAuthStore.getState().updateUser(updated);
-            return updated;
-          });
-          setStatusType("success");
-          setStatusMessage("Two-factor authentication enabled!");
-        } else {
-          const errorResult = result as { success: false; error: string };
-          setStatusType("error");
-          setStatusMessage(errorResult.error || "Failed to enable 2FA");
-        }
-      } catch (error) {
-        console.error("2FA toggle error:", error);
-        setStatusType("error");
-        setStatusMessage("Network error. Please try again.");
-      }
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    if (!deletePassword) {
-      setStatusType("error");
-      setShowStatus(true);
-      setStatusMessage("Password is required to delete account");
-      return;
-    }
-
-    setSubmitting(true);
-    setStatusType("loading");
-    setShowStatus(true);
-    setStatusMessage("Deleting account...");
-
-    try {
-      const { deleteAccount } = await import("@resomix/api-client");
-      const { useAuthStore } = await import("@resomix/stores");
-
-      const result = await deleteAccount(deletePassword);
-
-      if (result.success) {
-        setStatusType("success");
-        setStatusMessage("Account deleted successfully. Redirecting...");
-        setTimeout(() => {
-          useAuthStore.getState().logout();
-          onLogout?.();
-        }, 2000);
-      } else {
-        const errorResult = result as { success: false; error: string };
-        setStatusType("error");
-        setStatusMessage(errorResult.error || "Failed to delete account");
-      }
-    } catch (error) {
-      console.error("Delete account error:", error);
-      setStatusType("error");
-      setStatusMessage("Network error. Please try again.");
-    } finally {
-      setSubmitting(false);
-      setShowDeleteConfirm(false);
-      setDeletePassword("");
-    }
-  };
-
-  const handleResendVerification = async () => {
-    if (!user?.email) {
-      setStatusType("error");
-      setShowStatus(true);
-      setStatusMessage("Email address not found.");
-      return;
-    }
-
-    setResendingVerification(true);
-    setStatusType("loading");
-    setShowStatus(true);
-    setStatusMessage("Sending verification email...");
-
-    try {
-      const { resendVerification } = await import("@resomix/api-client");
-      const result = await resendVerification(user.email);
-
-      if (result.success) {
-        setStatusType("success");
-        setStatusMessage("Verification email sent! Please check your inbox.");
-      } else {
-        const errorResult = result as { success: false; error: string };
-        setStatusType("error");
-        setStatusMessage(errorResult.error || "Failed to send verification email.");
-      }
-    } catch (error) {
-      console.error("Resend verification error:", error);
-      setStatusType("error");
-      setStatusMessage("Network error. Please try again.");
-    } finally {
-      setResendingVerification(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      const { logout } = await import("@resomix/api-client");
-      const { useAuthStore } = await import("@resomix/stores");
-
-      // Server reads refresh token from HttpOnly cookie
-      await logout();
-
-      useAuthStore.getState().logout();
-      onLogout?.();
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Logout locally anyway
-      const { useAuthStore } = await import("@resomix/stores");
-      useAuthStore.getState().logout();
-      onLogout?.();
-    }
-  };
+  // ALL behaviour (profile load, edit form, 2FA, verification, delete, logout, tabs, status
+  // banner) lives in the hook — this component only renders. See useProfileSettings.
+  const {
+    user,
+    form,
+    setForm,
+    isEditing,
+    setIsEditing,
+    loading,
+    twoFactorEnabled,
+    showStatus,
+    setShowStatus,
+    statusType,
+    statusMessage,
+    submitting,
+    showDeleteConfirm,
+    setShowDeleteConfirm,
+    deletePassword,
+    setDeletePassword,
+    showDisable2FAModal,
+    setShowDisable2FAModal,
+    timezones,
+    resendingVerification,
+    activeTab,
+    setActiveTab,
+    handleChange,
+    handleUpdate,
+    handleDisable2FA,
+    handle2FAToggle,
+    handleDeleteAccount,
+    handleResendVerification,
+    handleLogout,
+  } = useProfileSettings({ onLogout });
 
   if (loading) {
     return (
@@ -513,11 +152,18 @@ export default function ProfileContent({
                 </div>
               </div>
 
-              <nav className="p-[var(--px-12)] border border-slate-200 border-dotted rounded-lg space-y-[var(--px-8)]">
+              {/* Tab nav — TABS, not feature boxes. Mobile: the three sit side-by-side as a
+                  segmented row (active highlighted, others dimmed). Desktop: same column position
+                  as before, but plain rows with a left indicator bar instead of bordered boxes,
+                  so they read as navigation rather than actions. */}
+              <nav
+                aria-label="Profile sections"
+                className="p-[var(--px-8)] lg:p-[var(--px-12)] border border-slate-200 border-dotted rounded-lg grid grid-cols-3 gap-[var(--px-6)] lg:flex lg:flex-col lg:gap-[var(--px-4)]"
+              >
                 {([
-                  { id: "personal", label: "Personal Information", hint: "Profile, password & security" },
-                  { id: "billing", label: "Billing & Subscription", hint: "Plan, usage & invoices" },
-                  { id: "account", label: "Account", hint: "Delete account" },
+                  { id: "personal", label: "Personal", labelLg: "Personal Information", hint: "Profile, password & security" },
+                  { id: "billing", label: "Billing", labelLg: "Billing & Subscription", hint: "Plan, usage & invoices" },
+                  { id: "account", label: "Account", labelLg: "Account", hint: "Delete account" },
                 ] as const).map((t) => {
                   const active = activeTab === t.id;
                   return (
@@ -525,17 +171,20 @@ export default function ProfileContent({
                       key={t.id}
                       onClick={() => setActiveTab(t.id)}
                       aria-current={active ? "page" : undefined}
-                      className={`group w-full flex items-center justify-between gap-[var(--px-8)] text-left p-[var(--px-10)] rounded border transition-colors cursor-pointer ${
+                      className={`text-center lg:text-left px-[var(--px-8)] py-[var(--px-8)] lg:px-[var(--px-10)] lg:py-[var(--px-8)] rounded-xs transition-all cursor-pointer lg:border-l-2 lg:rounded-none ${
                         active
-                          ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10"
-                          : "border-slate-200 border-dotted hover:bg-gray-50 hover:text-[var(--color-secondary)]"
+                          ? "bg-[var(--color-primary)]/10 lg:bg-white/5 lg:border-[var(--color-primary)]"
+                          : "opacity-50 hover:opacity-90 lg:border-transparent"
                       }`}
                     >
-                      <span className="min-w-0">
-                        <span className="block text-[length:var(--px-12)] font-medium font-helvetica truncate">{t.label}</span>
+                      {/* Mobile: compact label only. Desktop: full label + hint. */}
+                      <span className="block lg:hidden text-[length:var(--px-11)] font-medium font-helvetica whitespace-nowrap">
+                        {t.label}
+                      </span>
+                      <span className="hidden lg:block min-w-0">
+                        <span className="block text-[length:var(--px-12)] font-medium font-helvetica truncate">{t.labelLg}</span>
                         <span className="block text-[length:var(--px-10)] font-helvetica opacity-60 truncate">{t.hint}</span>
                       </span>
-                      <span className={active ? "text-[var(--color-primary)]" : "opacity-40 group-hover:opacity-100 transition-opacity"}>→</span>
                     </button>
                   );
                 })}
@@ -650,38 +299,45 @@ export default function ProfileContent({
                   Security
                 </h2>
 
+                {/* Each row: text block (truncating, min-w-0) + a proper compact button pinned
+                    right with a guaranteed gap — the bare "Change →" text link used to float
+                    mid-row and crowd the description. */}
                 <div className="flex flex-col gap-[var(--px-10)]">
-                  <div className="flex justify-between items-center p-[var(--px-10)] border border-slate-200 border-dotted rounded">
-                    <div>
+                  <div className="flex justify-between items-center gap-[var(--px-16)] p-[var(--px-10)] border border-slate-200 border-dotted rounded">
+                    <div className="min-w-0">
                       <div className="text-[length:var(--px-11)] font-light font-helvetica">
                         Password
                       </div>
-                      <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80">
+                      <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80 truncate">
                         Change your account password
                       </div>
                     </div>
-                    <button
-                      onClick={onNavigateChangePassword}
-                      className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
-                    >
-                      Change →
-                    </button>
+                    <div className="shrink-0">
+                      <ButtonSleek
+                        text="Change"
+                        onClick={onNavigateChangePassword ?? (() => {})}
+                        customWidth="min-w-[var(--px-70)]"
+                        transparent={true}
+                      />
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center p-[var(--px-10)] border border-slate-200 border-dotted rounded">
-                    <div>
+                  <div className="flex justify-between items-center gap-[var(--px-16)] p-[var(--px-10)] border border-slate-200 border-dotted rounded">
+                    <div className="min-w-0">
                       <div className="text-[length:var(--px-11)] font-light font-helvetica">
                         Two-Factor Authentication
                       </div>
-                      <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80">
+                      <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80 truncate">
                         {twoFactorEnabled ? "Enabled" : "Disabled"}
                       </div>
                     </div>
-                    <button
-                      onClick={handle2FAToggle}
-                      className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
-                    >
-                      {twoFactorEnabled ? "Disable" : "Enable"}
-                    </button>
+                    <div className="shrink-0">
+                      <ButtonSleek
+                        text={twoFactorEnabled ? "Disable" : "Enable"}
+                        onClick={handle2FAToggle}
+                        customWidth="min-w-[var(--px-70)]"
+                        transparent={true}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

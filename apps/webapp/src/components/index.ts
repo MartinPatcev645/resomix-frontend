@@ -26,6 +26,7 @@ import { OptionalAuthRoute } from "./OptionalAuthRoute.tsx";
 import { GuestRoute } from "./GuestRoute.tsx";
 import { CCLicenseGroup } from "./icons/CCLicenseGroup.tsx";
 import { SessionExpiredModal } from "./Auth/SessionExpiredModal.tsx";
+import { TrackMetaRow } from "./Library/TrackMetaRow.tsx";
 
 import { WebLayout } from "./Layout/WebLayout.tsx";
 
@@ -58,5 +59,6 @@ export {
     GuestRoute,
     CCLicenseGroup,
     SessionExpiredModal,
+    TrackMetaRow,
     WebLayout,
 }
