@@ -25,6 +25,11 @@ import {
 let cache: MyEntitlements | null = null;
 let cachedIdentity: string | null = null;
 let inflight: Promise<MyEntitlements | null> | null = null;
+// The identity the current in-flight request is for. Set BEFORE the await so concurrent callers
+// (multiple useEntitlements/useAccess consumers mounting on the same paint) dedupe onto the one
+// request. `cachedIdentity` alone can't do this — it isn't set until the request RESOLVES, so
+// during the in-flight window it's still stale and the dedup check would miss → a 2nd fetch fired.
+let inflightIdentity: string | null = null;
 
 function _cacheFresh(identity: string): boolean {
   return cache !== null && cachedIdentity === identity;
@@ -32,7 +37,9 @@ function _cacheFresh(identity: string): boolean {
 
 async function fetchEntitlements(identity: string, force = false): Promise<MyEntitlements | null> {
   if (_cacheFresh(identity) && !force) return cache;
-  if (inflight && cachedIdentity === identity && !force) return inflight;
+  // Dedupe on the in-flight identity (set synchronously below), NOT cachedIdentity.
+  if (inflight && inflightIdentity === identity && !force) return inflight;
+  inflightIdentity = identity;
   inflight = (async () => {
     const res = await getMyEntitlements();
     if (res && typeof res === "object" && "data" in res && (res as { success?: boolean }).success !== false) {
@@ -43,6 +50,7 @@ async function fetchEntitlements(identity: string, force = false): Promise<MyEnt
     return null;
   })().finally(() => {
     inflight = null;
+    inflightIdentity = null;
   });
   return inflight;
 }
@@ -153,6 +161,7 @@ export function resetEntitlementsCache(): void {
   cache = null;
   cachedIdentity = null;
   inflight = null;
+  inflightIdentity = null;
 }
 
 // Explicit invalidation on auth flips (login AND logout). The identity-keyed cache already makes
