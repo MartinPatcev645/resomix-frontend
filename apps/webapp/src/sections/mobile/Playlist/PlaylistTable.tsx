@@ -83,6 +83,9 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
             <h2 className="sr-only">Similar Tracks</h2>
             {tracks.map((track) => {
                 const isRestricted = track.rank > maxUnlocked;
+                // While this track plays, its label moves into the player row (centered), so it's
+                // hidden from the genre/label grid row below. Genre stays put.
+                const isThisPlaying = currentTrackId === track.id && isPlaying;
                 return (
                     <div key={track.id} className="relative w-full">
                         {track.rank === ctaCardRank && isRestricted && (
@@ -217,7 +220,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                 genre third. Each value truncates inside its own third (fixed
                                                 length). Captions render only with a value; the whole row is
                                                 skipped when both are absent. */}
-                                            {(firstGenre(track.genre) || resolveLabel(track.label)) && (
+                                            {(firstGenre(track.genre) || (resolveLabel(track.label) && !isThisPlaying)) && (
                                                 <div className="w-full grid grid-cols-3 items-center gap-[var(--px-6)] text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-5)] leading-[var(--px-9)]">
                                                     {/* Genre cell stretches to fill its 1/3 track (NO justify-self:
                                                         start — that would size the cell to its content and let a long
@@ -234,7 +237,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                         )}
                                                     </div>
                                                     <div className="flex items-center justify-center gap-[var(--px-3)] min-w-0 overflow-hidden" role="cell">
-                                                        {resolveLabel(track.label) && (
+                                                        {resolveLabel(track.label) && !isThisPlaying && (
                                                             <>
                                                                 <span className="text-[var(--color-primary-hover)] opacity-70 shrink-0">LABEL</span>
                                                                 <span className="text-[var(--color-primary)] truncate min-w-0" title={resolveLabel(track.label)}>
@@ -250,7 +253,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                     </button>
                                     {currentTrackId === track.id && isPlaying && (
                                         <div>
-                                            <SimilarityPlayer trackId={track.id} isPlaying={currentTrackId === track.id} totalDuration={track.duration} appleDeepLinkUrl={track.deep_link_url} />
+                                            <SimilarityPlayer trackId={track.id} isPlaying={currentTrackId === track.id} totalDuration={track.duration} appleDeepLinkUrl={track.deep_link_url} label={resolveLabel(track.label)} />
                                         </div>
                                     )}
                                 </div>
