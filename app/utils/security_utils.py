@@ -20,10 +20,38 @@ import time
 import hmac
 import hashlib
 import base64
+from functools import lru_cache
 from typing import Optional
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 
 from app.core.config import settings
+
+
+@lru_cache()
+def _secret_cipher() -> Fernet:
+    """Fernet built from ``token_encryption_key`` (falls back to ``preview_fernet_secret``).
+
+    Used to encrypt 3rd-party user tokens (e.g. the Apple Music user token) at rest.
+    """
+    secret = settings.token_encryption_key or settings.preview_fernet_secret
+    raw = secret.encode()
+    raw = raw.ljust(32, b"0")[:32]  # Fernet needs a 32-byte urlsafe-b64 key
+    return Fernet(base64.urlsafe_b64encode(raw))
+
+
+def encrypt_secret(plaintext: str) -> str:
+    """Encrypt a sensitive string for storage. Returns urlsafe ciphertext."""
+    return _secret_cipher().encrypt(plaintext.encode()).decode()
+
+
+def decrypt_secret(ciphertext: Optional[str]) -> Optional[str]:
+    """Decrypt a value produced by :func:`encrypt_secret`. Returns None if invalid/empty."""
+    if not ciphertext:
+        return None
+    try:
+        return _secret_cipher().decrypt(ciphertext.encode()).decode()
+    except (InvalidToken, Exception):
+        return None
 
 
 class URLSigner:

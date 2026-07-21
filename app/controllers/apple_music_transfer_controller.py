@@ -165,12 +165,14 @@ class AppleMusicTransferController:
         )
 
         try:
-            # Call the service to perform the transfer
+            # Call the service to perform the transfer. music_user_token may be None — the service
+            # then uses the user's saved connection (resolved by user_id).
             result = await self.apple_music_service.transfer_playlist_to_apple_music(
                 db=db,
                 playlist_id=playlist_id,
                 music_user_token=music_user_token,
                 custom_playlist_name=custom_playlist_name,
+                user_id=current_user.id if current_user else None,
             )
 
             # Format success response
@@ -298,6 +300,13 @@ class AppleMusicTransferController:
                 error_status_code = status.HTTP_401_UNAUTHORIZED
                 final_error_message = "Invalid or expired Apple Music user token"
                 error_type = "authentication_error"
+                # The stored token is no longer valid (expired / revoked in Apple ID) — drop the
+                # saved connection so the UI prompts a fresh reconnect instead of failing again.
+                if current_user:
+                    try:
+                        await self.apple_music_service.delete_connection(db, current_user.id)
+                    except Exception:  # noqa: BLE001 — best-effort cleanup
+                        pass
             else:
                 error_status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
                 final_error_message = (
@@ -346,3 +355,50 @@ class AppleMusicTransferController:
             )
 
             return JSONResponse(status_code=error_status_code, content=error_response)
+
+    # ----------------------------------------------------------------- connection (persisted link)
+
+    async def get_connection_status(self, db: AsyncSession, current_user: User) -> JSONResponse:
+        """Return whether the user has a saved Apple Music connection."""
+        try:
+            data = await self.apple_music_service.get_connection_status(db, current_user.id)
+            return JSONResponse(status_code=status.HTTP_200_OK, content=format_response(success=True, data=data))
+        except Exception as e:  # noqa: BLE001
+            logger.error("Failed to get Apple connection status: %s", str(e))
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="Could not check your Apple Music connection."),
+            )
+
+    async def save_connection(self, db: AsyncSession, current_user: User, music_user_token: str) -> JSONResponse:
+        """Validate + persist the user's Apple Music connection."""
+        try:
+            data = await self.apple_music_service.save_connection(db, current_user.id, music_user_token)
+            return JSONResponse(status_code=status.HTTP_200_OK, content=format_response(success=True, data=data))
+        except ValueError as e:
+            # Token could not be verified with Apple.
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=format_response(success=False, error=str(e)),
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.error("Failed to save Apple connection: %s", str(e))
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="Could not connect your Apple Music account."),
+            )
+
+    async def disconnect(self, db: AsyncSession, current_user: User) -> JSONResponse:
+        """Remove the user's saved Apple Music connection."""
+        try:
+            await self.apple_music_service.delete_connection(db, current_user.id)
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(success=True, data={"connected": False}),
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.error("Failed to disconnect Apple: %s", str(e))
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="Could not disconnect your Apple Music account."),
+            )

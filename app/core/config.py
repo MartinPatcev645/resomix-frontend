@@ -53,6 +53,11 @@ class Settings(BaseModel):
         default="default-fernet-secret-32bytes-long",
         description="Fernet encryption secret for preview URL signing (must be 32 bytes)",
     )
+    token_encryption_key: Optional[str] = Field(
+        default=None,
+        description="Secret for encrypting stored 3rd-party tokens at rest (e.g. Apple Music user "
+                    "token). Falls back to preview_fernet_secret if unset. Set TOKEN_ENCRYPTION_KEY.",
+    )
     preview_hmac_secret: str = Field(
         default="default-hmac-secret-for-preview-urls",
         description="HMAC secret for preview URL signing",
@@ -594,6 +599,7 @@ class Settings(BaseModel):
             "SIMILARITY_AUTH_REQUIRED": "similarity_auth_required",
             "SYSTEM_PARTNER_ID": "system_partner_id",
             "PREVIEW_FERNET_SECRET": "preview_fernet_secret",
+            "TOKEN_ENCRYPTION_KEY": "token_encryption_key",
             "PREVIEW_HMAC_SECRET": "preview_hmac_secret",
             "GUEST_COOKIE_SECRET": "guest_cookie_secret",
             "PREVIEW_AUDIO_URL_EXPIRES_SECONDS": "preview_audio_url_expires_seconds",

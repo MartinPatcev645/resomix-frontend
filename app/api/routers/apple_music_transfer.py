@@ -29,7 +29,8 @@ from app.schemas.apple_music_transfer import (
     AppleMusicTransferRequest,
     AppleMusicTransferResponse,
     AppleMusicTransferErrorResponse,
-    AppleMusicDeveloperTokenResponse
+    AppleMusicDeveloperTokenResponse,
+    AppleMusicConnectionRequest,
 )
 
 router = APIRouter(
@@ -140,3 +141,43 @@ async def transfer_playlist_to_apple_music_endpoint(
         custom_playlist_name=request_data.playlist_name,
         current_user=current_user,
     )
+
+
+@router.get(
+    "/connection/",
+    summary="Apple Music connection status",
+    description="Whether the current user has a saved Apple Music connection (linked once, reused across sessions).",
+)
+async def get_apple_connection_endpoint(
+    db: AsyncSession = Depends(get_database_session),
+    _partner: Partner = Depends(get_public_partner),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    return await apple_music_transfer_controller.get_connection_status(db, current_user)
+
+
+@router.post(
+    "/connection/",
+    summary="Save Apple Music connection",
+    description="Persist the user's Apple Music user token (encrypted) so they don't reconnect every session.",
+)
+async def save_apple_connection_endpoint(
+    request_data: AppleMusicConnectionRequest,
+    db: AsyncSession = Depends(get_database_session),
+    _partner: Partner = Depends(get_public_partner),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    return await apple_music_transfer_controller.save_connection(db, current_user, request_data.music_user_token)
+
+
+@router.delete(
+    "/connection/",
+    summary="Disconnect Apple Music",
+    description="Remove the user's saved Apple Music connection.",
+)
+async def delete_apple_connection_endpoint(
+    db: AsyncSession = Depends(get_database_session),
+    _partner: Partner = Depends(get_public_partner),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    return await apple_music_transfer_controller.disconnect(db, current_user)

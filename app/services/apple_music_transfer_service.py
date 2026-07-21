@@ -31,6 +31,9 @@ from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
 from app.repositories.playlist_transfer_track_repository import PlaylistTransferTrackRepository
 from app.repositories.apple_music_repository import AppleMusicRepository
+from app.repositories.service_connection_repository import ServiceConnectionRepository
+from app.models.constants import ServiceProvider
+from app.utils.security_utils import encrypt_secret, decrypt_secret
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -81,6 +84,7 @@ class AppleMusicTransferService:
         self.track_repository = TrackRepository()
         self.transfer_track_repository = PlaylistTransferTrackRepository()
         self.apple_music_repository = AppleMusicRepository()  # curated apple_song_id per track
+        self.connection_repository = ServiceConnectionRepository()  # saved external accounts per user
         self.max_concurrent_searches = 2  # Process 2 tracks at a time (fallback search only)
         
         logger.info("AppleMusicTransferService initialized")
@@ -466,9 +470,60 @@ class AppleMusicTransferService:
                 logger.warning("ISRC batch resolve failed: %s", str(e))
         return out
 
+    # ------------------------------------------------------------------ connection (persisted link)
+
+    async def save_connection(self, db: AsyncSession, user_id: int, music_user_token: str) -> Dict[str, Any]:
+        """Validate + persist a user's Apple Music connection (token encrypted at rest).
+
+        Validates the token by fetching the user's storefront; a token that can't be verified is
+        rejected rather than stored (so a saved connection always means a working one).
+        """
+        dev_token, _ = self.get_or_create_dev_token()
+        storefront = await self._get_user_storefront(dev_token, music_user_token)
+        if not storefront:
+            raise ValueError("Could not verify your Apple Music account. Please try connecting again.")
+
+        await self.connection_repository.async_upsert(
+            db, user_id, ServiceProvider.APPLE_MUSIC, encrypt_secret(music_user_token),
+            token_type="music_user_token", region=storefront,
+        )
+        logger.info("Saved Apple Music connection for user %s (storefront=%s)", user_id, storefront)
+        return {"connected": True, "storefront": storefront}
+
+    async def get_connection_status(self, db: AsyncSession, user_id: int) -> Dict[str, Any]:
+        """Return whether the user has a stored Apple Music connection."""
+        conn = await self.connection_repository.async_get(db, user_id, ServiceProvider.APPLE_MUSIC)
+        if not conn:
+            return {"connected": False, "storefront": None, "connected_at": None}
+        return {
+            "connected": True,
+            "storefront": conn.region,
+            "connected_at": conn.created_at.isoformat() if conn.created_at else None,
+        }
+
+    async def delete_connection(self, db: AsyncSession, user_id: int) -> bool:
+        """Remove the user's stored Apple Music connection (disconnect)."""
+        removed = await self.connection_repository.async_delete(db, user_id, ServiceProvider.APPLE_MUSIC)
+        if removed:
+            logger.info("Removed Apple Music connection for user %s", user_id)
+        return removed
+
+    async def _resolve_user_token(self, db: AsyncSession, user_id: Optional[int],
+                                  provided_token: Optional[str]) -> str:
+        """Return the music-user-token to use: the provided one, else the user's stored one."""
+        if provided_token:
+            return provided_token
+        if user_id is not None:
+            conn = await self.connection_repository.async_get(db, user_id, ServiceProvider.APPLE_MUSIC)
+            token = decrypt_secret(conn.access_token_enc) if conn else None
+            if token:
+                return token
+        raise ValueError("Apple Music is not connected. Please connect your Apple Music account first.")
+
     async def transfer_playlist_to_apple_music(self, db: AsyncSession, playlist_id: str,
-                                               music_user_token: str,
-                                               custom_playlist_name: Optional[str] = None) -> Dict[str, Any]:
+                                               music_user_token: Optional[str] = None,
+                                               custom_playlist_name: Optional[str] = None,
+                                               user_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Transfer a Resomix playlist to Apple Music using our curated internal Apple song ids.
 
@@ -493,6 +548,9 @@ class AppleMusicTransferService:
         transfer_start_time = time.time()
 
         try:
+            # 0) Resolve the music-user-token: the one passed in, else the user's saved connection.
+            music_user_token = await self._resolve_user_token(db, user_id, music_user_token)
+
             # 1) Developer token (server-side) + playlist + tracks (order preserved).
             dev_token, _ = self.get_or_create_dev_token()
 

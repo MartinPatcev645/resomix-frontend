@@ -23,9 +23,15 @@ class AppleMusicDeveloperTokenResponse(BaseModel):
 
 
 class AppleMusicTransferRequest(BaseModel):
-    """Request schema for transferring a playlist to Apple Music."""
+    """Request schema for transferring a playlist to Apple Music.
+
+    ``music_user_token`` is optional: when omitted the server uses the token stored from the user's
+    saved Apple Music connection (the normal path). It may still be provided for a one-off transfer.
+    """
     playlist_id: str = Field(..., description="Resomix playlist UUID to transfer")
-    music_user_token: str = Field(..., description="Apple Music User Token from MusicKit.authorize()")
+    music_user_token: Optional[str] = Field(
+        None, description="Apple Music User Token; omit to use the saved connection"
+    )
     playlist_name: Optional[str] = Field(None, description="Custom name for the Apple Music playlist")
 
     @validator('playlist_id')
@@ -37,10 +43,11 @@ class AppleMusicTransferRequest(BaseModel):
 
     @validator('music_user_token')
     def validate_user_token(cls, v):
-        """Validate user token format."""
-        if not v or not v.strip():
-            raise ValueError('Music user token cannot be empty')
-        return v.strip()
+        """Normalise the optional token (empty string → None)."""
+        if v is None:
+            return None
+        v = v.strip()
+        return v or None
 
     @validator('playlist_name')
     def validate_playlist_name(cls, v):
@@ -57,10 +64,27 @@ class AppleMusicTransferRequest(BaseModel):
         json_schema_extra = {
             "example": {
                 "playlist_id": "550e8400-e29b-41d4-a716-446655440000",
-                "music_user_token": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ij...",
                 "playlist_name": "My Resomix Playlist"
             }
         }
+
+
+class AppleMusicConnectionRequest(BaseModel):
+    """Request to save (link) the user's Apple Music account."""
+    music_user_token: str = Field(..., description="Apple Music User Token from MusicKit.authorize()")
+
+    @validator('music_user_token')
+    def validate_user_token(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Music user token cannot be empty')
+        return v.strip()
+
+
+class AppleMusicConnectionStatus(BaseModel):
+    """Whether the user has a linked Apple Music account."""
+    connected: bool = Field(..., description="True if a valid Apple Music connection is stored")
+    storefront: Optional[str] = Field(None, description="The user's Apple storefront (e.g. 'us')")
+    connected_at: Optional[str] = Field(None, description="ISO timestamp the account was linked")
 
 
 class AppleMusicTransferResponse(BaseModel):

@@ -65,6 +65,7 @@ from .partner_processing_job import PartnerProcessingJob
 from .partner_notification import PartnerNotification
 from .track_analysis_result import TrackAnalysisResult
 from .apple_music import AppleMusicTrack
+from .user_service_connection import UserServiceConnection
 
 # Make models available at package level
 __all__ = [
@@ -138,6 +139,7 @@ __all__ = [
     "PartnerNotification",
     "TrackAnalysisResult",
     "AppleMusicTrack",
+    "UserServiceConnection",
     # Consumer billing / subscriptions
     "PlanPrice",
     "BillingInvoice",
