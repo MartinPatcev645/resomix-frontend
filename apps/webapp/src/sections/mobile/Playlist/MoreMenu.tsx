@@ -3,9 +3,9 @@ import { ButtonSleek, HoverFlow } from "@resomix/ui";
 import MenuSeparator from "@/assets/icons/menu_separator.svg";
 import { ThumbIcon } from "@/components/index.ts";
 import { rateTrack } from "@resomix/api-client";
-import { usePlaylistStore, useAuthStore } from "@resomix/stores";
+import { usePlaylistStore } from "@resomix/stores";
 import { BASE_BETA_URL } from "@resomix/config";
-import { formatDuration, formatPercentage, usePlaylistExport } from "@resomix/hooks";
+import { formatDuration, formatPercentage, usePlaylistExport, useAccess, type AccessAction } from "@resomix/hooks";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import { getTrackRating, saveTrackRating } from "@/utils/trackRatingsStorage.js";
 
@@ -24,9 +24,17 @@ interface MoreMenuProps {
 const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, name, label, duration, score = null, onShare }) => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
     const { exportAndDownloadPlaylist, canExport } = usePlaylistExport();
-    // Per-track rating + export are gated: guests can click but get a login prompt (no API call).
-    const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+    // Rate / export / share are gated through the single source of truth (useAccess) — one verdict
+    // per action; "pending" is a silent no-op, never a wrong modal.
+    const access = useAccess();
     const [gate, setGate] = React.useState<{ reason: string; title: string; body: string } | null>(null);
+    /** Run `action` if allowed; otherwise raise the correct gate. Pending → no-op. */
+    const withAccess = (action: AccessAction, title: string, body: string, run: () => void) => {
+        const v = access.verdict(action);
+        if (v === "pending") return;
+        if (v === "allowed") return run();
+        setGate({ reason: v === "login" ? "login_required" : "upgrade_required", title, body });
+    };
     const [exportButtonText, setExportButtonText] = React.useState("Export to TXT");
 
     React.useEffect(() => {
@@ -39,23 +47,23 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
 
     const handleTrackRating = async (rating: number) => {
         if (!trackId) return;
-        if (!isAuthenticated) {
-            setGate({ reason: "login_required", title: "Log in to rate tracks", body: "Rating individual tracks needs an account. Log in or create a free account to rate." });
-            return;
-        }
-        try {
-            const playlistId = playlistData?.playlist?.id || null;
-            setTrackRating(trackId, rating);
-            saveTrackRating(trackId, rating);
-            await rateTrack(trackId, rating, playlistId);
-        } catch (error) {
-            console.error('Failed to rate track:', error);
-        }
+        withAccess("rateTrack", "Log in to rate tracks", "Rating individual tracks needs an account. Log in or create a free account to rate.", async () => {
+            try {
+                const playlistId = playlistData?.playlist?.id || null;
+                setTrackRating(trackId, rating);
+                saveTrackRating(trackId, rating);
+                await rateTrack(trackId, rating, playlistId);
+            } catch (error) {
+                console.error('Failed to rate track:', error);
+            }
+        });
     };
 
     const handleExportPlaylist = async () => {
-        if (!canExport) {
-            setGate({ reason: isAuthenticated ? "upgrade_required" : "login_required", title: "Log in to export", body: "Create a free account or log in to export your playlists." });
+        const v = access.verdict("export");
+        if (v === "pending") return;
+        if (v !== "allowed" || !canExport) {
+            setGate({ reason: v === "upgrade" ? "upgrade_required" : "login_required", title: "Log in to export", body: "Create a free account or log in to export your playlists." });
             return;
         }
 
@@ -190,11 +198,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                             <div className="w-full flex gap-2 flex-col">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-share-button" text="Share" customWidth="w-full" onClick={() => {
-                                    if (!isAuthenticated) {
-                                        setGate({ reason: "login_required", title: "Log in to share", body: "Create a free account or log in to share your playlists." });
-                                        return;
-                                    }
-                                    onShare?.();
+                                    withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => onShare?.());
                                 }} id={`playlist-hero-share-button`} />
                             </div>
                         )}

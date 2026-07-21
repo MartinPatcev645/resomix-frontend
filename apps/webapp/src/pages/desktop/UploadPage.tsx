@@ -7,7 +7,7 @@ import React from "react";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 
 export function UploadPage() {
-  const { response, error, setError, gateReason, gateTitle, gateBody, setGateReason, isFileUpload } = useUploadStore();
+  const { response, error, setError, gateReason, gateTitle, gateBody, setGateReason } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
   const processedId = React.useRef<string | null>(null);
@@ -44,7 +44,7 @@ export function UploadPage() {
   // Watch for API completion and route to playlist
   React.useEffect(() => {
     if (response && response.success) {
-      setPlaylistResponse(response as any, isFileUpload);
+      setPlaylistResponse(response as any);
 
       const playlistId = (response as any).data?.playlist?.id || null;
       if (playlistId) {

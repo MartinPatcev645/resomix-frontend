@@ -88,7 +88,7 @@ export function useTrackSimilarity(options?: TrackSimilarityOptions) {
           // Success path
           setProgress(100);
           setResponse(result as UploadResult);
-          setPlaylistResponse(result as any, false);
+          setPlaylistResponse(result as any);
 
           // Fire analysis callback if provided
           if (onAnalysis) {

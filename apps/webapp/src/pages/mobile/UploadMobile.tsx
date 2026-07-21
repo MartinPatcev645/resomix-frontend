@@ -9,7 +9,7 @@ import { useTrackSimilarity } from "@resomix/hooks";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 
 export function UploadMobile() {
-  const { response, error, setError, gateReason, gateTitle, gateBody, setGateReason, isFileUpload } = useUploadStore();
+  const { response, error, setError, gateReason, gateTitle, gateBody, setGateReason } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
   const processedId = React.useRef<string | null>(null);
@@ -44,7 +44,7 @@ export function UploadMobile() {
 
   React.useEffect(() => {
     if (response && response.success) {
-      setPlaylistResponse(response as any, isFileUpload);
+      setPlaylistResponse(response as any);
 
       const playlistId = (response as any).data?.playlist?.id || null;
       if (playlistId) {

@@ -25,6 +25,7 @@ import { ProtectedRoute } from "./ProtectedRoute.tsx";
 import { OptionalAuthRoute } from "./OptionalAuthRoute.tsx";
 import { GuestRoute } from "./GuestRoute.tsx";
 import { CCLicenseGroup } from "./icons/CCLicenseGroup.tsx";
+import { SessionExpiredModal } from "./Auth/SessionExpiredModal.tsx";
 
 import { WebLayout } from "./Layout/WebLayout.tsx";
 
@@ -56,5 +57,6 @@ export {
     OptionalAuthRoute,
     GuestRoute,
     CCLicenseGroup,
+    SessionExpiredModal,
     WebLayout,
 }

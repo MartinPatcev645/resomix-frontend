@@ -208,9 +208,10 @@ export const useAuthInit = () => {
             // than this origin's persisted one — verify and correct.
             reconcileIdentityIfMismatch();
           } else if (session.status === 'invalid') {
-            // Session is genuinely dead → clear the stale persisted auth. The navbar then reflects
-            // logged-out and ProtectedRoute redirects any protected page to login.
-            store.logout({ broadcast: false });
+            // Session is genuinely dead (SERVER truth) → clear the stale persisted auth and raise
+            // the "session expired — log in again" modal. The navbar then reflects logged-out and
+            // ProtectedRoute redirects any protected page to login.
+            store.logout({ broadcast: false, reason: 'expired' });
           }
           // 'network' (server unreachable) → leave the optimistic state as-is; the interceptor
           // re-checks on the first real API call rather than logging the user out on a connectivity blip.

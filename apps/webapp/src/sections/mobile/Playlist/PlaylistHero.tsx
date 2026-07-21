@@ -1,7 +1,6 @@
 import React from "react";
 import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, useEntitlements, useFavoritePlaylist } from "@resomix/hooks";
-import { FEATURE_KEYS } from "@resomix/api-client";
+import { formatDuration, useAccess, useFavoritePlaylist, type AccessAction } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistRename } from "@/components/index.ts";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
@@ -41,14 +40,24 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [statusTitle, setStatusTitle] = React.useState('');
 
   const { playlistData } = usePlaylistStore();
-  const { can, isGuest } = useEntitlements();
-  const canRename = can(FEATURE_KEYS.CAN_RENAME);
+  // Single source of truth for gated actions — same contract as the desktop hero: one verdict per
+  // action (allowed | login | upgrade | pending); pending = dimmed no-op, never a wrong modal.
+  const access = useAccess();
   // Favorite/unfavorite the current playlist (heart top-right of the card). Guests are prompted to
   // log in; a guest-created playlist is rejected by the backend and that message is surfaced.
   const { isFavorite, toggleFavorite } = useFavoritePlaylist();
   // Login/upgrade prompt for actions the tier can't do (rename stays visible; guests are
   // intercepted with a "log in" modal rather than opening the rename form that would then fail).
   const [gate, setGate] = React.useState<{ reason: string; title: string; body: string } | null>(null);
+  /** Run `action` if allowed; otherwise raise the correct gate. Pending → no-op (control is dimmed). */
+  const withAccess = (action: AccessAction, title: string, body: string, run: () => void) => {
+    const v = access.verdict(action);
+    if (v === "pending") return;
+    if (v === "allowed") return run();
+    setGate({ reason: v === "login" ? "login_required" : "upgrade_required", title, body });
+  };
+  // Dim gated controls until the verdicts are real.
+  const accessDim = access.ready ? "" : " opacity-60";
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,12 +70,15 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   };
 
   const handleFavoriteClick = async () => {
-    const res = await toggleFavorite();
-    if (res.gated) {
-      setGate({ reason: "login_required", title: "Log in to save favorites", body: "Create a free account or log in to add playlists to your favorites." });
-    } else if (!res.ok && res.error) {
-      handleStatusChange('error', res.error, 'Favorites');
-    }
+    withAccess("favorite", "Log in to save favorites", "Create a free account or log in to add playlists to your favorites.", async () => {
+      const res = await toggleFavorite();
+      if (res.gated) {
+        // Backstop from the hook (client auth flag says guest) — same login gate.
+        setGate({ reason: "login_required", title: "Log in to save favorites", body: "Create a free account or log in to add playlists to your favorites." });
+      } else if (!res.ok && res.error) {
+        handleStatusChange('error', res.error, 'Favorites');
+      }
+    });
   };
 
   const handleRenameClose = () => {
@@ -118,10 +130,10 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                   transparent={true}
                   customWidth="min-w-[var(--px-70)]"
                   mobile={true}
-                  onClick={() => canRename ? setShowRename(true) : setGate({ reason: isGuest ? "login_required" : "upgrade_required", title: "Log in to rename", body: "Create a free account or log in to rename your playlists." })}
+                  onClick={() => withAccess("rename", "Log in to rename", "Create a free account or log in to rename your playlists.", () => setShowRename(true))}
                   icon={<img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
                   hoverIcon={<img src={RenameBlackSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-12)] h-[var(--px-12)]" />}
-                  className="playlist-action-button"
+                  className={"playlist-action-button" + accessDim}
                   id="playlist-hero-rename-button"
                 />
                 <ToggleButton
@@ -280,8 +292,11 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               </button>
             </div>
             
-            {/* Apple Music attribution — the reference track links to Apple Music. */}
-            {!playlistData?.isUpload && (
+            {/* Apple Music attribution — only for a CATALOGUE reference track that actually has a
+                deep link. Gated on the per-track, server-provided `type`, which is the single source
+                of truth for upload-vs-catalogue and is correct however the playlist was loaded
+                (fresh upload/search response, cache, or re-opened from the Library). */}
+            {playlistData?.queried_track?.type === 'internal' && playlistData?.queried_track?.deep_link_url && (
               <div className="absolute right-[var(--px-5)] bottom-[var(--px-5)]">
                 <AppleMusicBadge deepLinkUrl={playlistData?.queried_track?.deep_link_url} playing />
               </div>

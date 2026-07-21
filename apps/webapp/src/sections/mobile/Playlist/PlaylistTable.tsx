@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SimilarityPlayer } from "@/components/index.ts";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
-import { formatDuration, formatPercentage, useGlobalAudioController, useEntitlements } from "@resomix/hooks";
+import { formatDuration, formatPercentage, useGlobalAudioController, useAccess } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { HoverFlow, ButtonSleek } from "@resomix/ui";
 import { useEntitlementCta } from "@/utils/entitlementCta.ts";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import MoreSvg from "@/assets/icons/more.svg";
 import { DEMO_MODE } from "@resomix/config";
-import { resolveLabel } from "@/utils/trackUtils.ts";
+import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 
 interface PlaylistTableProps {
@@ -19,11 +19,14 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const { playlistData } = usePlaylistStore();
     const tracks = playlistData?.similar_tracks ?? [];
 
-    // Result-unlock teasing: reveal the plan's quota, blur + upsell the rest.
-    const { maxTracksPerPlaylist, isGuest, loading: entitlementsLoading } = useEntitlements();
+    // Result-unlock teasing through the single source of truth (same contract as desktop).
+    // While unsettled: fail-CLOSED (guest default stays blurred) and the upsell card is withheld.
+    const access = useAccess();
     const { trigger: triggerCta } = useEntitlementCta();
-    const maxUnlocked = entitlementsLoading ? Number.POSITIVE_INFINITY : maxTracksPerPlaylist;
-    const ctaCardRank = entitlementsLoading ? -1 : maxTracksPerPlaylist + 2;
+    const maxUnlocked = access.unlockedTracks;
+    const ctaCardRank = access.teaseReady ? access.unlockedTracks + 2 : -1;
+    const isGuest = access.isGuestForCopy;
+    const maxTracksPerPlaylist = access.unlockedTracks;
 
     // --- Analysis footer stats ---
     const playlistId = playlistData?.playlist?.id;
@@ -163,7 +166,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                 <div className="select-none text-[length:var(--px-13)] lg:text-[length:var(--px-11)] font-helvetica font-light tracking-[var(--px-0-1)] leading-[var(--px-14)] uppercase text-left truncate max-w-[var(--px-250)]">
                                                     {currentTrackId === track.id && isPlaying ? (
                                                         <HoverFlow
-                                                            text={track.title}
+                                                            text={displayOrNA(track.title)}
                                                             maxChars={32}
                                                             delay={800}
                                                             speed={40}
@@ -172,18 +175,18 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                             flowAlways={true}
                                                         />
                                                     ) : (
-                                                        track.title
+                                                        displayOrNA(track.title)
                                                     )}
                                                 </div>
                                             </div>
                                             <div className="w-full" role="cell">
                                                 <div className="select-none text-[length:var(--px-8)] font-helvetica font-light tracking-[var(--px-0-1)] text-left leading-[var(--px-9)] truncate max-w-[var(--px-250)]">
-                                                    {track.artist}
+                                                    {displayOrNA(track.artist)}
                                                 </div>
                                             </div>
                                             <div className="w-full flex items-center justify-between">
                                                 <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-9)] flex items-center gap-[var(--px-3)]" role="cell">
-                                                    {resolveLabel(track.label) || ''} {resolveLabel(track.label) && track.year ? `- ${track.year}` : track.year ?? ''}
+                                                    {track.year ?? ''}
                                                 </div>
                                                 <div className="flex items-center justify-between" role="cell">
                                                     <div className="flex items-center">
@@ -202,6 +205,36 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                     </div>
                                                 </div>
                                             </div>
+                                            {/* Genre (left) + Label (right).
+                                                A 2-column grid rather than justify-between: each side owns a fixed half, so
+                                                the label stays right-aligned even when the genre is missing, and a long
+                                                value truncates inside its own half instead of pushing the other across.
+                                                The caption is rendered only when there is a value — an absent field shows
+                                                nothing at all. The whole row is skipped when both are absent. */}
+                                            {(firstGenre(track.genre) || resolveLabel(track.label)) && (
+                                                <div className="w-full grid grid-cols-2 gap-[var(--px-8)] text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-5)] leading-[var(--px-9)]">
+                                                    <div className="flex items-center gap-[var(--px-3)] min-w-0" role="cell">
+                                                        {firstGenre(track.genre) && (
+                                                            <>
+                                                                <span className="text-[var(--color-primary-hover)] opacity-70 shrink-0">GENRE</span>
+                                                                <span className="text-[var(--color-primary)] truncate" title={firstGenre(track.genre)}>
+                                                                    {firstGenre(track.genre)}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center justify-end gap-[var(--px-3)] min-w-0" role="cell">
+                                                        {resolveLabel(track.label) && (
+                                                            <>
+                                                                <span className="text-[var(--color-primary-hover)] opacity-70 shrink-0">LABEL</span>
+                                                                <span className="text-[var(--color-primary)] truncate" title={resolveLabel(track.label)}>
+                                                                    {resolveLabel(track.label)}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </button>
                                     {currentTrackId === track.id && isPlaying && (

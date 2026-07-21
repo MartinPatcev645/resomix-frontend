@@ -192,7 +192,7 @@ export function useUpload(options?: UseUploadOptions) {
                 // }
 
                 setResponse(result as UploadResult);
-                setPlaylistResponse(result as any, true);
+                setPlaylistResponse(result as any);
                 // Keep overlay visible; UploadPage effect will hide after navigation
                 setUploading(false);
                 setProgress(100);
