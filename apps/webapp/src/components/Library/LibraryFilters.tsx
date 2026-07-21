@@ -56,6 +56,14 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({
 
   const set = (patch: Partial<LibraryFiltersValue>) => setDraft((d) => ({ ...d, ...patch }));
 
+  const hasContent = (f: LibraryFiltersValue) =>
+    Boolean(f.search.trim() || f.startDate || f.endDate || f.numTracks);
+  // Apply only makes sense once the user has entered something; Clear only when there's
+  // something to clear — either an unapplied draft OR filters currently applied.
+  const draftHasContent = hasContent(draft);
+  const applyDisabled = loading || !draftHasContent;
+  const clearDisabled = loading || (!draftHasContent && !hasContent(applied));
+
   return (
     <div className="mb-[var(--px-15)] flex flex-wrap items-end gap-[var(--px-10)]">
       {/* Search */}
@@ -121,7 +129,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({
         <button
           type="button"
           onClick={() => onApply(draft)}
-          disabled={loading}
+          disabled={applyDisabled}
           className={`${btnBase} border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)]`}
         >
           Apply
@@ -129,7 +137,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({
         <button
           type="button"
           onClick={onClear}
-          disabled={loading}
+          disabled={clearDisabled}
           className={`${btnBase} border-white/20 hover:border-white/50 text-white/80`}
         >
           Clear

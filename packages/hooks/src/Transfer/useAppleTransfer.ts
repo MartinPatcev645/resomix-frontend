@@ -86,8 +86,12 @@ export function useAppleTransfer({
       // Only trust messages from same origin
       if (e.origin !== window.location.origin) return;
       const data = e.data;
-      // Expecting redirect window to post { type: 'APPLE_AUTH_RESULT', success, error? }
-      if (data && data.type === 'APPLE_AUTH_RESULT') {
+      // Expecting redirect window to post { type: 'APPLE_MUSIC_AUTH_RESULT', success, error? }.
+      // Note: the redirect popup is opened with noopener, so window.opener is null there and this
+      // message won't actually arrive — the reliable signal is the localStorage `storage` event +
+      // the 2s poll below. This handler is kept for correctness if the popup is ever opened with an
+      // opener, and to fail fast on an explicit error result.
+      if (data && data.type === 'APPLE_MUSIC_AUTH_RESULT') {
         if (data.success) {
           setConnectLoading(false);
           setIsAuthenticated(true);

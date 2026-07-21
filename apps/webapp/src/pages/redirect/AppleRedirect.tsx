@@ -52,8 +52,8 @@ async function fetchDeveloperToken(): Promise<{ token: string; expires_at: numbe
 }
 
 export function AppleRedirect() {
-  const [canClose, setCanClose] = useState(true);
-  const message = "Finishing Apple Music authentication…";
+  const [status, setStatus] = useState<"working" | "success" | "error">("working");
+  const [detail, setDetail] = useState<string>("");
 
   useEffect(() => {
     (async () => {
@@ -61,16 +61,21 @@ export function AppleRedirect() {
       const state = inParams.get("state") || "";
 
       const finish = (payload: { success: boolean; music_user_token?: string; error?: string; expires_in?: number }) => {
+        // Tokens are already in localStorage; the opener detects auth via the `storage` event + poll.
+        // Still post to the opener (harmless no-op under noopener) for instant feedback if available.
         try {
           window.opener?.postMessage({ type: "APPLE_MUSIC_AUTH_RESULT", ...payload }, window.location.origin);
         } catch {
           /* empty */
         }
-        try {
-          // window.close();
-        } catch {
-          setCanClose(false);
-        }
+        setStatus(payload.success ? "success" : "error");
+        setDetail(payload.success ? "Connected to Apple Music." : (payload.error || "Authentication failed."));
+        // Auto-close: give the opener a moment to observe the storage write, then close ourselves.
+        // window.close() works for script-opened windows even with noopener; if the browser blocks
+        // it, the fallback UI below lets the user close manually.
+        window.setTimeout(() => {
+          try { window.close(); } catch { /* blocked — fallback UI shown */ }
+        }, payload.success ? 900 : 2500);
       };
 
       if (!state) {
@@ -133,13 +138,20 @@ export function AppleRedirect() {
     })();
   }, []);
 
-  if (!canClose) {
-    return (
-      <div style={{ padding: 16 }}>
-        <div style={{ marginBottom: 8 }}>{message}</div>
-        <button onClick={() => window.close()}>Close this window</button>
-      </div>
-    );
-  }
-  return <div>Finishing…</div>;
+  const heading =
+    status === "success" ? "Connected to Apple Music"
+      : status === "error" ? "Apple Music connection failed"
+        : "Finishing Apple Music authentication…";
+
+  return (
+    <div style={{ padding: 24, fontFamily: "system-ui, sans-serif", textAlign: "center" }}>
+      <div style={{ marginBottom: 8, fontWeight: 600 }}>{heading}</div>
+      {detail && <div style={{ marginBottom: 16, opacity: 0.75, fontSize: 14 }}>{detail}</div>}
+      {status !== "working" && (
+        <button onClick={() => window.close()} style={{ padding: "6px 16px", cursor: "pointer" }}>
+          Close this window
+        </button>
+      )}
+    </div>
+  );
 }

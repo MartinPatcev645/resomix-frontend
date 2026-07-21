@@ -345,8 +345,10 @@ export default function LibraryPage() {
                     key={playlist.uuid}
                     className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex justify-between items-center relative rounded-xs hover:bg-white/5 transition-colors"
                   >
-                    {/* Aligned top content layout */}
-                    <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow pr-[var(--px-15)]">
+                    {/* Aligned top content layout. min-w-0 is REQUIRED: this column is flex-grow, and
+                        without it a flex item won't shrink below its content's intrinsic width, so the
+                        title's `truncate` never engages and a long name overflows the card. */}
+                    <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow min-w-0 pr-[var(--px-15)]">
                       {/* Playlist link (image). Real <a> so right-click / ⌘-click open a new tab;
                           a plain click is intercepted for SPA navigation. */}
                       <a
@@ -376,6 +378,7 @@ export default function LibraryPage() {
                           {/* Playlist title link — same open-in-new-tab / SPA behaviour. */}
                           <a
                             href={`/playlist?id=${playlist.uuid}`}
+                            title={playlist.name}
                             onClick={(e) => {
                               if (shouldOpenInNewTab(e)) return;
                               e.preventDefault();

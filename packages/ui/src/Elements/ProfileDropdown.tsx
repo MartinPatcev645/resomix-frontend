@@ -5,6 +5,10 @@ interface ProfileDropdownItem {
   icon: React.ReactNode;
   onClick: () => void;
   id: string;
+  /** If set, the item renders as a real <a> so right-click / ⌘-click / middle-click open a new
+   *  tab; a plain click is intercepted for SPA navigation. Action-only items (e.g. Logout) omit it
+   *  and render as a <button>. */
+  href?: string;
   /** If true, renders a visual separator above this item */
   separated?: boolean;
 }
@@ -80,7 +84,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     }
     closeTimeoutRef.current = setTimeout(() => {
       setIsOpen(false);
-    }, 250);
+    }, 400);
   }, []);
 
   // --- Toggle on click (for touch devices) ---
@@ -113,37 +117,71 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         {trigger}
       </div>
 
-      {/* Dropdown panel */}
+      {/* Dropdown panel. The outer wrapper carries the visual offset as PADDING (pt), not a
+          margin — so the gap between the trigger and the card is inside the hover region and the
+          pointer never leaves it on the way down. This is what keeps the menu stable across
+          browsers (Firefox in particular closed the menu mid-gap with a margin). */}
       {isOpen && (
         <div
-          className={`absolute top-full mt-[var(--px-10)] ${align === "right" ? "right-0" : "left-0"} min-w-[var(--px-200)] bg-[var(--color-secondary)] border border-dotted border-slate-200/60 rounded-xs shadow-2xl z-[60] overflow-hidden animate-[fadeSlideIn_0.15s_ease-out]`}
-          role="menu"
-          aria-label="Account menu"
+          className={`absolute top-full ${align === "right" ? "right-0" : "left-0"} pt-[var(--px-10)] z-[60]`}
+          role="presentation"
         >
-          {items.map((item, index) => (
-            <React.Fragment key={item.id}>
-              {index > 0 && (
-                <div className={`border-t border-dotted ${item.separated ? 'border-slate-200/60' : 'border-slate-200/30'} mx-[var(--px-12)]`} />
-              )}
-              <button
-                type="button"
-                id={item.id}
-                role="menuitem"
-                onClick={() => {
-                  item.onClick();
-                  setIsOpen(false);
-                }}
-                className="w-full flex items-center gap-[var(--px-14)] px-[var(--px-20)] py-[var(--px-12)] text-[var(--color-primary)] hover:bg-white/5 active:bg-white/10 transition-colors duration-150 cursor-pointer"
-              >
-                <span className="flex-shrink-0 w-[var(--px-16)] h-[var(--px-16)] flex items-center justify-center">
-                  {item.icon}
-                </span>
-                <span className="text-[length:var(--px-11)] font-light font-helvetica whitespace-nowrap leading-none">
-                  {item.label}
-                </span>
-              </button>
-            </React.Fragment>
-          ))}
+          <div
+            className="min-w-[var(--px-200)] bg-[var(--color-secondary)] border border-dotted border-slate-200/60 rounded-xs shadow-2xl overflow-hidden animate-[fadeSlideIn_0.15s_ease-out]"
+            role="menu"
+            aria-label="Account menu"
+          >
+            {items.map((item, index) => {
+              const inner = (
+                <>
+                  <span className="flex-shrink-0 w-[var(--px-16)] h-[var(--px-16)] flex items-center justify-center">
+                    {item.icon}
+                  </span>
+                  <span className="text-[length:var(--px-11)] font-light font-helvetica whitespace-nowrap leading-none">
+                    {item.label}
+                  </span>
+                </>
+              );
+              const itemClass = "w-full flex items-center gap-[var(--px-14)] px-[var(--px-20)] py-[var(--px-12)] text-[var(--color-primary)] no-underline hover:bg-white/5 active:bg-white/10 transition-colors duration-150 cursor-pointer";
+              return (
+                <React.Fragment key={item.id}>
+                  {index > 0 && (
+                    <div className={`border-t border-dotted ${item.separated ? 'border-slate-200/60' : 'border-slate-200/30'} mx-[var(--px-12)]`} />
+                  )}
+                  {item.href ? (
+                    <a
+                      id={item.id}
+                      role="menuitem"
+                      href={item.href}
+                      onClick={(e) => {
+                        // Modifier / non-left click → let the browser open a new tab natively.
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                        e.preventDefault();
+                        item.onClick();
+                        setIsOpen(false);
+                      }}
+                      className={itemClass}
+                    >
+                      {inner}
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      id={item.id}
+                      role="menuitem"
+                      onClick={() => {
+                        item.onClick();
+                        setIsOpen(false);
+                      }}
+                      className={itemClass}
+                    >
+                      {inner}
+                    </button>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
         </div>
       )}
 

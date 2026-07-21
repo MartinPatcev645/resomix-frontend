@@ -219,7 +219,11 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                 skipped when both are absent. */}
                                             {(firstGenre(track.genre) || resolveLabel(track.label)) && (
                                                 <div className="w-full grid grid-cols-3 items-center gap-[var(--px-6)] text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-5)] leading-[var(--px-9)]">
-                                                    <div className="flex items-center gap-[var(--px-3)] min-w-0 justify-self-start" role="cell">
+                                                    {/* Genre cell stretches to fill its 1/3 track (NO justify-self:
+                                                        start — that would size the cell to its content and let a long
+                                                        genre overflow past the track, defeating the truncate). Content
+                                                        is left-aligned via the flex default. */}
+                                                    <div className="flex items-center gap-[var(--px-3)] min-w-0 overflow-hidden" role="cell">
                                                         {firstGenre(track.genre) && (
                                                             <>
                                                                 <span className="text-[var(--color-primary-hover)] opacity-70 shrink-0">GENRE</span>
@@ -229,7 +233,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                             </>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center justify-center gap-[var(--px-3)] min-w-0" role="cell">
+                                                    <div className="flex items-center justify-center gap-[var(--px-3)] min-w-0 overflow-hidden" role="cell">
                                                         {resolveLabel(track.label) && (
                                                             <>
                                                                 <span className="text-[var(--color-primary-hover)] opacity-70 shrink-0">LABEL</span>
