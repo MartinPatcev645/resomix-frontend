@@ -28,6 +28,7 @@ import { GuestRoute } from "./GuestRoute.tsx";
 import { CCLicenseGroup } from "./icons/CCLicenseGroup.tsx";
 import { SessionExpiredModal } from "./Auth/SessionExpiredModal.tsx";
 import { TrackMetaRow } from "./Library/TrackMetaRow.tsx";
+import { LibraryFilters } from "./Library/LibraryFilters.tsx";
 
 import { WebLayout } from "./Layout/WebLayout.tsx";
 
@@ -62,5 +63,6 @@ export {
     CCLicenseGroup,
     SessionExpiredModal,
     TrackMetaRow,
+    LibraryFilters,
     WebLayout,
 }

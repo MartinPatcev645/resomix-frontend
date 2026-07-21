@@ -86,7 +86,10 @@ export const forkPlaylist = async (playlistId: string) => {
 export interface UserPlaylistListParams {
   page?: number;
   page_size?: number;
-  play_time?: number;
+  /** Free-text search over playlist name / uuid. */
+  search?: string;
+  play_time?: string;
+  /** Minimum number of tracks (>=): 10, 20, 50, 100. */
   num_tracks?: number;
   start_date?: string;
   end_date?: string;

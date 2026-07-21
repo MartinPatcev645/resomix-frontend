@@ -5,7 +5,7 @@ import { useAuthStore } from "@resomix/stores";
 import { useLibrary, shouldOpenInNewTab } from "@resomix/hooks";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
-import { TrackMetaRow, PlaylistRenameModal } from "@/components/index.ts";
+import { TrackMetaRow, PlaylistRenameModal, LibraryFilters } from "@/components/index.ts";
 
 export default function LibraryPage() {
   const navigate = useNavigate();
@@ -39,7 +39,19 @@ export default function LibraryPage() {
     sharePlaylist,
     setPlaylistVisibility,
     renamePlaylist,
+    playlistsFilters,
+    favoritesFilters,
+    tracksFilters,
+    applyFilters,
+    clearFilters,
   } = useLibrary();
+
+  // Filters applied to whichever tab is active (each tab keeps its own set).
+  const activeFilters =
+    activeTab === "tracks" ? tracksFilters : activeTab === "favorites" ? favoritesFilters : playlistsFilters;
+  const filtersActive = Boolean(
+    activeFilters.search || activeFilters.startDate || activeFilters.endDate || activeFilters.numTracks
+  );
 
   // Derived view of whichever tab is selected (each section has its own slice / paging / loading).
   const activePlaylists = activeTab === "favorites" ? favorites : playlists;
@@ -295,24 +307,15 @@ export default function LibraryPage() {
             </button>
           </div>
 
-          {/* Refresh the currently-selected tab (a full page reload refetches all three). */}
-          <div className="flex justify-end mb-[var(--px-15)]">
-            <button
-              onClick={handleRefresh}
-              disabled={activeLoading}
-              className="flex items-center gap-[var(--px-8)] px-[var(--px-14)] py-[var(--px-6)] border border-dotted border-white/20 hover:border-white/50 disabled:opacity-40 text-white/80 text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer disabled:cursor-not-allowed rounded-xs"
-              aria-label="Refresh"
-            >
-              <svg
-                className={`w-[var(--px-14)] h-[var(--px-14)] ${activeLoading ? "animate-spin" : ""}`}
-                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-              >
-                <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-                <path d="M21 3v6h-6" />
-              </svg>
-              Refresh
-            </button>
-          </div>
+          {/* Filters + Apply / Clear / Refresh for the currently-selected tab. */}
+          <LibraryFilters
+            activeTab={activeTab}
+            applied={activeFilters}
+            loading={activeLoading}
+            onApply={(f) => applyFilters(activeTab, f)}
+            onClear={() => clearFilters(activeTab)}
+            onRefresh={handleRefresh}
+          />
 
           {error && (
             <div className="p-[var(--px-20)] mb-[var(--px-20)] text-center border border-red-500/30 bg-red-500/5 text-red-400 font-fira text-[length:var(--px-14)] rounded-md">
@@ -328,7 +331,9 @@ export default function LibraryPage() {
             activePlaylists.length === 0 ? (
               <div className="p-[var(--px-40)] border border-slate-200 border-dotted rounded-lg text-center">
                 <p className="text-[length:var(--px-14)] font-light font-helvetica opacity-60">
-                  {activeTab === "favorites"
+                  {filtersActive
+                    ? "No playlists match your filters. Try adjusting or clearing them."
+                    : activeTab === "favorites"
                     ? "You have no favorited playlists yet."
                     : "Your library has no playlists. Generate some playlists by searching or uploading a track."}
                 </p>
@@ -531,7 +536,9 @@ export default function LibraryPage() {
             tracks.length === 0 ? (
               <div className="p-[var(--px-40)] border border-slate-200 border-dotted rounded-lg text-center">
                 <p className="text-[length:var(--px-14)] font-light font-helvetica opacity-60">
-                  No saved tracks. Upload tracks or find similarity matches to add to your track collection.
+                  {filtersActive
+                    ? "No tracks match your filters. Try adjusting or clearing them."
+                    : "No saved tracks. Upload tracks or find similarity matches to add to your track collection."}
                 </p>
               </div>
             ) : (

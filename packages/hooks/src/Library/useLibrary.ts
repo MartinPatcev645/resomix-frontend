@@ -1,5 +1,11 @@
 import { useCallback } from 'react';
-import { useLibraryStore, clearPlaylistFromCache, type LibraryPlaylist } from '@resomix/stores';
+import {
+  useLibraryStore,
+  clearPlaylistFromCache,
+  EMPTY_LIBRARY_FILTERS,
+  type LibraryPlaylist,
+  type LibraryFilters,
+} from '@resomix/stores';
 import {
   getAllPlaylists,
   getMyTracks,
@@ -7,8 +13,29 @@ import {
   deleteMyPlaylist,
   changePlaylistVisibility,
   renamePlaylist as apiRenamePlaylist,
-  removeFavorite
+  removeFavorite,
+  type UserPlaylistListParams,
+  type MyTracksParams,
 } from '@resomix/api-client';
+
+/** Applied playlist/favorites filters → backend query params (blank/any bounds dropped). */
+const toPlaylistParams = (f: LibraryFilters): UserPlaylistListParams => {
+  const p: UserPlaylistListParams = {};
+  if (f.search.trim()) p.search = f.search.trim();
+  if (f.startDate) p.start_date = f.startDate;
+  if (f.endDate) p.end_date = f.endDate;
+  if (f.numTracks) p.num_tracks = f.numTracks;
+  return p;
+};
+
+/** Applied tracks filters → backend query params (blank/any bounds dropped). */
+const toTrackParams = (f: LibraryFilters): MyTracksParams => {
+  const p: MyTracksParams = {};
+  if (f.search.trim()) p.search = f.search.trim();
+  if (f.startDate) p.start_date = f.startDate;
+  if (f.endDate) p.end_date = f.endDate;
+  return p;
+};
 
 const formatDuration = (playTime?: number): string => {
   if (!playTime) return "0m";
@@ -59,13 +86,23 @@ export function useLibrary() {
   const setPlaylistsPagination = useLibraryStore(state => state.setPlaylistsPagination);
   const setFavoritesPagination = useLibraryStore(state => state.setFavoritesPagination);
   const setTracksPagination = useLibraryStore(state => state.setTracksPagination);
+
+  const playlistsFilters = useLibraryStore(state => state.playlistsFilters);
+  const favoritesFilters = useLibraryStore(state => state.favoritesFilters);
+  const tracksFilters = useLibraryStore(state => state.tracksFilters);
+  const setPlaylistsFilters = useLibraryStore(state => state.setPlaylistsFilters);
+  const setFavoritesFilters = useLibraryStore(state => state.setFavoritesFilters);
+  const setTracksFilters = useLibraryStore(state => state.setTracksFilters);
+
   const reset = useLibraryStore(state => state.reset);
 
   const loadPlaylists = useCallback(async (page = 1, pageSize = 20) => {
     setPlaylistsLoading(true);
     setError(null);
     try {
-      const resp = await getAllPlaylists({ page, page_size: pageSize });
+      // Read the applied filters at call time so pagination + Refresh re-apply them.
+      const filters = useLibraryStore.getState().playlistsFilters;
+      const resp = await getAllPlaylists({ page, page_size: pageSize, ...toPlaylistParams(filters) });
       if (resp.success && resp.data && Array.isArray(resp.data)) {
         setPlaylists(resp.data.map(formatPlaylist));
         const total = (resp as any).total || 0;
@@ -84,7 +121,8 @@ export function useLibrary() {
     setFavoritesLoading(true);
     setError(null);
     try {
-      const resp = await getAllPlaylists({ page, page_size: pageSize, all_favorites: true });
+      const filters = useLibraryStore.getState().favoritesFilters;
+      const resp = await getAllPlaylists({ page, page_size: pageSize, all_favorites: true, ...toPlaylistParams(filters) });
       if (resp.success && resp.data && Array.isArray(resp.data)) {
         setFavorites(resp.data.map(formatPlaylist));
         const total = (resp as any).total || 0;
@@ -106,7 +144,8 @@ export function useLibrary() {
     setError(null);
     try {
       const limitPageSize = Math.min(pageSize, 20);
-      const resp = await getMyTracks({ page, page_size: limitPageSize });
+      const filters = useLibraryStore.getState().tracksFilters;
+      const resp = await getMyTracks({ page, page_size: limitPageSize, ...toTrackParams(filters) });
       if (resp.success && resp.data && Array.isArray(resp.data)) {
         // Real backend values only (reshaped response, 2026-07-22) — no fabricated
         // "Unknown Artist"/"Independent" placeholders; the UI simply skips absent fields.
@@ -256,6 +295,26 @@ export function useLibrary() {
     }
   }, [setPlaylists, setFavorites]);
 
+  // Commit a tab's filters and reload from page 1. Store `set` is synchronous, so the
+  // load* call below reads the just-set filters via getState().
+  const applyFilters = useCallback((tab: 'playlists' | 'favorites' | 'tracks', filters: LibraryFilters) => {
+    if (tab === 'favorites') {
+      setFavoritesFilters(filters);
+      loadFavorites(1);
+    } else if (tab === 'tracks') {
+      setTracksFilters(filters);
+      loadTracks(1);
+    } else {
+      setPlaylistsFilters(filters);
+      loadPlaylists(1);
+    }
+  }, [setFavoritesFilters, setTracksFilters, setPlaylistsFilters, loadFavorites, loadTracks, loadPlaylists]);
+
+  /** Reset a tab's filters to empty and reload. */
+  const clearFilters = useCallback((tab: 'playlists' | 'favorites' | 'tracks') => {
+    applyFilters(tab, { ...EMPTY_LIBRARY_FILTERS });
+  }, [applyFilters]);
+
   return {
     playlists,
     favorites,
@@ -284,6 +343,12 @@ export function useLibrary() {
     sharePlaylist,
     setPlaylistVisibility,
     renamePlaylist,
+    // Filters (applied, per tab) + actions.
+    playlistsFilters,
+    favoritesFilters,
+    tracksFilters,
+    applyFilters,
+    clearFilters,
     reset,
   };
 }
