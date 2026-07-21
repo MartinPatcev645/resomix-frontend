@@ -60,7 +60,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
       </div>
 
       <div className="relative flex items-center justify-between w-full">
-        <div className="flex items-center gap-[var(--px-10)] justify-between lg:justify-start">
+        <div className="flex items-center gap-[var(--px-4)] lg:gap-[var(--px-10)] justify-between lg:justify-start">
           <button
             type="button"
             onClick={ctl.skipBackward}
@@ -110,22 +110,24 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
           </div>
         </div>
 
-        {/* Desktop: lifted out of the flex flow and pinned above the timer (bottom-right of the
-            control row), so it no longer squeezes the row. Mobile keeps the original inline slot. */}
+        {/* Lifted out of the flex flow and pinned above the timer (bottom-right of the control row)
+            on BOTH breakpoints, so it sits above the duration instead of squeezing the row. */}
         {appleDeepLinkUrl && (
           <AppleMusicBadge
             deepLinkUrl={appleDeepLinkUrl}
             playing
             fullHeightClass="h-[var(--px-20)]"
-            className="lg:absolute lg:right-0 lg:bottom-full lg:z-10"
+            className="absolute right-0 bottom-full z-10"
           />
         )}
 
-        {/* Label then genre — the row's own Label/Genre cells hide these while the track plays. */}
+        {/* Label then genre — the row's own Label/Genre cells hide these while the track plays.
+            On mobile the label is centered in this control row (genre isn't passed there); on desktop
+            (lg:) it stays in the normal right-aligned flow next to genre + time. */}
         {label && (
           <span
             title={label}
-            className="text-[length:var(--px-9)] lg:text-[length:var(--px-8)] font-fira font-light text-[var(--color-primary-hover)] truncate max-w-[var(--px-120)]"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 lg:static lg:translate-x-0 lg:translate-y-0 text-[length:var(--px-9)] lg:text-[length:var(--px-8)] font-fira font-light text-[var(--color-primary-hover)] truncate max-w-[var(--px-120)]"
           >
             {label}
           </span>
