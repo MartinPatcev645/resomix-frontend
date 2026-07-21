@@ -229,6 +229,47 @@ class TrackRepository(BaseRepository[Track]):
 
     # --- User library methods (own uploaded tracks) ---
 
+    async def async_get_track_display_meta_map(
+        self, db: AsyncSession, track_ids: List[int]
+    ) -> Dict[int, Dict[str, Any]]:
+        """Batch-resolve the library display metadata that hangs OFF the track row:
+        artist (contributors, falling back to display_artist), album (release title) and
+        label (release → label). One query for the whole page — the list flow fetches tracks
+        without eager-loading these lazy collections, so touching the relationships per-row
+        would raise MissingGreenlet. MIN() collapses a track on multiple releases to one row.
+        """
+        if not track_ids:
+            return {}
+        from sqlalchemy import text as sa_text
+        from sqlalchemy import bindparam
+        rows = await db.execute(
+            sa_text(
+                """
+                SELECT
+                    t.id as track_id,
+                    COALESCE(
+                        GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
+                        t.display_artist
+                    ) as artist,
+                    MIN(r.title)      as album,
+                    MIN(l.label_name) as label
+                FROM tracks t
+                LEFT JOIN track_contributors tc ON t.id = tc.track_id
+                LEFT JOIN contributors c        ON tc.person_id = c.id
+                LEFT JOIN release_tracks rt     ON t.id = rt.track_id
+                LEFT JOIN releases r            ON rt.release_id = r.id
+                LEFT JOIN labels l              ON r.label_id = l.id
+                WHERE t.id IN :track_ids
+                GROUP BY t.id, t.display_artist
+                """
+            ).bindparams(bindparam("track_ids", expanding=True)),
+            {"track_ids": track_ids},
+        )
+        return {
+            row.track_id: {"artist": row.artist, "album": row.album, "label": row.label}
+            for row in rows.fetchall()
+        }
+
     async def async_get_user_uploaded_tracks(
         self,
         db: AsyncSession,

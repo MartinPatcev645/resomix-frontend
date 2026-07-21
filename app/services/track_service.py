@@ -45,42 +45,59 @@ class TrackService:
     def _serialize_track_summary(
         track: Track,
         playlist_uuid: Optional[str] = None,
-        analysis_uuid: Optional[str] = None,
+        analysis_meta: Optional[Dict[str, Any]] = None,
+        display_meta: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """Lightweight representation for the library list view.
+        """Lightweight representation for the library list view (reshaped 2026-07-22).
 
-        Only scalar columns and the eager-loaded genre relationships are touched, so
-        this is safe to call on rows fetched without eager-loading lazy collections.
+        Only scalar columns and the eager-loaded genre relationships are touched, so this is
+        safe on rows fetched without eager-loading lazy collections — ``display_meta`` (artist /
+        album / label, batch-resolved via ``async_get_track_display_meta_map``) and
+        ``analysis_meta`` (``async_get_analysis_meta_map``) carry everything relationship-bound.
 
-        ``playlist_uuid`` is the UUID of the similarity playlist generated from this track
-        (or None) → drives ``has_similarity``; ``analysis_uuid`` is the UUID of the analysis
-        generated from this track (or None) → drives ``has_analysis`` (opens ``/analysis?id=``).
+        Shape notes:
+          * ``playlist_uuid`` / ``analysis_uuid`` themselves signal existence — the old
+            ``has_similarity`` / ``has_analysis`` booleans were redundant and are gone.
+          * Track-level ``bpm`` / ``musical_key`` / ``sub_genre`` are never populated for uploads
+            — the analysis-derived values live in the ``analysis`` block instead.
+          * ``duration_ms`` falls back to the analysis-measured duration (upload meta rarely
+            carries one); shop/internal flags (price, explicit, active…) are not the library's
+            business.
         """
+        a = analysis_meta or {}
+        d = display_meta or {}
+        duration_ms = track.duration_ms
+        if duration_ms is None and a.get("duration_ms"):
+            duration_ms = int(a["duration_ms"])
         return {
             "uuid": track.uuid,
             "title": track.title,
             "version_title": track.version_title,
-            "display_artist": track.display_artist,
+            "artist": d.get("artist") or track.display_artist,
+            "album": d.get("album"),
+            "label": d.get("label"),
             "mix_name": track.mix_name,
             "isrc": track.isrc,
-            "duration_ms": track.duration_ms,
-            "duration": track.duration,  # seconds (property)
-            "bpm": track.bpm,
-            "musical_key": track.musical_key,
+            "duration_ms": duration_ms,
             "genre": track.genre_name,
-            "sub_genre": track.sub_genre_name,
             "track_type": track.track_type,
-            "price_cents": track.price_cents,
-            "is_explicit": track.is_explicit,
-            "is_instrumental": track.is_instrumental,
-            "is_active": track.is_active,
             "created_at": track.created_at.isoformat() if track.created_at else None,
             "updated_at": track.updated_at.isoformat() if track.updated_at else None,
-            # Library dropdown state
+            # Sibling artifacts — a non-null uuid IS the "exists" signal.
             "playlist_uuid": playlist_uuid,
-            "has_similarity": playlist_uuid is not None,
-            "analysis_uuid": analysis_uuid,
-            "has_analysis": analysis_uuid is not None,
+            "analysis_uuid": a.get("analysis_uuid"),
+            # Analysis-derived display metrics (null until the analysis lands).
+            "analysis": (
+                {
+                    "top_genre": a.get("top_genre"),
+                    "bpm": a.get("bpm"),
+                    "music_key": a.get("music_key"),
+                    "scale": a.get("scale"),
+                    "camelot": a.get("camelot"),
+                }
+                if a.get("analysis_uuid")
+                else None
+            ),
         }
 
     @classmethod
@@ -88,7 +105,8 @@ class TrackService:
         cls,
         track: Track,
         playlist_uuid: Optional[str] = None,
-        analysis_uuid: Optional[str] = None,
+        analysis_meta: Optional[Dict[str, Any]] = None,
+        display_meta: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Full metadata for the single-track view.
 
@@ -96,9 +114,11 @@ class TrackService:
         to be eager-loaded. Internal-only fields such as the storage ``stored_path`` and
         file checksums are deliberately not exposed to the client.
         """
-        detail = cls._serialize_track_summary(track, playlist_uuid, analysis_uuid)
+        detail = cls._serialize_track_summary(track, playlist_uuid, analysis_meta, display_meta)
         detail.update(
             {
+                # Detail keeps is_active (the delete flow returns the flipped row).
+                "is_active": track.is_active,
                 "key_signature": track.key_signature,
                 "audio_language": track.audio_language,
                 "language_of_lyrics": track.language_of_lyrics,
@@ -165,11 +185,16 @@ class TrackService:
             playlist_map = await self.playlist_repository.async_get_similarity_playlist_map(
                 db, track_ids, partner_id=partner_id
             )
-            analysis_map = await self.analysis_repository.async_get_analysis_map(
+            analysis_map = await self.analysis_repository.async_get_analysis_meta_map(
                 db, track_ids, partner_id=partner_id
             )
+            display_map = await self.track_repository.async_get_track_display_meta_map(
+                db, track_ids
+            )
             data: List[Dict[str, Any]] = [
-                self._serialize_track_summary(t, playlist_map.get(t.id), analysis_map.get(t.id))
+                self._serialize_track_summary(
+                    t, playlist_map.get(t.id), analysis_map.get(t.id), display_map.get(t.id)
+                )
                 for t in tracks
             ]
             return {"success": True, "data": data, "total": total}
@@ -203,13 +228,17 @@ class TrackService:
             playlist_map = await self.playlist_repository.async_get_similarity_playlist_map(
                 db, [track.id], partner_id=partner_id
             )
-            analysis_map = await self.analysis_repository.async_get_analysis_map(
+            analysis_map = await self.analysis_repository.async_get_analysis_meta_map(
                 db, [track.id], partner_id=partner_id
+            )
+            display_map = await self.track_repository.async_get_track_display_meta_map(
+                db, [track.id]
             )
             return {
                 "success": True,
                 "data": self._serialize_track_detail(
-                    track, playlist_map.get(track.id), analysis_map.get(track.id)
+                    track, playlist_map.get(track.id), analysis_map.get(track.id),
+                    display_map.get(track.id)
                 ),
             }
         except Exception as e:

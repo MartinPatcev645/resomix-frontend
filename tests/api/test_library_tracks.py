@@ -108,12 +108,18 @@ async def test_list_returns_only_own_uploaded_tracks():
     returned_uuids = {item["uuid"] for item in body["data"]}
     assert returned_uuids == {t1.uuid, t2.uuid}
     assert body["total"] == 2
-    # Every returned track is an upload and carries the expected meta.
+    # Every returned track is an upload and carries the reshaped (2026-07-22) meta:
+    # display fields + artifact uuids; the shop/internal flags and the never-populated
+    # track-level bpm/key are gone (analysis-derived metrics live under "analysis").
     for item in body["data"]:
         assert item["track_type"] == "upload"
-        assert item["bpm"] == 128
-        assert item["duration"] == pytest.approx(200.0)
-        assert "title" in item and "musical_key" in item
+        assert item["duration_ms"] == 200000
+        assert "title" in item and "artist" in item and "album" in item and "label" in item
+        assert "genre" in item and "analysis" in item
+        for removed in ("bpm", "musical_key", "duration", "sub_genre", "price_cents",
+                        "is_explicit", "is_instrumental", "is_active",
+                        "has_similarity", "has_analysis", "display_artist"):
+            assert removed not in item, f"{removed} must not be in the library list item"
 
 
 @pytest.mark.asyncio
@@ -325,7 +331,8 @@ async def test_delete_is_idempotent_second_delete_404():
 
 @pytest.mark.asyncio
 async def test_list_reports_playlist_and_analysis_state():
-    """Each track reports whether a similarity playlist exists, its uuid, and has_analysis."""
+    """The artifact uuids themselves signal existence (no has_* booleans): a non-null
+    playlist_uuid/analysis_uuid means the artifact exists, null means it doesn't."""
     user = await create_user()
     with_pl = await create_track(user_id=user.id, title="has playlist")
     without_pl = await create_track(user_id=user.id, title="no playlist")
@@ -339,18 +346,17 @@ async def test_list_reports_playlist_and_analysis_state():
 
     a = by_uuid[with_pl.uuid]
     assert a["playlist_uuid"] == pl.uuid
-    assert a["has_similarity"] is True
-    assert a["has_analysis"] is False  # not implemented yet — always false
+    assert a["analysis_uuid"] is None       # no analysis row for this track
+    assert a["analysis"] is None            # analysis block only present with an analysis
 
     b = by_uuid[without_pl.uuid]
     assert b["playlist_uuid"] is None
-    assert b["has_similarity"] is False
-    assert b["has_analysis"] is False
+    assert b["analysis_uuid"] is None
 
 
 @pytest.mark.asyncio
 async def test_detail_reports_playlist_state():
-    """The single-track view also carries playlist_uuid / has_similarity / has_analysis."""
+    """The single-track view carries the same artifact uuids (and keeps is_active)."""
     user = await create_user()
     track = await create_track(user_id=user.id)
     pl = await create_playlist(user_id=user.id, seed_track_id=track.id)
@@ -360,8 +366,8 @@ async def test_detail_reports_playlist_state():
 
     data = res.json()["data"]
     assert data["playlist_uuid"] == pl.uuid
-    assert data["has_similarity"] is True
-    assert data["has_analysis"] is False
+    assert data["analysis_uuid"] is None
+    assert data["is_active"] is True  # detail (unlike the list) still exposes is_active
 
 
 # --------------------------------------------------------------------------- #

@@ -263,7 +263,8 @@ class Cache:
         )
         return MSG_ID
 
-    async def release(self, db: AsyncSession, title: str, primary_artist_id: int, partner_id: int) -> int:
+    async def release(self, db: AsyncSession, title: str, primary_artist_id: int, partner_id: int,
+                      label_id: Optional[int] = None) -> int:
         # Sanitize the album title
         original_title = title
         sanitized_title = sanitize_album_title(title)
@@ -282,12 +283,19 @@ class Cache:
             # Reuse an existing release for this partner if present (re-uploads / repeats).
             existing = (
                 await db.execute(
-                    text("SELECT id FROM releases WHERE title = :title AND partner_id = :partner_id LIMIT 1"),
+                    text("SELECT id, label_id FROM releases WHERE title = :title AND partner_id = :partner_id LIMIT 1"),
                     {"title": sanitized_title, "partner_id": partner_id},
                 )
             ).first()
             if existing:
                 id_ = existing[0]
+                # Backfill the label on a reused release that never got one (the label used to be
+                # looked up but never persisted — see below). Never overwrite an existing label.
+                if label_id is not None and existing[1] is None:
+                    await db.execute(
+                        text("UPDATE releases SET label_id = :label_id WHERE id = :id"),
+                        {"label_id": label_id, "id": id_},
+                    )
                 self.releases[key] = id_
                 return id_
 
@@ -296,16 +304,19 @@ class Cache:
 
             # Plain INSERT (NOT "INSERT IGNORE", which silently swallowed FK errors and left
             # nothing to find → the old 500). Use lastrowid so we don't depend on a re-SELECT.
+            # label_id included: the tag-extracted label was previously looked up/created but never
+            # attached to anything, so uploaded tracks could never resolve a label.
             result = await db.execute(
                 text(
-                    """INSERT INTO releases (title, party_id, message_id, partner_id)
-                           VALUES (:title, :party_id, :message_id, :partner_id)"""
+                    """INSERT INTO releases (title, party_id, message_id, partner_id, label_id)
+                           VALUES (:title, :party_id, :message_id, :partner_id, :label_id)"""
                 ),
                 {
                     "title": sanitized_title,
                     "party_id": self.party_id,
                     "message_id": message_id,
                     "partner_id": partner_id,
+                    "label_id": label_id,
                 },
             )
             id_ = result.lastrowid
@@ -523,10 +534,13 @@ class TrackUploadService:
             # Get or create genre
             genre_id = await self.cache.genre(db, genre_name)
 
-            # Get or create release (optional)
+            # Get or create release (optional) — carries the tag-extracted label (releases.label_id
+            # is where the label lives; it was previously computed but never persisted).
             release_id = None
             if album_title:
-                release_id = await self.cache.release(db, album_title, primary_artist_id, partner_id=partner_id)
+                release_id = await self.cache.release(
+                    db, album_title, primary_artist_id, partner_id=partner_id, label_id=label_id
+                )
 
             # Insert track
             track_data = {

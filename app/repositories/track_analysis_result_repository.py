@@ -12,7 +12,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,6 +45,48 @@ class TrackAnalysisResultRepository:
         for track_id, analysis_uuid in result.all():
             if track_id not in mapping:  # rows are newest-first; keep the latest per track
                 mapping[track_id] = analysis_uuid
+        return mapping
+
+    async def async_get_analysis_meta_map(
+        self, db: AsyncSession, track_ids: List[int], partner_id: Optional[int] = None
+    ) -> Dict[int, Dict[str, Any]]:
+        """Map each track id -> its (latest) analysis summary for the library list: the
+        analysis_uuid plus the display metrics the analysis computed (top_genre / bpm / key /
+        scale / camelot / duration_ms). Uploads carry no bpm/key in their file tags, so the
+        library shows these analysis-derived values instead. Tracks with no analysis are absent.
+        """
+        if not track_ids:
+            return {}
+        conditions = [TrackAnalysisResult.track_id.in_(track_ids)]
+        if partner_id is not None:
+            conditions.append(TrackAnalysisResult.partner_id == partner_id)
+        stmt = (
+            select(
+                TrackAnalysisResult.track_id,
+                TrackAnalysisResult.analysis_uuid,
+                TrackAnalysisResult.top_genre,
+                TrackAnalysisResult.bpm,
+                TrackAnalysisResult.music_key,
+                TrackAnalysisResult.scale,
+                TrackAnalysisResult.camelot,
+                TrackAnalysisResult.duration_ms,
+            )
+            .where(and_(*conditions))
+            .order_by(desc(TrackAnalysisResult.created_at), desc(TrackAnalysisResult.id))
+        )
+        result = await db.execute(stmt)
+        mapping: Dict[int, Dict[str, Any]] = {}
+        for row in result.all():
+            if row.track_id not in mapping:  # rows are newest-first; keep the latest per track
+                mapping[row.track_id] = {
+                    "analysis_uuid": row.analysis_uuid,
+                    "top_genre": row.top_genre,
+                    "bpm": row.bpm,
+                    "music_key": row.music_key,
+                    "scale": row.scale,
+                    "camelot": row.camelot,
+                    "duration_ms": row.duration_ms,
+                }
         return mapping
 
     async def async_get_by_analysis_uuid(
