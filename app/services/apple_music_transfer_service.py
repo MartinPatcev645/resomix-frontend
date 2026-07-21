@@ -418,150 +418,191 @@ class AppleMusicTransferService:
         logger.info("Successfully added %d tracks to playlist", tracks_added)
         return tracks_added
     
-    async def transfer_playlist_to_apple_music(self, db: AsyncSession, playlist_id: str, 
-                                               music_user_token: str, 
+    async def _get_user_storefront(self, dev_token: str, user_token: str) -> Optional[str]:
+        """Return the user's Apple Music storefront id (e.g. 'us'), or None on failure."""
+        url = f"{APPLE_API}/v1/me/storefront"
+        loop = asyncio.get_event_loop()
+        try:
+            r = await loop.run_in_executor(
+                None,
+                lambda: _http_request("GET", url, headers=self._apple_headers(dev_token, user_token))
+            )
+            if r.ok:
+                data = (r.json().get("data") or [])
+                if data:
+                    return ((data[0].get("id") or "").lower()) or None
+        except Exception as e:
+            logger.warning("Failed to fetch user storefront: %s", str(e))
+        return None
+
+    async def _resolve_songs_by_isrc(self, dev_token: str, storefront: str,
+                                     isrcs: List[str]) -> Dict[str, str]:
+        """Resolve ISRCs → catalog song ids in the given storefront (batched, ISRC_BATCH/call).
+
+        Used to translate our catalogue-storefront matches into the user's storefront so the ids
+        are valid for their library (Apple catalog ids are storefront-specific).
+        """
+        out: Dict[str, str] = {}
+        unique = list(dict.fromkeys([i for i in isrcs if i]))
+        if not unique:
+            return out
+        loop = asyncio.get_event_loop()
+        for i in range(0, len(unique), ISRC_BATCH):
+            batch = unique[i:i + ISRC_BATCH]
+            url = f"{APPLE_API}/v1/catalog/{storefront}/songs"
+            params = {"filter[isrc]": ",".join(batch)}
+            try:
+                r = await loop.run_in_executor(
+                    None,
+                    lambda p=params: _http_request("GET", url, headers=self._apple_headers(dev_token), params=p)
+                )
+                if r.ok:
+                    for song in (r.json().get("data") or []):
+                        aisrc = (song.get("attributes") or {}).get("isrc")
+                        sid = song.get("id")
+                        if aisrc and sid and aisrc not in out:
+                            out[aisrc] = sid
+            except Exception as e:
+                logger.warning("ISRC batch resolve failed: %s", str(e))
+        return out
+
+    async def transfer_playlist_to_apple_music(self, db: AsyncSession, playlist_id: str,
+                                               music_user_token: str,
                                                custom_playlist_name: Optional[str] = None) -> Dict[str, Any]:
         """
-        Transfer a Resomix playlist to Apple Music
-        
+        Transfer a Resomix playlist to Apple Music using our curated internal Apple song ids.
+
+        Matching strategy (fast + reliable — no per-track metadata search):
+          1. Read the pre-matched ``apple_song_id`` (+ ISRC) for each track from ``apple_music_tracks``.
+          2. If the user's storefront == our catalogue storefront, use those ids directly.
+             Otherwise resolve them to the user's storefront by ISRC (catalog ids are
+             storefront-specific), batched.
+          3. Only tracks with no stored match (e.g. an uploaded seed, or a rare unmatched
+             catalogue track) fall back to the old ISRC/title+artist search.
+
         Args:
             db: Database session
             playlist_id: Resomix playlist UUID
             music_user_token: Apple Music User Token
             custom_playlist_name: Optional custom name for Apple Music playlist
-            
+
         Returns:
             Transfer result with statistics and details
         """
-        logger.info("Starting Apple Music playlist transfer...")
-        
+        logger.info("Starting Apple Music playlist transfer (stored-id mode)...")
         transfer_start_time = time.time()
-        
+
         try:
-            # Step 1: Generate developer token (always generated server-side, never from client)
+            # 1) Developer token (server-side) + playlist + tracks (order preserved).
             dev_token, _ = self.get_or_create_dev_token()
-            
-            # Step 2: Get playlist from database
-            logger.info("Fetching playlist from database...")
+
             playlist = await self.playlist_repository.async_get_playlist_by_uuid(db, playlist_id)
             if not playlist:
-                logger.error("Playlist not found: %s", playlist_id)
                 raise ValueError(f"Playlist with ID {playlist_id} not found")
-            
-            # Step 3: Get tracks for playlist
-            logger.info("Fetching tracks for playlist...")
+
             playlist_tracks = await self.playlist_repository.async_get_tracks_by_playlist_id(db, playlist.id)
             if not playlist_tracks:
-                logger.warning("Playlist has no tracks: %s", playlist_id)
                 raise ValueError(f"Playlist {playlist_id} has no tracks to transfer")
-            
-            logger.info("Found %d tracks in playlist '%s'", len(playlist_tracks), playlist.name)
-            
-            # Step 4: Get track information (title, artist, ISRC if available)
-            track_data = []
-            for playlist_track in playlist_tracks:
-                track = await self.track_repository.async_get_by_id(db, playlist_track.track_id)
-                if track:
-                    artists = await self.track_repository.async_get_track_artists(db, track.id)
-                    artist_names = [artist.name for artist in artists] if artists else ["Unknown Artist"]
-                    # Note: ISRC is not currently stored in tracks table, but can be added later
-                    isrc = None  # Could be track.isrc if added to model
-                    track_data.append((track.id, isrc, track.title or "Unknown Track", artist_names[0]))
-            
-            # Step 5: Check cache for existing Apple Music IDs
-            track_ids = [track_id for track_id, _, _, _ in track_data]
-            cached_apple_music_ids = await self._get_cached_apple_music_ids(db, track_ids)
-            
-            # Step 6: Separate cached and uncached tracks
-            cached_tracks = []
-            uncached_tracks = []
-            
-            for track_id, isrc, title, artist in track_data:
-                if track_id in cached_apple_music_ids:
-                    cached_tracks.append((track_id, cached_apple_music_ids[track_id]))
+
+            ordered_track_ids = [pt.track_id for pt in playlist_tracks]
+            logger.info("Playlist '%s' has %d tracks", playlist.name, len(ordered_track_ids))
+
+            # 2) Curated Apple matches for these tracks (one DB read).
+            apple_matches = await self.apple_music_repository.async_get_by_track_ids(db, ordered_track_ids)
+
+            # 3) Decide direct-id vs storefront resolution.
+            catalogue_sf = (settings.apple_storefront or "us").lower()
+            user_sf = (await self._get_user_storefront(dev_token, music_user_token)) or catalogue_sf
+            same_storefront = user_sf == catalogue_sf
+            logger.info("Catalogue storefront=%s, user storefront=%s (same=%s)", catalogue_sf, user_sf, same_storefront)
+
+            direct: Dict[int, str] = {}          # track_id -> catalog id usable as-is
+            need_isrc: List[Tuple[int, str]] = []  # cross-storefront, resolve by ISRC
+            need_search: List[int] = []            # no stored match -> fallback search
+            display_by_track: Dict[int, Dict[str, str]] = {}
+
+            for tid in ordered_track_ids:
+                m = apple_matches.get(tid)
+                if m and m.get("apple_song_id"):
+                    display_by_track[tid] = {"title": m.get("name") or "Unknown", "artist": m.get("artist") or "Unknown"}
+                    if same_storefront or not m.get("isrc"):
+                        # Same storefront → id is valid. No ISRC → best-effort direct id.
+                        direct[tid] = m["apple_song_id"]
+                    else:
+                        need_isrc.append((tid, m["isrc"]))
                 else:
-                    uncached_tracks.append((track_id, isrc, title, artist))
-            
-            # Step 7: Search for uncached tracks
-            search_results = []
-            new_apple_music_ids = {}
-            
-            if uncached_tracks:
-                search_results = await self._search_tracks_concurrently(dev_token, uncached_tracks)
-                
-                # Collect newly found Apple Music IDs for caching
-                for track_id, apple_music_id in search_results:
-                    if apple_music_id:
-                        new_apple_music_ids[track_id] = apple_music_id
-            
-            # Step 8: Update cache with newly found Apple Music IDs
-            if new_apple_music_ids:
-                await self._update_apple_music_cache(db, new_apple_music_ids)
-            
-            # Step 9: Process all results (cached + searched)
-            matched_ids = []
-            unmatched_tracks = []
-            
-            # Add cached tracks
-            for track_id, apple_music_id in cached_tracks:
-                matched_ids.append(apple_music_id)
-            
-            # Add searched tracks
-            for track_id, apple_music_id in search_results:
-                if apple_music_id:
-                    matched_ids.append(apple_music_id)
-                else:
-                    # Find original track info for not found list
-                    original_track = next((t for t in track_data if t[0] == track_id), None)
-                    if original_track:
-                        _, _, title, artist = original_track
-                        unmatched_tracks.append({"title": title, "artist": artist})
-            
-            logger.info("Found %d tracks (%d cached + %d searched), %d not found", 
-                       len(matched_ids), len(cached_tracks), len(new_apple_music_ids), len(unmatched_tracks))
-            
-            # Step 10: Create Apple Music playlist
+                    need_search.append(tid)
+
+            # 4) Cross-storefront ISRC resolution (batched).
+            resolved: Dict[int, str] = {}
+            if need_isrc:
+                isrc_map = await self._resolve_songs_by_isrc(dev_token, user_sf, [i for _, i in need_isrc])
+                for tid, isrc in need_isrc:
+                    sid = isrc_map.get(isrc)
+                    if sid:
+                        resolved[tid] = sid
+                    else:
+                        need_search.append(tid)  # couldn't resolve → try fallback search
+
+            # 5) Fallback search (only tracks with no stored/resolved id), in the user's storefront.
+            if need_search:
+                search_input: List[Tuple[int, Optional[str], str, str]] = []
+                for tid in need_search:
+                    track = await self.track_repository.async_get_by_id(db, tid)
+                    if not track:
+                        continue
+                    title = track.title or "Unknown Track"
+                    artist = track.display_artist or "Unknown Artist"
+                    display_by_track.setdefault(tid, {"title": title, "artist": artist})
+                    search_input.append((tid, getattr(track, "isrc", None), title, artist))
+                if search_input:
+                    for tid, sid in await self._search_tracks_concurrently(dev_token, search_input, storefront=user_sf):
+                        if sid:
+                            resolved[tid] = sid
+
+            # 6) Assemble catalog ids in playlist order (dedup — two tracks can map to one Apple song).
+            id_by_track: Dict[int, str] = {**direct, **resolved}
+            matched_ids: List[str] = []
+            unmatched_tracks: List[Dict[str, str]] = []
+            seen_ids: set = set()
+            for tid in ordered_track_ids:
+                sid = id_by_track.get(tid)
+                if sid and sid not in seen_ids:
+                    seen_ids.add(sid)
+                    matched_ids.append(sid)
+                elif not sid:
+                    unmatched_tracks.append(display_by_track.get(tid, {"title": "Unknown", "artist": "Unknown"}))
+
+            logger.info("Matched %d/%d tracks (%d not found)", len(matched_ids), len(ordered_track_ids), len(unmatched_tracks))
+
+            # 7) Create the Apple Music playlist and add the tracks.
             playlist_name = custom_playlist_name or f"Resomix - {playlist.name}"
-            logger.info("Creating Apple Music playlist...")
             apple_playlist_id = await self._create_playlist(
-                dev_token, 
-                music_user_token, 
-                playlist_name, 
+                dev_token, music_user_token, playlist_name,
                 description=f"Transferred from Resomix playlist '{playlist.name}'"
             )
-            
-            # Step 11: Add tracks to playlist
+
             tracks_added = 0
             if matched_ids:
-                tracks_added = await self._add_tracks_to_playlist(
-                    dev_token, 
-                    music_user_token, 
-                    apple_playlist_id, 
-                    matched_ids
-                )
+                tracks_added = await self._add_tracks_to_playlist(dev_token, music_user_token, apple_playlist_id, matched_ids)
             else:
-                logger.warning("No tracks found on Apple Music to add to playlist")
-            
-            # Prepare response
+                logger.warning("No tracks resolved on Apple Music to add to playlist")
+
             total_time = time.time() - transfer_start_time
-            
             result = {
                 "created_playlist_id": apple_playlist_id,
                 "created_playlist_name": playlist_name,
-                "storefront": settings.apple_storefront,
-                "total_tracks": len(playlist_tracks),
+                "storefront": user_sf,
+                "total_tracks": len(ordered_track_ids),
                 "matched": len(matched_ids),
                 "tracks_added": tracks_added,
                 "unmatched": len(unmatched_tracks),
                 "unmatched_examples": unmatched_tracks[:5],
-                "transfer_time_seconds": round(total_time, 2)
+                "transfer_time_seconds": round(total_time, 2),
             }
-            
-            logger.info("Transfer completed successfully in %.1fs - %d/%d tracks added", 
-                       total_time, tracks_added, len(playlist_tracks))
-            
+            logger.info("Transfer done in %.1fs — %d/%d tracks added", total_time, tracks_added, len(ordered_track_ids))
             return result
-            
+
         except Exception as e:
             total_time = time.time() - transfer_start_time
             logger.error("Transfer failed after %.1fs: %s", total_time, str(e))
