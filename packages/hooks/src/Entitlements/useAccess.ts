@@ -37,7 +37,8 @@ export type AccessAction =
   | "export"
   | "favorite"
   | "rateTrack"
-  | "similarityUpload";
+  | "similarityUpload"
+  | "exportApple";
 
 export type AccessVerdict = "allowed" | "login" | "upgrade" | "pending";
 
@@ -51,6 +52,7 @@ const ACTION_FEATURE: Record<AccessAction, string | null> = {
   favorite: FEATURE_KEYS.CAN_FAVORITE,
   rateTrack: FEATURE_KEYS.CAN_RATE_TRACKS,
   similarityUpload: FEATURE_KEYS.CAN_SIMILARITY_UPLOAD,
+  exportApple: null, // special-cased in verdict() — a LIST capability, not a boolean
 };
 
 /** Guest defaults used while entitlements are unsettled — always fail-CLOSED on display. */
@@ -92,6 +94,14 @@ export function useAccess(): UseAccess {
       if (errored) {
         // Our fetch failed — never block a logged-in user on our own error; server still guards.
         return isAuthenticated ? "allowed" : "login";
+      }
+      // Apple export is gated on a LIST capability: the `export_targets` CSV must contain "apple"
+      // (the server enforces the same). This is not a boolean cap, so it can't go through the map.
+      if (action === "exportApple") {
+        const targets = ent.getStr(FEATURE_KEYS.EXPORT_TARGETS, "");
+        const hasApple = targets.split(",").some((t) => t.trim().toLowerCase() === "apple");
+        if (hasApple) return "allowed";
+        return ent.isGuest ? "login" : "upgrade";
       }
       const featureKey = ACTION_FEATURE[action];
       if (featureKey === null) {

@@ -7,6 +7,7 @@ import { resolveLabel } from "@/utils/trackUtils.ts";
 import { useNavigate, useLocation } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport, PlaylistShare } from "@/components/index.ts";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
+import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ExportSvg from "@/assets/icons/export.svg";
@@ -30,6 +31,7 @@ const PlaylistHero: React.FC = () => {
 
   const [showExportMenu, setShowExportMenu] = React.useState(false);
   const [showDownloadExport, setShowDownloadExport] = React.useState(false);
+  const [showAppleExport, setShowAppleExport] = React.useState(false);
 
   const [showStatus, setShowStatus] = React.useState(false);
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
@@ -129,21 +131,49 @@ const PlaylistHero: React.FC = () => {
     // Don't clear forkedPlaylistId or hasForkedThisPlaylist here - keep them for the button to work
   };
 
+  // The Export button just opens the menu (for everyone — guests included). Each option inside is
+  // gated individually on click, so the menu always shows what's available and explains the gate
+  // where it's hit (matches the requirement: the Apple option is visible to free users but gated).
   const handleExportButtonClick = () => {
     if (isExporting) return;
+    setShowExportMenu((v) => !v);
+  };
+
+  // TXT download — gated on the plan's `can_export` capability.
+  const handleDownloadExportClick = () => {
+    setShowExportMenu(false);
     withAccess("export", "Log in to export", "Create a free account or log in to export your playlists.", () => {
-      // `canExport` additionally requires playlist data to be present.
-      if (!canExport) return;
-      setShowExportMenu((v) => !v);
+      if (!canExport) {
+        handleStatusChange('error', 'No playlist data available to export', 'Export Failed');
+        return;
+      }
+      setShowDownloadExport(true);
     });
   };
 
-  const handleDownloadExportClick = () => {
-    if (!canExport) {
-      handleStatusChange('error', 'No playlist data available to export', 'Export Failed');
+  // Apple Music export — visible to everyone; gated on the `export_targets` entitlement containing
+  // "apple". Guests get a login prompt, free users an upgrade prompt, entitled users the modal.
+  const handleAppleExportClick = () => {
+    setShowExportMenu(false);
+    const v = access.verdict("exportApple");
+    if (v === "pending") return;
+    if (v === "allowed") {
+      setShowAppleExport(true);
       return;
     }
-    setShowDownloadExport(true);
+    if (v === "login") {
+      setGate({
+        reason: "login_required",
+        title: "Log in to export",
+        body: "Create a free account or log in to export your playlists to Apple Music.",
+      });
+    } else {
+      setGate({
+        reason: "upgrade_required",
+        title: "Upgrade to export to Apple Music",
+        body: "Sending your playlist straight to your Apple Music library is a Pro feature. Upgrade your plan to unlock Apple Music export.",
+      });
+    }
   };
 
   useEffect(() => {
@@ -305,7 +335,7 @@ const PlaylistHero: React.FC = () => {
                   </Tooltip>
 
                 <div ref={exportButtonWrapRef} className="relative">
-                  <Tooltip message="Export Playlist to TXT file">
+                  <Tooltip message="Export your Playlist">
                     <IconButton
                       text={isExporting ? "Exporting..." : "Export"}
                       transparent={true}
@@ -332,6 +362,14 @@ const PlaylistHero: React.FC = () => {
                         id="export-menu-download"
                       >
                         Export to TXT
+                      </button>
+                      <button
+                        role="menuitem"
+                        className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-white hover:text-black transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)] border-t border-dotted border-slate-200/40"
+                        onClick={handleAppleExportClick}
+                        id="export-menu-apple"
+                      >
+                        Export to Apple Music
                       </button>
                     </div>
                   )}
@@ -558,6 +596,13 @@ const PlaylistHero: React.FC = () => {
         isOpen={showDownloadExport}
         onClose={handleDownloadExportClose}
         onStatusChange={handleStatusChange}
+      />
+
+      <AppleExportModal
+        isOpen={showAppleExport}
+        onClose={() => setShowAppleExport(false)}
+        onStatusChange={handleStatusChange}
+        initialPlaylistId={playlistData?.playlist?.id}
       />
 
       {/* Status Message */}

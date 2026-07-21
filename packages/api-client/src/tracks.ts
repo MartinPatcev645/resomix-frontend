@@ -6,6 +6,12 @@ import type { ApiResponse } from "./types/api";
 export interface MyTracksParams {
   page?: number;
   page_size?: number;
+  /** Free-text search over title / artist / uuid. */
+  search?: string;
+  /** Upload-date lower bound (YYYY-MM-DD). */
+  start_date?: string;
+  /** Upload-date upper bound (YYYY-MM-DD). */
+  end_date?: string;
 }
 
 /**

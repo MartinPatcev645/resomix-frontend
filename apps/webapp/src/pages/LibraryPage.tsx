@@ -5,7 +5,7 @@ import { useAuthStore } from "@resomix/stores";
 import { useLibrary, shouldOpenInNewTab } from "@resomix/hooks";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
-import { TrackMetaRow } from "@/components/index.ts";
+import { TrackMetaRow, PlaylistRenameModal, LibraryFilters } from "@/components/index.ts";
 
 export default function LibraryPage() {
   const navigate = useNavigate();
@@ -38,7 +38,20 @@ export default function LibraryPage() {
     removeFavoritePlaylist,
     sharePlaylist,
     setPlaylistVisibility,
+    renamePlaylist,
+    playlistsFilters,
+    favoritesFilters,
+    tracksFilters,
+    applyFilters,
+    clearFilters,
   } = useLibrary();
+
+  // Filters applied to whichever tab is active (each tab keeps its own set).
+  const activeFilters =
+    activeTab === "tracks" ? tracksFilters : activeTab === "favorites" ? favoritesFilters : playlistsFilters;
+  const filtersActive = Boolean(
+    activeFilters.search || activeFilters.startDate || activeFilters.endDate || activeFilters.numTracks
+  );
 
   // Derived view of whichever tab is selected (each section has its own slice / paging / loading).
   const activePlaylists = activeTab === "favorites" ? favorites : playlists;
@@ -64,6 +77,25 @@ export default function LibraryPage() {
   // Visibility (public/private) toggle confirmation — holds the playlist + its CURRENT state.
   const [visibilityFor, setVisibilityFor] = useState<{ uuid: string; isPublic: boolean } | null>(null);
   const [visibilityBusy, setVisibilityBusy] = useState(false);
+
+  // Rename modal — holds the playlist being renamed (same modal/flow as the playlist page).
+  const [renameFor, setRenameFor] = useState<{ uuid: string; name: string } | null>(null);
+  const [renameBusy, setRenameBusy] = useState(false);
+
+  const handleRenameSubmit = async (newName: string) => {
+    if (!renameFor) return;
+    const { uuid } = renameFor;
+    setRenameBusy(true);
+    handleStatusChange("loading", "Renaming playlist...", "Renaming");
+    const result = await renamePlaylist(uuid, newName);
+    setRenameBusy(false);
+    setRenameFor(null);
+    if (result.success) {
+      handleStatusChange("success", "", "Playlist renamed!");
+    } else {
+      handleStatusChange("error", result.error || "Failed to rename playlist", "Error");
+    }
+  };
 
   const handleConfirmVisibility = async () => {
     if (!visibilityFor) return;
@@ -275,24 +307,15 @@ export default function LibraryPage() {
             </button>
           </div>
 
-          {/* Refresh the currently-selected tab (a full page reload refetches all three). */}
-          <div className="flex justify-end mb-[var(--px-15)]">
-            <button
-              onClick={handleRefresh}
-              disabled={activeLoading}
-              className="flex items-center gap-[var(--px-8)] px-[var(--px-14)] py-[var(--px-6)] border border-dotted border-white/20 hover:border-white/50 disabled:opacity-40 text-white/80 text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer disabled:cursor-not-allowed rounded-xs"
-              aria-label="Refresh"
-            >
-              <svg
-                className={`w-[var(--px-14)] h-[var(--px-14)] ${activeLoading ? "animate-spin" : ""}`}
-                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-              >
-                <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-                <path d="M21 3v6h-6" />
-              </svg>
-              Refresh
-            </button>
-          </div>
+          {/* Filters + Apply / Clear / Refresh for the currently-selected tab. */}
+          <LibraryFilters
+            activeTab={activeTab}
+            applied={activeFilters}
+            loading={activeLoading}
+            onApply={(f) => applyFilters(activeTab, f)}
+            onClear={() => clearFilters(activeTab)}
+            onRefresh={handleRefresh}
+          />
 
           {error && (
             <div className="p-[var(--px-20)] mb-[var(--px-20)] text-center border border-red-500/30 bg-red-500/5 text-red-400 font-fira text-[length:var(--px-14)] rounded-md">
@@ -308,7 +331,9 @@ export default function LibraryPage() {
             activePlaylists.length === 0 ? (
               <div className="p-[var(--px-40)] border border-slate-200 border-dotted rounded-lg text-center">
                 <p className="text-[length:var(--px-14)] font-light font-helvetica opacity-60">
-                  {activeTab === "favorites"
+                  {filtersActive
+                    ? "No playlists match your filters. Try adjusting or clearing them."
+                    : activeTab === "favorites"
                     ? "You have no favorited playlists yet."
                     : "Your library has no playlists. Generate some playlists by searching or uploading a track."}
                 </p>
@@ -320,8 +345,10 @@ export default function LibraryPage() {
                     key={playlist.uuid}
                     className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex justify-between items-center relative rounded-xs hover:bg-white/5 transition-colors"
                   >
-                    {/* Aligned top content layout */}
-                    <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow pr-[var(--px-15)]">
+                    {/* Aligned top content layout. min-w-0 is REQUIRED: this column is flex-grow, and
+                        without it a flex item won't shrink below its content's intrinsic width, so the
+                        title's `truncate` never engages and a long name overflows the card. */}
+                    <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow min-w-0 pr-[var(--px-15)]">
                       {/* Playlist link (image). Real <a> so right-click / ⌘-click open a new tab;
                           a plain click is intercepted for SPA navigation. */}
                       <a
@@ -344,20 +371,50 @@ export default function LibraryPage() {
                       </a>
 
                       {/* Stacked Text Column */}
-                      <div className="flex flex-col gap-[var(--px-4)] flex-grow">
-                        {/* Playlist title link — same open-in-new-tab / SPA behaviour. */}
-                        <a
-                          href={`/playlist?id=${playlist.uuid}`}
-                          onClick={(e) => {
-                            if (shouldOpenInNewTab(e)) return;
-                            e.preventDefault();
-                            navigate(`/playlist?id=${playlist.uuid}`, { state: { from: "library" } });
-                          }}
-                          className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
-                        >
-                          {playlist.name}
-                        </a>
-                        
+                      <div className="flex flex-col gap-[var(--px-4)] flex-grow min-w-0">
+                        {/* Title + rename pen on one row. min-w-0 + truncate keep a long name from
+                            pushing the pen off; the pen opens the same rename modal as the playlist page. */}
+                        <div className="flex items-center gap-[var(--px-8)] min-w-0">
+                          {/* Playlist title link — same open-in-new-tab / SPA behaviour. */}
+                          <a
+                            href={`/playlist?id=${playlist.uuid}`}
+                            title={playlist.name}
+                            onClick={(e) => {
+                              if (shouldOpenInNewTab(e)) return;
+                              e.preventDefault();
+                              navigate(`/playlist?id=${playlist.uuid}`, { state: { from: "library" } });
+                            }}
+                            className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer truncate min-w-0"
+                          >
+                            {playlist.name}
+                          </a>
+                          <Tooltip message="Rename playlist">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                setRenameFor({ uuid: playlist.uuid, name: playlist.name });
+                              }}
+                              aria-label="Rename playlist"
+                              className="flex-shrink-0 text-white/50 hover:text-[var(--color-primary-hover)] cursor-pointer flex items-center justify-center p-[var(--px-2)] hover:scale-110 active:scale-90 transition-all bg-transparent border-0 outline-none"
+                            >
+                              {/* Pencil-with-underline (edit) — currentColor so the button's hover drives it. */}
+                              <svg
+                                className="w-[var(--px-13)] h-[var(--px-13)] md:w-[var(--px-15)] md:h-[var(--px-15)] fill-none stroke-current"
+                                viewBox="0 0 24 24"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                              </svg>
+                            </button>
+                          </Tooltip>
+                        </div>
+
                         {/* Meta Info Row - always stacked below the title on right of image */}
                         <div className="text-[length:var(--px-10)] font-light font-fira text-white/60">
                           <p>
@@ -482,7 +539,9 @@ export default function LibraryPage() {
             tracks.length === 0 ? (
               <div className="p-[var(--px-40)] border border-slate-200 border-dotted rounded-lg text-center">
                 <p className="text-[length:var(--px-14)] font-light font-helvetica opacity-60">
-                  No saved tracks. Upload tracks or find similarity matches to add to your track collection.
+                  {filtersActive
+                    ? "No tracks match your filters. Try adjusting or clearing them."
+                    : "No saved tracks. Upload tracks or find similarity matches to add to your track collection."}
                 </p>
               </div>
             ) : (
@@ -727,6 +786,15 @@ export default function LibraryPage() {
           </button>
         </div>
       </StatusMessage>
+
+      {/* Rename playlist — identical modal/flow to the playlist page (shared component). */}
+      <PlaylistRenameModal
+        isOpen={!!renameFor}
+        initialName={renameFor?.name || ""}
+        submitting={renameBusy}
+        onClose={() => setRenameFor(null)}
+        onSubmit={handleRenameSubmit}
+      />
     </section>
   );
 }

@@ -19,9 +19,11 @@ interface MoreMenuProps {
     score?: number | null;
     /** Open the share modal (owned by the parent so it survives this menu closing). */
     onShare?: () => void;
+    /** Open the Apple Music export modal (owned by the parent, same reason as onShare). */
+    onAppleExport?: () => void;
 }
 
-const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, name, label, duration, score = null, onShare }) => {
+const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, name, label, duration, score = null, onShare, onAppleExport }) => {
     const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
     const { exportAndDownloadPlaylist, canExport } = usePlaylistExport();
     // Rate / export / share are gated through the single source of truth (useAccess) — one verdict
@@ -78,6 +80,22 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
             }
         } catch (error) {
             console.error('Failed to export playlist:', error);
+        }
+    };
+
+    // Apple Music export — visible to everyone; gated on the `export_targets` entitlement. Guests
+    // get a login prompt, free users an upgrade prompt, entitled users the modal (owned by parent).
+    const handleAppleExport = () => {
+        const v = access.verdict("exportApple");
+        if (v === "pending") return;
+        if (v === "allowed") {
+            onAppleExport?.();
+            return;
+        }
+        if (v === "login") {
+            setGate({ reason: "login_required", title: "Log in to export", body: "Create a free account or log in to export your playlists to Apple Music." });
+        } else {
+            setGate({ reason: "upgrade_required", title: "Upgrade to export to Apple Music", body: "Sending your playlist straight to your Apple Music library is a Pro feature. Upgrade your plan to unlock Apple Music export." });
         }
     };
 
@@ -197,6 +215,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                         {isInput && (
                             <div className="w-full flex gap-2 flex-col">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
+                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-apple-export-button" text="Export to Apple Music" customWidth="w-full" onClick={handleAppleExport} id={`playlist-hero-apple-export-button`} />
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-share-button" text="Share" customWidth="w-full" onClick={() => {
                                     withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => onShare?.());
                                 }} id={`playlist-hero-share-button`} />

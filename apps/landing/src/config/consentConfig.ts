@@ -28,7 +28,7 @@ export const consentConfig = {
     {
       id: 'functional',
       label: 'Functional Storage',
-      description: 'Used to remember your preferences like "Demo Stage" dismissals etc.',
+      description: 'Used to remember your preferences like "Beta Stage" dismissals etc.',
       defaultValue: true,
       gtag: ['ad_storage', 'ad_user_data', 'ad_personalization'], 
     }

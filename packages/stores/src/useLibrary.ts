@@ -38,6 +38,24 @@ export interface LibraryPlaylist {
   createdAt: string;
 }
 
+/** Applied filters for a library section. `numTracks` is playlists/favorites only (ignored for tracks). */
+export interface LibraryFilters {
+  /** Free-text: title/artist/uuid (tracks) or name/uuid (playlists). */
+  search: string;
+  /** Inclusive date range (YYYY-MM-DD); either bound may be empty. */
+  startDate: string;
+  endDate: string;
+  /** Minimum number of tracks (playlists/favorites); null = any. */
+  numTracks: number | null;
+}
+
+export const EMPTY_LIBRARY_FILTERS: LibraryFilters = {
+  search: '',
+  startDate: '',
+  endDate: '',
+  numTracks: null,
+};
+
 export interface LibraryStore {
   // Three independent sections, each kept in the store so switching tabs is instant and every
   // tab's count stays visible. Favorites are held separately from the user's own playlists.
@@ -66,6 +84,11 @@ export interface LibraryStore {
   tracksTotalPages: number;
   tracksTotal: number;
 
+  // Applied filters (per section). Held here so pagination + Refresh re-apply the same query.
+  playlistsFilters: LibraryFilters;
+  favoritesFilters: LibraryFilters;
+  tracksFilters: LibraryFilters;
+
   setPlaylists: (playlists: LibraryPlaylist[]) => void;
   setFavorites: (favorites: LibraryPlaylist[]) => void;
   setTracks: (tracks: LibraryTrack[]) => void;
@@ -80,6 +103,10 @@ export interface LibraryStore {
   setPlaylistsPagination: (page: number, totalPages: number, total: number) => void;
   setFavoritesPagination: (page: number, totalPages: number, total: number) => void;
   setTracksPagination: (page: number, totalPages: number, total: number) => void;
+
+  setPlaylistsFilters: (filters: LibraryFilters) => void;
+  setFavoritesFilters: (filters: LibraryFilters) => void;
+  setTracksFilters: (filters: LibraryFilters) => void;
 
   reset: () => void;
 }
@@ -107,6 +134,10 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
   tracksTotalPages: 1,
   tracksTotal: 0,
 
+  playlistsFilters: { ...EMPTY_LIBRARY_FILTERS },
+  favoritesFilters: { ...EMPTY_LIBRARY_FILTERS },
+  tracksFilters: { ...EMPTY_LIBRARY_FILTERS },
+
   setPlaylists: (playlists) => set({ playlists }),
   setFavorites: (favorites) => set({ favorites }),
   setTracks: (tracks) => set({ tracks }),
@@ -124,6 +155,10 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
     set({ favoritesPage, favoritesTotalPages, favoritesTotal }),
   setTracksPagination: (tracksPage, tracksTotalPages, tracksTotal) =>
     set({ tracksPage, tracksTotalPages, tracksTotal }),
+
+  setPlaylistsFilters: (playlistsFilters) => set({ playlistsFilters }),
+  setFavoritesFilters: (favoritesFilters) => set({ favoritesFilters }),
+  setTracksFilters: (tracksFilters) => set({ tracksFilters }),
 
   reset: () => set({
     playlists: [],
@@ -143,5 +178,8 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
     tracksPage: 1,
     tracksTotalPages: 1,
     tracksTotal: 0,
+    playlistsFilters: { ...EMPTY_LIBRARY_FILTERS },
+    favoritesFilters: { ...EMPTY_LIBRARY_FILTERS },
+    tracksFilters: { ...EMPTY_LIBRARY_FILTERS },
   }),
 }));

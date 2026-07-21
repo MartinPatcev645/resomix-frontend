@@ -21,7 +21,7 @@ const SubscribePage = lazy(() => import("@/pages/SubscribePage.tsx"));
 const UploadLoader = lazy(() => import("@/components/index.ts").then(m => ({ default: m.UploadLoader })));
 const LibraryPage = lazy(() => import("@/pages/LibraryPage.tsx"));
 const AnalysisPage = lazy(() => import("@/pages/AnalysisPage.tsx"));
-// const AppleRedirect = lazy(() => import("@/pages/redirect/AppleRedirect.tsx").then(m => ({ default: m.AppleRedirect })));
+const AppleRedirect = lazy(() => import("@/pages/redirect/AppleRedirect.tsx").then(m => ({ default: m.AppleRedirect })));
 // const TidalRedirect = lazy(() => import("@/pages/redirect/TidalRedirect.tsx").then(m => ({ default: m.TidalRedirect })));
 // const SpotifyRedirect = lazy(() => import("@/pages/redirect/SpotifyRedirect.tsx").then(m => ({ default: m.SpotifyRedirect })));
 
@@ -160,7 +160,7 @@ function App() {
           <Route path="/loader" element={<UploadLoader />} />
 
           {/* Exports redirects */}
-          {/* <Route path="/apple-redirect" element={<AppleRedirect />} /> */}
+          <Route path="/apple-redirect" element={<AppleRedirect />} />
           {/* <Route path="/tidal-redirect" element={<TidalRedirect />} />
           <Route path="/spotify-redirect" element={<SpotifyRedirect />} /> */}
         </Routes>

@@ -17,6 +17,7 @@ import SimilarityPlayer from "./Playlist/SimilarityPlayer.tsx";
 import PlaylistRating from "./Modals/PlaylistRating.tsx";
 import PlaylistShare from "./Modals/PlaylistShare.tsx";
 import PlaylistRename from "./Modals/PlaylistRename.tsx";
+import PlaylistRenameModal from "./Modals/PlaylistRenameModal.tsx";
 import PlaylistExport from "./Modals/PlaylistExport.tsx";
 import StatusMessage from "../../../../packages/ui/src/Elements/StatusMessage.tsx";
 import UploadLoader from "./upload/UploadLoader.tsx";
@@ -27,6 +28,7 @@ import { GuestRoute } from "./GuestRoute.tsx";
 import { CCLicenseGroup } from "./icons/CCLicenseGroup.tsx";
 import { SessionExpiredModal } from "./Auth/SessionExpiredModal.tsx";
 import { TrackMetaRow } from "./Library/TrackMetaRow.tsx";
+import { LibraryFilters } from "./Library/LibraryFilters.tsx";
 
 import { WebLayout } from "./Layout/WebLayout.tsx";
 
@@ -50,6 +52,7 @@ export {
     PlaylistRating,
     PlaylistShare,
     PlaylistRename,
+    PlaylistRenameModal,
     PlaylistExport,
     StatusMessage,
     UploadLoader,
@@ -60,5 +63,6 @@ export {
     CCLicenseGroup,
     SessionExpiredModal,
     TrackMetaRow,
+    LibraryFilters,
     WebLayout,
 }
