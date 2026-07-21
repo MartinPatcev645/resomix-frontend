@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon } from "@resomix/ui";
+import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon, HeartStrokeIcon } from "@resomix/ui";
 import { useAuthStore } from "@resomix/stores";
 import { useLibrary, shouldOpenInNewTab } from "@resomix/hooks";
 import TrackSvg from "@/assets/icons/track_2.svg";
@@ -13,54 +13,46 @@ export default function LibraryPage() {
   const { isAuthenticated } = useAuthStore();
   const {
     playlists,
-    favorites,
     tracks,
     error,
     activeTab,
     playlistsLoading,
-    favoritesLoading,
     tracksLoading,
     playlistsPage,
     playlistsTotalPages,
     playlistsTotal,
-    favoritesPage,
-    favoritesTotalPages,
-    favoritesTotal,
     tracksPage,
     tracksTotalPages,
     tracksTotal,
     setActiveTab,
     loadPlaylists,
-    loadFavorites,
     loadTracks,
     removeTrack,
     removePlaylist,
-    removeFavoritePlaylist,
+    toggleFavorite,
     sharePlaylist,
     setPlaylistVisibility,
     renamePlaylist,
     playlistsFilters,
-    favoritesFilters,
     tracksFilters,
     applyFilters,
     clearFilters,
   } = useLibrary();
 
   // Filters applied to whichever tab is active (each tab keeps its own set).
-  const activeFilters =
-    activeTab === "tracks" ? tracksFilters : activeTab === "favorites" ? favoritesFilters : playlistsFilters;
+  const activeFilters = activeTab === "tracks" ? tracksFilters : playlistsFilters;
   const filtersActive = Boolean(
-    activeFilters.search || activeFilters.startDate || activeFilters.endDate || activeFilters.numTracks
+    activeFilters.search || activeFilters.startDate || activeFilters.endDate || activeFilters.numTracks || activeFilters.favoritesOnly
   );
 
+  // Whether the collapsible filter panel is shown (hidden by default to keep the view clean).
+  const [showFilters, setShowFilters] = useState(false);
+
   // Derived view of whichever tab is selected (each section has its own slice / paging / loading).
-  const activePlaylists = activeTab === "favorites" ? favorites : playlists;
-  const activeLoading =
-    activeTab === "tracks" ? tracksLoading : activeTab === "favorites" ? favoritesLoading : playlistsLoading;
-  const activePage =
-    activeTab === "tracks" ? tracksPage : activeTab === "favorites" ? favoritesPage : playlistsPage;
-  const activeTotalPages =
-    activeTab === "tracks" ? tracksTotalPages : activeTab === "favorites" ? favoritesTotalPages : playlistsTotalPages;
+  const activePlaylists = playlists;
+  const activeLoading = activeTab === "tracks" ? tracksLoading : playlistsLoading;
+  const activePage = activeTab === "tracks" ? tracksPage : playlistsPage;
+  const activeTotalPages = activeTab === "tracks" ? tracksTotalPages : playlistsTotalPages;
 
   // Status Message states
   const [showStatus, setShowStatus] = useState(false);
@@ -111,13 +103,13 @@ export default function LibraryPage() {
     }
   };
 
-  // Remove a playlist from favorites (Favorites tab). All items in that tab are favorites, so the
-  // heart is filled and clicking it un-favorites — the row then drops out of the list.
-  const handleRemoveFavorite = async (uuid: string, e: React.MouseEvent) => {
+  // Toggle a playlist's favorite state from its row heart (optimistic in the hook; reverts on
+  // failure). Under the favorites-only filter, un-favoriting also drops the row (handled in the hook).
+  const handleToggleFavorite = async (uuid: string, isFavorite: boolean, e: React.MouseEvent) => {
     e.stopPropagation();
-    const result = await removeFavoritePlaylist(uuid);
+    const result = await toggleFavorite(uuid, !isFavorite);
     if (!result.success) {
-      handleStatusChange("error", result.error || "Failed to remove from favorites", "Error");
+      handleStatusChange("error", result.error || "Failed to update favorite", "Error");
     }
   };
 
@@ -134,8 +126,11 @@ export default function LibraryPage() {
   // Sync activeTab with URL query parameter on mount and when URL parameter changes
   const tabParam = searchParams.get("tab");
   useEffect(() => {
-    if (tabParam === "playlists" || tabParam === "favorites" || tabParam === "tracks") {
+    if (tabParam === "playlists" || tabParam === "tracks") {
       setActiveTab(tabParam);
+    } else if (tabParam === "favorites") {
+      // Favorites is no longer a tab — favorites live inline on Playlists. Redirect legacy links.
+      setSearchParams({ tab: "playlists" }, { replace: true });
     } else {
       // If no tab in URL, sync activeTab back to URL parameter
       setSearchParams({ tab: activeTab }, { replace: true });
@@ -151,13 +146,12 @@ export default function LibraryPage() {
     return () => window.removeEventListener("click", handleOutsideClick);
   }, []);
 
-  // On arrival (and on login) load all three sections, so every tab's count is populated and
-  // switching tabs is instant (data lives in the store). A full page reload or the Refresh button
-  // refetches — deliberately NOT re-run when the user merely switches tabs.
+  // On arrival (and on login) load both sections, so every tab's count is populated and switching
+  // tabs is instant (data lives in the store). A full page reload or the Refresh button refetches —
+  // deliberately NOT re-run when the user merely switches tabs.
   useEffect(() => {
     if (!isAuthenticated) return;
     loadPlaylists(1);
-    loadFavorites(1);
     loadTracks(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
@@ -176,10 +170,9 @@ export default function LibraryPage() {
     return () => clearTimeout(timer);
   }, [activeTab, tracks, tracksPage, loadTracks]);
 
-  // Refresh only the currently-selected tab (keeps the others as-is).
+  // Refresh only the currently-selected tab (keeps the other as-is).
   const handleRefresh = () => {
     if (activeTab === "playlists") loadPlaylists(playlistsPage);
-    else if (activeTab === "favorites") loadFavorites(favoritesPage);
     else loadTracks(tracksPage);
   };
 
@@ -250,13 +243,11 @@ export default function LibraryPage() {
 
   const handlePrevPage = () => {
     if (activeTab === "playlists" && playlistsPage > 1) loadPlaylists(playlistsPage - 1);
-    else if (activeTab === "favorites" && favoritesPage > 1) loadFavorites(favoritesPage - 1);
     else if (activeTab === "tracks" && tracksPage > 1) loadTracks(tracksPage - 1);
   };
 
   const handleNextPage = () => {
     if (activeTab === "playlists" && playlistsPage < playlistsTotalPages) loadPlaylists(playlistsPage + 1);
-    else if (activeTab === "favorites" && favoritesPage < favoritesTotalPages) loadFavorites(favoritesPage + 1);
     else if (activeTab === "tracks" && tracksPage < tracksTotalPages) loadTracks(tracksPage + 1);
   };
 
@@ -286,16 +277,6 @@ export default function LibraryPage() {
               Playlists ({playlistsTotal})
             </button>
             <button
-              onClick={() => setSearchParams({ tab: "favorites" }, { replace: true })}
-              className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
-                activeTab === "favorites"
-                  ? "text-[var(--color-primary-hover)] border-b border-[var(--color-primary)]"
-                  : "text-slate-400 hover:text-[var(--color-primary)]"
-              }`}
-            >
-              Favorites ({favoritesTotal})
-            </button>
-            <button
               onClick={() => setSearchParams({ tab: "tracks" }, { replace: true })}
               className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
                 activeTab === "tracks"
@@ -307,15 +288,50 @@ export default function LibraryPage() {
             </button>
           </div>
 
-          {/* Filters + Apply / Clear / Refresh for the currently-selected tab. */}
-          <LibraryFilters
-            activeTab={activeTab}
-            applied={activeFilters}
-            loading={activeLoading}
-            onApply={(f) => applyFilters(activeTab, f)}
-            onClear={() => clearFilters(activeTab)}
-            onRefresh={handleRefresh}
-          />
+          {/* Persistent controls: a Filters toggle (reveals the collapsible filter panel) next to
+              Refresh. Keeping filters hidden by default keeps the list clean. */}
+          <div className="flex justify-end items-center gap-[var(--px-8)] mb-[var(--px-15)]">
+            <button
+              type="button"
+              onClick={() => setShowFilters((v) => !v)}
+              aria-expanded={showFilters}
+              className={`flex items-center gap-[var(--px-8)] px-[var(--px-14)] py-[var(--px-6)] border border-dotted text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer rounded-xs ${
+                showFilters || filtersActive
+                  ? "border-[var(--color-primary)] text-[var(--color-primary)]"
+                  : "border-white/20 hover:border-white/50 text-white/80"
+              }`}
+            >
+              <svg className="w-[var(--px-14)] h-[var(--px-14)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+              </svg>
+              Filters
+              {filtersActive && <span aria-hidden="true" className="w-[var(--px-6)] h-[var(--px-6)] rounded-full bg-[var(--color-primary)]" />}
+            </button>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={activeLoading}
+              className="flex items-center gap-[var(--px-8)] px-[var(--px-14)] py-[var(--px-6)] border border-dotted border-white/20 hover:border-white/50 disabled:opacity-40 disabled:cursor-not-allowed text-white/80 text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer rounded-xs"
+              aria-label="Refresh"
+            >
+              <svg className={`w-[var(--px-14)] h-[var(--px-14)] ${activeLoading ? "animate-spin" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                <path d="M21 3v6h-6" />
+              </svg>
+              Refresh
+            </button>
+          </div>
+
+          {/* Collapsible filter panel (search / date / min-tracks / favorites-only) + Apply / Clear. */}
+          {showFilters && (
+            <LibraryFilters
+              activeTab={activeTab}
+              applied={activeFilters}
+              loading={activeLoading}
+              onApply={(f) => applyFilters(activeTab, f)}
+              onClear={() => clearFilters(activeTab)}
+            />
+          )}
 
           {error && (
             <div className="p-[var(--px-20)] mb-[var(--px-20)] text-center border border-red-500/30 bg-red-500/5 text-red-400 font-fira text-[length:var(--px-14)] rounded-md">
@@ -327,14 +343,12 @@ export default function LibraryPage() {
             <div className="p-[var(--px-40)] text-center text-slate-400 font-fira">
               Loading your library...
             </div>
-          ) : activeTab === "playlists" || activeTab === "favorites" ? (
+          ) : activeTab === "playlists" ? (
             activePlaylists.length === 0 ? (
               <div className="p-[var(--px-40)] border border-slate-200 border-dotted rounded-lg text-center">
                 <p className="text-[length:var(--px-14)] font-light font-helvetica opacity-60">
                   {filtersActive
                     ? "No playlists match your filters. Try adjusting or clearing them."
-                    : activeTab === "favorites"
-                    ? "You have no favorited playlists yet."
                     : "Your library has no playlists. Generate some playlists by searching or uploading a track."}
                 </p>
               </div>
@@ -426,35 +440,41 @@ export default function LibraryPage() {
                     </div>
 
                     <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0 align-middle">
-                      {activeTab === "favorites" ? (
-                        <Tooltip message="Remove from Favorites">
-                          <button
-                            onClick={(e) => handleRemoveFavorite(playlist.uuid, e)}
-                            className="text-white/60 hover:text-white cursor-pointer mt-[var(--px-2)] flex items-center justify-center transition-all p-[var(--px-4)] hover:scale-110 active:scale-90 bg-transparent border-0 outline-none"
-                            aria-label="Remove from Favorites"
-                          >
-                            <HeartFilledIcon customWidth="22" customHeight="22" className="text-white" disableHover={true} />
-                          </button>
-                        </Tooltip>
-                      ) : (
-                        <Tooltip message={playlist.is_public ? "Public — click to make private" : "Private — click to make public"}>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setVisibilityFor({ uuid: playlist.uuid, isPublic: playlist.is_public });
-                            }}
-                            aria-label={playlist.is_public ? "Make playlist private" : "Make playlist public"}
-                            className="text-white/60 hover:text-white cursor-pointer flex items-center justify-center p-[var(--px-4)] hover:scale-110 active:scale-90 transition-all bg-transparent border-0 outline-none"
-                          >
-                            {playlist.is_public ? (
-                              <PublicIcon customWidth="14" customHeight="14" disableHover />
-                            ) : (
-                              <PrivateIcon customWidth="14" customHeight="14" disableHover />
-                            )}
-                          </button>
-                        </Tooltip>
-                      )}
+                      {/* Favorite heart — toggles favorite state inline (replaces the old Favorites tab). */}
+                      <Tooltip message={playlist.is_favorite ? "Remove from Favorites" : "Add to Favorites"}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleFavorite(playlist.uuid, playlist.is_favorite, e)}
+                          aria-label={playlist.is_favorite ? "Remove from Favorites" : "Add to Favorites"}
+                          aria-pressed={playlist.is_favorite}
+                          className="text-white/60 hover:text-white cursor-pointer flex items-center justify-center p-[var(--px-4)] hover:scale-110 active:scale-90 transition-all bg-transparent border-0 outline-none"
+                        >
+                          {playlist.is_favorite ? (
+                            <HeartFilledIcon customWidth="18" customHeight="18" className="text-white" disableHover={true} />
+                          ) : (
+                            <HeartStrokeIcon customWidth="18" customHeight="18" className="text-white/70" disableHover={true} />
+                          )}
+                        </button>
+                      </Tooltip>
+
+                      {/* Visibility (public/private) toggle. */}
+                      <Tooltip message={playlist.is_public ? "Public — click to make private" : "Private — click to make public"}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVisibilityFor({ uuid: playlist.uuid, isPublic: playlist.is_public });
+                          }}
+                          aria-label={playlist.is_public ? "Make playlist private" : "Make playlist public"}
+                          className="text-white/60 hover:text-white cursor-pointer flex items-center justify-center p-[var(--px-4)] hover:scale-110 active:scale-90 transition-all bg-transparent border-0 outline-none"
+                        >
+                          {playlist.is_public ? (
+                            <PublicIcon customWidth="14" customHeight="14" disableHover />
+                          ) : (
+                            <PrivateIcon customWidth="14" customHeight="14" disableHover />
+                          )}
+                        </button>
+                      </Tooltip>
 
                       {/* Dropdown Actions */}
                       <div className="relative" onClick={e => e.stopPropagation()}>

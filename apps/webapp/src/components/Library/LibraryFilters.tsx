@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { HeartFilledIcon, HeartStrokeIcon } from "@resomix/ui";
 import type { LibraryFilters as LibraryFiltersValue } from "@resomix/stores";
 
-type LibraryTab = "playlists" | "favorites" | "tracks";
+type LibraryTab = "playlists" | "tracks";
 
 interface LibraryFiltersProps {
   activeTab: LibraryTab;
@@ -10,10 +11,9 @@ interface LibraryFiltersProps {
   loading?: boolean;
   onApply: (filters: LibraryFiltersValue) => void;
   onClear: () => void;
-  onRefresh: () => void;
 }
 
-// "At least N tracks" options for the playlists/favorites tabs (backend treats num_tracks as a minimum).
+// "At least N tracks" options for the playlists tab (backend treats num_tracks as a minimum).
 const NUM_TRACKS_OPTIONS: { label: string; value: number | null }[] = [
   { label: "Any", value: null },
   { label: "10+", value: 10 },
@@ -41,7 +41,6 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({
   loading = false,
   onApply,
   onClear,
-  onRefresh,
 }) => {
   const [draft, setDraft] = useState<LibraryFiltersValue>(applied);
 
@@ -57,7 +56,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({
   const set = (patch: Partial<LibraryFiltersValue>) => setDraft((d) => ({ ...d, ...patch }));
 
   const hasContent = (f: LibraryFiltersValue) =>
-    Boolean(f.search.trim() || f.startDate || f.endDate || f.numTracks);
+    Boolean(f.search.trim() || f.startDate || f.endDate || f.numTracks || f.favoritesOnly);
   // Apply only makes sense once the user has entered something; Clear only when there's
   // something to clear — either an unapplied draft OR filters currently applied.
   const draftHasContent = hasContent(draft);
@@ -106,7 +105,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({
         />
       </div>
 
-      {/* Min tracks (playlists/favorites only — a track isn't a collection) */}
+      {/* Min tracks (playlists only — a track isn't a collection) */}
       {!isTracks && (
         <div className="flex flex-col">
           <label htmlFor="library-filter-tracks" className={labelClass}>Tracks</label>
@@ -121,6 +120,26 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({
               <option key={o.label} value={o.value ?? ""}>{o.label}</option>
             ))}
           </select>
+        </div>
+      )}
+
+      {/* Favorites-only toggle (playlists only). Stacks with the other filters on Apply. */}
+      {!isTracks && (
+        <div className="flex flex-col">
+          <label className={labelClass}>Favorites</label>
+          <button
+            type="button"
+            onClick={() => set({ favoritesOnly: !draft.favoritesOnly })}
+            aria-pressed={draft.favoritesOnly}
+            className={`${fieldClass} flex items-center gap-[var(--px-6)] cursor-pointer whitespace-nowrap ${
+              draft.favoritesOnly ? "border-[var(--color-primary)] text-[var(--color-primary)]" : ""
+            }`}
+          >
+            {draft.favoritesOnly
+              ? <HeartFilledIcon customWidth="12" customHeight="12" disableHover />
+              : <HeartStrokeIcon customWidth="12" customHeight="12" disableHover />}
+            Only favorites
+          </button>
         </div>
       )}
 
@@ -141,22 +160,6 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({
           className={`${btnBase} border-white/20 hover:border-white/50 text-white/80`}
         >
           Clear
-        </button>
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={loading}
-          className={`${btnBase} border-white/20 hover:border-white/50 text-white/80`}
-          aria-label="Refresh"
-        >
-          <svg
-            className={`w-[var(--px-14)] h-[var(--px-14)] ${loading ? "animate-spin" : ""}`}
-            viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-          >
-            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-            <path d="M21 3v6h-6" />
-          </svg>
-          Refresh
         </button>
       </div>
     </div>

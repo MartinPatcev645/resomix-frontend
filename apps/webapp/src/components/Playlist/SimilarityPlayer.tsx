@@ -127,7 +127,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
         {label && (
           <span
             title={label}
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 lg:static lg:translate-x-0 lg:translate-y-0 text-[length:var(--px-9)] lg:text-[length:var(--px-8)] font-fira font-light text-[var(--color-primary-hover)] truncate max-w-[var(--px-120)]"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 lg:static lg:translate-x-0 lg:translate-y-0 text-[length:var(--px-9)] lg:text-[length:var(--px-8)] font-fira font-light text-[var(--color-primary-hover)] truncate max-w-[var(--px-130)]"
           >
             {label}
           </span>

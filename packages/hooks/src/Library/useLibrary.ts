@@ -13,18 +13,21 @@ import {
   deleteMyPlaylist,
   changePlaylistVisibility,
   renamePlaylist as apiRenamePlaylist,
+  addFavorite,
   removeFavorite,
   type UserPlaylistListParams,
   type MyTracksParams,
 } from '@resomix/api-client';
 
-/** Applied playlist/favorites filters → backend query params (blank/any bounds dropped). */
+/** Applied playlist filters → backend query params (blank/any bounds dropped). */
 const toPlaylistParams = (f: LibraryFilters): UserPlaylistListParams => {
   const p: UserPlaylistListParams = {};
   if (f.search.trim()) p.search = f.search.trim();
   if (f.startDate) p.start_date = f.startDate;
   if (f.endDate) p.end_date = f.endDate;
   if (f.numTracks) p.num_tracks = f.numTracks;
+  // Favorites-only = owned AND favorited (the tab lists the user's own playlists).
+  if (f.favoritesOnly) p.own_favorites = true;
   return p;
 };
 
@@ -49,6 +52,7 @@ const formatPlaylist = (p: any): LibraryPlaylist => ({
   uuid: p.uuid || p.id,
   name: p.name,
   is_public: p.is_public,
+  is_favorite: !!p.is_favorite,
   trackCount: p.num_tracks || 0,
   duration: formatDuration(p.play_time),
   createdAt: p.created_at || new Date().toISOString(),
@@ -56,42 +60,32 @@ const formatPlaylist = (p: any): LibraryPlaylist => ({
 
 export function useLibrary() {
   const playlists = useLibraryStore(state => state.playlists);
-  const favorites = useLibraryStore(state => state.favorites);
   const tracks = useLibraryStore(state => state.tracks);
   const error = useLibraryStore(state => state.error);
   const activeTab = useLibraryStore(state => state.activeTab);
 
   const playlistsLoading = useLibraryStore(state => state.playlistsLoading);
-  const favoritesLoading = useLibraryStore(state => state.favoritesLoading);
   const tracksLoading = useLibraryStore(state => state.tracksLoading);
 
   const playlistsPage = useLibraryStore(state => state.playlistsPage);
   const playlistsTotalPages = useLibraryStore(state => state.playlistsTotalPages);
   const playlistsTotal = useLibraryStore(state => state.playlistsTotal);
-  const favoritesPage = useLibraryStore(state => state.favoritesPage);
-  const favoritesTotalPages = useLibraryStore(state => state.favoritesTotalPages);
-  const favoritesTotal = useLibraryStore(state => state.favoritesTotal);
   const tracksPage = useLibraryStore(state => state.tracksPage);
   const tracksTotalPages = useLibraryStore(state => state.tracksTotalPages);
   const tracksTotal = useLibraryStore(state => state.tracksTotal);
 
   const setPlaylists = useLibraryStore(state => state.setPlaylists);
-  const setFavorites = useLibraryStore(state => state.setFavorites);
   const setTracks = useLibraryStore(state => state.setTracks);
   const setPlaylistsLoading = useLibraryStore(state => state.setPlaylistsLoading);
-  const setFavoritesLoading = useLibraryStore(state => state.setFavoritesLoading);
   const setTracksLoading = useLibraryStore(state => state.setTracksLoading);
   const setError = useLibraryStore(state => state.setError);
   const setActiveTab = useLibraryStore(state => state.setActiveTab);
   const setPlaylistsPagination = useLibraryStore(state => state.setPlaylistsPagination);
-  const setFavoritesPagination = useLibraryStore(state => state.setFavoritesPagination);
   const setTracksPagination = useLibraryStore(state => state.setTracksPagination);
 
   const playlistsFilters = useLibraryStore(state => state.playlistsFilters);
-  const favoritesFilters = useLibraryStore(state => state.favoritesFilters);
   const tracksFilters = useLibraryStore(state => state.tracksFilters);
   const setPlaylistsFilters = useLibraryStore(state => state.setPlaylistsFilters);
-  const setFavoritesFilters = useLibraryStore(state => state.setFavoritesFilters);
   const setTracksFilters = useLibraryStore(state => state.setTracksFilters);
 
   const reset = useLibraryStore(state => state.reset);
@@ -116,26 +110,6 @@ export function useLibrary() {
       setPlaylistsLoading(false);
     }
   }, [setPlaylistsLoading, setError, setPlaylists, setPlaylistsPagination]);
-
-  const loadFavorites = useCallback(async (page = 1, pageSize = 20) => {
-    setFavoritesLoading(true);
-    setError(null);
-    try {
-      const filters = useLibraryStore.getState().favoritesFilters;
-      const resp = await getAllPlaylists({ page, page_size: pageSize, all_favorites: true, ...toPlaylistParams(filters) });
-      if (resp.success && resp.data && Array.isArray(resp.data)) {
-        setFavorites(resp.data.map(formatPlaylist));
-        const total = (resp as any).total || 0;
-        setFavoritesPagination(page, Math.max(1, Math.ceil(total / pageSize)), total);
-      } else {
-        setError(resp.error || "Failed to load favorites");
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to load favorites");
-    } finally {
-      setFavoritesLoading(false);
-    }
-  }, [setFavoritesLoading, setError, setFavorites, setFavoritesPagination]);
 
   // `silent` refetches in place (for the 10s artifact poll) without toggling the tracks spinner,
   // so the list doesn't flash while we wait for a sibling analysis/playlist to finish generating.
@@ -213,44 +187,46 @@ export function useLibrary() {
       if (resp.success) {
         clearPlaylistFromCache(uuid);
         const state = useLibraryStore.getState();
-
-        // Drop from both the owned-playlists and favorites lists (a deletion is global).
         setPlaylists(state.playlists.filter(p => p.uuid !== uuid));
         setPlaylistsPagination(state.playlistsPage, state.playlistsTotalPages, Math.max(0, state.playlistsTotal - 1));
-        if (state.favorites.some(p => p.uuid === uuid)) {
-          setFavorites(state.favorites.filter(p => p.uuid !== uuid));
-          setFavoritesPagination(state.favoritesPage, state.favoritesTotalPages, Math.max(0, state.favoritesTotal - 1));
-        }
         return { success: true };
       }
       return { success: false, error: (resp as any).error || "Failed to delete playlist" };
     } catch (err: any) {
       return { success: false, error: err.message || "Failed to delete playlist" };
     }
-  }, [setPlaylists, setPlaylistsPagination, setFavorites, setFavoritesPagination]);
+  }, [setPlaylists, setPlaylistsPagination]);
 
-  // Remove a playlist from the user's favorites (Favorites tab). On success the row is dropped from
-  // the favorites list; the owned-playlists list is untouched.
-  const removeFavoritePlaylist = useCallback(async (uuid: string) => {
+  /**
+   * Toggle a playlist's favorite state (the row heart). Optimistic: flips is_favorite immediately
+   * and reverts on failure. When the favorites-only filter is active, un-favoriting drops the row
+   * from the list on success (it no longer matches the view).
+   */
+  const toggleFavorite = useCallback(async (uuid: string, makeFavorite: boolean) => {
+    const setFav = (val: boolean) => {
+      const s = useLibraryStore.getState();
+      setPlaylists(s.playlists.map(p => p.uuid === uuid ? { ...p, is_favorite: val } : p));
+    };
+    setFav(makeFavorite); // optimistic
     try {
-      const resp = await removeFavorite(uuid);
+      const resp = makeFavorite ? await addFavorite(uuid) : await removeFavorite(uuid);
       if (resp && (resp as any).success) {
-        // Drop any cached copy so this playlist's hero heart isn't stale (shows favorited) next open.
+        // Drop any cached copy so the playlist hero heart isn't stale next open.
         clearPlaylistFromCache(uuid);
-        const state = useLibraryStore.getState();
-        setFavorites(state.favorites.filter(p => p.uuid !== uuid));
-        setFavoritesPagination(
-          state.favoritesPage,
-          state.favoritesTotalPages,
-          Math.max(0, state.favoritesTotal - 1)
-        );
+        const after = useLibraryStore.getState();
+        if (!makeFavorite && after.playlistsFilters.favoritesOnly) {
+          setPlaylists(after.playlists.filter(p => p.uuid !== uuid));
+          setPlaylistsPagination(after.playlistsPage, after.playlistsTotalPages, Math.max(0, after.playlistsTotal - 1));
+        }
         return { success: true };
       }
-      return { success: false, error: (resp as any)?.error || "Failed to remove favorite" };
+      setFav(!makeFavorite); // revert
+      return { success: false, error: (resp as any)?.error || "Failed to update favorite" };
     } catch (err: any) {
-      return { success: false, error: err.message || "Failed to remove favorite" };
+      setFav(!makeFavorite); // revert
+      return { success: false, error: err.message || "Failed to update favorite" };
     }
-  }, [setFavorites, setFavoritesPagination]);
+  }, [setPlaylists, setPlaylistsPagination]);
 
   /** Owner-only visibility toggle for a library playlist (public↔private), optimistic on success. */
   const setPlaylistVisibility = useCallback(async (uuid: string, isPublic: boolean) => {
@@ -258,16 +234,14 @@ export function useLibrary() {
       const resp = await changePlaylistVisibility(uuid, isPublic);
       if (resp.success) {
         const state = useLibraryStore.getState();
-        const mark = (list: LibraryPlaylist[]) => list.map(p => p.uuid === uuid ? { ...p, is_public: isPublic } : p);
-        setPlaylists(mark(state.playlists));
-        setFavorites(mark(state.favorites));
+        setPlaylists(state.playlists.map(p => p.uuid === uuid ? { ...p, is_public: isPublic } : p));
         return { success: true };
       }
       return { success: false, error: resp.error || "Failed to update visibility" };
     } catch (err: any) {
       return { success: false, error: err.message || "Failed to update visibility" };
     }
-  }, [setPlaylists, setFavorites]);
+  }, [setPlaylists]);
 
   // Sharing = ensure the playlist is public. Thin wrapper over setPlaylistVisibility.
   const sharePlaylist = useCallback(
@@ -275,7 +249,7 @@ export function useLibrary() {
     [setPlaylistVisibility]
   );
 
-  /** Rename an owned library playlist; optimistically updates the name in both lists on success. */
+  /** Rename an owned library playlist; optimistically updates the name in the list on success. */
   const renamePlaylist = useCallback(async (uuid: string, newName: string) => {
     try {
       const resp = await apiRenamePlaylist(uuid, newName);
@@ -283,69 +257,56 @@ export function useLibrary() {
         // Drop any cached copy so the playlist hero shows the new name on next open.
         clearPlaylistFromCache(uuid);
         const state = useLibraryStore.getState();
-        const rename = (list: LibraryPlaylist[]) =>
-          list.map(p => p.uuid === uuid ? { ...p, name: newName } : p);
-        setPlaylists(rename(state.playlists));
-        setFavorites(rename(state.favorites));
+        setPlaylists(state.playlists.map(p => p.uuid === uuid ? { ...p, name: newName } : p));
         return { success: true };
       }
       return { success: false, error: (resp as any).error || "Failed to rename playlist" };
     } catch (err: any) {
       return { success: false, error: err.message || "Failed to rename playlist" };
     }
-  }, [setPlaylists, setFavorites]);
+  }, [setPlaylists]);
 
   // Commit a tab's filters and reload from page 1. Store `set` is synchronous, so the
   // load* call below reads the just-set filters via getState().
-  const applyFilters = useCallback((tab: 'playlists' | 'favorites' | 'tracks', filters: LibraryFilters) => {
-    if (tab === 'favorites') {
-      setFavoritesFilters(filters);
-      loadFavorites(1);
-    } else if (tab === 'tracks') {
+  const applyFilters = useCallback((tab: 'playlists' | 'tracks', filters: LibraryFilters) => {
+    if (tab === 'tracks') {
       setTracksFilters(filters);
       loadTracks(1);
     } else {
       setPlaylistsFilters(filters);
       loadPlaylists(1);
     }
-  }, [setFavoritesFilters, setTracksFilters, setPlaylistsFilters, loadFavorites, loadTracks, loadPlaylists]);
+  }, [setTracksFilters, setPlaylistsFilters, loadTracks, loadPlaylists]);
 
   /** Reset a tab's filters to empty and reload. */
-  const clearFilters = useCallback((tab: 'playlists' | 'favorites' | 'tracks') => {
+  const clearFilters = useCallback((tab: 'playlists' | 'tracks') => {
     applyFilters(tab, { ...EMPTY_LIBRARY_FILTERS });
   }, [applyFilters]);
 
   return {
     playlists,
-    favorites,
     tracks,
     error,
     activeTab,
     playlistsLoading,
-    favoritesLoading,
     tracksLoading,
     playlistsPage,
     playlistsTotalPages,
     playlistsTotal,
-    favoritesPage,
-    favoritesTotalPages,
-    favoritesTotal,
     tracksPage,
     tracksTotalPages,
     tracksTotal,
     setActiveTab,
     loadPlaylists,
-    loadFavorites,
     loadTracks,
     removeTrack,
     removePlaylist,
-    removeFavoritePlaylist,
+    toggleFavorite,
     sharePlaylist,
     setPlaylistVisibility,
     renamePlaylist,
     // Filters (applied, per tab) + actions.
     playlistsFilters,
-    favoritesFilters,
     tracksFilters,
     applyFilters,
     clearFilters,
