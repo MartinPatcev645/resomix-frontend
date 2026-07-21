@@ -204,6 +204,12 @@ Components render markup. Anything else is a hook.
   (`Auth`, `Playlist`, `Player`, `Similarity`, `Library`, `Cart`, `Entitlements`, `Transfer`, …)
 - Shared client state → zustand store in `packages/stores`, accessed with a **selector**:
   `useAuthStore(s => s.isAuthenticated)` — not `const { x } = useStore()` for hot paths.
+- **Gated actions (share/rename/export/favorite/rate/upload) go through `useAccess()`** — one
+  verdict per action: `allowed | login | upgrade | pending`. Never gate UI on
+  `useAuthStore.isAuthenticated` or raw `useEntitlements` fields: mixing those signals is what
+  caused logged-in users to see "log in" modals. `pending` = dim the control and no-op; never
+  raise a gate modal from an unsettled state. Plan-agnostic by design — new plans (basic/max)
+  need zero frontend changes.
 - HTTP → `packages/api-client`. Authenticated calls **must** go through `authClient`
   (it attaches the Bearer token and serialises refresh on 401).
 

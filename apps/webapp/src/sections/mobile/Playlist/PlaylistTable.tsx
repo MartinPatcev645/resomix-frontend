@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SimilarityPlayer } from "@/components/index.ts";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
-import { formatDuration, formatPercentage, useGlobalAudioController, useEntitlements } from "@resomix/hooks";
+import { formatDuration, formatPercentage, useGlobalAudioController, useAccess } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { HoverFlow, ButtonSleek } from "@resomix/ui";
 import { useEntitlementCta } from "@/utils/entitlementCta.ts";
@@ -19,11 +19,14 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const { playlistData } = usePlaylistStore();
     const tracks = playlistData?.similar_tracks ?? [];
 
-    // Result-unlock teasing: reveal the plan's quota, blur + upsell the rest.
-    const { maxTracksPerPlaylist, isGuest, loading: entitlementsLoading } = useEntitlements();
+    // Result-unlock teasing through the single source of truth (same contract as desktop).
+    // While unsettled: fail-CLOSED (guest default stays blurred) and the upsell card is withheld.
+    const access = useAccess();
     const { trigger: triggerCta } = useEntitlementCta();
-    const maxUnlocked = entitlementsLoading ? Number.POSITIVE_INFINITY : maxTracksPerPlaylist;
-    const ctaCardRank = entitlementsLoading ? -1 : maxTracksPerPlaylist + 2;
+    const maxUnlocked = access.unlockedTracks;
+    const ctaCardRank = access.teaseReady ? access.unlockedTracks + 2 : -1;
+    const isGuest = access.isGuestForCopy;
+    const maxTracksPerPlaylist = access.unlockedTracks;
 
     // --- Analysis footer stats ---
     const playlistId = playlistData?.playlist?.id;

@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { IconButton, HoverFlow, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, usePlaylistExport, useEntitlements, useFavoritePlaylist } from "@resomix/hooks";
-import { FEATURE_KEYS } from "@resomix/api-client";
+import { formatDuration, usePlaylistExport, useAccess, useFavoritePlaylist, type AccessAction } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
@@ -43,19 +42,28 @@ const PlaylistHero: React.FC = () => {
   const { playlistData, isLoading, error } = usePlaylistStore();
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
-  // Entitlement gating (server is the guard; this hides actions the plan doesn't grant).
-  // Rename is logged-in-owner-only; the overall "Rate These Results" (playlist rating + feedback)
-  // stays open to guests (visitor_id), so it is NOT gated here.
-  const { can, isGuest } = useEntitlements();
-  const canRename = can(FEATURE_KEYS.CAN_RENAME);
+  // Single source of truth for gated actions (share/rename/favorite/…): useAccess merges the
+  // client auth flag with the server entitlements and yields one verdict per action —
+  // allowed | login | upgrade | pending. While "pending" the control is dimmed and a click is a
+  // no-op; we NEVER show a login/upgrade modal from an unsettled state (that's the bug where a
+  // logged-in user was told to log in). The overall "Rate These Results" (playlist rating +
+  // feedback) stays open to guests (visitor_id), so it is NOT gated here.
+  const access = useAccess();
   // Favorite/unfavorite the current playlist (heart top-right of the card). Guests are prompted to
   // log in; the backend rejects favoriting a guest-created playlist and that message is surfaced.
   const { isFavorite, toggleFavorite } = useFavoritePlaylist();
   // Login/upgrade gate prompt for actions the current tier can't do (guests see rename/export but
   // are intercepted with a "log in" modal rather than the button being hidden).
   const [gate, setGate] = React.useState<{ reason: string; title: string; body: string } | null>(null);
-  const gateFor = (title: string, body: string) =>
-    setGate({ reason: isGuest ? "login_required" : "upgrade_required", title, body });
+  /** Run `action` if allowed; otherwise raise the correct gate. Pending → no-op (control is dimmed). */
+  const withAccess = (action: AccessAction, title: string, body: string, run: () => void) => {
+    const v = access.verdict(action);
+    if (v === "pending") return;
+    if (v === "allowed") return run();
+    setGate({ reason: v === "login" ? "login_required" : "upgrade_required", title, body });
+  };
+  // Dim gated controls until the verdicts are real.
+  const accessDim = access.ready ? "" : " opacity-60";
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -76,12 +84,15 @@ const PlaylistHero: React.FC = () => {
   };
 
   const handleFavoriteClick = async () => {
-    const res = await toggleFavorite();
-    if (res.gated) {
-      gateFor("Log in to save favorites", "Create a free account or log in to add playlists to your favorites.");
-    } else if (!res.ok && res.error) {
-      handleStatusChange('error', res.error, 'Favorites');
-    }
+    withAccess("favorite", "Log in to save favorites", "Create a free account or log in to add playlists to your favorites.", async () => {
+      const res = await toggleFavorite();
+      if (res.gated) {
+        // Backstop from the hook (client auth flag says guest) — same login gate.
+        setGate({ reason: "login_required", title: "Log in to save favorites", body: "Create a free account or log in to add playlists to your favorites." });
+      } else if (!res.ok && res.error) {
+        handleStatusChange('error', res.error, 'Favorites');
+      }
+    });
   };
 
   const handleRenameClose = () => setShowRename(false);
@@ -98,11 +109,11 @@ const PlaylistHero: React.FC = () => {
 
   const handleExportButtonClick = () => {
     if (isExporting) return;
-    if (!canExport) {
-      gateFor("Log in to export", "Create a free account or log in to export your playlists.");
-      return;
-    }
-    setShowExportMenu((v) => !v);
+    withAccess("export", "Log in to export", "Create a free account or log in to export your playlists.", () => {
+      // `canExport` additionally requires playlist data to be present.
+      if (!canExport) return;
+      setShowExportMenu((v) => !v);
+    });
   };
 
   const handleDownloadExportClick = () => {
@@ -263,10 +274,10 @@ const PlaylistHero: React.FC = () => {
                       text="Rename"
                       transparent={true}
                       customWidth="min-w-[var(--px-100)]"
-                      onClick={() => canRename ? setShowRename(true) : gateFor("Log in to rename", "Create a free account or log in to rename your playlists.")}
+                      onClick={() => withAccess("rename", "Log in to rename", "Create a free account or log in to rename your playlists.", () => setShowRename(true))}
                       icon={<img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                       hoverIcon={<img src={RenameBlackSvg} aria-label="Rename" draggable={false} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                      className="playlist-action-button"
+                      className={"playlist-action-button" + accessDim}
                       id="playlist-hero-rename-button"
                     />
                   </Tooltip>
@@ -309,10 +320,10 @@ const PlaylistHero: React.FC = () => {
                     text="Share"
                     transparent={true}
                     customWidth="min-w-[var(--px-100)]"
-                    onClick={() => !isGuest ? setShowShare(true) : gateFor("Log in to share", "Create a free account or log in to share your playlists.")}
+                    onClick={() => withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => setShowShare(true))}
                     icon={<img src={ShareSvg} draggable={false} alt="Share" aria-label="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                     hoverIcon={<img src={ShareBlackSvg} aria-label="Share" draggable={false} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    className="playlist-action-button"
+                    className={"playlist-action-button" + accessDim}
                     id="playlist-hero-share-button"
                   />
                 </Tooltip>

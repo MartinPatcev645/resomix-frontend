@@ -3,8 +3,8 @@ import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import { IconComp, Tooltip, ButtonSleek } from "@resomix/ui";
-import { formatDuration, formatPercentage, useGlobalAudioController, useEntitlements } from "@resomix/hooks";
-import { usePlayerStore, usePlaylistStore, useAuthStore } from "@resomix/stores";
+import { formatDuration, formatPercentage, useGlobalAudioController, useAccess } from "@resomix/hooks";
+import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { rateTrack } from "@resomix/api-client";
 import { useEntitlementCta } from "@/utils/entitlementCta.ts";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
@@ -24,14 +24,16 @@ const PlaylistTable: React.FC = () => {
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
     const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
 
-    // Result-unlock teasing: how many tracks this plan reveals; the rest are blurred + upsold.
-    const { maxTracksPerPlaylist, isGuest, loading: entitlementsLoading } = useEntitlements();
-    // Per-track rating is login-required: guests can click but get a login prompt (no API call).
-    const isAuthenticated = useAuthStore(s => s.isAuthenticated);
-    const [rateLoginPrompt, setRateLoginPrompt] = useState(false);
+    // Result-unlock teasing + per-action gating — all through the single source of truth.
+    // While unsettled: rows beyond the guest default stay blurred (fail-CLOSED — never flash the
+    // full list at a guest) and the upsell card is withheld until the verdict/copy are real.
+    const access = useAccess();
+    const [rateGate, setRateGate] = useState<"login_required" | "upgrade_required" | null>(null);
     const { trigger: triggerCta } = useEntitlementCta();
-    const maxUnlocked = entitlementsLoading ? Number.POSITIVE_INFINITY : maxTracksPerPlaylist;
-    const ctaCardRank = entitlementsLoading ? -1 : maxTracksPerPlaylist + 2; // card sits 2 rows into the locked zone
+    const maxUnlocked = access.unlockedTracks;
+    const ctaCardRank = access.teaseReady ? access.unlockedTracks + 2 : -1; // card sits 2 rows into the locked zone
+    const isGuest = access.isGuestForCopy;
+    const maxTracksPerPlaylist = access.unlockedTracks;
 
     const handlePlayButtonClick = useCallback((trackId: string) => {
         if (!DEMO_MODE) {
@@ -95,10 +97,12 @@ const PlaylistTable: React.FC = () => {
     }, [trackIdsKey, setTrackRating, trackRatings, tracks]);
 
     const handleTrackRating = async (trackId: string, rating: number) => {
-        // Track rating requires a logged-in user (always sent with a user id). Guests can click but
-        // get a login prompt instead of an API call.
-        if (!isAuthenticated) {
-            setRateLoginPrompt(true);
+        // Gated by the `can_rate_tracks` entitlement (single source of truth) — guests get the
+        // login gate, a plan without the capability gets the upgrade gate, unsettled is a no-op.
+        const v = access.verdict("rateTrack");
+        if (v === "pending") return;
+        if (v !== "allowed") {
+            setRateGate(v === "login" ? "login_required" : "upgrade_required");
             return;
         }
         try {
@@ -331,10 +335,12 @@ const PlaylistTable: React.FC = () => {
                 </div>
             </div>
             <GateCtaModal
-                reason={rateLoginPrompt ? "login_required" : null}
-                title="Log in to rate tracks"
-                body="Rating individual tracks needs an account. Log in or create a free account to rate."
-                onClose={() => setRateLoginPrompt(false)}
+                reason={rateGate}
+                title={rateGate === "upgrade_required" ? "Upgrade to rate tracks" : "Log in to rate tracks"}
+                body={rateGate === "upgrade_required"
+                    ? "Your current plan does not include track rating. Subscribe to rate tracks."
+                    : "Rating individual tracks needs an account. Log in or create a free account to rate."}
+                onClose={() => setRateGate(null)}
             />
         </div>
     );

@@ -228,9 +228,11 @@ authClient.interceptors.response.use(
           }
         }
         
-        // Only logout on auth errors (401, 403), not on network errors
+        // Only logout on auth errors (401, 403), not on network errors. This is the SERVER
+        // invalidating the session — pass reason "expired" so the UI raises the
+        // "session expired, please log in again" modal (in every tab, via the logout broadcast).
         processQueue(refreshError, null);
-        logout();
+        logout({ reason: 'expired' });
         isRefreshing = false;
         return Promise.reject(refreshError);
       }

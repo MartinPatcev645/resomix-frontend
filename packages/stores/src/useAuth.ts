@@ -5,6 +5,12 @@ import { hybridStorage, deleteCookie, TAB_ID } from './cookieStorage';
 
 interface LogoutOptions {
     broadcast?: boolean;
+    /**
+     * Why the logout happened. "expired" = the SERVER invalidated the session (refresh 401/403,
+     * verifySession invalid) — the UI shows a "session expired, please log in again" modal.
+     * "user" (default) = the user clicked logout — no modal.
+     */
+    reason?: 'user' | 'expired';
 }
 
 interface AuthState {
@@ -13,12 +19,16 @@ interface AuthState {
     accessToken: string | null;
     isAuthenticated: boolean;
     isLoading: boolean;
+    /** True after a server-side session invalidation → App shows the "log in again" modal. */
+    sessionExpired: boolean;
 
     // Actions
     setAuth: (user: User, accessToken: string) => void;
     setAccessToken: (token: string) => void;
     setUser: (user: User) => void;
     logout: (options?: LogoutOptions) => void;
+    /** Dismiss (or programmatically raise) the session-expired modal. */
+    setSessionExpired: (value: boolean) => void;
     updateUser: (updates: Partial<User>) => void;
 
     // Utility
@@ -45,6 +55,7 @@ const useAuthStore = create<AuthState>()(
             accessToken: getInitialAccessToken(),
             isAuthenticated: false,
             isLoading: false,
+            sessionExpired: false,
 
             // Set full authentication
             setAuth: (user, accessToken) => {
@@ -64,6 +75,7 @@ const useAuthStore = create<AuthState>()(
                     user,
                     accessToken,
                     isAuthenticated: true,
+                    sessionExpired: false, // fresh login clears any pending "session expired" modal
                 });
                 // Also persist access token in sessionStorage
                 if (typeof window !== 'undefined' && accessToken) {
@@ -143,6 +155,9 @@ const useAuthStore = create<AuthState>()(
                     user: null,
                     accessToken: null,
                     isAuthenticated: false,
+                    // Server-invalidated sessions raise the "log in again" modal; a user-initiated
+                    // logout must never show it.
+                    sessionExpired: options?.reason === 'expired',
                 });
                 // Clear both localStorage and cookies
                 try {
@@ -168,13 +183,16 @@ const useAuthStore = create<AuthState>()(
                 }
                 if (options?.broadcast !== false) {
                     try {
-                        localStorage.setItem('resomix-logout', String(Date.now()));
+                        // Carry the reason so other tabs can also raise the session-expired modal.
+                        localStorage.setItem('resomix-logout', JSON.stringify({ ts: Date.now(), reason: options?.reason ?? 'user' }));
                     } catch (e) {
                         console.warn('Unable to broadcast logout:', e);
                     }
                 }
                 deleteCookie('resomix-auth-storage');
             },
+
+            setSessionExpired: (value) => set({ sessionExpired: value }),
 
             // Update user fields
             updateUser: (updates) => {
@@ -233,9 +251,15 @@ if (typeof window !== 'undefined') {
     window.addEventListener('storage', (event) => {
         if (event.storageArea !== window.localStorage) return;
 
-        // Handle logout broadcast from other tabs
+        // Handle logout broadcast from other tabs (value carries the reason; legacy plain-timestamp
+        // values parse as a user-initiated logout).
         if (event.key === 'resomix-logout' && event.newValue) {
-            useAuthStore.getState().logout({ broadcast: false });
+            let reason: 'user' | 'expired' = 'user';
+            try {
+                const parsed = JSON.parse(event.newValue);
+                if (parsed && parsed.reason === 'expired') reason = 'expired';
+            } catch { /* legacy format — treat as user logout */ }
+            useAuthStore.getState().logout({ broadcast: false, reason });
             return;
         }
 

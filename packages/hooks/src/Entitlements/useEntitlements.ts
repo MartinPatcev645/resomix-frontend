@@ -76,6 +76,14 @@ export interface UseEntitlements {
 export function useEntitlements(): UseEntitlements {
   // A stable identity string: "guest" or the logged-in user's uuid. Changes on login/logout.
   const identity = useAuthStore((s) => (s.isAuthenticated ? (s.user?.uuid ?? "user") : "guest"));
+  // HOLD guard: right after a tab reopen the store hydrates `isAuthenticated: true` from
+  // localStorage while the access token (sessionStorage / refresh cookie) is still being
+  // restored. Firing /entitlements/me in that window sends NO Bearer token, the server answers
+  // with GUEST entitlements, and we'd cache a logged-in user as a guest. So while the client
+  // claims "authenticated" but has no token yet, we stay in `loading` and wait for the token
+  // (verifySession/useAuthInit resolves it, or logs the user out — either way `identity`/token
+  // changes and this re-runs).
+  const waitingForToken = useAuthStore((s) => s.isAuthenticated && !s.accessToken);
 
   const [data, setData] = useState<MyEntitlements | null>(_cacheFresh(identity) ? cache : null);
   const [loading, setLoading] = useState<boolean>(!_cacheFresh(identity));
@@ -92,13 +100,14 @@ export function useEntitlements(): UseEntitlements {
 
   // (Re)load whenever the identity changes (login/logout) or on first mount.
   useEffect(() => {
+    if (waitingForToken) return; // stay loading; re-runs when the token lands or auth flips off
     if (_cacheFresh(identity)) {
       setData(cache);
       setLoading(false);
       return;
     }
     void load(false);
-  }, [identity, load]);
+  }, [identity, load, waitingForToken]);
 
   const map = data?.entitlements ?? {};
 
@@ -145,3 +154,17 @@ export function resetEntitlementsCache(): void {
   cachedIdentity = null;
   inflight = null;
 }
+
+// Explicit invalidation on auth flips (login AND logout). The identity-keyed cache already makes
+// stale reads impossible, but this drops the previous identity's data from memory outright and
+// makes the invalidation self-contained (the stores package cannot call us — it sits below hooks
+// in the dependency graph). Cross-tab logout is covered too: the `resomix-logout` broadcast makes
+// every tab run `logout({broadcast:false})`, which flips `isAuthenticated` in that tab's store and
+// lands here.
+let _prevAuthedForCache = useAuthStore.getState().isAuthenticated;
+useAuthStore.subscribe((state) => {
+  if (state.isAuthenticated !== _prevAuthedForCache) {
+    _prevAuthedForCache = state.isAuthenticated;
+    resetEntitlementsCache();
+  }
+});
