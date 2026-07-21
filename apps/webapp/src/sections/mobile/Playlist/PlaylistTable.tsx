@@ -161,9 +161,13 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                             )}
                                         </div>
                                         <TrackArtwork artworkUrl={track.artwork_url} className="w-[var(--px-40)] h-[var(--px-40)] rounded-md mr-[var(--px-6)]" />
-                                        <div className="flex flex-col w-[var(--px-290)] gap-[var(--px-2)]" role="cell">
-                                            <div className="w-full">
-                                                <div className="select-none text-[length:var(--px-13)] lg:text-[length:var(--px-11)] font-helvetica font-light tracking-[var(--px-0-1)] leading-[var(--px-14)] uppercase text-left truncate max-w-[var(--px-250)]">
+                                        {/* flex-1 + min-w-0 (not a fixed width): the column takes the space
+                                            left after the rank/artwork and can SHRINK, so `truncate` on the
+                                            rows below actually clips instead of overflowing the card. pr keeps
+                                            every row clear of the absolute More button pinned top-right. */}
+                                        <div className="flex flex-col flex-1 min-w-0 pr-[var(--px-24)] gap-[var(--px-2)]" role="cell">
+                                            <div className="w-full min-w-0 overflow-hidden">
+                                                <div className="select-none text-[length:var(--px-13)] lg:text-[length:var(--px-11)] font-helvetica font-light tracking-[var(--px-0-1)] leading-[var(--px-14)] uppercase text-left truncate w-full">
                                                     {currentTrackId === track.id && isPlaying ? (
                                                         <HoverFlow
                                                             text={displayOrNA(track.title)}
@@ -171,7 +175,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                             delay={800}
                                                             speed={40}
                                                             endPause={1000}
-                                                            maxWidth="250px"
+                                                            maxWidth="100%"
                                                             flowAlways={true}
                                                         />
                                                     ) : (
@@ -179,60 +183,63 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="w-full" role="cell">
-                                                <div className="select-none text-[length:var(--px-8)] font-helvetica font-light tracking-[var(--px-0-1)] text-left leading-[var(--px-9)] truncate max-w-[var(--px-250)]">
+                                            <div className="w-full min-w-0 overflow-hidden" role="cell">
+                                                <div className="select-none text-[length:var(--px-8)] font-helvetica font-light tracking-[var(--px-0-1)] text-left leading-[var(--px-9)] truncate w-full">
                                                     {displayOrNA(track.artist)}
                                                 </div>
                                             </div>
-                                            <div className="w-full flex items-center justify-between">
-                                                <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-9)] flex items-center gap-[var(--px-3)]" role="cell">
+                                            {/* year | score+bar | duration — clean 3-zone justify-between (no
+                                                nested wrapper, no ml-60), so the score bar sits centered and
+                                                becomes the anchor the label lines up under below. */}
+                                            <div className="w-full flex items-center justify-between gap-[var(--px-6)]">
+                                                <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-9)] flex items-center shrink-0" role="cell">
                                                     {track.year ?? ''}
                                                 </div>
-                                                <div className="flex items-center justify-between" role="cell">
-                                                    <div className="flex items-center">
-                                                        <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)]">
-                                                            {formatPercentage(track.score, 0)}
-                                                        </div>
-                                                        <div className="w-[var(--px-30)] h-[var(--px-3)] bg-transparent rounded-full overflow-hidden ml-[var(--px-5)] outline outline-white outline-dotted">
-                                                            <div
-                                                                className="h-full bg-white rounded-full transition-all duration-300"
-                                                                style={{ width: `${track.score * 100}%` }}
-                                                            ></div>
-                                                        </div>
+                                                <div className="flex items-center shrink-0" role="cell">
+                                                    <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] leading-[var(--px-7)]">
+                                                        {formatPercentage(track.score, 0)}
                                                     </div>
-                                                    <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-left leading-[var(--px-7)] flex items-center gap-[var(--px-3)] ml-[var(--px-60)]" role="cell">
-                                                        {formatDuration(track.duration)}
+                                                    <div className="w-[var(--px-30)] h-[var(--px-3)] bg-transparent rounded-full overflow-hidden ml-[var(--px-5)] outline outline-white outline-dotted">
+                                                        <div
+                                                            className="h-full bg-white rounded-full transition-all duration-300"
+                                                            style={{ width: `${track.score * 100}%` }}
+                                                        ></div>
                                                     </div>
                                                 </div>
+                                                <div className="text-[length:var(--px-7)] lg:text-[length:var(--px-5-5)] text-[var(--color-primary)] lg:text-[var(--color-primary-hover)] font-fira font-light tracking-[var(--px-0-5)] text-right leading-[var(--px-7)] flex items-center shrink-0" role="cell">
+                                                    {formatDuration(track.duration)}
+                                                </div>
                                             </div>
-                                            {/* Genre (left) + Label (right).
-                                                A 2-column grid rather than justify-between: each side owns a fixed half, so
-                                                the label stays right-aligned even when the genre is missing, and a long
-                                                value truncates inside its own half instead of pushing the other across.
-                                                The caption is rendered only when there is a value — an absent field shows
-                                                nothing at all. The whole row is skipped when both are absent. */}
+                                            {/* Genre (left) · Label (centered under the score bar) · spacer.
+                                                A 3-column grid of equal thirds: the label lives in the MIDDLE
+                                                cell so it's pinned dead-center of the column no matter how long
+                                                the genre or label is — the empty right third balances the left
+                                                genre third. Each value truncates inside its own third (fixed
+                                                length). Captions render only with a value; the whole row is
+                                                skipped when both are absent. */}
                                             {(firstGenre(track.genre) || resolveLabel(track.label)) && (
-                                                <div className="w-full grid grid-cols-2 gap-[var(--px-8)] text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-5)] leading-[var(--px-9)]">
-                                                    <div className="flex items-center gap-[var(--px-3)] min-w-0" role="cell">
+                                                <div className="w-full grid grid-cols-3 items-center gap-[var(--px-6)] text-[length:var(--px-7)] font-fira font-light tracking-[var(--px-0-5)] leading-[var(--px-9)]">
+                                                    <div className="flex items-center gap-[var(--px-3)] min-w-0 justify-self-start" role="cell">
                                                         {firstGenre(track.genre) && (
                                                             <>
                                                                 <span className="text-[var(--color-primary-hover)] opacity-70 shrink-0">GENRE</span>
-                                                                <span className="text-[var(--color-primary)] truncate" title={firstGenre(track.genre)}>
+                                                                <span className="text-[var(--color-primary)] truncate min-w-0" title={firstGenre(track.genre)}>
                                                                     {firstGenre(track.genre)}
                                                                 </span>
                                                             </>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center justify-end gap-[var(--px-3)] min-w-0" role="cell">
+                                                    <div className="flex items-center justify-center gap-[var(--px-3)] min-w-0" role="cell">
                                                         {resolveLabel(track.label) && (
                                                             <>
                                                                 <span className="text-[var(--color-primary-hover)] opacity-70 shrink-0">LABEL</span>
-                                                                <span className="text-[var(--color-primary)] truncate" title={resolveLabel(track.label)}>
+                                                                <span className="text-[var(--color-primary)] truncate min-w-0" title={resolveLabel(track.label)}>
                                                                     {resolveLabel(track.label)}
                                                                 </span>
                                                             </>
                                                         )}
                                                     </div>
+                                                    <div aria-hidden="true" />
                                                 </div>
                                             )}
                                         </div>

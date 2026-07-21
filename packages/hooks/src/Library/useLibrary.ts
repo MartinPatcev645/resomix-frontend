@@ -212,21 +212,28 @@ export function useLibrary() {
     }
   }, [setFavorites, setFavoritesPagination]);
 
-  const sharePlaylist = useCallback(async (uuid: string) => {
+  /** Owner-only visibility toggle for a library playlist (public↔private), optimistic on success. */
+  const setPlaylistVisibility = useCallback(async (uuid: string, isPublic: boolean) => {
     try {
-      const resp = await changePlaylistVisibility(uuid, true);
+      const resp = await changePlaylistVisibility(uuid, isPublic);
       if (resp.success) {
         const state = useLibraryStore.getState();
-        const mark = (list: LibraryPlaylist[]) => list.map(p => p.uuid === uuid ? { ...p, is_public: true } : p);
+        const mark = (list: LibraryPlaylist[]) => list.map(p => p.uuid === uuid ? { ...p, is_public: isPublic } : p);
         setPlaylists(mark(state.playlists));
         setFavorites(mark(state.favorites));
         return { success: true };
       }
-      return { success: false, error: resp.error || "Failed to share playlist" };
+      return { success: false, error: resp.error || "Failed to update visibility" };
     } catch (err: any) {
-      return { success: false, error: err.message || "Failed to share playlist" };
+      return { success: false, error: err.message || "Failed to update visibility" };
     }
   }, [setPlaylists, setFavorites]);
+
+  // Sharing = ensure the playlist is public. Thin wrapper over setPlaylistVisibility.
+  const sharePlaylist = useCallback(
+    (uuid: string) => setPlaylistVisibility(uuid, true),
+    [setPlaylistVisibility]
+  );
 
   return {
     playlists,
@@ -254,6 +261,7 @@ export function useLibrary() {
     removePlaylist,
     removeFavoritePlaylist,
     sharePlaylist,
+    setPlaylistVisibility,
     reset,
   };
 }

@@ -16,6 +16,7 @@ export { loadPeaksData } from "./Waveform/peaksCache";
 export * from './Playlist/usePlaylistLoader';
 export * from './Playlist/usePlaylistFork';
 export * from './Playlist/useFavoritePlaylist';
+export * from './Playlist/usePlaylistVisibility';
 export * from './Player/AudioProvider';
 export { attachHls } from './Player/attachHls';
 export * from './Feedback/useFeedbackSubmit'

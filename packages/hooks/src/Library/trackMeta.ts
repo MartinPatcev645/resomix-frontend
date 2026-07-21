@@ -12,6 +12,7 @@
  */
 
 import type { LibraryTrack, LibraryTrackAnalysis } from "@resomix/stores";
+import { shortGenre, formatDuration } from "../utils";
 
 /** Display-worthy value or undefined — skips empty and placeholder values ("Unknown", "N/A"). */
 export function cleanMeta(v?: string | null): string | undefined {
@@ -51,7 +52,13 @@ export function trackMetaPairs(track: LibraryTrack): Array<[string, string]> {
   if (artist) pairs.push(["Artist", artist]);
   const uploaded = formatUploadDate(track.created_at);
   if (uploaded) pairs.push(["Uploaded", uploaded]);
-  const genre = cleanMeta(track.analysis?.top_genre) ?? cleanMeta(track.genre);
+  // Duration sits right after the upload date (MM:SS from duration_ms).
+  if (track.duration_ms) pairs.push(["Duration", formatDuration(track.duration_ms / 1000)]);
+  // Genre prefers the analysis-derived value; both are passed through shortGenre so a hierarchical
+  // model label ("Electronic---Ambient") shows as its leaf ("Ambient") — identical to the
+  // Analysis page's Top-genre field. shortGenre is a no-op for the plain in-house genre.
+  const genreRaw = cleanMeta(track.analysis?.top_genre) ?? cleanMeta(track.genre);
+  const genre = genreRaw ? shortGenre(genreRaw) : undefined;
   if (genre) pairs.push(["Genre", genre]);
   if (track.analysis?.bpm) pairs.push(["BPM", String(Math.round(track.analysis.bpm))]);
   const key = keyDisplay(track.analysis);

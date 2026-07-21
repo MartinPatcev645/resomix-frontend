@@ -9,13 +9,12 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
-import { attachHls } from "@resomix/hooks";
+import { attachHls, shortGenre } from "@resomix/hooks";
 import { getPlaylistPlaybackSession } from "@resomix/api-client";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
 import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
 import { CamelotWheel, chromaLabelsForKey, ChromaSummary, ChromaView, Donut, keyFromCamelot, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
 
-const shortGenre = (l: string) => l.split("---").pop() ?? l;
 const fmtDuration = (ms: number) => {
   const s = Math.round(ms / 1000);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -105,13 +104,23 @@ export default function AnalysisPage() {
     if (!a || !playlistUuid) return;      // player not mounted yet, or no sibling playlist → wait
     let detach: (() => void) | null = null;
     let cancelled = false;
+    // The sibling playlist's HLS can lag its creation by a moment (segments still being cut), and a
+    // playback-session mint can blip — so retry a few times with backoff before giving up. attachHls
+    // then handles per-stream network/media recovery. If everything's exhausted, stay silent (no
+    // dead-player crash) — the panels/result still render.
     void (async () => {
-      try {
-        const { playback_url } = await getPlaylistPlaybackSession(playlistUuid);
-        if (cancelled || !audioRef.current) return;
-        detach = attachHls(audioRef.current, playback_url);
-      } catch {
-        /* no server audio available (session/playlist missing) — leave the player silent */
+      for (let attempt = 0; attempt < 4 && !cancelled; attempt++) {
+        try {
+          const { playback_url } = await getPlaylistPlaybackSession(playlistUuid);
+          if (cancelled || !audioRef.current) return;
+          detach = attachHls(audioRef.current, playback_url, () => {
+            /* stream unrecoverable (expired/missing) — leave the player silent */
+          });
+          return; // session obtained → done
+        } catch {
+          if (cancelled) return;
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1))); // 1s, 2s, 3s…
+        }
       }
     })();
     return () => { cancelled = true; if (detach) detach(); };
