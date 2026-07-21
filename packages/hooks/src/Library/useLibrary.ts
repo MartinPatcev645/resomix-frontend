@@ -107,17 +107,19 @@ export function useLibrary() {
       const limitPageSize = Math.min(pageSize, 20);
       const resp = await getMyTracks({ page, page_size: limitPageSize });
       if (resp.success && resp.data && Array.isArray(resp.data)) {
+        // Real backend values only (reshaped response, 2026-07-22) — no fabricated
+        // "Unknown Artist"/"Independent" placeholders; the UI simply skips absent fields.
         const formattedTracks = resp.data.map((t: any) => ({
           id: t.uuid,
           title: t.title || "Unknown Track",
-          artist: t.display_artist || "Unknown Artist",
-          year: t.created_at ? new Date(t.created_at).getFullYear() : 2026,
-          label: t.version_title || "Independent",
-          duration: t.duration ? `${Math.floor(t.duration / 60)}:${String(Math.floor(t.duration % 60)).padStart(2, "0")}` : "0:00",
+          artist: t.artist || null,
+          album: t.album || null,
+          label: t.label || null,
+          genre: t.genre || null,
+          duration_ms: t.duration_ms ?? null,
           playlist_uuid: t.playlist_uuid || null,
           analysis_uuid: t.analysis_uuid || null,
-          has_analysis: !!t.has_analysis,
-          has_similarity: !!t.has_similarity,
+          analysis: t.analysis || null,
           created_at: t.created_at || null,
         }));
         setTracks(formattedTracks);

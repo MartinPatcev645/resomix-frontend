@@ -476,7 +476,7 @@ export default function LibraryPage() {
                   return (
                     <div
                       key={track.id}
-                      className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex justify-between items-center relative hover:bg-white/5 transition-colors"
+                      className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex flex-wrap justify-between items-center gap-y-[var(--px-10)] relative hover:bg-white/5 transition-colors"
                     >
                       {/* Aligned top content layout */}
                       <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow pr-[var(--px-15)]">
@@ -556,13 +556,17 @@ export default function LibraryPage() {
                       <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0 align-middle" onClick={e => e.stopPropagation()}>
                         {/* Artifact capsules: reach the track's Sonic Discovery playlist and its
                             analysis straight from the row; a still-generating sibling shows a live
-                            "…generating" pill that the 10s poll flips to a link when it lands. */}
-                        <TrackArtifactChips
-                          track={track}
-                          onOpenPlaylist={(uuid) => navigate(`/playlist?id=${uuid}`, { state: { from: "library" } })}
-                          onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`, { state: { from: "library" } })}
-                          onComingSoon={() => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon")}
-                        />
+                            "…generating" pill that the 10s poll flips to a link when it lands.
+                            Desktop only here — on mobile they overflowed the row, so they render as
+                            stacked full-width rows at the bottom of the card instead (below). */}
+                        <div className="hidden md:block">
+                          <TrackArtifactChips
+                            track={track}
+                            onOpenPlaylist={(uuid) => navigate(`/playlist?id=${uuid}`, { state: { from: "library" } })}
+                            onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`, { state: { from: "library" } })}
+                            onComingSoon={() => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon")}
+                          />
+                        </div>
 
                         <span className="hidden md:inline text-[length:var(--px-10)] font-light font-fira text-white/40">
                           {track.duration}
@@ -607,6 +611,18 @@ export default function LibraryPage() {
                             </div>
                           )}
                         </div>
+                      </div>
+
+                      {/* Mobile: the two capsules as full-width rows at the bottom of the card
+                          (the card is flex-wrap, so this w-full block wraps onto its own line). */}
+                      <div className="w-full md:hidden" onClick={e => e.stopPropagation()}>
+                        <TrackArtifactChips
+                          track={track}
+                          layout="stacked"
+                          onOpenPlaylist={(uuid) => navigate(`/playlist?id=${uuid}`, { state: { from: "library" } })}
+                          onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`, { state: { from: "library" } })}
+                          onComingSoon={() => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon")}
+                        />
                       </div>
                     </div>
                   );

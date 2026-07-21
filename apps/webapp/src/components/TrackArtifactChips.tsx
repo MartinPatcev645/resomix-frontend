@@ -14,7 +14,7 @@ export const isTrackRecent = (t: LibraryTrack): boolean => {
 };
 
 const playlistReady = (t: LibraryTrack) => !!t.playlist_uuid;
-const analysisReady = (t: LibraryTrack) => !!(t.has_analysis && t.analysis_uuid);
+const analysisReady = (t: LibraryTrack) => !!t.analysis_uuid; // the uuid IS the exists signal
 
 // True while at least one sibling is still expected to arrive — drives the Library's 10s poll.
 export const trackHasPendingArtifact = (t: LibraryTrack): boolean =>
@@ -52,15 +52,19 @@ function Capsule({
   icon,
   title,
   onClick,
+  fullWidth = false,
 }: {
   state: CapsuleState;
   label: string;
   icon: React.ReactNode;
   title: string;
   onClick?: () => void;
+  /** Stacked (mobile) variant: the capsule becomes a full-width row button. */
+  fullWidth?: boolean;
 }) {
   const base =
-    "inline-flex items-center gap-[var(--px-6)] px-[var(--px-12)] py-[var(--px-5)] rounded-full border text-[length:var(--px-10)] font-fira uppercase tracking-wide whitespace-nowrap transition-colors select-none";
+    "inline-flex items-center gap-[var(--px-6)] px-[var(--px-12)] rounded-full border text-[length:var(--px-10)] font-fira uppercase tracking-wide whitespace-nowrap transition-colors select-none " +
+    (fullWidth ? "w-full justify-center py-[var(--px-8)]" : "py-[var(--px-5)]");
   const byState: Record<CapsuleState, string> = {
     ready:
       "border-[var(--color-primary-hover)]/50 text-white/90 hover:text-white hover:bg-[var(--color-primary-hover)]/15 hover:border-[var(--color-primary-hover)] cursor-pointer",
@@ -97,16 +101,30 @@ export function TrackArtifactChips({
   onOpenPlaylist,
   onOpenAnalysis,
   onComingSoon,
+  layout = "inline",
 }: {
   track: LibraryTrack;
   onOpenPlaylist: (uuid: string) => void;
   onOpenAnalysis: (uuid: string) => void;
   onComingSoon: () => void;
+  /**
+   * "inline"  — capsules sit side-by-side in the row's action cluster (desktop).
+   * "stacked" — each capsule is a full-width row of its own (mobile bottom-of-card,
+   *             like the MoreMenu button rows), so long labels can never overflow.
+   */
+  layout?: "inline" | "stacked";
 }) {
   const recent = isTrackRecent(track);
+  const stacked = layout === "stacked";
 
   return (
-    <div className="flex items-center gap-[var(--px-8)] flex-wrap justify-end">
+    <div
+      className={
+        stacked
+          ? "flex flex-col gap-[var(--px-8)] w-full"
+          : "flex items-center gap-[var(--px-8)] flex-wrap justify-end"
+      }
+    >
       {/* Sonic Discovery (similarity playlist) */}
       {playlistReady(track) ? (
         <Capsule
@@ -115,9 +133,10 @@ export function TrackArtifactChips({
           icon={<PlaylistIcon />}
           title="Open the similarity playlist for this track"
           onClick={() => onOpenPlaylist(track.playlist_uuid as string)}
+          fullWidth={stacked}
         />
       ) : recent ? (
-        <Capsule state="pending" label="Finding matches…" icon={<Spinner />} title="Building your Sonic Discovery playlist" />
+        <Capsule state="pending" label="Finding matches…" icon={<Spinner />} title="Building your Sonic Discovery playlist" fullWidth={stacked} />
       ) : null}
 
       {/* Analysis */}
@@ -128,11 +147,12 @@ export function TrackArtifactChips({
           icon={<AnalysisIcon />}
           title="Open the analysis for this track"
           onClick={() => onOpenAnalysis(track.analysis_uuid as string)}
+          fullWidth={stacked}
         />
       ) : recent ? (
-        <Capsule state="pending" label="Analyzing…" icon={<Spinner />} title="Analyzing your track" />
+        <Capsule state="pending" label="Analyzing…" icon={<Spinner />} title="Analyzing your track" fullWidth={stacked} />
       ) : (
-        <Capsule state="muted" label="Analyze" icon={<AnalysisIcon />} title="Analysis coming soon" onClick={onComingSoon} />
+        <Capsule state="muted" label="Analyze" icon={<AnalysisIcon />} title="Analysis coming soon" onClick={onComingSoon} fullWidth={stacked} />
       )}
     </div>
   );

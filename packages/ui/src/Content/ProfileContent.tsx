@@ -469,19 +469,31 @@ export default function ProfileContent({
                     customWidth="40"
                     customHeight="40"
                   />
-                  <div className="w-full">
-                    <div className="text-[length:var(--px-18)] font-medium font-helvetica">
+                  {/* min-w-0 lets the truncated children actually shrink inside the flex row —
+                      without it a long username/email pushes past the card border. */}
+                  <div className="w-full min-w-0">
+                    <div
+                      className="text-[length:var(--px-18)] font-medium font-helvetica truncate"
+                      title={user.username}
+                    >
                       {user.username}
                     </div>
-                    <div className="text-[length:var(--px-11)] font-light font-helvetica flex items-center gap-[var(--px-8)] mt-[var(--px-4)]">
-                      {user.email}
-                      {user.is_email_verified && (
-                        <span className="text-green-500 text-[length:var(--px-10)]">✓ Verified</span>
-                      )}
-                    </div>
-                    {!user.is_email_verified && (
-                      <div className="flex items-center gap-[var(--px-8)] w-full justify-between">
-                        <span className="text-yellow-500 text-[length:var(--px-10)]">⚠ Not Verified</span>
+                    {/* Email-verified row — its own labelled line between username and email,
+                        with a neutral tick/cross (no traffic-light colours). */}
+                    <div className="flex items-center justify-between gap-[var(--px-8)] mt-[var(--px-4)]">
+                      <span className="flex items-center gap-[var(--px-6)] text-[length:var(--px-10)] font-light font-fira uppercase tracking-[var(--px-0-5)] text-[var(--color-primary-hover)] whitespace-nowrap">
+                        Email verified:
+                        {user.is_email_verified ? (
+                          <svg viewBox="0 0 24 24" aria-label="Verified" className="w-[var(--px-11)] h-[var(--px-11)] text-[var(--color-primary)]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" aria-label="Not verified" className="w-[var(--px-11)] h-[var(--px-11)] text-[var(--color-primary)] opacity-80" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                          </svg>
+                        )}
+                      </span>
+                      {!user.is_email_verified && (
                         <ButtonSleek
                           text={resendingVerification ? "Sending..." : "Verify"}
                           onClick={handleResendVerification}
@@ -489,8 +501,14 @@ export default function ProfileContent({
                           transparent={true}
                           disabled={resendingVerification}
                         />
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    <div
+                      className="text-[length:var(--px-11)] font-light font-helvetica truncate mt-[var(--px-4)]"
+                      title={user.email}
+                    >
+                      {user.email}
+                    </div>
                   </div>
                 </div>
               </div>
