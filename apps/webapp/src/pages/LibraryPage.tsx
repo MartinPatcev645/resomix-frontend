@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon, HeartStrokeIcon } from "@resomix/ui";
 import { useAuthStore } from "@resomix/stores";
-import { useLibrary, shouldOpenInNewTab } from "@resomix/hooks";
+import { useLibrary, shouldOpenInNewTab, useAccess } from "@resomix/hooks";
 import TrackSvg from "@/assets/icons/track_2.svg";
 import { PlaylistCover } from "@/components/Library/PlaylistCover.tsx";
+import { ExportSubmenu } from "@/components/Library/ExportSubmenu.tsx";
+import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
+import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
 import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
 import { TrackMetaRow, PlaylistRenameModal, LibraryFilters } from "@/components/index.ts";
 
@@ -74,6 +77,35 @@ export default function LibraryPage() {
   // Rename modal — holds the playlist being renamed (same modal/flow as the playlist page).
   const [renameFor, setRenameFor] = useState<{ uuid: string; name: string } | null>(null);
   const [renameBusy, setRenameBusy] = useState(false);
+
+  // Apple Music export — reuses the playlist page's flow: verdict gate (login/upgrade) → the shared
+  // AppleExportModal (which handles the connect check + export). Holds the playlist uuid to export.
+  const access = useAccess();
+  const [exportPlaylistId, setExportPlaylistId] = useState<string | null>(null);
+  const [exportGate, setExportGate] = useState<{ reason: string; title: string; body: string } | null>(null);
+
+  const handleExportApple = (uuid: string) => {
+    setActiveMenuId(null);
+    const v = access.verdict("exportApple");
+    if (v === "pending") return;
+    if (v === "allowed") {
+      setExportPlaylistId(uuid);
+      return;
+    }
+    if (v === "login") {
+      setExportGate({
+        reason: "login_required",
+        title: "Log in to export",
+        body: "Create a free account or log in to export your playlists to Apple Music.",
+      });
+    } else {
+      setExportGate({
+        reason: "upgrade_required",
+        title: "Upgrade to export to Apple Music",
+        body: "Sending your playlist straight to your Apple Music library is a Pro feature. Upgrade your plan to unlock Apple Music export.",
+      });
+    }
+  };
 
   const handleRenameSubmit = async (newName: string) => {
     if (!renameFor) return;
@@ -509,22 +541,10 @@ export default function LibraryPage() {
                                 ),
                                 onClick: (e: React.MouseEvent) => handleSharePlaylist(playlist.uuid, playlist.is_public, e),
                               },
-                              {
-                                id: `playlist-delete-${playlist.uuid}`,
-                                label: "Delete",
-                                separated: true,
-                                danger: true,
-                                icon: (
-                                  <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
-                                  </svg>
-                                ),
-                                onClick: (e: React.MouseEvent) => handleDeletePlaylist(playlist.uuid, e),
-                              }
                             ].map((item, index) => (
                               <div key={item.id}>
                                 {index > 0 && (
-                                  <div className={`border-t border-dotted ${item.separated ? 'border-slate-200/60' : 'border-slate-200/30'} mx-[var(--px-12)] my-[var(--px-4)]`} />
+                                  <div className="border-t border-dotted border-slate-200/30 mx-[var(--px-12)] my-[var(--px-4)]" />
                                 )}
                                 <button
                                   onClick={(e) => {
@@ -532,9 +552,7 @@ export default function LibraryPage() {
                                     setActiveMenuId(null);
                                     item.onClick(e);
                                   }}
-                                  className={`w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] text-[length:var(--px-12)] font-light font-helvetica hover:bg-white/5 active:bg-white/10 transition-colors duration-150 cursor-pointer ${
-                                    item.danger ? "text-red-400 hover:text-red-300 hover:bg-red-500/10" : "text-white/80 hover:text-white"
-                                  }`}
+                                  className="w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] text-[length:var(--px-12)] font-light font-helvetica hover:bg-white/5 active:bg-white/10 transition-colors duration-150 cursor-pointer text-white/80 hover:text-white"
                                 >
                                   <span className="flex-shrink-0 w-[var(--px-16)] h-[var(--px-16)] flex items-center justify-center">
                                     {item.icon}
@@ -545,6 +563,28 @@ export default function LibraryPage() {
                                 </button>
                               </div>
                             ))}
+
+                            {/* Export → secondary flyout of targets (Apple Music for now). */}
+                            <div className="border-t border-dotted border-slate-200/30 mx-[var(--px-12)] my-[var(--px-4)]" />
+                            <ExportSubmenu onExportApple={() => handleExportApple(playlist.uuid)} />
+
+                            {/* Delete (separated, destructive). */}
+                            <div className="border-t border-dotted border-slate-200/60 mx-[var(--px-12)] my-[var(--px-4)]" />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenuId(null);
+                                handleDeletePlaylist(playlist.uuid, e);
+                              }}
+                              className="w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] text-[length:var(--px-12)] font-light font-helvetica hover:bg-white/5 active:bg-white/10 transition-colors duration-150 cursor-pointer text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                            >
+                              <span className="flex-shrink-0 w-[var(--px-16)] h-[var(--px-16)] flex items-center justify-center">
+                                <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
+                                </svg>
+                              </span>
+                              <span className="whitespace-nowrap leading-none">Delete</span>
+                            </button>
                           </div>
                         )}
                       </div>
@@ -812,6 +852,20 @@ export default function LibraryPage() {
         submitting={renameBusy}
         onClose={() => setRenameFor(null)}
         onSubmit={handleRenameSubmit}
+      />
+
+      {/* Apple Music export — the SAME modal + entitlement gate the playlist page uses. */}
+      <AppleExportModal
+        isOpen={!!exportPlaylistId}
+        onClose={() => setExportPlaylistId(null)}
+        onStatusChange={handleStatusChange}
+        initialPlaylistId={exportPlaylistId ?? undefined}
+      />
+      <GateCtaModal
+        reason={exportGate?.reason ?? null}
+        title={exportGate?.title}
+        body={exportGate?.body}
+        onClose={() => setExportGate(null)}
       />
     </section>
   );
