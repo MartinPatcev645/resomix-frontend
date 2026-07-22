@@ -422,36 +422,44 @@ const PlaylistHero: React.FC = () => {
 
             <div className="relative border border-dotted border-slate-200 p-[var(--px-20)] h-full w-full">
               <div className="flex items-start gap-[var(--px-30)]">
-                <div className="flex flex-col items-center gap-[var(--px-10)]">
-                  <div className="relative border border-dotted border-slate-200 p-[var(--px-20)]">
+                <div className="flex flex-col items-center gap-[var(--px-10)] w-[var(--px-120)]">
+                  {/* Cover fills the dotted border edge-to-edge (no inner padding). The box is forced
+                      square (aspect-square) so the border is always a square around the filled cover,
+                      and its width matches the "Rate These Results" button below via the fixed-width
+                      column. NOTE: use a DEFINED --px-* value here (--px-124 is not in the scale, so
+                      it collapses to auto and the image balloons to its intrinsic size). */}
+                  {/* Explicit square box (same approach as the working mobile hero) so the dotted
+                      border is always square and the image fills it edge-to-edge. */}
+                  <div className="relative border border-dotted border-slate-200 w-[var(--px-120)] h-[var(--px-120)]">
                     {!DEMO_MODE ? (
-                      <img src={(hasCustomCover ? customCoverUrl : seedCoverUrl) || uploadedCoverArt || DefaultCover} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="w-[var(--px-90)] h-[var(--px-90)] object-cover" />
+                      <img src={(hasCustomCover ? customCoverUrl : seedCoverUrl) || uploadedCoverArt || DefaultCover} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="block w-full h-full object-cover" />
                     ) : (
-                      <img src={DefaultCover} draggable={false} alt="Playlist Cover" aria-label="Playlist Cover" className="w-[var(--px-90)] h-[var(--px-90)] object-cover" />
+                      <img src={DefaultCover} draggable={false} alt="Playlist Cover" aria-label="Playlist Cover" className="block w-full h-full object-cover" />
                     )}
                     {/* Uploading loader over the existing cover */}
                     {coverUploading && (
-                      <div className="absolute inset-[var(--px-20)] flex items-center justify-center bg-black/60">
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
                         <span className="w-[var(--px-24)] h-[var(--px-24)] border-2 border-white/40 border-t-white rounded-full animate-spin" aria-label="Uploading cover" />
                       </div>
                     )}
-                    {/* Owner-only pen to change the cover (top-right of the cover) */}
+                    {/* Owner-only pen on the top-right corner of the border. Plain <button> (NOT wrapped
+                        in <Tooltip>, whose relative wrapper would offset the absolute positioning) —
+                        native title gives the hover hint, mirroring the mobile hero. */}
                     {!DEMO_MODE && isOwner && (
-                      <Tooltip message="Change cover image">
-                        <button
-                          type="button"
-                          onClick={handleCoverPick}
-                          disabled={coverUploading}
-                          aria-label="Change cover image"
-                          className="absolute top-[var(--px-8)] right-[var(--px-8)] w-[var(--px-24)] h-[var(--px-24)] flex items-center justify-center rounded-full bg-[var(--color-secondary-background)] text-white cursor-pointer hover:brightness-125 transition-[filter] disabled:opacity-50 disabled:cursor-not-allowed"
-                          id="playlist-hero-cover-edit-button"
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[var(--px-12)] h-[var(--px-12)]" aria-hidden="true">
-                            <path d="M12 20h9" />
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                          </svg>
-                        </button>
-                      </Tooltip>
+                      <button
+                        type="button"
+                        onClick={handleCoverPick}
+                        disabled={coverUploading}
+                        aria-label="Change cover image"
+                        title="Change cover image"
+                        className="absolute -top-[var(--px-10)] -right-[var(--px-10)] w-[var(--px-26)] h-[var(--px-26)] flex items-center justify-center rounded-full bg-[var(--color-secondary-background)] text-white cursor-pointer shadow-[0_var(--px-3)_var(--px-8)_rgba(0,0,0,0.55)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] hover:scale-110 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                        id="playlist-hero-cover-edit-button"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[var(--px-12)] h-[var(--px-12)]" aria-hidden="true">
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                        </svg>
+                      </button>
                     )}
                     <input
                       ref={coverInputRef}
@@ -467,14 +475,14 @@ const PlaylistHero: React.FC = () => {
                     type="button"
                     name="Rate these Results"
                     onClick={() => setShowRating(true)}
-                    className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end cursor-pointer playlist-rating-button"
+                    className="w-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end justify-center cursor-pointer playlist-rating-button"
                     id="playlist-hero-rating-button"
                     aria-label="Rate these Results"
                     aria-expanded={showRating}
                     data-playlist-id={playlistData?.playlist?.id}
                   >
                     <img src={StarSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-12)] h-[var(--px-12)] mb-[var(--px-2)]" />
-                    <span className="text-[length:var(--px-8)] tracking-[var(--px-0-25)] font-light font-fira text-[var(--color-text-primary)]">Rate These Results</span>
+                    <span className="whitespace-nowrap text-[length:var(--px-8)] tracking-[var(--px-0-25)] font-light font-fira text-[var(--color-text-primary)]">Rate These Results</span>
                   </button>
                 </div>
                 <div className="flex flex-col w-full gap-[var(--px-20)] max-w-[var(--px-480)]">

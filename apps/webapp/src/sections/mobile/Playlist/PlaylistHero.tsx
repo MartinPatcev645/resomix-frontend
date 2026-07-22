@@ -228,7 +228,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                         onClick={handleCoverPick}
                         disabled={coverUploading}
                         aria-label="Change cover image"
-                        className="absolute -top-[var(--px-6)] -right-[var(--px-6)] w-[var(--px-18)] h-[var(--px-18)] flex items-center justify-center rounded-full bg-[var(--color-secondary-background)] text-white cursor-pointer active:brightness-125 disabled:opacity-50"
+                        className="absolute -top-[var(--px-6)] -right-[var(--px-6)] w-[var(--px-18)] h-[var(--px-18)] flex items-center justify-center rounded-full bg-[var(--color-secondary-background)] text-white cursor-pointer shadow-[0_var(--px-2)_var(--px-5)_rgba(0,0,0,0.55)] active:scale-110 active:brightness-125 transition-transform disabled:opacity-50"
                         id="playlist-hero-cover-edit-button"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[var(--px-10)] h-[var(--px-10)]" aria-hidden="true">

@@ -23,8 +23,8 @@ import { uploadPlaylistCover } from "@resomix/api-client";
 import { usePlaylistCoverUrl } from "./usePlaylistCoverUrl";
 
 const MAX_COVER_BYTES = 1024 * 1024; // 1 MB — kept in sync with the backend limit.
-const MIN_DIM = 200;
-const MAX_DIM = 3000;
+const MIN_DIM = 100; // kept in sync with the media server's _PLAYLIST_COVER_MIN_DIM
+const MAX_DIM = 4000; // kept in sync with the media server's _PLAYLIST_COVER_MAX_DIM
 
 export interface CoverActionResult {
   ok: boolean;
