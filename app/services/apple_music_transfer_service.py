@@ -637,10 +637,36 @@ class AppleMusicTransferService:
             logger.info("Matched %d/%d tracks (%d not found)", len(matched_ids), len(ordered_track_ids), len(unmatched_tracks))
 
             # 7) Create the Apple Music playlist and add the tracks.
-            playlist_name = custom_playlist_name or f"Resomix - {playlist.name}"
+            #    Name + description are built from the SEED (reference) track — the song this playlist
+            #    was generated from — so the export reads like the Resomix result and is understandable
+            #    to someone who's never heard of the service. "Artist - Title" uses the Apple-enriched
+            #    name/artist first, with the in-house metadata as fallback.
+            seed_title = seed_artist = None
+            if playlist.seed_track_id:
+                seed_apple = (await self.apple_music_repository.async_get_by_track_ids(
+                    db, [playlist.seed_track_id])).get(playlist.seed_track_id)
+                if seed_apple:
+                    seed_title = seed_apple.get("name")
+                    seed_artist = seed_apple.get("artist")
+                if not (seed_title and seed_artist):
+                    seed_track = await self.track_repository.async_get_by_id(db, playlist.seed_track_id)
+                    if seed_track:
+                        seed_title = seed_title or seed_track.title
+                        seed_artist = seed_artist or getattr(seed_track, "display_artist", None)
+            seed_title = (seed_title or "Unknown Track").strip()
+            seed_artist = (seed_artist or "Unknown Artist").strip()
+            seed_ref = f"{seed_artist} - {seed_title}"
+
+            playlist_url = f"{settings.app_url.rstrip('/')}/sonic-discovery?id={playlist_id}"
+            playlist_name = custom_playlist_name or f'Resomix Sonic Match Found, for "{seed_ref}"'
+            playlist_description = (
+                f'Sonic matches for "{seed_ref}", discovered with Resomix — it listens to a track and '
+                f'finds the songs that sound closest to it. Hear the full match and discover more at '
+                f'{playlist_url}'
+            )
             apple_playlist_id = await self._create_playlist(
                 dev_token, music_user_token, playlist_name,
-                description=f"Transferred from Resomix playlist '{playlist.name}'"
+                description=playlist_description,
             )
 
             tracks_added = 0
