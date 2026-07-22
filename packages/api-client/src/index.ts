@@ -19,7 +19,7 @@ export * from "./entitlements";
 export * from "./apple";
 export { initDeviceHash, getDeviceHash } from "./deviceId";
 export * from "./partner";
-export * from "./playbackToken";
+// Playback token moved to @resomix/stores (usePlaybackToken) — a global, refreshable token store.
 export * from "./admin/feedback";
 export * from "./admin/contact";
 export * from "./admin/waitlist";

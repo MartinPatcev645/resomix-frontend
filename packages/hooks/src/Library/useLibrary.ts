@@ -56,7 +56,7 @@ const formatPlaylist = (p: any): LibraryPlaylist => ({
   trackCount: p.num_tracks || 0,
   duration: formatDuration(p.play_time),
   createdAt: p.created_at || new Date().toISOString(),
-  coverUrl: p.cover_url ?? null,
+  seedTrackUuid: p.seed_track_uuid ?? null,
 });
 
 export function useLibrary() {

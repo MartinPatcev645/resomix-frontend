@@ -4,7 +4,7 @@ import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon, Heart
 import { useAuthStore } from "@resomix/stores";
 import { useLibrary, shouldOpenInNewTab } from "@resomix/hooks";
 import TrackSvg from "@/assets/icons/track_2.svg";
-import DefaultCover from "@/assets/default-playlist-cover.jpg";
+import { PlaylistCover } from "@/components/Library/PlaylistCover.tsx";
 import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
 import { TrackMetaRow, PlaylistRenameModal, LibraryFilters } from "@/components/index.ts";
 
@@ -375,16 +375,10 @@ export default function LibraryPage() {
                         }}
                         className="flex-shrink-0 cursor-pointer"
                       >
-                        {/* Playlist cover: the seed track's cover when we have one, else the bundled
-                            Resomix default. */}
+                        {/* Playlist cover: the seed track's cover (media server, by uuid + token),
+                            else the bundled Resomix default. */}
                         <div className="border border-dotted border-slate-200 bg-black/40 hover:border-[var(--color-primary-hover)] transition-colors overflow-hidden w-[var(--px-32)] h-[var(--px-32)] md:w-[var(--px-52)] md:h-[var(--px-52)]">
-                          <img
-                            src={playlist.coverUrl || DefaultCover}
-                            onError={(e) => { e.currentTarget.src = DefaultCover; }}
-                            draggable={false}
-                            alt="Playlist cover"
-                            className="w-full h-full object-cover"
-                          />
+                          <PlaylistCover uuid={playlist.seedTrackUuid} className="w-full h-full object-cover" />
                         </div>
                       </a>
 

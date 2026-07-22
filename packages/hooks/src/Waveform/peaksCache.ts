@@ -1,4 +1,4 @@
-import { getPlaybackToken, clearPlaybackToken } from '@resomix/api-client';
+import { getPlaybackToken, clearPlaybackToken } from '@resomix/stores';
 
 export interface PeaksRich {
   fullband: number[];

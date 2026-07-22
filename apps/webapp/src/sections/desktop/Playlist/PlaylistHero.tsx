@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { IconButton, HoverFlow, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, usePlaylistExport, useAccess, useFavoritePlaylist, usePlaylistVisibility, type AccessAction } from "@resomix/hooks";
+import { formatDuration, usePlaylistExport, useAccess, useFavoritePlaylist, usePlaylistVisibility, useTrackCoverUrl, type AccessAction } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
@@ -42,6 +42,9 @@ const PlaylistHero: React.FC = () => {
   // const [hasForkedThisPlaylist, setHasForkedThisPlaylist] = React.useState(false);
 
   const { playlistData, isLoading, error } = usePlaylistStore();
+  // Persisted cover for the seed (uploaded) track, fetched from the media server by uuid + token
+  // (same pattern as peaks). Falls back to the session cover / bundled default in the img below.
+  const seedCoverUrl = useTrackCoverUrl(playlistData?.queried_track?.id);
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
   // Single source of truth for gated actions (share/rename/favorite/…): useAccess merges the
@@ -395,8 +398,8 @@ const PlaylistHero: React.FC = () => {
               <div className="flex items-start gap-[var(--px-30)]">
                 <div className="flex flex-col items-center gap-[var(--px-10)]">
                   <div className="border border-dotted border-slate-200 p-[var(--px-20)]">
-                    {!DEMO_MODE && uploadedCoverArt ? (
-                      <img src={uploadedCoverArt} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Track Cover" alt="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)] object-cover" />
+                    {!DEMO_MODE ? (
+                      <img src={seedCoverUrl || uploadedCoverArt || DefaultCover} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Track Cover" alt="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)] object-cover" />
                     ) : (
                       <img src={DefaultCover} draggable={false} alt="Track Cover" aria-label="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)] object-cover" />
                     )}

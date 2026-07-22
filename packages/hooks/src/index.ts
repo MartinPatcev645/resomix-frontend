@@ -14,6 +14,7 @@ export * from './Entitlements/useTrackCountOptions';
 export { useCustomPeaks } from "./Waveform/useCustomPeaks";
 export { loadPeaksData } from "./Waveform/peaksCache";
 export * from './Playlist/usePlaylistLoader';
+export * from './Playlist/useTrackCoverUrl';
 export * from './Playlist/usePlaylistFork';
 export * from './Playlist/useFavoritePlaylist';
 export * from './Playlist/usePlaylistVisibility';
