@@ -60,6 +60,15 @@ class TrackAnalysisResultService:
                 return first.get("label")
         return None
 
+    @staticmethod
+    def _genre_leaf(label: Optional[str]) -> Optional[str]:
+        """Discogs genres are hierarchical (``Parent---Child``, e.g. ``Electronic---Deep House``).
+        We store/display the leaf only (``Deep House``) — matches the frontend's ``shortGenre`` and
+        keeps the stored value clean at the root instead of relying on display-time trimming."""
+        if not label:
+            return label
+        return label.split("---")[-1].strip() or label
+
     @classmethod
     def summarize(cls, result: Dict[str, Any]) -> Dict[str, Any]:
         """Map the canonical analysis JSON → the summary column values (single-value only)."""
@@ -75,7 +84,7 @@ class TrackAnalysisResultService:
             "scale": _clip(tonality.get("scale"), 16),
             "camelot": _clip(tonality.get("camelot"), 8),
             "loudness_lufs": technical.get("integrated_loudness_lufs"),
-            "top_genre": _clip(cls._top_label(semantics.get("genre_top")), 128),
+            "top_genre": _clip(cls._genre_leaf(cls._top_label(semantics.get("genre_top"))), 128),
             "top_style": _clip(cls._top_label(semantics.get("style_maest_top")), 128),
             "top_mood": _clip(cls._top_label(semantics.get("mood_theme_top")), 128),
             "top_instrument": _clip(cls._top_label(semantics.get("instrument_top")), 128),
