@@ -204,6 +204,7 @@ async def upload_playlist_cover_endpoint(
     request: Request,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_database_session),
+    partner: Partner = Depends(get_current_partner),  # establishes the partner context (tenancy failsafe)
     current_user: User = Depends(get_current_user),  # REQUIRED auth
 ) -> JSONResponse:
     """Basic gate here (size + magic-byte type + optional ClamAV, and the owner check in the
