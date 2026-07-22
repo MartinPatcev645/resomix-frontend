@@ -1893,14 +1893,16 @@ class PlaylistRepository(BaseRepository[Playlist]):
             seed_track_ids = [p.seed_track_id for p in playlists if p.seed_track_id]
             seed_track_titles = {}
             seed_track_types = {}
+            seed_track_uuids = {}
 
             if seed_track_ids:
-                # Fetch seed track title + type in one query. Normalize the DB `type`
+                # Fetch seed track uuid + title + type in one query. Normalize the DB `type`
                 # column to the same "upload"/"internal" convention used by the
-                # `queried_track.type` field in the similarity response.
+                # `queried_track.type` field in the similarity response. The uuid lets the
+                # frontend build the media-server cover URL per playlist (same as peaks).
                 seed_query = text(
                     """
-                    SELECT id, title, type
+                    SELECT id, uuid, title, type
                     FROM tracks
                     WHERE id IN :track_ids
                 """
@@ -1910,6 +1912,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 )
                 for row in seed_result.fetchall():
                     seed_track_titles[row.id] = row.title or None
+                    seed_track_uuids[row.id] = row.uuid or None
                     seed_track_types[row.id] = (
                         "upload" if row.type == "upload" else "internal"
                     )
@@ -1922,12 +1925,14 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 if playlist.user_id == user_id:
                     fork_id_value = playlist.fork_id or ""
 
-                # Get seed track title + type ("upload" vs "internal")
+                # Get seed track uuid + title + type ("upload" vs "internal")
                 seed_track_title = None
                 seed_track_type = None
+                seed_track_uuid = None
                 if playlist.seed_track_id:
                     seed_track_title = seed_track_titles.get(playlist.seed_track_id)
                     seed_track_type = seed_track_types.get(playlist.seed_track_id)
+                    seed_track_uuid = seed_track_uuids.get(playlist.seed_track_id)
 
                 # Get engagement data
                 engagement = engagement_map.get(
@@ -1941,6 +1946,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     "is_public": playlist.is_public,
                     "seed_track_title": seed_track_title,
                     "seed_track_type": seed_track_type,
+                    "seed_track_uuid": seed_track_uuid,
                     "fork_id": fork_id_value,
                     "num_tracks": playlist.num_tracks or 0,
                     "play_time": playlist.play_time or 0,
