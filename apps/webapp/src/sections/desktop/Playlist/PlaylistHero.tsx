@@ -16,7 +16,7 @@ import ShareSvg from "@/assets/icons/share.svg";
 import ShareBlackSvg from "@/assets/icons/share_black.svg";
 import AngleLeftSvg from "@/assets/icons/angle_left.svg";
 import StarSvg from "@/assets/icons/star.svg";
-import TrackSvg from "@/assets/icons/track_2.svg";
+import DefaultCover from "@/assets/default-playlist-cover.jpg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
@@ -396,9 +396,9 @@ const PlaylistHero: React.FC = () => {
                 <div className="flex flex-col items-center gap-[var(--px-10)]">
                   <div className="border border-dotted border-slate-200 p-[var(--px-20)]">
                     {!DEMO_MODE && uploadedCoverArt ? (
-                      <img src={uploadedCoverArt} onError={(e) => { e.currentTarget.src = TrackSvg; }} draggable={false} aria-label="Track Cover" alt="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)] object-cover" />
+                      <img src={uploadedCoverArt} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Track Cover" alt="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)] object-cover" />
                     ) : (
-                      <img src={TrackSvg} draggable={false} alt="Track Cover" aria-label="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)]" />
+                      <img src={DefaultCover} draggable={false} alt="Track Cover" aria-label="Track Cover" className="w-[var(--px-90)] h-[var(--px-90)] object-cover" />
                     )}
                   </div>
                   <button

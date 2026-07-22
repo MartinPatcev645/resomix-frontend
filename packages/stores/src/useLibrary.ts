@@ -39,6 +39,8 @@ export interface LibraryPlaylist {
   trackCount: number;
   duration: string;
   createdAt: string;
+  // Signed cover URL for the seed track (media server); null → the UI shows the bundled default.
+  coverUrl?: string | null;
 }
 
 /** Applied filters for a library section. `numTracks` + `favoritesOnly` are playlists-only. */
