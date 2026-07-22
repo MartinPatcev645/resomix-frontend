@@ -40,6 +40,33 @@ export const changePlaylistVisibility = async (playlistId: string, isPublic = tr
   }
 };
 
+/**
+ * Owner-only custom playlist cover upload (multipart). The backend re-validates size/type + owner
+ * and forwards the image to the media server, which enforces square/resolution with Pillow and
+ * stores it by playlist uuid. On success the playlist's `has_custom_cover` flips to true.
+ */
+export const uploadPlaylistCover = async (playlistId: string, file: File) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    const url = `${API_CONFIG.ENDPOINTS.PLAYLIST_COVER}/${encodeURIComponent(playlistId)}/cover`;
+    const data = await axiosWrapper<ApiResponse>(
+      authClient.post(url, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 120_000,
+      }),
+    );
+
+    if (data.success === true) return data;
+    return {
+      success: false,
+      error: data.error || "Failed to upload cover.",
+    };
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
 export const getPlaylistSimilarity = async (playlistId: string) => {
   try {
     const data = await axiosWrapper<ApiResponse>(

@@ -15,6 +15,8 @@ export { useCustomPeaks } from "./Waveform/useCustomPeaks";
 export { loadPeaksData } from "./Waveform/peaksCache";
 export * from './Playlist/usePlaylistLoader';
 export * from './Playlist/useTrackCoverUrl';
+export * from './Playlist/usePlaylistCoverUrl';
+export * from './Playlist/usePlaylistCover';
 export * from './Playlist/usePlaylistFork';
 export * from './Playlist/useFavoritePlaylist';
 export * from './Playlist/usePlaylistVisibility';

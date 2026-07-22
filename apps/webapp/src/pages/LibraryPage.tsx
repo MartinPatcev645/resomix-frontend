@@ -406,10 +406,10 @@ export default function LibraryPage() {
                         }}
                         className="flex-shrink-0 cursor-pointer"
                       >
-                        {/* Playlist cover: the seed track's cover (media server, by uuid + token),
-                            else the bundled Resomix default. */}
+                        {/* Playlist cover precedence: custom playlist cover (by playlist uuid) →
+                            seed track cover (by uuid + token) → bundled Resomix default. */}
                         <div className="border border-dotted border-slate-200 bg-black/40 hover:border-[var(--color-primary-hover)] transition-colors overflow-hidden w-[var(--px-32)] h-[var(--px-32)] md:w-[var(--px-52)] md:h-[var(--px-52)]">
-                          <CoverThumbnail uuid={playlist.seedTrackUuid} className="w-full h-full object-cover" />
+                          <CoverThumbnail uuid={playlist.seedTrackUuid} playlistUuid={playlist.uuid} hasCustomCover={playlist.hasCustomCover} className="w-full h-full object-cover" />
                         </div>
                       </a>
 

@@ -32,6 +32,12 @@ export interface Playlist {
   is_public: boolean
   // Caller's engagement with this playlist (present for logged-in users; guests always see false).
   is_favorite?: boolean
+  // True → a custom cover was uploaded; the UI fetches it from the media server by playlist uuid
+  // (else it falls back to the seed track cover, then the bundled default).
+  has_custom_cover?: boolean
+  // True only when the current caller owns this playlist — drives owner-only affordances like the
+  // cover pen icon. The backend still enforces owner-only on every mutating endpoint.
+  is_owner?: boolean
 }
 
 export interface PlaylistData {
@@ -116,6 +122,8 @@ interface PlaylistStore {
   updatePlaylistPublicStatus: (isPublic: boolean) => void
   // Update is_favorite flag in both state and cache
   updatePlaylistFavoriteStatus: (isFavorite: boolean) => void
+  // Flip has_custom_cover after a successful cover upload (so the hero re-fetches the new cover)
+  updatePlaylistCustomCover: (hasCustomCover: boolean) => void
 }
 
 // Create the Zustand store
@@ -205,6 +213,22 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         playlist: {
           ...state.playlistData.playlist,
           is_favorite: isFavorite,
+        },
+      },
+    })
+  },
+
+  // Flip has_custom_cover on the in-memory playlist after a successful upload.
+  updatePlaylistCustomCover: (hasCustomCover: boolean) => {
+    const state = get()
+    if (!state.playlistData || !state.playlistData.playlist) return
+
+    set({
+      playlistData: {
+        ...state.playlistData,
+        playlist: {
+          ...state.playlistData.playlist,
+          has_custom_cover: hasCustomCover,
         },
       },
     })

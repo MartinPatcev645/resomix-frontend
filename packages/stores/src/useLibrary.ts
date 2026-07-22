@@ -42,6 +42,9 @@ export interface LibraryPlaylist {
   // Seed track uuid — the frontend builds the media-server cover URL from it (like peaks). null →
   // the UI shows the bundled default cover.
   seedTrackUuid?: string | null;
+  // True → a custom playlist cover was uploaded; the thumbnail fetches it by the playlist `uuid`
+  // (else it falls back to the seed track cover, then the bundled default).
+  hasCustomCover?: boolean;
 }
 
 /** Applied filters for a library section. `numTracks` + `favoritesOnly` are playlists-only. */

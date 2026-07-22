@@ -1,6 +1,6 @@
 import React from "react";
 import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, useAccess, useFavoritePlaylist, usePlaylistVisibility, useTrackCoverUrl, type AccessAction } from "@resomix/hooks";
+import { formatDuration, useAccess, useFavoritePlaylist, usePlaylistVisibility, useTrackCoverUrl, usePlaylistCover, type AccessAction } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistRename } from "@/components/index.ts";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
@@ -43,6 +43,13 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   // Persisted cover for the seed (uploaded) track, fetched from the media server by uuid + token
   // (same pattern as peaks). Falls back to the session cover / bundled default in the img below.
   const seedCoverUrl = useTrackCoverUrl(playlistData?.queried_track?.id);
+  // Owner-only custom playlist cover (same contract as desktop): custom → seed → session → default;
+  // only the owner sees the pen to change it.
+  const isOwner = !!playlistData?.playlist?.is_owner;
+  const hasCustomCover = !!playlistData?.playlist?.has_custom_cover;
+  const { coverUrl: customCoverUrl, isUploading: coverUploading, upload: uploadCover } =
+    usePlaylistCover(playlistData?.playlist?.id, hasCustomCover);
+  const coverInputRef = React.useRef<HTMLInputElement | null>(null);
   // Single source of truth for gated actions — same contract as the desktop hero: one verdict per
   // action (allowed | login | upgrade | pending); pending = dimmed no-op, never a wrong modal.
   const access = useAccess();
@@ -75,6 +82,24 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
     setStatusMessage(message);
     setStatusTitle(title || '');
     setShowStatus(true);
+  };
+
+  const handleCoverPick = () => {
+    if (!isOwner || coverUploading) return;
+    coverInputRef.current?.click();
+  };
+
+  const handleCoverSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file after an error
+    if (!file) return;
+    handleStatusChange("loading", "Uploading your cover…", "Updating Cover");
+    const res = await uploadCover(file);
+    if (res.ok) {
+      handleStatusChange("success", "Your playlist cover has been updated.", "Cover Updated");
+    } else {
+      handleStatusChange("error", res.error || "Failed to update the cover.", "Cover Update Failed");
+    }
   };
 
   const handleConfirmVisibility = async () => {
@@ -184,12 +209,43 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
             <div className="flex flex-col">
               <div className="flex items-start gap-[var(--px-10)]">
                 <div className="flex flex-col items-start gap-[var(--px-10)]">
-                  <div className="border border-dotted border-slate-200 h-[var(--px-50)] w-[var(--px-50)]">
+                  <div className="relative border border-dotted border-slate-200 h-[var(--px-50)] w-[var(--px-50)]">
                     {!DEMO_MODE ? (
-                      <img src={seedCoverUrl || uploadedCoverArt || DefaultCover} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Track Cover" alt="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
+                      <img src={(hasCustomCover ? customCoverUrl : seedCoverUrl) || uploadedCoverArt || DefaultCover} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
                     ) : (
-                      <img src={DefaultCover} draggable={false} alt="Track Cover" aria-label="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
+                      <img src={DefaultCover} draggable={false} alt="Playlist Cover" aria-label="Playlist Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
                     )}
+                    {/* Uploading loader over the existing cover */}
+                    {coverUploading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                        <span className="w-[var(--px-16)] h-[var(--px-16)] border-2 border-white/40 border-t-white rounded-full animate-spin" aria-label="Uploading cover" />
+                      </div>
+                    )}
+                    {/* Owner-only pen to change the cover */}
+                    {!DEMO_MODE && isOwner && (
+                      <button
+                        type="button"
+                        onClick={handleCoverPick}
+                        disabled={coverUploading}
+                        aria-label="Change cover image"
+                        className="absolute -top-[var(--px-6)] -right-[var(--px-6)] w-[var(--px-18)] h-[var(--px-18)] flex items-center justify-center rounded-full bg-[var(--color-secondary-background)] text-white cursor-pointer active:brightness-125 disabled:opacity-50"
+                        id="playlist-hero-cover-edit-button"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[var(--px-10)] h-[var(--px-10)]" aria-hidden="true">
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                        </svg>
+                      </button>
+                    )}
+                    <input
+                      ref={coverInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      className="hidden"
+                      onChange={handleCoverSelected}
+                      aria-hidden="true"
+                      tabIndex={-1}
+                    />
                   </div>
                 </div>
                 <div className="flex flex-col w-full gap-[var(--px-40)] max-w-[var(--px-250)]">
