@@ -12,6 +12,8 @@ import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { attachHls, shortGenre } from "@resomix/hooks";
 import { getPlaylistPlaybackSession } from "@resomix/api-client";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
+import { useRecentAnalyses } from "./analysis/useRecentAnalyses.js";
+import { AnalysisIntro } from "./analysis/AnalysisIntro.js";
 import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
 import { CamelotWheel, chromaLabelsForKey, ChromaSummary, ChromaView, Donut, keyFromCamelot, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
 
@@ -36,6 +38,8 @@ const ribbonTip =
 
 export default function AnalysisPage() {
   const { status, data, error, progress, fileName, audioUrl, part1Ready, analysisId, playlistUuid, analyze, loadById, reset } = useTrackAnalysis();
+  // Recent analyses (logged-in user) to preview on the otherwise-empty landing; only fetched idle.
+  const { items: recentAnalyses } = useRecentAnalyses(status === "idle");
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -259,7 +263,7 @@ export default function AnalysisPage() {
                 if (status === "idle") pick(e.dataTransfer.files?.[0]);
               }}
               className={
-                "flex w-full flex-col items-center gap-[var(--px-12)] rounded-[var(--px-16)] border border-dashed " +
+                "flex w-full flex-col items-center gap-[var(--px-12)] rounded-[var(--px-16)] border border-dotted " +
                 "p-[var(--px-56)] text-center transition-colors " +
                 (dragOver ? "bg-[var(--opacity-15)]" : "bg-[var(--opacity-10)]") +
                 " " +
@@ -296,6 +300,11 @@ export default function AnalysisPage() {
               />
             </button>
           </div>
+        )}
+
+        {/* ----------------------------- Landing: recent-analysis pills + facts */}
+        {status === "idle" && (
+          <AnalysisIntro items={recentAnalyses} onOpen={(id) => void loadById(id)} />
         )}
 
         {/* ------------------------------------------ Part-1 computing (loader) */}
