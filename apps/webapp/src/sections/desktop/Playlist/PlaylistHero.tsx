@@ -20,6 +20,7 @@ import DefaultCover from "@/assets/default-playlist-cover.jpg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
+import { CoverTextOverlay } from "@/components/Playlist/CoverTextOverlay.tsx";
 
 const InputTrackStatus = "Loading..."
 
@@ -52,6 +53,9 @@ const PlaylistHero: React.FC = () => {
   const { coverUrl: customCoverUrl, isUploading: coverUploading, upload: uploadCover } =
     usePlaylistCover(playlistData?.playlist?.id, hasCustomCover);
   const coverInputRef = React.useRef<HTMLInputElement | null>(null);
+  // Gate the canvas title overlay on the cover image actually being painted (custom/seed/default),
+  // so the text never flashes over a blank state.
+  const [coverLoaded, setCoverLoaded] = React.useState(false);
   const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
   // Single source of truth for gated actions (share/rename/favorite/…): useAccess merges the
@@ -432,10 +436,16 @@ const PlaylistHero: React.FC = () => {
                       border is always square and the image fills it edge-to-edge. */}
                   <div className="relative border border-dotted border-slate-200 w-[var(--px-120)] h-[var(--px-120)]">
                     {!DEMO_MODE ? (
-                      <img src={(hasCustomCover ? customCoverUrl : seedCoverUrl) || uploadedCoverArt || DefaultCover} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="block w-full h-full object-cover" />
+                      <img src={(hasCustomCover ? customCoverUrl : seedCoverUrl) || uploadedCoverArt || DefaultCover} onLoad={() => setCoverLoaded(true)} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="block w-full h-full object-cover" />
                     ) : (
-                      <img src={DefaultCover} draggable={false} alt="Playlist Cover" aria-label="Playlist Cover" className="block w-full h-full object-cover" />
+                      <img src={DefaultCover} onLoad={() => setCoverLoaded(true)} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="block w-full h-full object-cover" />
                     )}
+                    {/* Canvas title overlay — drawn on top of the loaded cover (centered, auto-sized). */}
+                    <CoverTextOverlay
+                      text={playlistData?.playlist?.name}
+                      active={coverLoaded}
+                      className="pointer-events-none absolute inset-0 h-full w-full"
+                    />
                     {/* Uploading loader over the existing cover */}
                     {coverUploading && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/60">
