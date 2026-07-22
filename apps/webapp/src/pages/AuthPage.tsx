@@ -9,8 +9,10 @@ import {
   ChangePasswordContent,
   SessionsContent,
 } from "@resomix/ui";
+import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { BASE_BETA_URL } from "@resomix/config";
+import { setPostAuthRedirect, getPostAuthRedirect, clearPostAuthRedirect } from "@/utils/authRedirect.ts";
 
 interface LocationState {
   from?: string;
@@ -34,6 +36,16 @@ interface AuthPageProps {
 export default function AuthPage({ mode }: AuthPageProps) {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Persist the return target the moment any auth step carries one (query or router state), so it
+  // survives an email-verification link (fresh tab, no state) or a full reload mid-flow. The final
+  // success handlers below read it as a fallback and clear it.
+  useEffect(() => {
+    const fromState = (location.state as LocationState)?.from;
+    const fromQuery = new URLSearchParams(location.search).get("redirect");
+    const redirect = fromState || fromQuery;
+    if (redirect) setPostAuthRedirect(redirect);
+  }, [location.search, location.state]);
 
   // Navigation handlers
   const handleNavigateLogin = () => {
@@ -82,7 +94,9 @@ export default function AuthPage({ mode }: AuthPageProps) {
   const handleLoginSuccess = () => {
     const fromState = (location.state as LocationState)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
-    const from = fromState || fromQuery || "/";
+    // localStorage fallback covers register→email-verify→login and Google, where state/query is lost.
+    const from = fromState || fromQuery || getPostAuthRedirect() || "/";
+    clearPostAuthRedirect();
     navigate(from, { replace: true });
   };
 
@@ -134,7 +148,8 @@ export default function AuthPage({ mode }: AuthPageProps) {
   const handle2FASuccess = () => {
     const fromState = (location.state as LocationState)?.from;
     const fromQuery = new URLSearchParams(location.search).get('redirect');
-    const from = fromState || fromQuery || "/";
+    const from = fromState || fromQuery || getPostAuthRedirect() || "/";
+    clearPostAuthRedirect();
     navigate(from, { replace: true });
   };
 

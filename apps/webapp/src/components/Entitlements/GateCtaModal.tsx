@@ -21,7 +21,7 @@ export interface GateCtaModalProps {
 }
 
 export const GateCtaModal: React.FC<GateCtaModalProps> = ({ reason, onClose, title: titleProp, body: bodyProp }) => {
-  const { onLogin, onSubscribe } = useEntitlementCta();
+  const { onLogin, onRegister, onSubscribe } = useEntitlementCta();
   if (!reason) return null;
 
   const isLogin = reason === "login_required";
@@ -60,7 +60,7 @@ export const GateCtaModal: React.FC<GateCtaModalProps> = ({ reason, onClose, tit
         <div className="flex gap-[var(--px-15)] justify-center items-center">
           {isLogin ? (
             <>
-              <ButtonSleek text="Create Free Account" href="/auth/register" onClick={() => {}} />
+              <ButtonSleek text="Create Free Account" onClick={() => { onRegister(); onClose(); }} />
               <ButtonSleek text="Log In" onClick={() => { onLogin(); onClose(); }} transparent />
             </>
           ) : (

@@ -81,7 +81,7 @@ export function WebLayout() {
             customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-[70] relative"
             onProfileClick={() => handleNavigate('/profile')}
             onNavigate={handleNavigate}
-            currentPath={location.pathname}
+            currentPath={location.pathname + location.search}
         />
     );
 

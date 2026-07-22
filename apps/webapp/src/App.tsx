@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useSilktide, useTelemetry } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise, GoogleOneTap } from "@resomix/ui";
@@ -46,6 +46,13 @@ function PlaylistLanding() {
       {isDesktop ? <PlaylistPage /> : <PlaylistMobile />}
     </>
   );
+}
+
+// /playlist is the legacy alias, kept as a redirect (never removed) so previously-shared links
+// keep working. Canonical is /sonic-discovery; forward the query (?id=…), hash, and router state.
+function PlaylistRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/sonic-discovery${location.search}${location.hash}`} replace state={location.state} />;
 }
 
 
@@ -127,8 +134,9 @@ function App() {
           <Route element={<WebLayout />}>
             {/* Optional Auth Routes (work with or without login) */}
             <Route path="/" element={<UploadLanding />} />
-            <Route path="/playlist" element={<PlaylistLanding />} />
+            {/* Canonical playlist/discovery page. /playlist redirects here (back-compat). */}
             <Route path="/sonic-discovery" element={<PlaylistLanding />} />
+            <Route path="/playlist" element={<PlaylistRedirect />} />
             <Route path="/subscribe" element={<SubscribePage />} />
 
             {/* Protected Auth Routes */}

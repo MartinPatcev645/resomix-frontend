@@ -1,6 +1,6 @@
 import React from "react";
 import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, useAccess, useFavoritePlaylist, usePlaylistVisibility, type AccessAction } from "@resomix/hooks";
+import { formatDuration, useAccess, useFavoritePlaylist, usePlaylistVisibility, useTrackCoverUrl, type AccessAction } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistRename } from "@/components/index.ts";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
@@ -12,7 +12,7 @@ import AngleDownSvg from "@/assets/icons/AngleDown.svg";
 import StarSvg from "@/assets/icons/star_white.svg";
 import StarBlackSvg from "@/assets/icons/star.svg";
 import MoreSvg from "@/assets/icons/more.svg";
-import TrackSvg from "@/assets/icons/track_2.svg";
+import DefaultCover from "@/assets/default-playlist-cover.jpg";
 import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
@@ -40,6 +40,9 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [statusTitle, setStatusTitle] = React.useState('');
 
   const { playlistData } = usePlaylistStore();
+  // Persisted cover for the seed (uploaded) track, fetched from the media server by uuid + token
+  // (same pattern as peaks). Falls back to the session cover / bundled default in the img below.
+  const seedCoverUrl = useTrackCoverUrl(playlistData?.queried_track?.id);
   // Single source of truth for gated actions — same contract as the desktop hero: one verdict per
   // action (allowed | login | upgrade | pending); pending = dimmed no-op, never a wrong modal.
   const access = useAccess();
@@ -182,10 +185,10 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
               <div className="flex items-start gap-[var(--px-10)]">
                 <div className="flex flex-col items-start gap-[var(--px-10)]">
                   <div className="border border-dotted border-slate-200 h-[var(--px-50)] w-[var(--px-50)]">
-                    {!DEMO_MODE && uploadedCoverArt ? (
-                      <img src={uploadedCoverArt} onError={(e) => { e.currentTarget.src = TrackSvg; }} draggable={false} aria-label="Track Cover" alt="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
+                    {!DEMO_MODE ? (
+                      <img src={seedCoverUrl || uploadedCoverArt || DefaultCover} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Track Cover" alt="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
                     ) : (
-                      <img src={TrackSvg} draggable={false} alt="Track Cover" aria-label="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)]" />
+                      <img src={DefaultCover} draggable={false} alt="Track Cover" aria-label="Track Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
                     )}
                   </div>
                 </div>

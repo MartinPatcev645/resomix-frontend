@@ -102,8 +102,8 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                     <div className="flex flex-col gap-[var(--px-10)] items-center w-full">
                                         {isGuest ? (
                                             <>
-                                                <ButtonSleek text="Create Free Account" href="/auth/register" onClick={() => {}} />
-                                                <ButtonSleek text="Log In" href="/auth/login" onClick={() => {}} transparent />
+                                                <ButtonSleek text="Create Free Account" onClick={() => triggerCta("register")} />
+                                                <ButtonSleek text="Log In" onClick={() => triggerCta("login")} transparent />
                                             </>
                                         ) : (
                                             <ButtonSleek text="Subscribe" onClick={() => triggerCta("subscribe")} />

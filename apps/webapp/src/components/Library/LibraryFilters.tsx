@@ -79,30 +79,34 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({
         />
       </div>
 
-      {/* Date range */}
-      <div className="flex flex-col">
-        <label htmlFor="library-filter-from" className={labelClass}>From</label>
-        <input
-          id="library-filter-from"
-          type="date"
-          value={draft.startDate}
-          max={draft.endDate || undefined}
-          onChange={(e) => set({ startDate: e.target.value })}
-          className={fieldClass}
-          style={{ colorScheme: "dark" }}
-        />
-      </div>
-      <div className="flex flex-col">
-        <label htmlFor="library-filter-to" className={labelClass}>To</label>
-        <input
-          id="library-filter-to"
-          type="date"
-          value={draft.endDate}
-          min={draft.startDate || undefined}
-          onChange={(e) => set({ endDate: e.target.value })}
-          className={fieldClass}
-          style={{ colorScheme: "dark" }}
-        />
+      {/* Date range — From/To share one row (each grows to fill), and only stack when the screen is
+          too narrow: each cell keeps a min width, so below ~2× that the inner flex wraps. On mobile
+          the pair spans a full row; on desktop it sizes to its content inline with the rest. */}
+      <div className="flex flex-wrap gap-[var(--px-10)] w-full md:w-auto">
+        <div className="flex flex-col grow shrink basis-[var(--px-130)] min-w-[var(--px-120)]">
+          <label htmlFor="library-filter-from" className={labelClass}>From</label>
+          <input
+            id="library-filter-from"
+            type="date"
+            value={draft.startDate}
+            max={draft.endDate || undefined}
+            onChange={(e) => set({ startDate: e.target.value })}
+            className={`${fieldClass} w-full`}
+            style={{ colorScheme: "dark" }}
+          />
+        </div>
+        <div className="flex flex-col grow shrink basis-[var(--px-130)] min-w-[var(--px-120)]">
+          <label htmlFor="library-filter-to" className={labelClass}>To</label>
+          <input
+            id="library-filter-to"
+            type="date"
+            value={draft.endDate}
+            min={draft.startDate || undefined}
+            onChange={(e) => set({ endDate: e.target.value })}
+            className={`${fieldClass} w-full`}
+            style={{ colorScheme: "dark" }}
+          />
+        </div>
       </div>
 
       {/* Min tracks (playlists only — a track isn't a collection) */}
