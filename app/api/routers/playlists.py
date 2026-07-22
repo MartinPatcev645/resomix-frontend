@@ -15,11 +15,12 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from fastapi import APIRouter, Depends, Request, status, Query, Path
+from fastapi import APIRouter, Depends, File, Request, status, Query, Path, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
+from app.utils.response_utils import format_response
 from app.controllers.playlist_controller import PlaylistController
 from app.api.dependencies.auth import get_current_user_optional, get_current_user
 from app.api.dependencies.partner import get_current_partner, get_public_partner
@@ -177,6 +178,57 @@ async def delete_playlist_endpoint(
     is retained server-side. Deletion is idempotent (a second delete returns 404).
     """
     return await playlist_controller.delete_playlist(db, request, playlist_id, current_user)
+
+
+# Max cover upload size (bytes) — kept in sync with the frontend's 1 MB limit.
+_MAX_COVER_BYTES = 1024 * 1024
+
+
+def _sniff_image_type(data: bytes) -> Optional[str]:
+    """Magic-byte content-type sniff (don't trust the client-declared type). JPEG or PNG only —
+    the media server does the deeper image validation (square / resolution) with Pillow."""
+    if data[:3] == b"\xff\xd8\xff":
+        return "image/jpeg"
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    return None
+
+
+@router.post(
+    "/{playlist_uuid}/cover",
+    summary="Upload a custom playlist cover",
+    description="Owner-only. Upload a square JPEG/PNG (≤ 1 MB) to use as the playlist's cover.",
+)
+async def upload_playlist_cover_endpoint(
+    playlist_uuid: str,
+    request: Request,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_database_session),
+    current_user: User = Depends(get_current_user),  # REQUIRED auth
+) -> JSONResponse:
+    """Basic gate here (size + magic-byte type + optional ClamAV, and the owner check in the
+    service); the media server enforces the image dimensions and stores it by playlist uuid."""
+    # Size guard — read at most one byte past the limit so an oversized file is rejected without
+    # buffering the whole thing.
+    data = await file.read(_MAX_COVER_BYTES + 1)
+    if not data:
+        return JSONResponse(status_code=400, content=format_response(success=False, error="The uploaded file is empty."))
+    if len(data) > _MAX_COVER_BYTES:
+        return JSONResponse(status_code=413, content=format_response(success=False, error="Image must be 1 MB or smaller."))
+
+    content_type = _sniff_image_type(data)
+    if content_type is None:
+        return JSONResponse(status_code=400, content=format_response(success=False, error="Only JPEG or PNG images are allowed."))
+
+    result = await playlist_controller.playlist_service.upload_custom_cover(
+        db, playlist_uuid, current_user.id, data, content_type
+    )
+    if result.get("success"):
+        return JSONResponse(status_code=200, content=format_response(success=True, data={"has_custom_cover": True}))
+    return JSONResponse(
+        status_code=result.get("status", 400),
+        content=format_response(success=False, error=result.get("error", "Failed to upload cover.")),
+    )
 
 
 @router.get(

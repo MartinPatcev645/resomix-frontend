@@ -41,6 +41,9 @@ class Playlist(Base):
     )
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # True once the owner has uploaded a custom cover (stored on the media server by playlist uuid).
+    # Drives the frontend cover source: custom → seed-track cover → bundled default.
+    has_custom_cover: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     type: Mapped[str] = mapped_column(Enum('custom', 'similarity', 'waiting_segments', name='playlist_type'), nullable=False, default='custom')
     
     # Foreign keys

@@ -778,6 +778,39 @@ class PlaylistService:
                 "total": 0,
             }
 
+    async def upload_custom_cover(
+        self, db: AsyncSession, playlist_uuid: str, user_id: int, image_bytes: bytes, content_type: str
+    ) -> Dict[str, Any]:
+        """Owner-checked custom playlist cover upload.
+
+        Ownership is enforced HERE (mirrors rename): a playlist not owned by ``user_id`` is treated
+        as not found. Then: optional ClamAV scan → forward to the media server (which does the
+        authoritative image validation with Pillow and stores it by playlist uuid) → flip
+        ``has_custom_cover``. Returns ``{success, error?, status?}``.
+        """
+        from app.utils.clamav import scan_bytes
+        from app.services.hetzner_service import HetznerService
+
+        playlist = await self.playlist_repository.async_get_playlist_by_uuid(db, playlist_uuid)
+        if not playlist or playlist.user_id != user_id:
+            return {"success": False, "error": "Playlist not found or not owned by you", "status": 404}
+
+        clean, threat = scan_bytes(image_bytes)
+        if not clean:
+            return {"success": False, "error": "The file failed a security scan and was rejected.", "status": 400}
+
+        res = await HetznerService().store_playlist_cover(
+            playlist.partner_id, playlist_uuid, image_bytes, content_type
+        )
+        if not res.get("success"):
+            # A 400 from the media server = image validation (not square / wrong resolution).
+            status = 400 if res.get("status") == 400 else 502
+            return {"success": False, "error": res.get("error", "Failed to save the cover."), "status": status}
+
+        playlist.has_custom_cover = True
+        await db.commit()
+        return {"success": True}
+
     async def get_playlist_playback_session(
         self, playlist_id: str, client_ip: str, partner_id: Optional[int] = None,
         user_id: Optional[int] = None,

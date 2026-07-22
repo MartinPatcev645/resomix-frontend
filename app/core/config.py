@@ -90,6 +90,10 @@ class Settings(BaseModel):
         default=None,
         description="Internal API key for securely deleting tracks on the Hetzner Audio Processing Server",
     )
+    # Optional ClamAV virus scanning for user uploads (e.g. playlist covers). Leave the host unset to
+    # disable — the scan step then no-ops. When set, a reachable clamd is scanned via INSTREAM.
+    clamav_host: Optional[str] = Field(default=None, description="clamd host (unset = scanning disabled)")
+    clamav_port: int = Field(default=3310, description="clamd TCP port")
     # Analysis microservice (runs on the Hetzner box; Alwyzon is its only caller). Leave unset
     # until the service is deployed — the upload orchestration treats an unset URL as "analysis
     # not available yet" and skips it (similarity still works). Mirrors the similarity wiring.

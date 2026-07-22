@@ -17,6 +17,47 @@ class HetznerService:
         self.hetzner_url = getattr(settings, "similarity_server_url", None)
         self.internal_api_key = getattr(settings, "hetzner_internal_api_key", None)
 
+    async def store_playlist_cover(
+        self, partner_id: int, playlist_uuid: str, image_bytes: bytes, content_type: str = "application/octet-stream"
+    ) -> Dict[str, Any]:
+        """Forward a validated cover image to the media server, which does the authoritative image
+        validation (square + resolution, Pillow) and stores it by playlist uuid. Returns
+        ``{success, error?, status?}`` — a non-200 surfaces the media server's rejection message."""
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+        endpoint = f"{self.hetzner_url.rstrip('/')}/internal/playlist-cover"
+        headers = {"Authorization": f"Bearer {self.internal_api_key}"}
+        params = {"partner_id": partner_id, "playlist_uuid": playlist_uuid}
+        files = {"file": ("cover", image_bytes, content_type)}
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(endpoint, params=params, files=files, headers=headers)
+            if response.status_code == 200:
+                return {"success": True}
+            try:
+                msg = response.json().get("message") or "Cover rejected by media server"
+            except Exception:
+                msg = "Cover rejected by media server"
+            return {"success": False, "error": msg, "status": response.status_code}
+        except Exception as e:
+            logger.error(f"store_playlist_cover failed for {playlist_uuid}: {e}")
+            return {"success": False, "error": "Failed to reach media server"}
+
+    async def delete_playlist_cover(self, partner_id: int, playlist_uuid: str) -> Dict[str, Any]:
+        """Remove a playlist's uploaded cover on the media server (idempotent)."""
+        if not self.hetzner_url or not self.internal_api_key:
+            return {"success": False, "error": "Media server not configured"}
+        endpoint = f"{self.hetzner_url.rstrip('/')}/internal/playlist-cover"
+        headers = {"Authorization": f"Bearer {self.internal_api_key}"}
+        params = {"partner_id": partner_id, "playlist_uuid": playlist_uuid}
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.delete(endpoint, params=params, headers=headers)
+            return {"success": response.status_code == 200}
+        except Exception as e:
+            logger.error(f"delete_playlist_cover failed for {playlist_uuid}: {e}")
+            return {"success": False, "error": "Failed to reach media server"}
+
     async def delete_track_on_hetzner(self, track_uuid: str, partner_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Calls the Hetzner server to securely wipe a track's audio and embedding assets.

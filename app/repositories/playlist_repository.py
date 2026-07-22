@@ -882,6 +882,11 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 "name": playlist.name,
                 "is_public": playlist.is_public,
                 "is_favorite": False,
+                # True → frontend fetches the media-server playlist cover; else the seed track cover.
+                "has_custom_cover": bool(playlist.has_custom_cover),
+                # Owner-only affordances (e.g. the cover pen icon). Backend still enforces owner-only
+                # on every mutating endpoint; this only drives what the UI offers.
+                "is_owner": bool(user_id is not None and playlist.user_id == user_id),
             }
 
             # Enrich with engagement data if user is logged in
@@ -1947,6 +1952,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     "seed_track_title": seed_track_title,
                     "seed_track_type": seed_track_type,
                     "seed_track_uuid": seed_track_uuid,
+                    "has_custom_cover": bool(playlist.has_custom_cover),
                     "fork_id": fork_id_value,
                     "num_tracks": playlist.num_tracks or 0,
                     "play_time": playlist.play_time or 0,
