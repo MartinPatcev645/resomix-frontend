@@ -3,8 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon, HeartStrokeIcon } from "@resomix/ui";
 import { useAuthStore } from "@resomix/stores";
 import { useLibrary, shouldOpenInNewTab, useAccess } from "@resomix/hooks";
-import TrackSvg from "@/assets/icons/track_2.svg";
-import { PlaylistCover } from "@/components/Library/PlaylistCover.tsx";
+import { CoverThumbnail } from "@/components/Library/CoverThumbnail.tsx";
 import { ExportSubmenu } from "@/components/Library/ExportSubmenu.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
@@ -410,7 +409,7 @@ export default function LibraryPage() {
                         {/* Playlist cover: the seed track's cover (media server, by uuid + token),
                             else the bundled Resomix default. */}
                         <div className="border border-dotted border-slate-200 bg-black/40 hover:border-[var(--color-primary-hover)] transition-colors overflow-hidden w-[var(--px-32)] h-[var(--px-32)] md:w-[var(--px-52)] md:h-[var(--px-52)]">
-                          <PlaylistCover uuid={playlist.seedTrackUuid} className="w-full h-full object-cover" />
+                          <CoverThumbnail uuid={playlist.seedTrackUuid} className="w-full h-full object-cover" />
                         </div>
                       </a>
 
@@ -630,15 +629,11 @@ export default function LibraryPage() {
                           artifacts are reached via the capsules; the row itself doesn't navigate.
                           Right padding clears the absolutely-positioned top-right kebab. */}
                       <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow min-w-0 pr-[var(--px-32)]">
-                        {/* Non-clickable Image */}
+                        {/* Non-clickable cover: the uploaded track's cover (media server, by uuid),
+                            else the bundled Resomix default — consistent with playlist covers. */}
                         <div className="flex-shrink-0">
-                          <div className="border border-dotted border-slate-200 p-[var(--px-6)] md:p-[var(--px-10)] bg-black/40">
-                            <img
-                              src={TrackSvg}
-                              draggable={false}
-                              alt="Track Icon"
-                              className="w-[var(--px-20)] h-[var(--px-20)] md:w-[var(--px-32)] md:h-[var(--px-32)]"
-                            />
+                          <div className="border border-dotted border-slate-200 bg-black/40 overflow-hidden w-[var(--px-32)] h-[var(--px-32)] md:w-[var(--px-52)] md:h-[var(--px-52)]">
+                            <CoverThumbnail uuid={track.id} className="w-full h-full object-cover" />
                           </div>
                         </div>
 
