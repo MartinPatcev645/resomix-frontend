@@ -61,147 +61,21 @@ const ensurePlaylistObject = (data: PlaylistData): PlaylistData => {
   return data;
 };
 
-// --- Demo/anon redaction detection ----------------------------------------
-// The backend scrambles similar-track metadata past the anonymous preview limit: track ids become a
-// repeating "dEm0" pattern and text fields become "demo…". We must never persist or reuse that
-// scrambled copy — otherwise a user who later logs in (and would receive the FULL playlist) keeps
-// seeing the cached teaser. Detect it deterministically via the id mask.
-const REDACTION_ID_PATTERN = 'dEm0';
-
-const isMaskedTrackId = (id: unknown): boolean => {
-  if (typeof id !== 'string' || id.length < REDACTION_ID_PATTERN.length) return false;
-  for (let i = 0; i < id.length; i++) {
-    if (id[i] !== REDACTION_ID_PATTERN[i % REDACTION_ID_PATTERN.length]) return false;
-  }
-  return true;
+// Cache helper functions.
+// The full playlist localStorage cache was REMOVED (2026-07): it could serve a stale guest/preview
+// copy after login — e.g. the first tracks correct but later ones still showing the backend's
+// scrambled "demo" teaser — because the cached anonymous response shadowed the fresh, full playlist.
+// The playlist view now always fetches fresh from the backend (the browser's own HTTP caching still
+// applies). These stay as no-ops so callers don't change; clearCache() below still purges any legacy
+// `playlistsBackup` / `lastAccessedPlaylist` entries the old cache left in localStorage.
+const saveResponseToCache = (_response: PlaylistResponse): void => {
+  // no-op — full playlist responses are no longer persisted to localStorage.
 };
 
-const isRedactedResponse = (response?: PlaylistResponse | null): boolean => {
-  const tracks = response?.data?.similar_tracks;
-  if (!Array.isArray(tracks)) return false;
-  return tracks.some((t) => isMaskedTrackId(t?.id));
+const loadCachedResponse = (_id?: string): PlaylistResponse | null => {
+  // no-op — always fetch fresh from the backend.
+  return null;
 };
-
-// Cache helper functions
-const saveResponseToCache = (response: PlaylistResponse): void => {
-  // Check if we're in a browser environment
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return;
-  }
-
-  try {
-    const playlistId = response.data?.playlist?.id || response.data?.queried_track?.id;
-    if (!playlistId) {
-      console.warn('Cannot cache playlist response: missing playlist ID');
-      return;
-    }
-
-    // Never cache a redacted (anonymous preview) response — it would shadow the full playlist the
-    // user receives after logging in. Any existing full cache entry for this id is left untouched.
-    if (isRedactedResponse(response)) {
-      return;
-    }
-
-    const cachedPlaylistsStr = window.localStorage.getItem('playlistsBackup')
-
-    let cachedPlaylists: PlaylistResponse[] = []
-    if (cachedPlaylistsStr) {
-      try {
-        cachedPlaylists = JSON.parse(cachedPlaylistsStr)
-        // Validate that it's an array
-        if (!Array.isArray(cachedPlaylists)) {
-          cachedPlaylists = []
-        }
-      } catch {
-        cachedPlaylists = []
-      }
-    }
-
-    // Remove existing response with same ID if it exists
-    cachedPlaylists = cachedPlaylists.filter(p => {
-      const id = p?.data?.playlist?.id || p?.data?.queried_track?.id;
-      return id && id !== playlistId;
-    })
-
-    // Add new response to the end (most recent)
-    cachedPlaylists.push(response)
-
-    // Keep only last 2 responses
-    if (cachedPlaylists.length > 2) {
-      cachedPlaylists = cachedPlaylists.slice(-2)
-    }
-
-    // Update localStorage - store the most recent playlist ID separately
-    window.localStorage.setItem('lastAccessedPlaylist', playlistId)
-    window.localStorage.setItem('playlistsBackup', JSON.stringify(cachedPlaylists))
-  } catch (error) {
-    console.warn('Failed to save playlist to cache:', error)
-    // On iOS Safari in private mode, localStorage can throw errors
-    // Clear potentially corrupted data
-    try {
-      window.localStorage.removeItem('playlistsBackup')
-      window.localStorage.removeItem('lastAccessedPlaylist')
-    } catch {
-      // Ignore cleanup errors
-    }
-  }
-}
-
-const loadCachedResponse = (id?: string): PlaylistResponse | null => {
-  // Check if we're in a browser environment
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return null;
-  }
-
-  try {
-    // If specific ID is requested, use that; otherwise get the last accessed one
-    const targetId = id || window.localStorage.getItem('lastAccessedPlaylist')
-    if (!targetId) return null
-
-    const cachedPlaylistsStr = window.localStorage.getItem('playlistsBackup')
-    if (!cachedPlaylistsStr) return null
-
-    const cachedPlaylists: PlaylistResponse[] = JSON.parse(cachedPlaylistsStr)
-
-    // Validate the cached data structure
-    if (!Array.isArray(cachedPlaylists)) {
-      console.warn('Invalid cached playlists data, clearing cache')
-      window.localStorage.removeItem('playlistsBackup')
-      window.localStorage.removeItem('lastAccessedPlaylist')
-      return null
-    }
-
-    // Find the response with matching ID
-    const foundResponse = cachedPlaylists.find(p => {
-      const pId = p?.data?.playlist?.id || p?.data?.queried_track?.id;
-      return pId === targetId;
-    })
-
-    // Validate the found response structure
-    if (foundResponse && !foundResponse.data?.playlist?.id && !foundResponse.data?.queried_track?.id) {
-      console.warn('Invalid cached response structure')
-      return null
-    }
-
-    // Defensive: ignore any redacted entry cached before this guard existed so a logged-in user
-    // gets a fresh (full) playlist from the backend instead of the stale anonymous teaser.
-    if (foundResponse && isRedactedResponse(foundResponse)) {
-      return null
-    }
-
-    return foundResponse || null
-  } catch (error) {
-    console.warn('Failed to load playlist from cache:', error)
-    // Clear potentially corrupted cache on error
-    try {
-      window.localStorage.removeItem('playlistsBackup')
-      window.localStorage.removeItem('lastAccessedPlaylist')
-    } catch {
-      // Ignore cleanup errors
-    }
-    return null
-  }
-}
 
 const clearCache = (): void => {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -265,8 +139,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     if (response.success) {
       const processedData = ensurePlaylistObject({ ...response.data });
       set({ playlistData: processedData, error: null })
-      // Auto-save to cache when response is set
-      get().saveResponseToCache({ ...response, data: processedData })
     } else {
       set({ error: 'Failed to load playlist data', playlistData: null })
     }
@@ -306,61 +178,26 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     return true
   },
 
-  // Update is_public flag in both state and localStorage cache
+  // Update is_public flag on the in-memory playlist (no localStorage cache anymore).
   updatePlaylistPublicStatus: (isPublic: boolean) => {
     const state = get()
     if (!state.playlistData || !state.playlistData.playlist) return
 
-    const playlistId = state.playlistData.playlist.id
-
-    // Update Zustand state
-    const updatedPlaylistData = {
-      ...state.playlistData,
-      playlist: {
-        ...state.playlistData.playlist,
-        is_public: isPublic
-      }
-    }
-    set({ playlistData: updatedPlaylistData })
-
-    // Update localStorage cache
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        const cachedPlaylistsStr = window.localStorage.getItem('playlistsBackup')
-        if (cachedPlaylistsStr) {
-          const cachedPlaylists: PlaylistResponse[] = JSON.parse(cachedPlaylistsStr)
-
-          const updatedPlaylists = cachedPlaylists.map(p => {
-            if (p?.data?.playlist?.id === playlistId) {
-              return {
-                ...p,
-                data: {
-                  ...p.data,
-                  playlist: {
-                    ...p.data.playlist,
-                    is_public: isPublic
-                  }
-                }
-              }
-            }
-            return p
-          })
-
-          window.localStorage.setItem('playlistsBackup', JSON.stringify(updatedPlaylists))
+    set({
+      playlistData: {
+        ...state.playlistData,
+        playlist: {
+          ...state.playlistData.playlist,
+          is_public: isPublic
         }
-      } catch (error) {
-        console.warn('Failed to update is_public in cache:', error)
       }
-    }
+    })
   },
 
-  // Update is_favorite flag in both Zustand state and the localStorage cache, so the heart stays
-  // correct across the current view and any later navigation back to this playlist.
+  // Update is_favorite flag on the in-memory playlist (no localStorage cache anymore).
   updatePlaylistFavoriteStatus: (isFavorite: boolean) => {
     const state = get()
     if (!state.playlistData || !state.playlistData.playlist) return
-
-    const playlistId = state.playlistData.playlist.id
 
     set({
       playlistData: {
@@ -371,33 +208,6 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
         },
       },
     })
-
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        const cachedPlaylistsStr = window.localStorage.getItem('playlistsBackup')
-        if (cachedPlaylistsStr) {
-          const cachedPlaylists: PlaylistResponse[] = JSON.parse(cachedPlaylistsStr)
-          const updatedPlaylists = cachedPlaylists.map(p => {
-            if (p?.data?.playlist?.id === playlistId) {
-              return {
-                ...p,
-                data: {
-                  ...p.data,
-                  playlist: {
-                    ...p.data.playlist,
-                    is_favorite: isFavorite,
-                  },
-                },
-              }
-            }
-            return p
-          })
-          window.localStorage.setItem('playlistsBackup', JSON.stringify(updatedPlaylists))
-        }
-      } catch (error) {
-        console.warn('Failed to update is_favorite in cache:', error)
-      }
-    }
   }
 }))
 

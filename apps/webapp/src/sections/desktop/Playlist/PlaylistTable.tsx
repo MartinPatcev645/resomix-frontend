@@ -158,8 +158,8 @@ const PlaylistTable: React.FC = () => {
                                     <div className="flex gap-[var(--px-15)] justify-center items-center">
                                         {isGuest ? (
                                             <>
-                                                <ButtonSleek text="Create Free Account" href="/auth/register" onClick={() => {}} />
-                                                <ButtonSleek text="Log In" href="/auth/login" onClick={() => {}} transparent />
+                                                <ButtonSleek text="Create Free Account" onClick={() => triggerCta("register")} />
+                                                <ButtonSleek text="Log In" onClick={() => triggerCta("login")} transparent />
                                             </>
                                         ) : (
                                             <ButtonSleek text="Subscribe" onClick={() => triggerCta("subscribe")} />

@@ -15,7 +15,7 @@
 import { useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-export type EntitlementCtaAction = "login" | "subscribe" | null;
+export type EntitlementCtaAction = "login" | "register" | "subscribe" | null;
 
 export const SUBSCRIPTION_ENABLED = true;
 export const SUBSCRIBE_ROUTE = "/subscribe";
@@ -24,9 +24,16 @@ export function useEntitlementCta() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Return the user to the EXACT view after auth — path AND query (e.g. a shared playlist's ?id=),
+  // not just the bare route. Dropping the query sent them to an id-less page (blank/home flash).
+  // SPA-navigate (not an <a> reload) so there's no full page reload / boot loader in between.
   const onLogin = useCallback(() => {
-    navigate(`/auth/login?redirect=${encodeURIComponent(location.pathname)}`);
-  }, [navigate, location.pathname]);
+    navigate(`/auth/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
+  }, [navigate, location.pathname, location.search]);
+
+  const onRegister = useCallback(() => {
+    navigate(`/auth/register?redirect=${encodeURIComponent(location.pathname + location.search)}`);
+  }, [navigate, location.pathname, location.search]);
 
   const onSubscribe = useCallback(() => {
     if (SUBSCRIPTION_ENABLED) {
@@ -38,10 +45,11 @@ export function useEntitlementCta() {
   const trigger = useCallback(
     (action: EntitlementCtaAction) => {
       if (action === "login") onLogin();
+      else if (action === "register") onRegister();
       else if (action === "subscribe") onSubscribe();
     },
-    [onLogin, onSubscribe]
+    [onLogin, onRegister, onSubscribe]
   );
 
-  return { onLogin, onSubscribe, trigger, subscriptionEnabled: SUBSCRIPTION_ENABLED };
+  return { onLogin, onRegister, onSubscribe, trigger, subscriptionEnabled: SUBSCRIPTION_ENABLED };
 }

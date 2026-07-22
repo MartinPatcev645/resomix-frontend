@@ -233,7 +233,8 @@ const PlaylistHero: React.FC = () => {
   const handleLoginClick = () => {
     setShowLoginButton(false);
     setShowStatus(false);
-    navigate(`/auth/login?redirect=${encodeURIComponent(location.pathname)}`);
+    // Preserve path + query (the ?id=) so login returns to this exact playlist.
+    navigate(`/auth/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
   };
 
   const handleOpenYourCopyClick = () => {
