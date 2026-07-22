@@ -31,9 +31,9 @@ export function UploadMobile() {
         setPlaylistResponse(cachedResponse);
         const playlistId = cachedResponse.data?.playlist?.id || null;
         if (playlistId) {
-          navigate(`/playlist?id=${playlistId}`);
+          navigate(`/sonic-discovery?id=${playlistId}`);
         } else {
-          navigate('/playlist');
+          navigate('/sonic-discovery');
         }
       } else {
         // Not in cache, make API call
@@ -48,9 +48,9 @@ export function UploadMobile() {
 
       const playlistId = (response as any).data?.playlist?.id || null;
       if (playlistId) {
-        navigate(`/playlist?id=${playlistId}`);
+        navigate(`/sonic-discovery?id=${playlistId}`);
       } else {
-        navigate('/playlist');
+        navigate('/sonic-discovery');
       }
     }
   }, [response, setPlaylistResponse, navigate]);

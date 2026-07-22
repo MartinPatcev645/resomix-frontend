@@ -217,7 +217,7 @@ export default function LibraryPage() {
 
   const handleSharePlaylist = async (uuid: string, isAlreadyPublic: boolean, e: React.MouseEvent) => {
     e.stopPropagation();
-    const shareUrl = `${window.location.origin}/playlist?id=${uuid}`;
+    const shareUrl = `${window.location.origin}/sonic-discovery?id=${uuid}`;
     
     const copyLink = () => {
       navigator.clipboard.writeText(shareUrl).then(
@@ -366,11 +366,11 @@ export default function LibraryPage() {
                       {/* Playlist link (image). Real <a> so right-click / ⌘-click open a new tab;
                           a plain click is intercepted for SPA navigation. */}
                       <a
-                        href={`/playlist?id=${playlist.uuid}`}
+                        href={`/sonic-discovery?id=${playlist.uuid}`}
                         onClick={(e) => {
                           if (shouldOpenInNewTab(e)) return;
                           e.preventDefault();
-                          navigate(`/playlist?id=${playlist.uuid}`, { state: { from: "library" } });
+                          navigate(`/sonic-discovery?id=${playlist.uuid}`, { state: { from: "library" } });
                         }}
                         className="flex-shrink-0 cursor-pointer"
                       >
@@ -391,12 +391,12 @@ export default function LibraryPage() {
                         <div className="flex items-center gap-[var(--px-8)] min-w-0">
                           {/* Playlist title link — same open-in-new-tab / SPA behaviour. */}
                           <a
-                            href={`/playlist?id=${playlist.uuid}`}
+                            href={`/sonic-discovery?id=${playlist.uuid}`}
                             title={playlist.name}
                             onClick={(e) => {
                               if (shouldOpenInNewTab(e)) return;
                               e.preventDefault();
-                              navigate(`/playlist?id=${playlist.uuid}`, { state: { from: "library" } });
+                              navigate(`/sonic-discovery?id=${playlist.uuid}`, { state: { from: "library" } });
                             }}
                             className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer truncate min-w-0"
                           >
@@ -499,7 +499,7 @@ export default function LibraryPage() {
                                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" />
                                   </svg>
                                 ),
-                                onClick: () => window.open(`/playlist?id=${playlist.uuid}`, "_blank"),
+                                onClick: () => window.open(`/sonic-discovery?id=${playlist.uuid}`, "_blank"),
                               },
                               {
                                 id: `playlist-share-${playlist.uuid}`,
@@ -665,7 +665,7 @@ export default function LibraryPage() {
                       <div className="hidden md:flex items-center justify-end w-full pr-[var(--px-28)]" onClick={e => e.stopPropagation()}>
                         <TrackArtifactChips
                           track={track}
-                          onOpenPlaylist={(uuid) => navigate(`/playlist?id=${uuid}`, { state: { from: "library" } })}
+                          onOpenPlaylist={(uuid) => navigate(`/sonic-discovery?id=${uuid}`, { state: { from: "library" } })}
                           onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`, { state: { from: "library" } })}
                           onComingSoon={() => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon")}
                         />
@@ -677,7 +677,7 @@ export default function LibraryPage() {
                         <TrackArtifactChips
                           track={track}
                           layout="stacked"
-                          onOpenPlaylist={(uuid) => navigate(`/playlist?id=${uuid}`, { state: { from: "library" } })}
+                          onOpenPlaylist={(uuid) => navigate(`/sonic-discovery?id=${uuid}`, { state: { from: "library" } })}
                           onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`, { state: { from: "library" } })}
                           onComingSoon={() => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon")}
                         />

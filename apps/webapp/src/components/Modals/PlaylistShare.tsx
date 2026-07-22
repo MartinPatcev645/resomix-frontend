@@ -80,18 +80,18 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
                         const generated =
                             response?.details?.share_url ||
                             response?.details?.link ||
-                            (BASE_BETA_URL + `/playlist?id=${playlistData.playlist.id}`);
+                            (BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
                         setLink(generated);
                     } else {
-                        setLink(BASE_BETA_URL + `/playlist?id=${playlistData.playlist.id}`);
+                        setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
                     }
                 } else {
                     // Playlist is already public, just generate the link
-                    setLink(BASE_BETA_URL + `/playlist?id=${playlistData.playlist.id}`);
+                    setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
                 }
             } catch (err) {
                 console.error('Failed to change visibility', err);
-                setLink(BASE_BETA_URL + `/playlist?id=${playlistData?.playlist?.id}`);
+                setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData?.playlist?.id}`);
             }
         };
 

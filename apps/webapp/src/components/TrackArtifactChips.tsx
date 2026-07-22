@@ -162,7 +162,7 @@ export function TrackArtifactChips({
           label="Sonic Discovery"
           icon={<PlaylistIcon />}
           title="Open the similarity playlist for this track"
-          href={`/playlist?id=${track.playlist_uuid}`}
+          href={`/sonic-discovery?id=${track.playlist_uuid}`}
           onClick={() => onOpenPlaylist(track.playlist_uuid as string)}
           fullWidth={stacked}
         />

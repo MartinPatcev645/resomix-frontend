@@ -240,7 +240,7 @@ const PlaylistHero: React.FC = () => {
     if (forkedPlaylistId) {
       setShowStatus(false);
       setForkedPlaylistId(null);
-      window.location.href = `${BASE_BETA_URL}/playlist?id=${forkedPlaylistId}`;
+      window.location.href = `${BASE_BETA_URL}/sonic-discovery?id=${forkedPlaylistId}`;
     }
   };
 
