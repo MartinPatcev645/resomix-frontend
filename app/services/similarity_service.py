@@ -230,11 +230,22 @@ class SimilarityService:
                         f"Updated track {track_uuid} duration to {final_duration} seconds"
                     )
 
+                # Fetch Apple ids/metadata for the candidates + reference so dedup can drop the same
+                # Apple track (apple_song_id/isrc) and key artist/title on Apple's authoritative
+                # values — done BEFORE the cushion is truncated, so the playlist still fills to
+                # target_count. Best-effort: a failure just falls back to in-house dedup.
+                from app.services.apple_music_enrichment import fetch_apple_map
+                _apple_dedup_ids = [t.get("track_id") for t in filtered_enriched_tracks if t.get("track_id") is not None]
+                if uploaded_track_details and uploaded_track_details.get("track_id") is not None:
+                    _apple_dedup_ids.append(uploaded_track_details.get("track_id"))
+                apple_by_track_id = await fetch_apple_map(db, _apple_dedup_ids)
+
                 deduplicated_enriched_tracks = deduplicate_tracks(
                     filtered_enriched_tracks,
                     target_count_after_deduplication,
                     reference_track=uploaded_track_details,  # Passing reference track for upload similarity
                     filter_title_func=filter_track_title,
+                    apple_by_track_id=apple_by_track_id,
                 )
 
                 # Get corresponding track IDs and scores for deduplicated tracks
@@ -490,11 +501,22 @@ class SimilarityService:
                 # Apply response-level filtering to existing tracks before deduplication
                 filtered_enriched_tracks = apply_response_filtering(enriched_similar_tracks)
 
+                # Fetch Apple ids/metadata for the candidates + reference so dedup can drop the same
+                # Apple track (apple_song_id/isrc) and key artist/title on Apple's authoritative
+                # values — done BEFORE the cushion is truncated, so the playlist still fills to
+                # target_count. Best-effort: a failure just falls back to in-house dedup.
+                from app.services.apple_music_enrichment import fetch_apple_map
+                _apple_dedup_ids = [t.get("track_id") for t in filtered_enriched_tracks if t.get("track_id") is not None]
+                if queried_track_data and queried_track_data.get("track_id") is not None:
+                    _apple_dedup_ids.append(queried_track_data.get("track_id"))
+                apple_by_track_id = await fetch_apple_map(db, _apple_dedup_ids)
+
                 deduplicated_enriched_tracks = deduplicate_tracks(
                     filtered_enriched_tracks,
                     target_count_after_deduplication,
                     reference_track=queried_track_data,  # Use queried track for reference in deduplication
                     filter_title_func=filter_track_title,
+                    apple_by_track_id=apple_by_track_id,
                 )
 
                 # Get corresponding track IDs and scores for deduplicated tracks

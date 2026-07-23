@@ -79,20 +79,82 @@ def normalize_artist_name(artist_name: str) -> str:
     return normalized
 
 
-def deduplicate_tracks(tracks: List[Dict[str, Any]], target_count: int, reference_track: Optional[Dict[str, Any]] = None, filter_title_func = None) -> List[Dict[str, Any]]:
+def _artist_title_key(track: Dict[str, Any], apple: Optional[Dict[str, Any]], filter_title_func) -> tuple:
+    """Build the normalized ``(sorted_artist_tuple, title)`` dedup key for a track.
+
+    Apple Music is authoritative for the artist/title the UI actually shows, so we dedupe on the
+    APPLE ``name``/``artist`` when an Apple match exists, falling back to the in-house values
+    otherwise. Titles are passed through ``filter_title_func`` (e.g. stripping "(Original Mix)") and
+    artists through :func:`normalize_artist_name` so formatting variants collapse to one key.
+    """
+    raw_title = (apple.get("name") if apple and apple.get("name") else track.get("title", "")) or ""
+    title = raw_title.strip()
+    if title and filter_title_func:
+        title = filter_title_func(title).strip()
+    title = title.lower()
+
+    if apple and apple.get("artist"):
+        source_artists = [apple.get("artist")]
+    else:
+        source_artists = track.get("all_artists") or []
+        if not source_artists:
+            primary = (track.get("artist") or "").strip()
+            source_artists = [primary] if primary else []
+
+    normalized = [normalize_artist_name(a) for a in source_artists]
+    normalized = [n for n in normalized if n]
+    return (tuple(sorted(normalized)), title)
+
+
+def dedupe_by_apple_identity(tracks: List[Dict[str, Any]], ref_apple_song_id, ref_isrc, id_of) -> List[Dict[str, Any]]:
+    """Remove tracks that share an Apple ``apple_song_id`` **or** ``isrc`` with the reference track
+    or with an earlier-kept track.
+
+    ``id_of(track) -> (apple_song_id, isrc)`` — either may be empty; an empty value never matches.
+    Input order is preserved and tracks carrying NEITHER id are always kept (uploads / unmatched
+    catalogue). ``apple_song_id`` is Apple's canonical id for the exact release; ``isrc`` is the
+    recording identifier, so it also collapses different Apple releases of the same recording.
+    """
+    ref_apple = str(ref_apple_song_id).strip() if ref_apple_song_id else ""
+    ref_isrc_v = str(ref_isrc).strip() if ref_isrc else ""
+    seen_apple, seen_isrc = set(), set()
+    kept: List[Dict[str, Any]] = []
+    for t in tracks:
+        apple_id, isrc = id_of(t)
+        apple_id = str(apple_id).strip() if apple_id else ""
+        isrc = str(isrc).strip() if isrc else ""
+        if apple_id and (apple_id == ref_apple or apple_id in seen_apple):
+            continue
+        if isrc and (isrc == ref_isrc_v or isrc in seen_isrc):
+            continue
+        if apple_id:
+            seen_apple.add(apple_id)
+        if isrc:
+            seen_isrc.add(isrc)
+        kept.append(t)
+    return kept
+
+
+def deduplicate_tracks(tracks: List[Dict[str, Any]], target_count: int, reference_track: Optional[Dict[str, Any]] = None, filter_title_func = None, apple_by_track_id: Optional[Dict[int, Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     """
     Removes duplicate tracks based on:
     1. Filename (without extension) and duration (existing logic)
-    2. Artist set and title combination (enhanced for multiple artists per track with robust normalization)
-    3. Reference track exclusion (for track selection similarity)
-    
-    Then sorts by score, re-ranks, and returns up to target_count tracks.
-    
+    2. Apple Music identity — ``apple_song_id`` + ``isrc`` — vs the reference and among candidates
+    3. Artist set and title combination (keyed on APPLE artist/title when available, else in-house)
+    4. Reference track exclusion (for track selection similarity)
+
+    All layers run on the FULL candidate set (which carries a de-dup cushion) BEFORE the final
+    truncation, so removals are absorbed and the playlist still fills up to ``target_count``. Then
+    sorts by score, re-ranks, and returns up to ``target_count`` tracks.
+
     Args:
         tracks: List of track dictionaries to deduplicate
         target_count: Maximum number of tracks to return
         reference_track: Optional reference track to exclude from results
         filter_title_func: Optional function to filter track titles before deduplication
+        apple_by_track_id: Optional ``{track_id: apple_row}`` map (apple_song_id/isrc/name/artist),
+            fetched by the caller. When provided, the Apple identity layer + Apple-keyed artist/title
+            dedup are applied; when absent, behaviour falls back to the in-house fields only.
     """
     # STEP 0: Apply title filtering BEFORE deduplication to normalize titles
     # This ensures tracks like "Junior Gee" and "Junior Gee (Original Mix)" are seen as duplicates
@@ -100,114 +162,94 @@ def deduplicate_tracks(tracks: List[Dict[str, Any]], target_count: int, referenc
     for track in tracks:
         # Create a copy to avoid modifying the original
         processed_track = track.copy()
-        
+
         # Apply title filtering if title exists and filter function provided
         if "title" in processed_track and processed_track["title"] and filter_title_func:
             processed_track["title"] = filter_title_func(processed_track["title"]).strip()
-        
+
         preprocessed_tracks.append(processed_track)
-    
+
     # First layer: Filename-based deduplication (existing logic)
     seen_filename_tracks = set()
     filename_deduplicated_list = []
-    
+
     for track in preprocessed_tracks:
         filename_full = track.get("filename", "")
         # Remove extension from filename for the key
         filename_base, file_extension = os.path.splitext(filename_full)
         duration = track.get("duration", -1)
         track_key = (filename_base.lower().strip(), duration)  # Use lowercased base filename
-        
+
         if track_key not in seen_filename_tracks:
             filename_deduplicated_list.append(track)
             seen_filename_tracks.add(track_key)
-    
-    # Second layer: Artist set and title-based deduplication (enhanced for multiple artists)
+
+    # Layer 1.5: Apple Music identity de-duplication (apple_song_id + isrc). Runs here — on the full
+    # cushioned candidate set, BEFORE the final truncation — so it removes the same Apple track
+    # (e.g. the seed re-appearing as the first "similar" track, or the same recording indexed under
+    # two uuids/labels) while the cushion keeps the playlist at target_count. No-op without an Apple
+    # map (uploads / callers that don't fetch it).
+    if apple_by_track_id:
+        ref_apple = apple_by_track_id.get(reference_track.get("track_id")) if reference_track else None
+
+        def _apple_ids(t):
+            a = apple_by_track_id.get(t.get("track_id")) or {}
+            return (a.get("apple_song_id"), a.get("isrc"))
+
+        filename_deduplicated_list = dedupe_by_apple_identity(
+            filename_deduplicated_list,
+            (ref_apple or {}).get("apple_song_id"),
+            (ref_apple or {}).get("isrc"),
+            _apple_ids,
+        )
+
+    # Second layer: Artist set and title-based deduplication (keyed on Apple artist/title when
+    # available — Apple is authoritative for what the UI shows — else the in-house fields).
     seen_artist_title_tracks = set()
     final_deduplicated_list = []
-    
+
     # Prepare reference track normalization if provided
     reference_normalized_key = None
     if reference_track:
-        # Apply title filtering to reference track as well for consistent comparison
-        ref_title = reference_track.get("title", "").strip()
-        if ref_title and filter_title_func:
-            ref_title = filter_title_func(ref_title).strip().lower()
-        else:
-            ref_title = ref_title.lower()
-        
-        ref_all_artists = reference_track.get("all_artists", [])
-        
-        # If no all_artists field, fall back to primary artist field
-        if not ref_all_artists:
-            ref_primary_artist = reference_track.get("artist", "").strip()
-            ref_all_artists = [ref_primary_artist] if ref_primary_artist else []
-        
-        # Create normalized reference key if we have title and artists
-        if ref_title and ref_all_artists:
-            ref_normalized_artists = []
-            for artist in ref_all_artists:
-                normalized_artist = normalize_artist_name(artist)
-                if normalized_artist:
-                    ref_normalized_artists.append(normalized_artist)
-            
-            if ref_normalized_artists:
-                ref_normalized_artists_tuple = tuple(sorted(ref_normalized_artists))
-                reference_normalized_key = (ref_normalized_artists_tuple, ref_title)
-    
+        ref_apple = apple_by_track_id.get(reference_track.get("track_id")) if apple_by_track_id else None
+        ref_key = _artist_title_key(reference_track, ref_apple, filter_title_func)
+        # Only use it if we actually have both artists and a title
+        if ref_key[0] and ref_key[1]:
+            reference_normalized_key = ref_key
+
     for track in filename_deduplicated_list:
         # Exclude the reference/queried track itself based on UUID equality before any further checks
         if reference_track and track.get("id") and reference_track.get("id") and track.get("id") == reference_track.get("id"):
             continue
-        # Title is already filtered, just need to normalize case and trim
-        title = track.get("title", "").strip().lower()
-        
-        # Get all artists for this track
-        all_artists = track.get("all_artists", [])
-        
-        # If no all_artists field, fall back to primary artist field
-        if not all_artists:
-            primary_artist = track.get("artist", "").strip()
-            all_artists = [primary_artist] if primary_artist else []
-        
-        # Skip tracks with empty title or no artists to avoid false positives
-        if not title or not all_artists:
+
+        cand_apple = apple_by_track_id.get(track.get("track_id")) if apple_by_track_id else None
+        artist_title_key = _artist_title_key(track, cand_apple, filter_title_func)
+
+        # Skip tracks with empty title or no artists to avoid false positives (keep them as-is)
+        if not artist_title_key[1] or not artist_title_key[0]:
             final_deduplicated_list.append(track)
             continue
-        
-        # Create a normalized, sorted set of artists with robust normalization
-        normalized_artists = []
-        for artist in all_artists:
-            normalized_artist = normalize_artist_name(artist)
-            if normalized_artist:  # Only add non-empty normalized names
-                normalized_artists.append(normalized_artist)
-        
-        # Sort the normalized artists and convert to tuple for hashing
-        normalized_artists_tuple = tuple(sorted(normalized_artists))
-        
-        # Create a key from normalized artist set and title
-        artist_title_key = (normalized_artists_tuple, title)
-        
+
         # Skip this track if its normalized key matches that of the reference track.
         # This ensures consistency between track-to-track and reference track deduplication (both use normalized artist set and filtered title).
         if reference_normalized_key and artist_title_key == reference_normalized_key:
             continue
-        
+
         if artist_title_key not in seen_artist_title_tracks:
             final_deduplicated_list.append(track)
             seen_artist_title_tracks.add(artist_title_key)
         # else: this track has the same artist set and title as a previous track, so skip it
-    
+
     # Sort by score in descending order (higher score is better)
     # Ensure score exists and is a number, default to 0 or a very low number if missing/invalid
     final_deduplicated_list.sort(key=lambda x: float(x.get("score", 0)) if isinstance(x.get("score"), (int, float, str)) and str(x.get("score")).replace('.', '', 1).isdigit() else 0, reverse=True)
-    
+
     # Re-rank the sorted list
     reranked_list = []
     for i, track_item in enumerate(final_deduplicated_list):
         track_item["rank"] = i + 1
         reranked_list.append(track_item)
-    
+
     # Title filtering is now done BEFORE deduplication, so just return the tracks
     # Limited to target_count
     return reranked_list[:target_count]

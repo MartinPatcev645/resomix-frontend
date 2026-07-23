@@ -27,10 +27,25 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.apple_music_repository import AppleMusicRepository
+from app.utils.similarity_utils import dedupe_by_apple_identity
 
 logger = logging.getLogger(__name__)
 
 _apple_repo = AppleMusicRepository()
+
+
+async def fetch_apple_map(db: AsyncSession, track_ids: List[int]) -> Dict[int, Dict[str, Any]]:
+    """Best-effort ``{track_id: apple_row}`` map (apple_song_id / isrc / name / artist / …) used to
+    build de-dup keys BEFORE the final truncation. Never raises — an Apple lookup must not break
+    similarity/playlist creation; on failure dedup simply falls back to the in-house fields."""
+    ids = [i for i in track_ids if i is not None]
+    if not ids:
+        return {}
+    try:
+        return await _apple_repo.async_get_by_track_ids(db, ids)
+    except Exception as exc:  # noqa: BLE001 - non-critical
+        logger.warning("Apple map fetch failed (%s ids) — dedup falls back to in-house: %s", len(ids), exc)
+        return {}
 
 
 def _merge_apple_into_track(track: Dict[str, Any], apple: Optional[Dict[str, Any]]) -> None:
@@ -110,6 +125,25 @@ async def enrich_similarity_data_with_apple(db: AsyncSession, data: Dict[str, An
     )
 
     await enrich_tracks_with_apple(db, bundle)
+
+    # ── Apple Music identity de-duplication (fix-on-read) ───────────────────────────────────────
+    # New playlists are already Apple/ISRC-deduped at creation (deduplicate_tracks fetches the Apple
+    # map and dedupes BEFORE truncation). This pass cleans EXISTING stored playlists on every read —
+    # dropping any member sharing the seed's apple_song_id or isrc, and collapsing members that share
+    # an id/isrc — without a migration. Members with neither id (uploads / unmatched) are untouched.
+    # Same fix-on-read pattern as the playlist-name re-derivation below (rewrites the response only).
+    if isinstance(members, list) and members:
+        deduped = dedupe_by_apple_identity(
+            members,
+            seed.get("apple_song_id") if isinstance(seed, dict) else None,
+            seed.get("isrc") if isinstance(seed, dict) else None,
+            lambda m: (m.get("apple_song_id"), m.get("isrc")) if isinstance(m, dict) else (None, None),
+        )
+        if len(deduped) != len(members):
+            for i, m in enumerate(deduped):
+                if isinstance(m, dict):
+                    m["rank"] = i + 1
+            data["similar_tracks"] = deduped
 
     # Playlist names are generated at creation from the seed's IN-HOUSE artist/title
     # (generate_playlist_name_from_seed_track, which runs before enrichment). Now that Apple is
