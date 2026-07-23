@@ -2,17 +2,15 @@
  * usePlaylistCover
  * ================
  *
- * Single source for the owner-only custom playlist cover: it both BUILDS the cover URL (fetched
- * from the media server by playlist uuid + playback token, mirroring peaks / track covers) and
- * OWNS the upload action (client validation → POST → flip the store flag → re-fetch the replaced
- * image). Keeping both here means the desktop and mobile `PlaylistHero` stay in sync and the pages
+ * Single source for the owner-only custom playlist cover: it BUILDS the cover URL (fetched from the
+ * media server by playlist uuid + playback token, mirroring peaks / track covers) and OWNS the upload
+ * action. Keeping both here means the desktop and mobile `PlaylistHero` stay in sync and the pages
  * stay thin.
  *
- * Client validation mirrors the server gates so obvious mistakes fail instantly (no round-trip):
- *   • JPEG or PNG only
- *   • ≤ 1 MB
- *   • square (equal width/height)
- *   • between 200px and 3000px on each side
+ * Flow: pick a file → `validateOriginal` (type / ≤ 3 MB / 100–4000 px per side, NON-square allowed) →
+ * the caller opens the crop modal (react-easy-crop) → the user crops to a square → `upload(blob)`
+ * sends the cropped square. So the backend/media server always receives a proper square.
+ *
  * The alwyzon backend re-checks size/type + owner and the media server re-checks square/resolution
  * with Pillow — the client checks are UX only, never the security boundary.
  */
@@ -22,7 +20,7 @@ import { usePlaylistStore } from "@resomix/stores";
 import { uploadPlaylistCover } from "@resomix/api-client";
 import { usePlaylistCoverUrl } from "./usePlaylistCoverUrl";
 
-const MAX_COVER_BYTES = 1024 * 1024; // 1 MB — kept in sync with the backend limit.
+const MAX_COVER_BYTES = 3 * 1024 * 1024; // 3 MB — kept in sync with the backend limit.
 const MIN_DIM = 100; // kept in sync with the media server's _PLAYLIST_COVER_MIN_DIM
 const MAX_DIM = 4000; // kept in sync with the media server's _PLAYLIST_COVER_MAX_DIM
 
@@ -36,12 +34,14 @@ export interface UsePlaylistCoverResult {
   coverUrl: string | null;
   /** True while an upload request is in flight. */
   isUploading: boolean;
-  /** Validate + upload a chosen file. Returns a human-readable error on failure. */
-  upload: (file: File) => Promise<CoverActionResult>;
+  /** Validate a freshly-picked file BEFORE cropping (type / size / bounds; non-square is allowed). */
+  validateOriginal: (file: File) => Promise<CoverActionResult>;
+  /** Upload the cropped square (a Blob produced by the crop modal). */
+  upload: (blob: Blob) => Promise<CoverActionResult>;
 }
 
 /** Read an image file's pixel dimensions in the browser. Rejects on a non-decodable file. */
-function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
+function readImageDimensions(file: Blob): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -58,13 +58,17 @@ function readImageDimensions(file: File): Promise<{ width: number; height: numbe
   });
 }
 
-/** Client-side pre-flight validation (UX only — the server re-validates authoritatively). */
-async function validateCoverFile(file: File): Promise<CoverActionResult> {
-  if (!/^image\/(jpeg|png)$/.test(file.type)) {
-    return { ok: false, error: "Please choose a JPEG or PNG image." };
+/**
+ * Pre-flight validation of the ORIGINAL picked file (UX only — the server re-validates). Non-square is
+ * allowed here: the user crops to a square in the modal afterwards. We just gate type, size, and that
+ * each side is within [MIN_DIM, MAX_DIM] so the eventual square crop stays in range.
+ */
+async function validateOriginalFile(file: File): Promise<CoverActionResult> {
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+    return { ok: false, error: "Please choose a JPEG, PNG, or WebP image." };
   }
   if (file.size > MAX_COVER_BYTES) {
-    return { ok: false, error: "Image must be 1 MB or smaller." };
+    return { ok: false, error: "Image must be 3 MB or smaller." };
   }
   let dims: { width: number; height: number };
   try {
@@ -72,11 +76,11 @@ async function validateCoverFile(file: File): Promise<CoverActionResult> {
   } catch {
     return { ok: false, error: "That file doesn’t look like a valid image." };
   }
-  if (dims.width !== dims.height) {
-    return { ok: false, error: "Cover must be square (equal width and height)." };
+  if (dims.width < MIN_DIM || dims.height < MIN_DIM) {
+    return { ok: false, error: `Image must be at least ${MIN_DIM}×${MIN_DIM} px.` };
   }
-  if (dims.width < MIN_DIM || dims.width > MAX_DIM) {
-    return { ok: false, error: `Cover must be between ${MIN_DIM}px and ${MAX_DIM}px on each side.` };
+  if (dims.width > MAX_DIM || dims.height > MAX_DIM) {
+    return { ok: false, error: `Image must be at most ${MAX_DIM}×${MAX_DIM} px.` };
   }
   return { ok: true };
 }
@@ -93,16 +97,18 @@ export function usePlaylistCover(
 
   const coverUrl = usePlaylistCoverUrl(playlistUuid, hasCustomCover, bust);
 
-  const upload = useCallback(
-    async (file: File): Promise<CoverActionResult> => {
-      if (!playlistUuid) return { ok: false, error: "No playlist to update." };
+  const validateOriginal = useCallback(
+    (file: File): Promise<CoverActionResult> => validateOriginalFile(file),
+    [],
+  );
 
-      const valid = await validateCoverFile(file);
-      if (!valid.ok) return valid;
+  const upload = useCallback(
+    async (blob: Blob): Promise<CoverActionResult> => {
+      if (!playlistUuid) return { ok: false, error: "No playlist to update." };
 
       setIsUploading(true);
       try {
-        const resp = await uploadPlaylistCover(playlistUuid, file);
+        const resp = await uploadPlaylistCover(playlistUuid, blob);
         if (resp && (resp as { success?: boolean }).success) {
           updateCustomCover?.(true);
           setBust(Date.now()); // force a re-fetch of the newly stored image
@@ -121,5 +127,5 @@ export function usePlaylistCover(
     [playlistUuid, updateCustomCover],
   );
 
-  return { coverUrl, isUploading, upload };
+  return { coverUrl, isUploading, validateOriginal, upload };
 }

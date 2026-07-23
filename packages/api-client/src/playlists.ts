@@ -45,10 +45,13 @@ export const changePlaylistVisibility = async (playlistId: string, isPublic = tr
  * and forwards the image to the media server, which enforces square/resolution with Pillow and
  * stores it by playlist uuid. On success the playlist's `has_custom_cover` flips to true.
  */
-export const uploadPlaylistCover = async (playlistId: string, file: File) => {
+export const uploadPlaylistCover = async (playlistId: string, file: Blob | File) => {
   try {
     const formData = new FormData();
-    formData.append("file", file);
+    // The frontend crops to a square JPEG (a Blob) before uploading; give it a filename so the
+    // multipart part is well-formed (a bare Blob has no name).
+    const filename = (file as File).name || "cover.jpg";
+    formData.append("file", file, filename);
     const url = `${API_CONFIG.ENDPOINTS.PLAYLIST_COVER}/${encodeURIComponent(playlistId)}/cover`;
     const data = await axiosWrapper<ApiResponse>(
       authClient.post(url, formData, {

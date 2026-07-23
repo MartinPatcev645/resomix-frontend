@@ -21,6 +21,7 @@ import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 import { CoverTextOverlay } from "@/components/Playlist/CoverTextOverlay.tsx";
+import { CoverCropModal } from "@/components/Playlist/CoverCropModal.tsx";
 
 const InputTrackStatus = "Loading..."
 
@@ -50,9 +51,11 @@ const PlaylistHero: React.FC = () => {
   // seed track cover → session upload art → bundled default. Only the owner sees the pen to change it.
   const isOwner = !!playlistData?.playlist?.is_owner;
   const hasCustomCover = !!playlistData?.playlist?.has_custom_cover;
-  const { coverUrl: customCoverUrl, isUploading: coverUploading, upload: uploadCover } =
+  const { coverUrl: customCoverUrl, isUploading: coverUploading, validateOriginal: validateCover, upload: uploadCover } =
     usePlaylistCover(playlistData?.playlist?.id, hasCustomCover);
   const coverInputRef = React.useRef<HTMLInputElement | null>(null);
+  // Object URL of a picked (pre-crop) image; non-null opens the crop modal. Upload happens after crop.
+  const [cropSrc, setCropSrc] = React.useState<string | null>(null);
   // Gate the canvas title overlay on the cover image actually being painted (custom/seed/default),
   // so the text never flashes over a blank state.
   const [coverLoaded, setCoverLoaded] = React.useState(false);
@@ -116,8 +119,26 @@ const PlaylistHero: React.FC = () => {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-picking the same file after an error
     if (!file) return;
+    const valid = await validateCover(file);
+    if (!valid.ok) {
+      handleStatusChange("error", valid.error || "That image can’t be used.", "Cover Update Failed");
+      return;
+    }
+    // Open the crop modal on the picked image; the upload runs once the user confirms the square.
+    setCropSrc(URL.createObjectURL(file));
+  };
+
+  const closeCrop = () => {
+    setCropSrc((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
+
+  const handleCropConfirm = async (blob: Blob) => {
+    closeCrop();
     handleStatusChange("loading", "Uploading your cover…", "Updating Cover");
-    const res = await uploadCover(file);
+    const res = await uploadCover(blob);
     if (res.ok) {
       handleStatusChange("success", "Your playlist cover has been updated.", "Cover Updated");
     } else {
@@ -474,7 +495,7 @@ const PlaylistHero: React.FC = () => {
                     <input
                       ref={coverInputRef}
                       type="file"
-                      accept="image/jpeg,image/png"
+                      accept="image/jpeg,image/png,image/webp"
                       className="hidden"
                       onChange={handleCoverSelected}
                       aria-hidden="true"
@@ -650,6 +671,12 @@ const PlaylistHero: React.FC = () => {
       </div>
 
       {/* Modals */}
+      <CoverCropModal
+        isOpen={!!cropSrc}
+        imageSrc={cropSrc}
+        onCancel={closeCrop}
+        onConfirm={handleCropConfirm}
+      />
       <GateCtaModal
         reason={gate?.reason ?? null}
         title={gate?.title}

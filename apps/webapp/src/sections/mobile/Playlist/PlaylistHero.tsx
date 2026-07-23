@@ -5,6 +5,7 @@ import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores"
 import { InputPlayer, PlaylistRating, PlaylistRename } from "@/components/index.ts";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
+import { CoverCropModal } from "@/components/Playlist/CoverCropModal.tsx";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import AngleLeftSvg from "@/assets/icons/angle_left.svg";
@@ -47,9 +48,11 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   // only the owner sees the pen to change it.
   const isOwner = !!playlistData?.playlist?.is_owner;
   const hasCustomCover = !!playlistData?.playlist?.has_custom_cover;
-  const { coverUrl: customCoverUrl, isUploading: coverUploading, upload: uploadCover } =
+  const { coverUrl: customCoverUrl, isUploading: coverUploading, validateOriginal: validateCover, upload: uploadCover } =
     usePlaylistCover(playlistData?.playlist?.id, hasCustomCover);
   const coverInputRef = React.useRef<HTMLInputElement | null>(null);
+  // Object URL of a picked (pre-crop) image; non-null opens the crop modal. Upload happens after crop.
+  const [cropSrc, setCropSrc] = React.useState<string | null>(null);
   // Single source of truth for gated actions — same contract as the desktop hero: one verdict per
   // action (allowed | login | upgrade | pending); pending = dimmed no-op, never a wrong modal.
   const access = useAccess();
@@ -93,8 +96,25 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-picking the same file after an error
     if (!file) return;
+    const valid = await validateCover(file);
+    if (!valid.ok) {
+      handleStatusChange("error", valid.error || "That image can’t be used.", "Cover Update Failed");
+      return;
+    }
+    setCropSrc(URL.createObjectURL(file));
+  };
+
+  const closeCrop = () => {
+    setCropSrc((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
+
+  const handleCropConfirm = async (blob: Blob) => {
+    closeCrop();
     handleStatusChange("loading", "Uploading your cover…", "Updating Cover");
-    const res = await uploadCover(file);
+    const res = await uploadCover(blob);
     if (res.ok) {
       handleStatusChange("success", "Your playlist cover has been updated.", "Cover Updated");
     } else {
@@ -240,7 +260,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                     <input
                       ref={coverInputRef}
                       type="file"
-                      accept="image/jpeg,image/png"
+                      accept="image/jpeg,image/png,image/webp"
                       className="hidden"
                       onChange={handleCoverSelected}
                       aria-hidden="true"
@@ -398,6 +418,12 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
       </div>
 
       {/* Modals */}
+      <CoverCropModal
+        isOpen={!!cropSrc}
+        imageSrc={cropSrc}
+        onCancel={closeCrop}
+        onConfirm={handleCropConfirm}
+      />
       <GateCtaModal
         reason={gate?.reason ?? null}
         title={gate?.title}
