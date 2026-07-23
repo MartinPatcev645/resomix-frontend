@@ -133,6 +133,19 @@ class PlaylistService:
         when the playlist doesn't exist / isn't owned by the user / is already deleted.
         """
         try:
+            # Capture the custom-cover info BEFORE the delete so we can clean the media-server file
+            # up afterwards (the soft-delete only returns a bool). Owner-checked so we never touch a
+            # cover we don't own; this read is non-fatal (worst case: an orphaned cover file remains).
+            cover_partner_id: Optional[int] = None
+            has_custom_cover = False
+            try:
+                existing = await self.playlist_repository.async_get_playlist_by_uuid(db, playlist_uuid)
+                if existing and existing.user_id == user_id and bool(getattr(existing, "has_custom_cover", False)):
+                    has_custom_cover = True
+                    cover_partner_id = existing.partner_id
+            except Exception as e:
+                print(f"delete_playlist: could not read cover flag for {playlist_uuid}: {e}")
+
             deleted = await self.playlist_repository.async_soft_delete_user_playlist(
                 db, playlist_uuid, user_id, partner_id=partner_id
             )
@@ -140,6 +153,19 @@ class PlaylistService:
                 await db.rollback()
                 return {"success": False, "error": "Playlist not found", "not_found": True}
             await db.commit()
+
+            # Best-effort cleanup of the custom cover on the media server. Mirrors the resilience in
+            # upload_custom_cover: the delete is already committed, so a media-server error must never
+            # fail or undo it — we only log. The DELETE endpoint is idempotent.
+            if has_custom_cover and cover_partner_id is not None:
+                try:
+                    from app.services.hetzner_service import HetznerService
+                    res = await HetznerService().delete_playlist_cover(cover_partner_id, playlist_uuid)
+                    if not res.get("success"):
+                        print(f"delete_playlist: cover cleanup did not succeed for {playlist_uuid}: {res.get('error')}")
+                except Exception as e:
+                    print(f"delete_playlist: cover cleanup failed for {playlist_uuid} (ignored): {e}")
+
             return {"success": True, "message": "Playlist deleted successfully"}
         except Exception as e:
             await db.rollback()
