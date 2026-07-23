@@ -180,8 +180,9 @@ async def delete_playlist_endpoint(
     return await playlist_controller.delete_playlist(db, request, playlist_id, current_user)
 
 
-# Max cover upload size (bytes) — kept in sync with the frontend's 1 MB limit.
-_MAX_COVER_BYTES = 1024 * 1024
+# Max cover upload size (bytes) — kept in sync with the frontend's 3 MB limit. The frontend crops to
+# a square before sending, so the received file is typically much smaller; this is the hard ceiling.
+_MAX_COVER_BYTES = 3 * 1024 * 1024
 
 
 def _sniff_image_type(data: bytes) -> Optional[str]:
@@ -197,7 +198,7 @@ def _sniff_image_type(data: bytes) -> Optional[str]:
 @router.post(
     "/{playlist_uuid}/cover",
     summary="Upload a custom playlist cover",
-    description="Owner-only. Upload a square JPEG/PNG (≤ 1 MB) to use as the playlist's cover.",
+    description="Owner-only. Upload a square JPEG/PNG (≤ 3 MB) to use as the playlist's cover.",
 )
 async def upload_playlist_cover_endpoint(
     playlist_uuid: str,
@@ -215,7 +216,7 @@ async def upload_playlist_cover_endpoint(
     if not data:
         return JSONResponse(status_code=400, content=format_response(success=False, error="The uploaded file is empty."))
     if len(data) > _MAX_COVER_BYTES:
-        return JSONResponse(status_code=413, content=format_response(success=False, error="Image must be 1 MB or smaller."))
+        return JSONResponse(status_code=413, content=format_response(success=False, error="Image must be 3 MB or smaller."))
 
     content_type = _sniff_image_type(data)
     if content_type is None:
