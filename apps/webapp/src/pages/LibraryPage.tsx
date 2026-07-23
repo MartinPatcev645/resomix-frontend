@@ -409,7 +409,7 @@ export default function LibraryPage() {
                         {/* Playlist cover precedence: custom playlist cover (by playlist uuid) →
                             seed track cover (by uuid + token) → bundled Resomix default. */}
                         <div className="border border-dotted border-slate-200 bg-black/40 hover:border-[var(--color-primary-hover)] transition-colors overflow-hidden w-[var(--px-32)] h-[var(--px-32)] md:w-[var(--px-52)] md:h-[var(--px-52)]">
-                          <CoverThumbnail uuid={playlist.seedTrackUuid} playlistUuid={playlist.uuid} hasCustomCover={playlist.hasCustomCover} className="w-full h-full object-cover" />
+                          <CoverThumbnail playlistUuid={playlist.uuid} hasCustomCover={playlist.hasCustomCover} className="w-full h-full object-cover" />
                         </div>
                       </a>
 

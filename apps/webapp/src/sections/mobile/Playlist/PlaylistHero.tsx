@@ -1,6 +1,6 @@
 import React from "react";
 import { IconButton, HoverFlow, StatusMessage, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, useAccess, useFavoritePlaylist, usePlaylistVisibility, useTrackCoverUrl, usePlaylistCover, type AccessAction } from "@resomix/hooks";
+import { formatDuration, useAccess, useFavoritePlaylist, usePlaylistVisibility, usePlaylistCover, type AccessAction } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistRename } from "@/components/index.ts";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
@@ -41,11 +41,8 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   const [statusTitle, setStatusTitle] = React.useState('');
 
   const { playlistData } = usePlaylistStore();
-  // Persisted cover for the seed (uploaded) track, fetched from the media server by uuid + token
-  // (same pattern as peaks). Falls back to the session cover / bundled default in the img below.
-  const seedCoverUrl = useTrackCoverUrl(playlistData?.queried_track?.id);
-  // Owner-only custom playlist cover (same contract as desktop): custom → seed → session → default;
-  // only the owner sees the pen to change it.
+  // Owner-only custom playlist cover (same contract as desktop): custom → bundled default; a playlist
+  // never uses a track's own cover. Only the owner sees the pen to change it.
   const isOwner = !!playlistData?.playlist?.is_owner;
   const hasCustomCover = !!playlistData?.playlist?.has_custom_cover;
   const { coverUrl: customCoverUrl, isUploading: coverUploading, validateOriginal: validateCover, upload: uploadCover } =
@@ -71,7 +68,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
   };
   // Dim gated controls until the verdicts are real.
   const accessDim = access.ready ? "" : " opacity-60";
-  const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
+  const { autoplay, setAutoplay } = usePlayerStore();
   // Public/private toggle — logged-in owner only (logged-out sees a read-only badge, unchanged).
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { setVisibility } = usePlaylistVisibility();
@@ -231,7 +228,7 @@ const PlaylistHero: React.FC<PlaylistHeroProps> = ({ onMoreClick }) => {
                 <div className="flex flex-col items-start gap-[var(--px-10)]">
                   <div className="relative border border-dotted border-slate-200 h-[var(--px-50)] w-[var(--px-50)]">
                     {!DEMO_MODE ? (
-                      <img src={(hasCustomCover ? customCoverUrl : seedCoverUrl) || uploadedCoverArt || DefaultCover} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
+                      <img src={(hasCustomCover ? customCoverUrl : null) || DefaultCover} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
                     ) : (
                       <img src={DefaultCover} draggable={false} alt="Playlist Cover" aria-label="Playlist Cover" className="w-[var(--px-50)] h-[var(--px-50)] object-cover" />
                     )}

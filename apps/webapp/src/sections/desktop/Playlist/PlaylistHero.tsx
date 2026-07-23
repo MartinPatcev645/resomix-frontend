@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { IconButton, HoverFlow, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
-import { formatDuration, usePlaylistExport, useAccess, useFavoritePlaylist, usePlaylistVisibility, useTrackCoverUrl, usePlaylistCover, type AccessAction } from "@resomix/hooks";
+import { formatDuration, usePlaylistExport, useAccess, useFavoritePlaylist, usePlaylistVisibility, usePlaylistCover, type AccessAction } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
@@ -44,11 +44,8 @@ const PlaylistHero: React.FC = () => {
   // const [hasForkedThisPlaylist, setHasForkedThisPlaylist] = React.useState(false);
 
   const { playlistData, isLoading, error } = usePlaylistStore();
-  // Persisted cover for the seed (uploaded) track, fetched from the media server by uuid + token
-  // (same pattern as peaks). Falls back to the session cover / bundled default in the img below.
-  const seedCoverUrl = useTrackCoverUrl(playlistData?.queried_track?.id);
   // Owner-only custom playlist cover. Precedence for what we display: custom cover (if uploaded) →
-  // seed track cover → session upload art → bundled default. Only the owner sees the pen to change it.
+  // bundled default. A playlist never uses a track's own cover. Only the owner sees the pen to change it.
   const isOwner = !!playlistData?.playlist?.is_owner;
   const hasCustomCover = !!playlistData?.playlist?.has_custom_cover;
   const { coverUrl: customCoverUrl, isUploading: coverUploading, validateOriginal: validateCover, upload: uploadCover } =
@@ -59,7 +56,7 @@ const PlaylistHero: React.FC = () => {
   // Gate the canvas title overlay on the cover image actually being painted (custom/seed/default),
   // so the text never flashes over a blank state.
   const [coverLoaded, setCoverLoaded] = React.useState(false);
-  const { autoplay, setAutoplay, uploadedCoverArt } = usePlayerStore();
+  const { autoplay, setAutoplay } = usePlayerStore();
   const { canExport, isExporting } = usePlaylistExport();
   // Single source of truth for gated actions (share/rename/favorite/…): useAccess merges the
   // client auth flag with the server entitlements and yields one verdict per action —
@@ -457,7 +454,7 @@ const PlaylistHero: React.FC = () => {
                       border is always square and the image fills it edge-to-edge. */}
                   <div className="relative border border-dotted border-slate-200 w-[var(--px-120)] h-[var(--px-120)]">
                     {!DEMO_MODE ? (
-                      <img src={(hasCustomCover ? customCoverUrl : seedCoverUrl) || uploadedCoverArt || DefaultCover} onLoad={() => setCoverLoaded(true)} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="block w-full h-full object-cover" />
+                      <img src={(hasCustomCover ? customCoverUrl : null) || DefaultCover} onLoad={() => setCoverLoaded(true)} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="block w-full h-full object-cover" />
                     ) : (
                       <img src={DefaultCover} onLoad={() => setCoverLoaded(true)} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="block w-full h-full object-cover" />
                     )}

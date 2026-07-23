@@ -3,29 +3,32 @@ import { useTrackCoverUrl, usePlaylistCoverUrl } from "@resomix/hooks";
 import DefaultCover from "@/assets/default-playlist-cover.jpg";
 
 interface CoverThumbnailProps {
-  /** Track uuid — the media server stores/serves the cover under this (uploaded track, playlist
-   *  seed, …). Used as the fallback when there's no custom playlist cover. */
+  /** Track uuid — the media server serves the track's own cover under this. Used only for track
+   *  rows (e.g. the library tracks tab); ignored for playlist rows (a playlist never uses a track cover). */
   uuid?: string | null;
   /** Playlist uuid — used to fetch the custom playlist cover when `hasCustomCover` is true. */
   playlistUuid?: string | null;
-  /** When true, a custom cover was uploaded → prefer the playlist cover over the seed track cover. */
+  /** When true, a custom cover was uploaded for this playlist → show it. */
   hasCustomCover?: boolean;
   className?: string;
 }
 
 /**
- * Cover thumbnail with the same precedence as the playlist hero: custom playlist cover (if
- * uploaded, fetched by playlist uuid) → seed track cover (fetched by track uuid) → bundled default.
- * Both cover URLs come from the media server (uuid + playback token, like peaks). Falls back to the
- * default while loading, when there's no uuid, or if an image 404s.
+ * Cover thumbnail with the same precedence as the playlist hero. Two modes, by which prop is set:
+ *   • Playlist rows (playlistUuid set): custom playlist cover (fetched by playlist uuid) → bundled
+ *     default. A playlist never falls back to a track's own cover.
+ *   • Track rows (uuid only, e.g. the library tracks tab): the track's own cover (fetched by track
+ *     uuid) → bundled default.
+ * Cover URLs come from the media server (uuid + playback token, like peaks). Falls back to the
+ * default while loading, when there's no cover, or if an image 404s.
  *
- * A component (not inline in a list `.map`) so each row can call the hooks. Used for library
- * playlist rows (custom cover / seed track) and library track rows (seed uuid only).
+ * A component (not inline in a list `.map`) so each row can call the hooks.
  */
 export const CoverThumbnail: React.FC<CoverThumbnailProps> = ({ uuid, playlistUuid, hasCustomCover, className }) => {
   const seedUrl = useTrackCoverUrl(uuid);
   const customUrl = usePlaylistCoverUrl(playlistUuid, !!hasCustomCover);
-  const url = hasCustomCover ? customUrl : seedUrl;
+  // Playlist context (playlistUuid set): custom playlist cover → default. Track context: track cover → default.
+  const url = playlistUuid ? (hasCustomCover ? customUrl : null) : seedUrl;
   return (
     <img
       src={url || DefaultCover}
