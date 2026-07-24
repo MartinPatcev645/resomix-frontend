@@ -268,6 +268,22 @@ export function useLibrary() {
     }
   }, [setPlaylists]);
 
+  /**
+   * Reflect a cover that was just replaced from the library's rename modal: flip `hasCustomCover`
+   * on the row and bump its cache-buster so the thumbnail re-fetches (the URL is otherwise
+   * identical). Also drops the cached playlist so the playlist page shows the new cover on next
+   * open. The upload itself is done by `usePlaylistCover`; this only syncs the list.
+   */
+  const markPlaylistCoverUpdated = useCallback((uuid: string) => {
+    clearPlaylistFromCache(uuid);
+    const state = useLibraryStore.getState();
+    setPlaylists(
+      state.playlists.map(p =>
+        p.uuid === uuid ? { ...p, hasCustomCover: true, coverBust: Date.now() } : p,
+      ),
+    );
+  }, [setPlaylists]);
+
   // Commit a tab's filters and reload from page 1. Store `set` is synchronous, so the
   // load* call below reads the just-set filters via getState().
   const applyFilters = useCallback((tab: 'playlists' | 'tracks', filters: LibraryFilters) => {
@@ -307,6 +323,7 @@ export function useLibrary() {
     sharePlaylist,
     setPlaylistVisibility,
     renamePlaylist,
+    markPlaylistCoverUpdated,
     // Filters (applied, per tab) + actions.
     playlistsFilters,
     tracksFilters,

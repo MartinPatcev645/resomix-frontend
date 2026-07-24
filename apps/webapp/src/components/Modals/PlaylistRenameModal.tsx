@@ -9,6 +9,12 @@ interface PlaylistRenameModalProps {
     onClose: () => void
     /** Called with the validated, trimmed new name when the user confirms. */
     onSubmit: (newName: string) => void
+    /**
+     * Optional cover slot rendered under the heading (the library passes a `<PlaylistCoverEditor>`
+     * so the cover can be changed from there too). Omit it — as the playlist hero does — and the
+     * dialog renders exactly as before, with no extra markup or spacing.
+     */
+    cover?: React.ReactNode
 }
 
 /**
@@ -22,6 +28,7 @@ export const PlaylistRenameModal: React.FC<PlaylistRenameModalProps> = ({
     submitting = false,
     onClose,
     onSubmit,
+    cover,
 }) => {
     const [newName, setNewName] = React.useState('')
 
@@ -80,6 +87,8 @@ export const PlaylistRenameModal: React.FC<PlaylistRenameModalProps> = ({
                         Rename Playlist
                     </h2>
                 </div>
+                {/* Optional cover slot (library only) — nothing renders when the prop is omitted. */}
+                {cover && <div className="flex justify-center">{cover}</div>}
                 <div className="w-full">
                     <label htmlFor="playlist-name-input" className="sr-only">New playlist name</label>
                     <input

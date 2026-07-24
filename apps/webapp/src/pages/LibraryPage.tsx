@@ -4,6 +4,7 @@ import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon, Heart
 import { useAuthStore } from "@resomix/stores";
 import { useLibrary, shouldOpenInNewTab, useAccess } from "@resomix/hooks";
 import { CoverThumbnail } from "@/components/Library/CoverThumbnail.tsx";
+import { PlaylistCoverEditor } from "@/components/Playlist/PlaylistCoverEditor.tsx";
 import { ExportSubmenu } from "@/components/Library/ExportSubmenu.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
@@ -36,6 +37,7 @@ export default function LibraryPage() {
     sharePlaylist,
     setPlaylistVisibility,
     renamePlaylist,
+    markPlaylistCoverUpdated,
     playlistsFilters,
     tracksFilters,
     applyFilters,
@@ -73,8 +75,9 @@ export default function LibraryPage() {
   const [visibilityFor, setVisibilityFor] = useState<{ uuid: string; isPublic: boolean } | null>(null);
   const [visibilityBusy, setVisibilityBusy] = useState(false);
 
-  // Rename modal — holds the playlist being renamed (same modal/flow as the playlist page).
-  const [renameFor, setRenameFor] = useState<{ uuid: string; name: string } | null>(null);
+  // Rename modal — holds the playlist being renamed (same modal/flow as the playlist page). In the
+  // library it also carries `hasCustomCover`, so the modal can host the cover editor.
+  const [renameFor, setRenameFor] = useState<{ uuid: string; name: string; hasCustomCover: boolean } | null>(null);
   const [renameBusy, setRenameBusy] = useState(false);
 
   // Apple Music export — reuses the playlist page's flow: verdict gate (login/upgrade) → the shared
@@ -104,6 +107,19 @@ export default function LibraryPage() {
         body: "Sending your playlist straight to your Apple Music library is a Pro feature. Upgrade your plan to unlock Apple Music export.",
       });
     }
+  };
+
+  // Cover changed from inside the rename modal: sync the row, close every modal, confirm.
+  const handleCoverUpdated = () => {
+    const uuid = renameFor?.uuid;
+    setRenameFor(null);
+    if (uuid) markPlaylistCoverUpdated(uuid);
+    handleStatusChange("success", "Your playlist cover has been updated.", "Cover Updated");
+  };
+
+  const handleCoverError = (message: string) => {
+    setRenameFor(null);
+    handleStatusChange("error", message, "Cover Update Failed");
   };
 
   const handleRenameSubmit = async (newName: string) => {
@@ -409,7 +425,7 @@ export default function LibraryPage() {
                         {/* Playlist cover precedence: custom playlist cover (by playlist uuid) →
                             seed track cover (by uuid + token) → bundled Resomix default. */}
                         <div className="border border-dotted border-slate-200 bg-black/40 hover:border-[var(--color-primary-hover)] transition-colors overflow-hidden w-[var(--px-32)] h-[var(--px-32)] md:w-[var(--px-52)] md:h-[var(--px-52)]">
-                          <CoverThumbnail playlistUuid={playlist.uuid} hasCustomCover={playlist.hasCustomCover} className="w-full h-full object-cover" />
+                          <CoverThumbnail playlistUuid={playlist.uuid} hasCustomCover={playlist.hasCustomCover} bust={playlist.coverBust} className="w-full h-full object-cover" />
                         </div>
                       </a>
 
@@ -437,7 +453,7 @@ export default function LibraryPage() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                setRenameFor({ uuid: playlist.uuid, name: playlist.name });
+                                setRenameFor({ uuid: playlist.uuid, name: playlist.name, hasCustomCover: !!playlist.hasCustomCover });
                               }}
                               aria-label="Rename playlist"
                               className="flex-shrink-0 text-white/50 hover:text-[var(--color-primary-hover)] cursor-pointer flex items-center justify-center p-[var(--px-2)] hover:scale-110 active:scale-90 transition-all bg-transparent border-0 outline-none"
@@ -840,13 +856,24 @@ export default function LibraryPage() {
         </div>
       </StatusMessage>
 
-      {/* Rename playlist — identical modal/flow to the playlist page (shared component). */}
+      {/* Rename playlist — same shared modal as the playlist page, plus the library-only `cover`
+          slot so the cover can be changed from here too (the hero omits the prop and is unchanged). */}
       <PlaylistRenameModal
         isOpen={!!renameFor}
         initialName={renameFor?.name || ""}
         submitting={renameBusy}
         onClose={() => setRenameFor(null)}
         onSubmit={handleRenameSubmit}
+        cover={
+          renameFor ? (
+            <PlaylistCoverEditor
+              playlistUuid={renameFor.uuid}
+              hasCustomCover={renameFor.hasCustomCover}
+              onUpdated={handleCoverUpdated}
+              onError={handleCoverError}
+            />
+          ) : null
+        }
       />
 
       {/* Apple Music export — the SAME modal + entitlement gate the playlist page uses. */}

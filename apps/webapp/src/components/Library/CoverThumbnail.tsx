@@ -10,6 +10,8 @@ interface CoverThumbnailProps {
   playlistUuid?: string | null;
   /** When true, a custom cover was uploaded for this playlist → show it. */
   hasCustomCover?: boolean;
+  /** Cache-buster — bump after replacing the cover so the same-URL image is re-fetched, not reused. */
+  bust?: number;
   className?: string;
 }
 
@@ -24,9 +26,9 @@ interface CoverThumbnailProps {
  *
  * A component (not inline in a list `.map`) so each row can call the hooks.
  */
-export const CoverThumbnail: React.FC<CoverThumbnailProps> = ({ uuid, playlistUuid, hasCustomCover, className }) => {
+export const CoverThumbnail: React.FC<CoverThumbnailProps> = ({ uuid, playlistUuid, hasCustomCover, bust, className }) => {
   const seedUrl = useTrackCoverUrl(uuid);
-  const customUrl = usePlaylistCoverUrl(playlistUuid, !!hasCustomCover);
+  const customUrl = usePlaylistCoverUrl(playlistUuid, !!hasCustomCover, bust);
   // Playlist context (playlistUuid set): custom playlist cover → default. Track context: track cover → default.
   const url = playlistUuid ? (hasCustomCover ? customUrl : null) : seedUrl;
   return (

@@ -43,8 +43,11 @@ export interface LibraryPlaylist {
   // the UI shows the bundled default cover.
   seedTrackUuid?: string | null;
   // True → a custom playlist cover was uploaded; the thumbnail fetches it by the playlist `uuid`
-  // (else it falls back to the seed track cover, then the bundled default).
+  // (else it shows the bundled default — a playlist never uses a track's own cover).
   hasCustomCover?: boolean;
+  // Cache-buster, bumped after the cover is replaced from the library so the thumbnail re-fetches
+  // the same URL instead of showing the previous image.
+  coverBust?: number;
 }
 
 /** Applied filters for a library section. `numTracks` + `favoritesOnly` are playlists-only. */

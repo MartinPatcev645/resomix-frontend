@@ -110,7 +110,9 @@ export function usePlaylistCover(
       try {
         const resp = await uploadPlaylistCover(playlistUuid, blob);
         if (resp && (resp as { success?: boolean }).success) {
-          updateCustomCover?.(true);
+          // Scoped by uuid: when this runs from the LIBRARY the playlist store may hold a different
+          // playlist, and an unscoped flip would mark the wrong one as having a custom cover.
+          updateCustomCover?.(true, playlistUuid);
           setBust(Date.now()); // force a re-fetch of the newly stored image
           return { ok: true };
         }

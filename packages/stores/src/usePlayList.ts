@@ -123,7 +123,7 @@ interface PlaylistStore {
   // Update is_favorite flag in both state and cache
   updatePlaylistFavoriteStatus: (isFavorite: boolean) => void
   // Flip has_custom_cover after a successful cover upload (so the hero re-fetches the new cover)
-  updatePlaylistCustomCover: (hasCustomCover: boolean) => void
+  updatePlaylistCustomCover: (hasCustomCover: boolean, playlistUuid?: string) => void
 }
 
 // Create the Zustand store
@@ -219,9 +219,19 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   },
 
   // Flip has_custom_cover on the in-memory playlist after a successful upload.
-  updatePlaylistCustomCover: (hasCustomCover: boolean) => {
+  //
+  // `playlistUuid` scopes the update: a cover can now be changed from the LIBRARY too, where the
+  // store may hold a DIFFERENT playlist (or none). Passing the uuid the upload was for makes this a
+  // no-op unless it matches the loaded playlist, so a library edit can never mark the wrong
+  // playlist. Omitting it keeps the old unconditional behaviour for existing callers.
+  updatePlaylistCustomCover: (hasCustomCover: boolean, playlistUuid?: string) => {
     const state = get()
     if (!state.playlistData || !state.playlistData.playlist) return
+
+    if (playlistUuid) {
+      const loaded = state.playlistData.playlist as { id?: string; uuid?: string }
+      if (loaded.id !== playlistUuid && loaded.uuid !== playlistUuid) return
+    }
 
     set({
       playlistData: {
