@@ -7,11 +7,7 @@ import {
   type AppleEnvelope,
   type AppleTransferResult,
 } from '@resomix/api-client';
-import {
-  initializeAppleMusicAuth,
-  clearAppleAuth,
-  clearGuardKey,
-} from './appleService';
+import { prepareMusicKit, type MusicKitInstance } from './appleService';
 
 type StatusFn = (status: 'loading' | 'success' | 'error', message: string, title?: string) => void;
 
@@ -25,23 +21,20 @@ interface UseAppleTransferParams {
 
 /** User-facing copy — no raw API/Apple errors are ever shown; everything maps to these. */
 const MSG = {
-  connecting: 'Waiting for you to finish sign-in in the Apple Music window…',
+  connecting: 'Complete the sign-in in the Apple window…',
   connected: 'Your Apple Music account is connected.',
-  cancelled: 'Apple Music sign-in was cancelled. You can try connecting again.',
-  blocked: 'Your browser blocked the sign-in window. Please allow pop-ups and try again.',
-  connectFailed: 'We couldn’t connect your Apple Music account. Please try again.',
+  authFailed:
+    'Apple Music sign-in didn’t complete. Connecting requires an active Apple Music subscription.',
+  prepareFailed: 'Couldn’t reach Apple Music right now. Please try again.',
   transferring: 'Adding your playlist to Apple Music…',
-  notConnected: 'Please connect your Apple Music account first.',
   sessionExpired: 'Your Apple Music session ended. Please reconnect your account.',
   transferFailed:
-    'We couldn’t add this playlist to Apple Music. Make sure you have an active Apple Music subscription, then try again.',
+    'We couldn’t add this playlist to Apple Music. Make sure your Apple Music subscription is active, then try again.',
+  noMatches: 'None of these tracks were available on Apple Music.',
   planBlocked: 'Apple Music export isn’t available on your plan.',
   disconnected: 'Your Apple Music account has been disconnected.',
   generic: 'Something went wrong. Please try again.',
 };
-
-const CONNECT_TIMEOUT_MS = 2 * 60 * 1000;
-const POLL_MS = 800;
 
 /** Map a failed envelope to a standard message (never surfaces the raw server/Apple text). */
 function mapError(env: AppleEnvelope<unknown>, ctx: 'connect' | 'transfer'): string {
@@ -49,14 +42,19 @@ function mapError(env: AppleEnvelope<unknown>, ctx: 'connect' | 'transfer'): str
   const raw = (env.error || '').toLowerCase();
   if (status === 403 || env.reason === 'upgrade_required') return MSG.planBlocked;
   if (status === 401 || raw.includes('expired') || raw.includes('reconnect')) return MSG.sessionExpired;
-  if (raw.includes('not connected') || raw.includes('connect your apple')) return MSG.notConnected;
-  return ctx === 'connect' ? MSG.connectFailed : MSG.transferFailed;
+  if (raw.includes('not connected') || raw.includes('connect your apple')) return MSG.sessionExpired;
+  return ctx === 'connect' ? MSG.authFailed : MSG.transferFailed;
 }
 
+const errText = (e: unknown): string =>
+  e instanceof Error ? e.message : typeof e === 'string' ? e : 'Unexpected error';
+
 /**
- * Apple Music connection + transfer, backed by the SERVER connection (persisted per account, so the
- * user links once and it survives sessions/devices). MusicKit sign-in happens in a popup that writes
- * the user token to localStorage; we read it once, persist it server-side, then clear the local copy.
+ * Apple Music connection + transfer — entirely IN-PAGE (no app-owned redirect popup).
+ *
+ * The connection is persisted SERVER-SIDE against the user's account, so linking once survives
+ * sessions and devices. MusicKit is prepared as soon as the modal opens, so the Connect click can
+ * call `authorize()` on a live user gesture (browsers drop activation across awaits).
  */
 export function useAppleTransfer({ active, initialPlaylistId, onStatusChange }: UseAppleTransferParams) {
   const playlistId = useMemo(
@@ -69,20 +67,26 @@ export function useAppleTransfer({ active, initialPlaylistId, onStatusChange }: 
   const [statusLoading, setStatusLoading] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
   const [transferLoading, setTransferLoading] = useState(false);
+  const [ready, setReady] = useState(false); // MusicKit prepared → Connect is armed
   const [notice, setNotice] = useState<AppleNotice>(null);
   const [result, setResult] = useState<AppleTransferResult | null>(null);
+  const [log, setLog] = useState<string[]>([]);
 
-  const pollRef = useRef<number | null>(null);
+  const musicRef = useRef<MusicKitInstance | null>(null);
   const mountedRef = useRef(true);
 
-  const stopPoll = useCallback(() => {
-    if (pollRef.current !== null) {
-      window.clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
+  const pushLog = useCallback((line: string) => {
+    // eslint-disable-next-line no-console
+    console.info('[apple]', line);
+    setLog((prev) => [...prev, `${new Date().toTimeString().slice(0, 8)}  ${line}`]);
   }, []);
 
-  // Fetch the authoritative connection status from the server.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  /** Authoritative connection state from the server. */
   const refreshStatus = useCallback(async () => {
     setStatusLoading(true);
     const res = await getAppleConnection();
@@ -90,106 +94,98 @@ export function useAppleTransfer({ active, initialPlaylistId, onStatusChange }: 
     if (res.success && res.data) {
       setConnected(!!res.data.connected);
       setStorefront(res.data.storefront ?? null);
+      pushLog(res.data.connected ? `connected account found (${res.data.storefront ?? '—'})` : 'no Apple Music account linked yet');
     } else {
       setConnected(false);
+      pushLog('could not read connection status');
     }
     setStatusLoading(false);
-  }, []);
+  }, [pushLog]);
 
-  // Track true mount/unmount (so async callbacks don't setState after unmount).
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      stopPoll();
-    };
-  }, [stopPoll]);
-
-  // On open: reset transient UI and load the authoritative status. On close: stop any pending poll.
+  // On open: reset transient UI and load status.
   useEffect(() => {
     if (!active) return;
     setNotice(null);
     setResult(null);
     setConnectLoading(false);
     setTransferLoading(false);
+    setLog([]);
     void refreshStatus();
-    return () => stopPoll();
-  }, [active, refreshStatus, stopPoll]);
+  }, [active, refreshStatus]);
 
-  // Kick off the MusicKit sign-in popup, then wait for the returned token and persist it.
+  // Prepare MusicKit up front so the Connect click can authorize on a live gesture.
+  useEffect(() => {
+    if (!active || connected || musicRef.current) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        pushLog('preparing Apple Music…');
+        const instance = await prepareMusicKit();
+        if (cancelled || !mountedRef.current) return;
+        musicRef.current = instance;
+        setReady(true);
+        pushLog('ready to connect');
+      } catch (e) {
+        if (cancelled || !mountedRef.current) return;
+        pushLog(`ERROR: ${errText(e)}`);
+        setNotice({ kind: 'error', text: MSG.prepareFailed });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [active, connected, pushLog]);
+
+  /** Called straight from the Connect button click — authorize() runs on the live gesture. */
   const connect = useCallback(async () => {
-    stopPoll();
-    setNotice({ kind: 'info', text: MSG.connecting });
-    setConnectLoading(true);
-    try {
-      clearAppleAuth();          // drop any stale local token so we only react to this sign-in
-      clearGuardKey(playlistId);
-      await initializeAppleMusicAuth(playlistId);
-    } catch {
-      // window.open threw (almost always a blocked pop-up)
-      setConnectLoading(false);
-      setNotice({ kind: 'error', text: MSG.blocked });
+    const music = musicRef.current;
+    if (!music) {
+      setNotice({ kind: 'error', text: MSG.prepareFailed });
       return;
     }
-
-    const startedAt = Date.now();
-    pollRef.current = window.setInterval(async () => {
-      const lastError = localStorage.getItem('apple_last_error');
-      const mut = localStorage.getItem('apple_music_user_token');
-
-      if (lastError) {
-        localStorage.removeItem('apple_last_error');
-        stopPoll();
-        clearAppleAuth();
-        if (mountedRef.current) {
-          setConnectLoading(false);
-          setNotice({ kind: 'error', text: MSG.cancelled });
-        }
-        return;
+    setConnectLoading(true);
+    setNotice({ kind: 'info', text: MSG.connecting });
+    pushLog('opening Apple sign-in…');
+    try {
+      const mut = await music.authorize(); // no await before this — gesture is still live
+      if (!mut) throw new Error('authorize() returned no token');
+      pushLog('authorized — saving connection');
+      const res = await saveAppleConnection(mut);
+      if (!mountedRef.current) return;
+      if (res.success && res.data?.connected) {
+        setConnected(true);
+        setStorefront(res.data.storefront ?? null);
+        setNotice({ kind: 'success', text: MSG.connected });
+        pushLog(`connected (${res.data.storefront ?? '—'})`);
+      } else {
+        pushLog(`ERROR: save failed (${res.status ?? '—'})`);
+        setNotice({ kind: 'error', text: mapError(res, 'connect') });
       }
-
-      if (mut) {
-        stopPoll();
-        const res = await saveAppleConnection(mut);
-        clearAppleAuth();        // token now lives server-side; drop the local copy
-        if (!mountedRef.current) return;
-        setConnectLoading(false);
-        if (res.success && res.data?.connected) {
-          setConnected(true);
-          setStorefront(res.data.storefront ?? null);
-          setNotice({ kind: 'success', text: MSG.connected });
-        } else {
-          setNotice({ kind: 'error', text: mapError(res, 'connect') });
-        }
-        return;
-      }
-
-      if (Date.now() - startedAt > CONNECT_TIMEOUT_MS) {
-        stopPoll();
-        if (mountedRef.current) {
-          setConnectLoading(false);
-          setNotice({ kind: 'error', text: MSG.cancelled });
-        }
-      }
-    }, POLL_MS);
-  }, [playlistId, stopPoll]);
+    } catch (e) {
+      if (!mountedRef.current) return;
+      // authorize() rejects when the sign-in is dismissed or the account has no subscription.
+      pushLog(`ERROR: ${errText(e)}`);
+      setNotice({ kind: 'error', text: MSG.authFailed });
+    } finally {
+      if (mountedRef.current) setConnectLoading(false);
+    }
+  }, [pushLog]);
 
   const disconnect = useCallback(async () => {
-    stopPoll();
+    pushLog('disconnecting…');
     await deleteAppleConnection();
-    clearAppleAuth();
     if (!mountedRef.current) return;
     setConnected(false);
     setStorefront(null);
     setResult(null);
     setNotice({ kind: 'info', text: MSG.disconnected });
-  }, [stopPoll]);
+    pushLog('disconnected');
+  }, [pushLog]);
 
   const transfer = useCallback(async () => {
     if (!playlistId.trim()) return;
     setTransferLoading(true);
     setResult(null);
     setNotice({ kind: 'info', text: MSG.transferring });
+    pushLog('transferring playlist…');
     const res = await transferPlaylistToApple(playlistId.trim());
     if (!mountedRef.current) return;
     setTransferLoading(false);
@@ -199,32 +195,31 @@ export function useAppleTransfer({ active, initialPlaylistId, onStatusChange }: 
       setResult(d);
       const added = d.tracks_added ?? 0;
       const total = d.total_tracks ?? 0;
+      const unmatched = d.unmatched ?? 0;
       if (added > 0) {
-        const unmatched = d.unmatched ?? 0;
         const text =
           unmatched > 0
             ? `Added ${added} of ${total} tracks to your Apple Music library. ${unmatched} weren’t available on Apple Music.`
             : `Added ${added} tracks to your Apple Music library.`;
         setNotice({ kind: 'success', text });
+        pushLog(`done — added ${added}/${total}, ${unmatched} unmatched`);
         onStatusChange?.('success', text, 'Apple Music');
       } else {
-        // Nothing added: either no track matched Apple's catalogue, or the add itself failed
-        // (most commonly no active subscription). Give the accurate message for each.
         const matched = d.matched ?? 0;
-        setNotice({
-          kind: 'error',
-          text: matched === 0 ? 'None of these tracks were available on Apple Music.' : MSG.transferFailed,
-        });
+        pushLog(`nothing added (matched ${matched})`);
+        setNotice({ kind: 'error', text: matched === 0 ? MSG.noMatches : MSG.transferFailed });
       }
       return;
     }
 
-    // Failure — a 401 means the stored token was cleared server-side; reflect that.
     if (res.status === 401 || (res.error || '').toLowerCase().includes('expired')) {
       setConnected(false);
+      musicRef.current = null;
+      setReady(false);
     }
+    pushLog(`ERROR: transfer failed (${res.status ?? '—'})`);
     setNotice({ kind: 'error', text: mapError(res, 'transfer') });
-  }, [playlistId, onStatusChange]);
+  }, [playlistId, onStatusChange, pushLog]);
 
   return {
     playlistId,
@@ -233,8 +228,10 @@ export function useAppleTransfer({ active, initialPlaylistId, onStatusChange }: 
     statusLoading,
     connectLoading,
     transferLoading,
+    ready,
     notice,
     result,
+    log,
     connect,
     disconnect,
     transfer,

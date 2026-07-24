@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { ButtonSleek } from '@resomix/ui';
 import SuccessSvg from '@/assets/icons/success.svg';
 import BaseModal from "@/components/Modals/BaseExportModal.js";
 import {useAppleTransfer} from "@resomix/hooks";
@@ -40,22 +39,22 @@ const AppleExportModal: React.FC<AppleExportModalProps> = ({
       title="Export to Apple Music"
       subtitle="Send this playlist to your Apple Music library."
     >
+      {/* Close sits beside the primary action inside the panel (side by side, stacked on mobile). */}
       <AppleExportPanel
         connected={s.connected}
         storefront={s.storefront}
         statusLoading={s.statusLoading}
         connectLoading={s.connectLoading}
         transferLoading={s.transferLoading}
+        ready={s.ready}
         notice={s.notice}
+        log={s.log}
         hasPlaylist={!!s.playlistId?.trim()}
         onConnect={s.connect}
         onTransfer={s.transfer}
         onDisconnect={s.disconnect}
+        onClose={onClose}
       />
-
-      <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)] w-full">
-        <ButtonSleek text="Close" onClick={onClose} transparent className="cta-button secondary" />
-      </div>
     </BaseModal>
   );
 };
