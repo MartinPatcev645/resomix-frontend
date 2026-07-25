@@ -14,6 +14,13 @@ const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
 const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
 const PartnersPage = lazy(() => import("@/pages/PartnersPage.tsx"));
 const PricingPage = lazy(() => import("@/pages/PricingPage.tsx"));
+const ProductPage = lazy(() => import("@/pages/ProductPage.tsx"));
+const SonicDiscoveryPage = lazy(() => import("@/pages/SonicDiscoveryPage.tsx"));
+const TrackIntelligencePage = lazy(() => import("@/pages/TrackIntelligencePage.tsx"));
+const CatalogueIntelligencePage = lazy(() => import("@/pages/CatalogueIntelligencePage.tsx"));
+const DevelopersPage = lazy(() => import("@/pages/DevelopersPage.tsx"));
+const PartnersPilotPage = lazy(() => import("@/pages/PartnersPilotPage.tsx"));
+const TrustPage = lazy(() => import("@/pages/TrustPage.tsx"));
 const SubscribePage = lazy(() => import("@/pages/SubscribePage.tsx"));
 // const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
 import ReferenceSvg from "@/assets/icons/reference.svg";
@@ -107,6 +114,13 @@ function App() {
             <Route path="/about" element={<UsedAboutPage />} />
             <Route path="/partners" element={<PartnersPage />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/product" element={<ProductPage />} />
+            <Route path="/product/sonic-discovery" element={<SonicDiscoveryPage />} />
+            <Route path="/product/track-intelligence" element={<TrackIntelligencePage />} />
+            <Route path="/product/catalogue-intelligence" element={<CatalogueIntelligencePage />} />
+            <Route path="/developers" element={<DevelopersPage />} />
+            <Route path="/partners/pilot" element={<PartnersPilotPage />} />
+            <Route path="/trust" element={<TrustPage />} />
             <Route path="/subscribe" element={<SubscribePage />} />
 
             {/* Info Pages */}

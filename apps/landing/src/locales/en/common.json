@@ -91,5 +91,1729 @@
             "upload_your_track": "Upload Your Track",
             "join_the_resomix_universe": "Join the Resomix<br />Universe"
         }
+    },
+    "product": {
+        "hero": {
+            "status": "STATUS: BETA · SCORED BY PYXIS-1",
+            "title": "One signal in. Three intelligences out.",
+            "sub": "Resomix listens to the sound itself — and turns it into discovery, understanding, and catalogue intelligence.",
+            "ctaPrimary": "Try Resomix",
+            "ctaSecondary": "Start a Catalogue Pilot",
+            "figureAlt": "Diagram: a reference audio signal enters, weaves into a braided band of filaments, and resolves into three intelligence outcomes — Sonic Discovery (live in beta), Track Intelligence (beta, sample data) and Catalogue Intelligence (private pilot). A dotted rail connects all three to the Developers API, the access layer with docs and a guided pilot. One orange filament marks the active discovery path.",
+            "inLabel": "reference audio in",
+            "bandLabel": "woven sonic structure",
+            "ep1": "Sonic Discovery",
+            "ep1s": "status: live in beta",
+            "ep2": "Track Intelligence",
+            "ep2s": "status: beta · sample data",
+            "ep3": "Catalogue Intelligence",
+            "ep3s": "status: private pilot",
+            "ep4": "Developers / API",
+            "ep4s": "access layer · docs + guided pilot"
+        },
+        "overview": {
+            "title": "ONE ENGINE. THREE PRODUCTS. ONE API.",
+            "sub": "Every capability starts from the same sonic analysis.",
+            "p1tag": "01 // DISCOVER",
+            "p1title": "Sonic Discovery",
+            "p1desc": "From one reference track to a scored, listenable shortlist.",
+            "p1status": "status: live in beta",
+            "p1link": "[ Explore Sonic Discovery → ]",
+            "p2tag": "02 // UNDERSTAND",
+            "p2title": "Track Intelligence",
+            "p2desc": "Structure, energy, key, timbre and mood — one readable anatomy.",
+            "p2status": "status: beta · sample data",
+            "p2link": "[ Explore Track Intelligence → ]",
+            "p3tag": "03 // CONNECT",
+            "p3title": "Catalogue Intelligence",
+            "p3desc": "Catalogue audio as searchable sonic intelligence — in a private pilot.",
+            "p3status": "status: private pilot",
+            "p3link": "[ Explore Catalogue Intelligence → ]",
+            "p4tag": "API // ACCESS",
+            "p4title": "Developers / API",
+            "p4desc": "All three intelligences, delivered through one API — live docs and a guided pilot.",
+            "p4status": "docs + guided pilot",
+            "p4link": "[ Explore the API → ]"
+        },
+        "sd": {
+            "tag": "01 // SONIC DISCOVERY",
+            "title": "Drop a reference. Get a shortlist that actually sounds right.",
+            "desc": "PYXIS-1 reads the sonic character of any track — released, unreleased, even a sketch — and returns listenable matches ranked by similarity, with waveform previews and chain discovery.",
+            "link": "[ Explore Sonic Discovery → ]",
+            "panelLabel": "SIMILARITY RESULT // REBUILT FROM PRODUCT PATTERNS",
+            "foot": "chain_discovery: available · depth: 1–5 [SAMPLE VALUES]"
+        },
+        "ti": {
+            "tag": "02 // TRACK INTELLIGENCE",
+            "badge": "SAMPLE DATA",
+            "title": "See what a track is actually made of.",
+            "desc": "Structure, energy, key, timbre and mood in one readable anatomy — measured values kept honestly separate from predicted ones. Powered by PYXIS-1.",
+            "link": "[ Analyse a Track → ]",
+            "panelLabel": "ANALYSIS FRAGMENT // SAMPLE DATA",
+            "measured": "MEASURED",
+            "predicted": "PREDICTED",
+            "measuredVals": "124 BPM · 8A · −7.2 LUFS",
+            "predictedVals": "deep house · dark · synth-led"
+        },
+        "ci": {
+            "tag": "03 // CATALOGUE INTELLIGENCE",
+            "badge": "PRIVATE PILOT",
+            "title": "Your catalogue already knows which tracks belong together.",
+            "desc": "Relationships, clusters and overlooked recordings that metadata alone can't see — surfaced from the audio itself, delivered as a bounded private pilot.",
+            "link": "[ Start a Catalogue Pilot → ]",
+            "panelLabel": "CATALOGUE RELATIONSHIPS // SCHEMATIC — NOT PRODUCT UI",
+            "region1": "CLUSTER 01 // LATE-NIGHT DUB",
+            "region2": "CLUSTER 02 // 124–126 BPM",
+            "region3": "DORMANT // UNTAGGED ERA",
+            "foot": "dormant → connected · qualitative links only (era · groove · timbre)"
+        },
+        "dev": {
+            "tag": "API // DEVELOPERS",
+            "title": "The same engine, as an API you can try today.",
+            "desc": "Real-time similarity, catalogue matching and deep sonic metadata — live documentation and a guided pilot on your own catalogue. Production scope is scoped with the partner team.",
+            "link": "[ View API Documentation → ]",
+            "panelLabel": "REQUEST → PYXIS-1 → RESPONSE // PARTNER API",
+            "flowRequest": "request",
+            "flowProcessing": "processing",
+            "flowResponse": "scored matches ←",
+            "foot": "status: docs + guided pilot · production scope: partner-scoped"
+        },
+        "router": {
+            "title": "BUILT FOR THE PEOPLE WHO LIVE IN SOUND",
+            "r1who": "[DJs]",
+            "r1what": "from one reference to a set-ready shortlist",
+            "r2who": "[Producers]",
+            "r2what": "decode the references you're chasing",
+            "r3who": "[Curators & Music Supervisors]",
+            "r3what": "answer sonic briefs with sonic search",
+            "r4who": "[Labels & Distributors]",
+            "r4what": "reactivate the catalogue you already own",
+            "r5who": "[Platforms & Music Technology]",
+            "r5what": "embed discovery through sound"
+        },
+        "cta": {
+            "leftTag": "FOR MUSIC PROFESSIONALS",
+            "leftTitle": "Hear it for yourself.",
+            "leftBtn": "Try Resomix",
+            "leftNote": "free tier · beta",
+            "rightTag": "FOR CATALOGUES & PLATFORMS",
+            "rightTitle": "Put your catalogue in the pilot.",
+            "rightBtn": "Start a Catalogue Pilot",
+            "rightNote": "bounded · private · scoped together"
+        }
+    },
+    "sonicDiscovery": {
+        "hero": {
+            "eyebrow": "Sonic Discovery // live in beta · powered by PYXIS-1",
+            "title": "Drop one track. Find what belongs next.",
+            "sub": "Search by how the music actually sounds. PYXIS-1 reads the groove, energy, timbre and structure of your reference — drawn from 70+ measurable audio characteristics — and returns a ranked shortlist you can hear, question and build on.",
+            "ctaPrimary": "Try Sonic Discovery",
+            "ctaSecondary": "See how matching works",
+            "fieldLabel": "One track becomes a search field",
+            "figureAlt": "Diagram: a reference waveform enters on the left and is read by PYXIS-1. The signal separates into four layered dimensions — groove as rhythmic pulses, energy as a contour curve, timbre as a spectral texture field, and structure as a segmented timeline. The four dimensions converge into a ranked list of matching tracks; the selected match is overlaid in orange across every dimension for comparison.",
+            "stackLabel": "Ranked matches",
+            "stackComparing": "comparing",
+            "stackHint": "select a result — the field re-compares",
+            "refCaption": "reference:",
+            "refCaptionNote": "one reference · ranked by similarity"
+        },
+        "console": {
+            "eyebrow": "01 // how it works",
+            "title": "From one reference to a shortlist",
+            "lead": "A working preview of the discovery flow — give it a reference, let PYXIS-1 read it, audition what comes back.",
+            "head": "Sonic search console",
+            "truth": "interactive preview · sample data — not live results",
+            "s1n": "01",
+            "s1t": "Reference — what you give it",
+            "methodInternal": "Internal Similarity",
+            "methodUpload": "Custom File Upload",
+            "waveLabel": "signal · structure · energy",
+            "waveAlt": "Reference track signal: waveform with phrase markers for intro, build, drop, break and outro, and an energy contour overlaid. Sample data.",
+            "waveFoot1": "phrase markers · energy contour",
+            "waveFoot2": "read by PYXIS-1 · 70+ characteristics",
+            "s2n": "02",
+            "s2t": "Ranked matches — what comes back",
+            "s2note": "select a row for the full comparison",
+            "labTitle": "Why this match",
+            "labTruth": "sample data",
+            "labWave": "waveforms · reference above, match below",
+            "labWaveNote": "full length",
+            "labGroove": "groove alignment",
+            "labGrooveNote": "beat-grid pulses",
+            "labEnergy": "energy contour",
+            "labEnergyNote": "journey overlay",
+            "labTimbre": "timbre overlap",
+            "labTimbreNote": "spectral ridge",
+            "labStruct": "structure",
+            "labStructNote": "phrase rows + ticks",
+            "legendRef": "reference",
+            "legendMatch": "this match",
+            "actPreview": "preview",
+            "actPreviewOn": "previewing",
+            "actAdd": "add to shortlist",
+            "actChain": "chain discovery",
+            "foot": "similarity computed from extracted audio features · scored by PYXIS-1"
+        },
+        "dims": {
+            "eyebrow": "02 // the four dimensions",
+            "title": "What PYXIS-1 listens for",
+            "lead": "Four of the feature families PYXIS-1 measures — alongside harmony and tonal relationships, drawn from 70+ measurable audio characteristics. Deep per-track anatomy lives in Track Intelligence; here, they decide what belongs next.",
+            "d1": "Groove",
+            "d1q": "How does the track move?",
+            "d1body": "Percussion density, swing and accent placement — the rhythmic signature that decides whether two tracks feel mixable back-to-back, before you ever hear them together.",
+            "d1steer": "which results feel compatible in motion",
+            "d2": "Energy",
+            "d2q": "Where does it rise, hold or release?",
+            "d2body": "The journey of intensity across the track — builds, peaks, breakdowns and resets. Discovery can hold that journey steady, raise it, or give the room space to breathe.",
+            "d2steer": "how the energy of what comes next compares",
+            "d3": "Timbre",
+            "d3q": "What gives it its sonic character?",
+            "d3body": "The colour and weight of the sound — brightness, density and texture, layered from sub to air. Timbre is why two tracks at the same tempo can feel worlds apart.",
+            "d3steer": "darker, brighter or related-texture results",
+            "d4": "Structure",
+            "d4q": "How does it unfold over time?",
+            "d4body": "Intro, build, drop, break, outro — the phrase-level architecture. Structure-aware matching means results that behave well in transitions, not just on paper.",
+            "d4steer": "results whose key moments arrive where you need them"
+        },
+        "shortlist": {
+            "eyebrow": "03 // shortlist to playlist",
+            "title": "Save the matches that work",
+            "lead": "Add results to a working shortlist, save it as a playlist, and continue listening and reviewing from there.",
+            "head": "Working shortlist",
+            "truth": "sample session",
+            "empty": "no tracks yet — add matches from the results above [+]",
+            "save": "Save as playlist",
+            "note": "reorder · remove · save — sample interactions",
+            "savedNote": "saved as playlist (simulated)",
+            "savedEmpty": "add matches first — then save them as a playlist"
+        },
+        "aud": {
+            "eyebrow": "04 // who it decides for",
+            "title": "One engine. Different decisions.",
+            "djHead": "For DJs",
+            "djCopy": "From one reference to a set-ready shortlist. See how each match compares on groove and energy, and audition alternatives before the room decides for you.",
+            "djA1": "Groove and tempo alignment for mixing",
+            "djA2": "Energy comparison at a glance",
+            "djA3": "Harmonically compatible key matches",
+            "djA4": "Hidden tracks beyond the charts",
+            "djCta": "Build a set shortlist",
+            "prodHead": "For Producers",
+            "prodCopy": "Explore recordings that approach a comparable musical idea — related textures, grooves and energy arcs. A reference board for direction, not a copying tool.",
+            "prodA1": "Related sonic themes across catalogues",
+            "prodA2": "Texture and groove comparison",
+            "prodA3": "Energy-arc reference points",
+            "prodA4": "Inspiration without imitation",
+            "prodCta": "Explore related themes",
+            "supHead": "For Supervisors & Curators",
+            "supCopy": "Answer a sonic brief with sonic search. Start from the known reference, branch into mood-compatible directions, and assemble a defensible shortlist fast.",
+            "supA1": "Reference-first search for briefs",
+            "supA2": "Mood and texture alternatives",
+            "supA3": "Less-obvious candidates outside genre tags",
+            "supA4": "Shortlists grouped by direction",
+            "supCta": "Start from a brief"
+        },
+        "proof": {
+            "eyebrow": "05 // why trust it",
+            "title": "Built on measurement, not mystery",
+            "lead": "Every claim below maps to how the product actually works — nothing is invented for this page.",
+            "s1t": "70+ characteristics",
+            "s1": "Every ranking starts from measurable properties of the sound itself.",
+            "s2t": "Structure-aware",
+            "s2": "Matches consider how tracks behave over time, not just averages.",
+            "s3t": "Deterministic",
+            "s3": "The same reference returns the same shortlist.",
+            "s4t": "Ranked, not random",
+            "s4": "Results arrive ordered by similarity, ready to audition.",
+            "s5t": "Explainable",
+            "s5": "Each result carries the dimensions that put it there.",
+            "s6t": "Private by default",
+            "s6": "Unreleased references are processed for you only.",
+            "valHead": "How relevance is validated",
+            "v1t": "Ranked-result review",
+            "v1": "Every shortlist is assessed as an ordered answer, not a bag of hits.",
+            "v2t": "Professional listening",
+            "v2": "Working professionals audition results against the reference.",
+            "v3t": "Precision at depth",
+            "v3": "Usefulness is measured at the result depths people actually use.",
+            "v4t": "Coverage & latency",
+            "v4": "Breadth of the searchable field and speed of the answer are tracked.",
+            "v5t": "Repeat usage",
+            "v5": "The test that matters: do professionals return with the next reference?",
+            "valFoot": "sonic similarity is contextual — validation asks \"was this useful?\", not \"was this identical?\"",
+            "reserved": "Approved beta feedback will appear here",
+            "reservedNote": "reserved module — no testimonial is invented for this page"
+        },
+        "cta": {
+            "leftEyebrow": "For music professionals",
+            "leftTitle": "Hear the shortlist for yourself.",
+            "leftBtn": "Try Sonic Discovery",
+            "leftNote": "beta access · opens the Resomix app",
+            "rightEyebrow": "For catalogues & products",
+            "rightTitle": "Need this inside your catalogue or product?",
+            "rightBtn": "Explore Catalogue Intelligence",
+            "rightApi": "[ View the API → ]",
+            "rightNote": "full catalogue intelligence ships as a private pilot"
+        }
+    },
+    "trackIntelligence": {
+        "hero": {
+            "eyebrow": "TRACK INTELLIGENCE // BETA · SAMPLE DATA · POWERED BY PYXIS-1",
+            "titleLine1": "See what a track",
+            "titleLine2": "is actually made of.",
+            "sub": "PYXIS-1 measures rhythm, energy, harmony, timbre, spectral behaviour and structure — 70+ measurable audio characteristics — and organises them into one readable track profile. Evidence first, interpretation alongside.",
+            "ctaPrimary": "Analyse a Track",
+            "ctaSecondary": "Explore the Anatomy",
+            "anatomyLabel": "SONIC ANATOMY · ONE RECORDING, MANY MEASUREMENTS",
+            "sampleData": "SAMPLE DATA",
+            "interpLabel": "EXAMPLE INTERPRETATION FROM MEASURED OUTPUTS",
+            "figureAlt": "Sonic anatomy instrument: a track waveform acts as the central spine of the diagram. Analysis lanes are layered around it — structure sections, an energy contour, a harmony strip, a timbre ridge and an identity row. Selecting a lens brings one lane forward while the others recede, and a plain-language interpretation of that layer appears below. Sample data.",
+            "lens": {
+                "structure": "Structure",
+                "energy": "Energy",
+                "harmony": "Harmony",
+                "timbre": "Timbre",
+                "identity": "Identity"
+            }
+        },
+        "profile": {
+            "eyebrow": "01 // THE PROFILE",
+            "title": "One track. One readable profile.",
+            "lead": "The first level of analysis — a concise professional summary, before any chart asks for your attention.",
+            "betaSample": "BETA · SAMPLE DATA",
+            "miniLabel": "structure · energy",
+            "miniAlt": "Compact profile strip: the track's six sections as blocks with the energy contour drawn above them. Sample data.",
+            "tableAlt": "Key measurements with their source: measured values come directly from the audio, predicted values are classification signals with confidence",
+            "measuredTag": "MEASURED",
+            "predictedTag": "PREDICTED",
+            "interpLabel": "interpretation",
+            "interp": "A steady, club-oriented track with a long central breakdown, stable tempo and its highest sustained energy in the final drop. Measured values are read directly from the audio; predicted values are classification signals, shown with confidence.",
+            "interpTruth": "EXAMPLE INTERPRETATION FROM MEASURED OUTPUTS",
+            "rows": {
+                "tempo": { "label": "Tempo", "value": "124 BPM", "note": "· stable" },
+                "key": { "label": "Key", "value": "G minor", "note": "· 6A camelot" },
+                "loudness": { "label": "Loudness", "value": "−7.4 LUFS", "note": "· integrated" },
+                "duration": { "label": "Duration", "value": "6:18", "note": "· 6 sections" },
+                "genre": { "label": "Genre", "value": "Deep house", "note": "· 0.62 primary" },
+                "energy": { "label": "Energy", "value": "Rising", "note": "· strongest final drop" },
+                "mood": { "label": "Mood", "value": "Dark · hypnotic", "note": "· late-night" }
+            }
+        },
+        "structure": {
+            "eyebrow": "02 // TIME & STRUCTURE",
+            "title": "How the track unfolds",
+            "lead": "A structural score — waveform, beat grid and sections on one timeline. Select a section to read its role.",
+            "panelLabel": "STRUCTURAL SCORE · WAVEFORM + BEAT GRID + SECTIONS",
+            "sampleData": "SAMPLE DATA",
+            "figureAlt": "Structural score: the full waveform with a beat grid beneath it and six labelled section blocks — intro, build, drop 01, break, drop 02, outro — with their durations. The selected section is highlighted with its energy and loudness readout. Sample data.",
+            "roleSuffix": "[example interpretation from measured outputs]",
+            "notesLabel": "How professionals use structure",
+            "notes": {
+                "djs": { "role": "DJS", "text": "understand the arrangement before preparing it for a set" },
+                "producers": { "role": "PRODUCERS", "text": "compare pacing and section balance against references" },
+                "supervisors": { "role": "SUPERVISORS", "text": "locate shifts in tension and intensity fast" },
+                "catalogue": { "role": "CATALOGUE TEAMS", "text": "describe structure consistently across releases" }
+            }
+        },
+        "energy": {
+            "eyebrow": "03 // MOTION & DYNAMICS",
+            "title": "How energy moves through the track",
+            "lead": "One continuous energy journey — loudness and dynamic range layered beneath it, anchored to the structure.",
+            "panelLabel": "ENERGY · LOUDNESS · DYNAMICS",
+            "sampleData": "SAMPLE DATA",
+            "figureAlt": "Layered dynamics chart: a shaded dynamic-range band, a grey loudness contour and a white energy contour drawn over section markers. The global peak in the final drop is marked in orange. Sample data.",
+            "legendEnergy": "energy",
+            "legendLoudness": "loudness",
+            "legendDynamic": "dynamic range",
+            "legendPeak": "global peak",
+            "readingInterp": "<b>Reading it:</b> intensity climbs gradually — no abrupt jumps; the long break releases energy before the strongest section; the final drop carries the global peak, then the outro steps down rather than cutting.",
+            "interpTruth": "EXAMPLE INTERPRETATION FROM MEASURED OUTPUTS",
+            "body": "DJs read the internal movement before set preparation. Producers study arrangement and intensity. Curators assess pacing. Catalogue teams turn the journey into searchable energy descriptors. The analysis describes the track — the decision stays yours."
+        },
+        "harmony": {
+            "eyebrow": "04 // HARMONY & PITCH",
+            "title": "Key and harmonic behaviour",
+            "lead": "Detected key, confidence and a readable chromagram strip up front — full pitch evidence and harmonic relationships one step deeper.",
+            "panelLabel": "HARMONIC FIELD · KEY + STABILITY",
+            "sampleData": "SAMPLE DATA",
+            "keyMain": "G MINOR",
+            "keySub": "· 6A camelot",
+            "confLabel": "confidence",
+            "confAlt": "Key confidence: high, 88 percent",
+            "confValue": "high",
+            "interp": "The track stays centred on G minor throughout, with its strongest tonal movement during the break — pitch content spreads before the final drop re-anchors the key.",
+            "expanderShow": "Show the evidence — chromagram ▸",
+            "expanderHide": "Hide the evidence — chromagram ▾",
+            "tonalAlt": "Harmonic field: a key-agreement line across the six sections that dips during the break, above a compact chromagram strip of the twelve pitch classes over time — G and B-flat dominate. Sample data.",
+            "chromaLabel": "chromagram · pitch-class energy over time",
+            "chromaAlt": "Chromagram: twelve pitch-class rows across the track timeline. Cells brighten where a pitch class carries more energy; G and B-flat dominate, with wider spread during the break. Sample data.",
+            "chromaFoot1": "rows: 12 pitch classes · columns: time",
+            "chromaFoot2": "full-resolution pitch evidence · sample data",
+            "relLabel": "harmonic relationships · tonnetz",
+            "rel": {
+                "chip1": "<b>G min</b> — tonal centre",
+                "chip2": "<b>B♭ maj</b> — relative · adjacent",
+                "chip3": "<b>D min</b> — dominant-side movement in break",
+                "chip4": "tonal movement: stable → wide (break) → re-anchored"
+            }
+        },
+        "spectral": {
+            "eyebrow": "05 // TIMBRE & SPECTRAL CHARACTER",
+            "title": "The texture of the recording",
+            "lead": "A branded spectral terrain — sub to air — with the brightness contour and texture regions read in plain language.",
+            "panelLabel": "SPECTRAL TERRAIN · SUB → AIR",
+            "sampleData": "SAMPLE DATA",
+            "terrainAlt": "Spectral terrain: a spectrogram field from sub frequencies at the bottom to air at the top across the track timeline, rendered in greys with orange marking the hottest regions. A brightness contour is drawn over it, rising at the final drop. Sample data.",
+            "legendEnergy": "spectral energy (grey → orange → hot)",
+            "legendContour": "brightness contour",
+            "legendNote": "controlled spectral colour · brand-first",
+            "timbreLabel": "timbre evolution · band balance over time",
+            "timbreAlt": "Timbre evolution: stacked bands showing how the balance between sub, body, presence and air changes across the track — sub-weighted early, presence and air widening at the final drop. Sample data.",
+            "mfccLabel": "mfcc timbral fingerprint · 13 coefficients",
+            "mfccAlt": "MFCC timbral fingerprint: thirteen coefficient cells summarising the track's texture. Sample data.",
+            "textureInterp": "<b>Texture read:</b> dark and dense through the first half — smooth, sub-weighted, percussive; the final drop lifts brightness and opens the top end without losing weight.",
+            "interpTruth": "EXAMPLE INTERPRETATION FROM MEASURED OUTPUTS",
+            "body": "Described as measured character — dark or bright, dense or open, smooth or percussive, stable or evolving. Never as a verdict on the mix."
+        },
+        "identity": {
+            "eyebrow": "06 // SONIC IDENTITY",
+            "title": "A profile, not a label",
+            "lead": "Genre, style, mood and vibe as coordinated signals — stronger and weaker, never absolute.",
+            "genreTitle": "Genre & style",
+            "genreDetail": "detailed style: deep · dub-inflected · rolling",
+            "moodTitle": "Mood & theme",
+            "vibeTitle": "Vibe & composition",
+            "vibe": {
+                "chip1": "synth-led",
+                "chip2": "no vocal presence",
+                "chip3": "percussive density: med-high",
+                "chip4": "bass-forward",
+                "chip5": "long phrases"
+            },
+            "vibeBody": "Compositional indicators from the analysis — instrumentation balance and phrasing character as shown in the current dashboard.",
+            "legendAlt": "Confidence envelope legend: solid orange marks strong signals, solid grey marks supporting signals, dotted outlines mark uncertain or overlapping signals",
+            "legendStrong": "strong signal",
+            "legendSupport": "supporting signal",
+            "legendUncertain": "uncertain / overlapping",
+            "sampleData": "SAMPLE DATA",
+            "overlapInterp": "Primary classification: deep house. Secondary characteristics suggest tech house and minimal influences — the profile keeps the overlap visible instead of forcing one answer."
+        },
+        "decision": {
+            "eyebrow": "07 // FROM DATA TO DECISION",
+            "title": "One profile. Five professional readings.",
+            "tabs": {
+                "dj": "DJs",
+                "prod": "Producers",
+                "label": "Labels & Distributors",
+                "sup": "Supervisors & Curators",
+                "api": "Product & API"
+            },
+            "modes": {
+                "dj": {
+                    "head": "For DJs",
+                    "copy": "Read the track before it enters your preparation — arrangement, tempo, key, movement and weight, at a glance.",
+                    "attrs": [
+                        "Structure — where every section starts and ends",
+                        "BPM — stable 124, confirmed across the beat grid",
+                        "Key — G minor · 6A, high confidence",
+                        "Energy journey — where it holds, lifts and releases",
+                        "Loudness and dynamics — how heavy it actually plays"
+                    ],
+                    "outcome": "Understand the track before adding it to a set-preparation workflow.",
+                    "cta": "Analyse a track"
+                },
+                "prod": {
+                    "head": "For Producers",
+                    "copy": "Study how a reference builds texture, movement and intensity — as measured evidence, not guesswork.",
+                    "attrs": [
+                        "Arrangement — pacing and section balance",
+                        "Timbre — texture and weight over time",
+                        "Spectral profile — where the density lives",
+                        "Energy movement — how intensity is shaped",
+                        "Harmony — tonal centre and movement"
+                    ],
+                    "outcome": "Study how a reference track builds texture, movement and intensity.",
+                    "cta": "Analyse a reference"
+                },
+                "label": {
+                    "head": "For Labels & Distributors",
+                    "copy": "One analytical language across the catalogue — consistent, repeatable track-level descriptors.",
+                    "attrs": [
+                        "Genre and style signals with confidence",
+                        "Mood and vibe descriptors",
+                        "Structural summaries per release",
+                        "Consistent metadata across the catalogue",
+                        "Flagging inconsistent tagging"
+                    ],
+                    "outcome": "Turn catalogue audio into consistent, searchable track intelligence.",
+                    "cta": "Start a catalogue pilot"
+                },
+                "sup": {
+                    "head": "For Supervisors & Curators",
+                    "copy": "Assess fit fast — mood, pacing, tonal character and texture, before the full listen.",
+                    "attrs": [
+                        "Mood and theme indicators",
+                        "Pacing — how the track unfolds",
+                        "Tonal character — dark or bright, dense or open",
+                        "Intensity — where it peaks and breathes",
+                        "Structural development at a glance"
+                    ],
+                    "outcome": "Assess whether a track fits the emotional and sonic direction of a brief.",
+                    "cta": "Analyse a track"
+                },
+                "api": {
+                    "head": "For Product & API Teams",
+                    "copy": "The same profile as structured, versioned, explainable data — retrieved instead of rebuilt.",
+                    "attrs": [
+                        "Structured descriptors per track",
+                        "Deterministic, repeatable output",
+                        "Analysis retrieval by track",
+                        "Catalogue-scale processing",
+                        "Explainable, versioned results"
+                    ],
+                    "outcome": "Add track intelligence to another platform without building the signal-processing layer internally.",
+                    "cta": "View the API"
+                }
+            }
+        },
+        "confidence": {
+            "eyebrow": "08 // TRUST",
+            "title": "Measured, interpreted, never presented as absolute.",
+            "lead": "Classification is contextual. Styles overlap. Confidence stays visible, and every number traces back to the analysis that produced it.",
+            "statements": [
+                "Measured values (tempo, key, loudness, structure) are read directly from the audio and are deterministic — the same file returns the same profile.",
+                "Predicted values (genre, style, mood, vibe) are classification signals — shown with confidence, with secondary signals kept visible.",
+                "Similar styles overlap; the profile presents the overlap instead of hiding it behind one label.",
+                "Raw charts never stand alone — each carries a plain-language interpretation.",
+                "Every result is traceable to its analysis run — engine version, date and scope."
+            ],
+            "panelLabel": "ANALYSIS PROVENANCE — SAMPLE FIELDS",
+            "provenance": {
+                "engine": { "label": "engine", "value": "PYXIS-1 · v5.3.9" },
+                "analysisDate": { "label": "analysis date", "value": "2026-07-23" },
+                "sourceDuration": { "label": "source duration", "value": "6:18 · 44.1 kHz" },
+                "scope": { "label": "scope", "value": "whole-track + 6 sections" },
+                "keyConfidence": { "label": "key confidence", "value": "high · 0.88" },
+                "qualityWarnings": { "label": "quality warnings", "value": "none" },
+                "dataStatus": { "label": "data status", "value": "SAMPLE DATA — design demonstration" }
+            }
+        },
+        "platform": {
+            "eyebrow": "09 // THE PLATFORM",
+            "title": "The profile is a beginning",
+            "diagramLabel": "ONE PROFILE → THREE ROUTES",
+            "diagramAlt": "A single signal line runs from the track profile node to three destinations: Sonic Discovery, Catalogue Intelligence and the API. Sample diagram.",
+            "routes": {
+                "sonic": {
+                    "node": "SONIC DISCOVERY",
+                    "copy": "Use the profile to find recordings with related sonic characteristics.",
+                    "link": "[ Explore Sonic Discovery → ]",
+                    "statusLabel": "status:",
+                    "status": "live in beta"
+                },
+                "catalogue": {
+                    "node": "CATALOGUE INTELLIGENCE",
+                    "copy": "Apply consistent analysis across a partner catalogue.",
+                    "link": "[ Explore Catalogue Intelligence → ]",
+                    "statusLabel": "status:",
+                    "status": "private pilot"
+                },
+                "api": {
+                    "node": "API",
+                    "copy": "Retrieve structured track intelligence inside another product.",
+                    "link": "[ View the API → ]",
+                    "statusLabel": "",
+                    "status": "docs + guided pilot"
+                }
+            }
+        },
+        "cta": {
+            "leftEyebrow": "FOR MUSIC PROFESSIONALS",
+            "leftTitle": "See your track as data you can use.",
+            "leftBtn": "Analyse a Track",
+            "leftNote": "beta · the analysis dashboard currently demonstrates sample data",
+            "rightEyebrow": "FOR CATALOGUES & PLATFORMS",
+            "rightTitle": "Need track intelligence across a catalogue?",
+            "rightBtn": "Start a Catalogue Pilot",
+            "rightNote": "private pilot · bounded · scoped together — destinations wired in production"
+        }
+    },
+    "catalogueIntelligence": {
+        "hero": {
+            "eyebrow": "CATALOGUE INTELLIGENCE // PRIVATE PILOT · POWERED BY RESOMIX & PYXIS-1",
+            "titleLine1": "Make every track",
+            "titleLine2": "discoverable by sound.",
+            "sub": "Resomix analyses the audio inside your catalogue, connects recordings by how they actually sound, and helps older or underexposed tracks return to discovery when they are relevant.",
+            "ctaPrimary": "Start a Catalogue Pilot",
+            "ctaSecondary": "See How It Works",
+            "fieldLabel": "YOUR CATALOGUE · PRIVATE VIEW",
+            "sampleData": "ILLUSTRATIVE PRIVATE PILOT VIEW · SAMPLE DATA",
+            "refGroupLabel": "Choose a sample reference",
+            "refCaption": "reference:",
+            "figureAlt": "A private catalogue map: hundreds of dim track dots grouped by how they sound and when they were released. A reference track enters from the left and the recordings related to it light up in orange — including older, low-exposure tracks — while the rest of the catalogue stays dim. A list beside the map explains why each lit track surfaced. Fictional sample catalogue.",
+            "fieldFoot": "dim: catalogue at rest · lit: related to the reference",
+            "railLabel": "Why these tracks surfaced — sample results",
+            "railTitle": "WHY THESE TRACKS SURFACED",
+            "railHint": "select a result — the field highlights it"
+        },
+        "how": {
+            "eyebrow": "01 // HOW IT WORKS",
+            "title": "Turn your catalogue into a sound-searchable library",
+            "panelLabel": "CATALOGUE PROCESSING LINE",
+            "truth": "CURRENT ONBOARDING PATH",
+            "figureAlt": "One continuous processing line: audio and metadata are delivered through a controlled area, validated, profiled by PYXIS-1, indexed for similarity, and become privately searchable. Sample diagram.",
+            "stages": {
+                "deliver": { "n": "01", "t": "Deliver", "p": "Send audio and metadata through a controlled delivery area." },
+                "validate": { "n": "02", "t": "Validate", "p": "Files and manifest are checked, with clear feedback." },
+                "profile": { "n": "03", "t": "Profile", "p": "PYXIS-1 creates a sonic profile for every track." },
+                "index": { "n": "04", "t": "Index", "p": "Profiles build your private similarity index." },
+                "search": { "n": "05", "t": "Search", "p": "Your team searches and reviews the results." }
+            }
+        },
+        "find": {
+            "eyebrow": "02 // THE CORE OUTCOME",
+            "title": "Find the tracks your team already owns — but would not have found",
+            "lead": "A current reference can reveal older recordings with related rhythm, energy, timbre, harmony and structure.",
+            "head": "REFERENCE → YOUR CATALOGUE · RANKED",
+            "truth": "SAMPLE DATA",
+            "refLabel": "REF",
+            "expanderLabel": "why this track surfaced",
+            "showMore": "show 2 more results",
+            "showFewer": "show fewer results",
+            "footNote": "reference from your catalogue, or an approved upload (uploads take longer to process)",
+            "shortlistCount": "pitch shortlist: {{count}}"
+        },
+        "attention": {
+            "eyebrow": "03 // WHERE TO LOOK",
+            "title": "See where your catalogue is strong — and where discovery breaks down",
+            "lead": "The map does not make the decision. It shows the team where a closer review may be useful.",
+            "mapLabel": "CATALOGUE MAP",
+            "mapTruth": "ILLUSTRATIVE PILOT VIEW",
+            "mapAlt": "Catalogue map: clusters of tracks positioned by how they sound. Two dense clusters sit near the centre, a small isolated group sits apart, one cluster mixes older and recent releases, and a sparse region contains few recordings. Selecting a cluster shows its profile. Fictional sample catalogue.",
+            "mapFoot": "brightness: recency · ring: selected cluster",
+            "clusterLabel": "CLUSTER PROFILE",
+            "clusterGroupLabel": "Select a cluster",
+            "clusterRows": {
+                "tracks": "tracks",
+                "chars": "characteristics",
+                "years": "typical years",
+                "meta": "stored style"
+            },
+            "reviewPrefix": "Review question:",
+            "matrixLabel": "METADATA WORTH CHECKING · SAMPLE TRACK — \"PALLADIUM NIGHT\" (2015)",
+            "matrixAlt": "Stored versus measured metadata comparison for a sample track, with a review status per row",
+            "matrixHead": {
+                "field": "field",
+                "stored": "stored value",
+                "measured": "measured result",
+                "status": "status"
+            },
+            "matrixFoot": "review prompts, not corrections — your team decides"
+        },
+        "campaigns": {
+            "eyebrow": "04 // CAMPAIGNS & BRIEFS",
+            "title": "Build a pitch shortlist from one reference",
+            "segLabel": "Choose a scenario",
+            "tabs": {
+                "ed": "Editorial / archive campaign",
+                "sync": "Sync / creative brief",
+                "ar": "Release & A&R research"
+            },
+            "listLabel": "OWNED CANDIDATES · HUMAN REVIEW — SAMPLE",
+            "queueLabel": "WHAT TO REVIEW NEXT",
+            "sampleEvidence": "[sample evidence]",
+            "listFoot": "supports — never replaces — your team's judgement"
+        },
+        "teams": {
+            "eyebrow": "05 // THE TEAMS",
+            "title": "Built for the teams who work the catalogue",
+            "segLabel": "Professional lens",
+            "tabs": {
+                "cm": "Catalogue Managers",
+                "ar": "A&R Teams",
+                "sync": "Sync & Curation",
+                "label": "Labels & Distributors",
+                "api": "Product & Platform"
+            },
+            "lensAlt": "Compact catalogue map with the regions this team examines most brought forward. Sample data."
+        },
+        "pilot": {
+            "eyebrow": "06 // THE PILOT",
+            "title": "Test it on your own catalogue first",
+            "lead": "A private pilot on a representative sample of your repertoire — success criteria agreed up front, no production commitment required.",
+            "steps": {
+                "useCase": { "title": "Agree the use case", "copy": "Goals and success criteria set with your team." },
+                "deliver": { "title": "Deliver a sample", "copy": "A representative slice of the catalogue, privately." },
+                "process": { "title": "Process & search", "copy": "PYXIS-1 profiles the sample; your team searches it." },
+                "review": { "title": "Review together", "copy": "Results auditioned and accepted by your team." },
+                "decide": { "title": "Decide", "copy": "Expand with a plan — or stop cleanly." }
+            },
+            "scorecardAlt": "Pilot proof measures with how each is checked — no fabricated results",
+            "scorecardHead": {
+                "prove": "what we prove",
+                "check": "how we check it"
+            },
+            "measures": {
+                "relevance": { "label": "Relevance at the top results", "check": "Your team reviews the top matches per reference", "evidence": "evidence collected in pilot" },
+                "older": { "label": "Older-track surfacing", "check": "Share of results drawn from low-exposure repertoire", "evidence": "evidence collected in pilot" },
+                "coverage": { "label": "Catalogue coverage", "check": "Validation and profiling coverage across the sample", "evidence": "evidence collected in pilot" },
+                "performance": { "label": "Query performance", "check": "Catalogue queries vs uploaded-reference timing", "evidence": "evidence collected in pilot" },
+                "acceptance": { "label": "Team acceptance", "check": "Does the catalogue team accept and reuse the shortlists?", "evidence": "partner decision" }
+            },
+            "trustBold": "Your catalogue stays yours.",
+            "trustBody": "The partner keeps the brand, commercial control and customer relationship — Resomix never replaces the storefront, and PYXIS-1 is not a model: nothing is trained on your content.",
+            "trustLink": "[ View Trust & Rights → ]"
+        },
+        "cta": {
+            "leftEyebrow": "FOR CATALOGUES",
+            "leftTitle": "Put your catalogue in the pilot.",
+            "leftBtn": "Start a Catalogue Pilot",
+            "chips": [
+                "private evaluation",
+                "representative catalogue sample",
+                "clear success criteria",
+                "no production commitment required"
+            ],
+            "rightEyebrow": "FOR PRODUCT & PLATFORM TEAMS",
+            "rightTitle": "Need this inside your product?",
+            "rightBtn": "Explore the API",
+            "rightNote": "docs + guided pilot · production scope partner-scoped"
+        }
+    },
+    "developers": {
+        "hero": {
+            "eyebrowPrefix": "Developers //",
+            "eyebrowLive": "Live",
+            "eyebrowSuffix": " · Partner-scoped REST API · Powered by PYXIS-1",
+            "title": "One API. Search, similarity and track analysis.",
+            "sub": "Search your own catalogue by sound, analyse new audio and retrieve structured Track Intelligence analysis data through a partner-scoped REST API.",
+            "ctaPrimary": "Request API Access",
+            "ctaSecondary": "View Full API Reference",
+            "trustline": "Partner-scoped · Versioned JSON · Private catalogue index",
+            "routerLabel": "Request router · One request enters, sonic intelligence returns",
+            "routerTruth": "Fictional data",
+            "routerAlt": "Request router diagram: a developer request with a bearer key enters from the left and passes through a single scoped gate into the partner's private catalogue boundary. Inside, three live routes — search, similarity and analysis — process the request against the partner's own index, and structured JSON returns on the right. A playback route is drawn permission-gated, and there is no connection to any shared public catalogue. Fictional data.",
+            "routerFoot": "no shared public catalogue exists on this diagram — or in the product",
+            "routes": {
+                "search": "Search",
+                "sim": "Similarity",
+                "ana": "Analysis"
+            }
+        },
+        "glance": {
+            "label": "API at a glance",
+            "items": [
+                { "text": "Search, similarity + analysis", "highlight": "LIVE" },
+                { "text": "Partner-catalogue only" },
+                { "text": "Batch ingestion", "highlight": "LIVE" },
+                { "text": "Guided pilot", "highlight": "AVAILABLE" }
+            ]
+        },
+        "capabilities": {
+            "eyebrow": "01 // Capabilities",
+            "title": "Three capabilities. One partner-scoped API.",
+            "headers": ["question", "input → output", "endpoints", "status"],
+            "lanes": [
+                {
+                    "question": "\"Find the partner-catalogue track ID for this title or artist.\"",
+                    "ioIn": "title / artist / auto query",
+                    "ioOut": "matching partner tracks + IDs",
+                    "endpoints": [{ "method": "GET", "path": "/api/v1/search_tracks/" }],
+                    "status": "LIVE"
+                },
+                {
+                    "question": "\"Which tracks in our catalogue sound most like this one?\"",
+                    "ioIn": "catalogue track ID · or uploaded reference (≤100 MB)",
+                    "ioOut": "ranked matches · scores · metadata · playlist info",
+                    "endpoints": [
+                        { "method": "POST", "path": "/api/v1/similarity/search" },
+                        { "method": "POST", "path": "/api/v1/similarity/upload" }
+                    ],
+                    "status": "LIVE"
+                },
+                {
+                    "question": "\"What does this track contain and how does it behave?\"",
+                    "tag": "track analysis api",
+                    "ioIn": "uploaded audio",
+                    "ioOut": "versioned structured JSON (async)",
+                    "endpoints": [
+                        { "method": "POST", "path": "/api/v1/analysis/upload" },
+                        { "method": "GET", "path": "/api/v1/analysis/{id}/status" },
+                        { "method": "GET", "path": "/api/v1/analysis/{id}/result" }
+                    ],
+                    "status": "LIVE"
+                }
+            ],
+            "footnote": "result depths: 10 · 20 · 50 · 100 — full parameters and schemas live at api-docs.resomix.com",
+            "partialFieldsNote": "Structured analysis endpoints are live. Returned fields are versioned and may be partial or optional."
+        },
+        "isolation": {
+            "eyebrow": "02 // The search space",
+            "title": "Your key searches your catalogue — and nothing else.",
+            "diagramLabel": "Partner isolation · Two partners, two sealed indexes",
+            "mobileContrast": "No shared catalogue. No cross-partner results.",
+            "disclosureClosed": "Why catalogue isolation matters ▸",
+            "disclosureOpen": "Why catalogue isolation matters ▾",
+            "disclosureBody": "Every partner runs against its own sealed index — its own catalogue, credentials and results. A key can never query another partner's catalogue or Resomix's consumer product, and an uploaded reference is only ever a query against your own index.",
+            "points": [
+                { "bold": "No shared public pool.", "body": "Each partner has its own catalogue, credentials, index and results." },
+                { "bold": "No cross-partner retrieval.", "body": "A key can never query another partner's catalogue — or Resomix's consumer product." },
+                { "bold": "Uploads stay queries.", "body": "An uploaded reference is analysed as the query; its matches still come only from your own indexed catalogue." }
+            ]
+        },
+        "console": {
+            "eyebrow": "03 // Workflows",
+            "title": "See the request. Read the response.",
+            "lead": "Five supported workflows — real endpoints, real envelope, fictional data.",
+            "truth": "Sample request · Fictional data · Placeholder key",
+            "requestLabel": "request",
+            "responseLabel": "response",
+            "envelopeNote": "envelope: check success before reading data",
+            "copy": "copy",
+            "expand": "expand full response ▸",
+            "collapse": "collapse response ▾",
+            "asyncLabel": "job states:",
+            "footnote": "compare rank order within a response — raw score bands are not universal quality measures across unrelated queries · examples are generic http, not official sdks",
+            "workflows": {
+                "chain": "Search → similarity",
+                "simid": "Similarity by ID",
+                "simup": "Similarity by upload",
+                "ana": "Analysis job",
+                "play": "Playback-enabled"
+            }
+        },
+        "ingestion": {
+            "eyebrow": "04 // Onboarding",
+            "title": "Deliver the catalogue once. Query it through the API.",
+            "lead": "The API searches a private index built from your catalogue. Managed batch ingestion is the live onboarding route today.",
+            "railLabel": "Ingestion rail · SFTP + CSV manifest",
+            "railTruth": "Live onboarding path",
+            "mobileSteps": [
+                "Deliver audio + CSV manifest",
+                { "text": "Add ", "bold": ".done", "suffix": " last" },
+                "Resomix validates and processes",
+                "Private index ready — webhook notifies you"
+            ],
+            "checksClosed": "View ingestion checks ▸",
+            "checksOpen": "View ingestion checks ▾",
+            "mobileNote": "audio + csv manifest → .done marker last → webhook when ready",
+            "checks": [
+                { "title": "missing audio file", "body": "manifest row 214 references a file not present in the batch — batch held, feedback returned" },
+                { "title": "duplicate isrc", "body": "two rows share one ISRC — de-duplication rules applied, review noted" },
+                { "title": "unsafe archive", "body": "zip failed safety checks — rejected before processing, partner notified" }
+            ],
+            "formats": "accepted audio: .mp3 · .wav · .flac · .aiff — manifest fields: id · isrc · title · artist · bpm · duration · filename",
+            "requirementsLink": "[ View Ingestion Requirements → ]",
+            "footnote": "a partial upload never starts processing · .done is sent last · one active batch per partner · new batches top up the catalogue and rebuild the private index"
+        },
+        "schema": {
+            "eyebrow": "05 // Analysis data",
+            "title": "Turn audio into versioned product data.",
+            "fragmentLabel": "result fragment ·",
+            "fragmentNote": "versioned structured json",
+            "defensiveBold": "Read results defensively.",
+            "defensiveBody": "Fields may be optional — a partial result returns the fields that completed successfully, with the job status alongside.",
+            "exploreLink": "[ Explore the Analysis Schema → ]",
+            "groups": {
+                "rhythm": { "num": "01", "title": "Rhythm", "desc": "BPM + confidence · beat times · downbeats · bars · phrase boundaries" },
+                "tonality": { "num": "02", "title": "Tonality", "desc": "key · scale · Camelot · key strength · tuning · chromagram · alternative-key hint" },
+                "loudness": { "num": "03", "title": "Loudness & dynamics", "desc": "integrated loudness · range · true peak · dynamic complexity · crest · curves" },
+                "mood": { "num": "04", "title": "Mood & semantics", "desc": "mood · valence · arousal · energy · danceability · acoustic/electronic · instrumental · genre indicators" },
+                "structure": { "num": "05", "title": "Structure", "desc": "intro · build · breakdown · drop · outro — time ranges + confidence" },
+                "prov": { "num": "06", "title": "Provenance", "desc": "service version · schema version · processing timings" }
+            }
+        },
+        "integration": {
+            "eyebrow": "06 // Integration",
+            "title": "Use the live path today. Plan the next layer later.",
+            "requiredNote": "Required before partner-catalogue similarity",
+            "laterClosed": "Coming later ▸",
+            "laterOpen": "Coming later ▾",
+            "accessClosed": "Access, limits & playback ▸",
+            "accessOpen": "Access, limits & playback ▾",
+            "accessLabel": "Scoped access · Predictable responses",
+            "authLabel": "authentication",
+            "authNote": "bearer header · never query-string keys",
+            "envelopeLabel": "envelope",
+            "envelopeNote": "check success before reading data",
+            "scopesNote": "versioned /api/v1 routes · scopes e.g. search:read · partner:read · keys begin rmx_",
+            "modesLabel": "Service modes & limits",
+            "limitsLabel": "rate limits & quotas",
+            "limitsNote": "limits are provisioned per partner agreement",
+            "limitsFoot": "Per-second limits and monthly quotas apply. On HTTP 429, respect Retry-After and use exponential backoff.",
+            "liveRows": [
+                {
+                    "title": "REST API",
+                    "status": "LIVE",
+                    "statusClass": "live",
+                    "body": "Similarity, search and analysis inside your existing backend or application — your interface, your customer journey. Requires an indexed partner catalogue."
+                },
+                {
+                    "title": "Batch ingestion",
+                    "status": "LIVE",
+                    "statusClass": "live",
+                    "body": "Managed SFTP onboarding that builds and grows the private index.",
+                    "required": true
+                },
+                {
+                    "title": "Guided pilot",
+                    "status": "AVAILABLE",
+                    "statusClass": "avail",
+                    "body": "Evaluate on a representative sample of your own catalogue with a scoped key — the current evaluation route."
+                }
+            ],
+            "plannedRows": [
+                { "title": "Self-serve trial", "status": "PLANNED", "body": "A self-serve trial catalogue is planned. It is not available today." },
+                { "title": "Embeddable widget", "status": "PLANNED", "body": "A ready-made \"find similar\" interface for minimal front-end work — planned." },
+                { "title": "White-label", "status": "PLANNED", "body": "The experience under your own brand, on enterprise terms — planned." }
+            ],
+            "modes": [
+                { "title": "Similarity only", "body": "IDs, scores and metadata. No audio access.", "status": "LIVE", "statusClass": "live" },
+                { "title": "Similarity + playback", "body": "Adds short-lived playback tokens for authorised media requests. Available only to provisioned partners with the required service mode and rights.", "status": "PLAYBACK — PERMISSION-GATED", "statusClass": "gate" }
+            ]
+        },
+        "evaluate": {
+            "eyebrow": "07 // Evaluate",
+            "title": "Test the API on your own catalogue.",
+            "lead": "There is no public sandbox today. The current evaluation path is a guided pilot using a representative sample of your own catalogue.",
+            "chips": [
+                { "label": "GUIDED API PILOT — AVAILABLE", "class": "avail" },
+                { "label": "SELF-SERVE TRIAL — PLANNED", "class": "plan" },
+                { "label": "PUBLIC SANDBOX — NOT AVAILABLE", "class": "plan" }
+            ],
+            "sandboxClosed": "Why is there no public sandbox? ▸",
+            "sandboxOpen": "Why is there no public sandbox? ▾",
+            "sandboxBold": "Similarity is only meaningful inside a real catalogue.",
+            "sandboxBody": "A shared demo pool would misrepresent both the isolation model and the results you would see in production. The guided pilot puts a scoped key against your own repertoire instead — the same API, honest results. A self-serve trial catalogue is planned.",
+            "steps": [
+                { "title": "Agree the use case", "body": "Goals and success criteria, set together." },
+                { "title": "Deliver a sample", "body": "A representative catalogue slice via managed SFTP." },
+                { "title": "Validate & index", "body": "Resomix validates, processes and indexes it privately." },
+                { "title": "Receive a scoped key", "body": "Partner-scoped credentials for your sample." },
+                { "title": "Test privately", "body": "Search, Similarity and Analysis against your own data." }
+            ]
+        },
+        "cta": {
+            "leftEyebrow": "For engineering & product teams",
+            "leftTitle": "Request a guided API pilot.",
+            "leftBtn": "Request a Guided API Pilot",
+            "leftNote": "private evaluation · scoped key · your own catalogue sample",
+            "rightEyebrow": "For implementation detail",
+            "rightTitle": "The full reference lives in the docs.",
+            "rightBtn": "View Full API Reference",
+            "rightNote": "self-serve trial · widget · white-label — planned · destinations wired in production"
+        }
+    },
+    "partnersPilot": {
+        "shared": {
+            "timelineTruth": "TIMELINE AGREED DURING SCOPING",
+            "subjectLabel": "FINAL WORDING SUBJECT TO PILOT AGREEMENT"
+        },
+        "hero": {
+            "eyebrowPrefix": "Private Catalogue Pilot //",
+            "eyebrowHighlight": "Managed evaluation",
+            "eyebrowSuffix": "· Powered by PYXIS-1",
+            "title": "Test Resomix on your own catalogue.",
+            "sub": "A managed private pilot for labels, distributors and catalogue teams that want to evaluate sonic discovery using authorised material and success criteria agreed in advance.",
+            "ctaPrimary": "Start a Catalogue Pilot",
+            "ctaSecondary": "See the Pilot Method",
+            "trustline": "MANAGED EVALUATION · PARTNER-SCOPED · NO PUBLIC SANDBOX",
+            "glanceLabel": "Pilot at a glance",
+            "glanceItems": [
+                "Managed evaluation",
+                "Representative catalogue sample",
+                "Agreed scorecard",
+                "Private partner index",
+                "Joint findings review",
+                "No public sandbox"
+            ],
+            "protocolLabel": "The pilot protocol · One sample, six stages",
+            "protocolAria": "The pilot protocol: one representative catalogue sample moves through six stages on a single line — scope, ingest, index, test, measure, decide. Each stage is a station on the protocol rail; the decision stage is highlighted as the destination.",
+            "protocolNote": "agree the questions and success criteria before reviewing the results",
+            "protocolNoteDim": "one bounded process · evidence at every stage",
+            "mobileStages": [
+                { "title": "Scope", "body": "Agree the question, the sample and the success criteria." },
+                { "title": "Ingest", "body": "Deliver audio + CSV manifest through managed SFTP." },
+                { "title": "Index", "body": "Validation, PYXIS-1 processing, private index build." },
+                { "title": "Test", "body": "Ranked results from your agreed reference set." },
+                { "title": "Measure", "body": "Expert review against the agreed scorecard." },
+                { "title": "Decide", "body": "Joint findings review — stop, extend, or plan production." }
+            ]
+        },
+        "qualification": {
+            "eyebrow": "01 // Fit",
+            "title": "Built for catalogue teams with a real question to test",
+            "matrix": [
+                { "type": "Label / label group", "question": "Can older tracks be surfaced from current references?" },
+                { "type": "Distributor", "question": "Are our catalogue relationships discoverable beyond metadata?" },
+                { "type": "Catalogue owner", "question": "Where does our current catalogue search break down?" },
+                { "type": "Store / platform", "question": "Can similarity fit inside our current product and journey?" },
+                { "type": "Music library", "question": "Does the analysis produce useful structured data for briefs?" }
+            ],
+            "interpBold": "You must control or be authorised to supply the evaluation material.",
+            "interpBody": "Submitting an inquiry starts a qualification conversation — not every request will fit a pilot immediately.",
+            "fitBtnClosed": "Strong fit vs more scoping ▸",
+            "fitBtnOpen": "Strong fit vs more scoping ▾",
+            "strongFitLabel": "Strong fit",
+            "strongFit": [
+                "Authorised catalogue access",
+                "Electronic-music repertoire",
+                "Clear discovery or product question",
+                "Representative sample available",
+                "Expert reviewers available",
+                "Willing to agree measures up front"
+            ],
+            "needsScopingLabel": "May need more scoping",
+            "needsScoping": [
+                "Very small or highly uniform sample",
+                "No relevant comparison method",
+                "No authorised audio delivery",
+                "Unclear rights position",
+                "Depends on roadmap features"
+            ]
+        },
+        "pilotPack": {
+            "eyebrow": "02 // The sample",
+            "title": "Bring a representative sample — not your entire catalogue",
+            "lead": "Sample size and composition are scoped together, around your use case and the catalogue's diversity.",
+            "items": [
+                { "title": "Authorised audio", "body": "MP3, WAV, FLAC or AIFF — material you control or are authorised to supply." },
+                { "title": "CSV metadata", "body": "Partner track ID, ISRC where available, title, artist, filename — optional BPM and duration." },
+                { "title": "Current + older repertoire", "body": "A meaningful mix, with enough related recordings to test similarity properly." },
+                { "title": "Known reference tracks", "body": "Tracks your team already understands — the anchors the evaluation is scored against." },
+                { "title": "Expert reviewers", "body": "A small group of catalogue experts or selectors who will judge relevance." },
+                { "title": "A clear use case", "body": "The question the pilot should answer — discovery, catalogue or product." },
+                { "title": "Optional event data", "body": "Only where you want to evaluate product behaviour downstream." }
+            ],
+            "footnote": "no universal track count — the sample is scoped around the use case, not a number"
+        },
+        "method": {
+            "eyebrow": "03 // The method",
+            "title": "One bounded process. Six clear stages.",
+            "lead": "Every stage states what Resomix does, what your team does, and what evidence it produces.",
+            "resomixDoes": "Resomix does",
+            "yourTeamDoes": "Your team does",
+            "evidence": "Evidence produced"
+        },
+        "scorecard": {
+            "eyebrow": "04 // The scorecard",
+            "title": "Agree the scorecard before you see the results",
+            "lead": "No pre-filled percentages, no fabricated outcomes — targets are agreed in scoping, results are measured in the pilot.",
+            "tableAria": "Pilot scorecard: each measure with how it is assessed; target and result fields are intentionally empty until agreed and measured",
+            "colMeasure": "measure",
+            "colAssessment": "how it is assessed",
+            "colTarget": "target",
+            "colResult": "result",
+            "latencyNote": "pre-indexed queries and uploaded-reference processing are reported separately — never combined into one \"search speed\" figure",
+            "deepBtnClosed": "View all measures ▸",
+            "deepBtnOpen": "View all measures ▾",
+            "optBtnClosed": "Optional product measures — where you supply event data ▸",
+            "optBtnOpen": "Optional product measures — where you supply event data ▾",
+            "optTableAria": "Optional product measures, used only where the partner supplies event data"
+        },
+        "deliverables": {
+            "eyebrow": "05 // The output",
+            "title": "A decision pack — not a sales demo",
+            "body": "The pilot ends with evidence your team can act on: what worked, what didn't, where the limits are, and what production would involve. Final deliverables are agreed during scoping.",
+            "outcomes": [
+                { "title": "Stop", "body": "The evidence does not justify expansion. A clean, documented end." },
+                { "title": "Extend", "body": "A second bounded evaluation for another catalogue area or question." },
+                { "title": "Plan production", "body": "Scope, ingestion cadence, API usage, service mode, terms — agreed together." }
+            ],
+            "footnote": "the pilot does not automatically convert into a contract · no public prices on this page",
+            "reportLabel": "Pilot findings — sample structure",
+            "reportTruth": "TYPICAL OUTPUTS · FINAL SCOPE AGREED BEFORE INGEST",
+            "reportAria": "A sample pilot findings dossier: a report-styled panel listing the typical outputs — scope and criteria, ingestion validation summary, indexed sample, evaluation access, relevance scorecard, performance summary, catalogue observations, technical findings, limitations and open questions, production options, joint review session."
+        },
+        "handling": {
+            "eyebrow": "06 // Control",
+            "title": "Your sample stays inside the agreed pilot boundary",
+            "trustItems": [
+                { "text": "Partner catalogues are logically isolated and restricted to authorised partner access." },
+                { "text": "You retain catalogue ownership and commercial control throughout." },
+                { "text": "Partner content is not used to train or fine-tune PYXIS-1 — it is not a model, and it does not generate derivative audio." },
+                { "text": "Public exposure is not part of the pilot." },
+                { "text": "Your sample is processed within a partner-scoped catalogue boundary and restricted to authorised access. Detailed access, retention and deletion terms are agreed before ingestion.", "subjectLabel": true }
+            ],
+            "trustLink": "[ View Trust, Rights & Security ]",
+            "partnerLink": "[ Review the Partner Process → ]"
+        },
+        "form": {
+            "eyebrow": "07 // Apply",
+            "title": "Start with the question you want the pilot to answer",
+            "lead": "Submitting the form starts a qualification conversation. It does not create an account, a public sandbox or an automatic pilot.",
+            "formLabel": "Pilot inquiry",
+            "emailLabel": "Work email",
+            "emailError": "Enter a valid work email address.",
+            "nameLabel": "Name",
+            "nameError": "Enter your name.",
+            "companyLabel": "Company",
+            "companyError": "Enter your company.",
+            "roleLabel": "Role",
+            "partnerTypeLabel": "Partner type",
+            "partnerTypeError": "Select your partner type.",
+            "catalogSizeLabel": "Catalogue-size band",
+            "sampleLabel": "Sample availability",
+            "questionLabel": "Primary pilot question",
+            "questionPlaceholder": "e.g. Can current references surface relevant tracks from our 2010–2016 catalogue?",
+            "questionError": "Tell us the question the pilot should answer.",
+            "techBtnClosed": "Technical integration details (optional) ▸",
+            "techBtnOpen": "Technical integration details (optional) ▾",
+            "workflowLabel": "Intended workflow",
+            "workflowPlaceholder": "e.g. internal curation tool, storefront discovery",
+            "integrationLabel": "Technical integration interest",
+            "messageLabel": "Message",
+            "rightsLabel": "I confirm our organisation controls, or is authorised to supply, the catalogue material proposed for evaluation.",
+            "rightsError": "Rights confirmation is required.",
+            "submit": "Request Pilot Review",
+            "submitting": "Submitting…",
+            "submitNote": "privacy & consent note — final legal wording pending · form data goes to the partner team only",
+            "selectPlaceholder": "select…",
+            "partnerTypes": [
+                "Label / label group",
+                "Distributor",
+                "Catalogue owner / manager",
+                "Store / platform",
+                "Music library",
+                "Other"
+            ],
+            "catalogSizes": [
+                "Under 1,000 tracks",
+                "1,000 – 10,000",
+                "10,000 – 100,000",
+                "Over 100,000"
+            ],
+            "sampleOptions": [
+                "Sample ready now",
+                "Sample needs preparation",
+                "Not sure yet"
+            ],
+            "integrationOptions": [
+                "REST API evaluation",
+                "Catalogue ingestion only",
+                "Both",
+                "Not sure yet"
+            ],
+            "successLabel": "Inquiry received",
+            "successLead": "Thank you. Here is what happens next:",
+            "nextSteps": [
+                "Resomix reviews fit against the qualification principles above",
+                "A scoping call is arranged with your team",
+                "Both teams agree inputs, method, scorecard and terms",
+                "Ingestion begins only after approval"
+            ]
+        }
+    },
+    "partners": {
+        "hero": {
+            "eyebrowPrefix": "Partners //",
+            "eyebrowHighlight": "Guided pilot available",
+            "eyebrowSuffix": "· REST API live",
+            "title": "Three ways to work with Resomix.",
+            "sub": "Start with a private catalogue pilot, integrate the live API, or scope the right deployment for your catalogue, platform or music product.",
+            "ctaPilot": "Start a Catalogue Pilot",
+            "ctaApi": "Explore the API",
+            "ctaContact": "[ Contact Partnerships → ]",
+            "trustline": "GUIDED PILOT AVAILABLE · REST API LIVE · WIDGET + WHITE-LABEL PLANNED"
+        },
+        "junction": {
+            "label": "The partner junction · one signal, three paths",
+            "truth": "Every path ends at a real destination",
+            "inbound1": "Your catalogue,",
+            "inbound2": "platform or product",
+            "nodeLabel": "The junction",
+            "footerLeft": "One inbound conversation · three real destinations",
+            "footerRight": "No sandbox path exists",
+            "figureAlt": "Partner junction diagram: one inbound signal enters from the left and separates at a junction into three routes — the Private Catalogue Pilot (available), the partner API with catalogue ingestion (live), and integration planning (scoping available). Each route ends at a labelled destination. Selecting a route highlights it and opens its detail panel below.",
+            "mobileLabel": "The three partner paths"
+        },
+        "routes": {
+            "pilot": {
+                "title": "PRIVATE CATALOGUE PILOT",
+                "panelTitle": "PRIVATE CATALOGUE PILOT",
+                "status": "AVAILABLE",
+                "note": "Outcome: an evidence-based decision, measured on your own repertoire.",
+                "outcomeTitle": "Private catalogue pilot.",
+                "cta": "Explore the Private Pilot",
+                "question": "\"Does Resomix surface useful relationships in our own repertoire?\"",
+                "mobileDesc": "test on your own repertoire",
+                "items": [
+                    "Representative authorised sample",
+                    "Agreed evaluation scorecard",
+                    "Private catalogue index",
+                    "Joint findings review"
+                ]
+            },
+            "api": {
+                "title": "API + CATALOGUE INGESTION",
+                "panelTitle": "API + CATALOGUE INGESTION",
+                "status": "LIVE",
+                "note": "Outcome: Search, Similarity and Track Analysis inside your product.",
+                "outcomeTitle": "API + catalogue ingestion.",
+                "cta": "Explore the API",
+                "question": "\"How do we add Search, Similarity or Track Analysis to our product?\"",
+                "mobileDesc": "build it into your product",
+                "items": [
+                    "Managed catalogue ingestion",
+                    "Partner-scoped REST API",
+                    "Search, Similarity and Analysis",
+                    "Versioned structured responses"
+                ]
+            },
+            "integration": {
+                "title": "INTEGRATION PLANNING",
+                "panelTitle": "INTEGRATION PLANNING",
+                "status": "SCOPING AVAILABLE",
+                "note": "Outcome: the right deployment for your catalogue or product, scoped together.",
+                "outcomeTitle": "Integration planning.",
+                "cta": "Discuss Integration Options",
+                "question": "\"What deployment would fit our catalogue, storefront or product?\"",
+                "mobileDesc": "scope the right deployment",
+                "items": [
+                    "Workflow and product scoping",
+                    "API-first deployment today",
+                    "Widget and white-label — planned",
+                    "Commercial and technical review"
+                ]
+            }
+        },
+        "paths": {
+            "eyebrow": "01 // The paths",
+            "title": "Start with the outcome you need"
+        },
+        "capabilities": {
+            "eyebrow": "02 // The engine",
+            "title": "One engine across catalogue, discovery and product workflows",
+            "engineNote": "one engine · 70+ characteristics",
+            "figureAlt": "Connected capability system: one PYXIS-1 engine line on the left branches into three capability strands — Catalogue Intelligence, Sonic Similarity, and Track Analysis — each ending at its product-page destination.",
+            "links": {
+                "catalogue-intelligence": "[ Explore Catalogue Intelligence → ]",
+                "sonic-discovery": "[ Explore Sonic Discovery → ]",
+                "track-intelligence": "[ Explore Track Intelligence → ]"
+            }
+        },
+        "engagement": {
+            "eyebrow": "03 // The start",
+            "title": "From first question to the right working path",
+            "figureAlt": "One connected routing line with four stations — fit, route, scope, proceed. Selecting a station reveals what the partner provides, what Resomix determines, and the next evidence or action.",
+            "mobileLabel": "The four engagement stages",
+            "colYou": "You provide",
+            "colResomix": "Resomix determines",
+            "colNext": "Next evidence / action",
+            "footnote": "no fixed timelines · no automatic account or key creation"
+        },
+        "audiences": {
+            "eyebrow": "04 // Who it serves",
+            "title": "Built for the teams that control and use the repertoire",
+            "switcherLabel": "Choose your team",
+            "routeIndicator": "recommended route →",
+            "routeChipAria": "Highlight the {{route}} route",
+            "colQuestion": "Main question",
+            "colRoute": "Best starting route",
+            "colConversation": "Expected conversation",
+            "segments": {
+                "label": "Labels & Groups",
+                "dist": "Distributors",
+                "store": "Stores & Platforms",
+                "cat": "Catalogue Teams",
+                "tech": "Music Technology"
+            },
+            "profiles": {
+                "label": {
+                    "label": "Labels & label groups",
+                    "question": "Can our own repertoire — current and back catalogue — be surfaced from the references that matter now?",
+                    "route": "<b>Private Catalogue Pilot</b> — test on a representative authorised sample first.",
+                    "conversation": "Catalogue scope, reference tracks, reviewers and an agreed scorecard."
+                },
+                "dist": {
+                    "label": "Distributors",
+                    "question": "Can we make thousands of distributed releases discoverable beyond text metadata?",
+                    "route": "<b>Pilot first, then API + managed ingestion</b> for catalogue-scale onboarding.",
+                    "conversation": "Catalogue breadth, ingestion cadence and metadata quality."
+                },
+                "store": {
+                    "label": "Stores & platforms",
+                    "question": "Can sound-first discovery deepen the user journey without replacing our storefront?",
+                    "route": "<b>API + Catalogue Ingestion</b> — your interface, your customer relationship.",
+                    "conversation": "Integration surface, service mode and the evaluation route."
+                },
+                "cat": {
+                    "label": "Catalogue teams",
+                    "question": "Which assets are hard to find, inconsistently described, or worth a campaign?",
+                    "route": "<b>Private Catalogue Pilot</b> with metadata-review observations in scope.",
+                    "conversation": "Sample composition, review workflow and evidence needs."
+                },
+                "tech": {
+                    "label": "Music technology products",
+                    "question": "Can we add similarity and track analysis without building the signal-processing layer?",
+                    "route": "<b>API first</b> — scoped key against an indexed evaluation catalogue.",
+                    "conversation": "Endpoints, response structures and integration planning."
+                }
+            }
+        },
+        "control": {
+            "eyebrow": "05 // Control",
+            "title": "Your catalogue stays yours",
+            "statements": [
+                "You retain catalogue ownership and commercial control.",
+                "Partner catalogues are logically isolated and restricted to authorised partner access.",
+                "Similarity searches only within the catalogue authorised for that partner.",
+                "PYXIS-1 does not train or fine-tune itself on partner audio, and does not generate derivative audio.",
+                "No public sandbox or shared partner catalogue exists.",
+                "Detailed rights, retention and deletion terms are agreed for the relevant service."
+            ],
+            "linkPilot": "[ View the Private Pilot → ]",
+            "linkApi": "[ Read the API Overview → ]",
+            "linkLegal": "[ View Legal Information ]"
+        },
+        "form": {
+            "eyebrow": "06 // Contact",
+            "title": "Start with the partner question you need answered",
+            "lead": "Submitting this form starts a qualification conversation. It does not create an account, API key, public sandbox or automatic pilot.",
+            "formLabel": "Contact partnerships",
+            "emailLabel": "Work email",
+            "emailError": "Enter a valid work email address.",
+            "nameLabel": "Name",
+            "nameError": "Enter your name.",
+            "companyLabel": "Company",
+            "companyError": "Enter your company.",
+            "roleLabel": "Role",
+            "partnerTypeLabel": "Partner type",
+            "partnerTypeError": "Select your partner type.",
+            "preferredPathLabel": "Preferred path",
+            "preferredPathError": "Select a preferred path.",
+            "contextLabel": "Catalogue or product context",
+            "contextPlaceholder": "e.g. electronic label group, ~40k tracks, own storefront",
+            "messageLabel": "Message",
+            "selectPlaceholder": "select…",
+            "submit": "Contact Partnerships",
+            "submitting": "Submitting…",
+            "successLabel": "Request submitted",
+            "successLead": "Thanks — your request was submitted. Check your email for confirmation; we'll get back to you in 2–5 business days.",
+            "partnerTypes": [
+                "Label / label group",
+                "Distributor",
+                "Store / platform",
+                "Catalogue owner / manager",
+                "Music technology product",
+                "Other"
+            ],
+            "preferredPaths": [
+                "Private Catalogue Pilot",
+                "API + Catalogue Ingestion",
+                "Integration Planning",
+                "General Partnership"
+            ]
+        }
+    },
+    "trust": {
+        "legalLibraryUrl": "https://support.resomix.com/hc/categories/1/3/legal",
+        "privacyEmail": "privacy@resomix.com",
+        "legalEmail": "legal@resomix.com",
+        "hero": {
+            "eyebrow": "Trust, Rights & Security // Production beta",
+            "title": "Your audio. Your rights. Clear boundaries.",
+            "body": "Resomix is a production-beta sonic discovery service. This page separates controls operating now, controls defined by partner agreement, and controls we do not yet claim.",
+            "ctaLegal": "View Legal Documents",
+            "ctaPartnerships": "Contact Partnerships",
+            "trustline": "Current controls · Agreement-bound terms · Beta limitations · Published policies",
+            "sourceNote": "Reflects the Resomix production-beta policies effective 20 July 2026. The published legal documents control.",
+            "legendTitle": "How to read this page — five status labels",
+            "legend": {
+                "current": "A control or behaviour operating now and approved for public description.",
+                "agreementBound": "A partner or Private Library control whose exact scope, duration, access or deletion terms are governed by the applicable account terms, partner agreement or Data Processing Addendum.",
+                "betaControl": "A control operating during the production beta but still being documented, expanded or verified — not presented as mature enterprise assurance.",
+                "roadmap": "A control or capability not implemented today.",
+                "notClaimed": "A deliberately explicit boundary where Resomix does not currently make a certification, guarantee or technical assurance."
+            }
+        },
+        "status": {
+            "current": "Current",
+            "agreementBound": "Agreement-bound",
+            "betaControl": "Beta control",
+            "roadmap": "Roadmap",
+            "notClaimed": "Not claimed",
+            "currentQualified": "Current — qualified",
+            "currentLegalDisclosure": "Current · legal disclosure",
+            "roadmapNotClaimed": "Roadmap / not claimed"
+        },
+        "glance": {
+            "eyebrow": "01 // At a glance",
+            "title": "What applies now — and what does not",
+            "groups": {
+                "current": "Current",
+                "agreementBound": "Agreement-bound",
+                "betaControl": "Beta control",
+                "roadmapNotClaimed": "Roadmap / not claimed"
+            },
+            "rows": {
+                "tempUpload": {
+                    "control": "Temporary upload lifecycle",
+                    "description": "Uploaded source audio is deleted no later than 24 hours after upload or analysis."
+                },
+                "partnerIsolation": {
+                    "control": "Partner catalogue isolation",
+                    "description": "Partner catalogues are logically isolated and restricted to authorised partner access."
+                },
+                "noTraining": {
+                    "control": "No training on supplied audio",
+                    "description": "User and partner audio is not used to train or fine-tune PYXIS-1."
+                },
+                "publicTls": {
+                    "control": "Public endpoint transport",
+                    "description": "TLS is used on public service endpoints."
+                },
+                "partnerTerms": {
+                    "control": "Partner catalogue terms",
+                    "description": "The applicable partner agreement and Data Processing Addendum govern access, retention and deletion."
+                },
+                "privateLibraryRetention": {
+                    "control": "Private Library retention",
+                    "description": "Retained as necessary for the user-authorised catalogue-analysis and discovery service."
+                },
+                "serviceStage": {
+                    "control": "Service stage",
+                    "description": "Resomix is live in production as a beta service during its initial three-month beta period."
+                },
+                "controlledMedia": {
+                    "control": "Controlled media delivery",
+                    "description": "Resomix uses encrypted HLS for controlled media delivery."
+                },
+                "backupControls": {
+                    "control": "Backup controls",
+                    "description": "Partially implemented and continuing to develop during the beta period."
+                },
+                "ddex": {
+                    "control": "DDEX ingestion & reporting",
+                    "description": "DDEX ERN ingestion and DDEX reporting workflows are not available today."
+                },
+                "securityCerts": {
+                    "control": "Security certifications",
+                    "description": "Resomix does not currently claim SOC 2, ISO 27001 or another enterprise security certification."
+                },
+                "uptimeSla": {
+                    "control": "Uptime SLA / high availability",
+                    "description": "Resomix does not currently publish an uptime SLA or claim a fully redundant high-availability architecture."
+                }
+            }
+        },
+        "lifecycles": {
+            "eyebrow": "02 // Audio lifecycles",
+            "title": "Not every audio upload has the same retention rule",
+            "tabs": {
+                "temp": "Temporary upload",
+                "library": "Private Library",
+                "partner": "Partner catalogue"
+            },
+            "columns": {
+                "temp": {
+                    "title": "Temporary Reference Upload",
+                    "status": "current"
+                },
+                "library": {
+                    "title": "Private Resomix Library",
+                    "status": "agreementBound"
+                },
+                "partner": {
+                    "title": "Partner Catalogue",
+                    "status": "agreementBound"
+                }
+            },
+            "rows": {
+                "purpose": {
+                    "label": "Purpose",
+                    "temp": "One-off analysis or similarity search from a reference you supply.",
+                    "library": "The user-authorised catalogue-analysis and discovery service.",
+                    "partner": "The purposes authorised by the applicable partner agreement."
+                },
+                "access": {
+                    "label": "Access",
+                    "temp": "Not accessible to other users.",
+                    "library": "Your authorised account.",
+                    "partner": "The partner's authorised account users, and Resomix personnel or service providers where access is necessary to provide, secure or support the authorised service."
+                },
+                "publicVisibility": {
+                    "label": "Public visibility",
+                    "temp": "Not made publicly available.",
+                    "library": "Not made publicly available.",
+                    "partner": "Partner content is not made publicly available."
+                },
+                "retention": {
+                    "label": "Retention",
+                    "tempBold": "Deleted no later than 24 hours",
+                    "tempRest": " after upload or analysis. Temporary previews and processing artefacts are retained only as long as reasonably necessary to provide, troubleshoot and secure the requested processing.",
+                    "library": "Retained for the duration necessary to provide the user-authorised service.",
+                    "partner": "Retained and processed for the duration and purposes authorised by the applicable partner agreement."
+                },
+                "deletionTrigger": {
+                    "label": "Deletion trigger",
+                    "temp": "Automatic — the 24-hour rule.",
+                    "library": "A user removal request, Private Library deletion, account termination or the applicable retention schedule.",
+                    "partner": "The removal and termination schedule in the partner agreement and DPA."
+                },
+                "trainingUse": {
+                    "label": "Training use",
+                    "temp": "Not used to train or fine-tune PYXIS-1.",
+                    "library": "Not used to train or fine-tune PYXIS-1.",
+                    "partner": "Not used to train or fine-tune PYXIS-1."
+                }
+            },
+            "noteBold": "Private Library audio is not a Temporary Reference Upload.",
+            "noteRest": " The three lifecycles have different purposes, different retention rules and different deletion triggers — the ledger above states each one separately."
+        },
+        "rights": {
+            "eyebrow": "03 // Rights & access",
+            "title": "Processing requires authority. Access stays bounded.",
+            "qa": [
+                {
+                    "question": "Who may submit audio?",
+                    "answer": "You must have the right or authority to submit audio for analysis. Partner catalogue use is defined by the applicable partner arrangement."
+                },
+                {
+                    "question": "Can another partner see our catalogue?",
+                    "answer": "Partner catalogues are logically isolated and restricted to authorised partner access.",
+                    "status": "current"
+                },
+                {
+                    "question": "Who at Resomix can access partner content?",
+                    "answer": "Access is restricted to the partner's authorised account users and Resomix personnel or service providers where access is necessary to provide, secure or support the authorised service. The partner agreement and Data Processing Addendum govern the specifics.",
+                    "status": "agreementBound"
+                },
+                {
+                    "question": "Is uploaded or partner audio used to train PYXIS-1?",
+                    "answer": "No. PYXIS-1 does not train or fine-tune itself using user or partner audio, and it does not generate, synthesise or recreate audio.",
+                    "status": "current"
+                },
+                {
+                    "question": "What does the analysis create?",
+                    "answer": "Sonic analysis does not create a playable replacement for the source recording. PYXIS-1 and Resomix software remain Resomix proprietary technology."
+                },
+                {
+                    "question": "What rights does a partner grant?",
+                    "answer": "Partner content is processed only for the purposes authorised by the applicable partner arrangement. The partner agreement defines the catalogue-processing licence and permitted use.",
+                    "status": "agreementBound"
+                },
+                {
+                    "question": "How do rights holders raise a concern?",
+                    "answerBefore": "Through the published Copyright & DMCA Policy, Acceptable Use Policy and Terms of Service — or directly at ",
+                    "answerAfter": "."
+                }
+            ],
+            "boundaryBold": "The partner agreement defines the operating boundary.",
+            "boundaryRest": " Authorised purpose, catalogue scope, authorised users, support access, retention, removal and termination schedules, the DPA, confidentiality, permitted output and playback use, supplied rights, and any pilot-specific handling are defined per engagement. The public page explains the operating model. The signed agreement controls the specific engagement."
+        },
+        "security": {
+            "eyebrow": "04 // Security",
+            "title": "Security controls operating today",
+            "rows": {
+                "publicTls": {
+                    "control": "Public endpoint transport",
+                    "description": "TLS on public service endpoints."
+                },
+                "accountSession": {
+                    "control": "Account & session access",
+                    "description": "Account, session and role-based access controls."
+                },
+                "twoFactor": {
+                    "control": "Two-factor authentication",
+                    "description": "Additional account-security control where available."
+                },
+                "abuseControls": {
+                    "control": "Abuse controls",
+                    "description": "Rate-limiting and abuse-prevention controls."
+                },
+                "apiAccess": {
+                    "control": "API access",
+                    "description": "API-key and token-based access where applicable, restricted by account and service roles."
+                },
+                "partnerIsolation": {
+                    "control": "Partner catalogue isolation",
+                    "description": "Logically isolated and restricted to authorised partner access."
+                },
+                "controlledMedia": {
+                    "control": "Controlled media delivery",
+                    "description": "Encrypted HLS for controlled media delivery. Media controls reduce unauthorised access risk; they do not make copying technically impossible."
+                },
+                "incidentProcedures": {
+                    "control": "Incident procedures",
+                    "description": "Incident-response and GDPR breach-notification procedures.",
+                    "legalDisclosure": "legal disclosure"
+                },
+                "backupControls": {
+                    "control": "Backup controls",
+                    "description": "Partially implemented and continuing to develop during the beta period."
+                }
+            }
+        },
+        "providers": {
+            "eyebrow": "05 // Who helps operate the service",
+            "title": "Service providers and infrastructure partners",
+            "rows": {
+                "alwyzon": {
+                    "name": "Alwyzon",
+                    "purpose": "Application, account and API infrastructure",
+                    "location": "Austria"
+                },
+                "hetzner": {
+                    "name": "Hetzner",
+                    "purpose": "Audio processing, media and related infrastructure",
+                    "location": "Germany"
+                },
+                "cloudflare": {
+                    "name": "Cloudflare",
+                    "purpose": "DNS, content delivery, traffic security and edge services",
+                    "location": "Global service provider"
+                },
+                "googleWorkspace": {
+                    "name": "Google Workspace",
+                    "purpose": "Business and transactional email administration",
+                    "location": "Google service"
+                },
+                "stripe": {
+                    "name": "Stripe Payments Europe",
+                    "purpose": "Payment processing where paid checkout is active",
+                    "location": "EEA payment provider"
+                },
+                "posthog": {
+                    "name": "Self-hosted PostHog",
+                    "purpose": "First-party product analytics where consent applies",
+                    "location": "Resomix-controlled infrastructure"
+                },
+                "ghost": {
+                    "name": "Ghost",
+                    "purpose": "Self-hosted publishing software",
+                    "location": "Resomix-controlled infrastructure"
+                }
+            },
+            "transferBold": "Where data is processed.",
+            "transferRest": " Core application and audio-processing infrastructure uses providers in Austria and Germany. Some global service providers may process data outside the EEA under the safeguards described in the Privacy Policy.",
+            "transferLegalDisclosure": "current legal disclosure",
+            "privacyLink": "[ Read the Privacy Policy ↗ ]",
+            "privacyLinkAria": "Read the Privacy Policy — opens the Resomix legal library"
+        },
+        "retention": {
+            "eyebrow": "06 // Retention & limits",
+            "title": "Deletion depends on the data lifecycle",
+            "rows": {
+                "tempUpload": {
+                    "control": "Temporary Reference Upload",
+                    "description": "Source audio deleted no later than 24 hours after upload or analysis. Not public, not shared with other users, not used to train PYXIS-1."
+                },
+                "previews": {
+                    "control": "Previews & processing artefacts",
+                    "description": "Retained only as long as reasonably necessary to provide, troubleshoot and secure the requested processing."
+                },
+                "privateLibrary": {
+                    "control": "Private Library audio",
+                    "description": "Retained as necessary for the user-authorised service; removal may follow a user request, Private Library deletion, account termination or the applicable retention schedule."
+                },
+                "partnerCatalogue": {
+                    "control": "Partner catalogue content",
+                    "description": "Retained and processed for the authorised purposes and duration defined by the partner agreement and DPA."
+                },
+                "savedAnalysis": {
+                    "control": "Saved analysis & discovery records",
+                    "description": "Retained until the user deletes them, closes the relevant Library or account, or the applicable retention period expires."
+                },
+                "accountData": {
+                    "control": "Account data",
+                    "description": "Retained during the active account and for 30 days following a deletion request, subject to legal obligations."
+                },
+                "usageData": {
+                    "control": "Usage data",
+                    "description": "Up to 24 months, then anonymised or deleted."
+                },
+                "communicationRecords": {
+                    "control": "Communication records",
+                    "description": "Up to 36 months."
+                },
+                "processingLogs": {
+                    "control": "Processing & security logs",
+                    "description": "Typically up to 90 days, unless needed longer for security investigations or legal obligations."
+                }
+            },
+            "legalNoteBold": "Legal and accounting obligations",
+            "legalNoteRest": " may require some records to be retained after account deletion. Deleting audio does not automatically delete every account, billing, consent, communication or security record.",
+            "limitsTitle": "What Resomix does not claim today",
+            "limits": {
+                "uptimeSla": {
+                    "control": "Uptime SLA / high availability",
+                    "description": "Resomix does not currently publish an uptime SLA or claim a fully redundant high-availability architecture."
+                },
+                "backupsDr": {
+                    "control": "Backups & disaster recovery",
+                    "description": "Backup controls are partially implemented and continue to develop during the beta period. Resomix does not currently claim a complete offsite 3-2-1 backup programme, full media-store recovery or a tested disaster-recovery guarantee."
+                },
+                "ddex": {
+                    "control": "DDEX ingestion & reporting",
+                    "description": "DDEX ERN ingestion and DDEX reporting workflows are not available today."
+                },
+                "securityCerts": {
+                    "control": "Security certifications",
+                    "description": "Resomix does not currently claim SOC 2, ISO 27001 or another enterprise security certification."
+                },
+                "regionalControls": {
+                    "control": "Regional processing controls",
+                    "description": "Resomix does not currently offer a public customer-selectable data-residency region or complete data-sovereignty guarantee."
+                },
+                "mediaProtection": {
+                    "control": "Media protection absolutes",
+                    "description": "Controlled media delivery reduces unauthorised access risk. Resomix does not claim that streamed media is impossible to copy or extract."
+                },
+                "statusPage": {
+                    "control": "Public status page",
+                    "description": "A public system-status destination is not currently available."
+                }
+            }
+        },
+        "legal": {
+            "eyebrow": "07 // The documents",
+            "title": "The controlling documents are published",
+            "documents": [
+                {
+                    "label": "Privacy Policy",
+                    "ariaLabel": "Privacy Policy — opens the Resomix legal library"
+                },
+                {
+                    "label": "Terms of Service",
+                    "ariaLabel": "Terms of Service — opens the Resomix legal library"
+                },
+                {
+                    "label": "Cookie Policy",
+                    "ariaLabel": "Cookie Policy — opens the Resomix legal library"
+                },
+                {
+                    "label": "Acceptable Use Policy",
+                    "ariaLabel": "Acceptable Use Policy — opens the Resomix legal library"
+                },
+                {
+                    "label": "Copyright & DMCA Policy",
+                    "ariaLabel": "Copyright and DMCA Policy — opens the Resomix legal library"
+                },
+                {
+                    "label": "GDPR Summary",
+                    "ariaLabel": "GDPR Summary — opens the Resomix legal library"
+                },
+                {
+                    "label": "Refund Policy",
+                    "ariaLabel": "Refund Policy — opens the Resomix legal library"
+                },
+                {
+                    "label": "Platform Disclaimer",
+                    "ariaLabel": "Platform Disclaimer — opens the Resomix legal library"
+                },
+                {
+                    "label": "Open Source Licensing Transparency",
+                    "ariaLabel": "Open Source Licensing Transparency — opens the Resomix legal library"
+                }
+            ],
+            "contacts": {
+                "privacy": "Privacy",
+                "legal": "Legal & rights-holder notices",
+                "partnerships": "Partnerships"
+            },
+            "ctaPartnerships": "Contact Partnerships",
+            "ctaLegal": "View Legal Documents",
+            "ctaLegalAria": "View Legal Documents — opens the Resomix legal library"
+        }
     }
 }
