@@ -15,7 +15,8 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Iterable
+from collections import Counter
 from sqlalchemy.ext.asyncio import AsyncSession
 import jwt  # PyJWT
 import time
@@ -67,6 +68,38 @@ def _http_request(method: str, url: str, *, headers, params=None, data=None,
             continue
         return resp
     return resp
+
+# Placeholder artist values that should never win the "most common artist" vote.
+_ARTIST_PLACEHOLDERS = {"", "unknown", "unknown artist", "n/a", "na", "various", "various artists"}
+
+
+def _most_common_artist(artist_strings: Iterable[Optional[str]]) -> Optional[str]:
+    """Most frequent INDIVIDUAL artist across a playlist's tracks, or None.
+
+    Multi-artist values are stored joined with a pipe (``"Artist1 | Artist2"``), so each string is
+    split on ``|`` and every artist counted separately — never the whole combined string. Counting
+    is case-insensitive (so ``"Nova Lux"`` and ``"nova lux"`` are the same artist) but the winner is
+    returned in its most common original casing. Placeholders (``Unknown``/``N/A``/…) are ignored.
+    Ties break by first appearance, which keeps the result stable for a given playlist order.
+    """
+    counts: Counter = Counter()          # lowercased name -> count
+    display: Dict[str, Counter] = {}     # lowercased name -> original-casing votes
+    for raw in artist_strings:
+        if not raw:
+            continue
+        for part in str(raw).split("|"):
+            name = part.strip()
+            key = name.lower()
+            if not name or key in _ARTIST_PLACEHOLDERS:
+                continue
+            counts[key] += 1
+            display.setdefault(key, Counter())[name] += 1
+    if not counts:
+        return None
+    top_key = max(counts, key=lambda k: counts[k])
+    # Return the most common original casing for the winning artist.
+    return display[top_key].most_common(1)[0][0]
+
 
 # Token cache for developer tokens
 _token_cache: Dict[str, Any] = {
@@ -384,7 +417,37 @@ class AppleMusicTransferService:
             raise ValueError(f"No playlist id returned: {js}")
         return playlist_id
     
-    async def _add_tracks_to_playlist(self, dev_token: str, user_token: str, 
+    async def _get_created_playlist_url(self, dev_token: str, user_token: str,
+                                        playlist_id: str, storefront: Optional[str]) -> Optional[str]:
+        """Best-effort openable URL for the just-created library playlist.
+
+        Preference: a public catalog URL (once Apple has synced a ``globalId``), else an explicit
+        ``attributes.url`` if returned, else the owner-openable **library** URL — which always works
+        for the person who just authorised, since it's their own library. Purely for display; we
+        never fail the export over it, so any error just yields the library-URL fallback.
+        """
+        # Owner-openable fallback (the user is signed in — it's their library).
+        fallback = f"https://music.apple.com/library/playlist/{playlist_id}"
+        try:
+            url = f"{APPLE_API}/v1/me/library/playlists/{playlist_id}"
+            loop = asyncio.get_event_loop()
+            r = await loop.run_in_executor(
+                None,
+                lambda: _http_request("GET", url, headers=self._apple_headers(dev_token, user_token))
+            )
+            if not r.ok:
+                return fallback
+            attrs = ((r.json().get("data") or [{}])[0] or {}).get("attributes", {}) or {}
+            global_id = (attrs.get("playParams") or {}).get("globalId")
+            if global_id and storefront:
+                return f"https://music.apple.com/{storefront}/playlist/{global_id}"
+            if attrs.get("url"):
+                return attrs["url"]
+        except Exception as e:
+            logger.warning("Could not resolve Apple playlist URL: %s", str(e))
+        return fallback
+
+    async def _add_tracks_to_playlist(self, dev_token: str, user_token: str,
                                      playlist_id: str, catalog_song_ids: List[str]) -> int:
         """
         Adds catalog songs to a user library playlist in batches of 100
@@ -657,12 +720,18 @@ class AppleMusicTransferService:
             seed_artist = (seed_artist or "Unknown Artist").strip()
             seed_ref = f"{seed_artist} - {seed_title}"
 
+            # Most common INDIVIDUAL artist across the playlist (multi-artist values are pipe-joined,
+            # so this splits on "|" and counts each artist, not the combined string). Apple's library
+            # playlist has no artist field, so we surface it in the description instead.
+            top_artist = _most_common_artist(d.get("artist") for d in display_by_track.values())
+
             playlist_url = f"{settings.app_url.rstrip('/')}/sonic-discovery?id={playlist_id}"
             playlist_name = custom_playlist_name or f'Resomix Sonic Match Found, for "{seed_ref}"'
+            featuring = f"Featuring {top_artist} and more. " if top_artist else ""
             playlist_description = (
-                f'Sonic matches for "{seed_ref}", discovered with Resomix — it listens to a track and '
-                f'finds the songs that sound closest to it. Hear the full match and discover more at '
-                f'{playlist_url}'
+                f'{featuring}Sonic matches for "{seed_ref}", discovered with Resomix — a music '
+                f'discovery engine that listens to a track and finds the songs that sound closest to '
+                f'it. Made by Resomix. Hear the full match and discover more at {playlist_url}'
             )
             apple_playlist_id = await self._create_playlist(
                 dev_token, music_user_token, playlist_name,
@@ -675,10 +744,17 @@ class AppleMusicTransferService:
             else:
                 logger.warning("No tracks resolved on Apple Music to add to playlist")
 
+            # Best-effort openable URL for the created playlist (owner can jump straight to it in
+            # Apple Music). Never fails the export — worst case it's None and the UI omits the link.
+            apple_playlist_url = await self._get_created_playlist_url(
+                dev_token, music_user_token, apple_playlist_id, user_sf,
+            )
+
             total_time = time.time() - transfer_start_time
             result = {
                 "created_playlist_id": apple_playlist_id,
                 "created_playlist_name": playlist_name,
+                "created_playlist_url": apple_playlist_url,
                 "storefront": user_sf,
                 "total_tracks": len(ordered_track_ids),
                 "matched": len(matched_ids),
