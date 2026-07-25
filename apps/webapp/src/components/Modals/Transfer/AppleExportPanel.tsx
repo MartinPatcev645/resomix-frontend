@@ -11,6 +11,8 @@ interface Props {
   transferLoading: boolean;
   ready: boolean;
   notice: AppleNotice;
+  /** Set after a successful transfer → shows an "Open in Apple Music" link (opens in a new tab). */
+  playlistUrl?: string | null;
   log: string[];
   hasPlaylist: boolean;
   onConnect: () => void;
@@ -27,6 +29,7 @@ const AppleExportPanel: React.FC<Props> = ({
   transferLoading,
   ready,
   notice,
+  playlistUrl,
   log,
   hasPlaylist,
   onConnect,
@@ -116,6 +119,24 @@ const AppleExportPanel: React.FC<Props> = ({
         >
           {notice.text}
         </div>
+      )}
+
+      {/* Open the created playlist in Apple Music (new tab). Shown once the transfer produced a URL. */}
+      {playlistUrl && (
+        <a
+          href={playlistUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full flex items-center justify-center gap-[var(--px-8)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider px-[var(--px-20)] py-[var(--px-10)] transition-colors"
+          id="apple-export-open-playlist"
+        >
+          <span>Open in Apple Music</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[var(--px-12)] h-[var(--px-12)]" aria-hidden="true">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <polyline points="15 3 21 3 21 9" />
+            <line x1="10" y1="14" x2="21" y2="3" />
+          </svg>
+        </a>
       )}
 
       {/* Activity log — appended line by line, themed to match the system */}

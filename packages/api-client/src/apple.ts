@@ -18,6 +18,9 @@ export interface AppleConnectionStatus {
 export interface AppleTransferResult {
   created_playlist_id?: string;
   created_playlist_name?: string;
+  /** Openable URL of the created Apple Music playlist (owner library link, or a public catalog
+   *  link once Apple has synced one). Display-only — the backend does not persist it. */
+  created_playlist_url?: string;
   storefront?: string;
   total_tracks?: number;
   matched?: number;
