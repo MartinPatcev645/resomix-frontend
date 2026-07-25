@@ -1,0 +1,62 @@
+---
+description: Resomix landing — binding conventions for all new marketing pages (/product wave and later). Typography tiers, token discipline, spacing ownership, scope guardrails.
+globs: apps/landing/src/**
+alwaysApply: true
+---
+
+# Resomix landing page conventions (binding)
+
+Governing docs (read on conflict): `docs/DESIGN_SYSTEM.md`, `docs/IMPLEMENTATION_RULES.md`, `docs/PAGE_BRIEFS.md`.
+
+## GOLDEN RULE — header and footer are off-limits
+
+Page tasks design **only the main sections** of a page. The header (`Navbar`/`MobileNavbar` via `LandingLayout`) and the footer (`GlobalFooter`/`GlobalMobileFooter` in `packages/ui`) are shared site chrome, identical on every page, and are **never designed, restyled, resized, re-spaced, or given page-specific copy or markup by a page task** — no exceptions, even "small improvements". New pages consume the existing header/footer code as-is, automatically, by rendering inside `LandingLayout`; a page component must never render its own footer or header content. Never design "below the line": everything from the footer's top boundary down belongs to the shared footer. Header/footer changes happen only in their own dedicated final-integration-wave tasks with explicit user authorisation and a full shared-consumer audit (landing AND webapp).
+
+## Typography tiers (exact classes — verified against AboutPage/HomePage sources)
+
+Copy lives in `locales/en/common.json` in natural sentence case; casing is applied by CSS (`uppercase` class), never by editing translations.
+
+- **Tier D — page hero display (one per page):**
+  `font-benzin uppercase` · size `text-[length:var(--px-56)]`–`var(--px-80)` · leading ≈ size (reference: AboutHero `--px-80`/`--px-80`).
+- **Tier S — section headings (H2):**
+  `font-helvetica uppercase font-medium text-[length:var(--px-52)] leading-[var(--px-60)]` (reference: OUR MISSION / OUR VISION). Light variant allowed: `font-light --px-58/--px-59 leading-[--px-64]` (Home). Left-aligned in two-column layouts; `text-center` only for full-width statement sections.
+- **Tier F — feature/sub headings (H3):**
+  `font-helvetica uppercase font-light text-[length:var(--px-33)] leading-[var(--px-38)]` (reference: Home sub-heads).
+- **Body:**
+  `font-helvetica font-light text-[length:var(--px-17)] opacity-70 leading-[var(--px-20)]`–`leading-[var(--px-24)]`.
+- **Micro/technical (tags, statuses, labels, code):**
+  `font-fira` small sizes with `tracking-[var(--px-1)]`–`tracking-[var(--px-2)]`; truth/status labels always textual, never colour-only.
+
+No other heading styles. No sentence-case headings. No new fonts, weights, or letter-spacing systems.
+
+## Legibility floors (essential vs decorative)
+
+Essential text (descriptions, explanations, statuses, truth labels, graph/diagram labels, navigation, footer information): body/descriptions ≥ `--px-15`, labels/statuses ≥ `--px-11`, opacity ≥ 0.75. Only purely decorative metadata (registration marks, ascii dividers) may go smaller/dimmer. Comfortable on standard laptops and phones is the bar.
+
+## Vocabulary (binding)
+
+**PYXIS-1** is the single public engine name for all processing, analysis and similarity — never introduce other engine names, model language, training claims, or generative-AI terminology. Feature counts, if stated, are "**70+ characteristics**" (never 75+). Product names: Sonic Discovery, Track Intelligence, Catalogue Intelligence, Catalogue Pilot, Developers / API. **The API is the delivery/access layer for the three intelligences — never presented as a fourth equivalent product.** Status labels must reflect verified reality: live in beta / beta · sample data / private pilot / docs + guided pilot (no public sandbox exists; a self-serve trial is planned — never claim a sandbox). Never imply production readiness where only pilot access exists.
+
+## Sizing discipline (fluid root)
+
+`apps/landing` has a fluid root font-size — all dimensions in `--px-*` tokens or rem (design-px ÷ 16). Never raw `px` (exceptions: 1px hairlines, SVG stroke-width, raster `background-size`). Never `vw`-based font clamps (the root already scales). Never add tokens to `pixels.css`.
+
+## Layout discipline
+
+- Content container: `max-width: min(80rem, 100%)`, centred, inside the LandingLayout/SideLines frame — content must NEVER cross the SideLines dotted lines; acceptance: no horizontal overflow (`scrollWidth === clientWidth`) at 393/768/1280/1920.
+- Grids: `repeat(n, minmax(0, 1fr))` — never bare `1fr` with `nowrap` children (min-content blowout).
+- Section spacing owned by one section-level rule (padding-block `6rem` desktop / `4rem` ≤600px + dotted hairline separators); components never carry section-boundary margins.
+
+## Motion & performance
+
+Static-first. Only IO-gated draw-once animations (≤900ms, unobserve after firing). No rAF loops, scroll listeners, idle timers, pointer-reactive rendering, parallax. `prefers-reduced-motion` ⇒ fully-drawn static state (CSS + JS guard).
+
+## Hard guardrails (every task)
+
+- Zero new dependencies; `git diff pnpm-lock.yaml` must stay empty.
+- No changes to `packages/*`, shared components, `LandingLayout` (beyond lines a task explicitly authorises), tokens, or existing pages.
+- Truth labels ship verbatim (`SAMPLE DATA`, `REBUILT FROM PRODUCT PATTERNS`, `SCHEMATIC — NOT PRODUCT UI`, `PRIVATE PILOT`, endpoint statuses). No invented metrics, telemetry, or customers.
+- No 21st.dev code, media, or naming in the repo. No API keys anywhere.
+- Public copy uses British "Catalogue"; internal code identifiers keep existing spellings.
+- No dead links: unbuilt destinations = non-interactive rows or approved temporary destinations with `TODO` comments.
+- Leave changes uncommitted; report per the task's completion-report section.

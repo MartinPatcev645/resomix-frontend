@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" fill="none" stroke="#ffffff" aria-hidden="true">
+  <!-- Resomix Void Field — structural depth (product pages). Static; opacity handled by consumer. -->
+  <!-- large cropped resonance arc, partially lost beyond right edge -->
+  <g stroke-width="1.1">
+    <path d="M 1720 120 A 640 640 0 0 0 1090 -140" opacity=".55"/>
+    <path d="M 1780 330 A 780 780 0 0 1 1180 1060" opacity=".4" stroke-dasharray="3 14"/>
+    <path d="M 1560 240 A 500 500 0 0 0 1120 -60" opacity=".28" stroke-dasharray="1 9"/>
+  </g>
+  <!-- spectral horizon -->
+  <line x1="0" y1="636" x2="1600" y2="636" stroke-dasharray="1 12" opacity=".5"/>
+  <!-- tilted analysis plane (partial grid) -->
+  <g opacity=".35" stroke-dasharray="1 8">
+    <path d="M 60 900 L 460 760"/><path d="M 140 930 L 540 790"/><path d="M 220 960 L 620 820"/>
+    <path d="M 60 900 L 220 960"/><path d="M 260 830 L 420 890"/><path d="M 460 760 L 620 820"/>
+  </g>
+  <!-- deep-field waveform contour, cropped left -->
+  <path d="M -40 500 q 22 -60 44 0 t 44 0 t 44 0 t 44 0 t 44 0 t 44 0" opacity=".45" stroke-width="1.1"/>
+  <!-- registration marks -->
+  <g stroke-width="1" opacity=".5"><path d="M 90 96 h 18 M 99 87 v 18"/><path d="M 1510 906 h 18 M 1519 897 v 18"/></g>
+</svg>

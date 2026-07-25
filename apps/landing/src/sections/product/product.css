@@ -1,0 +1,957 @@
+/* Product page scoped styles — all selectors under .product-page */
+
+.product-page {
+  overflow-x: clip;
+}
+
+.product-page .product-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.product-page .product-layer-plate {
+  z-index: -3;
+  background: var(--color-secondary) var(--product-plate-dark) center / cover no-repeat;
+}
+
+.light .product-page .product-layer-plate {
+  background-image: var(--product-plate-light);
+}
+
+.product-page .product-layer-grain {
+  z-index: -1;
+  background: var(--product-grain-dark) repeat;
+  background-size: 256px 256px;
+  opacity: 0.05;
+}
+
+.light .product-page .product-layer-grain {
+  background-image: var(--product-grain-light);
+  opacity: 0.045;
+}
+
+.product-page .product-layer-structure {
+  z-index: -2;
+  background: var(--product-structure-product) center / cover no-repeat;
+  opacity: 0.5;
+}
+
+.light .product-page .product-layer-structure {
+  opacity: 0.3;
+  filter: invert(1);
+}
+
+@media (max-width: 1023px) {
+  .product-page .product-layer-structure {
+    background-image: var(--product-structure-mobile) !important;
+  }
+}
+
+/* Frame & section rhythm — one owner per boundary */
+.product-page .product-frame {
+  max-width: min(80rem, 100%);
+  margin-inline: auto;
+  padding-inline: var(--px-48);
+  position: relative;
+  z-index: 10;
+}
+
+@media (max-width: 1023px) {
+  .product-page .product-frame {
+    padding-inline: var(--px-32);
+  }
+}
+
+@media (max-width: 600px) {
+  .product-page .product-frame {
+    padding-inline: var(--px-20);
+  }
+}
+
+.product-page .product-section {
+  padding-block: 6rem;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.08);
+}
+
+.light .product-page .product-section {
+  border-bottom-color: rgba(16, 16, 16, 0.09);
+}
+
+.product-page .product-section:last-of-type {
+  border-bottom: none;
+}
+
+@media (max-width: 600px) {
+  .product-page .product-section {
+    padding-block: 4rem;
+  }
+}
+
+.product-page .product-section-hero {
+  padding-top: 3rem;
+}
+
+.product-page .product-sec-head {
+  margin-bottom: 3rem;
+}
+
+.product-page .product-sec-head h2 {
+  margin-bottom: 0.625rem;
+}
+
+.product-page .product-feature-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4rem;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .product-page .product-feature-grid-57 {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+
+  .product-page .product-feature-grid-75 {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  }
+}
+
+@media (max-width: 1023px) {
+  .product-page .product-feature-grid {
+    gap: var(--px-36);
+  }
+}
+
+.product-page .product-feature-grid-75 .product-feature-panel {
+  order: 2;
+}
+
+.product-page .product-feature-grid-75 .product-feature-copy {
+  order: 1;
+}
+
+.product-page .product-feature-copy,
+.product-page .product-feature-panel {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .product-page .product-feature-grid-75 .product-feature-panel {
+    order: 1;
+  }
+
+  .product-page .product-feature-grid-75 .product-feature-copy {
+    order: 2;
+  }
+}
+
+.product-page .product-microtag {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin: 0 0 1rem;
+}
+
+.product-page .product-dot {
+  display: inline-block;
+  width: var(--px-7);
+  height: var(--px-7);
+  border-radius: 50%;
+  background: var(--color-neon-orange);
+  margin-left: var(--px-8);
+  vertical-align: baseline;
+}
+
+.product-page .product-badge {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: var(--px-2) var(--px-8);
+  margin-left: var(--px-10);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.light .product-page .product-badge {
+  border-color: rgba(16, 16, 16, 0.18);
+}
+
+.product-page .product-bracket-link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-bottom: 1px dotted transparent;
+}
+
+.product-page .product-bracket-link:hover {
+  color: var(--color-neon-orange);
+  border-bottom-color: var(--color-neon-orange);
+}
+
+.product-page .product-bracket-link:focus-visible {
+  outline: 2px solid var(--color-neon-orange);
+  outline-offset: var(--px-3);
+}
+
+.product-page .product-bracket-link-nowrap {
+  white-space: nowrap;
+}
+
+/* Filament stroke rules */
+.product-page .product-fil {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 1.1;
+  vector-effect: non-scaling-stroke;
+}
+
+.product-page .product-f-in {
+  stroke: var(--color-primary-hover);
+  stroke-width: 1.4;
+}
+
+.product-page .product-w1 { opacity: 0.62; }
+.product-page .product-w2 { opacity: 0.5; }
+.product-page .product-w3 { opacity: 0.4; }
+.product-page .product-w4 { opacity: 0.34; }
+.product-page .product-w5 { opacity: 0.26; }
+.product-page .product-w6 { opacity: 0.2; }
+.product-page .product-w7 { opacity: 0.68; stroke-width: 1.4; }
+
+.product-page .product-outs .product-fil {
+  opacity: 0.55;
+  stroke-width: 1.2;
+}
+
+.product-page .product-w-active {
+  stroke: var(--color-neon-orange);
+  stroke-width: 1.8;
+  opacity: 0.95;
+}
+
+.product-page .product-end-node {
+  fill: var(--color-secondary);
+  stroke: var(--color-primary);
+  stroke-width: 1.2;
+}
+
+.product-page .product-end-active {
+  fill: var(--color-neon-orange);
+  stroke: var(--color-neon-orange);
+}
+
+.product-page .product-xnode {
+  fill: var(--color-neon-orange);
+  opacity: 0.8;
+}
+
+.product-page .product-reg {
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 1;
+  fill: none;
+}
+
+.light .product-page .product-reg {
+  stroke: rgba(16, 16, 16, 0.18);
+}
+
+.product-page .product-slbl {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  fill: #6a6a6a;
+  opacity: 0.75;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.product-page .product-end-label-btn {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.03em;
+  color: var(--color-primary);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+.product-page .product-end-label-btn:hover {
+  color: var(--color-neon-orange);
+}
+
+.product-page .product-end-label-btn:focus-visible {
+  outline: 2px solid var(--color-neon-orange);
+  outline-offset: var(--px-3);
+}
+
+.product-page .product-end-label-status {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  color: #6a6a6a;
+  opacity: 0.8;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .product-page .product-end-label-btn,
+  .product-page .product-end-label-status {
+    font-size: var(--px-11);
+  }
+}
+
+/* Draw-once reveal */
+.product-page.product-motion-on .product-draw.product-armed {
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+}
+
+.product-page.product-motion-on .product-draw.product-play {
+  animation: product-drawin 0.9s ease-out forwards;
+}
+
+@keyframes product-drawin {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.product-page.product-motion-reduced .product-draw,
+.product-page.product-motion-reduced .product-draw.product-armed {
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-page .product-draw,
+  .product-page .product-draw.product-armed {
+    stroke-dasharray: none !important;
+    stroke-dashoffset: 0 !important;
+    animation: none !important;
+  }
+}
+
+/* HUD panels */
+.product-page .product-hud {
+  margin: 0;
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: var(--px-40) var(--px-28) var(--px-24);
+  clip-path: polygon(
+    0 0,
+    calc(100% - 1.125rem) 0,
+    100% 1.125rem,
+    100% 100%,
+    1.125rem 100%,
+    0 calc(100% - 1.125rem)
+  );
+}
+
+.light .product-page .product-hud {
+  background: rgba(16, 16, 16, 0.02);
+  border-color: rgba(16, 16, 16, 0.18);
+}
+
+@media (max-width: 600px) {
+  .product-page .product-hud {
+    padding: var(--px-36) var(--px-18) var(--px-20);
+  }
+}
+
+.product-page .product-hud-label-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--px-16);
+  margin-bottom: var(--px-16);
+}
+
+.product-page .product-hud-label {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.1em;
+  color: #6a6a6a;
+  opacity: 0.75;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.product-page .product-hud > .product-hud-label {
+  position: absolute;
+  top: var(--px-12);
+  left: var(--px-28);
+}
+
+@media (max-width: 600px) {
+  .product-page .product-hud > .product-hud-label {
+    left: var(--px-18);
+  }
+}
+
+.product-page .product-hud-foot {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  color: #6a6a6a;
+  opacity: 0.75;
+  margin: var(--px-16) 0 0;
+  letter-spacing: 0.04em;
+}
+
+.product-page .product-trackrow {
+  display: flex;
+  align-items: center;
+  gap: var(--px-14);
+  padding-block: var(--px-12);
+  padding-inline: var(--px-4);
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.08);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+}
+
+.light .product-page .product-trackrow {
+  border-bottom-color: rgba(16, 16, 16, 0.09);
+}
+
+.product-page .product-trackrow-ref {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--color-primary);
+}
+
+.light .product-page .product-trackrow-ref {
+  border-bottom-color: rgba(16, 16, 16, 0.18);
+}
+
+.product-page .product-wave {
+  flex: 1 1 auto;
+  min-width: var(--px-60);
+  height: var(--px-22);
+}
+
+.product-page .product-wavepath {
+  fill: none;
+  stroke: var(--color-primary-hover);
+  stroke-width: 1;
+  opacity: 0.7;
+}
+
+.product-page .product-energy {
+  width: 100%;
+  height: var(--px-60);
+  display: block;
+  margin-bottom: var(--px-14);
+}
+
+.product-page .product-energy .product-wavepath {
+  stroke: var(--color-primary);
+  opacity: 0.85;
+}
+
+.product-page .product-score {
+  color: var(--color-neon-orange);
+  font-weight: 700;
+  min-width: var(--px-34);
+  font-size: var(--px-13);
+}
+
+.product-page .product-score::after {
+  content: '%';
+  font-size: var(--px-10);
+  opacity: 0.7;
+}
+
+.product-page .product-code-block {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: var(--px-18) var(--px-16);
+  margin: 0;
+  overflow-x: auto;
+}
+
+.light .product-page .product-code-block {
+  background: rgba(16, 16, 16, 0.05);
+  border-color: rgba(16, 16, 16, 0.09);
+}
+
+.product-page .product-code-block code {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  line-height: 1.7;
+  color: var(--color-primary-hover);
+  white-space: pre;
+}
+
+.product-page .product-measured-val {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  margin: var(--px-4) 0 0;
+  white-space: nowrap;
+}
+
+.product-page .product-mp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--px-16);
+  border-top: 1px dotted rgba(255, 255, 255, 0.08);
+  padding-top: var(--px-14);
+}
+
+.light .product-page .product-mp-grid {
+  border-top-color: rgba(16, 16, 16, 0.09);
+}
+
+@media (max-width: 600px) {
+  .product-page .product-mp-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.product-page .product-mp-label {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.06em;
+  color: #6a6a6a;
+  opacity: 0.75;
+  text-transform: uppercase;
+}
+
+/* Platform overview */
+.product-page .product-pillar-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.light .product-page .product-pillar-grid {
+  background: rgba(16, 16, 16, 0.09);
+}
+
+@media (min-width: 600px) {
+  .product-page .product-pillar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .product-page .product-pillar-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.product-page .product-pillar-cell {
+  background: var(--color-secondary);
+  padding: var(--px-32) var(--px-24) var(--px-28);
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-10);
+  min-width: 0;
+}
+
+.product-page .product-pillar-desc {
+  margin: 0;
+  color: var(--color-primary-hover);
+  font-size: var(--px-15);
+  opacity: 0.8;
+}
+
+.product-page .product-pillar-status {
+  margin-top: auto;
+  padding-top: var(--px-14);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.06em;
+  color: #6a6a6a;
+  opacity: 0.8;
+  text-transform: uppercase;
+}
+
+/* API access band — subordinate to the three product pillars */
+.product-page .product-api-band {
+  display: flex;
+  align-items: center;
+  gap: var(--px-20);
+  margin-top: 1px;
+  padding: var(--px-24) var(--px-24);
+  background: var(--color-secondary);
+  border: 1px dotted rgba(255, 255, 255, 0.14);
+  border-left: 2px solid var(--color-neon-orange);
+  min-width: 0;
+}
+
+.light .product-page .product-api-band {
+  border-color: rgba(16, 16, 16, 0.18);
+  border-left-color: var(--color-neon-orange);
+}
+
+.product-page .product-api-band-desc {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-primary-hover);
+  font-size: var(--px-15);
+  opacity: 0.8;
+}
+
+.product-page .product-api-band-status {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.06em;
+  color: #6a6a6a;
+  opacity: 0.8;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.product-page .product-api-band .product-bracket-link {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .product-page .product-api-band {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--px-10);
+  }
+
+  .product-page .product-api-band .product-bracket-link {
+    margin-top: var(--px-4);
+  }
+}
+
+/* Audience router */
+.product-page .product-router-head {
+  margin-bottom: 3rem;
+}
+
+.product-page .product-route-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: product-route;
+}
+
+.product-page .product-route-row {
+  counter-increment: product-route;
+  display: flex;
+  align-items: baseline;
+  gap: var(--px-20);
+  padding-block: 1.25rem;
+  padding-inline: var(--px-6);
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.14);
+}
+
+.light .product-page .product-route-row {
+  border-bottom-color: rgba(16, 16, 16, 0.18);
+}
+
+.product-page .product-route-row::before {
+  content: '0' counter(product-route) ' //';
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  color: #6a6a6a;
+}
+
+.product-page .product-route-who {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.02em;
+  color: var(--color-primary);
+}
+
+.product-page .product-route-what {
+  color: var(--color-primary-hover);
+  font-size: var(--px-15);
+  opacity: 0.8;
+  flex: 1;
+}
+
+/* CTA split */
+.product-page .product-cta-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--px-40);
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .product-page .product-cta-grid {
+    grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
+    gap: var(--px-48);
+  }
+}
+
+.product-page .product-cta-divider {
+  display: none;
+  background: rgba(255, 255, 255, 0.14);
+  min-height: var(--px-160);
+  height: 100%;
+}
+
+.light .product-page .product-cta-divider {
+  background: rgba(16, 16, 16, 0.18);
+}
+
+@media (min-width: 1024px) {
+  .product-page .product-cta-divider {
+    display: block;
+  }
+}
+
+.product-page .product-cta-heading {
+  margin: 0 0 1.5rem;
+}
+
+.product-page .product-cta-btn-wrap {
+  margin-bottom: 0.875rem;
+}
+
+.product-page .product-cta-note {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.06em;
+  color: #6a6a6a;
+  opacity: 0.8;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* Hero — stacked copy block + full-width diagram band */
+.product-page .product-hero-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.product-page .product-hero-title {
+  font-size: var(--px-56);
+  line-height: var(--px-62);
+}
+
+@media (max-width: 1280px) {
+  .product-page .product-hero-title {
+    font-size: var(--px-50);
+    line-height: var(--px-56);
+  }
+}
+
+@media (max-width: 600px) {
+  .product-page .product-hero-title {
+    font-size: var(--px-36);
+    line-height: var(--px-42);
+  }
+}
+
+.product-page .product-region-lbl {
+  position: absolute;
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.08em;
+  color: #6a6a6a;
+  opacity: 0.75;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.product-page .product-flowrow {
+  display: flex;
+  align-items: center;
+  gap: var(--px-12);
+}
+
+.product-page .product-flowline {
+  flex: 1;
+  border-top: 1px dotted rgba(255, 255, 255, 0.14);
+}
+
+.light .product-page .product-flowline {
+  border-top-color: rgba(16, 16, 16, 0.18);
+}
+
+.product-page .product-flow-lbl {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.06em;
+  color: #6a6a6a;
+  opacity: 0.75;
+  text-transform: uppercase;
+}
+
+.product-page .product-flow-lbl-orange {
+  color: var(--color-neon-orange);
+}
+
+.product-page .product-timeline {
+  display: flex;
+  gap: var(--px-2);
+  margin: var(--px-6) 0 var(--px-14);
+}
+
+.product-page .product-timeline-seg {
+  text-align: center;
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding-block: var(--px-8);
+  border: 1px dotted rgba(255, 255, 255, 0.14);
+  color: #6a6a6a;
+  opacity: 0.75;
+}
+
+.light .product-page .product-timeline-seg {
+  border-color: rgba(16, 16, 16, 0.18);
+}
+
+.product-page .product-timeline-seg-active {
+  border: 1px solid var(--color-neon-orange);
+  color: var(--color-neon-orange);
+}
+
+.product-page .product-lbl-muted {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.06em;
+  color: #6a6a6a;
+  text-transform: uppercase;
+}
+
+.product-page .product-meta-muted {
+  color: #6a6a6a;
+  font-size: var(--px-10);
+  opacity: 0.75;
+}
+
+/* Hero API access rail */
+.product-page .product-api-rail-line {
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 1;
+  stroke-dasharray: 2 5;
+  vector-effect: non-scaling-stroke;
+}
+
+.light .product-page .product-api-rail-line {
+  stroke: rgba(16, 16, 16, 0.22);
+}
+
+.product-page .product-api-rail-tick {
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.light .product-page .product-api-rail-tick {
+  stroke: rgba(16, 16, 16, 0.22);
+}
+
+.product-page .product-api-rail-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-2);
+  padding-top: var(--px-16);
+  margin-top: var(--px-12);
+  border-top: 1px dotted rgba(255, 255, 255, 0.14);
+  flex-shrink: 0;
+}
+
+.light .product-page .product-api-rail-label {
+  border-top-color: rgba(16, 16, 16, 0.18);
+}
+
+.product-page .product-api-rail-label-title {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.03em;
+  color: var(--color-primary);
+  opacity: 0.7;
+}
+
+.product-page .product-api-rail-label-status {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.04em;
+  color: #6a6a6a;
+  opacity: 0.75;
+  line-height: 1.4;
+}
+
+/* Hero figure — full-width diagram with overlay labels */
+.product-page .product-hero-figure {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.product-page .product-hero-labels-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.product-page .product-hero-label-item {
+  position: absolute;
+  left: 83.5%;
+  top: var(--hero-label-y, 50%);
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-2);
+  pointer-events: auto;
+  max-width: 16%;
+}
+
+.product-page .product-hero-api-label {
+  position: absolute;
+  left: 82%;
+  top: 88%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-2);
+  max-width: 17%;
+  pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  .product-page .product-hero-label-item {
+    left: 78%;
+    max-width: 20%;
+  }
+
+  .product-page .product-hero-api-label {
+    left: 76%;
+    max-width: 22%;
+  }
+}
+
+.product-page .product-tag-orange {
+  color: var(--color-neon-orange);
+}
+
+.product-page .product-microtag-muted {
+  color: var(--color-primary-hover);
+}
+
+.product-page .product-microtag-orange {
+  color: var(--color-neon-orange);
+}
+
+.product-page .product-copy-col-title {
+  margin-bottom: 1rem;
+}
+
+.product-page .product-cluster-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}

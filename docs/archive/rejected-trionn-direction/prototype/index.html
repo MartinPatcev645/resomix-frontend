@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Resomix — Design Reference (NOT PRODUCTION)</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============ REVIEW TOOLBAR (prototype chrome, not proposed UI) ============ -->
+<div class="ref-toolbar" role="banner">
+  <span class="ref-badge">DESIGN REFERENCE — NOT PRODUCTION</span>
+  <nav class="ref-nav" aria-label="Scene navigation">
+    <a href="#scene-1">Scene 1</a><a href="#scene-2">Scene 2</a><a href="#scene-3">Scene 3</a>
+  </nav>
+  <div class="ref-controls">
+    <button id="toggle-motion" type="button" aria-pressed="true">motion: on</button>
+    <button id="toggle-theme" type="button" aria-pressed="false">theme: dark</button>
+  </div>
+</div>
+
+<!-- ==================== SCENE 1 — PRODUCT OVERVIEW HERO ==================== -->
+<section class="scene hero" id="scene-1" aria-label="Scene 1: Product Overview hero concept">
+  <div class="frame-line frame-left" aria-hidden="true"></div>
+  <div class="frame-line frame-right" aria-hidden="true"></div>
+
+  <header class="hero-top">
+    <div class="wordmark">RESOMIX<sup>®</sup></div>
+    <div class="hero-top-right">
+      <span class="microlabel">status: beta</span>
+      <a class="cta-pill" href="#scene-2">TRY RESOMIX</a>
+    </div>
+  </header>
+
+  <div class="hero-grid">
+    <div class="hero-copy reveal">
+      <h1>Sound in.<br>Intelligence out.</h1>
+      <p class="hero-sub">One platform to discover, understand, and connect music through the way it actually sounds. <span class="illustrative">[ILLUSTRATIVE COPY]</span></p>
+      <a class="cta-mono" href="#scene-3">EXPLORE THE PLATFORM <span aria-hidden="true">→</span></a>
+    </div>
+
+    <figure class="sonic-core" aria-label="Sonic core diagram: a resonance source connected to the three product surfaces and the developer path">
+      <svg viewBox="0 0 640 560" role="img">
+        <!-- resonance rings -->
+        <g class="rings" fill="none" stroke="var(--line)" stroke-width="1">
+          <circle cx="260" cy="240" r="42"/>
+          <circle cx="260" cy="240" r="86" stroke-dasharray="2 5"/>
+          <circle cx="260" cy="240" r="132" stroke-dasharray="1 7" opacity=".7"/>
+          <circle cx="260" cy="240" r="182" stroke-dasharray="1 10" opacity=".4"/>
+        </g>
+        <!-- core -->
+        <circle class="core-glow" cx="260" cy="240" r="26" fill="var(--accent)" opacity=".18"/>
+        <circle class="core" cx="260" cy="240" r="7" fill="var(--accent)"/>
+        <!-- waveform through the core -->
+        <path class="wave draw" d="M60 240 q20 -26 40 0 t40 0 t40 0 t40 0 t40 0 t40 0" fill="none" stroke="var(--fg)" stroke-width="1.2"/>
+        <!-- trajectories to surfaces -->
+        <g class="trajectories" fill="none" stroke="var(--line)" stroke-width="1">
+          <path class="draw" d="M282 226 L470 120"/>
+          <path class="draw" d="M292 240 L470 262"/>
+          <path class="draw" d="M282 256 L470 400"/>
+        </g>
+        <g class="nodes" fill="var(--fg)">
+          <circle cx="470" cy="120" r="2.5"/><circle cx="470" cy="262" r="2.5"/><circle cx="470" cy="400" r="2.5"/>
+        </g>
+        <!-- registration marks -->
+        <g class="marks" stroke="var(--line)" stroke-width="1" opacity=".8">
+          <path d="M24 24 h12 M30 18 v12"/><path d="M604 24 h12 M610 18 v12"/>
+          <path d="M24 536 h12 M30 530 v12"/><path d="M604 536 h12 M610 530 v12"/>
+        </g>
+      </svg>
+      <ul class="surface-labels">
+        <li style="--y:9%"><span class="microlabel">01</span> Sonic Discovery <em>live in beta</em></li>
+        <li style="--y:43%"><span class="microlabel">02</span> Track Intelligence <em>powered by PYXIS-1</em></li>
+        <li style="--y:68%"><span class="microlabel">03</span> Catalogue Intelligence <em>private pilot</em></li>
+        <li class="dev-rail" style="--y:88%"><span class="microlabel">API</span> Developers <em>docs + sandbox</em></li>
+      </ul>
+    </figure>
+  </div>
+
+  <footer class="hero-islands">
+    <span class="microlabel">SCORED BY PYXIS-1</span>
+    <span class="microlabel affordance">SCROLL ⟶ THE SYSTEM UNFOLDS</span>
+    <span class="microlabel">RESOMIX // SONIC-INTELLIGENCE PLATFORM</span>
+  </footer>
+</section>
+
+<!-- ==================== SCENE 2 — PLATFORM SYSTEM SECTION ==================== -->
+<section class="scene system" id="scene-2" aria-label="Scene 2: platform system section concept">
+  <div class="overflow-band" aria-hidden="true">
+    <div class="band-track">SOUND&nbsp;→&nbsp;SIGNAL&nbsp;→&nbsp;INTELLIGENCE&nbsp;+&nbsp;SOUND&nbsp;→&nbsp;SIGNAL&nbsp;→&nbsp;INTELLIGENCE&nbsp;+&nbsp;</div>
+  </div>
+
+  <div class="system-grid">
+    <p class="scrub-par" id="scrub-par">Metadata tells you what a track is called. Sound tells you what it actually is. Resomix listens to the recording itself and turns it into discovery, understanding, and connection. <span class="illustrative">[ILLUSTRATIVE COPY]</span></p>
+
+    <ol class="system-list">
+      <li class="reveal">
+        <span class="microlabel">01 // DISCOVER</span>
+        <h2>Sonic Discovery</h2>
+        <p>From one reference track to a scored, listenable shortlist.</p>
+        <a class="cta-mono" href="#">EXPLORE SONIC DISCOVERY <span aria-hidden="true">→</span></a>
+      </li>
+      <li class="reveal">
+        <span class="microlabel">02 // UNDERSTAND</span>
+        <h2>Track Intelligence</h2>
+        <p>Structure, energy, harmony, timbre, and mood — one readable anatomy.</p>
+        <a class="cta-mono" href="#">ANALYSE A TRACK <span aria-hidden="true">→</span></a>
+      </li>
+      <li class="reveal">
+        <span class="microlabel">03 // CONNECT</span>
+        <h2>Catalogue Intelligence</h2>
+        <p>Catalogue audio as searchable sonic intelligence, in a private pilot.</p>
+        <a class="cta-mono" href="#scene-3">START WITH A PILOT <span aria-hidden="true">→</span></a>
+      </li>
+      <li class="reveal dev">
+        <span class="microlabel">API // BUILD</span>
+        <h2>Developers</h2>
+        <p>The same engine as an API — documentation and a public sandbox.</p>
+        <a class="cta-mono" href="#">VIEW API DOCUMENTATION <span aria-hidden="true">→</span></a>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ==================== SCENE 3 — ENTERPRISE / CATALOGUE SECTION ==================== -->
+<section class="scene enterprise" id="scene-3" aria-label="Scene 3: enterprise and catalogue section concept">
+  <div class="ent-grid">
+    <div class="ent-copy">
+      <span class="microlabel">FOR LABELS &amp; DISTRIBUTORS</span>
+      <h2 class="reveal">Your catalogue already knows<br>which tracks belong together.</h2>
+      <p class="reveal">Relationships, clusters, and overlooked recordings that metadata alone can't see — surfaced from the audio itself. Delivery starts as a bounded private pilot. <span class="illustrative">[ILLUSTRATIVE COPY]</span></p>
+      <div class="ent-actions reveal">
+        <a class="cta-pill" href="#">START A CATALOGUE PILOT</a>
+        <a class="cta-mono" href="#">TRUST, RIGHTS &amp; SECURITY <span aria-hidden="true">→</span></a>
+      </div>
+      <dl class="ent-info reveal">
+        <div><dt class="microlabel">ENGAGEMENT</dt><dd>Scoped together, run by the Resomix team.</dd></div>
+        <div><dt class="microlabel">CONTAINMENT</dt><dd class="illustrative">[LANGUAGE PENDING LEGAL CONFIRMATION]</dd></div>
+        <div><dt class="microlabel">EVIDENCE</dt><dd>Real analysis of your material — no mock dashboards.</dd></div>
+      </dl>
+    </div>
+
+    <figure class="constellation-wrap" aria-label="Catalogue constellation diagram: dormant recordings illuminating as connections are found">
+      <canvas id="constellation" width="640" height="640"></canvas>
+      <noscript><div class="constellation-fallback" aria-hidden="true"></div></noscript>
+      <figcaption class="microlabel">CATALOGUE VIEW // SCHEMATIC — NOT PRODUCT UI</figcaption>
+    </figure>
+  </div>
+
+  <div class="diagram-placeholder">
+    <span class="microlabel">PRODUCT EVIDENCE PLACEHOLDER — approved screenshot or pilot diagram goes here</span>
+  </div>
+</section>
+
+<footer class="ref-footer">
+  <span class="microlabel">DESIGN REFERENCE — NOT PRODUCTION · disposable approval artifact · docs/design-reference/ · 2026-07-22</span>
+</footer>
+
+<script src="prototype.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1400" fill="none" stroke="#ffffff" aria-hidden="true">
+  <!-- Void Field structure — mobile crop: one arc + horizon + one mark -->
+  <path d="M 900 180 A 480 480 0 0 0 430 -160" opacity=".45" stroke-width="1.1"/>
+  <line x1="0" y1="920" x2="800" y2="920" stroke-dasharray="1 12" opacity=".45"/>
+  <g stroke-width="1" opacity=".5"><path d="M 60 80 h 16 M 68 72 v 16"/></g>
+</svg>

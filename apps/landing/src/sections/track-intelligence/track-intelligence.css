@@ -1,0 +1,1274 @@
+/* Track Intelligence page scoped styles — all selectors under .ti-page / .ti-* */
+
+.ti-page {
+  overflow-x: clip;
+}
+
+.ti-page .ti-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ti-page .ti-layer-plate {
+  z-index: -3;
+  background: var(--color-secondary) var(--ti-plate-dark) center / cover no-repeat;
+}
+
+.light .ti-page .ti-layer-plate {
+  background-image: var(--ti-plate-light);
+}
+
+.ti-page .ti-layer-grain {
+  z-index: -1;
+  background: var(--ti-grain-dark) repeat;
+  background-size: 256px 256px;
+  opacity: 0.05;
+}
+
+.light .ti-page .ti-layer-grain {
+  background-image: var(--ti-grain-light);
+  opacity: 0.045;
+}
+
+.ti-page .ti-frame {
+  max-width: min(80rem, 100%);
+  margin-inline: auto;
+  padding-inline: var(--px-48);
+  position: relative;
+  z-index: 10;
+}
+
+.ti-page .ti-section {
+  padding-block: 6rem;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.08);
+}
+
+.light .ti-page .ti-section {
+  border-bottom-color: rgba(16, 16, 16, 0.09);
+}
+
+.ti-page .ti-section:last-of-type {
+  border-bottom: none;
+}
+
+.ti-page a {
+  color: inherit;
+}
+
+.ti-page a:focus-visible,
+.ti-page button:focus-visible,
+.ti-page [tabindex]:focus-visible {
+  outline: 2px solid var(--color-neon-orange);
+  outline-offset: var(--px-3);
+}
+
+.ti-page button {
+  touch-action: manipulation;
+  font: inherit;
+  color: inherit;
+}
+
+.ti-page .ti-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.ti-page .ti-benzin-d {
+  font-family: 'Benzin', 'Arial Black', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-38);
+  line-height: 1.07;
+  letter-spacing: 0.005em;
+  margin: 0 0 var(--px-24);
+}
+
+@media (min-width: 1024px) {
+  .ti-page .ti-benzin-d {
+    font-size: var(--px-70);
+    line-height: 1.04;
+  }
+}
+
+.ti-page .ti-h2b {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-24);
+  line-height: 1.12;
+  letter-spacing: 0.02em;
+  margin: 0 0 var(--px-14);
+}
+
+@media (min-width: 1024px) {
+  .ti-page .ti-h2b {
+    font-size: var(--px-40);
+  }
+}
+
+.ti-page .ti-h3b {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-18);
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  margin: 0 0 var(--px-12);
+}
+
+@media (min-width: 1024px) {
+  .ti-page .ti-h3b {
+    font-size: var(--px-25);
+  }
+}
+
+.ti-page .ti-eyebrow {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.1em;
+  color: var(--color-primary-hover);
+  text-transform: uppercase;
+  margin: 0 0 var(--px-20);
+  display: flex;
+  align-items: center;
+  gap: var(--px-10);
+}
+
+@media (min-width: 1024px) {
+  .ti-page .ti-eyebrow {
+    font-size: var(--px-12);
+    letter-spacing: 0.14em;
+  }
+}
+
+.ti-page .ti-eyebrow::before {
+  content: '';
+  width: var(--px-32);
+  border-top: 1px solid var(--color-neon-orange);
+}
+
+.ti-page .ti-eyebrow .ti-o {
+  color: var(--color-neon-orange);
+}
+
+.ti-page .ti-body {
+  font-weight: 300;
+  color: var(--color-primary-hover);
+  font-size: var(--px-17);
+  line-height: 1.65;
+  margin: 0;
+}
+
+.ti-page .ti-lead {
+  font-weight: 300;
+  color: var(--color-primary);
+  font-size: var(--px-18);
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (min-width: 1024px) {
+  .ti-page .ti-lead {
+    font-size: var(--px-22);
+  }
+}
+
+.ti-page .ti-lbl {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.06em;
+  color: var(--color-primary-hover);
+  text-transform: uppercase;
+}
+
+.ti-page .ti-lbl-dim {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.06em;
+  color: #8a8a8a;
+  text-transform: uppercase;
+}
+
+.ti-page .ti-truth {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.1em;
+  color: var(--color-primary-hover);
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: var(--px-4) var(--px-10);
+  white-space: nowrap;
+}
+
+.light .ti-page .ti-truth {
+  border-color: rgba(16, 16, 16, 0.18);
+}
+
+.ti-page .ti-truth.ti-hot {
+  border-color: var(--color-neon-orange);
+  color: var(--color-neon-orange);
+}
+
+.ti-page .ti-interp {
+  color: var(--color-primary-hover);
+  font-size: var(--px-15);
+  font-weight: 300;
+  border-left: 2px solid var(--color-neon-orange);
+  padding-left: var(--px-16);
+  margin: 0;
+  max-width: 66ch;
+  line-height: 1.6;
+}
+
+.ti-page .ti-interp b {
+  color: var(--color-primary);
+  font-weight: 400;
+}
+
+.ti-page .ti-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-13);
+  letter-spacing: 0.05em;
+  padding: var(--px-14) var(--px-30);
+  border-radius: 999px;
+  text-decoration: none;
+  text-transform: uppercase;
+  border: 0;
+  cursor: pointer;
+  min-height: var(--px-44);
+}
+
+.ti-page .ti-pill-solid {
+  background: var(--color-primary);
+  color: var(--color-secondary);
+}
+
+.ti-page .ti-pill-solid:hover {
+  background: var(--color-neon-orange);
+  color: #fff;
+}
+
+.ti-page .ti-pill-line {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--color-primary);
+  background: none;
+}
+
+.light .ti-page .ti-pill-line {
+  border-color: rgba(16, 16, 16, 0.18);
+}
+
+.ti-page .ti-pill-line:hover {
+  border-color: var(--color-neon-orange);
+  color: var(--color-neon-orange);
+}
+
+.ti-page .ti-ctarow {
+  display: flex;
+  gap: var(--px-16);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ti-page .ti-bracket {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-13);
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  border-bottom: 1px dotted transparent;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+.ti-page .ti-bracket:hover {
+  color: var(--color-neon-orange);
+  border-bottom-color: var(--color-neon-orange);
+}
+
+.ti-page .ti-seg {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  flex-wrap: wrap;
+}
+
+.light .ti-page .ti-seg {
+  border-color: rgba(16, 16, 16, 0.18);
+}
+
+.ti-page .ti-seg button {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.05em;
+  color: var(--color-primary-hover);
+  background: none;
+  border: 0;
+  padding: var(--px-11) var(--px-16);
+  cursor: pointer;
+  text-transform: uppercase;
+  min-height: var(--px-44);
+}
+
+.ti-page .ti-seg button + button {
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.ti-page .ti-seg button[aria-pressed='true'] {
+  color: var(--color-neon-orange);
+  box-shadow: inset 0 -2px 0 var(--color-neon-orange);
+}
+
+.ti-page .ti-ghostbtn {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-primary-hover);
+  background: none;
+  border: 1px dotted rgba(255, 255, 255, 0.14);
+  padding: var(--px-11) var(--px-16);
+  cursor: pointer;
+  min-height: var(--px-44);
+}
+
+.ti-page .ti-ghostbtn:hover {
+  color: var(--color-neon-orange);
+  border-color: var(--color-neon-orange);
+}
+
+.ti-page .ti-hud {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  clip-path: polygon(0 0, calc(100% - var(--px-20)) 0, 100% var(--px-20), 100% 100%, var(--px-20) 100%, 0 calc(100% - var(--px-20)));
+}
+
+.light .ti-page .ti-hud {
+  border-color: rgba(16, 16, 16, 0.18);
+  background: rgba(16, 16, 16, 0.02);
+}
+
+.ti-page .ti-hudlbl {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.12em;
+  color: var(--color-primary-hover);
+  text-transform: uppercase;
+}
+
+.ti-page .ti-hudpad {
+  padding: var(--px-40) var(--px-32) var(--px-28);
+}
+
+.ti-page .ti-hudtop-l {
+  position: absolute;
+  top: var(--px-14);
+  left: var(--px-32);
+}
+
+.ti-page .ti-hudtop-r {
+  position: absolute;
+  top: var(--px-14);
+  right: var(--px-32);
+}
+
+.ti-page .ti-chip {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.05em;
+  color: var(--color-primary-hover);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: var(--px-5) var(--px-10);
+  white-space: nowrap;
+}
+
+.ti-page .ti-chip b {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.ti-page .ti-dim-intro {
+  max-width: 56rem;
+  margin-bottom: var(--px-56);
+}
+
+.ti-page .ti-viz-foot {
+  margin-top: var(--px-12);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--px-16);
+  flex-wrap: wrap;
+}
+
+/* hero */
+.ti-page .ti-hero-head {
+  max-width: 60rem;
+  padding-top: var(--px-32);
+}
+
+@media (min-width: 1024px) {
+  .ti-page .ti-hero-head {
+    padding-top: var(--px-56);
+  }
+}
+
+.ti-page .ti-hero-head .ti-sub {
+  max-width: 48ch;
+  margin: 0 0 var(--px-36);
+}
+
+.ti-page .ti-anatomy {
+  margin-top: var(--px-52);
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  clip-path: polygon(0 0, calc(100% - var(--px-24)) 0, 100% var(--px-24), 100% 100%, var(--px-24) 100%, 0 calc(100% - var(--px-24)));
+  padding: var(--px-48) var(--px-16) var(--px-28);
+}
+
+@media (min-width: 1024px) {
+  .ti-page .ti-anatomy {
+    padding: var(--px-52) var(--px-32) var(--px-28);
+  }
+}
+
+.ti-page .ti-lensrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--px-16);
+  flex-wrap: wrap;
+  margin-bottom: var(--px-24);
+}
+
+.ti-page .ti-trackid {
+  display: flex;
+  gap: var(--px-12);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ti-page .ti-anatomy figure {
+  margin: 0;
+}
+
+.ti-page .ti-anatomy svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ti-page .ti-anat-d {
+  display: none;
+}
+
+@media (min-width: 641px) {
+  .ti-page .ti-anat-d {
+    display: block;
+  }
+
+  .ti-page .ti-anat-m {
+    display: none;
+  }
+}
+
+.ti-page .ti-lane {
+  transition: opacity 0.25s ease;
+}
+
+.ti-page.ti-motion-reduced .ti-lane {
+  transition: none;
+}
+
+.ti-page .ti-lane-dim {
+  opacity: 0.3;
+}
+
+.ti-page .ti-anat-caption {
+  margin-top: var(--px-16);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--px-20);
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.ti-page .ti-anat-caption .ti-interp {
+  flex: 1 1 30rem;
+}
+
+.ti-page .ti-slbl {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  fill: var(--color-primary-hover);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ti-page .ti-slbl-hot {
+  fill: var(--color-neon-orange);
+}
+
+.ti-page .ti-slbl-dim {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  fill: #8a8a8a;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* draw-once */
+.ti-page.ti-motion-on .ti-draw.ti-armed {
+  stroke-dashoffset: var(--len, 900);
+}
+
+.ti-page.ti-motion-on .ti-draw.ti-play {
+  animation: ti-drawin 0.82s ease-out forwards;
+}
+
+@keyframes ti-drawin {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.ti-page.ti-motion-reduced .ti-draw,
+.ti-page.ti-motion-reduced .ti-draw.ti-armed {
+  stroke-dasharray: none !important;
+  stroke-dashoffset: 0 !important;
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ti-page .ti-draw,
+  .ti-page .ti-draw.ti-armed {
+    stroke-dasharray: none !important;
+    stroke-dashoffset: 0 !important;
+    animation: none !important;
+  }
+
+  .ti-page .ti-lane {
+    transition: none !important;
+  }
+}
+
+/* passport */
+.ti-page .ti-passport {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr);
+  gap: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  clip-path: polygon(0 0, calc(100% - var(--px-24)) 0, 100% var(--px-24), 100% 100%, var(--px-24) 100%, 0 calc(100% - var(--px-24)));
+}
+
+.ti-page .ti-pass-id {
+  padding: var(--px-40) var(--px-32);
+  border-right: 1px dotted rgba(255, 255, 255, 0.08);
+}
+
+.ti-page .ti-pass-id .ti-art {
+  width: var(--px-84);
+  height: var(--px-84);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #1a1a1a, #101010);
+  margin-bottom: var(--px-20);
+}
+
+.ti-page .ti-pass-title {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-18);
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+
+.ti-page .ti-pass-artist {
+  color: var(--color-primary-hover);
+  font-size: var(--px-15);
+  margin-bottom: var(--px-16);
+}
+
+.ti-page .ti-pass-mini svg {
+  width: 100%;
+  height: var(--px-88);
+  display: block;
+}
+
+.ti-page .ti-pass-score {
+  padding: var(--px-40) var(--px-32);
+  border-right: 1px dotted rgba(255, 255, 255, 0.08);
+}
+
+.ti-page .ti-scorerow {
+  display: grid;
+  grid-template-columns: var(--px-120) minmax(0, 1fr) auto;
+  gap: var(--px-16);
+  align-items: baseline;
+  padding: var(--px-11) 0;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.08);
+}
+
+.ti-page .ti-scorerow:last-child {
+  border-bottom: 0;
+}
+
+.ti-page .ti-scorerow .ti-k {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.08em;
+  color: #8a8a8a;
+  text-transform: uppercase;
+}
+
+.ti-page .ti-scorerow .ti-v {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-15);
+  color: var(--color-primary);
+  letter-spacing: 0.03em;
+}
+
+.ti-page .ti-scorerow .ti-v small {
+  color: var(--color-primary-hover);
+  font-size: var(--px-12);
+}
+
+.ti-page .ti-mtag {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-9);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: var(--px-2) var(--px-7);
+  white-space: nowrap;
+}
+
+.ti-page .ti-mtag-m {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--color-primary-hover);
+}
+
+.ti-page .ti-mtag-p {
+  border: 1px dotted var(--color-neon-orange);
+  color: var(--color-neon-orange);
+}
+
+.ti-page .ti-pass-read {
+  padding: var(--px-40) var(--px-32);
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-16);
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.ti-page .ti-pass-read .ti-truth {
+  white-space: normal;
+  line-height: 1.5;
+}
+
+/* structural score */
+.ti-page .ti-score-wrap {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  clip-path: polygon(0 0, calc(100% - var(--px-24)) 0, 100% var(--px-24), 100% 100%, var(--px-24) 100%, 0 calc(100% - var(--px-24)));
+  padding: var(--px-44) var(--px-20) var(--px-28);
+}
+
+@media (min-width: 1024px) {
+  .ti-page .ti-score-wrap {
+    padding: var(--px-48) var(--px-32) var(--px-28);
+  }
+}
+
+.ti-page .ti-score-wrap svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ti-page .ti-sectbtns {
+  display: flex;
+  gap: var(--px-8);
+  flex-wrap: wrap;
+  margin-top: var(--px-20);
+}
+
+.ti-page .ti-sectbtn {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary-hover);
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: var(--px-9) var(--px-14);
+  cursor: pointer;
+  min-height: var(--px-44);
+}
+
+.ti-page .ti-sectbtn[aria-pressed='true'] {
+  border-color: var(--color-neon-orange);
+  color: var(--color-neon-orange);
+}
+
+.ti-page .ti-sect-read {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--px-32);
+  margin-top: var(--px-24);
+  border-top: 1px dotted rgba(255, 255, 255, 0.08);
+  padding-top: var(--px-24);
+}
+
+.ti-page .ti-sect-stats {
+  display: flex;
+  gap: var(--px-12);
+  flex-wrap: wrap;
+  align-content: flex-start;
+}
+
+.ti-page .ti-prof-notes {
+  list-style: none;
+  margin: var(--px-32) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--px-20);
+}
+
+.ti-page .ti-prof-notes li {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  color: var(--color-primary-hover);
+  letter-spacing: 0.03em;
+  line-height: 1.55;
+  border-top: 1px dotted rgba(255, 255, 255, 0.08);
+  padding-top: var(--px-12);
+}
+
+.ti-page .ti-prof-notes b {
+  color: var(--color-primary);
+  font-weight: 500;
+  display: block;
+  margin-bottom: var(--px-4);
+  letter-spacing: 0.08em;
+}
+
+/* bigviz panels */
+.ti-page .ti-bigviz {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  clip-path: polygon(0 0, calc(100% - var(--px-24)) 0, 100% var(--px-24), 100% 100%, var(--px-24) 100%, 0 calc(100% - var(--px-24)));
+  padding: var(--px-44) var(--px-20) var(--px-28);
+}
+
+@media (min-width: 1024px) {
+  .ti-page .ti-bigviz {
+    padding: var(--px-48) var(--px-32) var(--px-28);
+  }
+}
+
+.ti-page .ti-bigviz svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ti-page .ti-legend {
+  display: flex;
+  gap: var(--px-20);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: var(--px-14);
+}
+
+.ti-page .ti-legend span {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  color: var(--color-primary-hover);
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--px-7);
+}
+
+.ti-page .ti-legend i {
+  display: inline-block;
+  width: var(--px-18);
+  border-top: 2px solid var(--color-primary);
+  opacity: 0.85;
+  font-style: normal;
+}
+
+.ti-page .ti-legend .ti-oi {
+  border-top-color: var(--color-neon-orange);
+}
+
+.ti-page .ti-legend .ti-gi {
+  border-top-color: #8a8a8a;
+}
+
+.ti-page .ti-legend .ti-bi {
+  border-top: var(--px-8) solid rgba(255, 255, 255, 0.12);
+}
+
+.ti-page .ti-split2 {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: var(--px-56);
+  align-items: start;
+}
+
+.ti-page .ti-split2 .ti-interp {
+  margin-top: var(--px-16);
+}
+
+.ti-page .ti-keypanel {
+  display: flex;
+  gap: var(--px-32);
+  align-items: baseline;
+  flex-wrap: wrap;
+  margin: var(--px-16) 0 var(--px-20);
+}
+
+.ti-page .ti-keybig {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-38);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ti-page .ti-keybig small {
+  font-size: var(--px-15);
+  color: var(--color-primary-hover);
+  font-weight: 400;
+}
+
+.ti-page .ti-conf {
+  display: flex;
+  align-items: center;
+  gap: var(--px-12);
+}
+
+.ti-page .ti-confbar {
+  width: var(--px-144);
+  height: var(--px-6);
+  background: rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+.ti-page .ti-confbar i {
+  position: absolute;
+  inset: 0;
+  right: auto;
+  background: var(--color-neon-orange);
+  font-style: normal;
+}
+
+.ti-page .ti-expandable {
+  display: none;
+  border-top: 1px dotted rgba(255, 255, 255, 0.08);
+  margin-top: var(--px-24);
+  padding-top: var(--px-24);
+}
+
+.ti-page .ti-expandable.ti-open {
+  display: block;
+}
+
+/* identity map */
+.ti-page .ti-idmap {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.ti-page .ti-idcol {
+  background: var(--color-secondary);
+  padding: var(--px-28) var(--px-24);
+}
+
+.light .ti-page .ti-idcol {
+  background: var(--color-primary-background);
+}
+
+.ti-page .ti-sigrow {
+  margin-bottom: var(--px-16);
+}
+
+.ti-page .ti-sigrow .ti-lbl {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--px-6);
+}
+
+.ti-page .ti-sigbar {
+  height: var(--px-7);
+  background: rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+.ti-page .ti-sigbar i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  font-style: normal;
+}
+
+.ti-page .ti-sig-strong i {
+  background: var(--color-neon-orange);
+}
+
+.ti-page .ti-sig-support i {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.ti-page .ti-sig-weak {
+  border: 1px dotted rgba(255, 255, 255, 0.14);
+  background: none;
+}
+
+.ti-page .ti-sig-weak i {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.ti-page .ti-idchips {
+  display: flex;
+  gap: var(--px-8);
+  flex-wrap: wrap;
+  margin-top: var(--px-4);
+}
+
+.ti-page .ti-env-legend {
+  display: flex;
+  gap: var(--px-20);
+  flex-wrap: wrap;
+  margin-top: var(--px-24);
+  align-items: center;
+}
+
+.ti-page .ti-env-legend span {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  color: var(--color-primary-hover);
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--px-7);
+}
+
+.ti-page .ti-env-legend i {
+  display: inline-block;
+  width: var(--px-18);
+  height: var(--px-7);
+  font-style: normal;
+}
+
+.ti-page .ti-env-legend .ti-e1 {
+  background: var(--color-neon-orange);
+}
+
+.ti-page .ti-env-legend .ti-e2 {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.ti-page .ti-env-legend .ti-e3 {
+  border: 1px dotted rgba(255, 255, 255, 0.14);
+}
+
+/* lens modes */
+.ti-page .ti-lensmode {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: var(--px-64);
+  align-items: start;
+  margin-top: var(--px-40);
+}
+
+.ti-page .ti-lensattrs {
+  list-style: none;
+  padding: 0;
+  margin: var(--px-24) 0 var(--px-32);
+}
+
+.ti-page .ti-lensattrs li {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-13);
+  color: var(--color-primary-hover);
+  padding: var(--px-10) 0;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.08);
+  letter-spacing: 0.02em;
+}
+
+.ti-page .ti-lensattrs li::before {
+  content: '— ';
+  color: var(--color-neon-orange);
+}
+
+.ti-page .ti-lens-viz {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  padding: var(--px-40) var(--px-24) var(--px-20);
+  clip-path: polygon(0 0, calc(100% - var(--px-18)) 0, 100% var(--px-18), 100% 100%, var(--px-18) 100%, 0 calc(100% - var(--px-18)));
+}
+
+.ti-page .ti-lens-viz svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ti-page .ti-outcome {
+  margin-top: var(--px-20);
+}
+
+/* provenance */
+.ti-page .ti-prov {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--px-24);
+  margin-top: var(--px-36);
+}
+
+.ti-page .ti-provlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ti-page .ti-provlist li {
+  padding: var(--px-12) 0;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.08);
+  color: var(--color-primary-hover);
+  font-size: var(--px-15);
+  font-weight: 300;
+  display: flex;
+  gap: var(--px-12);
+}
+
+.ti-page .ti-provlist li::before {
+  content: '—';
+  color: var(--color-neon-orange);
+}
+
+.ti-page .ti-provpanel .ti-row {
+  display: grid;
+  grid-template-columns: var(--px-176) minmax(0, 1fr);
+  gap: var(--px-16);
+  padding: var(--px-9) 0;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.08);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+}
+
+.ti-page .ti-provpanel .ti-row:last-child {
+  border-bottom: 0;
+}
+
+.ti-page .ti-provpanel .ti-k {
+  color: #8a8a8a;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ti-page .ti-provpanel .ti-v {
+  color: var(--color-primary);
+  letter-spacing: 0.02em;
+}
+
+.ti-page .ti-provpanel .ti-v-orange {
+  color: var(--color-neon-orange);
+}
+
+/* platform connect */
+.ti-page .ti-connect {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  padding: var(--px-48) var(--px-32) var(--px-32);
+  margin-top: var(--px-36);
+  clip-path: polygon(0 0, calc(100% - var(--px-24)) 0, 100% var(--px-24), 100% 100%, var(--px-24) 100%, 0 calc(100% - var(--px-24)));
+}
+
+.ti-page .ti-connect svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ti-page .ti-connect-ctas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--px-32);
+  margin-top: var(--px-12);
+}
+
+.ti-page .ti-connect-ctas > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-8);
+}
+
+.ti-page .ti-connect-ctas p {
+  margin: 0;
+  color: var(--color-primary-hover);
+  font-size: var(--px-15);
+  font-weight: 300;
+}
+
+/* final CTA */
+.ti-page .ti-final {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) 1px minmax(0, 5fr);
+  gap: var(--px-56);
+  align-items: start;
+}
+
+.ti-page .ti-finaldiv {
+  background: rgba(255, 255, 255, 0.14);
+  min-height: 12rem;
+}
+
+.ti-page .ti-note {
+  display: block;
+  margin-top: var(--px-14);
+}
+
+/* responsive */
+@media (max-width: 1180px) {
+  .ti-page .ti-passport {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .ti-page .ti-pass-read {
+    grid-column: 1 / -1;
+    border-top: 1px dotted rgba(255, 255, 255, 0.08);
+  }
+
+  .ti-page .ti-prof-notes {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ti-page .ti-idmap {
+    grid-template-columns: 1fr;
+  }
+
+  .ti-page .ti-prov {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1023px) {
+  .ti-page .ti-frame {
+    padding-inline: var(--px-32);
+  }
+
+  .ti-page .ti-split2 {
+    grid-template-columns: 1fr;
+    gap: var(--px-32);
+  }
+
+  .ti-page .ti-lensmode {
+    grid-template-columns: 1fr;
+    gap: var(--px-36);
+  }
+
+  .ti-page .ti-sect-read {
+    grid-template-columns: 1fr;
+    gap: var(--px-20);
+  }
+
+  .ti-page .ti-connect-ctas {
+    grid-template-columns: 1fr;
+    gap: var(--px-24);
+  }
+}
+
+@media (max-width: 640px) {
+  .ti-page .ti-frame {
+    padding-inline: var(--px-20);
+  }
+
+  .ti-page .ti-section {
+    padding-block: 4rem;
+  }
+
+  .ti-page .ti-anatomy .ti-hudtop-r {
+    display: none;
+  }
+
+  .ti-page .ti-seg {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .ti-page .ti-seg button {
+    flex: 1 1 auto;
+    padding: var(--px-13) var(--px-10);
+  }
+
+  .ti-page .ti-passport {
+    grid-template-columns: 1fr;
+  }
+
+  .ti-page .ti-pass-id,
+  .ti-page .ti-pass-score {
+    border-right: 0;
+    border-bottom: 1px dotted rgba(255, 255, 255, 0.08);
+  }
+
+  .ti-page .ti-score-wrap .ti-hudtop-r,
+  .ti-page .ti-bigviz .ti-hudtop-r {
+    display: none;
+  }
+
+  .ti-page .ti-prof-notes {
+    grid-template-columns: 1fr;
+    gap: var(--px-16);
+  }
+
+  .ti-page .ti-scorerow {
+    grid-template-columns: var(--px-104) minmax(0, 1fr) auto;
+    gap: var(--px-10);
+  }
+
+  .ti-page .ti-keybig {
+    font-size: var(--px-30);
+  }
+
+  .ti-page .ti-provpanel .ti-row {
+    grid-template-columns: var(--px-136) minmax(0, 1fr);
+  }
+
+  .ti-page .ti-final {
+    grid-template-columns: 1fr;
+    gap: var(--px-44);
+  }
+
+  .ti-page .ti-finaldiv {
+    display: none;
+  }
+
+  .ti-page .ti-truth {
+    white-space: normal;
+  }
+}
