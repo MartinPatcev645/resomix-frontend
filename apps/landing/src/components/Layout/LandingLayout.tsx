@@ -104,7 +104,7 @@ export function LandingLayout() {
 
                         <main
                             key={location.pathname}
-                            className="page-transition pt-[var(--nav-hdr-h,4.25rem)]"
+                            className="page-transition pt-[calc(var(--nav-hdr-h,4.25rem)-3px)]"
                         >
                             <Outlet />
                         </main>
