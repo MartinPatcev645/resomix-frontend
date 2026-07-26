@@ -8,10 +8,14 @@ import { LandingLayout } from '../components/Layout/LandingLayout.tsx';
 import { PpApplyForm } from '../sections/partners-pilot/PpApplyForm.tsx';
 import { submitContactForm } from '@resomix/api-client';
 
-vi.mock('@resomix/api-client', () => ({
-  submitContactForm: vi.fn(),
-  resendVerification: vi.fn(),
-}));
+vi.mock('@resomix/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@resomix/api-client')>();
+  return {
+    ...actual,
+    submitContactForm: vi.fn(),
+    resendVerification: vi.fn(),
+  };
+});
 
 vi.mock('@resomix/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@resomix/hooks')>();

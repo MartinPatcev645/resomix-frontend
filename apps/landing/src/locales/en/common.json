@@ -1815,5 +1815,152 @@
             "ctaLegal": "View Legal Documents",
             "ctaLegalAria": "View Legal Documents — opens the Resomix legal library"
         }
+    },
+    "nav": {
+        "topGroups": {
+            "product": "Product",
+            "solutions": "Solutions",
+            "partners": "Partners",
+            "developers": "Developers"
+        },
+        "groups": {
+            "productRoutes": "Product routes",
+            "rightsCatalogueLicensing": "Rights, catalogue and licensing",
+            "musicProfessionals": "Music professionals",
+            "startAndEvaluate": "Start and evaluate",
+            "trustAndDeployment": "Trust and deployment",
+            "build": "Build",
+            "evaluate": "Evaluate",
+            "resourcesCompany": "Resources & company"
+        },
+        "items": {
+            "platform": {
+                "title": "Resomix Platform",
+                "description": "One sonic intelligence platform across discovery, track analysis and catalogue relationships."
+            },
+            "sonic-discovery": {
+                "title": "Sonic Discovery",
+                "description": "Start with a reference and find ranked tracks by how the music actually sounds."
+            },
+            "track-intelligence": {
+                "title": "Track Intelligence",
+                "description": "Read structure, energy, harmony, timbre, style and mood from one recording."
+            },
+            "catalogue-intelligence": {
+                "title": "Catalogue Intelligence",
+                "description": "Surface relevant relationships across owned catalogue and back catalogue."
+            },
+            "record-labels": {
+                "title": "Record Labels",
+                "description": "Surface relevant back catalogue, compare references and support release or campaign research."
+            },
+            "music-publishers": {
+                "title": "Music Publishers",
+                "description": "Understand repertoire through sound and support licensing, catalogue and rights workflows."
+            },
+            "sync-agencies": {
+                "title": "Sync Agencies",
+                "description": "Build human-reviewed shortlists from a reference, mood, texture or pacing direction."
+            },
+            "music-libraries": {
+                "title": "Music Libraries & Sample Providers",
+                "description": "Make authorised libraries more searchable through structure, texture and sonic relationships."
+            },
+            "djs": {
+                "title": "DJs",
+                "description": "Reduce crate digging and find tracks that fit the energy, groove and character of a set."
+            },
+            "music-curators": {
+                "title": "Music Curators",
+                "description": "Build stronger playlists and editorial shortlists beyond charts and static metadata."
+            },
+            "producers": {
+                "title": "Producers",
+                "description": "Study arrangement, energy, timbre and sonic themes from reference recordings."
+            },
+            "partner-overview": {
+                "title": "Partner Overview",
+                "description": "Choose the right way to work with Resomix."
+            },
+            "private-catalogue-pilot": {
+                "title": "Private Catalogue Pilot",
+                "description": "Test Resomix against authorised catalogue material with an agreed scorecard."
+            },
+            "contact-partnerships": {
+                "title": "Contact Partnerships",
+                "description": "Start a qualification conversation about catalogue, product or integration needs."
+            },
+            "trust-rights-security": {
+                "title": "Trust, Rights & Security",
+                "description": "Review audio handling, access, retention, providers and current beta controls."
+            },
+            "api-catalogue-ingestion": {
+                "title": "API + Catalogue Ingestion",
+                "description": "Use the live partner-scoped REST API after managed catalogue onboarding."
+            },
+            "integration-planning": {
+                "title": "Integration Planning",
+                "description": "Scope the right deployment path for a catalogue, platform or music product."
+            },
+            "developers-overview": {
+                "title": "Developers Overview",
+                "description": "Search, Similarity and Track Analysis through one partner-scoped API."
+            },
+            "full-api-reference": {
+                "title": "Full API Reference",
+                "description": "Complete endpoint, schema and integration documentation."
+            },
+            "catalogue-ingestion": {
+                "title": "Catalogue Ingestion",
+                "description": "Managed SFTP, audio, CSV manifest, validation and private-index creation."
+            },
+            "track-analysis-schema": {
+                "title": "Track Analysis Schema",
+                "description": "Explore versioned rhythm, tonality, dynamics, structure and provenance outputs."
+            },
+            "request-api-access": {
+                "title": "Request API Access",
+                "description": "Begin with a guided partner evaluation using your own authorised catalogue."
+            }
+        },
+        "notes": {
+            "pyxisNote": "Powered by PYXIS-1 · 70+ measurable audio characteristics",
+            "plannedPagesNote": "Planned pages — links activate when each page ships. Never dead links in production."
+        },
+        "notices": {
+            "noPublicSandboxTitle": "No public sandbox",
+            "noPublicSandboxBody": "Guided pilot available. Self-serve trial planned."
+        },
+        "status": {
+            "comingNext": "Coming next",
+            "scopingAvailable": "Scoping available",
+            "currentPage": "Current page"
+        },
+        "cta": {
+            "tryResomix": "Try Resomix",
+            "startPilot": "Start a Catalogue Pilot",
+            "cataloguePilot": "Catalogue Pilot"
+        },
+        "utility": {
+            "about": "About",
+            "journal": "Journal",
+            "help-centre": "Help Centre",
+            "faq": "FAQ",
+            "legal-documents": "Legal Documents",
+            "trust": "Trust",
+            "cookie-settings": "Cookie Settings"
+        },
+        "external": "external",
+        "account": "Account",
+        "openMenu": "Open menu",
+        "closeMenu": "Close menu",
+        "drawerLabel": "Site navigation",
+        "drawerTitle": "Navigation",
+        "currentSection": " (current section)",
+        "fullApiReferenceAria": "Full API Reference — external documentation site, opens in a new tab",
+        "journalAria": "Journal — opens in a new tab",
+        "helpCentreAria": "Help Centre — opens in a new tab",
+        "faqAria": "FAQ — opens in a new tab",
+        "legalDocumentsAria": "Legal Documents — opens in a new tab"
     }
 }
