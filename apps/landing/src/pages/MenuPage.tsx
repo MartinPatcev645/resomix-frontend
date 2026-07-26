@@ -1,3 +1,4 @@
+// TODO(nav): retire after the new drawer ships
 import React from "react";
 import { ButtonHeavyRight, ButtonSleek } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";

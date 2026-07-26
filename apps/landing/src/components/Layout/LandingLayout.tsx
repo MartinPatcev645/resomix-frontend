@@ -1,13 +1,12 @@
 import React, { useMemo } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Navbar, MobileNavbar, StaticNoise, GlobalFooter, GlobalMobileFooter, SideLines } from "@resomix/ui";
-import { LogoHeader } from "../LogoHeader.tsx";
+import { StaticNoise, GlobalFooter, GlobalMobileFooter, SideLines } from "@resomix/ui";
 import { LogoRFooter } from "../LogoRFooter.tsx";
-import { MenuIcon } from "../MenuIcon.tsx";
 import { OptionalAuthRoute } from "../OptionalAuthRoute.tsx";
+import { SiteHeader } from "../Navigation/SiteHeader.tsx";
+import { MobileDrawer } from "../Navigation/MobileDrawer.tsx";
 import { useResponsive } from "@resomix/hooks";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
-import { MenuPage } from "@/pages/index.ts";
 
 /**
  * LandingLayout provides a persistent shell (Navbar, SideLines, Footer, StaticNoise)
@@ -18,6 +17,7 @@ export function LandingLayout() {
     const location = useLocation();
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const menuButtonRef = React.useRef<HTMLButtonElement>(null);
 
     // Internal navigation handler to avoid full page reloads
     const handleNavigate = React.useCallback((path: string) => {
@@ -33,7 +33,7 @@ export function LandingLayout() {
                 try {
                     const url = new URL(path);
                     relativePath = url.pathname + url.search + url.hash;
-                } catch (e) {
+                } catch {
                     relativePath = path.split('resomix.com')[1] || '/';
                 }
             }
@@ -58,53 +58,26 @@ export function LandingLayout() {
         return '404';
     }, [location.pathname]);
 
+    const headerProps = {
+        onNavigate: handleNavigate,
+        onProfileClick: () => handleNavigate(`${BASE_BETA_URL}/profile`),
+    };
+
     const desktopNavbar = (
-        <Navbar
-            logo={
-                <a
-                    href={BASE_LANDING_URL}
-                    aria-label="Resomix home"
-                    className="cursor-default"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        handleNavigate(BASE_LANDING_URL);
-                    }}
-                >
-                    <LogoHeader className="w-[var(--px-110)] h-[var(--px-16)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />
-                </a>
-            }
-            mode={mode}
-            baseUrl={BASE_LANDING_URL}
-            baseBetaUrl={BASE_BETA_URL}
-            customClass="flex justify-between items-center align-center pt-[var(--px-28)] z-[70] relative"
-            onProfileClick={() => handleNavigate(`${BASE_BETA_URL}/profile`)}
-            onNavigate={handleNavigate}
-            currentPath={location.pathname}
-            showAppLinks={false}
+        <SiteHeader
+            variant="desktop"
+            {...headerProps}
+            menuButtonRef={menuButtonRef}
+            onMenuOpen={() => setIsMenuOpen(true)}
         />
     );
 
     const mobileNavbar = (
-        <MobileNavbar
-            logo={
-                <a
-                    href={BASE_LANDING_URL}
-                    aria-label="Resomix home"
-                    className="cursor-default"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        handleNavigate(BASE_LANDING_URL);
-                    }}
-                >
-                    <LogoHeader className="w-[var(--px-120)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />
-                </a>
-            }
-            menuIcon={
-                <button onClick={() => setIsMenuOpen(true)} aria-label="Open menu" name="Open menu" type="button" className="cursor-default">
-                    <MenuIcon className="w-[var(--px-25)] h-[var(--px-17)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />
-                </button>
-            }
-            customClass="flex justify-between items-center align-center z-50 relative"
+        <SiteHeader
+            variant="mobile"
+            {...headerProps}
+            menuButtonRef={menuButtonRef}
+            onMenuOpen={() => setIsMenuOpen(true)}
         />
     );
 
@@ -119,7 +92,7 @@ export function LandingLayout() {
 
     return (
         <OptionalAuthRoute>
-            <div className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen relative`}>
+            <div id="landing-page-root" className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen relative`}>
                 {/* {isDesktop && <StaticNoise />} */}
                 {!['product', 'product/sonic-discovery', 'product/track-intelligence', 'product/catalogue-intelligence', 'developers', 'partners', 'partners/pilot', 'trust'].includes(mode) && <StaticNoise />}
                 <div className="mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]">
@@ -127,11 +100,11 @@ export function LandingLayout() {
                         navbar={isDesktop ? undefined : mobileNavbar}
                         mode={mode}
                     >
-                        {isDesktop && <header>{desktopNavbar}</header>}
+                        {isDesktop && desktopNavbar}
 
                         <main
                             key={location.pathname}
-                            className="page-transition"
+                            className="page-transition pt-[var(--nav-hdr-h,4.25rem)]"
                         >
                             <Outlet />
                         </main>
@@ -146,11 +119,16 @@ export function LandingLayout() {
                     </SideLines>
                 </div>
 
-                {/* Menu Overlay for Mobile */}
                 {isMenuOpen && (
-                    <div className="fixed inset-0 z-[100]">
-                        <MenuPage onClose={() => setIsMenuOpen(false)} />
-                    </div>
+                    <MobileDrawer
+                        isOpen={isMenuOpen}
+                        onClose={() => {
+                            setIsMenuOpen(false);
+                            requestAnimationFrame(() => menuButtonRef.current?.focus());
+                        }}
+                        onNavigate={handleNavigate}
+                        onProfileClick={() => handleNavigate(`${BASE_BETA_URL}/profile`)}
+                    />
                 )}
             </div>
         </OptionalAuthRoute>

@@ -9,10 +9,14 @@ import { TrRetention } from '../sections/trust/TrRetention.tsx';
 import { TrLifecycles } from '../sections/trust/TrLifecycles.tsx';
 import { LEGAL_LIBRARY_URL } from '../sections/trust/trData.ts';
 
-vi.mock('@resomix/api-client', () => ({
-  submitContactForm: vi.fn(),
-  resendVerification: vi.fn(),
-}));
+vi.mock('@resomix/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@resomix/api-client')>();
+  return {
+    ...actual,
+    submitContactForm: vi.fn(),
+    resendVerification: vi.fn(),
+  };
+});
 
 vi.mock('@resomix/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@resomix/hooks')>();
