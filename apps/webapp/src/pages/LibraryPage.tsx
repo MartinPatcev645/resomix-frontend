@@ -9,7 +9,7 @@ import { ExportSubmenu } from "@/components/Library/ExportSubmenu.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
 import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
-import { TrackMetaRow, PlaylistRenameModal, LibraryFilters } from "@/components/index.ts";
+import { TrackMetaRow, PlaylistRenameModal, LibraryFilters, PlaylistShare } from "@/components/index.ts";
 
 export default function LibraryPage() {
   const navigate = useNavigate();
@@ -79,6 +79,11 @@ export default function LibraryPage() {
   // library it also carries `hasCustomCover`, so the modal can host the cover editor.
   const [renameFor, setRenameFor] = useState<{ uuid: string; name: string; hasCustomCover: boolean } | null>(null);
   const [renameBusy, setRenameBusy] = useState(false);
+
+  // Share modal — mobile only. On mobile we open the SAME PlaylistShare modal the playlist page uses
+  // (its "Share" button fires the native share sheet on a fresh tap). Desktop keeps the instant
+  // copy-link flow below, unchanged.
+  const [shareFor, setShareFor] = useState<{ uuid: string; name: string } | null>(null);
 
   // Apple Music export — reuses the playlist page's flow: verdict gate (login/upgrade) → the shared
   // AppleExportModal (which handles the connect check + export). Holds the playlist uuid to export.
@@ -263,10 +268,27 @@ export default function LibraryPage() {
     }
   };
 
-  const handleSharePlaylist = async (uuid: string, isAlreadyPublic: boolean, e: React.MouseEvent) => {
+  const handleSharePlaylist = async (uuid: string, isAlreadyPublic: boolean, name: string, e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Mobile: match the playlist page — ensure the playlist is public, then open the PlaylistShare
+    // modal whose "Share" button opens the native share sheet (share to other apps).
+    const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
+    if (isMobile) {
+      if (!isAlreadyPublic) {
+        const result = await sharePlaylist(uuid);
+        if (!result.success) {
+          handleStatusChange("error", result.error || "Failed to share playlist", "Sharing Failed");
+          return;
+        }
+      }
+      setShareFor({ uuid, name }); // modal receives an already-public playlist
+      return;
+    }
+
+    // Desktop (unchanged): make public if needed, then copy the link.
     const shareUrl = `${window.location.origin}/sonic-discovery?id=${uuid}`;
-    
+
     const copyLink = () => {
       navigator.clipboard.writeText(shareUrl).then(
         () => handleStatusChange("success", "Link copied to clipboard!", "Link Copied"),
@@ -554,7 +576,7 @@ export default function LibraryPage() {
                                     <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" />
                                   </svg>
                                 ),
-                                onClick: (e: React.MouseEvent) => handleSharePlaylist(playlist.uuid, playlist.is_public, e),
+                                onClick: (e: React.MouseEvent) => handleSharePlaylist(playlist.uuid, playlist.is_public, playlist.name, e),
                               },
                             ].map((item, index) => (
                               <div key={item.id}>
@@ -855,6 +877,15 @@ export default function LibraryPage() {
           </button>
         </div>
       </StatusMessage>
+
+      {/* Share (mobile) — the SAME modal the playlist page uses; its Share button opens the native
+          share sheet. We pass an already-public playlist so it only builds the link + shares. */}
+      <PlaylistShare
+        isOpen={!!shareFor}
+        onClose={() => setShareFor(null)}
+        id={shareFor?.uuid ?? ""}
+        playlist={shareFor ? { id: shareFor.uuid, name: shareFor.name, is_public: true } : undefined}
+      />
 
       {/* Rename playlist — same shared modal as the playlist page, plus the library-only `cover`
           slot so the cover can be changed from here too (the hero omits the prop and is unchanged). */}

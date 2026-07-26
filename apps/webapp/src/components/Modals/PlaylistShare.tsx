@@ -10,6 +10,14 @@ interface PlaylistShareProps {
     isOpen: boolean
     onClose: () => void
     id: string
+    /**
+     * Optional playlist override. The playlist page leaves this undefined and the modal reads the
+     * single loaded playlist from `usePlaylistStore()` (unchanged). The LIBRARY passes it explicitly
+     * — there is no single playlist in the store there — with an ALREADY-public playlist, so the
+     * modal just generates the link and offers native share (it never re-hits the visibility API or
+     * mutates the playlist store).
+     */
+    playlist?: { id: string; name?: string; is_public?: boolean }
 }
 
 interface ShareData {
@@ -53,8 +61,15 @@ function isAbortError(err: unknown): boolean {
 export const PlaylistShare: React.FC<PlaylistShareProps> = ({
     isOpen,
     onClose,
+    playlist,
 }) => {
     const { playlistData, updatePlaylistPublicStatus } = usePlaylistStore();
+    // Source of truth for what we're sharing: the explicit `playlist` prop (library) or the store's
+    // loaded playlist (playlist page). `usingStore` gates the store-only side effect below.
+    const usingStore = !playlist;
+    const activeId = playlist?.id ?? playlistData?.playlist?.id ?? '';
+    const activeName = playlist?.name ?? playlistData?.playlist?.name;
+    const activeIsPublic = playlist ? !!playlist.is_public : !!playlistData?.playlist?.is_public;
     const [link, setLink] = useState('');
     const isMobileView = useIsMobileView(768);
 
@@ -65,33 +80,35 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
     const [buttonText, setButtonText] = useState("Copy Link");
 
     useEffect(() => {
-        if (!isOpen || !playlistData?.playlist?.id) return;
+        if (!isOpen || !activeId) return;
 
         const updateVisibilityAndLink = async () => {
             try {
                 // Only change visibility if the playlist is not already public
-                if (!playlistData.playlist.is_public) {
-                    const response = await changePlaylistVisibility(playlistData.playlist.id, true);
+                if (!activeIsPublic) {
+                    const response = await changePlaylistVisibility(activeId, true);
 
                     if (response.success) {
-                        // Update the store and localStorage cache to reflect the new public status
-                        updatePlaylistPublicStatus(true);
+                        // Reflect the new public status. Only the playlist page's store copy is
+                        // touched here; the library passes an already-public playlist so this branch
+                        // never runs there (and it must not mutate the unrelated store playlist).
+                        if (usingStore) updatePlaylistPublicStatus(true);
 
                         const generated =
                             response?.details?.share_url ||
                             response?.details?.link ||
-                            (BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
+                            (BASE_BETA_URL + `/sonic-discovery?id=${activeId}`);
                         setLink(generated);
                     } else {
-                        setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
+                        setLink(BASE_BETA_URL + `/sonic-discovery?id=${activeId}`);
                     }
                 } else {
                     // Playlist is already public, just generate the link
-                    setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData.playlist.id}`);
+                    setLink(BASE_BETA_URL + `/sonic-discovery?id=${activeId}`);
                 }
             } catch (err) {
                 console.error('Failed to change visibility', err);
-                setLink(BASE_BETA_URL + `/sonic-discovery?id=${playlistData?.playlist?.id}`);
+                setLink(BASE_BETA_URL + `/sonic-discovery?id=${activeId}`);
             }
         };
 
@@ -149,7 +166,7 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
     const handleShare = async () => {
         if (!link) return;
 
-        const title = playlistData?.playlist?.name || 'Resomix Playlist';
+        const title = activeName || 'Resomix Playlist';
         const text = 'Check out my sonic discovery on Resomix';
 
         try {
@@ -204,7 +221,7 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
                         PLAYLIST SHARED!
                     </h2>
                     <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
-                        {playlistData?.playlist?.is_public
+                        {activeIsPublic
                             ? "Your playlist is publicly accessible."
                             : "Your playlist is now publicly accessible."
                         }
@@ -223,7 +240,7 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
                 </button>
 
                 <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] w-full text-center">
-                    {playlistData?.playlist?.is_public
+                    {activeIsPublic
                         ? "Your playlist is publicly accessible."
                         : "Your playlist is now publicly accessible."
                     }

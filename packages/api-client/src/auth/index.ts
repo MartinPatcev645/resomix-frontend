@@ -14,6 +14,7 @@ export {
   updateProfile,
   changePassword,
   deleteAccount,
+  unlinkProvider,
 } from './profile';
 export { getMySessions, revokeSession } from './sessions';
 export { enable2FA, disable2FA } from './twoFactor';

@@ -45,6 +45,18 @@ export const changePassword = async (data: ChangePasswordRequest) => {
   }
 };
 
+// Disconnect a linked social provider (e.g. Google) from the current account.
+export const unlinkProvider = async (provider: string) => {
+  try {
+    const response = await axiosWrapper<SuccessResponse>(
+      authClient.delete(`${API_CONFIG.ENDPOINTS.USER_ME}/providers/${encodeURIComponent(provider)}`)
+    );
+    return response;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
 // Delete account
 export const deleteAccount = async (password: string) => {
   try {

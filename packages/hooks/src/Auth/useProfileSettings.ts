@@ -9,7 +9,11 @@
  * change intended. Auth-sensitive: touch with care.
  */
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+
+/** Profile tabs — also the accepted values for the `?tab=` deep-link. */
+export type ProfileTab = "personal" | "billing" | "account";
+const PROFILE_TABS: ProfileTab[] = ["personal", "billing", "account"];
 
 export type TimezoneOption = {
   value: string;
@@ -91,15 +95,32 @@ export function useProfileSettings({ onLogout }: UseProfileSettingsOptions = {})
   const [showDisable2FAModal, setShowDisable2FAModal] = useState(false);
   const [timezones, setTimezones] = useState<TimezoneOption[]>([]);
   const [resendingVerification, setResendingVerification] = useState(false);
-  const [activeTab, setActiveTab] = useState<"personal" | "billing" | "account">(() => {
-    // Returning from Stripe Checkout (?checkout=success|cancelled) lands on the Billing tab so the
-    // updated plan + confirmation banner are what the user sees first.
+  const [activeTab, setActiveTabState] = useState<ProfileTab>(() => {
+    // Precedence: returning from Stripe Checkout (?checkout=success|cancelled) forces Billing so the
+    // updated plan + confirmation banner show first; otherwise honour ?tab=; else Personal.
     try {
-      return new URLSearchParams(window.location.search).get("checkout") ? "billing" : "personal";
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("checkout")) return "billing";
+      const tab = params.get("tab") as ProfileTab | null;
+      return tab && PROFILE_TABS.includes(tab) ? tab : "personal";
     } catch {
       return "personal";
     }
   });
+
+  // Switch tabs AND reflect it in the URL (?tab=…) so tabs are shareable/deep-linkable, mirroring the
+  // library page. Uses replaceState (no history spam). Drops the one-shot ?checkout marker.
+  const setActiveTab = useCallback((tab: ProfileTab) => {
+    setActiveTabState(tab);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab);
+      url.searchParams.delete("checkout");
+      window.history.replaceState({}, "", url.toString());
+    } catch {
+      /* noop */
+    }
+  }, []);
 
   useEffect(() => {
     setTimezones(buildTimezones());
@@ -117,49 +138,9 @@ export function useProfileSettings({ onLogout }: UseProfileSettingsOptions = {})
       const store = useAuthStore.getState();
       const { getMyProfile } = await import("@resomix/api-client");
 
-      // Check if user exists and is authenticated
-      if (store.user && store.isAuthenticated) {
-        // If email is not verified, fetch latest data to check verification status
-        if (!store.user.is_email_verified) {
-          const result = await getMyProfile();
-
-          if (result.success) {
-            const userData = "user" in result.data ? result.data.user : result.data;
-            setUser(userData);
-            setForm({
-              name: userData.name || "",
-              language: userData.language || "",
-              timezone: userData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-            });
-            setTwoFactorEnabled(userData.is_two_factor_enabled || false);
-            useAuthStore.getState().updateUser(userData);
-          } else {
-            // If API call fails, still use store data
-            setUser(store.user);
-            setForm({
-              name: store.user.name || "",
-              language: store.user.language || "",
-              timezone: store.user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-            });
-            setTwoFactorEnabled(store.user.is_two_factor_enabled || false);
-          }
-          setLoading(false);
-          return;
-        }
-
-        // Email is verified - use store data without API call
-        setUser(store.user);
-        setForm({
-          name: store.user.name || "",
-          language: store.user.language || "",
-          timezone: store.user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-        });
-        setTwoFactorEnabled(store.user.is_two_factor_enabled || false);
-        setLoading(false);
-        return;
-      }
-
-      // No user data in store - fetch it
+      // Always fetch the latest profile so fields that only live on /me — has_password,
+      // auth_providers (linked accounts), and verification status — are current. Fall back to the
+      // store copy only if the request fails.
       const result = await getMyProfile();
 
       if (result.success) {
@@ -172,6 +153,14 @@ export function useProfileSettings({ onLogout }: UseProfileSettingsOptions = {})
         });
         setTwoFactorEnabled(userData.is_two_factor_enabled || false);
         useAuthStore.getState().updateUser(userData);
+      } else if (store.user) {
+        setUser(store.user);
+        setForm({
+          name: store.user.name || "",
+          language: store.user.language || "",
+          timezone: store.user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+        });
+        setTwoFactorEnabled(store.user.is_two_factor_enabled || false);
       }
     } catch (error) {
       console.error("Profile load error:", error);

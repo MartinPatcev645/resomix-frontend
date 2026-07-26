@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { InputModal } from "../Modals/InputModal";
@@ -12,6 +13,9 @@ interface ProfileContentProps {
   onNavigateChangePassword?: () => void;
   onNavigateSessions?: () => void;
   onLogout?: () => void;
+  /** Rendered in the Account tab ABOVE Danger Zone. The webapp passes the Linked Accounts panel
+   *  here (Google/Apple connect + disconnect); omit it and the tab is unchanged. */
+  linkedAccounts?: ReactNode;
 }
 
 export default function ProfileContent({
@@ -19,6 +23,7 @@ export default function ProfileContent({
   onNavigateChangePassword,
   onNavigateSessions,
   onLogout,
+  linkedAccounts,
 }: ProfileContentProps) {
   // ALL behaviour (profile load, edit form, 2FA, verification, delete, logout, tabs, status
   // banner) lives in the hook — this component only renders. See useProfileSettings.
@@ -309,12 +314,15 @@ export default function ProfileContent({
                         Password
                       </div>
                       <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80 truncate">
-                        Change your account password
+                        {/* Social-login accounts (has_password === false) haven't set one yet. */}
+                        {user.has_password === false
+                          ? "Set a password for your account"
+                          : "Change your account password"}
                       </div>
                     </div>
                     <div className="shrink-0">
                       <ButtonSleek
-                        text="Change"
+                        text={user.has_password === false ? "Set" : "Change"}
                         onClick={onNavigateChangePassword ?? (() => {})}
                         customWidth="min-w-[var(--px-70)]"
                         transparent={true}
@@ -348,6 +356,9 @@ export default function ProfileContent({
 
               {activeTab === "account" && (
               <>
+              {/* Linked accounts (Google / Apple) — provided by the app; sits above Danger Zone. */}
+              {linkedAccounts}
+
               <div className="p-[var(--px-16)] border border-[var(--color-neon-orange)] border-dotted rounded-lg">
                 <h3 className="text-[length:var(--px-14)] font-medium font-helvetica mb-[var(--px-10)] text-[var(--color-neon-orange)]">
                   Danger Zone

@@ -13,6 +13,7 @@ import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { BASE_BETA_URL } from "@resomix/config";
 import { setPostAuthRedirect, getPostAuthRedirect, clearPostAuthRedirect } from "@/utils/authRedirect.ts";
+import { LinkedAccounts } from "@/components/Profile/LinkedAccounts.tsx";
 
 interface LocationState {
   from?: string;
@@ -233,6 +234,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
           onNavigateChangePassword={handleNavigateChangePassword}
           onNavigateSessions={handleNavigateSessions}
           onLogout={handleLogout}
+          linkedAccounts={<LinkedAccounts />}
         />
       )}
       {mode === "change-password" && (

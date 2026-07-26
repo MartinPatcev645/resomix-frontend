@@ -13,6 +13,8 @@ export interface User {
   profile_picture: string | null;
   /** False for social-login (e.g. Google) accounts that haven't set a local password yet. */
   has_password?: boolean;
+  /** Linked OAuth providers, e.g. ["google"]. Empty/absent when only email+password. */
+  auth_providers?: string[];
   created_at: string;
 }
 
