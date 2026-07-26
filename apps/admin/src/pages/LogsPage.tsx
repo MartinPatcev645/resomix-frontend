@@ -28,10 +28,69 @@ import {
   Activity,
   FileText
 } from 'lucide-react';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
 import { useAdminLogs } from '@resomix/hooks';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
+// ── Log time zones ──────────────────────────────────────────────────────────
+// Log timestamps are written by the DB with CURRENT_TIMESTAMP and the server runs on UTC
+// (`timedatectl` → Etc/UTC), so the raw values are naive UTC. We interpret them as UTC and render
+// in the admin's chosen zone, DST-aware (dayjs timezone plugin uses the IANA database).
+const LOG_SOURCE_TZ = 'UTC';
+const LOG_TZ_STORAGE_KEY = 'admin_logs_display_tz';
+
+const LOG_TIMEZONES: { value: string; label: string }[] = [
+  { value: 'Europe/Athens', label: 'Greece — Athens' },
+  { value: 'Asia/Karachi', label: 'Pakistan — Karachi' },
+  { value: 'UTC', label: 'UTC (server time)' },
+  { value: 'Asia/Kolkata', label: 'India — Kolkata' },
+  { value: 'Asia/Dubai', label: 'UAE — Dubai' },
+  { value: 'Europe/London', label: 'UK — London' },
+  { value: 'Europe/Berlin', label: 'Germany — Berlin' },
+  { value: 'America/New_York', label: 'US — Eastern' },
+  { value: 'America/Los_Angeles', label: 'US — Pacific' },
+];
+const LOG_TZ_VALUES = LOG_TIMEZONES.map((t) => t.value);
+
+/** Naive server log timestamp → 'YYYY-MM-DD HH:mm:ss' in the given zone (DST-aware). */
+const formatLogTime = (value?: string | null, tz: string = 'UTC'): string => {
+  if (!value) return 'N/A';
+  const d = dayjs.tz(value, LOG_SOURCE_TZ);
+  return d.isValid() ? d.tz(tz).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
+};
+
+/** Compact 'HH:mm' variant for dense timelines. */
+const formatLogTimeShort = (value?: string | null, tz: string = 'UTC'): string => {
+  if (!value) return '';
+  const d = dayjs.tz(value, LOG_SOURCE_TZ);
+  return d.isValid() ? d.tz(tz).format('HH:mm') : '';
+};
+
+/**
+ * Combine a filter date + time (both entered in the admin's DISPLAY zone) into a naive-UTC ISO
+ * string for the backend (whose `created_at` is naive UTC). Returns undefined when neither is set.
+ *   • date given, time blank  → that date at 00:00 (start) / 23:59:59 (end)
+ *   • time given, date blank  → TODAY (in the display zone) at that time
+ */
+const toUtcBound = (
+  dateStr: string | undefined,
+  timeStr: string | undefined,
+  tz: string,
+  edge: 'start' | 'end',
+): string | undefined => {
+  if (!dateStr && !timeStr) return undefined;
+  const date = dateStr || dayjs().tz(tz).format('YYYY-MM-DD');
+  const time = timeStr || (edge === 'end' ? '23:59:59' : '00:00:00');
+  const wall = dayjs.tz(`${date}T${time}`, tz);
+  return wall.isValid() ? wall.utc().format('YYYY-MM-DDTHH:mm:ss') : undefined;
+};
 
 const renderJsonOrString = (val: any): string => {
   if (val === null || val === undefined) {
@@ -67,6 +126,38 @@ function LogsPage() {
   // Filter forms
   const [systemFilterForm] = Form.useForm();
   const [auditFilterForm] = Form.useForm();
+
+  // Zone the admin views/filters logs in (persisted). Defaults to Greece.
+  const [displayTz, setDisplayTz] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(LOG_TZ_STORAGE_KEY);
+      return saved && LOG_TZ_VALUES.includes(saved) ? saved : 'Europe/Athens';
+    } catch {
+      return 'Europe/Athens';
+    }
+  });
+  const changeDisplayTz = (tz: string) => {
+    setDisplayTz(tz);
+    try { localStorage.setItem(LOG_TZ_STORAGE_KEY, tz); } catch { /* noop */ }
+  };
+
+  /**
+   * Turn raw filter form values into backend params: combine start/end date+time (entered in the
+   * display zone) into naive-UTC bounds and validate them. Returns the params to apply, or an error
+   * string to surface (blocking the apply).
+   */
+  const resolveLogFilters = (values: any): { params: any } | { error: string } => {
+    const { start_date, start_time, end_date, end_time, ...rest } = values;
+    const startUtc = toUtcBound(start_date, start_time, displayTz, 'start');
+    const endUtc = toUtcBound(end_date, end_time, displayTz, 'end');
+    if (startUtc && dayjs.utc(startUtc).isAfter(dayjs.utc())) {
+      return { error: 'Start date/time cannot be in the future.' };
+    }
+    if (startUtc && endUtc && dayjs.utc(endUtc).isBefore(dayjs.utc(startUtc))) {
+      return { error: 'End date/time cannot be before the start date/time.' };
+    }
+    return { params: { ...rest, start_date: startUtc, end_date: endUtc } };
+  };
 
   // Modals visibility
   const [systemDetailVisible, setSystemDetailVisible] = useState(false);
@@ -187,7 +278,7 @@ function LogsPage() {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 170,
-      render: (date: string) => <span className="font-mono text-xs text-secondary">{new Date(date).toLocaleString()}</span>
+      render: (date: string) => <span className="font-mono text-xs text-secondary">{formatLogTime(date, displayTz)}</span>
     },
     {
       title: 'Level',
@@ -283,7 +374,7 @@ function LogsPage() {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 170,
-      render: (date: string) => <span className="font-mono text-xs text-secondary">{new Date(date).toLocaleString()}</span>
+      render: (date: string) => <span className="font-mono text-xs text-secondary">{formatLogTime(date, displayTz)}</span>
     },
     {
       title: 'Admin User',
@@ -397,7 +488,7 @@ function LogsPage() {
       title: 'Delivered At',
       dataIndex: 'delivered_at',
       key: 'delivered_at',
-      render: (date: string) => date ? new Date(date).toLocaleString() : 'N/A'
+      render: (date: string) => formatLogTime(date, displayTz)
     },
     {
       title: 'Actions',
@@ -449,11 +540,9 @@ function LogsPage() {
               form={systemFilterForm}
               layout="vertical"
               onFinish={(values) => {
-                setSystemLogsFilters((prev: any) => ({
-                  ...prev,
-                  ...values,
-                  page: 1
-                }));
+                const res = resolveLogFilters(values);
+                if ('error' in res) { message.error(res.error); return; }
+                setSystemLogsFilters((prev: any) => ({ ...prev, ...res.params, page: 1 }));
               }}
             >
               <Row gutter={[16, 16]}>
@@ -483,14 +572,24 @@ function LogsPage() {
                     </Select>
                   </Form.Item>
                 </Col>
-                <Col xs={12} sm={6} md={5}>
+                <Col xs={12} sm={6} md={4}>
                   <Form.Item name="start_date" label={<Text className="font-semibold text-secondary text-xs">Start Date</Text>} className="!mb-0">
                     <Input type="date" className="h-10 rounded-lg" />
                   </Form.Item>
                 </Col>
-                <Col xs={12} sm={6} md={5}>
+                <Col xs={12} sm={6} md={3}>
+                  <Form.Item name="start_time" label={<Text className="font-semibold text-secondary text-xs">Start Time</Text>} className="!mb-0">
+                    <Input type="time" step={1} className="h-10 rounded-lg" />
+                  </Form.Item>
+                </Col>
+                <Col xs={12} sm={6} md={4}>
                   <Form.Item name="end_date" label={<Text className="font-semibold text-secondary text-xs">End Date</Text>} className="!mb-0">
                     <Input type="date" className="h-10 rounded-lg" />
+                  </Form.Item>
+                </Col>
+                <Col xs={12} sm={6} md={3}>
+                  <Form.Item name="end_time" label={<Text className="font-semibold text-secondary text-xs">End Time</Text>} className="!mb-0">
+                    <Input type="time" step={1} className="h-10 rounded-lg" />
                   </Form.Item>
                 </Col>
 
@@ -587,11 +686,9 @@ function LogsPage() {
               form={auditFilterForm}
               layout="vertical"
               onFinish={(values) => {
-                setAuditLogsFilters((prev: any) => ({
-                  ...prev,
-                  ...values,
-                  page: 1
-                }));
+                const res = resolveLogFilters(values);
+                if ('error' in res) { message.error(res.error); return; }
+                setAuditLogsFilters((prev: any) => ({ ...prev, ...res.params, page: 1 }));
               }}
             >
               <Row gutter={[16, 16]}>
@@ -615,14 +712,24 @@ function LogsPage() {
                     <Input placeholder="e.g. 42" className="h-10 rounded-lg" allowClear />
                   </Form.Item>
                 </Col>
-                <Col xs={12} sm={6} md={5}>
+                <Col xs={12} sm={6} md={4}>
                   <Form.Item name="start_date" label={<Text className="font-semibold text-secondary text-xs">Start Date</Text>} className="!mb-0">
                     <Input type="date" className="h-10 rounded-lg" />
                   </Form.Item>
                 </Col>
-                <Col xs={12} sm={6} md={5}>
+                <Col xs={12} sm={6} md={3}>
+                  <Form.Item name="start_time" label={<Text className="font-semibold text-secondary text-xs">Start Time</Text>} className="!mb-0">
+                    <Input type="time" step={1} className="h-10 rounded-lg" />
+                  </Form.Item>
+                </Col>
+                <Col xs={12} sm={6} md={4}>
                   <Form.Item name="end_date" label={<Text className="font-semibold text-secondary text-xs">End Date</Text>} className="!mb-0">
                     <Input type="date" className="h-10 rounded-lg" />
+                  </Form.Item>
+                </Col>
+                <Col xs={12} sm={6} md={3}>
+                  <Form.Item name="end_time" label={<Text className="font-semibold text-secondary text-xs">End Time</Text>} className="!mb-0">
+                    <Input type="time" step={1} className="h-10 rounded-lg" />
                   </Form.Item>
                 </Col>
 
@@ -730,9 +837,25 @@ function LogsPage() {
   return (
     <div className="w-full max-w-[1400px] mx-auto px-4 py-8">
       {modalContextHolder}
-      <div className="mb-6">
-        <Title level={2} className="!mb-1 !text-primary">Logs & Audit Trail</Title>
-        <Text className="text-secondary text-base">Observe system application traces, endpoint executions, and administrative operation audits.</Text>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <Title level={2} className="!mb-1 !text-primary">Logs & Audit Trail</Title>
+          <Text className="text-secondary text-base">Observe system application traces, endpoint executions, and administrative operation audits.</Text>
+        </div>
+        <div className="flex flex-col gap-1 min-w-[240px]">
+          <Text className="font-semibold text-secondary text-xs flex items-center gap-1">
+            <Globe size={12} /> Display time zone
+          </Text>
+          <Select
+            value={displayTz}
+            onChange={changeDisplayTz}
+            className="h-10 w-full"
+            options={LOG_TIMEZONES}
+            showSearch
+            optionFilterProp="label"
+          />
+          <Text className="text-secondary text-[10px]">Log times are stored in UTC and shown/filtered in this zone (DST-aware).</Text>
+        </div>
       </div>
 
       {/* System Health & Overview Dashboard Widget */}
@@ -933,7 +1056,7 @@ function LogsPage() {
                           <div className="text-[11px] text-primary truncate font-semibold font-mono group-hover:text-primary">{log.action}</div>
                           <div className="text-[10px] text-secondary truncate">{log.message}</div>
                         </div>
-                        <span className="text-[10px] text-secondary font-mono self-start whitespace-nowrap">{new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="text-[10px] text-secondary font-mono self-start whitespace-nowrap">{formatLogTimeShort(log.created_at, displayTz)}</span>
                       </div>
                     ))
                   ) : (
@@ -1009,7 +1132,7 @@ function LogsPage() {
         ) : selectedSystemLog && (
           <div className="py-4">
             <Descriptions bordered column={2} size="small" className="mb-6">
-              <Descriptions.Item label="Timestamp">{new Date(selectedSystemLog.created_at).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="Timestamp">{formatLogTime(selectedSystemLog.created_at, displayTz)}</Descriptions.Item>
               <Descriptions.Item label="Level">
                 <Tag color={
                   selectedSystemLog.level === 'DEBUG' ? 'blue' :
@@ -1106,7 +1229,7 @@ function LogsPage() {
         ) : selectedOperationLog && (
           <div className="py-4">
             <Descriptions bordered column={2} size="small" className="mb-6">
-              <Descriptions.Item label="Timestamp">{new Date(selectedOperationLog.created_at).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="Timestamp">{formatLogTime(selectedOperationLog.created_at, displayTz)}</Descriptions.Item>
               <Descriptions.Item label="Admin Email">{selectedOperationLog.admin_email}</Descriptions.Item>
               <Descriptions.Item label="Admin User ID">{selectedOperationLog.admin_user_id}</Descriptions.Item>
               <Descriptions.Item label="Action">{selectedOperationLog.action}</Descriptions.Item>
@@ -1173,7 +1296,7 @@ function LogsPage() {
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Delivered At">
-                {selectedWebhookLog.delivered_at ? new Date(selectedWebhookLog.delivered_at).toLocaleString() : 'N/A'}
+                {formatLogTime(selectedWebhookLog.delivered_at, displayTz)}
               </Descriptions.Item>
             </Descriptions>
 
