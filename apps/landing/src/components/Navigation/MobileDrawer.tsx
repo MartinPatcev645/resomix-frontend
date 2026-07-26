@@ -4,8 +4,8 @@ import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ProfileDropdown } from '@resomix/ui';
 import { useAuthStore } from '@resomix/stores';
-import { BASE_BETA_URL } from '@resomix/config';
 import {
+  BETA_URL,
   NAV_TOP_GROUPS,
   NAV_UTILITY_LINKS,
   getNavSectionForPath,
@@ -39,7 +39,7 @@ export function MobileDrawer({
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [cookieSettingsEnabled] = useState(isCookiePreferencesAvailable);
   const currentSection = getNavSectionForPath(location.pathname);
-  const loginHref = `${BASE_BETA_URL}/auth/login?redirect=${encodeURIComponent(location.pathname)}`;
+  const loginHref = `${BETA_URL}/auth/login?redirect=${encodeURIComponent(location.pathname)}`;
 
   useLayoutEffect(() => {
     if (!isOpen) return;
@@ -86,11 +86,11 @@ export function MobileDrawer({
     {
       label: 'Profile',
       id: 'nav-drawer-profile-menu-item',
-      href: `${BASE_BETA_URL}/profile`,
+      href: `${BETA_URL}/profile`,
       icon: <AccountIcon />,
       onClick: () => {
         if (onProfileClick) onProfileClick();
-        else onNavigate(`${BASE_BETA_URL}/profile`);
+        else onNavigate(`${BETA_URL}/profile`);
         onClose();
       },
     },
@@ -248,10 +248,10 @@ export function MobileDrawer({
           <div className="nav-drawer-cta">
             <a
               className="nav-cta nav-cta-primary"
-              href={BASE_BETA_URL}
+              href={BETA_URL}
               onClick={(e) => {
                 e.preventDefault();
-                window.location.href = BASE_BETA_URL;
+                window.location.href = BETA_URL;
                 onClose();
               }}
             >

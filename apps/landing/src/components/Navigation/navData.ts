@@ -1,4 +1,8 @@
+import { BASE_BETA_URL } from '@resomix/config';
 import type { NavGlyphKey } from './NavGlyphs.tsx';
+
+/** BASE_BETA_URL is env-driven and empty when VITE_BASE_BETA_URL is unset — never ship an empty CTA target. */
+export const BETA_URL = BASE_BETA_URL || 'https://beta.resomix.com';
 
 export type NavStatus = 'coming-next' | 'scoping-available';
 

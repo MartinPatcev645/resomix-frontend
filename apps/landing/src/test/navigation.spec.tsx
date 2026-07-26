@@ -56,6 +56,14 @@ describe('SiteHeader render', () => {
     expect(screen.getAllByRole('link', { name: /account/i }).length).toBeGreaterThan(0);
   });
 
+  it('Try Resomix CTA links to beta.resomix.com', () => {
+    renderHeader('/');
+    expect(document.querySelector('.nav-rail2 a.nav-cta-primary')).toHaveAttribute(
+      'href',
+      'https://beta.resomix.com',
+    );
+  });
+
   it('places product and solutions on the left, partners and developers on the right', () => {
     renderHeader('/');
 

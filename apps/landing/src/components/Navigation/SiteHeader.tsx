@@ -3,10 +3,10 @@ import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ProfileDropdown } from '@resomix/ui';
 import { useAuthStore } from '@resomix/stores';
-import { BASE_BETA_URL, BASE_LANDING_URL } from '@resomix/config';
+import { BASE_LANDING_URL } from '@resomix/config';
 import { LogoHeader } from '../LogoHeader.tsx';
 import { MenuIcon } from '../MenuIcon.tsx';
-import { NAV_TOP_GROUPS, getNavSectionForPath, type NavTopGroup } from './navData.ts';
+import { BETA_URL, NAV_TOP_GROUPS, getNavSectionForPath, type NavTopGroup } from './navData.ts';
 import { NavPanelContent, CaretIcon, AccountIcon } from './NavMenuContent.tsx';
 import { useHeaderScroll, useMegaMenu } from './useMegaMenu.ts';
 import './navigation.css';
@@ -125,7 +125,7 @@ export function SiteHeader({
   const leftGroups = NAV_TOP_GROUPS.filter((g) => g.side === 'left');
   const rightGroups = NAV_TOP_GROUPS.filter((g) => g.side === 'right');
 
-  const loginHref = `${BASE_BETA_URL}/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+  const loginHref = `${BETA_URL}/auth/login?redirect=${encodeURIComponent(currentPath)}`;
 
   const handleLogout = useCallback(async () => {
     try {
@@ -143,9 +143,9 @@ export function SiteHeader({
     {
       label: 'Profile',
       id: 'nav-profile-menu-item',
-      href: `${BASE_BETA_URL}/profile`,
+      href: `${BETA_URL}/profile`,
       icon: <AccountIcon />,
-      onClick: () => onProfileClick?.() ?? onNavigate(`${BASE_BETA_URL}/profile`),
+      onClick: () => onProfileClick?.() ?? onNavigate(`${BETA_URL}/profile`),
     },
     {
       label: 'Logout',
@@ -204,8 +204,8 @@ export function SiteHeader({
   const primaryCta = (
     <a
       className="nav-cta nav-cta-primary"
-      href={BASE_BETA_URL}
-      onClick={(e) => handleCtaClick(e, BASE_BETA_URL, true)}
+      href={BETA_URL}
+      onClick={(e) => handleCtaClick(e, BETA_URL, true)}
     >
       {t('nav.cta.tryResomix')}
     </a>
