@@ -820,6 +820,22 @@
   margin-top: 0.625rem;
 }
 
+.nav-drawer .nav-mm-cols {
+  display: block;
+}
+
+.nav-drawer .nav-mm-col {
+  width: 100%;
+}
+
+.nav-drawer .nav-mm-col + .nav-mm-col {
+  border-left: 0;
+  padding-left: 0;
+  border-top: 1px dotted rgba(255, 255, 255, 0.08);
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+}
+
 .nav-util {
   padding: 1.25rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
