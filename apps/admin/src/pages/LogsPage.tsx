@@ -63,7 +63,7 @@ const LOG_TZ_VALUES = LOG_TIMEZONES.map((t) => t.value);
 const formatLogTime = (value?: string | null, tz: string = 'UTC'): string => {
   if (!value) return 'N/A';
   const d = dayjs.tz(value, LOG_SOURCE_TZ);
-  return d.isValid() ? d.tz(tz).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
+  return d.isValid() ? d.tz(tz).format('YYYY MMM DD, HH:mm:ss') : 'N/A';
 };
 
 /** Compact 'HH:mm' variant for dense timelines. */
@@ -546,6 +546,11 @@ function LogsPage() {
               }}
             >
               <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12} md={5}>
+                  <Form.Item label={<Text className="font-semibold text-secondary text-xs flex items-center gap-1"><Globe size={12} /> Time Zone</Text>} className="!mb-0">
+                    <Select value={displayTz} onChange={changeDisplayTz} className="h-10 w-full" options={LOG_TIMEZONES} showSearch optionFilterProp="label" />
+                  </Form.Item>
+                </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="q" label={<Text className="font-semibold text-secondary text-xs">Search Text</Text>} className="!mb-0">
                     <Input placeholder="Message, action, etc." className="h-10 rounded-lg" allowClear />
@@ -692,6 +697,11 @@ function LogsPage() {
               }}
             >
               <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12} md={5}>
+                  <Form.Item label={<Text className="font-semibold text-secondary text-xs flex items-center gap-1"><Globe size={12} /> Time Zone</Text>} className="!mb-0">
+                    <Select value={displayTz} onChange={changeDisplayTz} className="h-10 w-full" options={LOG_TIMEZONES} showSearch optionFilterProp="label" />
+                  </Form.Item>
+                </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="action" label={<Text className="font-semibold text-secondary text-xs">Action Match</Text>} className="!mb-0">
                     <Input placeholder="e.g. partner.rotate_api_key" className="h-10 rounded-lg" allowClear />
@@ -837,25 +847,9 @@ function LogsPage() {
   return (
     <div className="w-full max-w-[1400px] mx-auto px-4 py-8">
       {modalContextHolder}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <Title level={2} className="!mb-1 !text-primary">Logs & Audit Trail</Title>
-          <Text className="text-secondary text-base">Observe system application traces, endpoint executions, and administrative operation audits.</Text>
-        </div>
-        <div className="flex flex-col gap-1 min-w-[240px]">
-          <Text className="font-semibold text-secondary text-xs flex items-center gap-1">
-            <Globe size={12} /> Display time zone
-          </Text>
-          <Select
-            value={displayTz}
-            onChange={changeDisplayTz}
-            className="h-10 w-full"
-            options={LOG_TIMEZONES}
-            showSearch
-            optionFilterProp="label"
-          />
-          <Text className="text-secondary text-[10px]">Log times are stored in UTC and shown/filtered in this zone (DST-aware).</Text>
-        </div>
+      <div className="mb-6">
+        <Title level={2} className="!mb-1 !text-primary">Logs & Audit Trail</Title>
+        <Text className="text-secondary text-base">Observe system application traces, endpoint executions, and administrative operation audits.</Text>
       </div>
 
       {/* System Health & Overview Dashboard Widget */}
