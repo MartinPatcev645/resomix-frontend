@@ -4,7 +4,13 @@ import { loadGoogleGsi, handleGoogleCredential } from './googleGsi';
 interface GoogleSignInButtonProps {
   /** Google OAuth Web Client ID. Falls back to VITE_GOOGLE_CLIENT_ID if omitted. */
   clientId?: string;
-  /** Called after a successful sign-in (auth store is already populated). */
+  /**
+   * "Link" mode: when provided, the raw Google ID token is handed back and the normal SIGN-IN is
+   * skipped entirely (no login, no session change). Used by "Connect Google" in the profile, which
+   * links the Google identity to the already-authenticated user. `onSuccess`/`onError` are ignored.
+   */
+  onCredential?: (credential: string) => void;
+  /** Called after a successful sign-in (auth store is already populated). Ignored in link mode. */
   onSuccess?: (data: any) => void;
   onError?: (message: string) => void;
   /** Visible label. */
@@ -38,6 +44,7 @@ function GoogleGIcon() {
  */
 export function GoogleSignInButton({
   clientId,
+  onCredential,
   onSuccess,
   onError,
   label = 'Continue with Google',
@@ -65,6 +72,11 @@ export function GoogleSignInButton({
         google.accounts.id.initialize({
           client_id: resolvedClientId,
           callback: async (response: { credential: string }) => {
+            // Link mode: hand the raw token to the caller and DON'T sign in (no session change).
+            if (onCredential) {
+              onCredential(response.credential);
+              return;
+            }
             const res = await handleGoogleCredential(response.credential);
             if (res.success) onSuccess?.(res.data);
             else onError?.(res.error);

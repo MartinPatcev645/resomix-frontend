@@ -45,6 +45,19 @@ export const changePassword = async (data: ChangePasswordRequest) => {
   }
 };
 
+// Connect (link) a Google account to the CURRENT user — never switches/creates accounts, unlike
+// Google login. Rejected (409) if that Google identity is already linked to another account.
+export const linkGoogleProvider = async (credential: string) => {
+  try {
+    const response = await axiosWrapper<SuccessResponse>(
+      authClient.post(`${API_CONFIG.ENDPOINTS.USER_ME}/providers/google`, { credential })
+    );
+    return response;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
 // Disconnect a linked social provider (e.g. Google) from the current account.
 export const unlinkProvider = async (provider: string) => {
   try {

@@ -1,6 +1,6 @@
 import React from "react";
 import { GoogleSignInButton, StatusMessage } from "@resomix/ui";
-import { getMyProfile, unlinkProvider } from "@resomix/api-client";
+import { getMyProfile, unlinkProvider, linkGoogleProvider } from "@resomix/api-client";
 import { useAppleTransfer } from "@resomix/hooks";
 
 /**
@@ -127,6 +127,27 @@ export const LinkedAccounts: React.FC = () => {
 
   React.useEffect(() => { void loadGoogle(); }, [loadGoogle]);
 
+  // Connect Google = LINK the identity to THIS account (never a login/session switch). The GIS
+  // button hands us the raw credential; the backend links it or rejects it (409) if that Google
+  // account already belongs to someone else.
+  const linkGoogle = React.useCallback(async (credential: string) => {
+    setNotice(null);
+    setGoogleBusy(true);
+    const res = await linkGoogleProvider(credential);
+    if (!mounted.current) return;
+    setGoogleBusy(false);
+    if (res && (res as { success?: boolean }).success) {
+      setGoogleLinked(true);
+      setNotice({ kind: "success", text: "Google connected." });
+      void loadGoogle();
+    } else {
+      setNotice({
+        kind: "error",
+        text: (res as { error?: string })?.error || "Couldn’t connect Google. Please try again.",
+      });
+    }
+  }, [loadGoogle]);
+
   const disconnectGoogle = async () => {
     setNotice(null);
     // Lock-out guard: a Google-only account (no local password) must set one first.
@@ -187,11 +208,7 @@ export const LinkedAccounts: React.FC = () => {
                 label="Connect Google"
                 width={210}
                 className="mx-0"
-                onSuccess={() => {
-                  setNotice({ kind: "success", text: "Google connected." });
-                  void loadGoogle();
-                }}
-                onError={(m) => setNotice({ kind: "error", text: m || "Couldn’t connect Google." })}
+                onCredential={linkGoogle}
               />
             )
           }

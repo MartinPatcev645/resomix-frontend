@@ -15,6 +15,7 @@ export {
   changePassword,
   deleteAccount,
   unlinkProvider,
+  linkGoogleProvider,
 } from './profile';
 export { getMySessions, revokeSession } from './sessions';
 export { enable2FA, disable2FA } from './twoFactor';
