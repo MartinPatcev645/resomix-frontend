@@ -225,6 +225,30 @@ class UserRepository(BaseRepository[User]):
         )
         await db.commit()
 
+    async def async_list_providers(self, db: AsyncSession, user_id: int) -> List[str]:
+        """Return the provider names (e.g. ``["google"]``) linked to a user."""
+        result = await db.execute(
+            select(UserAuthProvider.provider).where(UserAuthProvider.user_id == user_id)
+        )
+        return [row[0] for row in result.all()]
+
+    async def async_unlink_provider(
+        self, db: AsyncSession, user_id: int, provider: str
+    ) -> bool:
+        """Remove a provider link from a user. Returns True if a row was deleted."""
+        result = await db.execute(
+            select(UserAuthProvider).where(
+                UserAuthProvider.user_id == user_id,
+                UserAuthProvider.provider == provider,
+            )
+        )
+        row = result.scalar_one_or_none()
+        if row is None:
+            return False
+        await db.delete(row)
+        await db.commit()
+        return True
+
     async def async_update_email_verified(
         self,
         db: AsyncSession,

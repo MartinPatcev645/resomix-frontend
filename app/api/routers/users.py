@@ -223,6 +223,36 @@ async def revoke_my_session(
     return await user_controller.revoke_session(db, request, current_user.id, session_id)
 
 
+@router.delete(
+    "/me/providers/{provider}",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Disconnect a linked social account",
+    description="Unlink a social sign-in provider (e.g. Google) from the current account.",
+    response_description="Provider disconnected",
+    responses={
+        400: {"model": ErrorResponse, "description": "Would remove the only sign-in method"},
+        404: {"model": ErrorResponse, "description": "Provider is not linked"},
+    },
+)
+async def unlink_my_provider(
+    request: Request,
+    provider: str = Path(..., description="Provider to unlink, e.g. 'google'"),
+    db: AsyncSession = Depends(get_database_session),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Disconnect a linked social account from the current user.
+
+    - **provider**: the provider key, e.g. `google`.
+
+    Refused with 400 when it would leave the account with no password and no other linked
+    provider (the user must always keep at least one way to sign in).
+    Requires authentication (JWT token).
+    """
+    return await user_controller.unlink_provider(db, request, current_user.id, provider.lower())
+
+
 @router.post(
     "/me/enable-2fa",
     response_model=MessageResponse,

@@ -155,6 +155,39 @@ class UserService:
 
         return user
 
+    async def unlink_auth_provider(
+        self, db: AsyncSession, user_id: int, provider: str
+    ) -> bool:
+        """Unlink a social provider (e.g. Google) from the user.
+
+        Lockout guard (mirrors the frontend prompt, enforced here too): a user must always keep at
+        least one way to sign in. Removing the provider is refused with 400 when it would leave the
+        account with NO password AND no other linked provider.
+
+        Raises HTTPException (404 not linked / not found, 400 lockout).
+        """
+        user = await self.user_repo.async_get_by_id(db, user_id)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+        providers = await self.user_repo.async_list_providers(db, user_id)
+        if provider not in providers:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"{provider.capitalize()} is not linked to this account",
+            )
+
+        has_password = bool(user.password_hash)
+        remaining = [p for p in providers if p != provider]
+        if not has_password and not remaining:
+            # 400 (not 401): the user is authenticated; must not trip the 401→refresh→logout path.
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Set a password before disconnecting your only sign-in method.",
+            )
+
+        return await self.user_repo.async_unlink_provider(db, user_id, provider)
+
     async def delete_account(
         self, db: AsyncSession, user_id: int, password: str
     ) -> bool:

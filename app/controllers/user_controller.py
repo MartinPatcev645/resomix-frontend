@@ -130,6 +130,9 @@ class UserController:
                     status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
                 )
 
+            # Linked social identities (e.g. ["google"]) — drives the Account tab's Linked Accounts UI.
+            auth_providers = await self.user_service.user_repo.async_list_providers(db, user.id)
+
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=True,
@@ -146,6 +149,8 @@ class UserController:
                     "two_factor_method": user.two_factor_method,
                     # Drives "Set password" vs "Change password" in the UI (Google-only accounts).
                     "has_password": bool(user.password_hash),
+                    # Linked OAuth providers, e.g. ["google"]. Empty when only email/password.
+                    "auth_providers": auth_providers,
                     "created_at": (
                         user.created_at.isoformat() if user.created_at else None
                     ),
@@ -265,6 +270,49 @@ class UserController:
                 metadata={"user_id": user_id, "error": e.detail},
             )
 
+            return JSONResponse(status_code=e.status_code, content=jsonable_encoder(response_data))
+
+    async def unlink_provider(
+        self, db: AsyncSession, request: Request, user_id: int, provider: str
+    ) -> JSONResponse:
+        """Unlink a social provider (e.g. Google) from the current user."""
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        try:
+            await self.user_service.unlink_auth_provider(db=db, user_id=user_id, provider=provider)
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(
+                success=True,
+                data={"message": f"{provider.capitalize()} disconnected successfully."},
+            )
+            self.logging_service.log(
+                async_db=db,
+                level="INFO",
+                category="USER_ACTION",
+                action="unlink_provider_success",
+                message=f"Provider {provider} unlinked for user {user_id}",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=200,
+                duration_ms=duration_ms,
+                metadata={"user_id": user_id, "provider": provider},
+            )
+            return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(response_data))
+        except HTTPException as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(success=False, error=e.detail)
+            self.logging_service.log(
+                async_db=db,
+                level="WARNING",
+                category="USER_ACTION",
+                action="unlink_provider_failed",
+                message=f"Provider unlink failed: {e.detail}",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=e.status_code,
+                duration_ms=duration_ms,
+                metadata={"user_id": user_id, "provider": provider, "error": e.detail},
+            )
             return JSONResponse(status_code=e.status_code, content=jsonable_encoder(response_data))
 
     async def change_password(
