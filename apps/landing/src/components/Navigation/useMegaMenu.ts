@@ -9,6 +9,7 @@ export function useMegaMenu(itemCount: number) {
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const focusTriggerRef = useRef<HTMLButtonElement | null>(null);
   const openIndexRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -28,13 +29,13 @@ export function useMegaMenu(itemCount: number) {
 
   const closeAll = useCallback(
     (refocus = false) => {
-      const prev = openIndexRef.current;
       clearTimers();
       setOpenIndex(null);
       pinnedRef.current = false;
-      if (refocus && prev !== null) {
-        itemRefs.current[prev]?.querySelector<HTMLButtonElement>('.nav-mm-trigger')?.focus();
+      if (refocus) {
+        focusTriggerRef.current?.focus();
       }
+      focusTriggerRef.current = null;
     },
     [clearTimers],
   );
@@ -43,6 +44,8 @@ export function useMegaMenu(itemCount: number) {
     (index: number, pin: boolean) => {
       clearTimers();
       pinnedRef.current = pin;
+      focusTriggerRef.current =
+        itemRefs.current[index]?.querySelector<HTMLButtonElement>('.nav-mm-trigger') ?? null;
       setOpenIndex(index);
     },
     [clearTimers],
