@@ -39,6 +39,14 @@ const AppleExportPanel: React.FC<Props> = ({
 }) => {
   const busy = connectLoading || transferLoading;
 
+  // Keep the activity log short (≤ 4 lines) and always pinned to the newest lines, so it can't grow
+  // the modal vertically. The scrollbar is hidden — older lines are still reachable by wheel/trackpad.
+  const logRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const el = logRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [log]);
+
   const primaryText = connected
     ? (transferLoading ? 'Adding…' : 'Add to Apple Music')
     : (connectLoading ? 'Connecting…' : ready ? 'Connect Apple Music' : 'Preparing…');
@@ -142,7 +150,8 @@ const AppleExportPanel: React.FC<Props> = ({
       {/* Activity log — appended line by line, themed to match the system */}
       {log.length > 0 && (
         <div
-          className="border border-dotted border-slate-200/30 bg-black/30 px-[var(--px-10)] py-[var(--px-8)] max-h-[var(--px-120)] overflow-y-auto"
+          ref={logRef}
+          className="border border-dotted border-slate-200/30 bg-black/30 px-[var(--px-10)] py-[var(--px-8)] max-h-[var(--px-72)] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           aria-label="Apple Music activity log"
         >
           {log.map((line, i) => (
