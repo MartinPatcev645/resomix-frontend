@@ -491,6 +491,34 @@ class AuthService:
             guest_visitor_id=guest_visitor_id,
         )
 
+    async def link_google_to_user(self, db: AsyncSession, user_id: int, credential: str) -> None:
+        """Link a Google identity to the CURRENT user (used by "Connect Google" in the profile).
+
+        Unlike ``login_with_google`` (which finds-or-creates-or-switches accounts and issues a new
+        session), this NEVER changes who is signed in and NEVER creates an account — it only attaches
+        the verified Google ``sub`` to the already-authenticated user. Refused (409) when that Google
+        account is already linked to a DIFFERENT Resomix account, so a Google identity can belong to
+        at most one account.
+        """
+        claims = self._verify_google_credential(credential)
+        provider_uid = claims["sub"]
+        if not bool(claims.get("email_verified", False)):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Google account email is not verified.",
+            )
+
+        existing = await self.user_repo.async_get_by_provider(db, "google", provider_uid)
+        if existing is not None:
+            if existing.id == user_id:
+                return  # already linked to this account — idempotent
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This Google account is already connected to another Resomix account.",
+            )
+
+        await self.user_repo.async_link_provider(db, user_id, "google", provider_uid)
+
     def _verify_google_credential(self, credential: str) -> Dict[str, Any]:
         """Verify a Google ID token's signature, audience, issuer and expiry; return its claims."""
         if not settings.google_client_id:

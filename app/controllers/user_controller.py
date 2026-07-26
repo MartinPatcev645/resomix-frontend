@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import time
 
 from app.services.user_service import UserService
+from app.services.auth_service import AuthService
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 from app.services.admin_operation_log_service import AdminOperationLogService
@@ -29,6 +30,7 @@ class UserController:
 
     def __init__(self):
         self.user_service = UserService()
+        self.auth_service = AuthService()
         self.logging_service = LoggingService()
         self.admin_log_service = AdminOperationLogService()
 
@@ -270,6 +272,50 @@ class UserController:
                 metadata={"user_id": user_id, "error": e.detail},
             )
 
+            return JSONResponse(status_code=e.status_code, content=jsonable_encoder(response_data))
+
+    async def link_google(
+        self, db: AsyncSession, request: Request, user_id: int, credential: str
+    ) -> JSONResponse:
+        """Link a Google account to the CURRENT user (Connect Google in the profile).
+
+        Never switches accounts or creates one, unlike Google *login*. Rejects (409) a Google
+        identity already linked to a different account.
+        """
+        start_time = time.time()
+        correlation_id = self.logging_service.generate_correlation_id()
+        try:
+            await self.auth_service.link_google_to_user(db=db, user_id=user_id, credential=credential)
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(success=True, data={"message": "Google connected successfully."})
+            self.logging_service.log(
+                async_db=db,
+                level="INFO",
+                category="USER_ACTION",
+                action="link_provider_success",
+                message=f"Google linked for user {user_id}",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=200,
+                duration_ms=duration_ms,
+                metadata={"user_id": user_id, "provider": "google"},
+            )
+            return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(response_data))
+        except HTTPException as e:
+            duration_ms = (time.time() - start_time) * 1000
+            response_data = format_response(success=False, error=e.detail)
+            self.logging_service.log(
+                async_db=db,
+                level="WARNING",
+                category="USER_ACTION",
+                action="link_provider_failed",
+                message=f"Google link failed: {e.detail}",
+                correlation_id=correlation_id,
+                request=request,
+                status_code=e.status_code,
+                duration_ms=duration_ms,
+                metadata={"user_id": user_id, "provider": "google", "error": e.detail},
+            )
             return JSONResponse(status_code=e.status_code, content=jsonable_encoder(response_data))
 
     async def unlink_provider(

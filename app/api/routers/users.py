@@ -28,6 +28,7 @@ from app.schemas.auth import (
     Enable2FARequest,
     Disable2FARequest,
     DeleteAccountRequest,
+    GoogleLoginRequest,
     MessageResponse,
 )
 from app.schemas.common import ErrorResponse
@@ -221,6 +222,36 @@ async def revoke_my_session(
     Requires authentication (JWT token).
     """
     return await user_controller.revoke_session(db, request, current_user.id, session_id)
+
+
+@router.post(
+    "/me/providers/google",
+    response_model=MessageResponse,
+    status_code=200,
+    summary="Connect a Google account to the current user",
+    description="Link a Google identity to the signed-in account. Does NOT switch or create accounts.",
+    response_description="Google connected",
+    responses={
+        401: {"model": ErrorResponse, "description": "Google credential not verified"},
+        409: {"model": ErrorResponse, "description": "Google account already linked elsewhere"},
+    },
+)
+async def link_my_google(
+    request: Request,
+    body: GoogleLoginRequest,
+    db: AsyncSession = Depends(get_database_session),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Connect a Google account to the current user.
+
+    - **credential**: the Google ID token from the "Sign in with Google" button.
+
+    Unlike Google *login*, this only attaches the Google identity to the signed-in account and never
+    switches or creates an account. Refused with 409 if that Google account is already linked to a
+    different Resomix account.
+    """
+    return await user_controller.link_google(db, request, current_user.id, body.credential)
 
 
 @router.delete(
