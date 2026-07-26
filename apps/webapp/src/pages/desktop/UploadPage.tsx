@@ -5,41 +5,35 @@ import { usePlaylistStore } from "@resomix/stores";
 import { useNavigate } from "react-router-dom";
 import React from "react";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
+import { claimDiscoveryTrigger } from "@/utils/discoveryTrigger.ts";
 
 export function UploadPage() {
   const { response, error, setError, gateReason, gateTitle, gateBody, setGateReason } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
   const navigate = useNavigate();
-  const processedId = React.useRef<string | null>(null);
 
   const { handleSelectTrack } = useTrackSimilarity();
 
-  // Trigger similarity if id param present on first mount
+  // Trigger similarity if id param present on load.
   React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
+    const id = new URLSearchParams(window.location.search).get('id');
+    if (!id) return;
 
-    // Prevent infinite loop by checking if we've already processed this ID
-    if (id && processedId.current !== id) {
-      processedId.current = id;
-
-      // First check cache before making API call
-      const cachedResponse = loadCachedResponse(id);
-      if (cachedResponse) {
-        // Found in cache, use cached data and navigate directly
-        setPlaylistResponse(cachedResponse);
-        const playlistId = cachedResponse.data?.playlist?.id || null;
-        if (playlistId) {
-          navigate(`/sonic-discovery?id=${playlistId}`);
-        } else {
-          navigate('/sonic-discovery');
-        }
-      } else {
-        // Not in cache, make API call
-        handleSelectTrack(id, true);
-      }
+    // Cache fast-path is side-effect-free (creates no playlist) — always safe to run.
+    const cachedResponse = loadCachedResponse(id);
+    if (cachedResponse) {
+      setPlaylistResponse(cachedResponse);
+      const playlistId = cachedResponse.data?.playlist?.id || null;
+      navigate(playlistId ? `/sonic-discovery?id=${playlistId}` : '/sonic-discovery');
+      return;
     }
-  }, [loadCachedResponse, setPlaylistResponse, navigate]);
+
+    // The API call CREATES a playlist, so it must run at most once per id — even if this landing
+    // remounts during a new-tab boot. `claimDiscoveryTrigger` dedups across mounts (module-level).
+    if (claimDiscoveryTrigger(id)) {
+      handleSelectTrack(id, true);
+    }
+  }, [loadCachedResponse, setPlaylistResponse, navigate, handleSelectTrack]);
 
   // Watch for API completion and route to playlist
   React.useEffect(() => {
