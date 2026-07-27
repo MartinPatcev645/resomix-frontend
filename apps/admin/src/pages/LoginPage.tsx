@@ -1,35 +1,45 @@
 import React from 'react';
 import { Form, Input, Button } from 'antd';
-import { User, Lock, ArrowRight, Shield } from 'lucide-react';
+import { User, Lock, ArrowRight, Shield, KeyRound, Send } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth.ts';
 import { useNavigate } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
-  const { loading, error, handleLogin } = useAdminAuth();
+  const { loading, error, codeSent, requestCode, verifyAndLogin } = useAdminAuth();
+  const [form] = Form.useForm();
   const navigate = useNavigate();
 
   const onFinish = (values: any) => {
-    handleLogin(
-      {
-        email: values.email,
-        password: values.password,
-      },
-      () => {
-        // Redirect to feedback dashboard on successful login
-        navigate('/feedback');
-      }
-    );
+    if (!codeSent) {
+      // Step 1 — verify credentials and email a code.
+      requestCode({ email: values.email, password: values.password });
+    } else {
+      // Step 2 — verify email + password + code together, then open the session.
+      verifyAndLogin(
+        { email: values.email, password: values.password, code: values.code },
+        () => navigate('/feedback'),
+      );
+    }
   };
+
+  const onResend = () => {
+    // Re-send a fresh code (invalidates the previous one) using the entered credentials.
+    form
+      .validateFields(['email', 'password'])
+      .then(({ email, password }) => requestCode({ email, password }))
+      .catch(() => {});
+  };
+
+  const inputClass =
+    'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] transition-all duration-300';
+  const labelClass =
+    'text-xs uppercase tracking-wider font-semibold text-[var(--color-text-secondary)]';
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-[var(--color-background-secondary)] font-sans px-4">
-      {/* Symmetrical subtle background gradient */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top,_var(--color-primary)_0%,_transparent_40%)] opacity-[0.03] dark:opacity-[0.05]" />
-      
-      {/* Main Administrative Card Container */}
+
       <div className="relative w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm rounded-xl p-8 md:p-10 transition-all duration-300">
-        
-        {/* Header - clean and professional */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-[var(--opacity-10)] text-[var(--color-primary)] mb-4">
             <Shield size={24} />
@@ -42,8 +52,8 @@ const LoginPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Form */}
         <Form
+          form={form}
           name="admin_login"
           layout="vertical"
           onFinish={onFinish}
@@ -57,35 +67,57 @@ const LoginPage: React.FC = () => {
               <span>{error}</span>
             </div>
           )}
-          
+
           <Form.Item
             name="email"
-            label={<span className="text-xs uppercase tracking-wider font-semibold text-[var(--color-text-secondary)]">Admin Email</span>}
+            label={<span className={labelClass}>Admin Email</span>}
             rules={[
               { required: true, message: 'Please input your Admin Email!' },
-              { type: 'email', message: 'Please enter a valid email address!' }
+              { type: 'email', message: 'Please enter a valid email address!' },
             ]}
           >
-            <Input 
-              prefix={<User className="text-[var(--color-text-tertiary)] mr-2" size={16} />} 
-              placeholder="admin@resomix.com" 
+            <Input
+              prefix={<User className="text-[var(--color-text-tertiary)] mr-2" size={16} />}
+              placeholder="admin@resomix.com"
               autoComplete="username"
-              className="bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] transition-all duration-300"
+              className={inputClass}
             />
           </Form.Item>
- 
+
           <Form.Item
             name="password"
-            label={<span className="text-xs uppercase tracking-wider font-semibold text-[var(--color-text-secondary)]">Password</span>}
+            label={<span className={labelClass}>Password</span>}
             rules={[{ required: true, message: 'Please input your Password!' }]}
           >
             <Input.Password
               prefix={<Lock className="text-[var(--color-text-tertiary)] mr-2" size={16} />}
               placeholder="••••••••"
               autoComplete="current-password"
-              className="bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] transition-all duration-300"
+              className={inputClass}
             />
           </Form.Item>
+
+          {/* Verification code field — appears only after a code has been sent. */}
+          {codeSent && (
+            <Form.Item
+              name="code"
+              label={<span className={labelClass}>Verification Code</span>}
+              rules={[{ required: true, message: 'Enter the code sent to your email.' }]}
+              extra={
+                <span className="text-xs text-[var(--color-text-tertiary)]">
+                  We emailed a verification code to your admin email.
+                </span>
+              }
+            >
+              <Input
+                prefix={<KeyRound className="text-[var(--color-text-tertiary)] mr-2" size={16} />}
+                placeholder="Enter code"
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                className={`${inputClass} tracking-[0.3em] font-mono`}
+              />
+            </Form.Item>
+          )}
 
           <Form.Item className="pt-2 !mb-0">
             <Button
@@ -94,13 +126,34 @@ const LoginPage: React.FC = () => {
               loading={loading}
               className="w-full h-11 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] border-none text-white font-medium rounded-lg shadow-sm hover:shadow active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Authenticate Session</span>
-              <ArrowRight size={16} />
+              {!codeSent ? (
+                <>
+                  <span>Send Verification Code</span>
+                  <Send size={16} />
+                </>
+              ) : (
+                <>
+                  <span>Verify &amp; Log In</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
             </Button>
           </Form.Item>
+
+          {codeSent && (
+            <div className="text-center !mt-3">
+              <Button
+                type="link"
+                onClick={onResend}
+                disabled={loading}
+                className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-sm p-0 h-auto"
+              >
+                Didn&apos;t get it? Resend code
+              </Button>
+            </div>
+          )}
         </Form>
 
-        {/* Footer details */}
         <div className="mt-8 text-center text-xs text-[var(--color-text-tertiary)] font-light">
           &copy; {new Date().getFullYear()} Resomix Inc. B2B Management
         </div>
