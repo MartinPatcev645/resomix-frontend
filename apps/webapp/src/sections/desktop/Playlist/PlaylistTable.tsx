@@ -16,6 +16,7 @@ import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 import { scoreBandWidthPct, shortlistScoreRange } from "@/utils/scoreBand.ts";
 import { PlaylistUnlockBand } from "@/components/Playlist/PlaylistUnlockBand.tsx";
+import { LOCKED_BLUR_VISIBLE_ROWS, PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
 import { PLAYLIST_ROW_GRID_CLASS, playlistRowGridStyle } from "@/utils/playlistGrid.ts";
 
 const PlaylistTable: React.FC = () => {
@@ -69,6 +70,19 @@ const PlaylistTable: React.FC = () => {
     const tracks = playlistData?.similar_tracks ?? [];
     const hasLockedRows = tracks.some((t) => t.rank > maxUnlocked);
     const showUnlockBand = access.teaseReady && hasLockedRows;
+    const guestBlurLock = isGuest && showUnlockBand;
+    const unlockedTracks = useMemo(
+        () => tracks.filter((t) => t.rank <= maxUnlocked),
+        [tracks, maxUnlocked],
+    );
+    const lockedTracks = useMemo(
+        () => tracks.filter((t) => t.rank > maxUnlocked),
+        [tracks, maxUnlocked],
+    );
+    const visibleLockedTracks = useMemo(
+        () => lockedTracks.slice(0, LOCKED_BLUR_VISIBLE_ROWS),
+        [lockedTracks],
+    );
     const scoreRange = useMemo(
         () => shortlistScoreRange(tracks.map((t) => t.score)),
         [tracks],
@@ -114,6 +128,188 @@ const PlaylistTable: React.FC = () => {
         }
     };
 
+    const renderTrackRow = (track: (typeof tracks)[number], restrictedMode: "none" | "dim" | "blur") => {
+        const isRestricted = restrictedMode !== "none";
+        const isTrackPlaying = currentTrackId === track.id && isPlaying;
+        const isTopRank = track.rank === 1;
+        const bandPct = scoreBandWidthPct(track.score, scoreRange.min, scoreRange.max);
+        const scorePctLabel = `${(track.score * 100).toFixed(2)}%`;
+
+        return (
+            <div
+                className={[
+                    "border-t border-dotted border-slate-200 first:border-t-0",
+                    isTrackPlaying && !isRestricted ? "bg-[rgba(255,255,255,.04)]" : "",
+                    !isRestricted && !isTrackPlaying ? "hover:bg-[rgba(255,255,255,.03)]" : "",
+                    restrictedMode === "dim" ? "pointer-events-none select-none opacity-45" : "",
+                    restrictedMode === "blur" ? "pointer-events-none select-none" : "",
+                    restrictedMode === "none" ? "select-text" : "",
+                ].join(" ")}
+            >
+                <div
+                    className={`${PLAYLIST_ROW_GRID_CLASS} px-[var(--px-16)] py-[var(--px-10)]`}
+                    style={playlistRowGridStyle}
+                    role="row"
+                >
+                    <div className={`font-fira text-[length:var(--px-11)] ${isTopRank && !isRestricted ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--color-primary)] opacity-60"}`} role="cell">
+                        {isRestricted && (
+                            <span aria-hidden="true" className="mr-[var(--px-2)] text-[length:var(--px-10)]">
+                                ⌾
+                            </span>
+                        )}
+                        {track.rank}
+                    </div>
+                    <div role="cell" className="relative inline-block">
+                        {DEMO_MODE && hintFor === track.id && (
+                            <div
+                                role="status"
+                                aria-live="polite"
+                                className="absolute -top-8 -left-2 whitespace-nowrap bg-[#FFCC00] text-black text-[length:var(--px-10)] font-semibold px-2 py-1 rounded shadow-md ring-2 ring-black/10 z-20"
+                            >
+                                Demo mode - Audio playback limited while we complete licensing
+                            </div>
+                        )}
+                        <IconComp
+                            className="relative z-20 w-[var(--px-32)] h-[var(--px-32)] playlist-play-button rounded-full border border-dotted border-slate-200 flex items-center justify-center"
+                            svg={<img
+                                src={currentTrackId === track.id && isPlaying ? PauseSvg : PlaySvg}
+                                alt={currentTrackId === track.id && isPlaying ? "Pause" : "Play"}
+                                className='w-[var(--px-10)] h-[var(--px-10)]'
+                            />}
+                            padding='p-[var(--px-6)]'
+                            onClick={restrictedMode === "blur" ? undefined : () => handlePlayButtonClick(track.id)}
+                            asDiv={restrictedMode === "blur"}
+                            id={`playlist-table-play-button-${track.id}`}
+                            dataAttributes={{
+                                'data-testid': 'table-play-button',
+                                'data-track-id': track.id,
+                                'data-track-artist': track.artist,
+                                'data-track-title': track.title,
+                                'data-track-name': track.title,
+                            }}
+                        />
+                    </div>
+                    <TrackArtwork artworkUrl={track.artwork_url} className="w-[var(--px-32)] h-[var(--px-32)] rounded-xs" />
+                    <div className="flex items-center justify-center" role="cell">
+                        {track.type === "internal" && track.deep_link_url && !isTrackPlaying && (
+                            <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
+                        )}
+                    </div>
+                    <div className="min-w-0 truncate text-[length:var(--px-13)] font-helvetica font-light text-[var(--color-primary-hover)] opacity-80" role="cell" title={displayOrNA(track.artist)}>
+                        {displayOrNA(track.artist)}
+                    </div>
+                    <div className="min-w-0 truncate text-[length:var(--px-13)] font-helvetica font-light uppercase" role="cell" title={displayOrNA(track.title)}>
+                        {displayOrNA(track.title)}
+                    </div>
+                    <div className="font-fira text-[length:var(--px-10)] leading-[var(--px-14)] text-[var(--color-primary)] opacity-75" role="cell">
+                        {!isTrackPlaying && resolveLabel(track.label) && (
+                            <div className="truncate text-[var(--color-primary-hover)]" title={resolveLabel(track.label) || undefined}>{resolveLabel(track.label)}</div>
+                        )}
+                        <div>{track.year ?? "—"}</div>
+                    </div>
+                    <div className="font-fira text-[length:var(--px-10)] leading-[var(--px-14)] text-[var(--color-primary)] opacity-75" role="cell">
+                        {!isTrackPlaying && firstGenre(track.genre) && (
+                            <div className="truncate text-[var(--color-primary-hover)]" title={firstGenre(track.genre) || undefined}>{firstGenre(track.genre)}</div>
+                        )}
+                        <div>{formatDuration(track.duration)}</div>
+                    </div>
+                    <div className="flex flex-col gap-[var(--px-4)] min-w-0" role="cell">
+                        <div className={`font-fira text-[length:var(--px-11)] ${isTopRank ? "text-[var(--color-accent,#EE4A26)]" : ""}`}>
+                            {scorePctLabel}
+                            {isTopRank && (
+                                <span className="ml-[var(--px-6)] text-[length:var(--px-8)] uppercase tracking-[var(--px-1)] text-[var(--color-accent,#EE4A26)]">TOP</span>
+                            )}
+                        </div>
+                        <div className="h-[var(--px-3)] bg-[rgba(255,255,255,.08)] relative overflow-hidden" aria-hidden="true">
+                            <div
+                                className={`absolute left-0 top-0 bottom-0 ${isTopRank ? "bg-[var(--color-accent,#EE4A26)]" : "bg-[var(--color-primary-hover)]"}`}
+                                style={{ width: `${bandPct}%` }}
+                            />
+                        </div>
+                    </div>
+                    {!isRestricted && (
+                        <div className="flex items-center gap-[var(--px-8)]" role="cell">
+                            {(() => {
+                                const currentRating = trackRatings[track.id];
+                                const upSelected = currentRating === 1;
+                                const downSelected = currentRating === 0;
+                                return (
+                                    <>
+                                        <Tooltip message="Yes Similar to Input Track!">
+                                            <ThumbIcon
+                                                onClick={() => {
+                                                    if (upSelected) return;
+                                                    handleTrackRating(track.id, 1);
+                                                }}
+                                                className={`w-[var(--px-16)] h-[var(--px-16)] ${upSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-up`}
+                                                id={`playlist-table-thumb-up-${track.id}`}
+                                                data-track-id={track.id}
+                                                data-track-artist={track.artist}
+                                                data-track-title={track.title}
+                                                data-track-name={track.title}
+                                            />
+                                        </Tooltip>
+                                        <Tooltip message="No, Not Similar to Input Track!">
+                                            <ThumbIcon
+                                                onClick={() => {
+                                                    if (downSelected) return;
+                                                    handleTrackRating(track.id, 0);
+                                                }}
+                                                className={`w-[var(--px-16)] h-[var(--px-16)] transform rotate-180 ${downSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-down`}
+                                                id={`playlist-table-thumb-down-${track.id}`}
+                                                data-track-id={track.id}
+                                                data-track-artist={track.artist}
+                                                data-track-title={track.title}
+                                                data-track-name={track.title}
+                                            />
+                                        </Tooltip>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    )}
+                    {isRestricted && <div role="cell" aria-hidden="true" />}
+                    {!isRestricted && (
+                        <button
+                            type="button"
+                            className="flex items-center justify-center hover:cursor-pointer playlist-sonic-discovery-button bg-transparent border-0 p-0"
+                            role="cell"
+                            onClick={() => {
+                                window.open(`${BASE_BETA_URL}/?id=${track.id}`, '_blank');
+                            }}
+                            id={`playlist-table-sonic-discovery-${track.id}`}
+                            aria-label="Chain Discover"
+                            data-track-id={track.id}
+                            data-track-artist={track.artist}
+                            data-track-title={track.title}
+                            data-track-name={track.title}
+                        >
+                            <Tooltip message="Use this track as a new reference to find more matches">
+                                <img src={SonicDiscoverySvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)] hover:scale-110 transition-transform duration-200" />
+                            </Tooltip>
+                        </button>
+                    )}
+                    {isRestricted && <div role="cell" aria-hidden="true" />}
+                    {isTrackPlaying && !isRestricted && (
+                        <div
+                            className="col-span-full border-t border-dotted border-slate-200 pt-[var(--px-8)]"
+                            style={{ gridColumn: "1 / -1" }}
+                            role="cell"
+                        >
+                            <SimilarityPlayer
+                                trackId={track.id}
+                                isPlaying={isTrackPlaying}
+                                totalDuration={track.duration}
+                                label={resolveLabel(track.label)}
+                                genre={firstGenre(track.genre)}
+                            />
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="flex flex-col w-full mt-[var(--px-16)]" role="table" aria-label="Similar tracks">
             <h2 className="sr-only">Similar Tracks</h2>
@@ -137,14 +333,26 @@ const PlaylistTable: React.FC = () => {
             </div>
 
             <div className="border border-dotted border-slate-200 bg-[rgba(255,255,255,.02)]">
-            {tracks.map((track) => {
-                const isRestricted = track.rank > maxUnlocked;
+            {unlockedTracks.map((track) => (
+                <React.Fragment key={track.id}>
+                    {renderTrackRow(track, "none")}
+                </React.Fragment>
+            ))}
+            {guestBlurLock && lockedTracks.length > 0 && (
+                <PlaylistLockedRegion
+                    isGuest={isGuest}
+                    maxTracksPerPlaylist={maxTracksPerPlaylist}
+                    rowHeightVar="var(--px-56)"
+                >
+                    {visibleLockedTracks.map((track) => (
+                        <React.Fragment key={track.id}>
+                            {renderTrackRow(track, "blur")}
+                        </React.Fragment>
+                    ))}
+                </PlaylistLockedRegion>
+            )}
+            {!guestBlurLock && lockedTracks.map((track) => {
                 const isFirstLockedRow = track.rank === maxUnlocked + 1;
-                const isTrackPlaying = currentTrackId === track.id && isPlaying;
-                const isTopRank = track.rank === 1;
-                const bandPct = scoreBandWidthPct(track.score, scoreRange.min, scoreRange.max);
-                const scorePctLabel = `${(track.score * 100).toFixed(2)}%`;
-
                 return (
                     <React.Fragment key={track.id}>
                         {showUnlockBand && isFirstLockedRow && (
@@ -153,174 +361,7 @@ const PlaylistTable: React.FC = () => {
                                 maxTracksPerPlaylist={maxTracksPerPlaylist}
                             />
                         )}
-                        <div
-                            className={[
-                                "border-t border-dotted border-slate-200 first:border-t-0",
-                                isTrackPlaying && !isRestricted ? "bg-[rgba(255,255,255,.04)]" : "",
-                                !isRestricted && !isTrackPlaying ? "hover:bg-[rgba(255,255,255,.03)]" : "",
-                                isRestricted ? "pointer-events-none select-none opacity-45" : "select-text",
-                            ].join(" ")}
-                        >
-                            <div
-                                className={`${PLAYLIST_ROW_GRID_CLASS} px-[var(--px-16)] py-[var(--px-10)]`}
-                                style={playlistRowGridStyle}
-                                role="row"
-                            >
-                                <div className={`font-fira text-[length:var(--px-11)] ${isTopRank && !isRestricted ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--color-primary)] opacity-60"}`} role="cell">
-                                    {isRestricted && (
-                                        <span aria-hidden="true" className="mr-[var(--px-2)] text-[length:var(--px-10)]">
-                                            ⌾
-                                        </span>
-                                    )}
-                                    {track.rank}
-                                </div>
-                                <div role="cell" className="relative inline-block">
-                                    {DEMO_MODE && hintFor === track.id && (
-                                        <div
-                                            role="status"
-                                            aria-live="polite"
-                                            className="absolute -top-8 -left-2 whitespace-nowrap bg-[#FFCC00] text-black text-[length:var(--px-10)] font-semibold px-2 py-1 rounded shadow-md ring-2 ring-black/10 z-20"
-                                        >
-                                            Demo mode - Audio playback limited while we complete licensing
-                                        </div>
-                                    )}
-                                    <IconComp
-                                        className="relative z-20 w-[var(--px-32)] h-[var(--px-32)] playlist-play-button rounded-full border border-dotted border-slate-200 flex items-center justify-center"
-                                        svg={<img
-                                            src={currentTrackId === track.id && isPlaying ? PauseSvg : PlaySvg}
-                                            alt={currentTrackId === track.id && isPlaying ? "Pause" : "Play"}
-                                            className='w-[var(--px-10)] h-[var(--px-10)]'
-                                        />}
-                                        padding='p-[var(--px-6)]'
-                                        onClick={() => handlePlayButtonClick(track.id)}
-                                        id={`playlist-table-play-button-${track.id}`}
-                                        dataAttributes={{
-                                            'data-testid': 'table-play-button',
-                                            'data-track-id': track.id,
-                                            'data-track-artist': track.artist,
-                                            'data-track-title': track.title,
-                                            'data-track-name': track.title,
-                                        }}
-                                    />
-                                </div>
-                                <TrackArtwork artworkUrl={track.artwork_url} className="w-[var(--px-32)] h-[var(--px-32)] rounded-xs" />
-                                <div className="flex items-center justify-center" role="cell">
-                                    {track.type === "internal" && track.deep_link_url && !isTrackPlaying && (
-                                        <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
-                                    )}
-                                </div>
-                                <div className="min-w-0 truncate text-[length:var(--px-13)] font-helvetica font-light text-[var(--color-primary-hover)] opacity-80" role="cell" title={displayOrNA(track.artist)}>
-                                    {displayOrNA(track.artist)}
-                                </div>
-                                <div className="min-w-0 truncate text-[length:var(--px-13)] font-helvetica font-light uppercase" role="cell" title={displayOrNA(track.title)}>
-                                    {displayOrNA(track.title)}
-                                </div>
-                                <div className="font-fira text-[length:var(--px-10)] leading-[var(--px-14)] text-[var(--color-primary)] opacity-75" role="cell">
-                                    {!isTrackPlaying && resolveLabel(track.label) && (
-                                        <div className="truncate text-[var(--color-primary-hover)]" title={resolveLabel(track.label) || undefined}>{resolveLabel(track.label)}</div>
-                                    )}
-                                    <div>{track.year ?? "—"}</div>
-                                </div>
-                                <div className="font-fira text-[length:var(--px-10)] leading-[var(--px-14)] text-[var(--color-primary)] opacity-75" role="cell">
-                                    {!isTrackPlaying && firstGenre(track.genre) && (
-                                        <div className="truncate text-[var(--color-primary-hover)]" title={firstGenre(track.genre) || undefined}>{firstGenre(track.genre)}</div>
-                                    )}
-                                    <div>{formatDuration(track.duration)}</div>
-                                </div>
-                                <div className="flex flex-col gap-[var(--px-4)] min-w-0" role="cell">
-                                    <div className={`font-fira text-[length:var(--px-11)] ${isTopRank ? "text-[var(--color-accent,#EE4A26)]" : ""}`}>
-                                        {scorePctLabel}
-                                        {isTopRank && (
-                                            <span className="ml-[var(--px-6)] text-[length:var(--px-8)] uppercase tracking-[var(--px-1)] text-[var(--color-accent,#EE4A26)]">TOP</span>
-                                        )}
-                                    </div>
-                                    <div className="h-[var(--px-3)] bg-[rgba(255,255,255,.08)] relative overflow-hidden" aria-hidden="true">
-                                        <div
-                                            className={`absolute left-0 top-0 bottom-0 ${isTopRank ? "bg-[var(--color-accent,#EE4A26)]" : "bg-[var(--color-primary-hover)]"}`}
-                                            style={{ width: `${bandPct}%` }}
-                                        />
-                                    </div>
-                                </div>
-                                {!isRestricted && (
-                                    <div className="flex items-center gap-[var(--px-8)]" role="cell">
-                                        {(() => {
-                                            const currentRating = trackRatings[track.id];
-                                            const upSelected = currentRating === 1;
-                                            const downSelected = currentRating === 0;
-                                            return (
-                                                <>
-                                                    <Tooltip message="Yes Similar to Input Track!">
-                                                        <ThumbIcon
-                                                            onClick={() => {
-                                                                if (upSelected) return;
-                                                                handleTrackRating(track.id, 1);
-                                                            }}
-                                                            className={`w-[var(--px-16)] h-[var(--px-16)] ${upSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-up`}
-                                                            id={`playlist-table-thumb-up-${track.id}`}
-                                                            data-track-id={track.id}
-                                                            data-track-artist={track.artist}
-                                                            data-track-title={track.title}
-                                                            data-track-name={track.title}
-                                                        />
-                                                    </Tooltip>
-                                                    <Tooltip message="No, Not Similar to Input Track!">
-                                                        <ThumbIcon
-                                                            onClick={() => {
-                                                                if (downSelected) return;
-                                                                handleTrackRating(track.id, 0);
-                                                            }}
-                                                            className={`w-[var(--px-16)] h-[var(--px-16)] transform rotate-180 ${downSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-down`}
-                                                            id={`playlist-table-thumb-down-${track.id}`}
-                                                            data-track-id={track.id}
-                                                            data-track-artist={track.artist}
-                                                            data-track-title={track.title}
-                                                            data-track-name={track.title}
-                                                        />
-                                                    </Tooltip>
-                                                </>
-                                            );
-                                        })()}
-                                    </div>
-                                )}
-                                {isRestricted && <div role="cell" aria-hidden="true" />}
-                                {!isRestricted && (
-                                    <button
-                                        type="button"
-                                        className="flex items-center justify-center hover:cursor-pointer playlist-sonic-discovery-button bg-transparent border-0 p-0"
-                                        role="cell"
-                                        onClick={() => {
-                                            window.open(`${BASE_BETA_URL}/?id=${track.id}`, '_blank');
-                                        }}
-                                        id={`playlist-table-sonic-discovery-${track.id}`}
-                                        aria-label="Chain Discover"
-                                        data-track-id={track.id}
-                                        data-track-artist={track.artist}
-                                        data-track-title={track.title}
-                                        data-track-name={track.title}
-                                    >
-                                        <Tooltip message="Use this track as a new reference to find more matches">
-                                            <img src={SonicDiscoverySvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)] hover:scale-110 transition-transform duration-200" />
-                                        </Tooltip>
-                                    </button>
-                                )}
-                                {isRestricted && <div role="cell" aria-hidden="true" />}
-                                {isTrackPlaying && !isRestricted && (
-                                    <div
-                                        className="col-span-full border-t border-dotted border-slate-200 pt-[var(--px-8)]"
-                                        style={{ gridColumn: "1 / -1" }}
-                                        role="cell"
-                                    >
-                                        <SimilarityPlayer
-                                            trackId={track.id}
-                                            isPlaying={isTrackPlaying}
-                                            totalDuration={track.duration}
-                                            label={resolveLabel(track.label)}
-                                            genre={firstGenre(track.genre)}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        {renderTrackRow(track, "dim")}
                     </React.Fragment>
                 );
             })}

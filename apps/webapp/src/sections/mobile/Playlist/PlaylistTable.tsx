@@ -3,6 +3,7 @@ import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import { PlaylistUnlockBand } from "@/components/Playlist/PlaylistUnlockBand.tsx";
+import { LOCKED_BLUR_VISIBLE_ROWS, PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import { formatDuration, formatPercentage, useGlobalAudioController, useAccess } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
@@ -37,6 +38,19 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const maxTracksPerPlaylist = access.unlockedTracks;
     const hasLockedRows = tracks.some((t) => t.rank > maxUnlocked);
     const showUnlockBand = access.teaseReady && hasLockedRows;
+    const guestBlurLock = isGuest && showUnlockBand;
+    const unlockedTracks = useMemo(
+        () => tracks.filter((t) => t.rank <= maxUnlocked),
+        [tracks, maxUnlocked],
+    );
+    const lockedTracks = useMemo(
+        () => tracks.filter((t) => t.rank > maxUnlocked),
+        [tracks, maxUnlocked],
+    );
+    const visibleLockedTracks = useMemo(
+        () => lockedTracks.slice(0, LOCKED_BLUR_VISIBLE_ROWS),
+        [lockedTracks],
+    );
 
     const playlistId = playlistData?.playlist?.id;
     const analysis = playlistId ? loadPlaylistAnalysis(playlistId) : null;
@@ -117,24 +131,220 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
         };
     }, []);
 
+    const renderTrackRow = (track: (typeof tracks)[number], restrictedMode: "none" | "dim" | "blur") => {
+        const isRestricted = restrictedMode !== "none";
+        const isThisPlaying = currentTrackId === track.id && isPlaying;
+        const isTopRank = track.rank === 1;
+        const bandPct = scoreBandWidthPct(track.score, scoreRange.min, scoreRange.max);
+        const labelText = resolveLabel(track.label);
+        const genreText = firstGenre(track.genre);
+        const metaLine = [labelText, track.year, genreText, formatDuration(track.duration)]
+            .filter(Boolean)
+            .join(" · ");
+        const currentRating = trackRatings[track.id];
+        const upSelected = currentRating === 1;
+        const downSelected = currentRating === 0;
+
+        return (
+            <article
+                aria-hidden={restrictedMode === "blur" ? true : undefined}
+                aria-label={restrictedMode === "blur" ? undefined : `${displayOrNA(track.title)} by ${displayOrNA(track.artist)}`}
+                className={[
+                    "relative w-full border border-dotted border-slate-200",
+                    isThisPlaying && !isRestricted ? "bg-[rgba(255,255,255,.04)]" : "",
+                    restrictedMode === "dim" ? "pointer-events-none select-none opacity-45" : "",
+                    restrictedMode === "blur" ? "pointer-events-none select-none border-t-0 first:border-t" : "",
+                ].join(" ")}
+            >
+                <div className="flex justify-between p-[var(--px-8)] pb-[var(--px-12)] relative">
+                    <div className="flex flex-col w-full gap-[var(--px-8)]">
+                        <div
+                            className="grid gap-[var(--px-8)] items-start"
+                            style={mobilePlaylistRowGridStyle}
+                        >
+                            <div
+                                className={`pt-[var(--px-10)] font-fira text-[length:var(--px-13)] ${isTopRank && !isRestricted ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--color-primary)]"}`}
+                            >
+                                {isRestricted && (
+                                    <span aria-hidden="true" className="mr-[var(--px-2)] text-[length:var(--px-10)]">
+                                        ⌾
+                                    </span>
+                                )}
+                                {track.rank}
+                            </div>
+                            <button
+                                type="button"
+                                aria-label={isThisPlaying ? "Pause" : "Play"}
+                                aria-hidden={restrictedMode === "blur" ? true : undefined}
+                                tabIndex={restrictedMode === "blur" ? -1 : undefined}
+                                disabled={restrictedMode === "blur"}
+                                onClick={() => handlePlayButtonClick(track.id)}
+                                className="relative flex h-[var(--px-44)] w-[var(--px-40)] items-center justify-center rounded-md border border-dotted border-slate-200 playlist-play-button"
+                                id={`playlist-table-play-button-${track.id}`}
+                                data-track-id={track.id}
+                                data-track-artist={track.artist}
+                                data-track-title={track.title}
+                            >
+                                {DEMO_MODE && hintFor === track.id && (
+                                    <div
+                                        role="status"
+                                        aria-live="polite"
+                                        className="pointer-events-none absolute -top-6 left-0 z-20 whitespace-nowrap bg-[#FFCC00] text-black text-[length:var(--px-10)] font-semibold px-2 py-1 rounded shadow-md ring-2 ring-black/10"
+                                    >
+                                        Demo mode - Audio playback limited while we complete licensing
+                                    </div>
+                                )}
+                                <TrackArtwork artworkUrl={track.artwork_url} className="absolute inset-0 h-full w-full rounded-md" />
+                                {isThisPlaying && (
+                                    <span className="absolute inset-0 flex items-center justify-center bg-black/45 rounded-md">
+                                        <img src={PauseSvg} alt="" aria-hidden="true" className="h-[var(--px-16)] w-[var(--px-16)]" />
+                                    </span>
+                                )}
+                            </button>
+                            <div className="min-w-0">
+                                <div className="truncate text-[length:var(--px-13)] font-helvetica font-light uppercase leading-[var(--px-16)]">
+                                    {isThisPlaying ? (
+                                        <HoverFlow text={displayOrNA(track.title)} maxChars={32} delay={800} speed={40} endPause={1000} maxWidth="100%" flowAlways={true} />
+                                    ) : (
+                                        displayOrNA(track.title)
+                                    )}
+                                    {isTopRank && !isRestricted && (
+                                        <span className="ml-[var(--px-6)] font-fira text-[length:var(--px-8)] uppercase tracking-[var(--px-1)] text-[var(--color-accent,#EE4A26)]">
+                                            TOP
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="truncate text-[length:var(--px-10)] font-helvetica font-light opacity-75">
+                                    {displayOrNA(track.artist)}
+                                </div>
+                                <div className="mt-[var(--px-4)] truncate font-fira text-[length:var(--px-9)] tracking-[var(--px-0-5)] text-[var(--color-primary)] opacity-60">
+                                    {metaLine}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-[var(--px-8)] min-w-0">
+                            <span className={`shrink-0 font-fira text-[length:var(--px-10)] ${isTopRank && !isRestricted ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--color-primary)] opacity-75"}`}>
+                                {formatPercentage(track.score, 2)}
+                            </span>
+                            <div className="h-[var(--px-3)] flex-1 bg-[rgba(255,255,255,.08)] relative overflow-hidden" aria-hidden="true">
+                                <div
+                                    className={`absolute left-0 top-0 bottom-0 ${isTopRank && !isRestricted ? "bg-[var(--color-accent,#EE4A26)]" : "bg-[var(--color-primary-hover)]"}`}
+                                    style={{ width: `${bandPct}%` }}
+                                />
+                            </div>
+                        </div>
+                        {isThisPlaying && !isRestricted && (
+                            <SimilarityPlayer
+                                trackId={track.id}
+                                isPlaying={isThisPlaying}
+                                totalDuration={track.duration}
+                                label={labelText}
+                                genre={genreText}
+                            />
+                        )}
+                        {!isRestricted && (
+                            <div className="flex items-center justify-between gap-[var(--px-8)]">
+                                <div className="flex min-h-[var(--px-44)] items-center gap-[var(--px-10)]">
+                                    <Tooltip message="Yes Similar to Input Track!">
+                                        <button
+                                            type="button"
+                                            aria-label="Mark as similar"
+                                            onClick={() => {
+                                                if (upSelected) return;
+                                                void handleTrackRating(track.id, 1);
+                                            }}
+                                            className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center"
+                                            id={`playlist-table-thumb-up-${track.id}`}
+                                        >
+                                            <ThumbIcon
+                                                className={`h-[var(--px-16)] w-[var(--px-16)] ${upSelected ? "fill-current" : "fill-transparent hover:fill-current"} hover:text-[var(--color-primary)]`}
+                                            />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip message="No, Not Similar to Input Track!">
+                                        <button
+                                            type="button"
+                                            aria-label="Mark as not similar"
+                                            onClick={() => {
+                                                if (downSelected) return;
+                                                void handleTrackRating(track.id, 0);
+                                            }}
+                                            className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center"
+                                            id={`playlist-table-thumb-down-${track.id}`}
+                                        >
+                                            <ThumbIcon
+                                                className={`h-[var(--px-16)] w-[var(--px-16)] rotate-180 ${downSelected ? "fill-current" : "fill-transparent hover:fill-current"} hover:text-[var(--color-primary)]`}
+                                            />
+                                        </button>
+                                    </Tooltip>
+                                </div>
+                                <div className="flex min-h-[var(--px-44)] items-center gap-[var(--px-8)]">
+                                    {track.type === "internal" && track.deep_link_url && !isThisPlaying && (
+                                        <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
+                                    )}
+                                    <button
+                                        type="button"
+                                        className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center playlist-sonic-discovery-button"
+                                        onClick={() => {
+                                            window.open(`${BASE_BETA_URL}/?id=${track.id}`, "_blank");
+                                        }}
+                                        id={`playlist-table-sonic-discovery-${track.id}`}
+                                        aria-label="Chain Discover"
+                                        data-track-id={track.id}
+                                    >
+                                        <img src={SonicDiscoverySvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-16)] w-[var(--px-16)]" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        aria-label="More"
+                                        onClick={() =>
+                                            onMoreClick?.(
+                                                track.id,
+                                                `${track.artist} - ${track.title}`,
+                                                track.label,
+                                                track.duration,
+                                                track.score,
+                                                false,
+                                            )
+                                        }
+                                        className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center text-[#5C5C5C] playlist-more-button"
+                                        id={`playlist-table-more-${track.id}`}
+                                    >
+                                        <img src={MoreSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-14)] w-[var(--px-19)]" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </article>
+        );
+    };
+
     return (
         <section className="mt-[var(--px-25)] flex w-full flex-col items-center justify-start gap-[var(--px-10)]" aria-label="Similar tracks">
             <h2 className="sr-only">Similar Tracks</h2>
-            {tracks.map((track) => {
-                const isRestricted = track.rank > maxUnlocked;
+            {unlockedTracks.map((track) => (
+                <React.Fragment key={track.id}>
+                    {renderTrackRow(track, "none")}
+                </React.Fragment>
+            ))}
+            {guestBlurLock && lockedTracks.length > 0 && (
+                <PlaylistLockedRegion
+                    isGuest={isGuest}
+                    maxTracksPerPlaylist={maxTracksPerPlaylist}
+                    mobile
+                    rowHeightVar="var(--px-120)"
+                >
+                    {visibleLockedTracks.map((track) => (
+                        <React.Fragment key={track.id}>
+                            {renderTrackRow(track, "blur")}
+                        </React.Fragment>
+                    ))}
+                </PlaylistLockedRegion>
+            )}
+            {!guestBlurLock && lockedTracks.map((track) => {
                 const isFirstLockedRow = track.rank === maxUnlocked + 1;
-                const isThisPlaying = currentTrackId === track.id && isPlaying;
-                const isTopRank = track.rank === 1;
-                const bandPct = scoreBandWidthPct(track.score, scoreRange.min, scoreRange.max);
-                const labelText = resolveLabel(track.label);
-                const genreText = firstGenre(track.genre);
-                const metaLine = [labelText, track.year, genreText, formatDuration(track.duration)]
-                    .filter(Boolean)
-                    .join(" · ");
-                const currentRating = trackRatings[track.id];
-                const upSelected = currentRating === 1;
-                const downSelected = currentRating === 0;
-
                 return (
                     <React.Fragment key={track.id}>
                         {showUnlockBand && isFirstLockedRow && (
@@ -144,173 +354,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 mobile
                             />
                         )}
-                        <article
-                            aria-label={`${displayOrNA(track.title)} by ${displayOrNA(track.artist)}`}
-                            className={[
-                                "relative w-full border border-dotted border-slate-200",
-                                isThisPlaying && !isRestricted ? "bg-[rgba(255,255,255,.04)]" : "",
-                                isRestricted ? "pointer-events-none select-none opacity-45" : "",
-                            ].join(" ")}
-                        >
-                            <div className="flex justify-between p-[var(--px-8)] pb-[var(--px-12)] relative">
-                                <div className="flex flex-col w-full gap-[var(--px-8)]">
-                                    <div
-                                        className="grid gap-[var(--px-8)] items-start"
-                                        style={mobilePlaylistRowGridStyle}
-                                    >
-                                        <div
-                                            className={`pt-[var(--px-10)] font-fira text-[length:var(--px-13)] ${isTopRank && !isRestricted ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--color-primary)]"}`}
-                                        >
-                                            {isRestricted && (
-                                                <span aria-hidden="true" className="mr-[var(--px-2)] text-[length:var(--px-10)]">
-                                                    ⌾
-                                                </span>
-                                            )}
-                                            {track.rank}
-                                        </div>
-                                        <button
-                                            type="button"
-                                            aria-label={isThisPlaying ? "Pause" : "Play"}
-                                            onClick={() => handlePlayButtonClick(track.id)}
-                                            className="relative flex h-[var(--px-44)] w-[var(--px-40)] items-center justify-center rounded-md border border-dotted border-slate-200 playlist-play-button"
-                                            id={`playlist-table-play-button-${track.id}`}
-                                            data-track-id={track.id}
-                                            data-track-artist={track.artist}
-                                            data-track-title={track.title}
-                                        >
-                                            {DEMO_MODE && hintFor === track.id && (
-                                                <div
-                                                    role="status"
-                                                    aria-live="polite"
-                                                    className="pointer-events-none absolute -top-6 left-0 z-20 whitespace-nowrap bg-[#FFCC00] text-black text-[length:var(--px-10)] font-semibold px-2 py-1 rounded shadow-md ring-2 ring-black/10"
-                                                >
-                                                    Demo mode - Audio playback limited while we complete licensing
-                                                </div>
-                                            )}
-                                            <TrackArtwork artworkUrl={track.artwork_url} className="absolute inset-0 h-full w-full rounded-md" />
-                                            {isThisPlaying && (
-                                                <span className="absolute inset-0 flex items-center justify-center bg-black/45 rounded-md">
-                                                    <img src={PauseSvg} alt="" aria-hidden="true" className="h-[var(--px-16)] w-[var(--px-16)]" />
-                                                </span>
-                                            )}
-                                        </button>
-                                        <div className="min-w-0">
-                                            <div className="truncate text-[length:var(--px-13)] font-helvetica font-light uppercase leading-[var(--px-16)]">
-                                                {isThisPlaying ? (
-                                                    <HoverFlow text={displayOrNA(track.title)} maxChars={32} delay={800} speed={40} endPause={1000} maxWidth="100%" flowAlways={true} />
-                                                ) : (
-                                                    displayOrNA(track.title)
-                                                )}
-                                                {isTopRank && !isRestricted && (
-                                                    <span className="ml-[var(--px-6)] font-fira text-[length:var(--px-8)] uppercase tracking-[var(--px-1)] text-[var(--color-accent,#EE4A26)]">
-                                                        TOP
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="truncate text-[length:var(--px-10)] font-helvetica font-light opacity-75">
-                                                {displayOrNA(track.artist)}
-                                            </div>
-                                            <div className="mt-[var(--px-4)] truncate font-fira text-[length:var(--px-9)] tracking-[var(--px-0-5)] text-[var(--color-primary)] opacity-60">
-                                                {metaLine}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-[var(--px-8)] min-w-0">
-                                        <span className={`shrink-0 font-fira text-[length:var(--px-10)] ${isTopRank && !isRestricted ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--color-primary)] opacity-75"}`}>
-                                            {formatPercentage(track.score, 2)}
-                                        </span>
-                                        <div className="h-[var(--px-3)] flex-1 bg-[rgba(255,255,255,.08)] relative overflow-hidden" aria-hidden="true">
-                                            <div
-                                                className={`absolute left-0 top-0 bottom-0 ${isTopRank && !isRestricted ? "bg-[var(--color-accent,#EE4A26)]" : "bg-[var(--color-primary-hover)]"}`}
-                                                style={{ width: `${bandPct}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                    {isThisPlaying && !isRestricted && (
-                                        <SimilarityPlayer
-                                            trackId={track.id}
-                                            isPlaying={isThisPlaying}
-                                            totalDuration={track.duration}
-                                            label={labelText}
-                                            genre={genreText}
-                                        />
-                                    )}
-                                    {!isRestricted && (
-                                        <div className="flex items-center justify-between gap-[var(--px-8)]">
-                                            <div className="flex min-h-[var(--px-44)] items-center gap-[var(--px-10)]">
-                                                <Tooltip message="Yes Similar to Input Track!">
-                                                    <button
-                                                        type="button"
-                                                        aria-label="Mark as similar"
-                                                        onClick={() => {
-                                                            if (upSelected) return;
-                                                            void handleTrackRating(track.id, 1);
-                                                        }}
-                                                        className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center"
-                                                        id={`playlist-table-thumb-up-${track.id}`}
-                                                    >
-                                                        <ThumbIcon
-                                                            className={`h-[var(--px-16)] w-[var(--px-16)] ${upSelected ? "fill-current" : "fill-transparent hover:fill-current"} hover:text-[var(--color-primary)]`}
-                                                        />
-                                                    </button>
-                                                </Tooltip>
-                                                <Tooltip message="No, Not Similar to Input Track!">
-                                                    <button
-                                                        type="button"
-                                                        aria-label="Mark as not similar"
-                                                        onClick={() => {
-                                                            if (downSelected) return;
-                                                            void handleTrackRating(track.id, 0);
-                                                        }}
-                                                        className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center"
-                                                        id={`playlist-table-thumb-down-${track.id}`}
-                                                    >
-                                                        <ThumbIcon
-                                                            className={`h-[var(--px-16)] w-[var(--px-16)] rotate-180 ${downSelected ? "fill-current" : "fill-transparent hover:fill-current"} hover:text-[var(--color-primary)]`}
-                                                        />
-                                                    </button>
-                                                </Tooltip>
-                                            </div>
-                                            <div className="flex min-h-[var(--px-44)] items-center gap-[var(--px-8)]">
-                                                {track.type === "internal" && track.deep_link_url && !isThisPlaying && (
-                                                    <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
-                                                )}
-                                                <button
-                                                    type="button"
-                                                    className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center playlist-sonic-discovery-button"
-                                                    onClick={() => {
-                                                        window.open(`${BASE_BETA_URL}/?id=${track.id}`, "_blank");
-                                                    }}
-                                                    id={`playlist-table-sonic-discovery-${track.id}`}
-                                                    aria-label="Chain Discover"
-                                                    data-track-id={track.id}
-                                                >
-                                                    <img src={SonicDiscoverySvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-16)] w-[var(--px-16)]" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    aria-label="More"
-                                                    onClick={() =>
-                                                        onMoreClick?.(
-                                                            track.id,
-                                                            `${track.artist} - ${track.title}`,
-                                                            track.label,
-                                                            track.duration,
-                                                            track.score,
-                                                            false,
-                                                        )
-                                                    }
-                                                    className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center text-[#5C5C5C] playlist-more-button"
-                                                    id={`playlist-table-more-${track.id}`}
-                                                >
-                                                    <img src={MoreSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-14)] w-[var(--px-19)]" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </article>
+                        {renderTrackRow(track, "dim")}
                     </React.Fragment>
                 );
             })}

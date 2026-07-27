@@ -8,23 +8,31 @@ export interface PlaylistUnlockBandProps {
   maxTracksPerPlaylist: number;
   /** Stack CTAs vertically on narrow viewports. */
   mobile?: boolean;
+  /** Guest locked block uses a floating panel; signed-in keeps the in-flow band. */
+  variant?: "inline" | "floating";
 }
 
 /**
- * In-flow unlock band between the last unlocked result row and the first locked row.
+ * Unlock tease panel — in-flow band (signed-in) or floating over guest blurred rows.
  * Copy and CTAs mirror the legacy entitlement tease — styling only.
  */
 export const PlaylistUnlockBand: React.FC<PlaylistUnlockBandProps> = ({
   isGuest,
   maxTracksPerPlaylist,
   mobile = false,
+  variant = "inline",
 }) => {
   const { trigger: triggerCta } = useEntitlementCta();
+  const isFloating = variant === "floating";
 
   return (
     <div
-      className={`${WORKSPACE_PANEL_CLASS} border-t border-dotted border-slate-200 pointer-events-auto select-text`}
-      data-testid="playlist-unlock-band"
+      className={[
+        WORKSPACE_PANEL_CLASS,
+        isFloating ? "!bg-[#0b0b0b]" : "border-t border-dotted border-slate-200",
+        "pointer-events-auto select-text",
+      ].join(" ")}
+      data-testid={isFloating ? "playlist-unlock-panel" : "playlist-unlock-band"}
     >
       <h3 className="m-0 text-center font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--color-primary)] opacity-80">
         Unlock all matching tracks

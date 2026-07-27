@@ -182,7 +182,8 @@ test.describe.serial('workspace a11y gates', () => {
     await expect(page).toHaveTitle(APP_TITLE)
     await dismissConsent(page)
     await expect(page.getByRole('region', { name: 'Similar tracks' })).toHaveCount(1)
-    await expect(page.getByTestId('playlist-unlock-band')).toBeVisible()
+    await expect(page.getByTestId('playlist-unlock-panel')).toBeVisible()
+    await expect(page.getByTestId('playlist-locked-blur')).toHaveAttribute('aria-hidden', 'true')
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])

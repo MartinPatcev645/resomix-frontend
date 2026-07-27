@@ -309,7 +309,7 @@ function guestPlaylistFixture(trackCount = 15) {
   }
 }
 
-test('guest playlist keeps unlock band between unlocked and locked rows', async ({ page }) => {
+test('guest playlist shows floating unlock panel over blurred locked rows', async ({ page }) => {
   const fixture = guestPlaylistFixture(15)
   await page.addInitScript(seedConsentStorage)
   await mockGuestSession(page)
@@ -342,13 +342,17 @@ test('guest playlist keeps unlock band between unlocked and locked rows', async 
   await dismissConsent(page)
   const resultsTable = page.getByRole('table', { name: 'Similar tracks' })
   await expect(resultsTable).toHaveCount(1)
-  await expect(resultsTable.getByTestId('playlist-unlock-band')).toBeVisible()
-  await expect(resultsTable.getByTestId('playlist-unlock-band')).toHaveCount(1)
+  await expect(page.getByTestId('playlist-unlock-panel')).toBeVisible()
+  await expect(page.getByTestId('playlist-unlock-panel')).toHaveCount(1)
+  await expect(page.getByTestId('playlist-unlock-band')).toHaveCount(0)
+  await expect(page.getByTestId('playlist-locked-blur')).toHaveAttribute('aria-hidden', 'true')
   await expect(page.getByRole('button', { name: /create free account/i })).toBeVisible()
   await expect(page.getByRole('button', { name: /^log in$/i })).toBeVisible()
-  await expect(page.locator('.blur-xs')).toHaveCount(0)
-  await expect(page.locator('[style*="backdrop-filter"]')).toHaveCount(0)
-  await expect(resultsTable.locator('[id^="playlist-table-play-button-"]')).toHaveCount(15)
+  const blurContainer = page.getByTestId('playlist-locked-blur')
+  await expect(blurContainer).toHaveCSS('filter', /blur/)
+  await expect(resultsTable.locator('[id^="playlist-table-play-button-"]')).toHaveCount(10)
+  const lockedRegion = page.getByTestId('playlist-locked-region')
+  await expect(lockedRegion.locator('.playlist-play-button')).toHaveCount(5)
 })
 
 test('discovery submit surfaces session expired modal and keeps reference state', async ({ page }) => {
