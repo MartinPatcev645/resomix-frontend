@@ -29,7 +29,7 @@ export const PlaylistUnlockBand: React.FC<PlaylistUnlockBandProps> = ({
     <div
       className={[
         WORKSPACE_PANEL_CLASS,
-        isFloating ? "!bg-[#0b0b0b]" : "border-t border-dotted border-slate-200",
+        isFloating ? "!bg-[#0b0b0b]" : "border-t border-solid border-[var(--playlist-divider)]",
         "pointer-events-auto select-text",
       ].join(" ")}
       data-testid={isFloating ? "playlist-unlock-panel" : "playlist-unlock-band"}

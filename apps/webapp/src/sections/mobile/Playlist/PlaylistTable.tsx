@@ -10,13 +10,19 @@ import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { rateTrack, deleteTrackRating, getMyPlaylistRatings } from "@resomix/api-client";
 import { HoverFlow, Tooltip } from "@resomix/ui";
 import PauseSvg from "@/assets/icons/pause_white.svg";
+import PlaySvg from "@/assets/icons/play.svg";
 import MoreSvg from "@/assets/icons/more.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 import { scoreBandWidthPct, shortlistScoreRange } from "@/utils/scoreBand.ts";
-import { mobilePlaylistRowGridStyle } from "@/utils/playlistGrid.ts";
+import {
+  PLAYLIST_DIVIDER_BORDER,
+  PLAYLIST_DIVIDER_STRONG,
+  PLAYLIST_VISIBLE_PAGE,
+} from "@/utils/playlistChrome.ts";
+import { useVisibleResultWindow } from "@/hooks/useVisibleResultWindow.ts";
 
 interface PlaylistTableProps {
     onMoreClick?: (trackId: string, name: string, label: string, duration: number, score: number, isInput?: boolean) => void;
@@ -24,7 +30,15 @@ interface PlaylistTableProps {
 
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const { playlistData, trackRatings = {}, setTrackRating, setTrackRatings, removeTrackRating } = usePlaylistStore();
-    const tracks = playlistData?.similar_tracks ?? [];
+    const tracks = useMemo(
+        () => playlistData?.similar_tracks ?? [],
+        [playlistData?.similar_tracks],
+    );
+    const playlistId = playlistData?.playlist?.id;
+    const { visibleCount, canLoadMore, loadMore, remaining } = useVisibleResultWindow(
+        playlistId,
+        tracks.length,
+    );
     const scoreRange = useMemo(
         () => shortlistScoreRange(tracks.map((t) => t.score)),
         [tracks],
@@ -35,23 +49,27 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const maxUnlocked = access.unlockedTracks;
     const isGuest = access.isGuestForCopy;
     const maxTracksPerPlaylist = access.unlockedTracks;
-    const hasLockedRows = tracks.some((t) => t.rank > maxUnlocked);
+
+    const windowedTracks = useMemo(
+        () => tracks.filter((t) => t.rank <= visibleCount),
+        [tracks, visibleCount],
+    );
+    const hasLockedRows = windowedTracks.some((t) => t.rank > maxUnlocked);
     const showUnlockBand = access.teaseReady && hasLockedRows;
     const guestBlurLock = isGuest && showUnlockBand;
     const unlockedTracks = useMemo(
-        () => tracks.filter((t) => t.rank <= maxUnlocked),
-        [tracks, maxUnlocked],
+        () => windowedTracks.filter((t) => t.rank <= maxUnlocked),
+        [windowedTracks, maxUnlocked],
     );
     const lockedTracks = useMemo(
-        () => tracks.filter((t) => t.rank > maxUnlocked),
-        [tracks, maxUnlocked],
+        () => windowedTracks.filter((t) => t.rank > maxUnlocked),
+        [windowedTracks, maxUnlocked],
     );
     const visibleLockedTracks = useMemo(
         () => lockedTracks.slice(0, LOCKED_BLUR_VISIBLE_ROWS),
         [lockedTracks],
     );
 
-    const playlistId = playlistData?.playlist?.id;
     const analysis = playlistId ? loadPlaylistAnalysis(playlistId) : null;
     const footerResultCount = analysis?.resultCount ?? tracks.length;
     const footerTopMatch = analysis?.topMatchScore != null
@@ -63,6 +81,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const hlsController = useGlobalAudioController();
     const currentTrackId = usePlayerStore(s => s.currentTrackId);
     const isPlaying: boolean = usePlayerStore(s => s.isPlaying);
+    const networkError = usePlayerStore(s => s.networkError);
     const [hintFor, setHintFor] = useState<string | null>(null);
     const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -149,14 +168,13 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
 
     const renderTrackRow = (track: (typeof tracks)[number], restrictedMode: "none" | "dim" | "blur") => {
         const isRestricted = restrictedMode !== "none";
-        const isThisPlaying = currentTrackId === track.id && isPlaying;
+        const isSelected = currentTrackId === track.id;
+        const isThisPlaying = isSelected && isPlaying;
+        const isUnavailable = isSelected && networkError;
         const isTopRank = track.rank === 1;
         const bandPct = scoreBandWidthPct(track.score, scoreRange.min, scoreRange.max);
         const labelText = resolveLabel(track.label);
         const genreText = firstGenre(track.genre);
-        const metaLine = [labelText, track.year, genreText, formatDuration(track.duration)]
-            .filter(Boolean)
-            .join(" · ");
         const currentRating = trackRatings[track.id];
         const upSelected = currentRating === 1;
         const downSelected = currentRating === 0;
@@ -165,26 +183,33 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
             <article
                 aria-hidden={restrictedMode === "blur" ? true : undefined}
                 aria-label={restrictedMode === "blur" ? undefined : `${displayOrNA(track.title)} by ${displayOrNA(track.artist)}`}
+                aria-current={isThisPlaying && !isRestricted ? "true" : undefined}
                 className={[
-                    "relative w-full border border-dotted border-slate-200",
-                    isThisPlaying && !isRestricted ? "bg-[rgba(255,255,255,.04)]" : "",
+                    `relative w-full border ${PLAYLIST_DIVIDER_BORDER}`,
+                    isThisPlaying && !isRestricted
+                        ? "border-l-[length:var(--px-3)] border-l-[var(--color-accent,#EE4A26)] bg-[rgba(238,74,38,.07)]"
+                        : "",
+                    isSelected && !isThisPlaying && !isRestricted
+                        ? "bg-[rgba(255,255,255,.03)]"
+                        : "",
+                    isUnavailable && !isRestricted ? "opacity-80" : "",
                     restrictedMode === "dim" ? "pointer-events-none select-none opacity-45" : "",
                     restrictedMode === "blur" ? "pointer-events-none select-none border-t-0 first:border-t" : "",
                 ].join(" ")}
             >
-                <div className="flex justify-between p-[var(--px-8)] pb-[var(--px-12)] relative">
-                    <div className="flex flex-col w-full gap-[var(--px-8)]">
-                        <div
-                            className="grid gap-[var(--px-8)] items-start"
-                            style={mobilePlaylistRowGridStyle}
-                        >
+                <div className="relative flex justify-between p-[var(--px-12)]">
+                    <div className="flex w-full min-w-0 flex-col gap-[var(--px-10)]">
+                        <div className="flex min-w-0 items-start gap-[var(--px-10)]">
                             <div
-                                className={`pt-[var(--px-10)] font-fira text-[length:var(--px-13)] ${isTopRank && !isRestricted ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--color-primary)]"}`}
+                                className={`shrink-0 pt-[var(--px-12)] font-fira text-[length:var(--px-12)] ${isTopRank && !isRestricted ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--color-primary)] opacity-70"}`}
                             >
                                 {isRestricted && (
                                     <span aria-hidden="true" className="mr-[var(--px-2)] text-[length:var(--px-10)]">
                                         ⌾
                                     </span>
+                                )}
+                                {isThisPlaying && !isRestricted && (
+                                    <span className="sr-only">Now playing: </span>
                                 )}
                                 {track.rank}
                             </div>
@@ -195,7 +220,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 tabIndex={restrictedMode === "blur" ? -1 : undefined}
                                 disabled={restrictedMode === "blur"}
                                 onClick={() => handlePlayButtonClick(track.id)}
-                                className="relative flex h-[var(--px-44)] w-[var(--px-40)] items-center justify-center rounded-md border border-dotted border-slate-200 playlist-play-button"
+                                className={`relative flex h-[var(--px-48)] w-[var(--px-48)] shrink-0 items-center justify-center overflow-hidden rounded-md border ${PLAYLIST_DIVIDER_STRONG} playlist-play-button focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]`}
                                 id={`playlist-table-play-button-${track.id}`}
                                 data-track-id={track.id}
                                 data-track-artist={track.artist}
@@ -210,15 +235,18 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         Demo mode - Audio playback limited while we complete licensing
                                     </div>
                                 )}
-                                <TrackArtwork artworkUrl={track.artwork_url} className="absolute inset-0 h-full w-full rounded-md" />
-                                {isThisPlaying && (
-                                    <span className="absolute inset-0 flex items-center justify-center bg-black/45 rounded-md">
-                                        <img src={PauseSvg} alt="" aria-hidden="true" className="h-[var(--px-16)] w-[var(--px-16)]" />
-                                    </span>
-                                )}
+                                <TrackArtwork artworkUrl={track.artwork_url} className="absolute inset-0 h-full w-full rounded-md border-0" />
+                                <span className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-md">
+                                    <img
+                                        src={isThisPlaying ? PauseSvg : PlaySvg}
+                                        alt=""
+                                        aria-hidden="true"
+                                        className="h-[var(--px-16)] w-[var(--px-16)] opacity-95"
+                                    />
+                                </span>
                             </button>
-                            <div className="min-w-0">
-                                <div className="truncate text-[length:var(--px-13)] font-helvetica font-light uppercase leading-[var(--px-16)]">
+                            <div className="min-w-0 flex-1">
+                                <div className="line-clamp-2 text-[length:var(--px-14)] font-helvetica font-light uppercase leading-[var(--px-18)] text-[var(--color-primary)]">
                                     {isThisPlaying ? (
                                         <HoverFlow text={displayOrNA(track.title)} maxChars={32} delay={800} speed={40} endPause={1000} maxWidth="100%" flowAlways={true} />
                                     ) : (
@@ -230,21 +258,43 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         </span>
                                     )}
                                 </div>
-                                <div className="truncate text-[length:var(--px-10)] font-helvetica font-light opacity-75">
+                                <div className="mt-[var(--px-2)] truncate text-[length:var(--px-12)] font-helvetica font-light text-[var(--color-primary-hover)]">
                                     {displayOrNA(track.artist)}
                                 </div>
-                                <div className="mt-[var(--px-4)] truncate font-fira text-[length:var(--px-9)] tracking-[var(--px-0-5)] text-[var(--color-primary)] opacity-60">
-                                    {metaLine}
+                                <div className="mt-[var(--px-6)] flex flex-wrap gap-x-[var(--px-10)] gap-y-[var(--px-2)] font-fira text-[length:var(--px-11)] tracking-[var(--px-0-5)] text-[var(--color-primary-hover)]">
+                                    {track.year != null && <span>{track.year}</span>}
+                                    <span>{formatDuration(track.duration)}</span>
+                                    {genreText && <span className="truncate">{genreText}</span>}
                                 </div>
                             </div>
+                            {!isRestricted && (
+                                <button
+                                    type="button"
+                                    aria-label="More"
+                                    onClick={() =>
+                                        onMoreClick?.(
+                                            track.id,
+                                            `${track.artist} - ${track.title}`,
+                                            track.label,
+                                            track.duration,
+                                            track.score,
+                                            false,
+                                        )
+                                    }
+                                    className="flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center text-[var(--color-primary-hover)] opacity-80 playlist-more-button focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
+                                    id={`playlist-table-more-${track.id}`}
+                                >
+                                    <img src={MoreSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-14)] w-[var(--px-19)]" />
+                                </button>
+                            )}
                         </div>
-                        <div className="flex items-center gap-[var(--px-8)] min-w-0">
-                            <span className={`shrink-0 font-fira text-[length:var(--px-10)] ${isTopRank && !isRestricted ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--color-primary)] opacity-75"}`}>
+                        <div className="flex min-w-0 items-center gap-[var(--px-10)]">
+                            <span className={`shrink-0 font-fira text-[length:var(--px-12)] ${isTopRank || isThisPlaying ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--color-primary)]"}`}>
                                 {formatPercentage(track.score, 2)}
                             </span>
-                            <div className="h-[var(--px-3)] flex-1 bg-[rgba(255,255,255,.08)] relative overflow-hidden" aria-hidden="true">
+                            <div className="relative h-[var(--px-3)] flex-1 overflow-hidden bg-[rgba(255,255,255,.14)]" aria-hidden="true">
                                 <div
-                                    className={`absolute left-0 top-0 bottom-0 ${isTopRank && !isRestricted ? "bg-[var(--color-accent,#EE4A26)]" : "bg-[var(--color-primary-hover)]"}`}
+                                    className={`absolute bottom-0 left-0 top-0 ${isTopRank || isThisPlaying ? "bg-[var(--color-accent,#EE4A26)]" : "bg-[var(--color-primary-hover)]"}`}
                                     style={{ width: `${bandPct}%` }}
                                 />
                             </div>
@@ -260,17 +310,17 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                         )}
                         {!isRestricted && (
                             <div className="flex items-center justify-between gap-[var(--px-8)]">
-                                <div className="flex min-h-[var(--px-44)] items-center gap-[var(--px-10)]">
+                                <div className="flex min-h-[var(--px-44)] items-center gap-[var(--px-4)]">
                                     <Tooltip message="Yes Similar to Input Track!">
                                         <button
                                             type="button"
                                             aria-label="Mark as similar"
                                             onClick={() => void handleTrackRating(track.id, 1)}
-                                            className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center"
+                                            className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
                                             id={`playlist-table-thumb-up-${track.id}`}
                                         >
                                             <ThumbIcon
-                                                className={`h-[var(--px-16)] w-[var(--px-16)] ${upSelected ? "fill-current" : "fill-transparent hover:fill-current"} hover:text-[var(--color-primary)]`}
+                                                className={`h-[var(--px-16)] w-[var(--px-16)] ${upSelected ? "fill-current" : "fill-transparent hover:fill-current"} opacity-85 hover:text-[var(--color-primary)]`}
                                             />
                                         </button>
                                     </Tooltip>
@@ -279,22 +329,22 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                             type="button"
                                             aria-label="Mark as not similar"
                                             onClick={() => void handleTrackRating(track.id, 0)}
-                                            className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center"
+                                            className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
                                             id={`playlist-table-thumb-down-${track.id}`}
                                         >
                                             <ThumbIcon
-                                                className={`h-[var(--px-16)] w-[var(--px-16)] rotate-180 ${downSelected ? "fill-current" : "fill-transparent hover:fill-current"} hover:text-[var(--color-primary)]`}
+                                                className={`h-[var(--px-16)] w-[var(--px-16)] rotate-180 ${downSelected ? "fill-current" : "fill-transparent hover:fill-current"} opacity-85 hover:text-[var(--color-primary)]`}
                                             />
                                         </button>
                                     </Tooltip>
                                 </div>
-                                <div className="flex min-h-[var(--px-44)] items-center gap-[var(--px-8)]">
+                                <div className="flex min-h-[var(--px-44)] items-center gap-[var(--px-4)]">
                                     {track.type === "internal" && track.deep_link_url && !isThisPlaying && (
                                         <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
                                     )}
                                     <button
                                         type="button"
-                                        className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center playlist-sonic-discovery-button"
+                                        className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center playlist-sonic-discovery-button opacity-85 hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
                                         onClick={() => {
                                             window.open(`${BASE_BETA_URL}/?id=${track.id}`, "_blank");
                                         }}
@@ -303,24 +353,6 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         data-track-id={track.id}
                                     >
                                         <img src={SonicDiscoverySvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-16)] w-[var(--px-16)]" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        aria-label="More"
-                                        onClick={() =>
-                                            onMoreClick?.(
-                                                track.id,
-                                                `${track.artist} - ${track.title}`,
-                                                track.label,
-                                                track.duration,
-                                                track.score,
-                                                false,
-                                            )
-                                        }
-                                        className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center text-[#5C5C5C] playlist-more-button"
-                                        id={`playlist-table-more-${track.id}`}
-                                    >
-                                        <img src={MoreSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-14)] w-[var(--px-19)]" />
                                     </button>
                                 </div>
                             </div>
@@ -332,8 +364,16 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     };
 
     return (
-        <section className="mt-[var(--px-25)] flex w-full flex-col items-center justify-start gap-[var(--px-10)]" aria-label="Similar tracks">
-            <h2 className="sr-only">Similar Tracks</h2>
+        <section className="mt-[var(--px-20)] flex w-full flex-col items-center justify-start gap-[var(--px-8)]" aria-label="Similar tracks">
+            <div className="mb-[var(--px-4)] flex w-full items-center gap-[var(--px-10)]">
+                <span
+                    aria-hidden="true"
+                    className="block h-[var(--px-2)] w-[var(--px-28)] bg-[var(--color-accent,#EE4A26)]"
+                />
+                <h2 className="m-0 font-fira text-[length:var(--px-11)] font-medium uppercase tracking-[var(--px-2)] text-[var(--color-primary)]">
+                    Similar tracks for this reference
+                </h2>
+            </div>
             {unlockedTracks.map((track) => (
                 <React.Fragment key={track.id}>
                     {renderTrackRow(track, "none")}
@@ -368,6 +408,23 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                     </React.Fragment>
                 );
             })}
+
+            <div className="mt-[var(--px-10)] flex w-full flex-col items-center gap-[var(--px-8)]">
+                {canLoadMore ? (
+                    <button
+                        type="button"
+                        onClick={loadMore}
+                        className={`inline-flex min-h-[var(--px-44)] w-full max-w-[var(--px-320)] items-center justify-center border ${PLAYLIST_DIVIDER_STRONG} px-[var(--px-22)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-90 hover:bg-[rgba(255,255,255,.04)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]`}
+                        id="playlist-load-more"
+                    >
+                        Load {Math.min(PLAYLIST_VISIBLE_PAGE, remaining)} more
+                    </button>
+                ) : null}
+                <p className="m-0 font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] text-[var(--color-primary)] opacity-70">
+                    Showing {Math.min(visibleCount, tracks.length)} of {tracks.length} results
+                </p>
+            </div>
+
             <p className="mt-[var(--px-8)] w-full text-right font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] text-[var(--color-primary)] opacity-60">
                 Matched by PYXIS-1 · {footerResultCount} results
                 {footerTopMatch ? ` · Top match: ${footerTopMatch}` : ""}

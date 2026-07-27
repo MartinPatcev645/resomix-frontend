@@ -10,6 +10,10 @@
   --color-text-secondary: #ffffff;
   --color-light-theme: #B9B9B9;
   --color-neon-orange: #EE4A26;
+  /* Playlist / similarity-results separators — near-background, never bright white */
+  --playlist-divider: rgba(255, 255, 255, 0.09);
+  --playlist-divider-strong: rgba(255, 255, 255, 0.14);
+  --playlist-compact-bar-h: 0px;
   /* Transparency levels (black base) */
   --opacity-10: rgba(0, 0, 0, 0.10);
   --opacity-15: rgba(0, 0, 0, 0.15);

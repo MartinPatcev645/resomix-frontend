@@ -20,12 +20,15 @@ import { DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
 import { useNavigate, useLocation } from "react-router-dom";
 import { playlistAccessChrome, PLAYLIST_LOCK_MARK } from "@/utils/playlistAccessChrome.ts";
+import { StickyReferenceBar } from "@/components/Playlist/StickyReferenceBar.tsx";
+import { PLAYLIST_DIVIDER_BORDER, PLAYLIST_DIVIDER_STRONG } from "@/utils/playlistChrome.ts";
 
 const InputTrackStatus = "Loading...";
 
 const TOOLBAR_PILL = "min-w-[var(--px-80)]";
 
 const PlaylistHero: React.FC = () => {
+  const stickySentinelRef = React.useRef<HTMLDivElement | null>(null);
   const [showMeta, setShowMeta] = React.useState(false);
   const [showRating, setShowRating] = React.useState(false);
   const [showRename, setShowRename] = React.useState(false);
@@ -228,7 +231,7 @@ const PlaylistHero: React.FC = () => {
                 e.preventDefault();
                 navigate("/library");
               }}
-              className="inline-flex min-h-[var(--px-44)] items-center rounded-full border border-dotted border-slate-200 px-[var(--px-12)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-80 playlist-nav-link"
+              className={`inline-flex min-h-[var(--px-44)] items-center rounded-full border ${PLAYLIST_DIVIDER_STRONG} px-[var(--px-12)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-90 playlist-nav-link`}
               id="playlist-hero-back-link"
               aria-label="Back to Library"
             >
@@ -241,7 +244,7 @@ const PlaylistHero: React.FC = () => {
                 e.preventDefault();
                 navigate("/sonic-discovery");
               }}
-              className="inline-flex min-h-[var(--px-44)] items-center rounded-full border border-dotted border-slate-200 px-[var(--px-12)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-80 playlist-nav-link"
+              className={`inline-flex min-h-[var(--px-44)] items-center rounded-full border ${PLAYLIST_DIVIDER_STRONG} px-[var(--px-12)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-90 playlist-nav-link`}
               id="playlist-hero-back-link"
               aria-label="Back to search"
             >
@@ -292,7 +295,7 @@ const PlaylistHero: React.FC = () => {
                 ref={exportMenuRef}
                 role="menu"
                 aria-label="Export options"
-                className="absolute left-0 top-[calc(100%+var(--px-6))] z-50 min-w-[var(--px-220)] border border-dotted border-slate-200 bg-[var(--color-secondary-background)] text-white shadow-lg"
+                className={`absolute left-0 top-[calc(100%+var(--px-6))] z-50 min-w-[var(--px-220)] border ${PLAYLIST_DIVIDER_STRONG} bg-[var(--color-secondary-background)] text-white shadow-lg`}
               >
                 <button
                   role="menuitem"
@@ -304,7 +307,7 @@ const PlaylistHero: React.FC = () => {
                 </button>
                 <button
                   role="menuitem"
-                  className="flex w-full items-center gap-[var(--px-8)] border-t border-dotted border-slate-200/40 px-[var(--px-12)] py-[var(--px-10)] text-left font-fira text-[length:var(--px-9)] font-light tracking-[var(--px-0-25)] transition-colors hover:bg-white hover:text-black"
+                  className={`flex w-full items-center gap-[var(--px-8)] border-t ${PLAYLIST_DIVIDER_BORDER} px-[var(--px-12)] py-[var(--px-10)] text-left font-fira text-[length:var(--px-9)] font-light tracking-[var(--px-0-25)] transition-colors hover:bg-white hover:text-black`}
                   onClick={handleAppleExportClick}
                   id="export-menu-apple"
                 >
@@ -330,8 +333,8 @@ const PlaylistHero: React.FC = () => {
       </div>
 
       {/* Header card — stacked mobile anatomy */}
-      <div className="relative flex flex-col gap-[var(--px-14)] border border-[rgba(255,255,255,.14)] bg-[#101010] p-[var(--px-16)]">
-        <div className="relative h-[var(--px-88)] w-[var(--px-88)] shrink-0 border border-[rgba(255,255,255,.14)]">
+      <div className={`relative flex flex-col gap-[var(--px-14)] border ${PLAYLIST_DIVIDER_STRONG} bg-[#101010] p-[var(--px-16)] before:absolute before:left-[var(--px-16)] before:top-0 before:block before:w-[var(--px-28)] before:border-t before:border-[var(--color-accent,#EE4A26)] before:content-['']`}>
+        <div className={`relative h-[var(--px-88)] w-[var(--px-88)] shrink-0 border ${PLAYLIST_DIVIDER_BORDER}`}>
           {!DEMO_MODE ? (
             <img
               src={(hasCustomCover ? customCoverUrl : null) || DefaultCover}
@@ -501,10 +504,16 @@ const PlaylistHero: React.FC = () => {
           </div>
         )}
       </div>
+      <div ref={stickySentinelRef} aria-hidden="true" className="h-px w-full" data-testid="playlist-ref-sentinel" />
 
       <p className="mt-[var(--px-12)] mb-[var(--px-16)] flex items-center gap-[var(--px-10)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50 before:block before:w-[var(--px-20)] before:border-t before:border-[var(--color-accent,#EE4A26)] before:content-['']">
         Sonic match found — scored by PYXIS-1
       </p>
+
+      <StickyReferenceBar
+        sentinelRef={stickySentinelRef}
+        resultCount={playlistData?.similar_tracks?.length ?? 0}
+      />
 
       <CoverCropModal isOpen={!!cropSrc} imageSrc={cropSrc} onCancel={closeCrop} onConfirm={handleCropConfirm} />
       <GateCtaModal reason={gate?.reason ?? null} title={gate?.title} body={gate?.body} onClose={() => setGate(null)} />

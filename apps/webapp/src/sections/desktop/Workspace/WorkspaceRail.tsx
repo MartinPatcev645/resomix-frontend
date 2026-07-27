@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getAllPlaylists } from "@resomix/api-client";
 import { displayArtistOrOmit, sanitizeWorkspaceTitle } from "@/utils/trackUtils.ts";
 import { useRecentAnalyses } from "@/pages/analysis/useRecentAnalyses.ts";
+import { PLAYLIST_DIVIDER_BORDER, PLAYLIST_DIVIDER_STRONG } from "@/utils/playlistChrome.ts";
 
 interface RailPlaylist {
   uuid: string;
@@ -22,17 +23,26 @@ function relativeWhen(iso: string): string {
   return then.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-const panelClass =
-  "border border-dotted border-slate-200 bg-[rgba(255,255,255,.02)] px-[var(--px-18)] py-[var(--px-16)]";
+const primaryPanelClass =
+  `border ${PLAYLIST_DIVIDER_STRONG} bg-[rgba(255,255,255,.03)] px-[var(--px-18)] py-[var(--px-16)]`;
 
-const headingClass =
-  "mb-[var(--px-8)] font-fira text-[length:var(--px-10)] font-medium uppercase tracking-[var(--px-2)] text-[var(--color-primary)] opacity-75";
+const secondaryPanelClass =
+  `border ${PLAYLIST_DIVIDER_BORDER} bg-[rgba(255,255,255,.015)] px-[var(--px-18)] py-[var(--px-16)] opacity-90`;
+
+const primaryHeadingClass =
+  "mb-[var(--px-10)] font-fira text-[length:var(--px-11)] font-medium uppercase tracking-[var(--px-2)] text-[var(--color-primary)]";
+
+const secondaryHeadingClass =
+  "mb-[var(--px-8)] font-fira text-[length:var(--px-10)] font-medium uppercase tracking-[var(--px-2)] text-[var(--color-primary)] opacity-60";
 
 const itemBtnClass =
-  "block w-full py-[var(--px-8)] text-left text-[length:var(--px-13)] font-helvetica font-light text-[var(--color-primary)] opacity-80 transition-opacity hover:opacity-100 min-h-[var(--px-44)]";
+  "block w-full py-[var(--px-8)] text-left text-[length:var(--px-13)] font-helvetica font-light text-[var(--color-primary)] opacity-80 transition-opacity hover:opacity-100 min-h-[var(--px-44)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]";
+
+const activeItemBtnClass =
+  "relative block w-full border-l-[length:var(--px-3)] border-l-[var(--color-accent,#EE4A26)] bg-[rgba(238,74,38,.1)] py-[var(--px-8)] pl-[calc(var(--px-8)+var(--px-2))] text-left text-[length:var(--px-13)] font-helvetica font-light text-[var(--color-primary)] min-h-[var(--px-44)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]";
 
 const metaClass =
-  "mt-[var(--px-2)] block font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-45";
+  "mt-[var(--px-2)] block font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-55";
 
 /**
  * Variant A signed-in rail — recent similarity playlists, recent analyses, Library link.
@@ -40,6 +50,8 @@ const metaClass =
  */
 export const WorkspaceRail: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const activePlaylistId = searchParams.get("id");
   const { items: analyses } = useRecentAnalyses(true, 5);
   const [playlists, setPlaylists] = useState<RailPlaylist[]>([]);
 
@@ -67,39 +79,43 @@ export const WorkspaceRail: React.FC = () => {
   }, []);
 
   return (
-    <aside className="hidden lg:block" aria-label="Recent work">
+    <aside className="hidden lg:block lg:sticky lg:top-[var(--nav-sticky-h)] lg:self-start" aria-label="Recent work">
       <div className="space-y-[var(--px-16)]">
-        <div className={panelClass}>
-          <h2 className={headingClass}>Similarity playlists</h2>
+        <div className={primaryPanelClass}>
+          <h2 className={primaryHeadingClass}>Similarity playlists</h2>
           {playlists.length === 0 ? (
             <p className="font-fira text-[length:var(--px-10)] opacity-45">No playlists yet.</p>
           ) : (
-            <ul className="divide-y divide-dotted divide-slate-200">
-              {playlists.map((p) => (
-                <li key={p.uuid}>
-                  <button
-                    type="button"
-                    className={itemBtnClass}
-                    onClick={() => navigate(`/sonic-discovery?id=${p.uuid}`)}
-                  >
-                    {p.name}
-                    <span className={metaClass}>
-                      {p.trackCount} track{p.trackCount === 1 ? "" : "s"}
-                      {p.createdAt ? ` · ${relativeWhen(p.createdAt)}` : ""}
-                    </span>
-                  </button>
-                </li>
-              ))}
+            <ul className={`divide-y divide-solid divide-[var(--playlist-divider)]`}>
+              {playlists.map((p) => {
+                const isActive = activePlaylistId === p.uuid;
+                return (
+                  <li key={p.uuid}>
+                    <button
+                      type="button"
+                      className={isActive ? activeItemBtnClass : itemBtnClass}
+                      aria-current={isActive ? "page" : undefined}
+                      onClick={() => navigate(`/sonic-discovery?id=${p.uuid}`)}
+                    >
+                      {p.name}
+                      <span className={metaClass}>
+                        {p.trackCount} track{p.trackCount === 1 ? "" : "s"}
+                        {p.createdAt ? ` · ${relativeWhen(p.createdAt)}` : ""}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
 
-        <div className={panelClass}>
-          <h2 className={headingClass}>Recent analyses</h2>
+        <div className={secondaryPanelClass}>
+          <h2 className={secondaryHeadingClass}>Recent analyses</h2>
           {analyses.length === 0 ? (
             <p className="font-fira text-[length:var(--px-10)] opacity-45">No analyses yet.</p>
           ) : (
-            <ul className="divide-y divide-dotted divide-slate-200">
+            <ul className={`divide-y divide-solid divide-[var(--playlist-divider)]`}>
               {analyses.map((a) => (
                 <li key={a.analysisUuid}>
                   <button
@@ -119,8 +135,8 @@ export const WorkspaceRail: React.FC = () => {
           )}
         </div>
 
-        <div className={panelClass}>
-          <h2 className={headingClass}>Library</h2>
+        <div className={secondaryPanelClass}>
+          <h2 className={secondaryHeadingClass}>Library</h2>
           <ul>
             <li>
               <button type="button" className={itemBtnClass} onClick={() => navigate("/library")}>

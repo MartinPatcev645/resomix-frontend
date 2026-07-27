@@ -14,7 +14,7 @@ export function TrackArtwork({
 }) {
   return (
     <div
-      className={`flex-shrink-0 border border-dotted border-slate-200 bg-black/40 flex items-center justify-center overflow-hidden ${className}`.trim()}
+      className={`flex-shrink-0 border border-solid border-[var(--playlist-divider)] bg-black/40 flex items-center justify-center overflow-hidden ${className}`.trim()}
     >
       {artworkUrl ? (
         <img
