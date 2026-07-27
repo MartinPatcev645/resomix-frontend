@@ -1,0 +1,44 @@
+---
+description: Git branch, commit, and push workflow for george-updates
+alwaysApply: true
+---
+
+# Git workflow — george-updates
+
+## Repository
+
+- **Active project root:** `/Users/astor/Documents/resomix-web` (GitHub clone).
+- **Do not use** `resomix-web_bak` — that folder is disconnected from git and stale.
+- **Working branch:** `george-updates` (tracks `origin/george-updates`).
+- **Base branch:** `main` — never merge into `main` locally; integration happens via GitHub PR only.
+
+## Commits
+
+- **Never commit unless the user explicitly asks** (e.g. "commit this", "create a commit").
+- When asked to commit:
+  1. Run `git status`, `git diff`, and `git log -5 --oneline` to understand the change set.
+  2. Stage only relevant files; never commit secrets (`.env`, credentials).
+  3. Write a concise message focused on *why*, matching recent repo style.
+  4. Commit on `george-updates` — do not switch to or merge with `main`.
+- **Leave changes uncommitted** after normal task work unless the user requests a commit.
+
+## Push
+
+- **Only push when the user explicitly asks** (typically right after a commit request).
+- Push to `origin george-updates`: `git push origin george-updates` (or `git push -u origin HEAD` if upstream is missing).
+- Never force-push `main`/`master`. Avoid force-push on `george-updates` unless the user explicitly requests it.
+
+## Ignored local docs
+
+These paths exist locally but are **gitignored** — do not expect them in commits or on the remote:
+
+- `docs/page-demos/`
+- `docs/design-lab/`
+
+Work that lives only in those folders stays local unless the user changes `.gitignore`.
+
+## Dev environment
+
+- Package manager: **pnpm** (`pnpm@10.13.1`).
+- Install: `pnpm install` (from repo root).
+- Landing dev server: `pnpm dev:landing`.

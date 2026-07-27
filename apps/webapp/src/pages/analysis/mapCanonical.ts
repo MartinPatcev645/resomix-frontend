@@ -72,6 +72,7 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
   const sem = raw?.semantics ?? {};
   const tl = raw?.timeline ?? {};
   const comp = raw?.composition ?? {};
+  const rd = raw?.readings ?? {};
 
   const beats = arr<number>(rhy.beat_times_seconds);
 
@@ -158,6 +159,11 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
     composition: {
       stems: stemRecord(comp.stems),
       vocalRegions: regions(comp.vocal_regions),
+    },
+    readings: {
+      forDj: str(rd.for_dj ?? rd.dj ?? rd.for_djs),
+      forProducers: str(rd.for_producers ?? rd.producers ?? rd.for_producer),
+      forCurators: str(rd.for_curators ?? rd.curators ?? rd.for_curator),
     },
   };
 }

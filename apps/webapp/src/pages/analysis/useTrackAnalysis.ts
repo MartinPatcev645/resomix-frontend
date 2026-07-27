@@ -27,6 +27,7 @@ import {
 import type { AnalysisData } from "./data.js";
 import { mapCanonicalToAnalysisData } from "./mapCanonical.js";
 import { makePlayableUrl } from "./audioPlayable.js";
+import { shouldDeferToSessionExpiredModal } from "@/utils/sessionExpiryGuard.ts";
 
 /** resomix-analysis-service (FastAPI) public base URL. Used by the dev-direct fallback AND by the
  *  direct-from-cache result fetch below (the served cache lives on the analysis service). */
@@ -334,6 +335,7 @@ export function useTrackAnalysis() {
         }),
       );
     } catch (e) {
+      if (shouldDeferToSessionExpiredModal()) return;
       live(() => setError(e instanceof Error ? e.message : "Analysis failed"));
       live(() => setStatus("error"));
     }
@@ -383,6 +385,7 @@ export function useTrackAnalysis() {
         }),
       );
     } catch (e) {
+      if (shouldDeferToSessionExpiredModal()) return;
       live(() => setError(e instanceof Error ? e.message : "Could not load analysis"));
       live(() => setStatus("error"));
     }

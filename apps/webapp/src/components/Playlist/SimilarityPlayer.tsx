@@ -1,166 +1,157 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
 import SoundLowSvg from "@/assets/icons/sound_low.svg";
-import NetworkSvg from "@/assets/icons/network-aleft.svg";
-import { useWaveformControls, formatTime } from "@resomix/hooks";
+import { useWaveformControls, formatTime, useGlobalAudioController } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 import { WaveformLoader } from "@resomix/ui";
 import { PreviewProgressBar } from "@/components/Playlist/PreviewProgressBar.tsx";
-import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
+import { PlaybackUnavailable } from "@/components/Playlist/PlaybackUnavailable.tsx";
 
 
 interface SimilarityPlayerProps {
   trackId: string;
   totalDuration: number;
   isPlaying?: boolean;
-  /** When set, the "Listen on Apple Music" lockup renders inline on mobile, and pinned above the timer on desktop. */
-  appleDeepLinkUrl?: string | null;
-  /**
-   * Label + genre move here while the track plays (the row hides them in their own columns), so the
-   * control row reads: skip · volume · label · genre · time. Already display-resolved by the caller.
-   */
+  /** Label + genre — shown in the control row while the track plays (row columns hide them). */
   label?: string | null;
   genre?: string | null;
 }
 
-const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration, appleDeepLinkUrl, label, genre }) => {
+const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration, label, genre }) => {
   const volume = usePlayerStore((s) => s.volume);
   const networkError = usePlayerStore((s) => s.networkError);
+  const networkErrorReason = usePlayerStore((s) => s.networkErrorReason);
   const ctl = useWaveformControls({ id: trackId, totalDuration });
+  const hlsController = useGlobalAudioController();
 
-  // Initialize Peaks by attaching the overview element (matches previous behavior)
+  const playbackFailed = Boolean(ctl.wfError || networkError);
+  const playbackDetail = ctl.wfError || networkErrorReason || (networkError ? "network-error" : null);
+
+  const retryPlayback = () => {
+    hlsController.load(trackId, true);
+  };
+
+  const elapsed = formatTime(ctl.uiTime);
+  const metaLine = useMemo(() => {
+    const parts = [label, genre].filter(Boolean);
+    return parts.length > 0 ? `${parts.join(" · ")} · ${elapsed}` : elapsed;
+  }, [label, genre, elapsed]);
+
   useEffect(() => {
     if (ctl.containerRef.current) {
       ctl.attachOverviewElement(ctl.containerRef.current);
     }
   }, [ctl.attachOverviewElement, ctl.containerRef]);
 
+  const skipClass =
+    "font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-9)] flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center gap-[var(--px-3)] px-[var(--px-4)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)] player-control";
+
+  const seekBar = ctl.isPreview ? (
+    <PreviewProgressBar
+      compact
+      currentTime={ctl.uiTime}
+      duration={ctl.getPlayableDuration()}
+      onSeek={ctl.seekTo}
+    />
+  ) : (
+    <div className="relative h-[var(--px-3)] w-full min-w-0 flex items-center">
+      <div
+        ref={ctl.containerRef}
+        className={`h-full w-full ${ctl.wfLoading ? "invisible" : "visible"}`}
+      />
+      {ctl.wfLoading && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <WaveformLoader />
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className="flex flex-col w-full gap-[var(--px-5)]">
-      <div className="h-[var(--px-50)] overflow-y-hidden relative flex items-center">
-        {ctl.isPreview ? (
-          <PreviewProgressBar currentTime={ctl.uiTime} duration={ctl.getPlayableDuration()} onSeek={ctl.seekTo} />
-        ) : (
-          <>
-            <div
-              ref={ctl.containerRef}
-              className={`w-full h-full ${ctl.wfLoading ? "invisible" : "visible"}`}
-            >
-            </div>
-            {ctl.wfLoading && (
-              <div className="absolute inset-0 flex items-center justify-center z-50">
-                <WaveformLoader />
-              </div>
-            )}
-            {ctl.wfError && <div className="text-center text-sm text-red-500 absolute inset-0 flex items-center justify-center">Error: {ctl.wfError}</div>}
-          </>
-        )}
-      </div>
-
-      <div className="relative flex items-center justify-between w-full">
-        <div className="flex items-center gap-[var(--px-4)] lg:gap-[var(--px-10)] justify-between lg:justify-start">
-          <button
-            type="button"
-            onClick={ctl.skipBackward}
-            className="font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] py-[var(--px-2)] px-[var(--px-10)] lg:px-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)] player-control player-control-skip-backward"
-          >
-            <img src={NextTrackSvg} aria-label="Previous Track" draggable={false} alt="Previous Track" className="w-[var(--px-14)] lg:w-[var(--px-10)] h-[var(--px-10)] rotate-180" />
-            <span className="mt-[var(--px-3)]">10s</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={ctl.skipForward}
-            className="font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-7)] flex items-center gap-[var(--px-3)] py-[var(--px-2)] px-[var(--px-10)] lg:px-[var(--px-2)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)] player-control player-control-skip-forward"
-          >
-            <span className="mt-[var(--px-3)]">10s</span>
-            <img src={NextTrackSvg} aria-label="Next Track" draggable={false} alt="Next Track" className="w-[var(--px-10)] lg:w-[var(--px-10)] h-[var(--px-10)] mt-[var(--px-3)]" />
-          </button>
-        </div>
-
-        <div className="hidden lg:flex items-center gap-[var(--px-8)]">
-          <button
-            type="button"
-            onClick={ctl.toggleMute}
-            className="flex items-center justify-center w-[var(--px-16)] h-[var(--px-16)] player-control player-control-mute-toggle"
-          >
-            {volume === 0 ? (
-              <img src={SoundMuteSvg} draggable={false} alt="" aria-hidden="true" className="w-full h-full" />
-            ) : volume < 0.5 ? (
-              <img src={SoundLowSvg} draggable={false} alt="" aria-hidden="true" className="w-full h-full" />
+    <div className="flex w-full flex-col gap-[var(--px-6)] py-[var(--px-4)]">
+      {/* Desktop: seek · skips · volume · meta on one row. Mobile: controls row then meta row. */}
+      <div className="flex w-full flex-col gap-[var(--px-6)] lg:flex-row lg:items-center lg:gap-[var(--px-10)]">
+        <div className="flex min-h-[var(--px-44)] min-w-0 flex-1 items-center gap-[var(--px-6)] lg:gap-[var(--px-8)]">
+          <div className="min-w-0 flex-1">
+            {playbackFailed ? (
+              <PlaybackUnavailable onRetry={retryPlayback} compact detail={playbackDetail} />
             ) : (
-              <img src={SoundLoudSvg} draggable={false} alt="" aria-hidden="true" className="w-full h-full" />
+              seekBar
             )}
-          </button>
+          </div>
 
-          <div className="relative flex items-center w-[var(--px-80)]">
-            <div className="absolute w-[var(--px-80)] h-[var(--px-1)] bg-white"></div>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={volume}
-              onChange={ctl.handleVolumeChange}
-              aria-label="Volume"
-              className="relative w-full h-[var(--px-2)] appearance-none cursor-pointer bg-transparent z-10 [&::-webkit-slider-track]:bg-transparent [&::-webkit-slider-track]:h-[var(--px-1)] [&::-webkit-slider-track]:rounded-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[var(--px-2)] [&::-webkit-slider-thumb]:h-[var(--px-8)] [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-none [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-track]:bg-transparent [&::-moz-range-track]:h-[var(--px-1)] [&::-moz-range-track]:border-none [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-[var(--px-2)] [&::-moz-range-thumb]:h-[var(--px-8)] [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:cursor-pointer player-control player-control-volume-slider"
-            />
+          <div className="flex shrink-0 items-center gap-[var(--px-2)]">
+            <button
+              type="button"
+              onClick={ctl.skipBackward}
+              aria-label="Skip back 10 seconds"
+              className={`${skipClass} player-control-skip-backward`}
+            >
+              <img
+                src={NextTrackSvg}
+                draggable={false}
+                alt=""
+                aria-hidden="true"
+                className="h-[var(--px-10)] w-[var(--px-10)] rotate-180 lg:h-[var(--px-8)] lg:w-[var(--px-8)]"
+              />
+              <span className="mt-[var(--px-1)]">10s</span>
+            </button>
+            <button
+              type="button"
+              onClick={ctl.skipForward}
+              aria-label="Skip forward 10 seconds"
+              className={`${skipClass} player-control-skip-forward`}
+            >
+              <span className="mt-[var(--px-1)]">10s</span>
+              <img
+                src={NextTrackSvg}
+                draggable={false}
+                alt=""
+                aria-hidden="true"
+                className="mt-[var(--px-1)] h-[var(--px-10)] w-[var(--px-10)] lg:h-[var(--px-8)] lg:w-[var(--px-8)]"
+              />
+            </button>
+          </div>
+
+          <div className="flex w-[var(--px-64)] shrink-0 items-center gap-[var(--px-6)]">
+            <button
+              type="button"
+              onClick={ctl.toggleMute}
+              aria-label={volume === 0 ? "Unmute" : "Mute"}
+              className="flex h-[var(--px-44)] w-[var(--px-16)] shrink-0 items-center justify-center player-control player-control-mute-toggle"
+            >
+              {volume === 0 ? (
+                <img src={SoundMuteSvg} draggable={false} alt="" aria-hidden="true" className="h-full w-full" />
+              ) : volume < 0.5 ? (
+                <img src={SoundLowSvg} draggable={false} alt="" aria-hidden="true" className="h-full w-full" />
+              ) : (
+                <img src={SoundLoudSvg} draggable={false} alt="" aria-hidden="true" className="h-full w-full" />
+              )}
+            </button>
+            <div className="relative flex min-w-0 flex-1 items-center">
+              <div className="absolute h-[var(--px-1)] w-full bg-white/20" />
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={ctl.handleVolumeChange}
+                aria-label="Volume"
+                className="relative z-10 h-[var(--px-44)] w-full cursor-pointer appearance-none bg-transparent [&::-moz-range-thumb]:h-[var(--px-8)] [&::-moz-range-thumb]:w-[var(--px-2)] [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-none [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-white [&::-moz-range-track]:h-[var(--px-1)] [&::-moz-range-track]:border-none [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:h-[var(--px-8)] [&::-webkit-slider-thumb]:w-[var(--px-2)] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-track]:h-[var(--px-1)] [&::-webkit-slider-track]:rounded-none [&::-webkit-slider-track]:bg-transparent player-control player-control-volume-slider"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Lifted out of the flex flow and pinned above the timer (bottom-right of the control row)
-            on BOTH breakpoints, so it sits above the duration instead of squeezing the row. */}
-        {appleDeepLinkUrl && (
-          <AppleMusicBadge
-            deepLinkUrl={appleDeepLinkUrl}
-            playing
-            fullHeightClass="h-[var(--px-20)]"
-            className="absolute right-0 bottom-full z-10"
-          />
-        )}
-
-        {/* Label then genre — the row's own Label/Genre cells hide these while the track plays.
-            On mobile the label is centered in this control row (genre isn't passed there); on desktop
-            (lg:) it stays in the normal right-aligned flow next to genre + time. */}
-        {label && (
-          <span
-            title={label}
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 lg:static lg:translate-x-0 lg:translate-y-0 text-[length:var(--px-9)] lg:text-[length:var(--px-8)] font-fira font-light text-[var(--color-primary-hover)] truncate max-w-[var(--px-130)]"
-          >
-            {label}
-          </span>
-        )}
-        {genre && (
-          <span
-            title={genre}
-            className="text-[length:var(--px-9)] lg:text-[length:var(--px-8)] font-fira font-light text-[var(--color-primary-hover)] truncate max-w-[var(--px-100)]"
-          >
-            {genre}
-          </span>
-        )}
-
-        <time className="text-[length:var(--px-10)] lg:text-[length:var(--px-8)] text-right font-fira font-light">
-          {formatTime(ctl.uiTime)} / {formatTime(ctl.isPreview ? ctl.getPlayableDuration() : totalDuration)}
-        </time>
-        {networkError && (
-          <div className="absolute bottom-2 left-32 flex items-center gap-[var(--px-3)] text-yellow-200">
-            <span aria-hidden="true" className="inline-block w-[var(--px-12)] h-[var(--px-12)] bg-current"
-              style={{
-                WebkitMaskImage: `url("${NetworkSvg}")`,
-                WebkitMaskRepeat: "no-repeat",
-                WebkitMaskPosition: "center",
-                WebkitMaskSize: "contain",
-                maskImage: `url("${NetworkSvg}")`,
-                maskRepeat: "no-repeat",
-                maskPosition: "center",
-                maskSize: "contain",
-              }}
-            />
-            <span className="text-[length:var(--px-10)]">Network</span>
-          </div>
-        )}
+        <p
+          className="m-0 w-full shrink-0 text-right font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-75 lg:max-w-[40%] lg:truncate"
+          title={metaLine}
+        >
+          {metaLine}
+        </p>
       </div>
     </div>
   );

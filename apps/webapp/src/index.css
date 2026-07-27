@@ -171,3 +171,20 @@ html #stcm-wrapper .stcm-button-secondary:hover {
   color: #000000 !important;
   border: 1px dotted #000000 !important; /* black dotted border on hover */
 }
+
+@keyframes workspace-stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe\:animate-\[workspace-stage-in_200ms_ease-out_both\] {
+    animation: none !important;
+  }
+}

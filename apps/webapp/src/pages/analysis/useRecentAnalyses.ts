@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getMyTracks } from "@resomix/api-client";
+import { displayArtistOrOmit, sanitizeWorkspaceTitle } from "@/utils/trackUtils.ts";
 
 export interface RecentAnalysis {
   /** The analysis uuid — open with /analysis?id=<this>. */
@@ -35,8 +36,8 @@ export function useRecentAnalyses(enabled: boolean, limit = 5): { items: RecentA
             .slice(0, limit)
             .map((t: any): RecentAnalysis => ({
               analysisUuid: t.analysis_uuid,
-              title: t.title || "Untitled",
-              artist: t.artist || null,
+              title: sanitizeWorkspaceTitle(t.title || "Untitled"),
+              artist: displayArtistOrOmit(t.artist) ?? null,
               topGenre: t.analysis?.top_genre ?? null,
               bpm: t.analysis?.bpm ?? null,
               key: t.analysis?.camelot ?? t.analysis?.music_key ?? null,

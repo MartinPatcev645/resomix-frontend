@@ -1,0 +1,12 @@
+export { WorkspaceDiscoveryResults } from "./WorkspaceDiscoveryResults.tsx";
+export { WorkspaceShell, type WorkspaceMode } from "./WorkspaceShell.tsx";
+export { WorkspaceDiscoveryPanel } from "./WorkspaceDiscoveryPanel.tsx";
+export { WorkspaceAnalysisPanel } from "./WorkspaceAnalysisPanel.tsx";
+export { WorkspaceAnalysisGate } from "./WorkspaceAnalysisGate.tsx";
+export { AnalysisProcessingPanel } from "./AnalysisProcessingPanel.tsx";
+export { AnalysisSummaryCard } from "./AnalysisSummaryCard.tsx";
+export { ReferenceChip, type WorkspaceReference } from "./ReferenceChip.tsx";
+export { DepthControl } from "./DepthControl.tsx";
+export { DiscoveryProcessingPanel } from "./DiscoveryProcessingPanel.tsx";
+export { WORKSPACE_PANEL_CLASS } from "./workspacePanelStyles.ts";
+export { WorkspaceRail } from "./WorkspaceRail.tsx";

@@ -24,6 +24,24 @@ export function displayOrNA(value: string | null | undefined): string {
   return value;
 }
 
+const UNKNOWN_ARTIST_VALUES = new Set(['unknown', 'n/a', 'na', '']);
+
+/** True when an artist/name string is a backend placeholder — omit rather than render literally. */
+export function isUnknownArtist(value: string | null | undefined): boolean {
+  if (!value) return true;
+  return UNKNOWN_ARTIST_VALUES.has(value.trim().toLowerCase());
+}
+
+export function displayArtistOrOmit(value: string | null | undefined): string | undefined {
+  if (isUnknownArtist(value)) return undefined;
+  return value!.trim();
+}
+
+/** Strip backend " · UNKNOWN" suffix from combined title lines. */
+export function sanitizeWorkspaceTitle(title: string): string {
+  return title.replace(/\s*·\s*unknown\s*$/i, "").trim() || title;
+}
+
 /**
  * Returns the primary genre for display.
  *

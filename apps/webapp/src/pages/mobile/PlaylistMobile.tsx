@@ -52,7 +52,7 @@ export function PlaylistMobile() {
     <AudioProvider>
       {playlistData ? (
         <div className="">
-          <PlaylistHero onMoreClick={handleMoreMenuOpen} />
+          <PlaylistHero />
 
           {/* Content Table */}
           <div className="relative z-20">

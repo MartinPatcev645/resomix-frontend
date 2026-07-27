@@ -4,14 +4,12 @@ import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useSilkt
 import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
-import { ProtectedRoute, GuestRoute, WebLayout, SessionExpiredModal } from "@/components/index.ts";
+import { ProtectedRoute, GuestRoute, WebLayout, SessionExpiredModal, OptionalAuthRoute } from "@/components/index.ts";
 import { MetricsOverlay } from "@/components/metrics/MetricsOverlay.js";
 
 // Lazy-load pages
-const UploadPage = lazy(() => import("@/pages/desktop/UploadPage.tsx").then(m => ({ default: m.UploadPage })));
-const UploadMobile = lazy(() => import("@/pages/mobile/UploadMobile.tsx").then(m => ({ default: m.UploadMobile })));
-const PlaylistPage = lazy(() => import("@/pages/desktop/PlaylistPage.tsx").then(m => ({ default: m.PlaylistPage })));
-const PlaylistMobile = lazy(() => import("@/pages/mobile/PlaylistMobile.tsx").then(m => ({ default: m.PlaylistMobile })));
+const WorkspacePage = lazy(() => import("@/pages/desktop/WorkspacePage.tsx").then(m => ({ default: m.WorkspacePage })));
+const WorkspaceMobile = lazy(() => import("@/pages/mobile/WorkspaceMobile.tsx").then(m => ({ default: m.WorkspaceMobile })));
 const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
 const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
 const SubscribePage = lazy(() => import("@/pages/SubscribePage.tsx"));
@@ -20,7 +18,6 @@ const SubscribePage = lazy(() => import("@/pages/SubscribePage.tsx"));
 // const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
 const UploadLoader = lazy(() => import("@/components/index.ts").then(m => ({ default: m.UploadLoader })));
 const LibraryPage = lazy(() => import("@/pages/LibraryPage.tsx"));
-const AnalysisPage = lazy(() => import("@/pages/AnalysisPage.tsx"));
 // Apple Music connects IN-PAGE via MusicKit (no app-owned redirect page needed — that pattern is
 // only required for Spotify's server-side OAuth redirect flow).
 // const TidalRedirect = lazy(() => import("@/pages/redirect/TidalRedirect.tsx").then(m => ({ default: m.TidalRedirect })));
@@ -31,22 +28,19 @@ import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
 
 
-function UploadLanding() {
+function DiscoveryLanding() {
   const { isDesktop } = useResponsive();
-  return (
-    <>
-      {isDesktop ? <UploadPage /> : <UploadMobile />}
-    </>
-  );
+  return isDesktop ? <WorkspacePage mode="discovery" /> : <WorkspaceMobile mode="discovery" />;
 }
 
-function PlaylistLanding() {
+function AnalysisLanding() {
   const { isDesktop } = useResponsive();
-  return (
-    <>
-      {isDesktop ? <PlaylistPage /> : <PlaylistMobile />}
-    </>
-  );
+  return isDesktop ? <WorkspacePage mode="analysis" /> : <WorkspaceMobile mode="analysis" />;
+}
+
+function HomeLanding() {
+  const location = useLocation();
+  return <Navigate to={`/sonic-discovery${location.search}${location.hash}`} replace state={location.state} />;
 }
 
 // /playlist is the legacy alias, kept as a redirect (never removed) so previously-shared links
@@ -134,10 +128,11 @@ function App() {
           {/* Group A: Routes wrapped in persistent WebLayout shell */}
           <Route element={<WebLayout />}>
             {/* Optional Auth Routes (work with or without login) */}
-            <Route path="/" element={<UploadLanding />} />
-            {/* Canonical playlist/discovery page. /playlist redirects here (back-compat). */}
-            <Route path="/sonic-discovery" element={<PlaylistLanding />} />
+            <Route path="/" element={<HomeLanding />} />
+            {/* Canonical discovery workspace + playlist results (?id=). /playlist redirects here (back-compat). */}
+            <Route path="/sonic-discovery" element={<OptionalAuthRoute><DiscoveryLanding /></OptionalAuthRoute>} />
             <Route path="/playlist" element={<PlaylistRedirect />} />
+            <Route path="/analysis" element={<OptionalAuthRoute><AnalysisLanding /></OptionalAuthRoute>} />
             <Route path="/subscribe" element={<SubscribePage />} />
 
             {/* Protected Auth Routes */}
@@ -146,7 +141,6 @@ function App() {
               <Route path="/sessions" element={<AuthPage mode="sessions" />} />
               <Route path="/change-password" element={<AuthPage mode="change-password" />} />
               <Route path="/library" element={<LibraryPage />} />
-              <Route path="/analysis" element={<AnalysisPage />} />
             </Route>
 
             {/* Guest-Only Auth Routes */}
