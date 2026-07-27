@@ -127,15 +127,15 @@ const LoginPage: React.FC = () => {
               className="w-full h-11 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] border-none text-white font-medium rounded-lg shadow-sm hover:shadow active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
               {!codeSent ? (
-                <>
-                  <span>Send Verification Code</span>
+                <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap">
+                  Send Verification Code
                   <Send size={16} />
-                </>
+                </span>
               ) : (
-                <>
-                  <span>Verify &amp; Log In</span>
+                <span className="inline-flex items-center justify-center gap-2 whitespace-nowrap">
+                  Verify &amp; Log In
                   <ArrowRight size={16} />
-                </>
+                </span>
               )}
             </Button>
           </Form.Item>

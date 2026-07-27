@@ -248,10 +248,7 @@ const PlaylistTable: React.FC = () => {
                                     <>
                                         <Tooltip message="Yes Similar to Input Track!">
                                             <ThumbIcon
-                                                onClick={() => {
-                                                    if (upSelected) return;
-                                                    handleTrackRating(track.id, 1);
-                                                }}
+                                                onClick={() => handleTrackRating(track.id, 1)}
                                                 className={`w-[var(--px-16)] h-[var(--px-16)] ${upSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-up`}
                                                 id={`playlist-table-thumb-up-${track.id}`}
                                                 data-track-id={track.id}
@@ -262,10 +259,7 @@ const PlaylistTable: React.FC = () => {
                                         </Tooltip>
                                         <Tooltip message="No, Not Similar to Input Track!">
                                             <ThumbIcon
-                                                onClick={() => {
-                                                    if (downSelected) return;
-                                                    handleTrackRating(track.id, 0);
-                                                }}
+                                                onClick={() => handleTrackRating(track.id, 0)}
                                                 className={`w-[var(--px-16)] h-[var(--px-16)] transform rotate-180 ${downSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:text-[var(--color-primary)] hover:cursor-pointer playlist-rating-thumb-down`}
                                                 id={`playlist-table-thumb-down-${track.id}`}
                                                 data-track-id={track.id}

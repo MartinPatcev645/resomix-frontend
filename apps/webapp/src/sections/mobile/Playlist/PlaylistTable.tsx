@@ -259,10 +259,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         <button
                                             type="button"
                                             aria-label="Mark as similar"
-                                            onClick={() => {
-                                                if (upSelected) return;
-                                                void handleTrackRating(track.id, 1);
-                                            }}
+                                            onClick={() => void handleTrackRating(track.id, 1)}
                                             className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center"
                                             id={`playlist-table-thumb-up-${track.id}`}
                                         >
@@ -275,10 +272,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         <button
                                             type="button"
                                             aria-label="Mark as not similar"
-                                            onClick={() => {
-                                                if (downSelected) return;
-                                                void handleTrackRating(track.id, 0);
-                                            }}
+                                            onClick={() => void handleTrackRating(track.id, 0)}
                                             className="flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center"
                                             id={`playlist-table-thumb-down-${track.id}`}
                                         >
