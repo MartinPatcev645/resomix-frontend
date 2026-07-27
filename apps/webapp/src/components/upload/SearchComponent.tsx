@@ -8,6 +8,7 @@ import { useSearch } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 import { DEMO_MODE } from "@resomix/config";
 import type { SearchResult } from "@resomix/hooks";
+import { WorkspaceSearchField } from "./WorkspaceSearchField.tsx";
 
 interface SearchComponentProps {
     onUploadClick?: () => void;
@@ -15,41 +16,49 @@ interface SearchComponentProps {
      * Invoked when the user selects a track from the dropdown.
      */
     onTrackSelect?: (track: SearchResult) => void;
+    /** Hide the built-in Search/Upload tab row when an outer workspace tablist owns source switching. */
+    hideSourceTabs?: boolean;
+    /** Visual skin — `workspace` is flat panel interior; default preserves legacy chrome everywhere else. */
+    variant?: "legacy" | "workspace";
 }
 
 /**
  * Simple structural mock-up of the desktop search section.
  * All copy / visuals are placeholders – tweak freely.
  */
-export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick, onTrackSelect }) => {
+export const SearchComponent: React.FC<SearchComponentProps> = ({
+    onUploadClick,
+    onTrackSelect,
+    hideSourceTabs = false,
+    variant = "legacy",
+}) => {
     const sectionRef = useRef<HTMLDivElement | null>(null);
     const { query, results, isLoading, handleQueryChange } = useSearch();
     const [showSearchHint, setShowSearchHint] = useState(false);
     const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    
-    // Get searchMode state and setter from the store
+
     const { searchMode, setSearchMode } = usePlayerStore();
 
     const handleSearchModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSearchMode(e.target.value as 'auto' | 'artist' | 'title');
+        setSearchMode(e.target.value as "auto" | "artist" | "title");
     };
 
-    const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        if (DEMO_MODE) {
-            // Show hint and prevent search
-            setShowSearchHint(true);
-            if (hintTimerRef.current) {
-                clearTimeout(hintTimerRef.current);
+    const handleSearchInputChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            if (DEMO_MODE) {
+                setShowSearchHint(true);
+                if (hintTimerRef.current) {
+                    clearTimeout(hintTimerRef.current);
+                }
+                hintTimerRef.current = setTimeout(() => {
+                    setShowSearchHint(false);
+                }, 3000);
+                return;
             }
-            hintTimerRef.current = setTimeout(() => {
-                setShowSearchHint(false);
-            }, 3000);
-            // Don't update query in demo mode
-            return;
-        }
-        // Normal search behavior when not in demo mode
-        handleQueryChange(e);
-    }, [handleQueryChange]);
+            handleQueryChange(e);
+        },
+        [handleQueryChange],
+    );
 
     const handleSearchInputFocus = useCallback(() => {
         if (DEMO_MODE) {
@@ -71,6 +80,46 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
             if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
         };
     }, []);
+
+    if (variant === "workspace") {
+        return (
+            <div ref={sectionRef}>
+                <div className="flex flex-wrap items-stretch gap-[var(--px-10)]">
+                    <div className="relative flex min-w-[min(100%,20rem)] flex-1">
+                        <WorkspaceSearchField
+                            demoMode={DEMO_MODE}
+                            onDemoFocus={handleSearchInputFocus}
+                            onDemoChange={handleSearchInputFocus}
+                            onTrackSelect={onTrackSelect}
+                        />
+                        {DEMO_MODE && showSearchHint && (
+                            <div
+                                role="status"
+                                aria-live="polite"
+                                className="absolute -top-[var(--px-32)] left-0 z-40 whitespace-nowrap rounded bg-[#FFCC00] px-[var(--px-8)] py-[var(--px-4)] text-[length:var(--px-10)] font-semibold text-black shadow-md ring-2 ring-black/10"
+                            >
+                                Demo mode - Search functionality limited while we complete licensing
+                            </div>
+                        )}
+                    </div>
+                    <select
+                        id="search-mode-dropdown"
+                        aria-label="Search mode"
+                        value={searchMode}
+                        onChange={handleSearchModeChange}
+                        className="min-h-[var(--px-44)] appearance-none border border-dotted border-slate-400 bg-[#0e0e0e] bg-[length:var(--px-10)] bg-[position:right_var(--px-10)_center] bg-no-repeat px-[var(--px-10)] py-[var(--px-10)] pr-[var(--px-28)] font-fira text-[length:var(--px-11)] text-[var(--color-primary)] opacity-75"
+                        style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23B9B9B9' stroke-width='1.2'/%3E%3C/svg%3E")`,
+                        }}
+                    >
+                        <option value="auto">Auto</option>
+                        <option value="artist">Artist</option>
+                        <option value="title">Title</option>
+                    </select>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div ref={sectionRef} className="relative">
@@ -97,31 +146,33 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
             <div className="relative w-[var(--px-474)] h-[var(--px-383)] mx-auto z-30">
                 {/* Tabs positioned to align with the tab shapes */}
                 <div className="flex flex-col justify-start w-full h-full select-none py-auto">
-                    <div className="flex" role="tablist" aria-label="Search and upload tabs">
-                        <button
-                            id="tab-search"
-                            role="tab"
-                            aria-selected="true"
-                            aria-controls="panel-search"
-                            type="button"
-                            className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2"
-                        >
-                            <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</span>
-                            <img src={searchIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
-                        </button>
-                        <button
-                            id="tab-upload"
-                            role="tab"
-                            aria-selected="false"
-                            aria-controls="panel-upload"
-                            type="button"
-                            className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2 hover:cursor-pointer hover:underline search-component-upload-button"
-                            onClick={onUploadClick}
-                        >
-                            <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</span>
-                            <img src={uploadIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
-                        </button>
-                    </div>
+                    {!hideSourceTabs && (
+                        <div className="flex" role="tablist" aria-label="Search and upload tabs">
+                            <button
+                                id="tab-search"
+                                role="tab"
+                                aria-selected="true"
+                                aria-controls="panel-search"
+                                type="button"
+                                className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2"
+                            >
+                                <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</span>
+                                <img src={searchIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                            </button>
+                            <button
+                                id="tab-upload"
+                                role="tab"
+                                aria-selected="false"
+                                aria-controls="panel-upload"
+                                type="button"
+                                className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2 hover:cursor-pointer hover:underline search-component-upload-button"
+                                onClick={onUploadClick}
+                            >
+                                <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</span>
+                                <img src={uploadIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                            </button>
+                        </div>
+                    )}
                     <div id="panel-search" role="tabpanel" aria-labelledby="tab-search" className="m-[var(--px-30)]">
                         <div className="w-full h-[var(--px-265)] border border-dotted border-slate-300">
                             <div className="w-full flex justify-end p-[var(--px-12)] absolute right-[var(--px-24)]">
@@ -129,7 +180,7 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
                                 <div className="flex items-center gap-[var(--px-6)]">
                                     <Tooltip message="Choose how Resomix should search: Auto (all fields), Artist (artist name only), or Title (track title only)." displayOnClick={true}>
                                         <div className="flex items-center gap-[var(--px-6)] hover:cursor-pointer">
-                                            <label 
+                                            <label
                                                 htmlFor="search-mode-dropdown"
                                                 className="text-[length:var(--px-9)] font-fira font-light mt-[var(--px-1)]"
                                             >
@@ -141,7 +192,7 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
                                         </div>
                                     </Tooltip>
                                     <div className="">
-                                        <select 
+                                        <select
                                             id="search-mode-dropdown"
                                             aria-label="Search mode"
                                             value={searchMode}
@@ -175,12 +226,12 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({ onUploadClick,
                                             />
                                         )}
                                         <div className="relative z-20">
-                                            <SearchInput 
-                                                value={DEMO_MODE ? "" : query} 
-                                                onChange={handleSearchInputChange} 
+                                            <SearchInput
+                                                value={DEMO_MODE ? "" : query}
+                                                onChange={handleSearchInputChange}
                                                 onFocus={handleSearchInputFocus}
-                                                placeholder="Search by artist or title..." 
-                                                width="w-[var(--px-310)]" 
+                                                placeholder="Search by artist or title..."
+                                                width="w-[var(--px-310)]"
                                             />
                                         </div>
                                     </div>

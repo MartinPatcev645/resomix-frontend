@@ -7,26 +7,57 @@ import { SearchInput, SearchDropdown, Tooltip } from "@resomix/ui";
 import { useSearch } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 import type { SearchResult } from "@resomix/hooks";
+import { WorkspaceSearchField } from "./WorkspaceSearchField.tsx";
 
 interface SearchComponentProps {
     onUploadClick?: () => void;
     onTrackSelect?: (track: SearchResult) => void;
+    hideSourceTabs?: boolean;
+    variant?: "legacy" | "workspace";
 }
 
 /**
  * Simple structural mock-up of the desktop search section.
  * All copy / visuals are placeholders – tweak freely.
  */
-export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUploadClick, onTrackSelect }) => {
+export const SearchComponentMobile: React.FC<SearchComponentProps> = ({
+    onUploadClick,
+    onTrackSelect,
+    hideSourceTabs = false,
+    variant = "legacy",
+}) => {
     const sectionRef = useRef<HTMLDivElement | null>(null);
     const { query, results, isLoading, handleQueryChange } = useSearch();
-    
-    // Get searchMode state and setter from the store
+
     const { searchMode, setSearchMode } = usePlayerStore();
 
     const handleSearchModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSearchMode(e.target.value as 'auto' | 'artist' | 'title');
+        setSearchMode(e.target.value as "auto" | "artist" | "title");
     };
+
+    if (variant === "workspace") {
+        return (
+            <div ref={sectionRef}>
+                <div className="flex flex-wrap items-stretch gap-[var(--px-10)]">
+                    <WorkspaceSearchField compact onTrackSelect={onTrackSelect} />
+                    <select
+                        id="search-mode-dropdown-mobile"
+                        aria-label="Search mode"
+                        value={searchMode}
+                        onChange={handleSearchModeChange}
+                        className="min-h-[var(--px-44)] appearance-none border border-dotted border-slate-400 bg-[#0e0e0e] bg-[length:var(--px-10)] bg-[position:right_var(--px-10)_center] bg-no-repeat px-[var(--px-10)] py-[var(--px-10)] pr-[var(--px-28)] font-fira text-[length:var(--px-11)] text-[var(--color-primary)] opacity-75"
+                        style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23B9B9B9' stroke-width='1.2'/%3E%3C/svg%3E")`,
+                        }}
+                    >
+                        <option value="auto">Auto</option>
+                        <option value="artist">Artist</option>
+                        <option value="title">Title</option>
+                    </select>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div ref={sectionRef} className="relative">
@@ -53,31 +84,33 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
             <div className="relative w-[var(--px-355)] h-[var(--px-384)] mx-auto z-30">
                 {/* Tabs positioned to align with the tab shapes */}
                 <div className="flex flex-col justify-start w-full h-full select-none py-auto">
-                    <div className="flex" role="tablist" aria-label="Search and upload tabs">
-                        <button
-                            id="tab-search-mobile"
-                            role="tab"
-                            aria-selected="true"
-                            aria-controls="panel-search-mobile"
-                            type="button"
-                            className="flex-1/2 h-[var(--px-60)] p-3 flex items-center justify-center gap-2"
-                        >
-                            <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</span>
-                            <img src={searchIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
-                        </button>
-                        <button
-                            id="tab-upload-mobile"
-                            role="tab"
-                            aria-selected="false"
-                            aria-controls="panel-upload-mobile"
-                            type="button"
-                            className="flex-1/2 h-[var(--px-60)] p-3 flex items-center justify-center gap-2 hover:cursor-pointer hover:underline search-component-upload-button"
-                            onClick={onUploadClick}
-                        >
-                            <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</span>
-                            <img src={uploadIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
-                        </button>
-                    </div>
+                    {!hideSourceTabs && (
+                        <div className="flex" role="tablist" aria-label="Search and upload tabs">
+                            <button
+                                id="tab-search-mobile"
+                                role="tab"
+                                aria-selected="true"
+                                aria-controls="panel-search-mobile"
+                                type="button"
+                                className="flex-1/2 h-[var(--px-60)] p-3 flex items-center justify-center gap-2"
+                            >
+                                <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</span>
+                                <img src={searchIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                            </button>
+                            <button
+                                id="tab-upload-mobile"
+                                role="tab"
+                                aria-selected="false"
+                                aria-controls="panel-upload-mobile"
+                                type="button"
+                                className="flex-1/2 h-[var(--px-60)] p-3 flex items-center justify-center gap-2 hover:cursor-pointer hover:underline search-component-upload-button"
+                                onClick={onUploadClick}
+                            >
+                                <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</span>
+                                <img src={uploadIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                            </button>
+                        </div>
+                    )}
                     <div id="panel-search-mobile" role="tabpanel" aria-labelledby="tab-search-mobile" className="m-[var(--px-20)]">
                         <div className="w-full h-[var(--px-300)] border border-dotted border-slate-300 my-[var(--px-20)] relative">
                             {/* Search Mode Dropdown for Mobile */}
@@ -85,7 +118,7 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
                                 <div className="flex items-center gap-[var(--px-4)]">
                                     <Tooltip message="Choose how Resomix should search: Auto (all fields), Artist (artist name only), or Title (track title only)." displayOnClick={true}>
                                         <div className="flex items-center gap-[var(--px-4)] hover:cursor-pointer">
-                                            <label 
+                                            <label
                                                 htmlFor="search-mode-dropdown-mobile"
                                                 className="text-[length:var(--px-8)] font-fira font-light"
                                             >
@@ -97,7 +130,7 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({ onUpload
                                         </div>
                                     </Tooltip>
                                     <div className="">
-                                        <select 
+                                        <select
                                             id="search-mode-dropdown-mobile"
                                             aria-label="Search mode"
                                             value={searchMode}

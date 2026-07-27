@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useCallback } from "react";
 import searchIcon from "@/assets/icons/search.svg";
 import uploadIcon from "@/assets/icons/arrow_upload.svg";
 import ReferenceSvg from "@/assets/icons/reference.svg";
@@ -7,16 +7,90 @@ import { useUpload, type UseUploadOptions } from "@resomix/hooks";
 
 interface UploadComponentProps {
     onSearchClick?: () => void;
-    onAnalysis?: UseUploadOptions['onAnalysis'];
+    onAnalysis?: UseUploadOptions["onAnalysis"];
+    /** Hide the built-in Search/Upload tab row when an outer workspace tablist owns source switching. */
+    hideSourceTabs?: boolean;
+    /** When true, file selection calls onFileSelected instead of uploading immediately. */
+    deferSubmit?: boolean;
+    onFileSelected?: (file: File) => void;
+    variant?: "legacy" | "workspace";
 }
 
 /**
  * Simple structural mock-up of the desktop search section.
  * All copy / visuals are placeholders – tweak freely.
  */
-export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick, onAnalysis }) => {
+export const UploadComponent: React.FC<UploadComponentProps> = ({
+    onSearchClick,
+    onAnalysis,
+    hideSourceTabs = false,
+    deferSubmit = false,
+    onFileSelected,
+    variant = "legacy",
+}) => {
     const sectionRef = useRef<HTMLDivElement | null>(null);
-    const { inputRef, inputAccept, onInputChange, openFilePicker, onDrop, onDragOver } = useUpload({ onAnalysis });
+    const { inputRef, inputAccept, onInputChange, openFilePicker, onDrop, onDragOver, handleUpload } = useUpload({ onAnalysis });
+
+    const pickFile = useCallback(
+        async (file: File | null | undefined) => {
+            if (!file) return;
+            if (deferSubmit && onFileSelected) {
+                onFileSelected(file);
+                return;
+            }
+            await handleUpload(file);
+        },
+        [deferSubmit, onFileSelected, handleUpload],
+    );
+
+    const onDeferredInputChange = useCallback<React.ChangeEventHandler<HTMLInputElement>>(
+        (e) => {
+            const file = e.target.files && e.target.files[0];
+            void pickFile(file || null);
+            if (inputRef.current) inputRef.current.value = "";
+        },
+        [pickFile, inputRef],
+    );
+
+    const onDeferredDrop = useCallback(
+        (e: React.DragEvent) => {
+            e.preventDefault();
+            const file = e.dataTransfer?.files?.[0];
+            void pickFile(file || null);
+        },
+        [pickFile],
+    );
+
+    const dropHandler = deferSubmit ? onDeferredDrop : onDrop;
+    const inputHandler = deferSubmit ? onDeferredInputChange : onInputChange;
+
+    if (variant === "workspace") {
+        return (
+            <div ref={sectionRef}>
+                <input ref={inputRef} type="file" accept={inputAccept} onChange={inputHandler} className="hidden" />
+                <div
+                    className="border border-dashed border-slate-400 px-[var(--px-20)] py-[var(--px-28)] text-center text-[var(--color-primary)] opacity-75"
+                    onDrop={dropHandler}
+                    onDragOver={onDragOver}
+                >
+                    <p className="mb-[var(--px-4)] text-[length:var(--px-15)] font-helvetica font-light text-[var(--color-primary)] opacity-100">
+                        Drop a reference file
+                    </p>
+                    <p className="mt-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50">
+                        MP3 · WAV · FLAC · AIFF — up to 100 MB
+                    </p>
+                    <button
+                        type="button"
+                        id="upload-component-upload-button"
+                        className="upload-button mt-[var(--px-14)] inline-block border border-dotted border-slate-200 px-[var(--px-14)] py-[var(--px-8)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] hover:border-slate-300"
+                        onClick={openFilePicker}
+                    >
+                        Choose file
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div ref={sectionRef} className="relative">
@@ -40,49 +114,41 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({ onSearchClick,
             </svg>
 
             {/* Hidden file input for desktop (Windows/mac) */}
-            <input
-                ref={inputRef}
-                type="file"
-                accept={inputAccept}
-                onChange={onInputChange}
-                className="hidden"
-            />
+            <input ref={inputRef} type="file" accept={inputAccept} onChange={inputHandler} className="hidden" />
 
             {/* Tab container - positioned above the main content */}
             <div className="relative w-[var(--px-474)] h-[var(--px-383)] mx-auto z-30">
                 {/* Tabs positioned to align with the tab shapes */}
                 <div className="flex flex-col justify-start w-full h-full select-none py-auto">
-                    <div className="flex" role="tablist" aria-label="Search and upload tabs">
-                        <button
-                            id="tab-search"
-                            role="tab"
-                            aria-selected="false"
-                            aria-controls="panel-search"
-                            type="button"
-                            className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2 hover:cursor-pointer hover:underline"
-                            onClick={onSearchClick}
-                        >
-                            <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</span>
-                            <img src={searchIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
-                        </button>
-                        <button
-                            id="tab-upload"
-                            role="tab"
-                            aria-selected="true"
-                            aria-controls="panel-upload"
-                            type="button"
-                            className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2"
-                        >
-                            <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</span>
-                            <img src={uploadIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
-                        </button>
-                    </div>
+                    {!hideSourceTabs && (
+                        <div className="flex" role="tablist" aria-label="Search and upload tabs">
+                            <button
+                                id="tab-search"
+                                role="tab"
+                                aria-selected="false"
+                                aria-controls="panel-search"
+                                type="button"
+                                className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2 hover:cursor-pointer hover:underline"
+                                onClick={onSearchClick}
+                            >
+                                <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">SEARCH</span>
+                                <img src={searchIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                            </button>
+                            <button
+                                id="tab-upload"
+                                role="tab"
+                                aria-selected="true"
+                                aria-controls="panel-upload"
+                                type="button"
+                                className="flex-1/2 h-[var(--px-55)] p-3 flex items-center justify-center gap-2"
+                            >
+                                <span className="text-[var(--color-primary)] text-[length:var(--px-16)] font-helvetica uppercase font-light">UPLOAD</span>
+                                <img src={uploadIcon} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)]" />
+                            </button>
+                        </div>
+                    )}
                     <div id="panel-upload" role="tabpanel" aria-labelledby="tab-upload" className="m-[var(--px-30)]">
-                        <div
-                            className="w-full h-[var(--px-265)] border border-dotted border-slate-300"
-                            onDrop={onDrop}
-                            onDragOver={onDragOver}
-                        >
+                        <div className="w-full h-[var(--px-265)] border border-dotted border-slate-300" onDrop={dropHandler} onDragOver={onDragOver}>
                             <div className="flex flex-col w-full h-full justify-center items-center">
                                 <h3 className="mt-[var(--px-10)] text-[length:var(--px-16)] font-helvetica font-light text-center leading-[var(--px-20)] uppercase">
                                     DROP A REFERENCE TRACK
