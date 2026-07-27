@@ -95,6 +95,70 @@ async def test_filter_system_logs_by_level_and_search(admin_auth_headers, seeded
 
 
 @pytest.mark.asyncio
+async def test_filter_system_logs_by_multiple_categories(admin_auth_headers, seeded_logs):
+    """Category filter accepts several values (repeated param) and matches any of them."""
+    tag = seeded_logs["tag"]
+    async with _client() as ac:
+        both = await ac.get(
+            "/api/v1/admin/logs",
+            params=[("category", "PARTNER"), ("category", "SYSTEM"), ("q", tag)],
+            headers=admin_auth_headers,
+        )
+        one = await ac.get(
+            "/api/v1/admin/logs",
+            params=[("category", "PARTNER"), ("q", tag)],
+            headers=admin_auth_headers,
+        )
+    assert both.status_code == 200 and one.status_code == 200
+    assert {d["category"] for d in both.json()["data"]} == {"PARTNER", "SYSTEM"}
+    assert [d["category"] for d in one.json()["data"]] == ["PARTNER"]
+
+
+@pytest.mark.asyncio
+async def test_filter_system_logs_by_multiple_actions(admin_auth_headers, seeded_logs):
+    """Action filter accepts several exact action names."""
+    tag = seeded_logs["tag"]
+    a1, a2 = f"API_KEY_ISSUE_{tag}", f"BOOM_{tag}"
+    async with _client() as ac:
+        res = await ac.get(
+            "/api/v1/admin/logs",
+            params=[("action", a1), ("action", a2)],
+            headers=admin_auth_headers,
+        )
+    assert res.status_code == 200
+    assert {a1, a2} <= {d["action"] for d in res.json()["data"]}
+
+
+@pytest.mark.asyncio
+async def test_system_log_facets(admin_auth_headers, seeded_logs):
+    """Facets endpoint returns distinct levels/categories/actions for the filter dropdowns."""
+    async with _client() as ac:
+        res = await ac.get("/api/v1/admin/logs/facets", headers=admin_auth_headers)
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert {"levels", "categories", "actions"} <= set(data.keys())
+    assert "PARTNER" in data["categories"] and "SYSTEM" in data["categories"]
+    assert isinstance(data["actions"], list)
+
+
+def test_classify_http_exception():
+    """Probe/scanner noise vs real errors are categorized distinctly for the Logs page."""
+    from types import SimpleNamespace
+    from app.main import _classify_http_exception
+
+    no_route = SimpleNamespace(scope={})                       # nothing matched (favicon, scanners)
+    matched = SimpleNamespace(scope={"endpoint": object()})    # a real endpoint handled it
+
+    assert _classify_http_exception(no_route, 404)[0] == "NOISE"
+    assert _classify_http_exception(no_route, 405)[0] == "NOISE"
+    assert _classify_http_exception(matched, 401)[0] == "AUTH"
+    assert _classify_http_exception(matched, 403)[0] == "AUTH"
+    assert _classify_http_exception(matched, 404)[0] == "CLIENT_ERROR"
+    assert _classify_http_exception(matched, 409)[0] == "CLIENT_ERROR"
+    assert _classify_http_exception(matched, 500)[0] == "ERROR"
+
+
+@pytest.mark.asyncio
 async def test_get_system_log_detail_and_404(admin_auth_headers, seeded_logs):
     log_id = seeded_logs["system"][0]
     async with _client() as ac:

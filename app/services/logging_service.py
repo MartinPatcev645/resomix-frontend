@@ -210,7 +210,17 @@ class LoggingService:
             # Auto-determine log level from status code if not provided
             if status_code and level == "INFO":
                 level = self._get_log_level_from_status(status_code)
-            
+
+            # Mark this request as already error-logged so the 5xx safety-net middleware
+            # (TimingMiddleware) does not record a duplicate entry for the same failure.
+            if request is not None and (
+                level == "ERROR" or error is not None or (status_code and status_code >= 500)
+            ):
+                try:
+                    request.state._db_error_logged = True
+                except Exception:
+                    pass
+
             # Build transfer metadata if transfer fields provided
             if platform or operation or transfer_status or transfer_details:
                 if metadata is None:

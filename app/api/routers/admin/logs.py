@@ -16,7 +16,7 @@ Version: 1.0.0
 Date: June 18, 2026
 """
 
-from typing import Optional
+from typing import List, Optional
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
@@ -41,8 +41,8 @@ async def list_system_logs(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=500),
     level: Optional[str] = Query(None, description="DEBUG | INFO | WARNING | ERROR | CRITICAL"),
-    category: Optional[str] = Query(None, description="e.g. REQUEST, PARTNER, AUTH, SYSTEM"),
-    action: Optional[str] = Query(None, description="Substring match on action"),
+    category: Optional[List[str]] = Query(None, description="One or more categories (e.g. NOISE, AUTH, ERROR, REQUEST). Repeat the param to match several."),
+    action: Optional[List[str]] = Query(None, description="One or more exact action names. Repeat the param to match several."),
     endpoint: Optional[str] = Query(None, description="Substring match on endpoint"),
     q: Optional[str] = Query(None, description="Free-text search over message/action/endpoint"),
     client_ip: Optional[str] = Query(None),
@@ -98,6 +98,17 @@ async def system_log_stats(
 ):
     """Aggregate counters (level/category distribution, error rate) for the page header."""
     return await controller.system_log_stats(db, hours=hours)
+
+
+@router.get("/logs/facets")
+async def system_log_facets(
+    db: AsyncSession = Depends(get_async_db),
+):
+    """Distinct levels / categories / actions present in the logs (for the filter dropdowns).
+
+    Declared before ``/logs/{log_id}`` so the literal path isn't swallowed by the id route.
+    """
+    return await controller.log_facets(db)
 
 
 @router.get("/logs/{log_id}")

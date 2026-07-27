@@ -551,11 +551,26 @@ class LogRepository(BaseRepository[SystemLog]):
             conditions = []
             if filters:
                 if filters.get("level"):
-                    conditions.append(SystemLog.level == filters["level"])
+                    lvl = filters["level"]
+                    conditions.append(
+                        SystemLog.level.in_(lvl) if isinstance(lvl, (list, tuple, set))
+                        else SystemLog.level == lvl
+                    )
                 if filters.get("category"):
-                    conditions.append(SystemLog.category == filters["category"])
+                    cat = filters["category"]
+                    # Multi-select from the admin UI arrives as a list -> match any (IN).
+                    conditions.append(
+                        SystemLog.category.in_(cat) if isinstance(cat, (list, tuple, set))
+                        else SystemLog.category == cat
+                    )
                 if filters.get("action"):
-                    conditions.append(SystemLog.action.like(f"%{filters['action']}%"))
+                    act = filters["action"]
+                    # A list of chosen actions -> exact match on any of them; a bare string
+                    # keeps the old substring behaviour for ad-hoc lookups.
+                    conditions.append(
+                        SystemLog.action.in_(act) if isinstance(act, (list, tuple, set))
+                        else SystemLog.action.like(f"%{act}%")
+                    )
                 if filters.get("endpoint"):
                     conditions.append(SystemLog.endpoint.like(f"%{filters['endpoint']}%"))
                 if filters.get("q"):
@@ -601,6 +616,36 @@ class LogRepository(BaseRepository[SystemLog]):
         except SQLAlchemyError as e:
             logger.error(f"Failed to get filtered logs (async): {e}")
             return [], 0
+
+    async def async_get_log_facets(
+        self, db: AsyncSession, action_limit: int = 300
+    ) -> Dict[str, List[str]]:
+        """Distinct filter values present in ``system_logs``, for the admin filter dropdowns.
+
+        Returns ``{"levels": [...], "categories": [...], "actions": [...]}`` ordered by
+        frequency (most common first). Actions are capped since they can be high-cardinality.
+        """
+        try:
+            async def _distinct(column, limit=None):
+                stmt = (
+                    select(column, func.count(SystemLog.id).label("c"))
+                    .where(column.isnot(None))
+                    .group_by(column)
+                    .order_by(desc("c"))
+                )
+                if limit:
+                    stmt = stmt.limit(limit)
+                rows = (await db.execute(stmt)).all()
+                return [r[0] for r in rows if r[0] not in (None, "")]
+
+            return {
+                "levels": await _distinct(SystemLog.level),
+                "categories": await _distinct(SystemLog.category),
+                "actions": await _distinct(SystemLog.action, limit=action_limit),
+            }
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to get log facets (async): {e}")
+            return {"levels": [], "categories": [], "actions": []}
 
     async def async_get_system_overview(self, db: AsyncSession, hours: int = 24) -> Dict[str, Any]:
         """System-health rollup over ``system_logs`` for the admin overview widget.

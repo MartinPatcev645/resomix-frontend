@@ -85,20 +85,48 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
+def _classify_http_exception(request: Request, status_code: int) -> tuple[str, str]:
+    """Classify an HTTPException into a (category, action) for the admin Logs page.
+
+    Lets admins separate scanner/probe *noise* from real application problems:
+      • NOISE        — no route matched (404) or wrong method on an unregistered path (405):
+                       favicon.ico, /health probed with the wrong verb, vuln scanners, bots.
+      • AUTH         — 401/403 on a real endpoint (unauthenticated / forbidden access).
+      • CLIENT_ERROR — other 4xx on a real endpoint (bad request, not-found resource, conflict).
+      • ERROR        — a 5xx raised as an HTTPException (a genuine server error).
+    """
+    endpoint_matched = (
+        request.scope.get("endpoint") is not None
+        or request.scope.get("route") is not None
+    )
+    if not endpoint_matched:
+        return "NOISE", "probe_request"
+    if status_code in (401, 403):
+        return "AUTH", "auth_failure"
+    if status_code >= 500:
+        return "ERROR", "http_exception"
+    return "CLIENT_ERROR", "http_exception"
+
+
 async def http_exception_handler(request: Request, exc: HTTPException):
     """Handler for HTTP exceptions (e.g., 404, 401, 500)"""
     # Create logging service instance
     logging_service = LoggingService()
 
-    # Log the exception internally
+    # Log the exception internally, categorized so scanner/probe noise (favicon, /health,
+    # unauthenticated hits) is filterable and doesn't drown out real errors on the Logs page.
+    is_server_error = exc.status_code >= 500
+    category, action = _classify_http_exception(request, exc.status_code)
     logging_service.log(
-        level="WARNING" if exc.status_code < 500 else "ERROR",
-        category="INTERNAL",
-        action="http_exception",
-        message=f"HTTP Exception {exc.status_code}: {exc.detail}",
+        level="ERROR" if is_server_error else "WARNING",
+        category=category,
+        action=action,
+        message=f"HTTP {exc.status_code}: {exc.detail}",
         request=request,
         status_code=exc.status_code,
-        error=exc,
+        # Only attach an exception/stack trace for genuine server errors — expected 4xx
+        # (probes, auth failures) don't need one.
+        error=exc if is_server_error else None,
     )
 
     # For 500 internal server errors, never expose the detail to the client

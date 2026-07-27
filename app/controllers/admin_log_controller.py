@@ -77,6 +77,21 @@ class AdminLogController:
                 content=jsonable_encoder(format_response(success=False, error="Failed to list logs")),
             )
 
+    async def log_facets(self, db: AsyncSession) -> JSONResponse:
+        """Distinct levels/categories/actions present in the logs, for the filter dropdowns."""
+        try:
+            facets = await self.log_repo.async_get_log_facets(db)
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=jsonable_encoder({"success": True, "data": facets}),
+            )
+        except Exception as e:
+            logger.error(f"Failed to get log facets: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=jsonable_encoder(format_response(success=False, error="Failed to fetch log facets")),
+            )
+
     async def get_system_log(self, db: AsyncSession, log_id: int) -> JSONResponse:
         try:
             row = await self.log_repo.async_get_by_id(db, log_id)
