@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect } from 'react';
+import React, { useCallback, useLayoutEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ProfileDropdown } from '@resomix/ui';
@@ -50,6 +50,8 @@ function NavGroupList({
         const index = NAV_TOP_GROUPS.findIndex((g) => g.key === group.key);
         const isOpen = megaMenu.openIndex === index;
         const isSection = currentSection === group.key;
+        const panelId = idPrefix ? `${idPrefix}${group.panelId}` : group.panelId;
+        const noteId = group.key === 'solutions' ? `${idPrefix}planned-note` : undefined;
         return (
           <li
             key={group.key}
@@ -74,7 +76,7 @@ function NavGroupList({
                 type="button"
                 className="nav-mm-trigger"
                 aria-expanded={isOpen}
-                aria-controls={group.panelId}
+                aria-controls={panelId}
                 onClick={() => megaMenu.handleTriggerClick(index)}
                 onKeyDown={(e) => megaMenu.handleTriggerKeyDown(index, e)}
               >
@@ -85,7 +87,7 @@ function NavGroupList({
               {withPanels ? (
                 <div
                   className={`nav-mm-pop${group.side === 'right' ? ' nav-mm-pop--align-right' : ''}`}
-                  id={group.panelId}
+                  id={panelId}
                 >
                   <div className="nav-mm-panel">
                     <NavPanelContent
@@ -93,7 +95,7 @@ function NavGroupList({
                       pathname={currentPath}
                       hash={hash}
                       onNavigate={onNavigate}
-                      noteId={group.key === 'solutions' ? 'planned-note' : undefined}
+                      noteId={noteId}
                     />
                   </div>
                 </div>
@@ -268,19 +270,20 @@ export function SiteHeader({
   useLayoutEffect(() => {
     if (megaMenu.openIndex === null) return;
     const group = NAV_TOP_GROUPS[megaMenu.openIndex];
-    const panel = document.getElementById(group.panelId);
+    const panelId = isScrolled ? `sticky-${group.panelId}` : group.panelId;
+    const panel = document.getElementById(panelId);
     if (!panel) return;
 
-    const hframe = panel.closest('.nav-hframe') as HTMLElement | null;
+    const container = panel.closest('.nav-hframe, .nav-sticky-in') as HTMLElement | null;
     const anchorId = isScrolled ? `sticky-mi-${group.key}` : `mi-${group.key}`;
     const anchor = document.getElementById(anchorId);
-    if (!hframe || !anchor) return;
+    if (!container || !anchor) return;
 
     const trigger = anchor.querySelector('.nav-mm-trigger') as HTMLElement | null;
     const panelInner = panel.querySelector('.nav-mm-panel') as HTMLElement | null;
     if (!trigger || !panelInner) return;
 
-    const hframeRect = hframe.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
     const triggerRect = trigger.getBoundingClientRect();
     const panelWidth = panelInner.offsetWidth;
 
@@ -289,14 +292,14 @@ export function SiteHeader({
       if (isScrolled) {
         const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
         const safeRight = 1.75 * rem;
-        panel.style.right = `${window.innerWidth - hframeRect.right + safeRight}px`;
+        panel.style.right = `${window.innerWidth - containerRect.right + safeRight}px`;
       } else {
         panel.style.right = '';
       }
     } else {
       panel.style.right = 'auto';
-      let left = triggerRect.left - hframeRect.left;
-      const maxLeft = Math.max(0, hframeRect.width - panelWidth);
+      let left = triggerRect.left - containerRect.left;
+      const maxLeft = Math.max(0, containerRect.width - panelWidth);
       left = Math.max(0, Math.min(left, maxLeft));
       if (isScrolled) {
         panel.style.left = `${triggerRect.left}px`;
@@ -305,6 +308,14 @@ export function SiteHeader({
       }
     }
   }, [isScrolled, megaMenu.openIndex]);
+
+  const prevScrolledRef = useRef(isScrolled);
+  useLayoutEffect(() => {
+    if (prevScrolledRef.current !== isScrolled && megaMenu.openIndex !== null) {
+      megaMenu.closeAll(false);
+    }
+    prevScrolledRef.current = isScrolled;
+  }, [isScrolled, megaMenu]);
 
   if (variant === 'mobile') {
     return (
@@ -371,7 +382,6 @@ export function SiteHeader({
             <NavGroupList
               groups={leftGroups}
               {...navListProps}
-              withPanels={false}
               idPrefix="sticky-"
               setItemRef={stickyItemRef}
             />
@@ -384,7 +394,6 @@ export function SiteHeader({
               <NavGroupList
                 groups={rightGroups}
                 {...navListProps}
-                withPanels={false}
                 idPrefix="sticky-"
                 setItemRef={stickyItemRef}
               />
