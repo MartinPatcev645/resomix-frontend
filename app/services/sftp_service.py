@@ -19,7 +19,7 @@ from app.repositories.partner_repository import PartnerRepository
 from app.models.sftp_user import SftpUser
 from app.models.user import User
 from app.services.admin_operation_log_service import AdminOperationLogService
-from app.schemas.partner import SftpProvisionRequest
+from app.schemas.partner import SftpProvisionRequest, SftpLimitsUpdateRequest
 from app.core.config import settings
 from app.core.security import hash_password
 

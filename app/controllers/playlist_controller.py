@@ -1753,7 +1753,7 @@ class PlaylistController:
         self,
         db: AsyncSession,
         request: Request,
-        uuid: str,
+        playlist_uuid: str,
         current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """

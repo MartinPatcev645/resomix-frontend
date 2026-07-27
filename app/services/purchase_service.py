@@ -6,6 +6,7 @@ This service handles the fulfillment of orders after successful payment.
 """
 
 import logging
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.order_repository import OrderRepository
 from app.repositories.purchase_repository import PurchaseRepository
