@@ -23,4 +23,6 @@ export interface AnalysisData {
   semantics: { genreTop: ScoredLabel[]; styleMaestTop: ScoredLabel[]; moodThemeTop: ScoredLabel[]; instrumentTop: ScoredLabel[]; moodDimensions: Record<string, number>; danceability: number; approachability: number; voiceInstrumental: string; voiceScore: number; timbreBright: number; timbreDark: number; moodAcoustic: number; moodElectronic: number; valence: number; arousal: number };
   timeline: { genreOverTime: TimelineTrack; moodOverTime: TimelineTrack; instrumentOverTime: TimelineTrack; voiceRegions: VoiceRegion[] };
   composition: { stems: Record<string, StemMetrics>; vocalRegions: VoiceRegion[] };
+  /** Optional narrative readings from the canonical result (may be absent on partial jobs). */
+  readings: { forDj: string; forProducers: string; forCurators: string };
 }
