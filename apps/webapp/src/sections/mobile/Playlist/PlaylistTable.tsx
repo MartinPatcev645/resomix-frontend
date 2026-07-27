@@ -7,7 +7,7 @@ import { LOCKED_BLUR_VISIBLE_ROWS, PlaylistLockedRegion } from "@/components/Pla
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import { formatDuration, formatPercentage, useGlobalAudioController, useAccess } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
-import { rateTrack } from "@resomix/api-client";
+import { rateTrack, deleteTrackRating, getMyPlaylistRatings } from "@resomix/api-client";
 import { HoverFlow, Tooltip } from "@resomix/ui";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import MoreSvg from "@/assets/icons/more.svg";
@@ -17,14 +17,13 @@ import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 import { scoreBandWidthPct, shortlistScoreRange } from "@/utils/scoreBand.ts";
 import { mobilePlaylistRowGridStyle } from "@/utils/playlistGrid.ts";
-import { loadAllTrackRatings, saveTrackRating } from "@/utils/trackRatingsStorage.js";
 
 interface PlaylistTableProps {
     onMoreClick?: (trackId: string, name: string, label: string, duration: number, score: number, isInput?: boolean) => void;
 }
 
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
-    const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
+    const { playlistData, trackRatings = {}, setTrackRating, setTrackRatings, removeTrackRating } = usePlaylistStore();
     const tracks = playlistData?.similar_tracks ?? [];
     const scoreRange = useMemo(
         () => shortlistScoreRange(tracks.map((t) => t.score)),
@@ -67,18 +66,23 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const [hintFor, setHintFor] = useState<string | null>(null);
     const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const trackIdsKey = useMemo(() => tracks.map(t => t.id).join(","), [tracks]);
-
+    // Hydrate the user's existing thumbs for THIS playlist from the server (per-playlist source
+    // of truth). Replaces the map so un-rated tracks show no thumb.
+    const loadPlaylistId = playlistData?.playlist?.id;
     useEffect(() => {
-        if (tracks.length === 0) return;
-        const saved = loadAllTrackRatings();
-        tracks.forEach(t => {
-            const localRating = saved[t.id];
-            if (localRating !== undefined && trackRatings[t.id] === undefined) {
-                setTrackRating(t.id, localRating);
+        if (!loadPlaylistId) return;
+        let cancelled = false;
+        (async () => {
+            const res = await getMyPlaylistRatings(loadPlaylistId);
+            if (cancelled) return;
+            if (res?.success && res.data?.track_ratings) {
+                setTrackRatings(res.data.track_ratings);
+            } else {
+                setTrackRatings({});
             }
-        });
-    }, [trackIdsKey, setTrackRating, trackRatings, tracks]);
+        })();
+        return () => { cancelled = true; };
+    }, [loadPlaylistId, setTrackRatings]);
 
     const handleTrackRating = async (trackId: string, rating: number) => {
         const v = access.verdict("rateTrack");
@@ -87,11 +91,17 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
             setRateGate(v === "login" ? "login_required" : "upgrade_required");
             return;
         }
+        const pid = playlistData?.playlist?.id || null;
+        if (!pid) return;
+        const current = trackRatings[trackId];
         try {
-            const pid = playlistData?.playlist?.id || null;
-            setTrackRating(trackId, rating);
-            saveTrackRating(trackId, rating);
-            await rateTrack(trackId, rating, pid);
+            if (current === rating) {
+                removeTrackRating(trackId);          // click active thumb → un-rate (optimistic)
+                await deleteTrackRating(trackId, pid);
+            } else {
+                setTrackRating(trackId, rating);
+                await rateTrack(trackId, rating, pid);
+            }
         } catch (error) {
             console.error("Failed to rate track:", error);
         }

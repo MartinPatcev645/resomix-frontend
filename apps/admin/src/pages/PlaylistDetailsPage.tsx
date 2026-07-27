@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { App, Spin, Button, Tag, Descriptions, message, Space } from 'antd'
-import { ArrowLeft, RefreshCw, Lock, Unlock } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Lock, Unlock, Star } from 'lucide-react'
 import { getPlaylistDetails, adminChangePlaylistVisibility, type PlaylistDetailsResponse } from '@resomix/api-client'
 import PlaylistTracksTable from '@/components/playlist/PlaylistTracksTable.tsx'
 import { useStatusModals } from '@resomix/hooks'
@@ -160,12 +160,20 @@ function PlaylistDetailsPage() {
           </Button>
           <h1 className="text-2xl md:text-3xl font-bold text-primary">{playlist.name}</h1>
         </div>
-        <Button
-          icon={<RefreshCw size={16} />}
-          onClick={fetchPlaylistDetails}
-        >
-          Refresh
-        </Button>
+        <Space>
+          <Button
+            icon={<Star size={16} />}
+            onClick={() => navigate(`/playlists/${playlist.uuid}/ratings`)}
+          >
+            View Ratings
+          </Button>
+          <Button
+            icon={<RefreshCw size={16} />}
+            onClick={fetchPlaylistDetails}
+          >
+            Refresh
+          </Button>
+        </Space>
       </div>
 
       {/* Playlist Details Card */}

@@ -9,6 +9,7 @@ import AnalyticsPage from '@/pages/AnalyticsPage.tsx'
 import PlansPage from '@/pages/PlansPage.tsx'
 import PlaylistsPage from '@/pages/PlaylistsPage.tsx'
 import PlaylistDetailsPage from '@/pages/PlaylistDetailsPage.tsx'
+import PlaylistRatingsPage from '@/pages/PlaylistRatingsPage.tsx'
 import TracksPage from '@/pages/TracksPage.tsx'
 import LogsPage from '@/pages/LogsPage.tsx'
 import OperationsPage from '@/pages/OperationsPage.tsx'
@@ -90,6 +91,7 @@ function App() {
               <Route path="plans" element={<PlansPage />} />
               <Route path="playlists" element={<PlaylistsPage />} />
               <Route path="playlists/:uuid" element={<PlaylistDetailsPage />} />
+              <Route path="playlists/:uuid/ratings" element={<PlaylistRatingsPage />} />
               <Route path="tracks" element={<TracksPage />} />
               <Route path="logs" element={<LogsPage />} />
               <Route path="operations" element={<OperationsPage />} />

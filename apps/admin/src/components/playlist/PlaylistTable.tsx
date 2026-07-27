@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Table, Tag, Dropdown, Button, Modal } from 'antd'
 import type { TableColumnsType, MenuProps } from 'antd'
-import { Trash2, MoreVertical, Eye, Lock, Unlock, Expand } from 'lucide-react'
+import { Trash2, MoreVertical, Eye, Lock, Unlock, Expand, Star } from 'lucide-react'
 import type { PlaylistItem } from '@/hooks/usePlaylist.ts'
 import { useConfirmDialog } from '@resomix/hooks'
 
@@ -37,6 +38,7 @@ function PlaylistTable({
   onChangeVisibility,
 }: PlaylistTableProps) {
   const { confirmDelete } = useConfirmDialog()
+  const navigate = useNavigate()
   const [viewingPlaylist, setViewingPlaylist] = useState<PlaylistItem | null>(null)
 
   const handleDeleteSingle = (record: PlaylistItem) => {
@@ -79,6 +81,12 @@ function PlaylistTable({
       label: 'View Details',
       icon: <Eye size={16} />,
       onClick: () => handleViewPlaylist(record),
+    },
+    {
+      key: 'view-ratings',
+      label: 'View Ratings',
+      icon: <Star size={16} />,
+      onClick: () => navigate(`/playlists/${record.uuid}/ratings`),
     },
     {
       key: 'expand-playlist',

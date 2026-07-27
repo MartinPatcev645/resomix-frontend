@@ -2,12 +2,11 @@ import React from "react";
 import { ButtonSleek, HoverFlow } from "@resomix/ui";
 import MenuSeparator from "@/assets/icons/menu_separator.svg";
 import { ThumbIcon } from "@/components/index.ts";
-import { rateTrack } from "@resomix/api-client";
+import { rateTrack, deleteTrackRating } from "@resomix/api-client";
 import { usePlaylistStore } from "@resomix/stores";
 import { BASE_BETA_URL } from "@resomix/config";
 import { formatDuration, formatPercentage, usePlaylistExport, useAccess, type AccessAction } from "@resomix/hooks";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
-import { getTrackRating, saveTrackRating } from "@/utils/trackRatingsStorage.js";
 
 interface MoreMenuProps {
     onClose?: () => void;
@@ -24,7 +23,7 @@ interface MoreMenuProps {
 }
 
 const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, name, label, duration, score = null, onShare, onAppleExport }) => {
-    const { playlistData, trackRatings = {}, setTrackRating } = usePlaylistStore();
+    const { playlistData, trackRatings = {}, setTrackRating, removeTrackRating } = usePlaylistStore();
     const { exportAndDownloadPlaylist, canExport } = usePlaylistExport();
     // Rate / export / share are gated through the single source of truth (useAccess) — one verdict
     // per action; "pending" is a silent no-op, never a wrong modal.
@@ -39,22 +38,23 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
     };
     const [exportButtonText, setExportButtonText] = React.useState("Export to TXT");
 
-    React.useEffect(() => {
-        if (!trackId) return;
-        const localRating = getTrackRating(trackId);
-        if (localRating !== undefined && trackRatings[trackId] === undefined) {
-            setTrackRating(trackId, localRating);
-        }
-    }, [trackId, trackRatings, setTrackRating]);
+    // The shared store is hydrated from the server by the playlist table on load, so the thumbs
+    // here reflect the user's real, per-playlist ratings — no local seeding needed.
 
     const handleTrackRating = async (rating: number) => {
         if (!trackId) return;
         withAccess("rateTrack", "Log in to rate tracks", "Rating individual tracks needs an account. Log in or create a free account to rate.", async () => {
+            const playlistId = playlistData?.playlist?.id || null;
+            if (!playlistId) return;
+            const current = trackRatings[trackId];
             try {
-                const playlistId = playlistData?.playlist?.id || null;
-                setTrackRating(trackId, rating);
-                saveTrackRating(trackId, rating);
-                await rateTrack(trackId, rating, playlistId);
+                if (current === rating) {
+                    removeTrackRating(trackId);            // tap the active thumb → un-rate
+                    await deleteTrackRating(trackId, playlistId);
+                } else {
+                    setTrackRating(trackId, rating);
+                    await rateTrack(trackId, rating, playlistId);
+                }
             } catch (error) {
                 console.error('Failed to rate track:', error);
             }
@@ -158,10 +158,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                             return (
                                                 <>
                                                     <ThumbIcon
-                                                        onClick={() => {
-                                                            if (upSelected) return;
-                                                            handleTrackRating(1);
-                                                        }}
+                                                        onClick={() => handleTrackRating(1)}
                                                         className={`w-[var(--px-26)] h-[var(--px-26)] text-white ${upSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:cursor-pointer playlist-rating-thumb-up`}
                                                         id={`playlist-table-thumb-up-${trackId}`}
                                                         innerClassName="playlist-rating-thumb-up"
@@ -169,10 +166,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                                         data-track-name={name}
                                                     />
                                                     <ThumbIcon
-                                                        onClick={() => {
-                                                            if (downSelected) return;
-                                                            handleTrackRating(0);
-                                                        }}
+                                                        onClick={() => handleTrackRating(0)}
                                                         className={`w-[var(--px-26)] h-[var(--px-26)] transform rotate-180 text-white ${downSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:cursor-pointer playlist-rating-thumb-down`}
                                                         id={`playlist-table-thumb-down-${trackId}`}
                                                         innerClassName="playlist-rating-thumb-down"

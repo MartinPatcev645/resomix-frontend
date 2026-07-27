@@ -112,6 +112,28 @@ export const deletePlaylistRating = async (playlistId: string) => {
   }
 };
 
+/** The current user's ratings for a whole playlist (per-track thumbs + playlist stars). */
+export interface MyPlaylistRatings {
+  playlist_id: string;
+  /** map of track UUID → thumb rating (1 = up, 0 = down) */
+  track_ratings: Record<string, number>;
+  playlist_rating: { rating: number; message: string | null } | null;
+}
+
+/**
+ * Load the current user's ratings for an entire playlist in one call — used to hydrate the
+ * playlist screen so returning users see their thumbs already set. Guests get an empty set.
+ */
+export const getMyPlaylistRatings = async (playlistId: string) => {
+  try {
+    return await axiosWrapper<ApiResponse<MyPlaylistRatings>>(
+      authClient.get(`${API_CONFIG.ENDPOINTS.RATING_PLAYLISTS_DETAIL}${playlistId}/mine`),
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
 /**
  * Get aggregated statistics for a playlist.
  */

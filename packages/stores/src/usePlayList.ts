@@ -108,6 +108,10 @@ interface PlaylistStore {
   setPlaylistData: (data: PlaylistData) => void
   setPlaylistResponse: (response: PlaylistResponse) => void
   setTrackRating: (trackId: string, rating: number) => void
+  // Replace the whole thumb map (used to hydrate from the server on playlist load).
+  setTrackRatings: (ratings: Record<string, number>) => void
+  // Remove a single track's thumb (used when the user clicks their active thumb to un-rate).
+  removeTrackRating: (trackId: string) => void
   clearPlaylistData: () => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
@@ -153,6 +157,16 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   },
 
   setTrackRating: (trackId, rating) => set((state) => ({ trackRatings: { ...state.trackRatings, [trackId]: rating } })),
+
+  // Replace the map wholesale — the server response is the source of truth for the loaded playlist,
+  // so tracks the user hasn't rated correctly show no thumb.
+  setTrackRatings: (ratings) => set({ trackRatings: { ...ratings } }),
+
+  removeTrackRating: (trackId) => set((state) => {
+    const next = { ...state.trackRatings };
+    delete next[trackId];
+    return { trackRatings: next };
+  }),
 
   clearPlaylistData: () => set({ playlistData: null, error: null }),
 

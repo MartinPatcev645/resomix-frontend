@@ -289,11 +289,67 @@ export const getPlaylistDetails = async (playlistUuid: string) => {
     );
 
     if (data.success && data.data) return data;
-    
+
     return {
       success: false,
       error: (data as ApiResponse).error || "Failed to fetch playlist details.",
     };
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+// ─── Playlist ratings (admin) ──────────────────────────────────────────────────
+
+export interface AdminPlaylistRatingEntry {
+  user_id: number | null;
+  visitor_id: string | null;
+  email: string | null;
+  name: string | null;
+  is_creator: boolean;
+  rating: number | null;   // 0–3 stars
+  message: string | null;
+  rated_at: string | null;
+}
+
+export interface AdminTrackRatingRow {
+  track_id: string;        // track UUID
+  title: string | null;
+  artist: string | null;
+  position: number | null;
+  plus: number;
+  minus: number;
+  total: number;
+  creator_rating: number | null;  // 1 up, 0 down, null = creator didn't rate
+}
+
+export interface AdminPlaylistRatingsDetail {
+  playlist: {
+    uuid: string;
+    name: string;
+    type: string;
+    num_tracks: number;
+    created_at: string | null;
+    creator: { user_id: number; email: string | null; name: string | null } | null;
+  };
+  playlist_ratings: AdminPlaylistRatingEntry[];
+  playlist_rating_summary: {
+    count: number;
+    average: number | null;
+    distribution: Record<string, number>;
+  };
+  tracks: AdminTrackRatingRow[];
+}
+
+/**
+ * Admin: full ratings breakdown for a playlist — playlist-level ratings (creator highlighted)
+ * plus per-track thumb aggregates and the creator's own thumb.
+ */
+export const getPlaylistRatings = async (playlistUuid: string) => {
+  try {
+    return await axiosWrapper<ApiResponse<AdminPlaylistRatingsDetail>>(
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_PLAYLIST_DETAILS}${playlistUuid}/ratings`)
+    );
   } catch (error) {
     return handleApiError(error as Error);
   }
