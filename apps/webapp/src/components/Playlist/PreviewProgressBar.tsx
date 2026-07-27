@@ -9,10 +9,13 @@ export function PreviewProgressBar({
   currentTime,
   duration,
   onSeek,
+  compact = false,
 }: {
   currentTime: number;
   duration: number;
   onSeek: (t: number) => void;
+  /** Inline row player — 2px track, ink fill on soft track. */
+  compact?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const pct = duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
@@ -32,7 +35,11 @@ export function PreviewProgressBar({
     <div
       ref={ref}
       onClick={handleClick}
-      className="relative w-full h-[var(--px-6)] bg-white/15 rounded-full cursor-pointer overflow-hidden"
+      className={
+        compact
+          ? "relative h-[var(--px-2)] w-full cursor-pointer overflow-hidden rounded-full bg-[var(--color-primary)]/15"
+          : "relative h-[var(--px-6)] w-full cursor-pointer overflow-hidden rounded-full bg-white/15"
+      }
       role="slider"
       aria-label="Seek"
       aria-valuemin={0}

@@ -62,19 +62,6 @@ function wrapLines(ctx: CanvasRenderingContext2D, words: string[], maxWidth: num
   const lines: string[] = [];
   let current = "";
 
-  const breakWord = (word: string): string => {
-    let chunk = "";
-    for (const ch of word) {
-      if (chunk && ctx.measureText(chunk + ch).width > maxWidth) {
-        lines.push(chunk);
-        chunk = ch;
-      } else {
-        chunk += ch;
-      }
-    }
-    return chunk; // remainder continues as the new current line
-  };
-
   for (const word of words) {
     const candidate = current ? current + " " + word : word;
     if (ctx.measureText(candidate).width <= maxWidth) {
@@ -84,7 +71,15 @@ function wrapLines(ctx: CanvasRenderingContext2D, words: string[], maxWidth: num
         lines.push(current);
         current = "";
       }
-      current = ctx.measureText(word).width <= maxWidth ? word : breakWord(word);
+      if (ctx.measureText(word).width <= maxWidth) {
+        current = word;
+      } else {
+        let truncated = word;
+        while (truncated.length > 1 && ctx.measureText(`${truncated}…`).width > maxWidth) {
+          truncated = truncated.slice(0, -1);
+        }
+        lines.push(`${truncated}…`);
+      }
     }
   }
   if (current) lines.push(current);
