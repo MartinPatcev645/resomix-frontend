@@ -57,6 +57,12 @@
   .w-fluid-1280 {
     width: clamp(1280px, 100vw, 2560px);
   }
+
+  .webapp-approved-container {
+    width: 100%;
+    max-width: min(var(--webapp-content-max), 100%);
+    margin-inline: auto;
+  }
 }
 
 /* ─── Fluid desktop scaling (html) ───────────────────────── */
@@ -65,12 +71,14 @@
   --ideal-width: 1280;
   --min-width: 1280px;
   --max-width: 2560px;
+  /* 1248px @ 16px root — approved preview canvas */
+  --webapp-content-max: 78rem;
 }
 
 /* scale the REM unit */
 html {
-  font-size: clamp(12.8px, 1.25vw, 32px);
-  /* 1.25vw = 16px at 1280 px because 1280 × 1.25% = 16 px */
+  font-size: clamp(12.8px, 1.25vw, 16px);
+  /* 1.25vw = 16px at 1280 px because 1280 × 1.25% = 16 px; cap stops growth above 1280 */
 }
 
 /* optional crisp lines */
