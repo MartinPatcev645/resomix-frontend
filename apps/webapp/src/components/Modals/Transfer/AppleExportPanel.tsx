@@ -1,5 +1,6 @@
 import React from 'react';
 import { ButtonSleek } from '@resomix/ui';
+import AppleMusicIcon from '@/assets/icons/cc/apple-music.svg';
 
 export type AppleNotice = { kind: 'success' | 'error' | 'info'; text: string } | null;
 
@@ -55,6 +56,13 @@ const AppleExportPanel: React.FC<Props> = ({
     <div className="w-full flex flex-col gap-[var(--px-14)] mt-[var(--px-14)]">
       {/* Connection status */}
       <div className="flex items-center gap-[var(--px-8)] text-[length:var(--px-11)] font-fira">
+        {/* Apple Music mark, to the left of the connection state */}
+        <img
+          src={AppleMusicIcon}
+          alt="Apple Music"
+          draggable={false}
+          className="w-[var(--px-16)] h-[var(--px-16)] shrink-0"
+        />
         <span
           className={
             'inline-block w-[var(--px-8)] h-[var(--px-8)] rounded-full ' +

@@ -3,6 +3,7 @@ import SuccessSvg from '@/assets/icons/success.svg';
 import BaseModal from "@/components/Modals/BaseExportModal.js";
 import {useAppleTransfer} from "@resomix/hooks";
 import AppleExportPanel from "@/components/Modals/Transfer/AppleExportPanel.js";
+import RekordboxTip from "@/components/Modals/Transfer/RekordboxTip.js";
 
 interface AppleExportModalProps {
   isOpen: boolean;
@@ -39,6 +40,10 @@ const AppleExportModal: React.FC<AppleExportModalProps> = ({
       title="Export to Apple Music"
       subtitle="Send this playlist to your Apple Music library."
     >
+      {/* Top-right pill: tip that the exported playlist appears in rekordbox via Apple Music.
+          Absolutely positioned against the modal shell (BaseExportModal is position:relative). */}
+      <RekordboxTip />
+
       {/* Close sits beside the primary action inside the panel (side by side, stacked on mobile). */}
       <AppleExportPanel
         connected={s.connected}
