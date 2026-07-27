@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.controllers.playlist_controller import PlaylistController
+from app.controllers.rating_controller import RatingController
 from app.api.dependencies.auth import require_admin, require_permission
 from app.api.dependencies.database import get_database_session
 from app.models.user import User
@@ -46,8 +47,9 @@ router = APIRouter(
     },
 )
 
-# Initialize controller
+# Initialize controllers
 playlist_controller = PlaylistController()
+rating_controller = RatingController()
 
 
 @router.get(
@@ -121,6 +123,23 @@ async def get_playlist_detail(
 ) -> JSONResponse:
     """Get detailed playlist information by UUID."""
     return await playlist_controller.get_playlist_detail_by_uuid_admin(db, request, uuid, current_admin=current_admin)
+
+
+@router.get(
+    "/{uuid}/ratings",
+    status_code=200,
+    summary="Get Playlist Ratings (admin)",
+    description="Full ratings breakdown for a playlist: playlist-level ratings (creator "
+    "highlighted) + per-track thumb aggregates (plus/minus + the creator's own thumb).",
+)
+async def get_playlist_ratings(
+    request: Request,
+    uuid: str = Path(..., description="Playlist UUID", regex="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"),
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+) -> JSONResponse:
+    """Admin ratings view for a single playlist."""
+    return await rating_controller.get_playlist_ratings_detail(db, request, uuid, current_admin=current_admin)
 
 
 @router.delete(

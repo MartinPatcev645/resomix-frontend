@@ -1286,3 +1286,50 @@ class RatingController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=response_content,
             )
+
+    async def get_my_playlist_ratings(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_id: str,
+        current_user: Optional[User] = None,
+    ) -> JSONResponse:
+        """Return the current user's ratings for a playlist (per-track thumbs + playlist stars).
+
+        Uses optional auth: a guest (no user) simply gets an empty set — the playlist screen calls
+        this unconditionally on load.
+        """
+        try:
+            final_user_id = current_user.id if current_user else None
+            result = await self.rating_service.get_my_playlist_ratings(db, playlist_id, final_user_id)
+            code = status.HTTP_200_OK if result.get("success") else status.HTTP_400_BAD_REQUEST
+            return JSONResponse(status_code=code, content=result)
+        except Exception:
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="Failed to load ratings"),
+            )
+
+    async def get_playlist_ratings_detail(
+        self,
+        db: AsyncSession,
+        request: Request,
+        playlist_id: str,
+        current_admin: Optional[User] = None,
+    ) -> JSONResponse:
+        """Admin: full ratings breakdown for a playlist (creator highlighted + per-track thumbs)."""
+        try:
+            result = await self.rating_service.get_playlist_ratings_detail(db, playlist_id)
+            if not result.get("success"):
+                code = (
+                    status.HTTP_404_NOT_FOUND
+                    if result.get("error") == "Playlist not found"
+                    else status.HTTP_400_BAD_REQUEST
+                )
+                return JSONResponse(status_code=code, content=result)
+            return JSONResponse(status_code=status.HTTP_200_OK, content=result)
+        except Exception:
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="Failed to load playlist ratings"),
+            )

@@ -381,3 +381,44 @@ class RatingService:
                 "success": False,
                 "error": "An error occurred while retrieving rating statistics"
             }
+
+    # Combined / admin retrieval
+    async def get_my_playlist_ratings(
+        self, db: AsyncSession, playlist_uuid: str, user_id: Optional[int]
+    ) -> Dict[str, Any]:
+        """The current user's ratings for a whole playlist in one call.
+
+        Returns their per-track thumbs (``{track_uuid: 0|1}``) plus their playlist star rating,
+        so the playlist screen can hydrate everything on load.
+        """
+        try:
+            track_ratings = await self.track_rating_repository.async_get_user_ratings_for_playlist(
+                db, playlist_uuid, user_id
+            )
+            pr = await self.playlist_rating_repository.async_get_user_playlist_rating(
+                db, playlist_uuid, user_id
+            )
+            return {
+                "success": True,
+                "data": {
+                    "playlist_id": playlist_uuid,
+                    "track_ratings": track_ratings,
+                    "playlist_rating": (
+                        {"rating": pr.rating, "message": pr.message} if pr is not None else None
+                    ),
+                },
+            }
+        except Exception as e:
+            print(f"Error in rating service get_my_playlist_ratings: {e}")
+            return {"success": False, "error": "An error occurred while retrieving your ratings"}
+
+    async def get_playlist_ratings_detail(self, db: AsyncSession, playlist_uuid: str) -> Dict[str, Any]:
+        """Admin: full ratings breakdown for a playlist (creator highlighted + per-track thumbs)."""
+        try:
+            data = await self.playlist_rating_repository.async_get_playlist_ratings_detail(db, playlist_uuid)
+            if data is None:
+                return {"success": False, "error": "Playlist not found"}
+            return {"success": True, "data": data}
+        except Exception as e:
+            print(f"Error in rating service get_playlist_ratings_detail: {e}")
+            return {"success": False, "error": "An error occurred while retrieving playlist ratings"}

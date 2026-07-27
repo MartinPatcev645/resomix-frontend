@@ -320,3 +320,24 @@ async def get_playlist_rating_stats_endpoint(
     - **playlist_id**: The ID of the playlist
     """
     return await rating_controller.get_playlist_rating_stats(db, request, playlist_id)
+
+
+@router.get(
+    "/playlists/{playlist_id}/mine",
+    summary="Get My Ratings For Playlist",
+    description="Return the current user's ratings for a whole playlist in one call: per-track "
+    "thumbs ({track_uuid: 0|1}) plus their playlist star rating. Guests get an empty set.",
+    responses={
+        200: {"description": "The user's ratings for the playlist"},
+        500: {"model": RatingErrorResponse, "description": "Internal server error"},
+    },
+)
+async def get_my_playlist_ratings_endpoint(
+    request: Request,
+    playlist_id: str = Path(..., description="Playlist UUID"),
+    db: AsyncSession = Depends(get_database_session),
+    _partner: Partner = Depends(get_public_partner),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+) -> JSONResponse:
+    """Hydrate the playlist screen with the user's existing thumbs + star rating."""
+    return await rating_controller.get_my_playlist_ratings(db, request, playlist_id, current_user)
