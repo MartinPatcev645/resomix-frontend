@@ -1,9 +1,17 @@
 # Admin access hardening — Cloudflare Access + origin lockdown
 
-**Status:** Backend code landed (Cloudflare Access dependency, **disabled by default**). Origin
-lockdown (ufw) + enabling steps are operator actions. 2FA-on-admin is a follow-up.
+**Status:** ✅ **Origin lockdown LIVE & verified (2026-07-27)** — direct-IP bypass closed (a
+`curl -k` to the origin IP now times out; site works via Cloudflare). Backend Cloudflare-Access
+code deployed but **disabled** (`CF_ACCESS_ENABLED=false`). Follow-ups: admin TOTP 2FA;
+Access-on-the-admin-API (needs same-origin routing) before enabling the flag.
 **Date:** 2026-07-27
 **Owner context:** admin surface is `r-admin.resomix.com`; origin is `193.219.97.122` (Alwyzon).
+
+**Final ufw shape (Alwyzon):** SSH (22/OpenSSH) allow anywhere; 8001 allow only from media box
+`135.181.218.143`; 80/443 allow only Cloudflare ranges + Hetzner boxes `135.181.218.143`,
+`46.4.100.18`, then `DENY` for everyone else (v4 + v6). The pre-existing broad `Nginx Full` /
+`Nginx HTTP` "allow web from anywhere" rules were the gap — deleted (they sat above the DENY, so
+first-match let non-Cloudflare traffic through). Default incoming policy: deny.
 
 ---
 
