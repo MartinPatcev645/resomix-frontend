@@ -494,16 +494,13 @@ class ContactController:
     ) -> JSONResponse:
         """Delete a single contact entry."""
         try:
-            # Audit: Get before state
-            entry_res = await self.contact_service.get_contact_by_id(db, contact_id)
-            before_state = None
-            if entry_res.get("success") and entry_res.get("data"):
-                entry = entry_res.get("data")
-                before_state = {
-                    "id": entry.id,
-                    "email": entry.email,
-                    "status": entry.status
-                }
+            # Audit: Get before state. get_contact_by_id returns a Contact model (or None),
+            # NOT a {success, data} envelope — treat it as the object.
+            entry = await self.contact_service.get_contact_by_id(db, contact_id)
+            before_state = (
+                {"id": entry.id, "email": entry.email, "status": entry.status}
+                if entry else None
+            )
 
             result = await self.contact_service.delete_contact_admin(db, contact_id)
             if result.get("success"):
@@ -582,12 +579,10 @@ class ContactController:
     ) -> JSONResponse:
         """Update contact status for admin."""
         try:
-            # Audit: Get before state
-            entry_res = await self.contact_service.get_contact_by_id(db, contact_id)
-            before_state = None
-            if entry_res.get("success") and entry_res.get("data"):
-                entry = entry_res.get("data")
-                before_state = {"status": entry.status}
+            # Audit: Get before state. get_contact_by_id returns a Contact model (or None),
+            # NOT a {success, data} envelope — treat it as the object.
+            entry = await self.contact_service.get_contact_by_id(db, contact_id)
+            before_state = {"status": entry.status} if entry else None
 
             result = await self.contact_service.mark_contact_status_admin(
                 db, contact_id, status_value

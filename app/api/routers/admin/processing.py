@@ -20,7 +20,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, Query, BackgroundTasks, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import require_admin, require_permission
@@ -714,6 +714,27 @@ async def retry_ingestion(
 # ===========================================================================
 # §G  TRACK CONTROL
 # ===========================================================================
+def _track_to_dict(t: Track, tps: Optional[TrackProcessingStatus]) -> dict:
+    """Base admin track shape shared by the list and the single-track detail endpoints."""
+    return {
+        "id": t.id,
+        "uuid": t.uuid,
+        "title": t.title,
+        "display_artist": t.display_artist,
+        "isrc": t.isrc,
+        "type": t.track_type,
+        "duration_seconds": round(t.duration_ms / 1000.0, 3) if t.duration_ms else None,
+        "bpm": t.bpm,
+        "musical_key": t.musical_key,
+        "ingestion_source": t.ingestion_source,
+        "is_active": t.is_active,
+        "partner_id": t.partner_id,
+        "created_at": t.created_at.isoformat() if t.created_at else None,
+        "updated_at": t.updated_at.isoformat() if t.updated_at else None,
+        "processing": _tps_to_dict(tps) if tps else None,
+    }
+
+
 @router.get(
     "/tracks",
     summary="List tracks with processing status",
@@ -775,28 +796,88 @@ async def list_tracks(
                 "has_next": page < total_pages,
                 "has_prev": page > 1,
             },
-            "tracks": [
-                {
-                    "id": t.id,
-                    "uuid": t.uuid,
-                    "title": t.title,
-                    "display_artist": t.display_artist,
-                    "isrc": t.isrc,
-                    "type": t.track_type,
-                    "duration_seconds": round(t.duration_ms / 1000.0, 3) if t.duration_ms else None,
-                    "bpm": t.bpm,
-                    "musical_key": t.musical_key,
-                    "ingestion_source": t.ingestion_source,
-                    "is_active": t.is_active,
-                    "partner_id": t.partner_id,
-                    "created_at": t.created_at.isoformat() if t.created_at else None,
-                    "updated_at": t.updated_at.isoformat() if t.updated_at else None,
-                    "processing": _tps_to_dict(tps) if tps else None,
-                }
-                for (t, tps) in rows
-            ],
+            "tracks": [_track_to_dict(t, tps) for (t, tps) in rows],
         }
     )
+
+
+@router.get(
+    "/tracks/{track_id}",
+    summary="Get full track detail (Apple + in-house metadata)",
+)
+async def get_track_detail(
+    track_id: int,
+    db: AsyncSession = Depends(get_database_session),
+    current_admin: User = Depends(require_admin),
+) -> JSONResponse:
+    """Full detail for a single track — the base admin shape plus in-house/Apple metadata
+    (artists, album/release, year, genre, label, ISRC, master audio-file info). Backs the
+    shared Track Details modal used by both the Tracks panel and the playlist tracks table."""
+    set_admin_context(True)
+
+    from app.models.genre import Genre
+    from app.models.label import Label
+    from app.models.release import Release
+    from app.models.release_track import ReleaseTrack
+    from app.models.audio_file import AudioFile
+    from app.models.contributor import Contributor
+    from app.models.track_contributor import TrackContributor
+
+    stmt = (
+        select(
+            Track,
+            TrackProcessingStatus,
+            Genre.name.label("genre_name"),
+            Label.label_name.label("label_name"),
+            Release.title.label("album"),
+            AudioFile.file_size_bytes.label("file_size"),
+            AudioFile.original_filename.label("audio_filename"),
+        )
+        .outerjoin(TrackProcessingStatus, TrackProcessingStatus.track_id == Track.id)
+        .outerjoin(ReleaseTrack, Track.id == ReleaseTrack.track_id)
+        .outerjoin(Release, ReleaseTrack.release_id == Release.id)
+        .outerjoin(Label, Release.label_id == Label.id)
+        .outerjoin(Genre, Track.genre_id == Genre.id)
+        .outerjoin(
+            AudioFile,
+            and_(Track.id == AudioFile.track_id, AudioFile.asset_class == "Master"),
+        )
+        .where(Track.id == track_id)
+        .limit(1)
+    )
+    row = (await db.execute(stmt)).first()
+    if row is None:
+        return JSONResponse(
+            status_code=404,
+            content={"status": "error", "message": "Track not found"},
+        )
+
+    t = row.Track
+    tps = row.TrackProcessingStatus
+
+    # Credited artists (fall back to the denormalized display_artist column).
+    artists_rows = await db.execute(
+        select(Contributor.full_name)
+        .join(TrackContributor, Contributor.id == TrackContributor.person_id)
+        .where(TrackContributor.track_id == t.id)
+    )
+    artists = [r[0] for r in artists_rows.fetchall() if r[0]]
+
+    data = _track_to_dict(t, tps)
+    data.update(
+        {
+            "artists": artists,
+            "display_artist": t.display_artist or (", ".join(artists) if artists else None),
+            "album": row.album,
+            "release": row.album,
+            "year": t.p_line_year,
+            "genre": row.genre_name,
+            "label": row.label_name,
+            "file_size": row.file_size or 0,
+            "audio_filename": row.audio_filename,
+        }
+    )
+    return JSONResponse(content={"status": "success", "track": data})
 
 
 @router.post(

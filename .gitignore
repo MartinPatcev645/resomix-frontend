@@ -191,3 +191,4 @@ db_query.txt
 logs/
 scripts/duration/*.csv
 scripts/duration/*.txt
+exports/

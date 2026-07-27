@@ -996,7 +996,8 @@ class FeedbackController:
         self,
         db: AsyncSession,
         request: Request,
-        partner_id: Optional[int] = None
+        partner_id: Optional[int] = None,
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """Get feedback statistics for admin dashboard."""
         start_time = time.time()
@@ -1088,7 +1089,8 @@ class FeedbackController:
         self,
         db: AsyncSession,
         request: Request,
-        filters: Dict[str, Any]
+        filters: Dict[str, Any],
+        current_admin: Optional[User] = None,
     ) -> JSONResponse:
         """Export feedback to CSV and return download URL."""
         start_time = time.time()
