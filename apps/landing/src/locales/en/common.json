@@ -192,6 +192,8 @@
             "reading": "Builds patiently · peaks at the drop · releases clean",
             "capOne": "One recording · read plainly",
             "capConf": "Confidence shown where available",
+            "panelLabel": "Sonic anatomy · one recording",
+            "sampleData": "SAMPLE DATA",
             "intro": "Intro",
             "build": "Build",
             "breakdown": "Breakdown",

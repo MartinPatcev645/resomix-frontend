@@ -13,7 +13,6 @@ export function HmProductWorlds() {
         <div className="hm-prods">
           <article className="hm-prod">
             <div className="hm-wbar" aria-hidden="true">
-              <i /><i /><i />
               <span className="hm-wt">{t('home.products.sonic.name')}</span>
             </div>
             <div className="hm-world" aria-hidden="true">
@@ -47,7 +46,6 @@ export function HmProductWorlds() {
           </article>
           <article className="hm-prod">
             <div className="hm-wbar" aria-hidden="true">
-              <i /><i /><i />
               <span className="hm-wt">{t('home.products.track.name')}</span>
             </div>
             <div className="hm-world" aria-hidden="true">
@@ -75,7 +73,6 @@ export function HmProductWorlds() {
           </article>
           <article className="hm-prod">
             <div className="hm-wbar" aria-hidden="true">
-              <i /><i /><i />
               <span className="hm-wt">{t('home.products.catalogue.name')}</span>
             </div>
             <div className="hm-world" aria-hidden="true">
@@ -83,24 +80,29 @@ export function HmProductWorlds() {
               <rect x="10" y="10" width="340" height="148" strokeDasharray="4 5" style={{color: 'rgba(255,255,255,.25)'}}/>
               <text x="20" y="30" fontSize="11">{t('home.products.privateIndex')}</text>
               <text x="240" y="30" fontSize="10.5">{t('home.products.humanReviewed')}</text>
-              <g style={{color: 'rgba(255,255,255,.32)'}}>
-                <circle cx="74" cy="64" r="2.4"/><circle cx="92" cy="78" r="2.4"/><circle cx="84" cy="96" r="2.4"/><circle cx="106" cy="60" r="2.4"/><circle cx="112" cy="88" r="2.4"/><circle cx="96" cy="112" r="2.4"/><circle cx="124" cy="104" r="2.4"/>
-                <circle cx="186" cy="54" r="2.4"/><circle cx="204" cy="66" r="2.4"/><circle cx="194" cy="84" r="2.4"/><circle cx="216" cy="52" r="2.4"/><circle cx="224" cy="76" r="2.4"/>
-                <circle cx="280" cy="102" r="2.4"/><circle cx="296" cy="116" r="2.4"/><circle cx="312" cy="98" r="2.4"/><circle cx="288" cy="132" r="2.4"/>
+              <g style={{color: 'rgba(255,255,255,.16)'}}>
+                <circle cx="74" cy="64" r="2.2"/><circle cx="92" cy="78" r="2.2"/><circle cx="84" cy="96" r="2.2"/><circle cx="106" cy="60" r="2.2"/><circle cx="112" cy="88" r="2.2"/><circle cx="96" cy="112" r="2.2"/><circle cx="124" cy="104" r="2.2"/>
+                <circle cx="186" cy="54" r="2.2"/><circle cx="204" cy="66" r="2.2"/><circle cx="194" cy="84" r="2.2"/><circle cx="216" cy="52" r="2.2"/><circle cx="224" cy="76" r="2.2"/>
+                <circle cx="280" cy="102" r="2.2"/><circle cx="296" cy="116" r="2.2"/><circle cx="312" cy="98" r="2.2"/><circle cx="288" cy="132" r="2.2"/>
               </g>
-              <g style={{color: 'rgba(255,255,255,.1)'}}>
+              <g style={{color: 'rgba(255,255,255,.06)'}}>
                 <path d="M92 78 L186 54 M204 66 L280 102 M112 88 L194 84"/>
               </g>
               <circle cx="34" cy="140" r="3.5" style={{fill: '#EE4A26', stroke: 'none'}}/>
               <text x="24" y="158" fontSize="11">{t('home.products.brief')}</text>
-              <g style={{color: 'rgba(238,74,38,.5)'}}>
+              <g style={{color: 'rgba(238,74,38,.55)'}}>
                 <path className="hm-dashflow" d="M34 140 C 60 110 76 84 92 78"/>
                 <path className="hm-dashflow" d="M34 140 C 90 120 150 80 194 84"/>
                 <path className="hm-dashflow" d="M34 140 C 120 150 220 130 288 132"/>
               </g>
-              <g style={{color: 'rgba(238,74,38,.7)'}}>
-                <circle cx="92" cy="78" r="7"/><circle cx="194" cy="84" r="7"/><circle cx="288" cy="132" r="7"/>
+              <g style={{color: 'rgba(238,74,38,.22)'}}>
+                <circle cx="92" cy="78" r="11"/><circle cx="194" cy="84" r="11"/><circle cx="288" cy="132" r="11"/>
               </g>
+              <g style={{color: 'rgba(238,74,38,.9)'}}>
+                <circle cx="92" cy="78" r="7" style={{strokeWidth: 1.8}}/><circle cx="194" cy="84" r="7" style={{strokeWidth: 1.8}}/><circle cx="288" cy="132" r="7" style={{strokeWidth: 1.8}}/>
+              </g>
+              <circle cx="92" cy="78" r="2.2" style={{fill: '#fff', stroke: 'none'}}/>
+              <circle cx="194" cy="84" r="2.2" style={{fill: '#fff', stroke: 'none'}}/>
               <circle className="hm-glowp" cx="288" cy="132" r="3" style={{fill: '#EE4A26', stroke: 'none'}}/>
               <text x="234" y="156" fontSize="11" style={{fill: '#EE4A26'}}>{t('home.products.resurfaced')}</text>
             </svg>

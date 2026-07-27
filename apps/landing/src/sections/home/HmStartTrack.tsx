@@ -1,6 +1,63 @@
 import { useTranslation } from 'react-i18next';
 import { BASE_BETA_URL } from '@resomix/config';
 
+const JoinArrow = ({ merge = false }: { merge?: boolean }) => (
+  <div className="hm-join" aria-hidden="true">
+    {/* Desktop: horizontal */}
+    <svg className="hm-join-h" viewBox="0 0 44 32">
+      <g
+        style={{
+          stroke: 'currentColor',
+          fill: 'none',
+          strokeWidth: 1.25,
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+        }}
+      >
+        {merge ? (
+          <>
+            <path d="M2 8 C 16 8 22 16 30 16" vectorEffect="non-scaling-stroke" />
+            <path d="M2 24 C 16 24 22 16 30 16" vectorEffect="non-scaling-stroke" />
+            <path d="M30 16 H38" vectorEffect="non-scaling-stroke" />
+            <path d="M34 11 L40 16 L34 21" vectorEffect="non-scaling-stroke" />
+          </>
+        ) : (
+          <>
+            <path d="M2 16 H38" vectorEffect="non-scaling-stroke" />
+            <path d="M34 11 L40 16 L34 21" vectorEffect="non-scaling-stroke" />
+          </>
+        )}
+      </g>
+    </svg>
+    {/* Mobile/tablet: vertical */}
+    <svg className="hm-join-v" viewBox="0 0 32 44">
+      <g
+        style={{
+          stroke: 'currentColor',
+          fill: 'none',
+          strokeWidth: 1.25,
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+        }}
+      >
+        {merge ? (
+          <>
+            <path d="M8 2 C 8 16 16 22 16 30" vectorEffect="non-scaling-stroke" />
+            <path d="M24 2 C 24 16 16 22 16 30" vectorEffect="non-scaling-stroke" />
+            <path d="M16 30 V38" vectorEffect="non-scaling-stroke" />
+            <path d="M11 34 L16 40 L21 34" vectorEffect="non-scaling-stroke" />
+          </>
+        ) : (
+          <>
+            <path d="M16 2 V38" vectorEffect="non-scaling-stroke" />
+            <path d="M11 34 L16 40 L21 34" vectorEffect="non-scaling-stroke" />
+          </>
+        )}
+      </g>
+    </svg>
+  </div>
+);
+
 export function HmStartTrack() {
   const { t } = useTranslation('common');
 
@@ -22,19 +79,17 @@ export function HmStartTrack() {
               <span className="hm-fd">{t('home.how.tileDropD')}</span>
             </div>
           </div>
-          <div className="hm-join" aria-hidden="true">
-            <svg viewBox="0 0 44 32"><g style={{stroke:'currentColor', fill:'none', strokeWidth:1.4, strokeLinecap:'round', strokeLinejoin:'round'}}><path d="M2 8 C 16 8 22 16 30 16 M2 24 C 16 24 22 16 30 16 M30 16 H38 M34 11 L40 16 L34 21"/></g></svg>
-          </div>
+          <JoinArrow merge />
           <div className="hm-fstage">
             <span className="hm-fstep"><b>02</b>{t('home.how.step02')}</span>
             <div className="hm-fcard">
-              <svg className="hm-sl" viewBox="0 0 200 44" aria-hidden="true"><polyline points="0,36 26,30 48,20 74,18 92,28 112,24 124,10 152,8 176,14 200,24" style={{strokeWidth: 1.6}}/></svg>
+              <svg className="hm-sl" viewBox="0 0 200 44" aria-hidden="true">
+                <polyline points="0,36 26,30 48,20 74,18 92,28 112,24 124,10 152,8 176,14 200,24" style={{strokeWidth: 1.6}} />
+              </svg>
               <span className="hm-fd">{t('home.how.step02body')}</span>
             </div>
           </div>
-          <div className="hm-join" aria-hidden="true">
-            <svg viewBox="0 0 44 32"><g style={{stroke:'currentColor', fill:'none', strokeWidth:1.4, strokeLinecap:'round', strokeLinejoin:'round'}}><path d="M2 16 H38 M34 11 L40 16 L34 21"/></g></svg>
-          </div>
+          <JoinArrow />
           <div className="hm-fstage">
             <span className="hm-fstep"><b>03</b>{t('home.how.step03')}</span>
             <div className="hm-fres" aria-hidden="true">
@@ -44,7 +99,7 @@ export function HmStartTrack() {
             </div>
             <span className="hm-fsub">{t('home.how.step03sub')}</span>
             <div className="hm-fopt">
-              <span className="hm-fstep" style={{ fontSize: '0.65625rem' }}>
+              <span className="hm-fstep">
                 <b>04</b>{t('home.how.step04')}
                 <span className="hm-opt">{t('home.how.step04opt')}</span>
               </span>

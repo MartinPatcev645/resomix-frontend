@@ -6,6 +6,39 @@ const SAMPLE_RESPONSE = `{ "rank": 1,
   "score": 0.981,
   "title": "…" }`;
 
+const JoinArrow = () => (
+  <div className="hm-join" aria-hidden="true">
+    <svg className="hm-join-h" viewBox="0 0 44 32">
+      <g
+        style={{
+          stroke: 'currentColor',
+          fill: 'none',
+          strokeWidth: 1.25,
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+        }}
+      >
+        <path d="M2 16 H38" vectorEffect="non-scaling-stroke" />
+        <path d="M34 11 L40 16 L34 21" vectorEffect="non-scaling-stroke" />
+      </g>
+    </svg>
+    <svg className="hm-join-v" viewBox="0 0 32 44">
+      <g
+        style={{
+          stroke: 'currentColor',
+          fill: 'none',
+          strokeWidth: 1.25,
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+        }}
+      >
+        <path d="M16 2 V38" vectorEffect="non-scaling-stroke" />
+        <path d="M11 34 L16 40 L21 34" vectorEffect="non-scaling-stroke" />
+      </g>
+    </svg>
+  </div>
+);
+
 export function HmApi() {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
@@ -22,7 +55,7 @@ export function HmApi() {
             <div className="hm-arows" aria-hidden="true"><i /><i /><i /></div>
             <span className="hm-ad">{t('home.api.s01d')}</span>
           </div>
-          <div className="hm-join" aria-hidden="true"><svg viewBox="0 0 44 32"><g style={{stroke:'currentColor', fill:'none', strokeWidth:1.4, strokeLinecap:'round', strokeLinejoin:'round'}}><path d="M2 16 H38 M34 11 L40 16 L34 21"/></g></svg></div>
+          <JoinArrow />
           <div className="hm-astage hm-aiso">
             <span className="hm-anum">02</span>
             <span className="hm-at">{t('home.api.s02t')}</span>
@@ -34,13 +67,13 @@ export function HmApi() {
             </div>
             <span className="hm-ad">{t('home.api.s02d')}</span>
           </div>
-          <div className="hm-join" aria-hidden="true"><svg viewBox="0 0 44 32"><g style={{stroke:'currentColor', fill:'none', strokeWidth:1.4, strokeLinecap:'round', strokeLinejoin:'round'}}><path d="M2 16 H38 M34 11 L40 16 L34 21"/></g></svg></div>
+          <JoinArrow />
           <div className="hm-astage">
             <span className="hm-anum">03</span>
             <span className="hm-at">{t('home.api.s03t')}</span>
             <code className="hm-acode" aria-hidden="true">{SAMPLE_RESPONSE}</code>
           </div>
-          <div className="hm-join" aria-hidden="true"><svg viewBox="0 0 44 32"><g style={{stroke:'currentColor', fill:'none', strokeWidth:1.4, strokeLinecap:'round', strokeLinejoin:'round'}}><path d="M2 16 H38 M34 11 L40 16 L34 21"/></g></svg></div>
+          <JoinArrow />
           <div className="hm-astage">
             <span className="hm-anum">04</span>
             <span className="hm-at">{t('home.api.s04t')}</span>
