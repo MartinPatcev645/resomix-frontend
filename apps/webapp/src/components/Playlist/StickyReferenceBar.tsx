@@ -37,14 +37,19 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
     const el = sentinelRef.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
 
-    const stickyOffset =
-      getComputedStyle(document.documentElement).getPropertyValue("--nav-sticky-h").trim() ||
-      "3.25rem";
+    // IntersectionObserver rootMargin only accepts px/% — convert --nav-sticky-h (often rem).
+    const probe = document.createElement("div");
+    probe.style.cssText =
+      "position:absolute;visibility:hidden;height:var(--nav-sticky-h,3.25rem);pointer-events:none";
+    document.body.appendChild(probe);
+    const stickyPx = Math.max(1, Math.round(probe.getBoundingClientRect().height)) || 52;
+    probe.remove();
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         setVisible(!entry.isIntersecting);
       },
-      { root: null, threshold: 0, rootMargin: `-${stickyOffset} 0px 0px 0px` },
+      { root: null, threshold: 0, rootMargin: `-${stickyPx}px 0px 0px 0px` },
     );
     observer.observe(el);
     return () => observer.disconnect();
