@@ -1,9 +1,10 @@
 import React, { useEffect } from "react";
-import { IconButton, HoverFlow, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
+import { IconButton, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
 import { formatDuration, usePlaylistExport, useAccess, useFavoritePlaylist, usePlaylistVisibility, usePlaylistCover, type AccessAction } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
+import { autoFluidGridStyle } from "@/utils/playlistGrid.ts";
 import { useNavigate, useLocation } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport, PlaylistShare } from "@/components/index.ts";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
@@ -14,14 +15,12 @@ import ExportSvg from "@/assets/icons/export.svg";
 import ExportBlackSvg from "@/assets/icons/export_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
 import ShareBlackSvg from "@/assets/icons/share_black.svg";
-import AngleLeftSvg from "@/assets/icons/angle_left.svg";
 import StarSvg from "@/assets/icons/star.svg";
 import DefaultCover from "@/assets/default-playlist-cover.jpg";
-import TimeSvg from "@/assets/icons/time.svg";
 import InfoSvg from "@/assets/icons/info.svg";
-import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 import { CoverTextOverlay } from "@/components/Playlist/CoverTextOverlay.tsx";
 import { CoverCropModal } from "@/components/Playlist/CoverCropModal.tsx";
+import { playlistAccessChrome, PLAYLIST_LOCK_MARK } from "@/utils/playlistAccessChrome.ts";
 
 const InputTrackStatus = "Loading..."
 
@@ -78,8 +77,12 @@ const PlaylistHero: React.FC = () => {
     if (v === "allowed") return run();
     setGate({ reason: v === "login" ? "login_required" : "upgrade_required", title, body });
   };
-  // Dim gated controls until the verdicts are real.
-  const accessDim = access.ready ? "" : " opacity-60";
+  // Dim gated controls until the verdicts are real, or when login/upgrade is required.
+  const favoriteChrome = playlistAccessChrome(access.verdict("favorite"), access.ready, "Log in to save favorites");
+  const renameChrome = playlistAccessChrome(access.verdict("rename"), access.ready, "Log in to rename");
+  const exportChrome = playlistAccessChrome(access.verdict("export"), access.ready, "Log in to export");
+  const shareChrome = playlistAccessChrome(access.verdict("share"), access.ready, "Log in to share");
+  const rateChrome = playlistAccessChrome(access.verdict("rateTrack"), access.ready, "Log in to rate tracks");
   // Public/private toggle of the CURRENT playlist. Only a logged-in user can toggle (the owner);
   // logged-out users see the badge as a read-only status (unchanged). The backend enforces
   // owner-only and returns 403 for a non-owner, which is surfaced via the status message.
@@ -301,371 +304,314 @@ const PlaylistHero: React.FC = () => {
 
 
   return (
-    <div className="relative">
-      {/* Hidden SVG defs for clip-path */}
-      <svg
-        viewBox="0 0 1152 628"
-        preserveAspectRatio="none"
-        className="absolute inset-0 w-full h-[length:var(--px-628)] pointer-events-none z-10 overflow-visible"
-      >
-        <defs>
-          <clipPath id="heroClip" clipPathUnits="objectBoundingBox">
-            <path transform="scale(0.0008680556,0.0015923567)" d="M279.222 1.07413H0.333008L0.333336 628H279.222L347.74 585.889H779.963L848.481 628H1152L1152 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z" />
-          </clipPath>
-        </defs>
-
-        {/* stroke outline */}
-        <path
-          d="M279.222 1.07413H0.333008L0.333336 628H279.222L347.74 585.889H779.963L848.481 628H1152L1152 1.07413H848.481L779.963 40.6333H347.74L279.222 1.07413Z"
-          stroke="white"
-          strokeOpacity="1"
-          strokeWidth="1"
-          strokeDasharray="0.74 0.74"
-          fill="none"
-        />
-      </svg>
-
-      {/* Clip content inside shape */}
-      <div
-        className="relative w-[var(--px-1152)] h-[var(--px-628)] mx-auto z-20"
-        style={{
-          clipPath: "url(#heroClip)",
-          WebkitClipPath: "url(#heroClip)"
-        }}
-      >
-        {/* Overlay content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-between w-full h-full select-none py-[var(--px-55)]">
-          <div></div>
-          <div className="flex flex-col w-[var(--px-700)] gap-[var(--px-10)]">
-            <div className="flex w-full justify-between items-center">
-              {location.state?.from === "library" ? (
-                <a
-                  aria-label="Back to Library"
-                  href="/library"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate("/library");
-                  }}
-                  className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline playlist-nav-link"
-                  id="playlist-hero-back-link"
-                >
-                  <img src={AngleLeftSvg} alt="" aria-hidden="true" draggable={false} className="w-[var(--px-13)] h-[var(--px-13)]" />
-                  Back to Library
-                </a>
-              ) : (
-                <a
-                  aria-label="Back to Search"
-                  href={BASE_BETA_URL}
-                  className="flex text-[length:var(--px-9)] font-light font-fira gap-[var(--px-8)] items-center hover:underline playlist-nav-link"
-                  id="playlist-hero-back-link"
-                >
-                  <img src={AngleLeftSvg} alt="" aria-hidden="true" draggable={false} className="w-[var(--px-13)] h-[var(--px-13)]" />
-                  Back to Search
-                </a>
-              )}
-              <div className="flex items-center gap-[var(--px-8)]">
-                <Tooltip message={autoplay ? "Turn off Autoplay" : "Turn on Autoplay"}>
-                  <ToggleButton
-                    text="Autoplay"
-                    customWidth="min-w-[var(--px-120)]"
-                    isOn={autoplay}
-                    onToggle={setAutoplay}
-                    id="playlist-hero-autoplay-toggle"
-                  />
-                </Tooltip>
-                <Tooltip message="Rename your Playlist">
-                    <IconButton
-                      text="Rename"
-                      transparent={true}
-                      customWidth="min-w-[var(--px-100)]"
-                      onClick={() => withAccess("rename", "Log in to rename", "Create a free account or log in to rename your playlists.", () => setShowRename(true))}
-                      icon={<img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                      hoverIcon={<img src={RenameBlackSvg} aria-label="Rename" draggable={false} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                      className={"playlist-action-button" + accessDim}
-                      id="playlist-hero-rename-button"
-                    />
-                  </Tooltip>
-
-                <div ref={exportButtonWrapRef} className="relative">
-                  <Tooltip message="Export your Playlist">
-                    <IconButton
-                      text={isExporting ? "Exporting..." : "Export"}
-                      transparent={true}
-                      customWidth="min-w-[var(--px-100)]"
-                      onClick={handleExportButtonClick}
-                      disabled={isExporting}
-                      icon={<img src={ExportSvg} draggable={false} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                      hoverIcon={<img src={ExportBlackSvg} draggable={false} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                      className="playlist-action-button"
-                      id="playlist-hero-export-button"
-                    />
-                  </Tooltip>
-                  {showExportMenu && (
-                    <div
-                      ref={exportMenuRef}
-                      role="menu"
-                      aria-label="Export options"
-                      className="absolute right-0 top-[calc(100%+var(--px-6))] z-50 min-w-[var(--px-220)] bg-[var(--color-secondary-background)] text-white border border-dotted border-slate-200 shadow-lg"
-                    >
-                      <button
-                        role="menuitem"
-                        className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-white hover:text-black transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)]"
-                        onClick={handleDownloadExportClick}
-                        id="export-menu-download"
-                      >
-                        Export to TXT
-                      </button>
-                      <button
-                        role="menuitem"
-                        className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-white hover:text-black transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)] border-t border-dotted border-slate-200/40"
-                        onClick={handleAppleExportClick}
-                        id="export-menu-apple"
-                      >
-                        Export to Apple Music
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <Tooltip message="Share your Playlist">
-                  <IconButton
-                    text="Share"
-                    transparent={true}
-                    customWidth="min-w-[var(--px-100)]"
-                    onClick={() => withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => setShowShare(true))}
-                    icon={<img src={ShareSvg} draggable={false} alt="Share" aria-label="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    hoverIcon={<img src={ShareBlackSvg} aria-label="Share" draggable={false} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                    className={"playlist-action-button" + accessDim}
-                    id="playlist-hero-share-button"
-                  />
-                </Tooltip>
-              </div>
+    <div className="relative w-full">
+      {/* Toolbar */}
+      <div className="mb-[var(--px-14)] flex flex-wrap items-center gap-[var(--px-8)]">
+        {location.state?.from === "library" ? (
+          <a
+            aria-label="Back to Library"
+            href="/library"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/library");
+            }}
+            className="inline-flex items-center rounded-full border border-dotted border-slate-200 px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-80 hover:opacity-100 playlist-nav-link"
+            id="playlist-hero-back-link"
+          >
+            ‹ Back to Library
+          </a>
+        ) : (
+          <a
+            aria-label="Back to search"
+            href={BASE_BETA_URL}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/sonic-discovery");
+            }}
+            className="inline-flex items-center rounded-full border border-dotted border-slate-200 px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-80 hover:opacity-100 playlist-nav-link"
+            id="playlist-hero-back-link"
+          >
+            ‹ Back to search
+          </a>
+        )}
+        <span className="flex-1" />
+        <Tooltip message={autoplay ? "Turn off Autoplay" : "Turn on Autoplay"}>
+          <ToggleButton
+            text="Autoplay"
+            customWidth="min-w-[var(--px-100)]"
+            isOn={autoplay}
+            onToggle={setAutoplay}
+            id="playlist-hero-autoplay-toggle"
+          />
+        </Tooltip>
+        <Tooltip message="Rename your Playlist">
+          <span title={renameChrome.title}>
+            <IconButton
+              text={`Rename${renameChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}`}
+              transparent={true}
+              customWidth="min-w-[var(--px-90)]"
+              onClick={() => withAccess("rename", "Log in to rename", "Create a free account or log in to rename your playlists.", () => setShowRename(true))}
+              icon={<img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+              hoverIcon={<img src={RenameBlackSvg} aria-label="Rename" draggable={false} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+              className={"playlist-action-button" + renameChrome.className}
+              id="playlist-hero-rename-button"
+            />
+          </span>
+        </Tooltip>
+        <div ref={exportButtonWrapRef} className="relative">
+          <Tooltip message="Export your Playlist">
+            <span title={exportChrome.title}>
+              <IconButton
+                text={`${isExporting ? "Exporting..." : "Export"}${exportChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}`}
+                transparent={true}
+                customWidth="min-w-[var(--px-90)]"
+                onClick={handleExportButtonClick}
+                disabled={isExporting}
+                icon={<img src={ExportSvg} draggable={false} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                hoverIcon={<img src={ExportBlackSvg} draggable={false} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+                className={"playlist-action-button" + exportChrome.className}
+                id="playlist-hero-export-button"
+              />
+            </span>
+          </Tooltip>
+          {showExportMenu && (
+            <div
+              ref={exportMenuRef}
+              role="menu"
+              aria-label="Export options"
+              className="absolute right-0 top-[calc(100%+var(--px-6))] z-50 min-w-[var(--px-220)] bg-[var(--color-secondary-background)] text-white border border-dotted border-slate-200 shadow-lg"
+            >
+              <button
+                role="menuitem"
+                className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-white hover:text-black transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)]"
+                onClick={handleDownloadExportClick}
+                id="export-menu-download"
+              >
+                Export to TXT
+              </button>
+              <button
+                role="menuitem"
+                className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-white hover:text-black transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)] border-t border-dotted border-slate-200/40"
+                onClick={handleAppleExportClick}
+                id="export-menu-apple"
+              >
+                Export to Apple Music
+              </button>
             </div>
+          )}
+        </div>
+        <Tooltip message="Share your Playlist">
+          <span title={shareChrome.title}>
+            <IconButton
+              text={`Share${shareChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}`}
+              transparent={true}
+              customWidth="min-w-[var(--px-90)]"
+              onClick={() => withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => setShowShare(true))}
+              icon={<img src={ShareSvg} draggable={false} alt="Share" aria-label="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+              hoverIcon={<img src={ShareBlackSvg} aria-label="Share" draggable={false} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
+              className={"playlist-action-button" + shareChrome.className}
+              id="playlist-hero-share-button"
+            />
+          </span>
+        </Tooltip>
+      </div>
 
-            <div className="relative border border-dotted border-slate-200 p-[var(--px-20)] h-full w-full">
-              <div className="flex items-start gap-[var(--px-30)]">
-                <div className="flex flex-col items-center gap-[var(--px-10)] w-[var(--px-120)]">
-                  {/* Cover fills the dotted border edge-to-edge (no inner padding). The box is forced
-                      square (aspect-square) so the border is always a square around the filled cover,
-                      and its width matches the "Rate These Results" button below via the fixed-width
-                      column. NOTE: use a DEFINED --px-* value here (--px-124 is not in the scale, so
-                      it collapses to auto and the image balloons to its intrinsic size). */}
-                  {/* Explicit square box (same approach as the working mobile hero) so the dotted
-                      border is always square and the image fills it edge-to-edge. */}
-                  <div className="relative border border-dotted border-slate-200 w-[var(--px-120)] h-[var(--px-120)]">
-                    {!DEMO_MODE ? (
-                      <img src={(hasCustomCover ? customCoverUrl : null) || DefaultCover} onLoad={() => setCoverLoaded(true)} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="block w-full h-full object-cover" />
-                    ) : (
-                      <img src={DefaultCover} onLoad={() => setCoverLoaded(true)} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="block w-full h-full object-cover" />
-                    )}
-                    {/* Canvas title overlay — drawn on top of the loaded cover (centered, auto-sized). */}
-                    <CoverTextOverlay
-                      text={playlistData?.playlist?.name}
-                      active={coverLoaded}
-                      className="pointer-events-none absolute inset-0 h-full w-full"
-                    />
-                    {/* Uploading loader over the existing cover */}
-                    {coverUploading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                        <span className="w-[var(--px-24)] h-[var(--px-24)] border-2 border-white/40 border-t-white rounded-full animate-spin" aria-label="Uploading cover" />
-                      </div>
-                    )}
-                    {/* Owner-only pen on the top-right corner of the border. Plain <button> (NOT wrapped
-                        in <Tooltip>, whose relative wrapper would offset the absolute positioning) —
-                        native title gives the hover hint, mirroring the mobile hero. */}
-                    {!DEMO_MODE && isOwner && (
-                      <button
-                        type="button"
-                        onClick={handleCoverPick}
-                        disabled={coverUploading}
-                        aria-label="Change cover image"
-                        title="Change cover image"
-                        className="absolute -top-[var(--px-10)] -right-[var(--px-10)] w-[var(--px-26)] h-[var(--px-26)] flex items-center justify-center rounded-full bg-[var(--color-secondary-background)] text-white cursor-pointer shadow-[0_var(--px-3)_var(--px-8)_rgba(0,0,0,0.55)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] hover:scale-110 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-                        id="playlist-hero-cover-edit-button"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[var(--px-12)] h-[var(--px-12)]" aria-hidden="true">
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                        </svg>
-                      </button>
-                    )}
-                    <input
-                      ref={coverInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="hidden"
-                      onChange={handleCoverSelected}
-                      aria-hidden="true"
-                      tabIndex={-1}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    name="Rate these Results"
-                    onClick={() => setShowRating(true)}
-                    className="w-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] p-[var(--px-10)] flex gap-[var(--px-8)] items-end justify-center cursor-pointer playlist-rating-button"
-                    id="playlist-hero-rating-button"
-                    aria-label="Rate these Results"
-                    aria-expanded={showRating}
-                    data-playlist-id={playlistData?.playlist?.id}
-                  >
-                    <img src={StarSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-12)] h-[var(--px-12)] mb-[var(--px-2)]" />
-                    <span className="whitespace-nowrap text-[length:var(--px-8)] tracking-[var(--px-0-25)] font-light font-fira text-[var(--color-text-primary)]">Rate These Results</span>
-                  </button>
-                </div>
-                <div className="flex flex-col w-full gap-[var(--px-20)] max-w-[var(--px-480)]">
-                  <div className="flex flex-col gap-[var(--px-7)] min-h-[var(--px-61)]">
-                    {error && (
-                      <div className="text-red-500 text-[length:var(--px-9)] font-fira">
-                        Error: {error}
-                      </div>
-                    )}
+      {/* Header card */}
+      <div
+        className="relative grid gap-[var(--px-20)] border border-dotted border-slate-200 bg-[rgba(255,255,255,.02)] p-[var(--px-18)]"
+        style={autoFluidGridStyle}
+      >
+        <div className="relative w-[var(--px-120)] h-[var(--px-120)] shrink-0 border border-dotted border-slate-200">
+          {!DEMO_MODE ? (
+            <img src={(hasCustomCover ? customCoverUrl : null) || DefaultCover} onLoad={() => setCoverLoaded(true)} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="block w-full h-full object-cover" />
+          ) : (
+            <img src={DefaultCover} onLoad={() => setCoverLoaded(true)} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="block w-full h-full object-cover" />
+          )}
+          <CoverTextOverlay
+            text={playlistData?.playlist?.name}
+            active={coverLoaded}
+            className="pointer-events-none absolute inset-0 h-full w-full"
+          />
+          {coverUploading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+              <span className="w-[var(--px-24)] h-[var(--px-24)] border-2 border-white/40 border-t-white rounded-full animate-spin" aria-label="Uploading cover" />
+            </div>
+          )}
+          {!DEMO_MODE && isOwner && (
+            <button
+              type="button"
+              onClick={handleCoverPick}
+              disabled={coverUploading}
+              aria-label="Change cover image"
+              title="Change cover image"
+              className="absolute -top-[var(--px-10)] -right-[var(--px-10)] w-[var(--px-26)] h-[var(--px-26)] flex items-center justify-center rounded-full bg-[var(--color-secondary-background)] text-white cursor-pointer shadow-[0_var(--px-3)_var(--px-8)_rgba(0,0,0,0.55)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] hover:scale-110 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              id="playlist-hero-cover-edit-button"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[var(--px-12)] h-[var(--px-12)]" aria-hidden="true">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+              </svg>
+            </button>
+          )}
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleCoverSelected}
+            aria-hidden="true"
+            tabIndex={-1}
+          />
+        </div>
 
-                    {isLoading ? (
-                      <div className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
-                        Loading playlist...
-                      </div>
-                    ) : (
-                      <h1 className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
-                        <HoverFlow
-                          text={playlistData?.playlist?.name || "No playlist data"}
-                          maxChars={35}
-                          delay={800}
-                          speed={80}
-                          endPause={1000}
-                          maxWidth="400px"
-                        />
-                      </h1>
-                    )}
-                    <div className={`text-[length:var(--px-9)] font-light tracking-[var(--px-0-1)] font-fira leading-[var(--px-14)] ${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist?.name ? 'hidden' : ''}`}>
-                      {/* Display only if default is changed */}
-                      <HoverFlow
-                        text={playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title}
-                        maxChars={70}
-                        delay={800}
-                        speed={80}
-                        endPause={1000}
-                        maxWidth="400px"
-                      />
-                    </div>
-                    <div className={`${(playlistData?.queried_track.artist + ' - ' + playlistData?.queried_track.title) === playlistData?.playlist?.name ? '' : 'hidden'}`}></div>
-                    <div className="flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-9)] font-light font-fira leading-[var(--px-14)] items-center">
-                      <img src={TimeSvg} draggable={false} aria-label="Time" alt="Time" className="w-[var(--px-10)] h-[var(--px-10)]" />
-                      <div>{playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}</div>
-                      <div>|</div>
-                      <div>{playlistData?.queried_track.year}</div>
-                      {resolveLabel(playlistData?.queried_track.label) && (
-                        <>
-                          <div>|</div>
-                          <div>{resolveLabel(playlistData?.queried_track.label)}</div>
-                        </>
-                      )}
-                      <Tooltip message={showMeta ? "Hide Meta Info" : "Show Meta Info"}>
-                        <button
-                          type="button"
-                          onClick={() => setShowMeta((v) => !v)}
-                          aria-label={showMeta ? "Hide Meta Info" : "Show Meta Info"}
-                          aria-expanded={showMeta}
-                          className="hover:cursor-pointer playlist-meta-toggle"
-                          id="playlist-hero-meta-toggle"
-                        >
-                          <img draggable={false} src={InfoSvg} alt="" aria-hidden="true" className="w-[var(--px-14)] h-[var(--px-14)] ml-[var(--px-20)]" />
-                        </button>
-                      </Tooltip>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-[var(--px-10)]">
-                    {/* Hidden Meta Info */}
-                    <div className={`flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-7)] font-light font-fira leading-[var(--px-14)] items-center h-[var(--px-14)] min-h-[var(--px-14)] ${showMeta ? '' : 'hidden'}`}>
-                      <div>ID: {playlistData?.queried_track.id}</div>
-                      <div>|</div>
-                      <div>Duration: {playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}</div>
-                      <div>|</div>
-                      <div>Status: {InputTrackStatus}</div>
-                      <div>|</div>
-                      <div>Mode: Independent</div>
-                      <div>|</div>
-                      {/* Usage: playlistData?.queried_track.type (either 'upload' or 'internal') */}
-                      <div>Instance: Input Track</div>
-                    </div>
-                    <div className={`h-[var(--px-14)] min-h-[var(--px-14)] ${showMeta ? 'hidden' : ''}`}></div>
-                    {/* The actual Input player */}
-                    {playlistData?.queried_track.id && (
-                      <InputPlayer
-                        trackId={playlistData.queried_track.id}
-                        totalDuration={playlistData.queried_track.duration ?? 0}
-                        playButtonDataAttributes={{
-                          'data-testid': 'play-button',
-                          'data-track-id': playlistData?.queried_track.id,
-                          'data-track-artist': playlistData?.queried_track.artist || '',
-                          'data-track-title': playlistData?.queried_track.title || '',
-                          'data-track-name': playlistData?.queried_track.title || '',
-                        }}
-                      />
-                    )}
-                  </div>
-                </div>
+        <div className="min-w-0 flex flex-col gap-[var(--px-10)]">
+          {error && (
+            <div className="font-fira text-[length:var(--px-9)] opacity-75" role="alert">
+              {error}
+            </div>
+          )}
+
+          <div className="flex min-w-0 items-center gap-[var(--px-10)] overflow-hidden">
+            {isLoading ? (
+              <div className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
+                Loading playlist...
               </div>
-              <div className="absolute right-[var(--px-10)] top-[var(--px-10)] flex items-center gap-[var(--px-8)]">
-                <Tooltip message={isFavorite ? "Remove from favorites" : "Add to favorites"}>
-                  <button
-                    type="button"
-                    onClick={handleFavoriteClick}
-                    aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                    className="mt-[var(--px-6)] cursor-pointer bg-transparent border-0 p-0 flex items-center justify-center transition-transform hover:scale-110 active:scale-90 playlist-favorite-button"
-                    id="playlist-hero-favorite-button"
-                  >
-                    {isFavorite ? (
-                      <HeartFilledIcon customWidth="24" customHeight="24" className="text-white" disableHover={true} />
-                    ) : (
-                      <HeartStrokeIcon customWidth="24" customHeight="24" className="text-white/60 hover:text-white" />
+            ) : (
+              <h1
+                id="playlist-results-heading"
+                tabIndex={-1}
+                title={playlistData?.playlist?.name || undefined}
+                className="m-0 min-w-0 flex-1 basis-0 truncate text-[length:var(--px-19)] font-medium uppercase font-helvetica leading-[var(--px-24)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
+              >
+                {playlistData?.playlist?.name || "No playlist data"}
+              </h1>
+            )}
+            <Tooltip message={isFavorite ? "Remove from favorites" : "Add to favorites"}>
+              <button
+                type="button"
+                onClick={handleFavoriteClick}
+                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                aria-pressed={isFavorite}
+                title={favoriteChrome.title}
+                className={"flex-none shrink-0 cursor-pointer bg-transparent border-0 p-0 flex items-center justify-center transition-transform hover:scale-110 active:scale-90 playlist-favorite-button" + favoriteChrome.className}
+                id="playlist-hero-favorite-button"
+              >
+                {isFavorite ? (
+                  <HeartFilledIcon customWidth="24" customHeight="24" className="text-[var(--color-accent,#EE4A26)]" disableHover={true} />
+                ) : (
+                  <>
+                    <HeartStrokeIcon customWidth="24" customHeight="24" className="text-white/60 hover:text-white" />
+                    {favoriteChrome.showLock && (
+                      <span aria-hidden="true" className="ml-[var(--px-4)] font-fira text-[length:var(--px-10)]">
+                        {PLAYLIST_LOCK_MARK}
+                      </span>
                     )}
-                  </button>
-                </Tooltip>
-                <Tooltip message={
-                  isAuthenticated
-                    ? (playlistData?.playlist?.is_public ? "Public — click to make private" : "Private — click to make public")
-                    : (playlistData?.playlist?.is_public ? "Playlist is Public" : "Playlist is Private!")
-                }>
-                  {/* Logged-in owner → clickable toggle; logged-out → read-only status badge. */}
-                  {React.createElement(
-                    isAuthenticated ? 'button' : 'div',
-                    {
-                      ...(isAuthenticated
-                        ? {
-                            type: 'button',
-                            onClick: () => setVisibilityConfirm(true),
-                            'aria-label': playlistData?.playlist?.is_public ? 'Make playlist private' : 'Make playlist public',
-                          }
-                        : {}),
-                      className: `px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase ${isAuthenticated ? 'cursor-pointer hover:brightness-125 transition-[filter]' : 'cursor-default'} ${playlistData?.playlist?.is_public ? 'text-[#5C5C5C]' : 'text-white'}`,
-                    },
-                    playlistData?.playlist?.is_public ? (
-                      <>
-                        <PublicIcon customWidth="10" customHeight="10" className="text-[#5C5C5C] mb-[var(--px-2)]" disableHover={true} />
-                        Public
-                      </>
-                    ) : (
-                      <>
-                        <PrivateIcon customWidth="12" customHeight="12" className="text-white" disableHover={true} />
-                        Private
-                      </>
-                    )
-                  )}
-                </Tooltip>
-              </div>
-              {/* Apple Music attribution — only for a CATALOGUE reference track that actually has a
-                  deep link (an 'internal' track with no deep_link_url must not show the badge). */}
-              {playlistData?.queried_track?.type === 'internal' && playlistData?.queried_track?.deep_link_url && (
-                <div className="absolute right-[var(--px-5)] bottom-[var(--px-0-1)]">
-                  <AppleMusicBadge deepLinkUrl={playlistData?.queried_track?.deep_link_url} playing />
-                </div>
+                  </>
+                )}
+              </button>
+            </Tooltip>
+            <Tooltip message={
+              isAuthenticated
+                ? (playlistData?.playlist?.is_public ? "Public — click to make private" : "Private — click to make public")
+                : (playlistData?.playlist?.is_public ? "Playlist is Public" : "Playlist is Private!")
+            }>
+              {React.createElement(
+                isAuthenticated ? 'button' : 'div',
+                {
+                  ...(isAuthenticated
+                    ? {
+                        type: 'button',
+                        onClick: () => setVisibilityConfirm(true),
+                        'aria-label': playlistData?.playlist?.is_public ? 'Make playlist private' : 'Make playlist public',
+                      }
+                    : {}),
+                  className: `flex-none shrink-0 px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase ${isAuthenticated ? 'cursor-pointer hover:brightness-125 transition-[filter]' : 'cursor-default'} ${playlistData?.playlist?.is_public ? 'text-[#5C5C5C]' : 'text-white'}`,
+                },
+                playlistData?.playlist?.is_public ? (
+                  <>
+                    <PublicIcon customWidth="10" customHeight="10" className="text-[#5C5C5C] mb-[var(--px-2)]" disableHover={true} />
+                    Public
+                  </>
+                ) : (
+                  <>
+                    <PrivateIcon customWidth="12" customHeight="12" className="text-white" disableHover={true} />
+                    Private
+                  </>
+                )
               )}
+            </Tooltip>
+          </div>
+
+          <p className="font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] text-[var(--color-primary)] opacity-60 m-0">
+            ⧖ {playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}
+            {' · '}{playlistData?.queried_track.year ?? '—'}
+            {resolveLabel(playlistData?.queried_track.label) ? ` · ${resolveLabel(playlistData?.queried_track.label)}` : ''}
+            {' · Similarity playlist — created automatically from your reference'}
+            {playlistData?.similar_tracks?.length ? ` · ${playlistData.similar_tracks.length} results` : ''}
+          </p>
+
+          <div className="flex flex-col gap-[var(--px-8)]">
+            <div className={`flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-7)] font-light font-fira leading-[var(--px-14)] items-center h-[var(--px-14)] min-h-[var(--px-14)] ${showMeta ? '' : 'hidden'}`}>
+              <div>ID: {playlistData?.queried_track.id}</div>
+              <div>|</div>
+              <div>Duration: {playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}</div>
+              <div>|</div>
+              <div>Status: {InputTrackStatus}</div>
+              <div>|</div>
+              <div>Mode: Independent</div>
+              <div>|</div>
+              <div>Instance: Input Track</div>
+            </div>
+            {playlistData?.queried_track.id && (
+              <InputPlayer
+                trackId={playlistData.queried_track.id}
+                totalDuration={playlistData.queried_track.duration ?? 0}
+                trackType={playlistData.queried_track.type}
+                deepLinkUrl={playlistData.queried_track.deep_link_url}
+                playButtonDataAttributes={{
+                  'data-testid': 'play-button',
+                  'data-track-id': playlistData?.queried_track.id,
+                  'data-track-artist': playlistData?.queried_track.artist || '',
+                  'data-track-title': playlistData?.queried_track.title || '',
+                  'data-track-name': playlistData?.queried_track.title || '',
+                }}
+              />
+            )}
+            <div className="flex flex-wrap items-center gap-[var(--px-10)]">
+              <button
+                type="button"
+                name="Rate these Results"
+                onClick={() => setShowRating(true)}
+                title={rateChrome.title}
+                className={"inline-flex items-center gap-[var(--px-8)] border border-dotted border-slate-200 px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] hover:opacity-100 playlist-rating-button min-h-[var(--px-44)]" + (rateChrome.showLock ? " opacity-45" : " opacity-80")}
+                id="playlist-hero-rating-button"
+                aria-label="Rate these Results"
+                aria-expanded={showRating}
+                data-playlist-id={playlistData?.playlist?.id}
+              >
+                <img src={StarSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-12)] h-[var(--px-12)]" />
+                Rate these results{rateChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
+              </button>
+              <Tooltip message={showMeta ? "Hide Meta Info" : "Show Meta Info"}>
+                <button
+                  type="button"
+                  onClick={() => setShowMeta((v) => !v)}
+                  aria-label={showMeta ? "Hide Meta Info" : "Show Meta Info"}
+                  aria-expanded={showMeta}
+                  className="hover:cursor-pointer playlist-meta-toggle opacity-60 hover:opacity-100"
+                  id="playlist-hero-meta-toggle"
+                >
+                  <img draggable={false} src={InfoSvg} alt="" aria-hidden="true" className="w-[var(--px-14)] h-[var(--px-14)]" />
+                </button>
+              </Tooltip>
             </div>
           </div>
-          <div className="text-[var(--color-text-secondary)] text-[length:var(--px-19)] font-light font-helvetica uppercase">SONIC MATCH FOUND - SCORED BY PYXIS-1</div>
         </div>
       </div>
+
+      <p className="mt-[var(--px-12)] mb-[var(--px-16)] flex items-center gap-[var(--px-10)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-50 before:block before:w-[var(--px-20)] before:border-t before:border-[var(--color-accent,#EE4A26)] before:content-['']">
+        Sonic match found — scored by PYXIS-1
+      </p>
 
       {/* Modals */}
       <CoverCropModal
