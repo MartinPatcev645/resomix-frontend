@@ -119,6 +119,9 @@ export interface ApiConfig {
     ADMIN_OPERATION_LOGS: string;
     ADMIN_PARTNER_STRIPE_CHECKOUT: string;
     ADMIN_AUTH_LOGIN: string;
+    ADMIN_AUTH_REFRESH: string;
+    ADMIN_AUTH_LOGOUT: string;
+    ADMIN_AUTH_ME: string;
     ADMIN_PROMO_CREATE: string;
     ADMIN_SIMILARITY_REBUILD: string;
     PARTNER_ME: string;
@@ -354,6 +357,9 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_OPERATION_LOGS: "/api/v1/admin/operation-logs",
     ADMIN_PARTNER_STRIPE_CHECKOUT: "/api/v1/admin/partners/",
     ADMIN_AUTH_LOGIN: "/api/v1/admin/auth/login",
+    ADMIN_AUTH_REFRESH: "/api/v1/admin/auth/refresh",
+    ADMIN_AUTH_LOGOUT: "/api/v1/admin/auth/logout",
+    ADMIN_AUTH_ME: "/api/v1/admin/auth/me",
     ADMIN_PROMO_CREATE: "/api/v1/admin/promo/create",
     ADMIN_SIMILARITY_REBUILD: "/api/v1/admin/similarity/rebuild-index",
     PARTNER_ME: "/api/v1/partner/me",

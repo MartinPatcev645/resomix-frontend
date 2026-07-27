@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { adminLogin, type AdminLoginRequest } from '@resomix/api-client';
-import { useAuthStore } from '@resomix/stores';
+import { adminLogin, adminLogout, type AdminLoginRequest } from '@resomix/api-client';
+import { useAdminAuthStore } from '@/store/adminAuthStore.ts';
 import { message } from 'antd';
 
 export function useAdminAuth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  const { setAuth, logout, user, isAuthenticated } = useAuthStore();
+
+  const { setAuth, logout, user, isAuthenticated } = useAdminAuthStore();
 
   const handleLogin = async (credentials: AdminLoginRequest, onSuccess?: () => void) => {
     setLoading(true);
@@ -38,12 +38,16 @@ export function useAdminAuth() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
+      // Clear the server-side admin refresh cookie first, then the local session. The route guard
+      // then redirects to /login on the next render.
+      await adminLogout();
+    } catch (err) {
+      console.error('Admin logout (server) error:', err);
+    } finally {
       logout();
       message.success('Logged out successfully.');
-    } catch (err) {
-      console.error('Logout error:', err);
     }
   };
 

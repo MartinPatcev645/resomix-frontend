@@ -39,11 +39,11 @@ function Navbar({ onMenuClick }: NavbarProps) {
         {user && (
           <div className="flex items-center gap-3 pl-3 border-l border-default">
             <div className="hidden sm:flex flex-col text-right">
-              <span className="text-sm font-semibold text-primary">{user.name || user.username}</span>
+              <span className="text-sm font-semibold text-primary">{user.name || user.email}</span>
               <span className="text-[10px] text-secondary tracking-wider uppercase font-semibold">Administrator</span>
             </div>
             <div className="w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold">
-              {user.name ? user.name[0].toUpperCase() : user.username[0].toUpperCase()}
+              {(user.name || user.email || '?')[0].toUpperCase()}
             </div>
             <button
               onClick={handleLogout}

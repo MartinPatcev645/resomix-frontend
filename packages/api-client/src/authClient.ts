@@ -13,6 +13,14 @@ const getAuthStore = () => {
   }
 };
 
+// Which endpoint the 401-refresh flow calls. The admin app overrides this (via
+// `globalThis.__RESOMIX_AUTH_REFRESH_PATH__`) so it refreshes against ITS own session/cookie
+// (`/admin/auth/refresh`), never the main site's `/auth/refresh`.
+const getRefreshPath = (): string => {
+  const override = (globalThis as Record<string, unknown>).__RESOMIX_AUTH_REFRESH_PATH__;
+  return typeof override === 'string' && override ? override : API_CONFIG.ENDPOINTS.AUTH_REFRESH;
+};
+
 const API_BASE_URL = API_CONFIG.BASE_URL;
 const API_TIMEOUT = 300_000; // 5 minutes (matches existing setup)
 
@@ -111,7 +119,7 @@ authClient.interceptors.response.use(
     }
 
     // CRITICAL: Prevent infinite loop - never try to refresh the refresh endpoint itself
-    const isRefreshEndpoint = originalRequest.url?.includes(API_CONFIG.ENDPOINTS.AUTH_REFRESH);
+    const isRefreshEndpoint = originalRequest.url?.includes(getRefreshPath());
     if (isRefreshEndpoint) {
       // console.log('[authClient] 401 on refresh endpoint - not attempting refresh to prevent infinite loop');
       return Promise.reject(error);
@@ -162,7 +170,7 @@ authClient.interceptors.response.use(
         // console.log('[authClient] Refreshing access token...');
         // Attempt to refresh token - no body needed, server reads from HttpOnly cookie
         const response = await axios.post(
-          `${API_BASE_URL}${API_CONFIG.ENDPOINTS.AUTH_REFRESH}`,
+          `${API_BASE_URL}${getRefreshPath()}`,
           {}, // Empty body - server manages refresh token via HttpOnly cookie
           {
             withCredentials: true, // Include cookies (server reads the refresh token from an HttpOnly cookie)

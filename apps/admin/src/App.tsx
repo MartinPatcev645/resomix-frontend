@@ -19,41 +19,42 @@ import UsersPage from '@/pages/UsersPage.tsx'
 import LoginPage from '@/pages/LoginPage.tsx'
 import { useTheme } from '@/hooks/useTheme.ts'
 import { lightTheme, darkTheme } from '@/lib/antdTheme.ts'
-import { useAuthStore } from '@resomix/stores'
+import { useAdminAuthStore } from '@/store/adminAuthStore.ts'
+import { useAdminAuthInit } from '@/hooks/useAdminAuthInit.ts'
 
-// Route guard for authenticated admin sessions
+function AuthLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-950">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+    </div>
+  )
+}
+
+// Route guard for authenticated admin sessions. While the on-load session check runs we show a
+// loader (never a protected screen); an unauthenticated/expired session is sent to /login.
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuthStore()
+  const { isAuthenticated, isLoading } = useAdminAuthStore()
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
+  if (isLoading) return <AuthLoader />
+  if (!isAuthenticated) return <Navigate to="/login" replace />
   return <>{children}</>
 }
 
-// Route guard for anonymous/guest sessions
+// Route guard for the login screen. Also waits for the session check so a valid session lands on the
+// dashboard instead of flashing the login form.
 function GuestRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, isLoading } = useAdminAuthStore()
 
-  if (isAuthenticated) {
-    return <Navigate to="/feedback" replace />
-  }
-
+  if (isLoading) return <AuthLoader />
+  if (isAuthenticated) return <Navigate to="/feedback" replace />
   return <>{children}</>
 }
 
 function App() {
   const { theme } = useTheme()
-  
+  // Validate the admin session on load; gates the whole app via the guards above.
+  useAdminAuthInit()
+
   return (
     <ConfigProvider theme={theme === 'light' ? lightTheme : darkTheme}>
       <AntApp>
