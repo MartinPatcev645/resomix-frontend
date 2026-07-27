@@ -42,7 +42,7 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({ mode, children }
   };
 
   return (
-    <div className="mx-auto w-full max-w-[min(80rem,100%)] px-[var(--px-32)] pb-[var(--px-64)]">
+    <div className="webapp-approved-container px-[var(--px-32)] pb-[var(--px-64)]">
       <header className="flex flex-wrap items-end justify-between gap-[var(--px-24)] pb-[var(--px-20)] pt-[var(--px-28)]">
         <div>
           <p className="mb-[var(--px-10)] flex items-center gap-[var(--px-8)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--color-primary)] opacity-75 before:block before:w-[var(--px-28)] before:border-t before:border-[var(--color-accent,#EE4A26)] before:content-['']">

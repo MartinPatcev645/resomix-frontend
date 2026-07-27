@@ -379,8 +379,8 @@ test.describe('Global navigation (beta webapp)', () => {
     expect(loginLineCount.pass, `login doubled lines: ${loginLineCount.count}`).toBe(true);
   });
 
-  test('header geometry passes at 1280 and 1920', async ({ page }) => {
-    for (const width of [1280, 1920]) {
+  test('header geometry passes at 1280, 1440, and 1920', async ({ page }) => {
+    for (const width of [1280, 1440, 1920]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto('/');
       await dismissConsent(page);
