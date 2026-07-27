@@ -65,12 +65,18 @@ export interface SystemOverviewStats {
   };
 }
 
+export interface SystemLogFacets {
+  levels: string[];
+  categories: string[];
+  actions: string[];
+}
+
 export interface ListSystemLogsParams {
   page?: number;
   page_size?: number;
   level?: string;
-  category?: string;
-  action?: string;
+  category?: string | string[];
+  action?: string | string[];
   endpoint?: string;
   q?: string;
   client_ip?: string;
@@ -139,7 +145,22 @@ export interface DetailResponse<T> {
 export const getSystemLogs = async (params: ListSystemLogsParams): Promise<ListResponse<SystemLog>> => {
   try {
     return await axiosWrapper(
-      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_SYSTEM_LOGS, { params })
+      // `indexes: null` serializes array params as repeats (category=A&category=B),
+      // which is what the FastAPI List[str] query params expect.
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_SYSTEM_LOGS, {
+        params,
+        paramsSerializer: { indexes: null },
+      })
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+export const getSystemLogFacets = async (): Promise<DetailResponse<SystemLogFacets>> => {
+  try {
+    return await axiosWrapper(
+      authClient.get(API_CONFIG.ENDPOINTS.ADMIN_SYSTEM_LOGS_FACETS)
     );
   } catch (error: any) {
     return handleApiError(error) as any;

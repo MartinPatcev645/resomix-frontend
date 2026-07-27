@@ -59,6 +59,29 @@ const LOG_TIMEZONES: { value: string; label: string }[] = [
 ];
 const LOG_TZ_VALUES = LOG_TIMEZONES.map((t) => t.value);
 
+// Baseline categories/actions so the important ones always appear in the filter dropdowns
+// even before any such log exists yet. Merged (deduped) with the live values from /logs/facets.
+const KNOWN_LOG_CATEGORIES = [
+  'NOISE', 'AUTH', 'ERROR', 'CLIENT_ERROR', 'REQUEST', 'ADMIN_ACTION', 'ADMIN',
+  'SYSTEM', 'TRANSFER', 'UPLOAD', 'USER_ACTION', 'INTERNAL', 'GENERAL',
+];
+const KNOWN_LOG_ACTIONS = [
+  'http_exception', 'http_5xx_response', 'unhandled_exception', 'probe_request', 'auth_failure',
+];
+
+/** Merge a known baseline with live facet values (baseline first), deduped, into Select options. */
+const toSelectOptions = (known: string[], live: string[] | undefined) => {
+  const seen = new Set<string>();
+  const out: { value: string; label: string }[] = [];
+  for (const v of [...known, ...(live || [])]) {
+    if (v && !seen.has(v)) {
+      seen.add(v);
+      out.push({ value: v, label: v });
+    }
+  }
+  return out;
+};
+
 /** Naive server log timestamp → 'YYYY-MM-DD HH:mm:ss' in the given zone (DST-aware). */
 const formatLogTime = (value?: string | null, tz: string = 'UTC'): string => {
   if (!value) return 'N/A';
@@ -156,7 +179,15 @@ function LogsPage() {
     if (startUtc && endUtc && dayjs.utc(endUtc).isBefore(dayjs.utc(startUtc))) {
       return { error: 'End date/time cannot be before the start date/time.' };
     }
-    return { params: { ...rest, start_date: startUtc, end_date: endUtc } };
+    // Normalize: empty arrays / blank strings become undefined so they overwrite (clear) any
+    // previously-applied value when merged into the filter state, and axios omits them.
+    const cleaned: Record<string, any> = {};
+    for (const [k, v] of Object.entries(rest)) {
+      if (Array.isArray(v)) cleaned[k] = v.length ? v : undefined;
+      else if (typeof v === 'string') cleaned[k] = v.trim() === '' ? undefined : v;
+      else cleaned[k] = v;
+    }
+    return { params: { ...cleaned, start_date: startUtc, end_date: endUtc } };
   };
 
   // Modals visibility
@@ -184,6 +215,8 @@ function LogsPage() {
     fetchSystemLogs,
     fetchSystemLogDetail,
     fetchSystemLogsOverview,
+    logFacets,
+    fetchLogFacets,
 
     // Operation Logs
     operationLogs,
@@ -212,6 +245,15 @@ function LogsPage() {
   useEffect(() => {
     fetchSystemLogsOverview(overviewHours);
   }, [overviewHours, fetchSystemLogsOverview]);
+
+  // Load the distinct categories/actions once, to populate the filter dropdowns.
+  useEffect(() => {
+    fetchLogFacets();
+  }, [fetchLogFacets]);
+
+  // Options for the multi-select Category / Action filters (known baseline + live facet values).
+  const categoryOptions = toSelectOptions(KNOWN_LOG_CATEGORIES, logFacets?.categories);
+  const actionOptions = toSelectOptions(KNOWN_LOG_ACTIONS, logFacets?.actions);
 
   // Fetch logs when tab or filters change
   useEffect(() => {
@@ -569,12 +611,16 @@ function LogsPage() {
                 </Col>
                 <Col xs={12} sm={6} md={4}>
                   <Form.Item name="category" label={<Text className="font-semibold text-secondary text-xs">Category</Text>} className="!mb-0">
-                    <Select placeholder="All Categories" className="h-10 rounded-lg" allowClear>
-                      <Option value="REQUEST">REQUEST</Option>
-                      <Option value="PARTNER">PARTNER</Option>
-                      <Option value="AUTH">AUTH</Option>
-                      <Option value="SYSTEM">SYSTEM</Option>
-                    </Select>
+                    <Select
+                      mode="multiple"
+                      placeholder="All Categories"
+                      className="min-h-10 rounded-lg w-full"
+                      allowClear
+                      showSearch
+                      optionFilterProp="label"
+                      maxTagCount="responsive"
+                      options={categoryOptions}
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={12} sm={6} md={4}>
@@ -614,8 +660,17 @@ function LogsPage() {
                   </Form.Item>
                 </Col>
                 <Col xs={12} sm={6} md={4}>
-                  <Form.Item name="action" label={<Text className="font-semibold text-secondary text-xs">Action Match</Text>} className="!mb-0">
-                    <Input placeholder="e.g. rotate_api_key" className="h-10 rounded-lg" allowClear />
+                  <Form.Item name="action" label={<Text className="font-semibold text-secondary text-xs">Action</Text>} className="!mb-0">
+                    <Select
+                      mode="multiple"
+                      placeholder="All Actions"
+                      className="min-h-10 rounded-lg w-full"
+                      allowClear
+                      showSearch
+                      optionFilterProp="label"
+                      maxTagCount="responsive"
+                      options={actionOptions}
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={6} className="flex items-end gap-2 pt-6">

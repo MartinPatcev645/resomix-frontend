@@ -8,6 +8,7 @@ import {
   getSystemLogDetail,
   getSystemLogsStats,
   getSystemLogsOverview,
+  getSystemLogFacets,
   getOperationLogs,
   getOperationLogDetail,
   type WebhookDeliveryLog,
@@ -15,6 +16,7 @@ import {
   type SystemLog,
   type SystemLogsStats,
   type SystemOverviewStats,
+  type SystemLogFacets,
   type OperationLog,
   type ListSystemLogsParams,
   type ListOperationLogsParams,
@@ -37,6 +39,9 @@ export function useAdminLogs() {
   // System Overview State
   const [systemOverview, setSystemOverview] = useState<SystemOverviewStats | null>(null);
   const [systemOverviewLoading, setSystemOverviewLoading] = useState(false);
+
+  // Distinct filter values (categories / actions / levels) for the filter dropdowns
+  const [logFacets, setLogFacets] = useState<SystemLogFacets>({ levels: [], categories: [], actions: [] });
 
   // Operation Logs State
   const [operationLogs, setOperationLogs] = useState<OperationLog[]>([]);
@@ -172,6 +177,18 @@ export function useAdminLogs() {
     }
   }, []);
 
+  // Fetch distinct filter values for the dropdowns (categories / actions / levels)
+  const fetchLogFacets = useCallback(async () => {
+    try {
+      const result = await getSystemLogFacets();
+      if (result && result.success && result.data) {
+        setLogFacets(result.data);
+      }
+    } catch {
+      // Non-fatal: the filters just fall back to their known baseline options.
+    }
+  }, []);
+
   // Fetch Operation Logs
   const fetchOperationLogs = useCallback(async (params: ListOperationLogsParams) => {
     setOperationLogsLoading(true);
@@ -236,6 +253,8 @@ export function useAdminLogs() {
     fetchSystemLogDetail,
     fetchSystemLogsStats,
     fetchSystemLogsOverview,
+    logFacets,
+    fetchLogFacets,
 
     // Operation Logs
     operationLogs,
