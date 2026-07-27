@@ -488,6 +488,34 @@ class PlaylistService:
                 "error": "An error occurred while retrieving playlists",
             }
 
+    async def get_playlist_by_id_admin(
+        self, db: AsyncSession, playlist_id: int
+    ) -> Dict[str, Any]:
+        """
+        Fetch a single playlist by its integer ID (admin).
+
+        Used for capturing the audit "before state" prior to a mutation (delete /
+        visibility change). Returns the raw Playlist model in ``data``.
+
+        Args:
+            db: Database session
+            playlist_id: Playlist ID
+
+        Returns:
+            Dictionary with success status and the playlist model (or an error)
+        """
+        try:
+            playlist = await self.playlist_repository.async_get_by_id(db, playlist_id)
+            if playlist:
+                return {"success": True, "data": playlist}
+            return {"success": False, "error": "Playlist not found"}
+        except Exception as e:
+            print(f"Error getting playlist by id for admin: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while retrieving the playlist",
+            }
+
     async def delete_playlist_admin(
         self, db: AsyncSession, playlist_id: int, partner_id: Optional[int] = None
     ) -> Dict[str, Any]:

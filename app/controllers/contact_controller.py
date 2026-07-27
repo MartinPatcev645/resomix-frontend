@@ -38,7 +38,37 @@ class ContactController:
         self.contact_service = ContactService()
         self.logging_service = LoggingService()
         self.admin_log_service = AdminOperationLogService()
-    
+
+    def _log_admin_exception(
+        self,
+        db: AsyncSession,
+        request: Request,
+        error: Exception,
+        action: str,
+    ) -> None:
+        """Persist an admin-path exception to the system logs (best-effort).
+
+        The admin methods below catch exceptions and return a generic 500 to the client.
+        Without this, those failures never reach the global exception handler and so were
+        invisible on the admin Logs page. This records them just like the consumer-facing
+        methods in this controller already do.
+        """
+        try:
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ERROR",
+                action=action,
+                message=f"Admin contact operation failed: {type(error).__name__}: {error}",
+                request=request,
+                status_code=500,
+                error=error,
+                context="admin contact",
+            )
+        except Exception as log_exc:  # never let logging break the error response
+            logger.error(f"Failed to log admin contact exception ({action}): {log_exc}")
+
+
     async def submit_contact(self, db: AsyncSession, request: Request, contact_data: Dict[str, Any], current_user: Optional[User] = None) -> JSONResponse:
         """
         Submit a contact form.
@@ -449,8 +479,9 @@ class ContactController:
             else:
                 return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content=format_response(success=False, error=result.get("error", "Failed to retrieve contact list")))
-        except Exception:
+        except Exception as e:
             await db.rollback()
+            self._log_admin_exception(db, request, e, "admin_contact_exception")
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
@@ -498,8 +529,9 @@ class ContactController:
             else:
                 return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(success=False, error=result.get("error")))
-        except Exception:
+        except Exception as e:
             await db.rollback()
+            self._log_admin_exception(db, request, e, "admin_contact_exception")
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
@@ -534,16 +566,17 @@ class ContactController:
                 content={"success": result.get("success"), "deleted_count": result.get("deleted_count", 0),
                         "message": result.get("message", result.get("error", ""))}
             )
-        except Exception:
+        except Exception as e:
             await db.rollback()
+            self._log_admin_exception(db, request, e, "admin_contact_exception")
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
-    async def update_contact_status_admin(
-        self, 
-        db: AsyncSession, 
-        request: Request, 
-        contact_id: int, 
+    async def mark_contact_status_admin(
+        self,
+        db: AsyncSession,
+        request: Request,
+        contact_id: int,
         status_value: str,
         current_admin: Optional[User] = None
     ) -> JSONResponse:
@@ -556,7 +589,7 @@ class ContactController:
                 entry = entry_res.get("data")
                 before_state = {"status": entry.status}
 
-            result = await self.contact_service.update_contact_status_admin(
+            result = await self.contact_service.mark_contact_status_admin(
                 db, contact_id, status_value
             )
             if result.get("success"):
@@ -583,8 +616,9 @@ class ContactController:
             else:
                 return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(success=False, error=result.get("error")))
-        except Exception:
+        except Exception as e:
             await db.rollback()
+            self._log_admin_exception(db, request, e, "admin_contact_exception")
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))
     
@@ -618,7 +652,8 @@ class ContactController:
             else:
                 return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content=format_response(success=False, error=result.get("error", "Failed to export contact")))
-        except Exception:
+        except Exception as e:
             await db.rollback()
+            self._log_admin_exception(db, request, e, "admin_contact_exception")
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred"))

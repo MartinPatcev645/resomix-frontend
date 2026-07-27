@@ -1281,7 +1281,7 @@ class PlaylistController:
         start_time = time.time()
         correlation_id = self.logging_service.generate_correlation_id()
         try:
-            result = await self.playlist_service.batch_delete_playlist_admin(
+            result = await self.playlist_service.batch_delete_playlists_admin(
                 db, playlist_ids
             )
             duration_ms = (time.time() - start_time) * 1000

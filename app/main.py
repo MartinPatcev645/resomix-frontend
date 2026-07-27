@@ -127,6 +127,27 @@ async def general_exception_handler(request: Request, exc: Exception):
         exc_info=True,  # This logs the full stack trace
     )
 
+    # Persist the failure to the DB system logs so it surfaces on the admin Logs page.
+    # Previously only HTTPExceptions were recorded there; genuine bugs (AttributeError,
+    # KeyError, DB errors, ...) hit this handler and were invisible to admins — the exact
+    # reason a failing request could 500 without ever showing up in the logs.
+    try:
+        LoggingService().log(
+            level="ERROR",
+            category="ERROR",
+            action="unhandled_exception",
+            message=f"Unhandled {exc.__class__.__name__}: {str(exc)}",
+            request=request,
+            status_code=500,
+            error=exc,
+            # Build the trace from the exception itself (robust regardless of exc_info state).
+            stack_trace="".join(
+                traceback.format_exception(type(exc), exc, exc.__traceback__)
+            ),
+        )
+    except Exception as log_exc:  # never let logging break the error response
+        logger.error(f"Failed to persist unhandled exception to system logs: {log_exc}")
+
     # In development mode, also print to console for quick debugging
     if settings.use_development_cors:
         print(f"\n{'='*60}")
