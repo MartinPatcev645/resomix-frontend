@@ -110,6 +110,28 @@ v1_routers = [
     (notify_internal_router, ""),
 ]
 
+# Admin routers — gated by Cloudflare Access (see app.api.dependencies.cf_access).
+# main.py checks identity membership against this to attach the edge-identity dependency to every
+# admin route (both the /api/v1 and the legacy-root registrations), including admin login/refresh.
+# A list (not a set): APIRouter is unhashable, and membership is tested by identity.
+admin_routers = [
+    admin_partners_router,
+    admin_operation_limits_router,
+    admin_similarity_router,
+    admin_feedback_router,
+    admin_contact_router,
+    admin_waitlist_router,
+    admin_playlist_router,
+    admin_promo_router,
+    admin_spotify_apps_router,
+    admin_auth_router,
+    admin_users_router,
+    admin_roles_router,
+    admin_processing_router,
+    admin_logs_router,
+    admin_entitlements_router,
+]
+
 # Legacy support: Unversioned registration at root
 legacy_root_routers = [r for r, p in v1_routers if p == V1_PREFIX] + [webhooks_router, sftp_internal_router, notify_internal_router]
 

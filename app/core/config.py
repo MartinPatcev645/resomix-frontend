@@ -401,6 +401,26 @@ class Settings(BaseModel):
         "not for ID-token verification.",
     )
 
+    # Cloudflare Access (Zero Trust) — edge identity gate in front of the admin surface.
+    # When enabled, admin routes additionally require a valid `Cf-Access-Jwt-Assertion` header
+    # (injected by Cloudflare after the user passes Access), verified against the team JWKS.
+    # DISABLED by default: only turn on once the admin API is reached THROUGH the Access-protected
+    # origin (same-origin as the admin SPA), otherwise every admin call will 403.
+    cf_access_enabled: bool = Field(
+        default=False,
+        description="Require a verified Cloudflare Access JWT on admin routes.",
+    )
+    cf_access_team_domain: str = Field(
+        default="",
+        description="Cloudflare Access team domain, e.g. 'veggera.cloudflareaccess.com'. "
+        "Used to derive the JWKS certs URL and the expected token issuer.",
+    )
+    cf_access_aud: str = Field(
+        default="",
+        description="Cloudflare Access Application Audience (AUD) tag for the admin app; the "
+        "expected 'aud' claim on the Access JWT.",
+    )
+
     # Cookie Configuration
     cookie_domain: str = Field(
         default=".resomix.com",
@@ -642,6 +662,10 @@ class Settings(BaseModel):
             "COOKIE_SAMESITE": "cookie_samesite",
             "GOOGLE_CLIENT_ID": "google_client_id",
             "GOOGLE_CLIENT_SECRET": "google_client_secret",
+            # Cloudflare Access (Zero Trust)
+            "CF_ACCESS_ENABLED": "cf_access_enabled",
+            "CF_ACCESS_TEAM_DOMAIN": "cf_access_team_domain",
+            "CF_ACCESS_AUD": "cf_access_aud",
             "SMTP_HOST": "smtp_host",
             "SMTP_PORT": "smtp_port",
             "SMTP_USER": "smtp_user",
@@ -697,7 +721,7 @@ class Settings(BaseModel):
             env_value = os.getenv(env_key)
             if env_value is not None:
                 # Handle boolean conversion
-                if config_key in ["demo_mode", "similarity_auth_required", "rate_limit_enabled", "stripe_automatic_tax_enabled", "elasticsearch_enabled", "es_verify_certs"]:
+                if config_key in ["demo_mode", "similarity_auth_required", "rate_limit_enabled", "stripe_automatic_tax_enabled", "elasticsearch_enabled", "es_verify_certs", "cf_access_enabled"]:
                     env_overrides[config_key] = env_value.lower() in (
                         "true",
                         "1",

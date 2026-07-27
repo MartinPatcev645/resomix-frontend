@@ -391,16 +391,29 @@ except Exception as e:
     print(f"WARNING: Failed to mount /exports static files: {e}")
 
 # Include all routers
-from app.api.routers import v1_routers, legacy_root_routers
+from fastapi import Depends
+from app.api.routers import v1_routers, legacy_root_routers, admin_routers
+from app.api.dependencies.cf_access import require_cf_access
+
+
+def _router_dependencies(router):
+    """Admin routers get the Cloudflare Access edge gate; everything else is unchanged.
+
+    The dependency is a no-op unless ``CF_ACCESS_ENABLED`` is set, so this is inert until the
+    admin API is served through the Access-protected origin (see app.api.dependencies.cf_access).
+    """
+    is_admin = any(router is r for r in admin_routers)
+    return [Depends(require_cf_access)] if is_admin else None
+
 
 # Primary Versioned Registration (/api/v1/...)
 for router, prefix in v1_routers:
-    app.include_router(router, prefix=prefix)
+    app.include_router(router, prefix=prefix, dependencies=_router_dependencies(router))
 
 # Legacy Unversioned Registration (Root level)
 # This maintains backward compatibility for existing frontend/partners
 for router in legacy_root_routers:
-    app.include_router(router)
+    app.include_router(router, dependencies=_router_dependencies(router))
 
 
 # Root endpoint
