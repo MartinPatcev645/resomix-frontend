@@ -60,7 +60,7 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
     items: [
       { key: 'sonic-discovery', glyph: 'sonic-discovery', live: true, route: '/product/sonic-discovery' },
       { key: 'track-intelligence', glyph: 'track-intelligence', live: true, route: '/product/track-intelligence' },
-      { key: 'catalogue-intelligence', glyph: 'catalogue-intelligence', live: true, route: '/product/catalogue-intelligence' },
+      { key: 'catalogue-intelligence', glyph: 'catalogue-intelligence', live: true, route: '/product/catalog-intelligence' },
     ],
     noteKey: 'pyxisNote',
   },

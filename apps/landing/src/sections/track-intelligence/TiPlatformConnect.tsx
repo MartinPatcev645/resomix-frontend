@@ -19,7 +19,7 @@ export function TiPlatformConnect() {
       return;
     }
     if (key === 'catalogue') {
-      navigate('/product/catalogue-intelligence');
+      navigate('/product/catalog-intelligence');
       return;
     }
     navigate('/developers');

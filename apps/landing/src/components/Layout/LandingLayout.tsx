@@ -52,7 +52,7 @@ export function LandingLayout() {
         if (path.startsWith('/auth/')) {
             return path.split('/auth/')[1] || 'auth';
         }
-        if (['/contact', '/waitlist', '/error', '/partners', '/partners/pilot', '/trust', '/pricing', '/product', '/product/sonic-discovery', '/product/track-intelligence', '/product/catalogue-intelligence', '/developers'].includes(path)) {
+        if (['/contact', '/waitlist', '/error', '/partners', '/partners/pilot', '/trust', '/pricing', '/product', '/product/sonic-discovery', '/product/track-intelligence', '/product/catalog-intelligence', '/developers'].includes(path)) {
             return path.substring(1);
         }
         return '404';
@@ -94,7 +94,7 @@ export function LandingLayout() {
         <OptionalAuthRoute>
             <div id="landing-page-root" className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen relative`}>
                 {/* {isDesktop && <StaticNoise />} */}
-                {!['product', 'product/sonic-discovery', 'product/track-intelligence', 'product/catalogue-intelligence', 'developers', 'partners', 'partners/pilot', 'trust'].includes(mode) && <StaticNoise />}
+                {!['home', 'product', 'product/sonic-discovery', 'product/track-intelligence', 'product/catalog-intelligence', 'developers', 'partners', 'partners/pilot', 'trust'].includes(mode) && <StaticNoise />}
                 <div className="mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]">
                     <SideLines
                         navbar={isDesktop ? undefined : mobileNavbar}

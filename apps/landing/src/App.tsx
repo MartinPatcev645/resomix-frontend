@@ -1,13 +1,12 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useFirstVisit, useResponsive, useAuthInit, useSilktide } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, SineWaves, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
 import { ProtectedRoute, GuestRoute, LandingLayout } from "@/components/index.ts";
 // Lazy-load pages directly for proper code-splitting
-const HomePage = lazy(() => import("@/pages/desktop/HomePage.tsx").then(m => ({ default: m.HomePage })));
-const HomeMobile = lazy(() => import("@/pages/mobile/HomeMobile.tsx").then(m => ({ default: m.HomeMobile })));
+const HomePage = lazy(() => import("@/pages/HomePage.tsx"));
 const AboutPage = lazy(() => import("@/pages/desktop/AboutPage.tsx").then(m => ({ default: m.AboutPage })));
 const AboutMobile = lazy(() => import("@/pages/mobile/AboutMobile.tsx").then(m => ({ default: m.AboutMobile })));
 const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
@@ -26,16 +25,6 @@ const SubscribePage = lazy(() => import("@/pages/SubscribePage.tsx"));
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
-
-function UsedHomePage() {
-  const { isDesktop } = useResponsive();
-
-  return (
-    <>
-      {isDesktop ? <HomePage /> : <HomeMobile />}
-    </>
-  );
-}
 
 function UsedAboutPage() {
   const { isDesktop } = useResponsive();
@@ -110,14 +99,15 @@ function App() {
             </Route>
 
             {/* Optional Auth Routes */}
-            <Route path="/" element={<UsedHomePage />} />
+            <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<UsedAboutPage />} />
             <Route path="/partners" element={<PartnersPage />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/product" element={<ProductPage />} />
             <Route path="/product/sonic-discovery" element={<SonicDiscoveryPage />} />
             <Route path="/product/track-intelligence" element={<TrackIntelligencePage />} />
-            <Route path="/product/catalogue-intelligence" element={<CatalogueIntelligencePage />} />
+            <Route path="/product/catalog-intelligence" element={<CatalogueIntelligencePage />} />
+            <Route path="/product/catalogue-intelligence" element={<Navigate to="/product/catalog-intelligence" replace />} />
             <Route path="/developers" element={<DevelopersPage />} />
             <Route path="/partners/pilot" element={<PartnersPilotPage />} />
             <Route path="/trust" element={<TrustPage />} />

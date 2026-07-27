@@ -1,0 +1,60 @@
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+
+/* illustrative / fictional sample response */
+const SAMPLE_RESPONSE = `{ "rank": 1,
+  "score": 0.981,
+  "title": "…" }`;
+
+export function HmApi() {
+  const { t } = useTranslation('common');
+  const navigate = useNavigate();
+
+  return (
+    <section className="hm-section" id="hm-api">
+      <div className="hm-frame">
+        <p className="hm-eyebrow uppercase">{t('home.api.eyebrow')}</p>
+        <h2 className="hm-h2b uppercase">{t('home.api.head')}</h2>
+        <div className="hm-api-flow" role="img" aria-label={t('home.api.figureAria')}>
+          <div className="hm-astage">
+            <span className="hm-anum">01</span>
+            <span className="hm-at">{t('home.api.s01t')}</span>
+            <div className="hm-arows" aria-hidden="true"><i /><i /><i /></div>
+            <span className="hm-ad">{t('home.api.s01d')}</span>
+          </div>
+          <div className="hm-join" aria-hidden="true"><svg viewBox="0 0 44 32"><g style={{stroke:'currentColor', fill:'none', strokeWidth:1.4, strokeLinecap:'round', strokeLinejoin:'round'}}><path d="M2 16 H38 M34 11 L40 16 L34 21"/></g></svg></div>
+          <div className="hm-astage hm-aiso">
+            <span className="hm-anum">02</span>
+            <span className="hm-at">{t('home.api.s02t')}</span>
+            <span className="hm-aiso-tag">{t('home.api.s02tag')}</span>
+            <div className="hm-lanes" aria-hidden="true">
+              <span>{t('home.api.laneSearch')}</span>
+              <span>{t('home.api.laneSimilarity')}</span>
+              <span>{t('home.api.laneAnalysis')}</span>
+            </div>
+            <span className="hm-ad">{t('home.api.s02d')}</span>
+          </div>
+          <div className="hm-join" aria-hidden="true"><svg viewBox="0 0 44 32"><g style={{stroke:'currentColor', fill:'none', strokeWidth:1.4, strokeLinecap:'round', strokeLinejoin:'round'}}><path d="M2 16 H38 M34 11 L40 16 L34 21"/></g></svg></div>
+          <div className="hm-astage">
+            <span className="hm-anum">03</span>
+            <span className="hm-at">{t('home.api.s03t')}</span>
+            <code className="hm-acode" aria-hidden="true">{SAMPLE_RESPONSE}</code>
+          </div>
+          <div className="hm-join" aria-hidden="true"><svg viewBox="0 0 44 32"><g style={{stroke:'currentColor', fill:'none', strokeWidth:1.4, strokeLinecap:'round', strokeLinejoin:'round'}}><path d="M2 16 H38 M34 11 L40 16 L34 21"/></g></svg></div>
+          <div className="hm-astage">
+            <span className="hm-anum">04</span>
+            <span className="hm-at">{t('home.api.s04t')}</span>
+            <div className="hm-arows" aria-hidden="true"><i /><i /><i /></div>
+            <span className="hm-ad">{t('home.api.s04d')}</span>
+          </div>
+        </div>
+        <div className="hm-dev-row">
+          <span className="hm-truth">{t('home.api.truth')}</span>
+          <button type="button" className="hm-cta-s" onClick={() => navigate('/developers')}>
+            {t('home.api.exploreCta')}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
