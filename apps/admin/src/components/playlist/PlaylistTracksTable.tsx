@@ -1,7 +1,8 @@
-import { Table, Tag, Dropdown, Button, Modal, Descriptions, type MenuProps, type TableColumnsType } from 'antd'
+import { Table, Tag, Dropdown, Button, type MenuProps, type TableColumnsType } from 'antd'
 import { MoreVertical, Eye } from 'lucide-react'
 import { useState } from 'react'
 import type { PlaylistDetailsResponse } from '@resomix/api-client'
+import TrackDetailsModal from '../track/TrackDetailsModal.tsx'
 
 type PlaylistData = NonNullable<PlaylistDetailsResponse['data']>
 type TrackItem = PlaylistData['tracks'][number]
@@ -141,83 +142,13 @@ export default function PlaylistTracksTable({ tracks }: PlaylistTracksTableProps
         size="small"
       />
 
-      {/* View Track Details Modal */}
-      <Modal
-        title="Track Details"
+      {/* Shared Track Details modal — same full data/shape as the Tracks panel. */}
+      <TrackDetailsModal
+        trackId={viewingTrack?.track.id ?? null}
         open={viewingTrack !== null}
-        onCancel={() => setViewingTrack(null)}
-        footer={[
-          <Button key="close" onClick={() => setViewingTrack(null)}>
-            Close
-          </Button>,
-        ]}
-        width={800}
-      >
-        {viewingTrack && (
-          <div className="space-y-4">
-            <Descriptions bordered column={2} size="small">
-              <Descriptions.Item label="Position" span={1}>
-                {viewingTrack.position}
-              </Descriptions.Item>
-              {viewingTrack.score !== null && (
-                <Descriptions.Item label="Score" span={1}>
-                  <Tag color="purple">{(viewingTrack.score * 100).toFixed(2)}%</Tag>
-                </Descriptions.Item>
-              )}
-              <Descriptions.Item label="ID" span={1}>
-                {viewingTrack.track.id}
-              </Descriptions.Item>
-              <Descriptions.Item label="UUID" span={1}>
-                <span className="font-mono text-xs break-all">{viewingTrack.track.uuid}</span>
-              </Descriptions.Item>
-              <Descriptions.Item label="Title" span={2}>
-                {viewingTrack.track.title}
-              </Descriptions.Item>
-              <Descriptions.Item label="Artists" span={2}>
-                {viewingTrack.track.artists.join(', ') || 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Duration">
-                {formatDuration(viewingTrack.track.duration_sec)}
-              </Descriptions.Item>
-              <Descriptions.Item label="File Size">
-                {formatFileSize(viewingTrack.track.file_size)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Type">
-                <Tag color="cyan">{viewingTrack.track.type}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Genre">
-                {viewingTrack.track.genre || 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Label">
-                {viewingTrack.track.label || 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Album">
-                {viewingTrack.track.album || 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Year">
-                {viewingTrack.track.year || 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="BPM">
-                {viewingTrack.track.bpm || 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Key">
-                {viewingTrack.track.musical_key || 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="File Path" span={2}>
-                <span className="font-mono text-xs break-all">{viewingTrack.track.file_path}</span>
-              </Descriptions.Item>
-              <Descriptions.Item label="Preview Path" span={2}>
-                <span className="font-mono text-xs break-all">
-                  {viewingTrack.track.preview_path || 'N/A'}
-                </span>
-              </Descriptions.Item>
-              <Descriptions.Item label="Created At" span={2}>
-                {new Date(viewingTrack.track.created_at).toLocaleString()}
-              </Descriptions.Item>
-            </Descriptions>
-          </div>
-        )}
-      </Modal>
+        onClose={() => setViewingTrack(null)}
+        extra={viewingTrack ? { position: viewingTrack.position, score: viewingTrack.score } : undefined}
+      />
     </>
   )
-} 
+}

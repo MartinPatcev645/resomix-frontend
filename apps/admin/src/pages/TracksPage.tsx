@@ -10,17 +10,14 @@ import {
   Card,
   Checkbox,
   Typography,
-  Badge,
   Alert,
-  Pagination,
-  Descriptions
+  Pagination
 } from 'antd';
-import { 
-  Search, 
-  RotateCw, 
-  Play, 
-  Ban, 
-  Music,
+import {
+  Search,
+  RotateCw,
+  Play,
+  Ban,
   ArrowLeft,
   ArrowRight,
   Building2,
@@ -28,6 +25,7 @@ import {
   Eye
 } from 'lucide-react';
 import { useAdminTracks, usePartners } from '@resomix/hooks';
+import TrackDetailsModal from '../components/track/TrackDetailsModal.tsx';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -502,168 +500,12 @@ function TracksPage() {
         />
       </div>
 
-      <Modal
-        title={<span className="flex items-center gap-2 text-primary font-semibold"><Music size={18} /><span>Track Details</span></span>}
+      <TrackDetailsModal
+        trackId={viewingTrack?.id ?? null}
         open={!!viewingTrack}
-        onCancel={() => setViewingTrack(null)}
-        footer={[
-          <Button key="close" onClick={() => setViewingTrack(null)}>
-            Close
-          </Button>
-        ]}
-        width={700}
-        className="rounded-2xl overflow-hidden"
-      >
-        {viewingTrack && (
-          <div className="py-2 flex flex-col gap-4">
-            <Descriptions bordered column={2} size="small" className="rounded-xl overflow-hidden border-default bg-surface">
-              <Descriptions.Item label="Track ID" span={1}>{viewingTrack.id}</Descriptions.Item>
-              <Descriptions.Item label="UUID" span={1}><span className="font-mono text-xs">{viewingTrack.uuid}</span></Descriptions.Item>
-              
-              <Descriptions.Item label="Title" span={2}><Text strong>{viewingTrack.title}</Text></Descriptions.Item>
-              <Descriptions.Item label="Artist" span={2}>{viewingTrack.display_artist || <Text type="secondary" italic>None</Text>}</Descriptions.Item>
-              
-              <Descriptions.Item label="ISRC" span={1}>{viewingTrack.isrc ? <span className="font-mono">{viewingTrack.isrc}</span> : '—'}</Descriptions.Item>
-              <Descriptions.Item label="Type" span={1}><Tag>{viewingTrack.type || '—'}</Tag></Descriptions.Item>
-              
-              <Descriptions.Item label="Duration" span={1}>
-                {viewingTrack.duration_seconds ? `${Math.floor(viewingTrack.duration_seconds / 60)}m ${Math.floor(viewingTrack.duration_seconds % 60)}s (${viewingTrack.duration_seconds}s)` : '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="BPM" span={1}>{viewingTrack.bpm || '—'}</Descriptions.Item>
-              
-              <Descriptions.Item label="Musical Key" span={1}>{viewingTrack.musical_key || '—'}</Descriptions.Item>
-              <Descriptions.Item label="Ingestion Source" span={1}>
-                <Tag color={
-                  viewingTrack.ingestion_source === 'csv' ? 'blue' :
-                  viewingTrack.ingestion_source === 'cc_by' ? 'orange' :
-                  viewingTrack.ingestion_source === 'user_upload' ? 'purple' : 'default'
-                }>
-                  {viewingTrack.ingestion_source || '—'}
-                </Tag>
-              </Descriptions.Item>
-              
-              <Descriptions.Item label="Search Status" span={1}>
-                <Tag color={viewingTrack.is_active ? 'success' : 'default'}>
-                  {viewingTrack.is_active ? 'LIVE / ACTIVE' : 'STOPPED / INACTIVE'}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Partner" span={1}>{getPartnerName(viewingTrack.partner_id)}</Descriptions.Item>
-              
-              <Descriptions.Item label="Created At" span={1}>
-                {viewingTrack.created_at ? new Date(viewingTrack.created_at).toLocaleString() : '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Updated At" span={1}>
-                {viewingTrack.updated_at ? new Date(viewingTrack.updated_at).toLocaleString() : '—'}
-              </Descriptions.Item>
-            </Descriptions>
-
-            {viewingTrack.processing && (
-              <div className="mt-2">
-                <Title level={5} className="!mb-2 !text-primary">Processing Status</Title>
-                <Descriptions bordered column={2} size="small" className="rounded-xl overflow-hidden border-default bg-surface">
-                  <Descriptions.Item label="Transcode" span={1}>
-                    <Badge status={
-                      viewingTrack.processing.transcode_status === 'completed' ? 'success' : 
-                      viewingTrack.processing.transcode_status === 'failed' ? 'error' : 'processing'
-                    } text={viewingTrack.processing.transcode_status || 'pending'} />
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Embeddings" span={1}>
-                    <Badge status={
-                      viewingTrack.processing.embedding_status === 'completed' ? 'success' : 
-                      viewingTrack.processing.embedding_status === 'failed' ? 'error' : 'processing'
-                    } text={viewingTrack.processing.embedding_status || 'pending'} />
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Peaks" span={1}>
-                    <Badge status={
-                      viewingTrack.processing.peaks_status === 'completed' ? 'success' : 
-                      viewingTrack.processing.peaks_status === 'failed' ? 'error' : 'processing'
-                    } text={viewingTrack.processing.peaks_status || 'pending'} />
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Segments" span={1}>
-                    <Badge status={
-                      viewingTrack.processing.segments_status === 'completed' ? 'success' : 
-                      viewingTrack.processing.segments_status === 'failed' ? 'error' : 'processing'
-                    } text={viewingTrack.processing.segments_status || 'pending'} />
-                  </Descriptions.Item>
-                  <Descriptions.Item label="FAISS Indexed" span={1}>
-                    <Badge status={viewingTrack.processing.faiss_indexed ? 'success' : 'default'} text={viewingTrack.processing.faiss_indexed ? 'YES' : 'NO'} />
-                  </Descriptions.Item>
-                  {viewingTrack.processing.audio_filename && (
-                    <Descriptions.Item label="Audio File" span={1}>
-                      <span className="font-mono text-xs">{viewingTrack.processing.audio_filename}</span>
-                    </Descriptions.Item>
-                  )}
-                  {viewingTrack.processing.sftp_env && (
-                    <Descriptions.Item label="SFTP Env" span={1}>
-                      <Tag color={viewingTrack.processing.sftp_env === 'live' ? 'success' : 'blue'}>{viewingTrack.processing.sftp_env.toUpperCase()}</Tag>
-                    </Descriptions.Item>
-                  )}
-                </Descriptions>
-
-                {/* Completion timestamps */}
-                {(viewingTrack.processing.transcode_completed_at || viewingTrack.processing.embedding_completed_at || viewingTrack.processing.peaks_completed_at || viewingTrack.processing.segments_completed_at || viewingTrack.processing.faiss_indexed_at) && (
-                  <div className="mt-3">
-                    <Text className="text-secondary text-xs font-semibold uppercase block mb-1.5">Completion Timestamps</Text>
-                    <Descriptions bordered column={2} size="small" className="rounded-xl overflow-hidden border-default bg-surface">
-                      {viewingTrack.processing.transcode_completed_at && (
-                        <Descriptions.Item label="Transcode" span={1}>
-                          <span className="text-xs">{new Date(viewingTrack.processing.transcode_completed_at).toLocaleString()}</span>
-                        </Descriptions.Item>
-                      )}
-                      {viewingTrack.processing.embedding_completed_at && (
-                        <Descriptions.Item label="Embeddings" span={1}>
-                          <span className="text-xs">{new Date(viewingTrack.processing.embedding_completed_at).toLocaleString()}</span>
-                        </Descriptions.Item>
-                      )}
-                      {viewingTrack.processing.peaks_completed_at && (
-                        <Descriptions.Item label="Peaks" span={1}>
-                          <span className="text-xs">{new Date(viewingTrack.processing.peaks_completed_at).toLocaleString()}</span>
-                        </Descriptions.Item>
-                      )}
-                      {viewingTrack.processing.segments_completed_at && (
-                        <Descriptions.Item label="Segments" span={1}>
-                          <span className="text-xs">{new Date(viewingTrack.processing.segments_completed_at).toLocaleString()}</span>
-                        </Descriptions.Item>
-                      )}
-                      {viewingTrack.processing.faiss_indexed_at && (
-                        <Descriptions.Item label="FAISS Indexed" span={1}>
-                          <span className="text-xs">{new Date(viewingTrack.processing.faiss_indexed_at).toLocaleString()}</span>
-                        </Descriptions.Item>
-                      )}
-                    </Descriptions>
-                  </div>
-                )}
-
-                {/* Error details */}
-                {(viewingTrack.processing.transcode_error || viewingTrack.processing.embedding_error || viewingTrack.processing.peaks_error || viewingTrack.processing.segments_error) && (
-                  <Alert
-                    type="error"
-                    showIcon
-                    className="rounded-xl mt-3"
-                    message="Processing Errors"
-                    description={
-                      <div className="flex flex-col gap-1 mt-1">
-                        {viewingTrack.processing.transcode_error && (
-                          <Text type="danger" className="text-xs"><strong>Transcode:</strong> {viewingTrack.processing.transcode_error}</Text>
-                        )}
-                        {viewingTrack.processing.embedding_error && (
-                          <Text type="danger" className="text-xs"><strong>Embedding:</strong> {viewingTrack.processing.embedding_error}</Text>
-                        )}
-                        {viewingTrack.processing.peaks_error && (
-                          <Text type="danger" className="text-xs"><strong>Peaks:</strong> {viewingTrack.processing.peaks_error}</Text>
-                        )}
-                        {viewingTrack.processing.segments_error && (
-                          <Text type="danger" className="text-xs"><strong>Segments:</strong> {viewingTrack.processing.segments_error}</Text>
-                        )}
-                      </div>
-                    }
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
+        onClose={() => setViewingTrack(null)}
+        partnerName={viewingTrack ? getPartnerName(viewingTrack.partner_id) : undefined}
+      />
     </div>
   );
 }

@@ -35,6 +35,31 @@ export interface AdminTrack {
   processing: TrackProcessingStatus | null;
 }
 
+/** Full single-track detail (Apple + in-house metadata) from GET /admin/tracks/{id}. */
+export interface AdminTrackDetail extends AdminTrack {
+  type: string | null;
+  duration_seconds: number | null;
+  bpm: number | null;
+  musical_key: string | null;
+  ingestion_source: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  // Enriched metadata (contributors / release / genre / label / master audio file)
+  artists: string[];
+  album: string | null;
+  release: string | null;
+  year: number | null;
+  genre: string | null;
+  label: string | null;
+  file_size: number;
+  audio_filename: string | null;
+}
+
+export interface TrackDetailResponse {
+  status: string;
+  track: AdminTrackDetail;
+}
+
 export interface ListTracksParams {
   partner_id: number;
   is_active?: boolean;
@@ -99,6 +124,22 @@ export const listAdminTracks = async (
   try {
     return await axiosWrapper(
       authClient.get(API_CONFIG.ENDPOINTS.ADMIN_TRACKS, { params }),
+    );
+  } catch (error: any) {
+    return handleApiError(error) as any;
+  }
+};
+
+/**
+ * Full detail for a single track (Apple + in-house metadata + processing status).
+ * Shared by the Tracks panel and the playlist tracks-table detail modals.
+ */
+export const getAdminTrackDetail = async (
+  trackId: number,
+): Promise<TrackDetailResponse> => {
+  try {
+    return await axiosWrapper(
+      authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_TRACKS}/${trackId}`),
     );
   } catch (error: any) {
     return handleApiError(error) as any;
