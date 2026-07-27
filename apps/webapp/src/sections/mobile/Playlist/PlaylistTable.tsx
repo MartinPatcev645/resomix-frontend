@@ -93,17 +93,23 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
         }
         const pid = playlistData?.playlist?.id || null;
         if (!pid) return;
-        const current = trackRatings[trackId];
+        // Optimistic, with rollback if the server call fails — otherwise a failed POST leaves a
+        // thumb showing "rated" while nothing was saved.
+        const prev = trackRatings[trackId];
+        const restore = () => (prev === undefined ? removeTrackRating(trackId) : setTrackRating(trackId, prev));
         try {
-            if (current === rating) {
+            if (prev === rating) {
                 removeTrackRating(trackId);          // click active thumb → un-rate (optimistic)
-                await deleteTrackRating(trackId, pid);
+                const res = await deleteTrackRating(trackId, pid);
+                if (!res?.success) restore();
             } else {
                 setTrackRating(trackId, rating);
-                await rateTrack(trackId, rating, pid);
+                const res = await rateTrack(trackId, rating, pid);
+                if (!res?.success) restore();
             }
         } catch (error) {
             console.error("Failed to rate track:", error);
+            restore();
         }
     };
 

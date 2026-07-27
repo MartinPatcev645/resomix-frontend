@@ -15,13 +15,20 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
   return (
     <footer className="mt-[var(--px-150)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
       {/*
-        Full-bleed headline: sized from the VIEWPORT, not the rem unit. The webapp caps its
-        root font-size at 16px above 1280px (workspace-parity), which would otherwise freeze this
-        title at 1280px and stop it filling wide screens. These clamps are exactly what
-        `--px-63` / `--px-1280` resolve to with the *uncapped* root (clamp(12.8px,1.25vw,32px)),
-        so this renders identically on landing and restores edge-to-edge scaling on the webapp.
+        Full-bleed headline. Only the FONT-SIZE is made viewport-based (inline so the webapp's
+        root-font-size cap — George's 4230874, html capped at 16px above 1280px — can't freeze it):
+        clamp(50.4px,4.921875vw,126px) is exactly what `--px-63` resolves to with the *uncapped* root,
+        i.e. 63px @ 1280px, scaling with the viewport up to the 2560px content cap.
+        `-left`/`min-w` deliberately stay `--px-63`/`--px-1280`: `-left-[--px-63]` cancels the
+        `mx-[--px-63]` side margin in WebSideLines so the title's left edge lands exactly on the
+        content-box edge. (Making `-left` a vw over-compensated that fixed margin and pushed the "J"
+        off-screen with a growing right gap on wide viewports.)
       */}
-      <div aria-hidden="true" className="absolute text-[length:clamp(50.4px,4.921875vw,126px)] -left-[clamp(50.4px,4.921875vw,126px)] top-[var(--px-140)] min-w-[clamp(1024px,100vw,2560px)] font-benzin uppercase">
+      <div
+        aria-hidden="true"
+        className="absolute -left-[var(--px-63)] top-[var(--px-140)] min-w-[var(--px-1280)] font-benzin uppercase whitespace-nowrap"
+        style={{ fontSize: "clamp(50.4px, 4.921875vw, 126px)" }}
+      >
         Join the Resomix Universe
       </div>
       <div className="flex flex-col gap-[var(--px-130)]">

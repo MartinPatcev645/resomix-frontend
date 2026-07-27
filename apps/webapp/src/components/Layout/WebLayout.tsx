@@ -81,7 +81,7 @@ export function WebLayout() {
         <OptionalAuthRoute>
             <div
                 id="webapp-page-root"
-                className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen relative overflow-x-hidden`}
+                className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen flex flex-col relative overflow-x-hidden`}
             >
                 <StaticNoise />
 
@@ -92,7 +92,7 @@ export function WebLayout() {
                 )}
 
                 <div
-                    className={`mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)] ${showOverlay ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                    className={`mx-auto w-full flex-1 flex flex-col text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)] ${showOverlay ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
                     style={{ overflowX: "hidden" }}
                 >
                     <WebSideLines
@@ -104,7 +104,7 @@ export function WebLayout() {
 
                         <main
                             key={location.pathname}
-                            className="page-transition min-h-[50vh] lg:pt-[var(--header-height)]"
+                            className="page-transition flex-1 min-h-[50vh] lg:pt-[var(--header-height)]"
                         >
                             <Outlet />
                         </main>
