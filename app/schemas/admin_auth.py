@@ -27,9 +27,8 @@ class AdminUserShort(BaseModel):
 
 
 class AdminLoginResponse(BaseModel):
-    """Admin login response"""
+    """Admin login response. The refresh token is delivered as an HttpOnly cookie, never in the body."""
     access_token: str
-    refresh_token: str
     token_type: str = "bearer"
     user: AdminUserShort
 
