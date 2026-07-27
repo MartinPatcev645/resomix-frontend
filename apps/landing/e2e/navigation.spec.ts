@@ -130,6 +130,87 @@ function desktopHeader(page: import('@playwright/test').Page) {
   return page.locator('.hidden.lg\\:block #site-header');
 }
 
+function stickyHeader(page: import('@playwright/test').Page) {
+  return page.locator('.hidden.lg\\:block #site-header-sticky');
+}
+
+function stickyVisiblePanelLocator(page: import('@playwright/test').Page, panelId: string) {
+  return stickyHeader(page).locator(`#sticky-${panelId} > .nav-mm-panel`).filter({ visible: true });
+}
+
+async function scrollPastFold(page: import('@playwright/test').Page) {
+  await page.waitForSelector('#site-header', { state: 'visible' });
+  await page.evaluate(() => {
+    if (!document.querySelector('[data-e2e-scroll-spacer]')) {
+      const spacer = document.createElement('div');
+      spacer.setAttribute('data-e2e-scroll-spacer', 'true');
+      spacer.style.height = '120vh';
+      document.body.appendChild(spacer);
+    }
+    window.scrollTo(0, 100);
+  });
+  await page.waitForFunction(() =>
+    document.getElementById('site-header')?.classList.contains('is-scrolled'),
+  );
+  await expect(stickyHeader(page)).toHaveClass(/is-visible/);
+}
+
+async function auditStickyPanelAnchoring(
+  page: import('@playwright/test').Page,
+  panelId: string,
+  side: 'left' | 'right',
+) {
+  return page.evaluate(
+    ({ id, panelSide }) => {
+      const sticky = document.getElementById('site-header-sticky');
+      const stickyIn = sticky?.querySelector('.nav-sticky-in') as HTMLElement | null;
+      const panel = Array.from(document.querySelectorAll(`#sticky-${id} .nav-mm-panel`)).find((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      });
+
+      if (!stickyIn || !panel) {
+        return { pass: false, reason: 'MISSING ELEMENTS', violations: ['MISSING ELEMENTS'] };
+      }
+
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      const stickyH = 3.25 * rem;
+      const minPanelTop = stickyH + 0.5 * rem;
+      const panelRect = panel.getBoundingClientRect();
+      const violations: string[] = [];
+
+      if (panelRect.top < minPanelTop - 1) {
+        violations.push(`PANEL TOP ${panelRect.top.toFixed(1)} < MIN ${minPanelTop.toFixed(1)}`);
+      }
+
+      if (panelSide === 'right') {
+        const acct = sticky?.querySelector('.nav-cl-right .nav-acct')?.getBoundingClientRect();
+        const cta = sticky?.querySelector('.nav-cl-right .nav-cta-primary')?.getBoundingClientRect();
+        const targets = [acct, cta].filter(Boolean) as DOMRect[];
+        targets.forEach((r, i) => {
+          const hit =
+            panelRect.left < r.right &&
+            panelRect.right > r.left &&
+            panelRect.top < r.bottom &&
+            panelRect.bottom > r.top;
+          if (hit) violations.push(`CTA/ACCT OVERLAP ${i}`);
+        });
+      }
+
+      const visiblePops = Array.from(document.querySelectorAll('.nav-mm-pop')).filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      });
+      if (visiblePops.length !== 1) {
+        violations.push(`VISIBLE PANEL COUNT ${visiblePops.length} (expected 1)`);
+      }
+
+      return { pass: violations.length === 0, violations };
+    },
+    { id: panelId, panelSide: side },
+  );
+}
+
 test.describe('Global navigation', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
@@ -439,6 +520,133 @@ test.describe('Global navigation', () => {
     await page.getByRole('button', { name: /^product/i }).first().click();
 
     const results = await new AxeBuilder({ page })
+      .include('header.nav-site')
+      .withTags(['wcag2a', 'wcag2aa'])
+      .analyze();
+
+    expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([]);
+  });
+
+  test('sticky bar opens all four mega menus with correct anchoring at 1440', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await dismissConsent(page);
+    await scrollPastFold(page);
+
+    for (const [trigger, panelId, side] of [
+      [/^product/i, 'panel-product', 'left'],
+      [/^solutions/i, 'panel-solutions', 'left'],
+      [/^partners/i, 'panel-partners', 'right'],
+      [/^developers/i, 'panel-developers', 'right'],
+    ] as const) {
+      await stickyHeader(page).getByRole('button', { name: trigger }).click({ force: true });
+      await stickyVisiblePanelLocator(page, panelId).waitFor({ state: 'visible' });
+      await expect(page.locator('.nav-scrim')).toHaveCount(1);
+
+      const audit = await auditStickyPanelAnchoring(page, panelId, side);
+      expect(audit.violations, `${panelId} sticky: ${audit.violations?.join(', ')}`).toEqual([]);
+      expect(audit.pass).toBe(true);
+
+      await page.keyboard.press('Escape');
+    }
+  });
+
+  test('keyboard walk through sticky mega menu', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    await dismissConsent(page);
+    await scrollPastFold(page);
+
+    const productTrigger = stickyHeader(page).getByRole('button', { name: /^product/i });
+    await productTrigger.focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(productTrigger).toHaveAttribute('aria-expanded', 'true');
+
+    const platformLink = stickyVisiblePanelLocator(page, 'panel-product').getByRole('link', {
+      name: /resomix platform/i,
+    });
+    await expect(platformLink).toBeFocused();
+
+    await page.keyboard.press('ArrowUp');
+    await expect(productTrigger).toBeFocused();
+
+    await page.keyboard.press('Escape');
+    await expect(productTrigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(productTrigger).toBeFocused();
+  });
+
+  test('stuck/unstuck transition closes open panel', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    await dismissConsent(page);
+    await scrollPastFold(page);
+
+    await stickyHeader(page).getByRole('button', { name: /^product/i }).click({ force: true });
+    await stickyVisiblePanelLocator(page, 'panel-product').waitFor({ state: 'visible' });
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(stickyHeader(page)).not.toHaveClass(/is-visible/);
+    await expect(page.locator('.nav-scrim')).toHaveCount(0);
+
+    const visiblePops = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.nav-mm-pop')).filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      }).length,
+    );
+    expect(visiblePops).toBe(0);
+  });
+
+  test('solutions panel scrolls internally at 1280x700 from sticky bar', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 700 });
+    await page.goto('/');
+    await dismissConsent(page);
+    await scrollPastFold(page);
+
+    await stickyHeader(page).getByRole('button', { name: /^solutions/i }).click({ force: true });
+    const panel = stickyVisiblePanelLocator(page, 'panel-solutions');
+    await expect(panel).toBeVisible();
+
+    const scrollable = await panel.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        overflowY: style.overflowY,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+        canScroll: el.scrollHeight > el.clientHeight,
+      };
+    });
+    expect(scrollable.overflowY).toBe('auto');
+
+    if (!scrollable.canScroll) {
+      await panel.evaluate((el) => {
+        el.style.maxHeight = '10rem';
+      });
+    }
+
+    const canScroll = await panel.evaluate((el) => el.scrollHeight > el.clientHeight);
+    expect(canScroll).toBe(true);
+
+    const pageScrollBefore = await page.evaluate(() => window.scrollY);
+    const panelScrollBefore = await panel.evaluate((el) => el.scrollTop);
+    await panel.evaluate((el) => {
+      el.scrollTop += 48;
+    });
+    expect(await panel.evaluate((el) => el.scrollTop)).toBeGreaterThan(panelScrollBefore);
+    expect(await page.evaluate(() => window.scrollY)).toBe(pageScrollBefore);
+  });
+
+  test('axe pass with sticky product panel open', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    await dismissConsent(page);
+    await scrollPastFold(page);
+
+    await stickyHeader(page).getByRole('button', { name: /^product/i }).click({ force: true });
+    await stickyVisiblePanelLocator(page, 'panel-product').waitFor({ state: 'visible' });
+
+    const results = await new AxeBuilder({ page })
+      .include('#site-header-sticky')
       .include('header.nav-site')
       .withTags(['wcag2a', 'wcag2aa'])
       .analyze();

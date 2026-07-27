@@ -331,13 +331,25 @@
   right: var(--header-safe-right);
 }
 
-.nav-site.is-scrolled .nav-mm-pop {
-  position: fixed;
-  top: calc(var(--nav-sticky-h) + 0.5rem);
+/* When sticky bar is active, main-header panels must not render visibly */
+.nav-site.is-scrolled .nav-hnav .nav-mm-pop {
+  display: none !important;
 }
 
-.nav-site.is-scrolled .nav-mm-pop::before {
+.nav-sticky .nav-mm-pop {
+  position: fixed;
+  top: calc(var(--nav-sticky-h) + 0.5rem);
+  left: 0;
+  z-index: 95;
+}
+
+.nav-sticky .nav-mm-pop::before {
   height: 0.5rem;
+}
+
+.nav-sticky .nav-mm-pop--align-right {
+  left: auto;
+  right: var(--header-safe-right);
 }
 
 .nav-hnav li.is-open .nav-mm-pop {
@@ -356,7 +368,7 @@
   overscroll-behavior: contain;
 }
 
-.nav-site.is-scrolled .nav-mm-panel {
+.nav-sticky .nav-mm-panel {
   max-height: calc(100vh - var(--nav-sticky-h) - 0.5rem - 2rem);
 }
 
@@ -365,7 +377,7 @@
     max-height: calc(100vh - var(--nav-panel-top) - 5.5rem);
   }
 
-  .nav-site.is-scrolled .nav-mm-panel {
+  .nav-sticky .nav-mm-panel {
     max-height: calc(100vh - var(--nav-sticky-h) - 0.5rem - 5.5rem);
   }
 }
@@ -604,6 +616,22 @@
 }
 
 #panel-developers .nav-mm-panel {
+  width: 36rem;
+}
+
+#sticky-panel-product .nav-mm-panel {
+  width: 38rem;
+}
+
+#sticky-panel-solutions .nav-mm-panel {
+  width: 44rem;
+}
+
+#sticky-panel-partners .nav-mm-panel {
+  width: 40rem;
+}
+
+#sticky-panel-developers .nav-mm-panel {
   width: 36rem;
 }
 
@@ -933,6 +961,8 @@
 
 .nav-site a:focus-visible,
 .nav-site button:focus-visible,
+.nav-sticky a:focus-visible,
+.nav-sticky button:focus-visible,
 .nav-drawer a:focus-visible,
 .nav-drawer button:focus-visible {
   outline: 2px solid var(--color-primary, #ee4a26);
