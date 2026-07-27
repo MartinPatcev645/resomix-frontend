@@ -47,7 +47,11 @@ const RekordboxTip: React.FC = () => {
   return (
     <div
       ref={wrapRef}
-      className="absolute top-[var(--px-14)] right-[var(--px-14)] z-20"
+      // `flex` so the wrapper shrink-wraps the button exactly — a block wrapper adds ~3px of
+      // line-box leading, which made the halo span (inset-0) taller than the pill and pushed the
+      // ring off-centre (gap at the top). top offset ≥ the halo's 15px reach so the ring clears the
+      // modal's top edge; extra right offset on mobile so it doesn't clip the narrow modal's edge.
+      className="absolute flex top-[var(--px-20)] right-[var(--px-28)] sm:right-[var(--px-16)] z-20"
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
