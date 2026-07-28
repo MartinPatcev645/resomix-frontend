@@ -23,7 +23,7 @@ export const DiscoveryEmptyGuide: React.FC<DiscoveryEmptyGuideProps> = ({
   onTryExample,
   onSelectExample,
 }) => {
-  const chips = examples.slice(0, 5);
+  const chips = examples.slice(0, 6);
 
   return (
     <div className="-mx-[var(--px-22)] mt-[var(--px-8)] grid grid-cols-1 max-[1023px]:gap-0 min-[1024px]:grid-cols-[minmax(0,62fr)_minmax(0,38fr)]">
