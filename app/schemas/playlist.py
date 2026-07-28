@@ -323,6 +323,10 @@ class PlaylistEntity(BaseModel):
     id: int
     uuid: str
     user_id: Optional[str]
+    # Creator's username when the playlist belongs to a registered user; None for guests.
+    creator_username: Optional[str] = None
+    # Hashed guest visitor id when the playlist was created anonymously; None for users.
+    guest_visitor_id: Optional[str] = None
     name: str
     is_public: bool
     type: str
@@ -448,6 +452,7 @@ class PlaylistDetailInfo(BaseModel):
     id: int
     uuid: str
     user_id: Optional[str]
+    guest_visitor_id: Optional[str] = None
     name: str
     is_public: bool
     type: str
@@ -459,9 +464,30 @@ class PlaylistDetailInfo(BaseModel):
     track_count: int
 
 
+class PlaylistCreator(BaseModel):
+    """Who created the playlist. ``type`` is 'user', 'guest', or 'unknown'; the remaining fields
+    are populated per type (registered-user identity vs. guest visitor id + best-effort IP)."""
+    type: str
+    # Registered-user fields
+    id: Optional[int] = None
+    uuid: Optional[str] = None
+    username: Optional[str] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
+    is_active: Optional[bool] = None
+    is_email_verified: Optional[bool] = None
+    created_at: Optional[str] = None
+    # Guest fields
+    visitor_id: Optional[str] = None
+    ip: Optional[str] = None
+    user_agent: Optional[str] = None
+    seen_at: Optional[str] = None
+
+
 class PlaylistDetailData(BaseModel):
     """Schema for complete playlist detail data."""
     playlist: PlaylistDetailInfo
+    creator: Optional[PlaylistCreator] = None
     seed_track: Optional[SeedTrackDetail]
     tracks: List[PlaylistTrackDetail]
 

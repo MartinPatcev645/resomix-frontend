@@ -1174,6 +1174,18 @@ class PlaylistRepository(BaseRepository[Playlist]):
             result = await db.execute(query)
             playlists = result.scalars().all()
 
+            # Resolve creator usernames for this page in one batched query (registered-user
+            # playlists only; guests have user_id = NULL and are identified by guest_visitor_id).
+            from app.models.user import User
+
+            user_ids = {p.user_id for p in playlists if p.user_id is not None}
+            username_by_id: Dict[int, str] = {}
+            if user_ids:
+                urows = await db.execute(
+                    select(User.id, User.username).where(User.id.in_(user_ids))
+                )
+                username_by_id = {uid: uname for uid, uname in urows.all()}
+
             # Format results
             playlist_list = []
             for playlist in playlists:
@@ -1182,6 +1194,14 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         "id": playlist.id,
                         "uuid": playlist.uuid,
                         "user_id": playlist.user_id,
+                        # Creator username (None for guest-created playlists).
+                        "creator_username": (
+                            username_by_id.get(playlist.user_id)
+                            if playlist.user_id
+                            else None
+                        ),
+                        # Guest identifier for anonymous creators (None for registered users).
+                        "guest_visitor_id": playlist.guest_visitor_id,
                         "name": playlist.name,
                         "is_public": playlist.is_public,
                         "type": playlist.type,
@@ -1509,6 +1529,74 @@ class PlaylistRepository(BaseRepository[Playlist]):
             if not playlist:
                 return None
 
+            # Resolve the creator — a registered user, or an anonymous guest.
+            from app.models.user import User
+            from app.models.log import SystemLog
+
+            if playlist.user_id:
+                urow = (
+                    await db.execute(
+                        select(
+                            User.id,
+                            User.uuid,
+                            User.username,
+                            User.email,
+                            User.name,
+                            User.is_active,
+                            User.is_email_verified,
+                            User.created_at,
+                        ).where(User.id == playlist.user_id)
+                    )
+                ).first()
+                if urow:
+                    creator = {
+                        "type": "user",
+                        "id": urow.id,
+                        "uuid": urow.uuid,
+                        "username": urow.username,
+                        "email": urow.email,
+                        "name": urow.name,
+                        "is_active": urow.is_active,
+                        "is_email_verified": urow.is_email_verified,
+                        "created_at": urow.created_at.isoformat() if urow.created_at else None,
+                    }
+                else:
+                    # FK is SET NULL on user delete, but be defensive if a stale id lingers.
+                    creator = {"type": "user", "id": playlist.user_id, "username": None}
+            elif playlist.guest_visitor_id:
+                # Guests aren't a table — we only store the hashed visitor_id on the playlist. Surface
+                # that, plus a best-effort IP / user-agent from the request logs tied to this playlist
+                # (earliest logged row with an IP ≈ the creation request). The raw IP is never stored
+                # on the playlist itself, so this may be null if no such log row exists.
+                log_row = (
+                    await db.execute(
+                        select(
+                            SystemLog.client_ip,
+                            SystemLog.user_agent,
+                            SystemLog.created_at,
+                        )
+                        .where(
+                            SystemLog.playlist_id == playlist.id,
+                            SystemLog.client_ip.isnot(None),
+                        )
+                        .order_by(SystemLog.created_at.asc())
+                        .limit(1)
+                    )
+                ).first()
+                creator = {
+                    "type": "guest",
+                    "visitor_id": playlist.guest_visitor_id,
+                    "ip": log_row.client_ip if log_row else None,
+                    "user_agent": log_row.user_agent if log_row else None,
+                    "seen_at": (
+                        log_row.created_at.isoformat()
+                        if log_row and log_row.created_at
+                        else None
+                    ),
+                }
+            else:
+                creator = {"type": "unknown"}
+
             # Get track count
             count_query = (
                 select(func.count())
@@ -1651,6 +1739,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     "id": playlist.id,
                     "uuid": playlist.uuid,
                     "user_id": playlist.user_id,
+                    "guest_visitor_id": playlist.guest_visitor_id,
                     "name": playlist.name,
                     "is_public": playlist.is_public,
                     "type": playlist.type,
@@ -1665,6 +1754,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     ),
                     "track_count": track_count,
                 },
+                "creator": creator,
                 "seed_track": seed_track_data,
                 "tracks": tracks_data,
             }
