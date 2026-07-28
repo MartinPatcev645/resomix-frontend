@@ -1,0 +1,276 @@
+{
+  "base": "http://127.0.0.1:5211",
+  "at": "2026-07-28T12:22:05.044Z",
+  "viewports": {
+    "390": {
+      "mutedToken": "rgba(255, 255, 255, 0.72)",
+      "controlRadius": "2px",
+      "surface": "#111111",
+      "canvas": "#050505",
+      "iconRadius": "2px",
+      "moreRadius": "2px",
+      "mobilePlayRadius": "2px",
+      "playSize": {
+        "w": 44,
+        "h": 44
+      },
+      "moreSize": {
+        "w": 44,
+        "h": 44
+      },
+      "mobilePlaySize": {
+        "w": 44,
+        "h": 44
+      },
+      "pausedBg": "rgba(255, 255, 255, 0.03)",
+      "pausedShadow": "rgba(255, 255, 255, 0.24) 3px 0px 0px 0px inset",
+      "playingBg": "rgba(238, 74, 38, 0.2)",
+      "playingShadow": "rgb(238, 74, 38) 3px 0px 0px 0px inset",
+      "selectedBg": "rgba(238, 74, 38, 0.12)",
+      "selectedShadow": "rgb(238, 74, 38) 3px 0px 0px 0px inset",
+      "unavailableOpacity": "0.68",
+      "metaColor": "rgba(255, 255, 255, 0.72)",
+      "uploadMetaColor": "rgba(255, 255, 255, 0.72)",
+      "dropzoneBg": "rgba(238, 74, 38, 0.14)",
+      "labelColor": "rgba(255, 255, 255, 0.8)",
+      "cookieVisible": false,
+      "channels": 2,
+      "mobileRows": 6,
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "hasOverflow": false
+    },
+    "768": {
+      "mutedToken": "rgba(255, 255, 255, 0.72)",
+      "controlRadius": "2px",
+      "surface": "#111111",
+      "canvas": "#050505",
+      "iconRadius": "2px",
+      "moreRadius": "2px",
+      "mobilePlayRadius": "2px",
+      "playSize": {
+        "w": 72,
+        "h": 72
+      },
+      "moreSize": {
+        "w": 72,
+        "h": 72
+      },
+      "mobilePlaySize": {
+        "w": 72,
+        "h": 72
+      },
+      "pausedBg": "rgba(255, 255, 255, 0.03)",
+      "pausedShadow": "rgba(255, 255, 255, 0.24) 3px 0px 0px 0px inset",
+      "playingBg": "rgba(238, 74, 38, 0.2)",
+      "playingShadow": "rgb(238, 74, 38) 3px 0px 0px 0px inset",
+      "selectedBg": "rgba(238, 74, 38, 0.12)",
+      "selectedShadow": "rgb(238, 74, 38) 3px 0px 0px 0px inset",
+      "unavailableOpacity": "0.68",
+      "metaColor": "rgba(255, 255, 255, 0.72)",
+      "uploadMetaColor": "rgba(255, 255, 255, 0.72)",
+      "dropzoneBg": "rgba(238, 74, 38, 0.14)",
+      "labelColor": "rgba(255, 255, 255, 0.8)",
+      "cookieVisible": false,
+      "channels": 2,
+      "mobileRows": 6,
+      "viewport": {
+        "w": 768,
+        "h": 1100
+      },
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "hasOverflow": false
+    },
+    "1280": {
+      "mutedToken": "rgba(255, 255, 255, 0.72)",
+      "controlRadius": "2px",
+      "surface": "#111111",
+      "canvas": "#050505",
+      "iconRadius": "2px",
+      "moreRadius": "2px",
+      "mobilePlayRadius": "2px",
+      "playSize": {
+        "w": 44,
+        "h": 44
+      },
+      "moreSize": {
+        "w": 44,
+        "h": 44
+      },
+      "mobilePlaySize": {
+        "w": 44,
+        "h": 44
+      },
+      "pausedBg": "rgba(255, 255, 255, 0.03)",
+      "pausedShadow": "rgba(255, 255, 255, 0.24) 3px 0px 0px 0px inset",
+      "playingBg": "rgba(238, 74, 38, 0.2)",
+      "playingShadow": "rgb(238, 74, 38) 3px 0px 0px 0px inset",
+      "selectedBg": "rgba(238, 74, 38, 0.12)",
+      "selectedShadow": "rgb(238, 74, 38) 3px 0px 0px 0px inset",
+      "unavailableOpacity": "0.68",
+      "metaColor": "rgba(255, 255, 255, 0.72)",
+      "uploadMetaColor": "rgba(255, 255, 255, 0.72)",
+      "dropzoneBg": "rgba(238, 74, 38, 0.14)",
+      "labelColor": "rgba(255, 255, 255, 0.8)",
+      "cookieVisible": false,
+      "channels": 2,
+      "mobileRows": 6,
+      "viewport": {
+        "w": 1280,
+        "h": 1100
+      },
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "hasOverflow": false
+    },
+    "1440": {
+      "mutedToken": "rgba(255, 255, 255, 0.72)",
+      "controlRadius": "2px",
+      "surface": "#111111",
+      "canvas": "#050505",
+      "iconRadius": "2px",
+      "moreRadius": "2px",
+      "mobilePlayRadius": "2px",
+      "playSize": {
+        "w": 44,
+        "h": 44
+      },
+      "moreSize": {
+        "w": 44,
+        "h": 44
+      },
+      "mobilePlaySize": {
+        "w": 44,
+        "h": 44
+      },
+      "pausedBg": "rgba(255, 255, 255, 0.03)",
+      "pausedShadow": "rgba(255, 255, 255, 0.24) 3px 0px 0px 0px inset",
+      "playingBg": "rgba(238, 74, 38, 0.2)",
+      "playingShadow": "rgb(238, 74, 38) 3px 0px 0px 0px inset",
+      "selectedBg": "rgba(238, 74, 38, 0.12)",
+      "selectedShadow": "rgb(238, 74, 38) 3px 0px 0px 0px inset",
+      "unavailableOpacity": "0.68",
+      "metaColor": "rgba(255, 255, 255, 0.72)",
+      "uploadMetaColor": "rgba(255, 255, 255, 0.72)",
+      "dropzoneBg": "rgba(238, 74, 38, 0.14)",
+      "labelColor": "rgba(255, 255, 255, 0.8)",
+      "cookieVisible": false,
+      "channels": 2,
+      "mobileRows": 6,
+      "viewport": {
+        "w": 1440,
+        "h": 1100
+      },
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "hasOverflow": false
+    }
+  },
+  "contrast": [
+    {
+      "token": "rgba(255,255,255,0.72)",
+      "computedColor": "rgba(255, 255, 255, 0.72)",
+      "solidFg": "rgb(188, 188, 188)",
+      "surface": "surface #111111",
+      "surfaceColor": "rgb(17, 17, 17)",
+      "ratio": 9.94,
+      "aa": true,
+      "method": "alpha-composited"
+    },
+    {
+      "token": "rgba(255,255,255,0.72)",
+      "computedColor": "rgba(255, 255, 255, 0.72)",
+      "solidFg": "rgb(185, 185, 185)",
+      "surface": "canvas #050505",
+      "surfaceColor": "rgb(5, 5, 5)",
+      "ratio": 10.39,
+      "aa": true,
+      "method": "alpha-composited"
+    },
+    {
+      "token": "rgba(255,255,255,0.72)",
+      "computedColor": "rgba(255, 255, 255, 0.72)",
+      "solidFg": "rgb(186, 186, 186)",
+      "surface": "input field #0A0A0A",
+      "surfaceColor": "rgb(10, 10, 10)",
+      "ratio": 10.2,
+      "aa": true,
+      "method": "alpha-composited"
+    },
+    {
+      "token": "rgba(255,255,255,0.72) / .rx-meta",
+      "computedColor": "rgba(255, 255, 255, 0.72)",
+      "solidFg": "rgb(190, 190, 190)",
+      "surface": "default dropzone rgba(255,255,255,0.02) over #111",
+      "surfaceColor": "rgb(22, 22, 22)",
+      "ratio": 9.74,
+      "aa": true,
+      "method": "alpha-composited"
+    },
+    {
+      "token": "rgba(255,255,255,0.72) / upload constraints",
+      "computedColor": "rgba(255, 255, 255, 0.72)",
+      "solidFg": "rgb(197, 191, 189)",
+      "surface": "drag-active/focus accent-soft over #111",
+      "surfaceColor": "rgb(48, 25, 20)",
+      "ratio": 9.07,
+      "aa": true,
+      "method": "alpha-composited"
+    },
+    {
+      "token": "rgba(255,255,255,0.72) / upload constraints",
+      "computedColor": "rgba(255, 255, 255, 0.72)",
+      "solidFg": "rgb(194, 191, 190)",
+      "surface": "error dropzone over #111",
+      "surfaceColor": "rgb(36, 25, 23)",
+      "ratio": 9.37,
+      "aa": true,
+      "method": "alpha-composited"
+    }
+  ],
+  "focus": {
+    "tag": "BUTTON",
+    "className": "rx-button rx-button--primary",
+    "ariaLabel": null,
+    "focusVisible": true,
+    "boxShadow": "rgba(5, 5, 5, 0.95) 0px 0px 0px 1px, rgba(255, 143, 116, 0.92) 0px 0px 0px 3px",
+    "borderRadius": "2px",
+    "clipPath": "none",
+    "rect": {
+      "x": 145,
+      "y": 528.125,
+      "w": 140.40625,
+      "h": 44
+    }
+  },
+  "isolation": {
+    "/sonic-discovery": {
+      "hasRx": false,
+      "rxNodes": 0
+    },
+    "/analysis": {
+      "hasRx": false,
+      "rxNodes": 0
+    }
+  },
+  "mobileMeta": {
+    "viewport": {
+      "w": 390,
+      "h": 844,
+      "dpr": 1
+    },
+    "channels": 2,
+    "mobileRows": 6,
+    "firstMobilePlayRadius": "2px",
+    "firstMobilePlaySize": {
+      "w": 44,
+      "h": 44
+    },
+    "cookieVisible": false
+  }
+}
