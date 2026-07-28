@@ -28,9 +28,13 @@ export function useWorkspaceSearch() {
   const skipNextFetch = useRef(
     cached.searchQuery.length > 0 && cached.searchResults.length > 0 && cached.searchMode === searchMode,
   );
+  // Monotonic id so a slow response for an older query/mode can't clobber a newer one.
+  const reqIdRef = useRef(0);
 
   const performSearch = useCallback(
     async (searchQuery: string, mode: typeof searchMode) => {
+      const reqId = ++reqIdRef.current;
+
       if (!searchQuery.trim()) {
         setResults([]);
         setError(null);
@@ -38,6 +42,9 @@ export function useWorkspaceSearch() {
         return;
       }
 
+      // Restore-without-refetch: only a COMPLETE cache entry (query + mode + its own results) hits.
+      // handleQueryChange clears the cached results on every keystroke, so a mid-typing query can
+      // never match stale results here.
       const cache = getDiscoveryCache();
       if (
         cache.searchQuery === searchQuery &&
@@ -55,6 +62,7 @@ export function useWorkspaceSearch() {
 
       try {
         const response = await searchTracks(searchQuery, mode);
+        if (reqId !== reqIdRef.current) return; // superseded by a newer search
         if (response.success && response.data?.tracks) {
           const mappedResults = response.data.tracks.map((track: Record<string, unknown>) => ({
             id: track.id as string | number,
@@ -74,11 +82,12 @@ export function useWorkspaceSearch() {
           patchDiscoveryCache({ searchQuery: searchQuery, searchResults: [], searchMode: mode });
         }
       } catch {
+        if (reqId !== reqIdRef.current) return;
         setError("An unexpected error occurred");
         setResults([]);
         patchDiscoveryCache({ searchQuery: searchQuery, searchResults: [], searchMode: mode });
       } finally {
-        setIsLoading(false);
+        if (reqId === reqIdRef.current) setIsLoading(false);
       }
     },
     [],
@@ -89,16 +98,20 @@ export function useWorkspaceSearch() {
       skipNextFetch.current = false;
       return;
     }
+    // Debounce: fire ~half a second after the user stops typing (or after a mode change).
     const timeoutId = setTimeout(() => {
       void performSearch(query, searchMode);
-    }, 300);
+    }, 500);
     return () => clearTimeout(timeoutId);
   }, [query, searchMode, performSearch]);
 
   const handleQueryChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const next = e.target.value;
     setQuery(next);
-    patchDiscoveryCache({ searchQuery: next });
+    // Keep the typed query in the cache (so Back/Change restores it) but DROP the old results —
+    // leaving stale results here is what made performSearch's cache check short-circuit and never
+    // fetch the new query. performSearch repopulates the results once they arrive.
+    patchDiscoveryCache({ searchQuery: next, searchResults: [] });
   }, []);
 
   return {
