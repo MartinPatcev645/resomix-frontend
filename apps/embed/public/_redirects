@@ -1,5 +1,4 @@
-# SPA fallback ONLY for path-style deep links (/playlist/<uuid>). The embed is normally loaded via
-# `/?id=<uuid>` (a query on `/`), which needs no rule. Scoping to /playlist/* is important: a broad
-# `/*  /index.html  200` catch-all would shadow /assets/*.js and serve index.html (text/html) for
-# them, which the browser refuses to run as a module (MIME mismatch under X-Content-Type-Options).
-/playlist/*   /index.html   200
+# No redirects. The embed is always loaded as `/?id=<uuid>` — a query on the root `/`, which serves
+# index.html natively, and /assets/* serve as real files. We deliberately do NOT add a `/* → index.html`
+# SPA fallback: on Cloudflare Pages that catch-all can shadow /assets/*.js|css and serve them as
+# text/html (blocked under X-Content-Type-Options: nosniff). There are no path-based routes to fall back.
