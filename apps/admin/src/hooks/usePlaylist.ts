@@ -16,6 +16,8 @@ export interface PlaylistItem {
   id: string
   uuid: string
   user_id: string | null
+  creator_username: string | null
+  guest_visitor_id: string | null
   name: string
   is_public: boolean
   type: 'custom' | 'similarity' | 'waiting_segments'
@@ -28,6 +30,8 @@ const convertApiPlaylist = (apiData: ApiPlaylistItem): PlaylistItem => ({
   id: String(apiData.id),
   uuid: apiData.uuid,
   user_id: apiData.user_id,
+  creator_username: apiData.creator_username ?? null,
+  guest_visitor_id: apiData.guest_visitor_id ?? null,
   name: apiData.name,
   is_public: apiData.is_public,
   type: apiData.type,
