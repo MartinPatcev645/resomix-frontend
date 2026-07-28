@@ -15,7 +15,8 @@ export interface WorkspaceReference {
 export const ReferenceChip: React.FC<{
   reference: WorkspaceReference;
   onChange: () => void;
-}> = ({ reference, onChange }) => (
+  onCancel?: () => void;
+}> = ({ reference, onChange, onCancel }) => (
   <div className="relative flex flex-wrap items-center gap-x-[var(--px-14)] gap-y-[var(--px-8)] border border-[rgba(238,74,38,.5)] bg-[linear-gradient(to_right,rgba(238,74,38,.05),rgba(238,74,38,.012)_55%,transparent)] p-[var(--px-14)] transition-[border-color,background-color] duration-150 ease-out motion-reduce:transition-none">
     <span
       aria-hidden="true"
@@ -48,5 +49,14 @@ export const ReferenceChip: React.FC<{
     >
       {REFERENCE_CHANGE}
     </button>
+    {onCancel && (
+      <button
+        type="button"
+        onClick={onCancel}
+        className="min-h-[var(--px-44)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-2)] text-[var(--color-neon-orange,#EE4A26)] opacity-75 hover:opacity-100"
+      >
+        Cancel
+      </button>
+    )}
   </div>
 );

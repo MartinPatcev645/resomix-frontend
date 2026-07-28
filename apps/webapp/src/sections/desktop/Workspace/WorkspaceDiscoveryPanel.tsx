@@ -85,6 +85,8 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
     upload.setError(null);
   }, [sessionExpired]);
 
+  // "Change" — drop the selected reference but KEEP the search results, so the user returns to the
+  // same result list to pick a different track.
   const clearReference = () => {
     clearDiscoveryReferenceCache();
     setReference(null);
@@ -93,9 +95,30 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
     setIsSubmitting(false);
   };
 
+  // Reset the search field + results to empty (a "fresh" search screen).
+  const clearSearchState = () => {
+    patchDiscoveryCache({ searchQuery: "", searchResults: [] });
+  };
+
+  // "Cancel" — fully abandon the selection and land on a fresh search screen.
+  const cancelReference = () => {
+    withViewTransition(() => {
+      clearReference();
+      clearSearchState();
+      setSource("search");
+    });
+  };
+
+  // Switching tabs unselects any preview AND resets the search, so the destination (and a later
+  // return) is always a fresh screen — not the stale preview/results. Fixes the bug where clicking
+  // Upload while a track was selected changed the tab but not the view (the preview took priority).
   const switchSource = (next: "search" | "upload") => {
     if (next === source) return;
-    withViewTransition(() => setSource(next));
+    withViewTransition(() => {
+      clearReference();
+      clearSearchState();
+      setSource(next);
+    });
   };
 
   const onCatalogueSelect = (track: SearchResult) => {
@@ -176,7 +199,7 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
           <DiscoveryProcessingPanel />
         ) : reference ? (
           <div className="space-y-[var(--px-16)] pt-[var(--px-18)]">
-            <ReferenceChip reference={reference} onChange={clearReference} />
+            <ReferenceChip reference={reference} onChange={clearReference} onCancel={cancelReference} />
             <div className="flex flex-wrap items-end justify-between gap-[var(--px-12)]">
               <DepthControl />
               <button
