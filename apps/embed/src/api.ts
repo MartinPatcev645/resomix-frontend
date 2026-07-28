@@ -18,6 +18,10 @@ export interface EmbedTrack {
   title?: string | null
   artist?: string | null
   duration?: number | null
+  year?: number | null
+  album?: string | null
+  genre?: string | null
+  label?: string | null
   playback?: 'preview' | 'hls'
   preview_url?: string | null
   artwork_url?: string | null
@@ -27,6 +31,8 @@ export interface EmbedTrack {
 export interface EmbedPlaylistData {
   uuid: string
   name?: string | null
+  /** The seed/reference track the playlist was built from (playable when it has an Apple preview). */
+  reference: EmbedTrack | null
   /** Total tracks in the playlist (incl. any locked for anonymous viewers). */
   total: number
   /** Real, playable tracks shown in the widget. */
@@ -59,18 +65,21 @@ export async function fetchPublicPlaylist(uuid: string): Promise<Result> {
       return { ok: false, error: body?.reason === 'not_public' ? 'not_public' : 'not_found' }
     }
 
-    // The payload is nested under `data` ({ success, data: { playlist, similar_tracks } }).
+    // The payload is nested under `data` ({ success, data: { queried_track, similar_tracks, playlist } }).
     const payload = body.data ?? body
     const playlist = payload.playlist ?? {}
     const all: EmbedTrack[] = Array.isArray(payload.similar_tracks) ? payload.similar_tracks : []
     if (!all.length) return { ok: false, error: 'empty' }
 
+    const reference: EmbedTrack | null =
+      payload.queried_track && !isRedacted(payload.queried_track) ? payload.queried_track : null
     const tracks = all.filter((t) => !isRedacted(t))
     return {
       ok: true,
       data: {
         uuid,
         name: playlist.name ?? null,
+        reference,
         total: all.length,
         tracks,
         hiddenCount: all.length - tracks.length,

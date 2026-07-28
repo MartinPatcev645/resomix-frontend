@@ -14,6 +14,7 @@ import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 import { scoreBandWidthPct, shortlistScoreRange } from "@/utils/scoreBand.ts";
+import { prefetchAudio } from "@/utils/prefetchAudio.ts";
 import { PlaylistUnlockBand } from "@/components/Playlist/PlaylistUnlockBand.tsx";
 import { LOCKED_BLUR_VISIBLE_ROWS, PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
 import { PLAYLIST_ROW_GRID_CLASS, playlistRowGridStyle } from "@/utils/playlistGrid.ts";
@@ -202,6 +203,7 @@ const PlaylistTable: React.FC = () => {
                     restrictedMode === "none" ? "select-text" : "",
                 ].join(" ")}
                 aria-current={isTrackPlaying && !isRestricted ? "true" : undefined}
+                onMouseEnter={!isRestricted ? () => prefetchAudio((track as { preview_url?: string | null }).preview_url) : undefined}
             >
                 <div
                     className={`${PLAYLIST_ROW_GRID_CLASS} min-h-[var(--px-48)] px-[var(--px-16)] py-[var(--px-12)]`}

@@ -14,11 +14,20 @@ type LoadState =
 
 function fmtDuration(d?: number | null): string {
   if (d == null || !isFinite(d) || d <= 0) return ''
-  // The API sends seconds; guard in case a value ever arrives in ms.
   const secs = d > 10000 ? Math.round(d / 1000) : Math.round(d)
-  const m = Math.floor(secs / 60)
-  const s = secs % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
+  return `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}`
+}
+
+/** "House | Music | Dance" → "House" (drop the generic "Music" segment). */
+function cleanGenre(g?: string | null): string {
+  if (!g) return ''
+  const parts = g.split('|').map((s) => s.trim()).filter((s) => s && s.toLowerCase() !== 'music')
+  return parts[0] || ''
+}
+
+/** Secondary meta line: genre · year · album (whatever's present). */
+function metaLine(t: EmbedTrack): string {
+  return [cleanGenre(t.genre), t.year ? String(t.year) : '', t.album].filter(Boolean).join(' · ')
 }
 
 const ERROR_COPY: Record<string, string> = {
@@ -33,9 +42,13 @@ export default function EmbedPlaylist() {
   const uuid = useMemo(() => readPlaylistUuid(), [])
   const [state, setState] = useState<LoadState>({ status: 'loading' })
 
-  // Single shared audio element for 30s Apple previews.
+  // One shared, standard <audio controls> in the bottom player bar.
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [playingId, setPlayingId] = useState<string | null>(null)
+  const [current, setCurrent] = useState<EmbedTrack | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+
+  // Prefetch de-dupe — we warm each preview at most once.
+  const prefetched = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     if (!uuid) {
@@ -53,45 +66,66 @@ export default function EmbedPlaylist() {
     }
   }, [uuid])
 
-  // Reflect the loaded playlist in the tab title (falls back to the static title otherwise).
+  // Reflect the loaded playlist in the tab title.
   useEffect(() => {
-    if (state.status === 'ready' && state.data.name) {
-      document.title = `${state.data.name} · Resomix Playlist`;
-    } else {
-      document.title = 'Resomix Embedded Playlist';
-    }
-  }, [state]);
+    document.title =
+      state.status === 'ready' && state.data.name
+        ? `${state.data.name} · Resomix Playlist`
+        : 'Resomix Embedded Playlist'
+  }, [state])
 
-  // Keep local play state in sync with the audio element.
+  // Sync play/pause state from the audio element (covers the native controls too).
   useEffect(() => {
     const a = audioRef.current
     if (!a) return
-    const onEnd = () => setPlayingId(null)
-    a.addEventListener('ended', onEnd)
-    a.addEventListener('pause', onEnd)
+    const onPlay = () => setIsPlaying(true)
+    const onStop = () => setIsPlaying(false)
+    a.addEventListener('play', onPlay)
+    a.addEventListener('pause', onStop)
+    a.addEventListener('ended', onStop)
     return () => {
-      a.removeEventListener('ended', onEnd)
-      a.removeEventListener('pause', onEnd)
+      a.removeEventListener('play', onPlay)
+      a.removeEventListener('pause', onStop)
+      a.removeEventListener('ended', onStop)
     }
-  }, [state.status])
+  }, [current])
 
-  const togglePlay = (track: EmbedTrack) => {
+  // Warm the first couple of previews once loaded, so the first click is instant.
+  useEffect(() => {
+    if (state.status !== 'ready') return
+    if (state.data.reference) prefetch(state.data.reference)
+    state.data.tracks.slice(0, 2).forEach(prefetch)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state])
+
+  /** Background-download a preview (link rel=prefetch — no CORS, warms the HTTP cache). */
+  const prefetch = (t?: EmbedTrack | null) => {
+    if (!t?.preview_url || prefetched.current.has(t.id)) return
+    prefetched.current.add(t.id)
+    const link = document.createElement('link')
+    link.rel = 'prefetch'
+    link.as = 'audio'
+    link.href = t.preview_url
+    document.head.appendChild(link)
+  }
+
+  const selectTrack = (t: EmbedTrack) => {
     const a = audioRef.current
-    if (!a || !track.preview_url) return
-    if (playingId === track.id) {
-      a.pause()
-      setPlayingId(null)
+    if (!a || !t.preview_url) return
+    if (current?.id === t.id) {
+      if (a.paused) void a.play()
+      else a.pause()
       return
     }
-    a.src = track.preview_url
-    void a.play().then(() => setPlayingId(track.id)).catch(() => setPlayingId(null))
+    a.src = t.preview_url
+    setCurrent(t)
+    void a.play().catch(() => setIsPlaying(false))
   }
 
   const fullUrl = uuid ? `${APP_URL}/sonic-discovery?id=${encodeURIComponent(uuid)}` : APP_URL
 
   return (
     <div className="embed">
-      {/* Branding bar — pinned at top so it stays visible even if the frame is clipped. */}
       <header className="embed-brand">
         <a className="embed-brand-logo" href={APP_URL} target="_blank" rel="noopener noreferrer">
           <span className="embed-brand-mark">◆</span> RESOMIX
@@ -102,36 +136,128 @@ export default function EmbedPlaylist() {
       </header>
 
       {state.status === 'loading' && <div className="embed-msg">Loading playlist…</div>}
-
       {state.status === 'error' && <div className="embed-msg">{ERROR_COPY[state.kind]}</div>}
 
       {state.status === 'ready' && (
         <ReadyView
           data={state.data}
-          playingId={playingId}
-          onToggle={togglePlay}
+          currentId={current?.id ?? null}
+          isPlaying={isPlaying}
+          onPlay={selectTrack}
+          onPrefetch={prefetch}
           fullUrl={fullUrl}
         />
       )}
 
-      {/* Hidden shared player. */}
-      <audio ref={audioRef} preload="none" />
+      {/* Standard player bar (native controls) — persists across renders so playback isn't cut. */}
+      <div className={`embed-player${current ? ' is-active' : ''}`}>
+        {current && (
+          <div className="embed-player-meta">
+            {current.artwork_url && (
+              <img className="embed-player-art" src={current.artwork_url} alt="" draggable={false} />
+            )}
+            <div className="embed-player-txt">
+              <div className="embed-player-title" title={current.title || undefined}>
+                {current.title}
+              </div>
+              <div className="embed-player-artist" title={current.artist || undefined}>
+                {current.artist}
+              </div>
+            </div>
+          </div>
+        )}
+        <audio ref={audioRef} className="embed-player-audio" controls preload="auto" />
+      </div>
+
+      <footer className="embed-foot">
+        <a href={fullUrl} target="_blank" rel="noopener noreferrer">
+          Powered by <strong>Resomix</strong>
+        </a>
+      </footer>
+    </div>
+  )
+}
+
+function TrackRow({
+  t,
+  index,
+  isReference,
+  isCurrent,
+  isPlaying,
+  onPlay,
+  onPrefetch,
+}: {
+  t: EmbedTrack
+  index: number
+  isReference?: boolean
+  isCurrent: boolean
+  isPlaying: boolean
+  onPlay: (t: EmbedTrack) => void
+  onPrefetch: (t: EmbedTrack) => void
+}) {
+  const playable = !!t.preview_url
+  const meta = metaLine(t)
+  return (
+    <div
+      className={`embed-row${isCurrent ? ' is-playing' : ''}${isReference ? ' is-ref' : ''}`}
+      onMouseEnter={() => onPrefetch(t)}
+    >
+      <button
+        className="embed-play"
+        onClick={() => onPlay(t)}
+        disabled={!playable}
+        aria-label={isCurrent && isPlaying ? 'Pause' : 'Play preview'}
+        title={playable ? 'Play 30s preview' : 'Preview unavailable'}
+      >
+        {isCurrent && isPlaying ? '❚❚' : '►'}
+      </button>
+
+      {t.deep_link_url ? (
+        <a className="embed-art" href={t.deep_link_url} target="_blank" rel="noopener noreferrer" title="Open on Apple Music">
+          {t.artwork_url ? <img src={t.artwork_url} alt="" loading="lazy" draggable={false} /> : <span>{t.rank ?? index + 1}</span>}
+        </a>
+      ) : (
+        <div className="embed-art" aria-hidden="true">
+          {t.artwork_url ? <img src={t.artwork_url} alt="" loading="lazy" draggable={false} /> : <span>{t.rank ?? index + 1}</span>}
+        </div>
+      )}
+
+      <div className="embed-info">
+        <div className="embed-track-title" title={t.title || undefined}>
+          {isReference && <span className="embed-ref-tag">Reference</span>}
+          {t.title || 'Untitled'}
+        </div>
+        <div className="embed-track-artist" title={t.artist || undefined}>{t.artist || '—'}</div>
+        {meta && <div className="embed-track-meta" title={meta}>{meta}</div>}
+      </div>
+
+      <div className="embed-right">
+        <span className="embed-dur">{fmtDuration(t.duration)}</span>
+        {t.deep_link_url && (
+          <a className="embed-apple" href={t.deep_link_url} target="_blank" rel="noopener noreferrer" title="Listen on Apple Music"></a>
+        )}
+      </div>
     </div>
   )
 }
 
 function ReadyView({
   data,
-  playingId,
-  onToggle,
+  currentId,
+  isPlaying,
+  onPlay,
+  onPrefetch,
   fullUrl,
 }: {
   data: EmbedPlaylistData
-  playingId: string | null
-  onToggle: (t: EmbedTrack) => void
+  currentId: string | null
+  isPlaying: boolean
+  onPlay: (t: EmbedTrack) => void
+  onPrefetch: (t: EmbedTrack) => void
   fullUrl: string
 }) {
-  const cover = data.tracks.find((t) => t.artwork_url)?.artwork_url || null
+  const cover =
+    data.reference?.artwork_url || data.tracks.find((t) => t.artwork_url)?.artwork_url || null
   const title = data.name || 'Sonic Discovery'
 
   return (
@@ -142,47 +268,38 @@ function ReadyView({
         </div>
         <div className="embed-head-meta">
           <div className="embed-eyebrow">Sonic Discovery</div>
-          <a className="embed-title" href={fullUrl} target="_blank" rel="noopener noreferrer">
-            {title}
-          </a>
+          <a className="embed-title" href={fullUrl} target="_blank" rel="noopener noreferrer">{title}</a>
           <div className="embed-sub">{data.total} tracks · similarity playlist</div>
         </div>
       </div>
 
+      {data.reference && (
+        <div className="embed-ref-wrap">
+          <TrackRow
+            t={data.reference}
+            index={0}
+            isReference
+            isCurrent={currentId === data.reference.id}
+            isPlaying={isPlaying}
+            onPlay={onPlay}
+            onPrefetch={onPrefetch}
+          />
+        </div>
+      )}
+
       <ol className="embed-list">
-        {data.tracks.map((t, i) => {
-          const playable = t.playback === 'preview' && !!t.preview_url
-          const isPlaying = playingId === t.id
-          return (
-            <li key={t.id} className={`embed-row${isPlaying ? ' is-playing' : ''}`}>
-              <button
-                className="embed-play"
-                onClick={() => onToggle(t)}
-                disabled={!playable}
-                aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
-                title={playable ? 'Play 30s preview' : 'Preview unavailable'}
-              >
-                {isPlaying ? '❚❚' : '►'}
-              </button>
-              <div className="embed-art" aria-hidden="true">
-                {t.artwork_url ? (
-                  <img src={t.artwork_url} alt="" loading="lazy" draggable={false} />
-                ) : (
-                  <span>{t.rank ?? i + 1}</span>
-                )}
-              </div>
-              <div className="embed-info">
-                <div className="embed-track-title" title={t.title || undefined}>
-                  {t.title || 'Untitled'}
-                </div>
-                <div className="embed-track-artist" title={t.artist || undefined}>
-                  {t.artist || '—'}
-                </div>
-              </div>
-              <div className="embed-dur">{fmtDuration(t.duration)}</div>
-            </li>
-          )
-        })}
+        {data.tracks.map((t, i) => (
+          <li key={t.id}>
+            <TrackRow
+              t={t}
+              index={i}
+              isCurrent={currentId === t.id}
+              isPlaying={isPlaying}
+              onPlay={onPlay}
+              onPrefetch={onPrefetch}
+            />
+          </li>
+        ))}
       </ol>
 
       {data.hiddenCount > 0 && (
@@ -192,12 +309,6 @@ function ReadyView({
           </a>
         </div>
       )}
-
-      <footer className="embed-foot">
-        <a href={fullUrl} target="_blank" rel="noopener noreferrer">
-          Powered by <strong>Resomix</strong>
-        </a>
-      </footer>
     </>
   )
 }

@@ -17,6 +17,7 @@ import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 import { scoreBandWidthPct, shortlistScoreRange } from "@/utils/scoreBand.ts";
+import { prefetchAudio } from "@/utils/prefetchAudio.ts";
 import {
   PLAYLIST_DIVIDER_BORDER,
   PLAYLIST_DIVIDER_STRONG,
@@ -196,6 +197,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                     restrictedMode === "dim" ? "pointer-events-none select-none opacity-45" : "",
                     restrictedMode === "blur" ? "pointer-events-none select-none border-t-0 first:border-t" : "",
                 ].join(" ")}
+                onTouchStart={!isRestricted ? () => prefetchAudio((track as { preview_url?: string | null }).preview_url) : undefined}
             >
                 <div className="relative flex justify-between p-[var(--px-12)]">
                     <div className="flex w-full min-w-0 flex-col gap-[var(--px-10)]">

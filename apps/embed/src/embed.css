@@ -164,14 +164,80 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.embed-track-artist {
+.embed-track-artist,
+.embed-track-meta {
   font-size: 10px;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.embed-dur { flex: none; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.embed-track-meta { font-size: 9px; opacity: 0.85; margin-top: 1px; }
+
+/* "Reference" seed badge inside the title line. */
+.embed-ref-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.embed-right { flex: none; display: flex; align-items: center; gap: 8px; }
+.embed-dur { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Apple Music link (deep link) — a small red apple glyph. */
+.embed-apple {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  border-radius: 4px;
+  background: #fa233b;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M16.365 1.43c0 1.14-.42 2.2-1.12 2.99-.76.85-2.02 1.51-3.06 1.43-.13-1.1.42-2.27 1.09-3 .76-.83 2.09-1.46 3.09-1.42zM20.6 17.02c-.55 1.27-.82 1.84-1.53 2.96-.99 1.57-2.39 3.52-4.12 3.53-1.54.01-1.94-1-4.03-.99-2.09.01-2.53.99-4.07.98-1.73-.01-3.05-1.77-4.04-3.34-2.77-4.4-3.06-9.56-1.35-12.3 1.21-1.95 3.13-3.1 4.93-3.1 1.84 0 2.99 1.01 4.51 1.01 1.47 0 2.37-1.01 4.5-1.01 1.6 0 3.3.87 4.51 2.38-3.96 2.17-3.31 7.82.21 9.42z'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M16.365 1.43c0 1.14-.42 2.2-1.12 2.99-.76.85-2.02 1.51-3.06 1.43-.13-1.1.42-2.27 1.09-3 .76-.83 2.09-1.46 3.09-1.42zM20.6 17.02c-.55 1.27-.82 1.84-1.53 2.96-.99 1.57-2.39 3.52-4.12 3.53-1.54.01-1.94-1-4.03-.99-2.09.01-2.53.99-4.07.98-1.73-.01-3.05-1.77-4.04-3.34-2.77-4.4-3.06-9.56-1.35-12.3 1.21-1.95 3.13-3.1 4.93-3.1 1.84 0 2.99 1.01 4.51 1.01 1.47 0 2.37-1.01 4.5-1.01 1.6 0 3.3.87 4.51 2.38-3.96 2.17-3.31 7.82.21 9.42z'/%3E%3C/svg%3E") center / contain no-repeat;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.embed-apple:hover { opacity: 1; }
+
+/* Reference (seed) row — visually set apart above the similar list. */
+.embed-ref-wrap { flex: none; border-bottom: 1px solid var(--line); background: rgba(238, 74, 38, 0.05); }
+.embed-row.is-ref { border-bottom: none; }
+
+/* Standard player bar (native <audio controls>) — pinned above the footer while a track plays. */
+.embed-player {
+  flex: none;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+.embed-player.is-active { display: flex; }
+.embed-player-meta { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 0 1 40%; }
+.embed-player-art { width: 34px; height: 34px; border-radius: 5px; object-fit: cover; flex: none; }
+.embed-player-txt { min-width: 0; }
+.embed-player-title {
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.embed-player-artist {
+  font-size: 9px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.embed-player-audio { flex: 1 1 auto; height: 32px; min-width: 0; }
 
 /* "View more tracks" CTA — a fixed bar between the list and footer (always visible, not scrolled),
    shown when the playlist has more tracks than the anonymous embed reveals. Links to the full
