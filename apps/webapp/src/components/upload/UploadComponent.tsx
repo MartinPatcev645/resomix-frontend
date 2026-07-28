@@ -10,6 +10,7 @@ import {
     UPLOAD_FORMAT_LINE,
     UPLOAD_RETENTION_SHORT,
 } from "@/sections/desktop/Workspace/workspaceCopy.ts";
+import { WORKSPACE_BTN_SECONDARY } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
 
 interface UploadComponentProps {
     onSearchClick?: () => void;
@@ -80,10 +81,10 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({
                     role="region"
                     aria-label={UPLOAD_DROP_HEADING}
                     className={[
-                        "flex flex-col items-center gap-[var(--px-10)] border-2 border-dashed px-[var(--px-24)] py-[var(--px-36)] text-center transition-colors",
+                        "flex flex-col items-center gap-[var(--px-10)] border-2 border-dashed px-[var(--px-24)] py-[var(--px-36)] text-center transition-colors duration-[var(--rx-duration-base)]",
                         dragOver
-                            ? "border-[rgba(238,74,38,.7)] bg-[rgba(238,74,38,.04)]"
-                            : "border-[rgba(255,255,255,.25)] bg-[rgba(255,255,255,.012)]",
+                            ? "border-[var(--rx-color-accent)] bg-[var(--rx-color-accent-soft)]"
+                            : "border-[var(--rx-color-border-default)] bg-[rgba(255,255,255,0.02)]",
                     ].join(" ")}
                     onDrop={dropHandler}
                     onDragOver={(e) => {
@@ -126,7 +127,7 @@ export const UploadComponent: React.FC<UploadComponentProps> = ({
                     <button
                         type="button"
                         id="upload-component-upload-button"
-                        className="upload-button mt-[var(--px-6)] inline-flex min-h-[var(--px-44)] items-center gap-[var(--px-8)] rounded-full border border-[rgba(255,255,255,.3)] px-[var(--px-22)] py-[var(--px-13)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] before:block before:w-[var(--px-6)] before:border-t before:border-[var(--color-accent,#EE4A26)] before:content-[''] hover:border-[rgba(255,255,255,.7)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
+                        className={`upload-button mt-[var(--px-6)] ${WORKSPACE_BTN_SECONDARY}`}
                         onClick={openFilePicker}
                     >
                         {UPLOAD_BROWSE_ACTION}

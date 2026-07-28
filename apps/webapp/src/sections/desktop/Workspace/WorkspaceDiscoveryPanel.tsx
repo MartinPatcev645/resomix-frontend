@@ -22,7 +22,7 @@ import { ReferenceChip, type WorkspaceReference } from "./ReferenceChip.tsx";
 import { DepthControl } from "./DepthControl.tsx";
 import { DiscoveryProcessingPanel } from "./DiscoveryProcessingPanel.tsx";
 import { DiscoveryEmptyGuide } from "./DiscoveryEmptyGuide.tsx";
-import { WORKSPACE_PANEL_CLASS, WORKSPACE_STAGE_MIN_H } from "./workspacePanelStyles.ts";
+import { WORKSPACE_PANEL_CLASS, WORKSPACE_STAGE_MIN_H, WORKSPACE_BTN_PRIMARY } from "./workspacePanelStyles.ts";
 import { SubmitPendingGlyph, WorkspaceStage } from "./WorkspaceStage.tsx";
 import {
   getDiscoveryCache,
@@ -177,7 +177,7 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
       <WorkspaceStage stageKey={stageKey}>
         {!showProcessing && (
           <div
-            className="relative flex border-b border-[rgba(255,255,255,.09)] max-[640px]:grid max-[640px]:grid-cols-2"
+            className="flex w-full overflow-hidden border border-[var(--rx-color-border-default)] max-[640px]:grid max-[640px]:grid-cols-2"
             role="tablist"
             aria-label="Reference source"
           >
@@ -206,7 +206,7 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
                 type="button"
                 disabled={isSubmitting}
                 onClick={() => void submitDiscovery()}
-                className="inline-flex min-h-[var(--px-44)] items-center justify-center rounded-full bg-[var(--color-primary)] px-[var(--px-22)] font-fira text-[length:var(--px-12)] font-medium uppercase tracking-[var(--px-2)] text-[var(--color-text-primary,#000)] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
+                className={WORKSPACE_BTN_PRIMARY}
               >
                 {FIND_SIMILAR_CTA}
                 {isSubmitting ? <SubmitPendingGlyph /> : null}
@@ -240,7 +240,7 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
           </div>
         ) : (
           <div className="pb-[var(--px-8)] pt-[var(--px-8)]">
-            <p className="mb-[var(--px-18)] text-[length:var(--px-16)] font-helvetica font-light leading-[var(--px-24)] text-[#d4d4d4]">
+            <p className="mb-[var(--px-18)] text-[length:var(--px-16)] font-helvetica font-light leading-[var(--px-24)] text-[var(--rx-color-text-secondary)]">
               {UPLOAD_OUTCOME_LINE}
             </p>
             {isDesktop ? (
@@ -262,7 +262,7 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
                 onAnalysis={onAnalysis}
               />
             )}
-            <p className="mt-[var(--px-14)] text-[length:var(--px-12)] font-helvetica font-light leading-[var(--px-18)] opacity-70">
+            <p className="mt-[var(--px-14)] text-[length:var(--px-12)] font-helvetica font-light leading-[var(--px-18)] text-[var(--rx-color-text-muted)]">
               {UPLOAD_PRIVACY_NOTE}{" "}
               <a
                 href={`${BASE_LANDING_URL}/trust`}
@@ -301,10 +301,10 @@ const SourceTab: React.FC<{ selected: boolean; label: string; onClick: () => voi
     aria-selected={selected}
     onClick={onClick}
     className={[
-      "relative top-px min-h-[var(--px-46)] shrink-0 border-b-2 px-[var(--px-24)] py-[var(--px-12)] font-fira text-[length:var(--px-12)] uppercase tracking-[var(--px-1)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)] max-[640px]:min-h-[var(--px-44)] max-[640px]:px-[var(--px-8)] max-[640px]:text-center",
+      "ws-focus-ring min-h-[var(--px-44)] shrink-0 border-r border-[var(--rx-color-border-subtle)] px-[var(--px-24)] py-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] transition-[background-color,color,box-shadow] duration-[var(--rx-duration-base)] ease-[var(--rx-ease-standard)] last:border-r-0 max-[640px]:px-[var(--px-8)] max-[640px]:text-center",
       selected
-        ? "border-[var(--color-accent,#EE4A26)] text-[var(--color-primary)]"
-        : "border-transparent text-[rgba(255,255,255,.55)] hover:text-[rgba(255,255,255,.7)]",
+        ? "bg-[var(--rx-color-overlay)] text-[var(--rx-color-text-primary)] shadow-[inset_0_-2px_0_0_var(--rx-color-accent)]"
+        : "text-[var(--rx-color-text-secondary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--rx-color-text-primary)]",
     ].join(" ")}
   >
     {label}

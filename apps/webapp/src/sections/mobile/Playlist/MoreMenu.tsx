@@ -7,6 +7,7 @@ import { usePlaylistStore } from "@resomix/stores";
 import { BASE_BETA_URL } from "@resomix/config";
 import { formatDuration, formatPercentage, usePlaylistExport, useAccess, type AccessAction } from "@resomix/hooks";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
+import { WORKSPACE_BTN_SECONDARY } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
 
 interface MoreMenuProps {
     onClose?: () => void;
@@ -166,7 +167,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                                 <>
                                                     <ThumbIcon
                                                         onClick={() => handleTrackRating(1)}
-                                                        className={`w-[var(--px-26)] h-[var(--px-26)] text-white ${upSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:cursor-pointer playlist-rating-thumb-up`}
+                                                        className={`h-[var(--px-26)] w-[var(--px-26)] text-[var(--rx-color-text-primary)] ${upSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:cursor-pointer playlist-rating-thumb-up`}
                                                         id={`playlist-table-thumb-up-${trackId}`}
                                                         innerClassName="playlist-rating-thumb-up"
                                                         data-track-id={trackId}
@@ -174,7 +175,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                                     />
                                                     <ThumbIcon
                                                         onClick={() => handleTrackRating(0)}
-                                                        className={`w-[var(--px-26)] h-[var(--px-26)] transform rotate-180 text-white ${downSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:cursor-pointer playlist-rating-thumb-down`}
+                                                        className={`h-[var(--px-26)] w-[var(--px-26)] rotate-180 text-[var(--rx-color-text-primary)] ${downSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} hover:cursor-pointer playlist-rating-thumb-down`}
                                                         id={`playlist-table-thumb-down-${trackId}`}
                                                         innerClassName="playlist-rating-thumb-down"
                                                         data-track-id={trackId}
@@ -207,7 +208,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                     <div className="flex flex-col gap-[var(--px-10)] w-full px-[var(--px-3)]">
                         {!isInput && (
                             <div className="w-full flex flex-col">
-                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-sonic-discovery-button" text="Chain Discover using this Track" customWidth="w-full" onClick={() => {
+                                <ButtonSleek transparent={true} className={`${WORKSPACE_BTN_SECONDARY} w-[var(--px-276)] text-[length:var(--px-14)] playlist-sonic-discovery-button`} text="Chain Discover using this Track" customWidth="w-full" onClick={() => {
                                     onClose?.();
                                     window.open(`${BASE_BETA_URL}/?id=${trackId}`, '_blank');
                                 }} id={`playlist-table-sonic-discovery-${trackId}`} />
@@ -215,16 +216,16 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                         )}
                         {isInput && (
                             <div className="w-full flex gap-2 flex-col">
-                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
-                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-apple-export-button" text="Export to Apple Music" customWidth="w-full" onClick={handleAppleExport} id={`playlist-hero-apple-export-button`} />
-                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-embed-button" text="Embed (iframe)" customWidth="w-full" onClick={handleEmbed} id={`playlist-hero-embed-button`} />
-                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-share-button" text="Share" customWidth="w-full" onClick={() => {
+                                <ButtonSleek transparent={true} className={`${WORKSPACE_BTN_SECONDARY} w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button`} text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
+                                <ButtonSleek transparent={true} className={`${WORKSPACE_BTN_SECONDARY} w-[var(--px-276)] text-[length:var(--px-14)] playlist-apple-export-button`} text="Export to Apple Music" customWidth="w-full" onClick={handleAppleExport} id={`playlist-hero-apple-export-button`} />
+                                <ButtonSleek transparent={true} className={`${WORKSPACE_BTN_SECONDARY} w-[var(--px-276)] text-[length:var(--px-14)] playlist-embed-button`} text="Embed (iframe)" customWidth="w-full" onClick={handleEmbed} id={`playlist-hero-embed-button`} />
+                                <ButtonSleek transparent={true} className={`${WORKSPACE_BTN_SECONDARY} w-[var(--px-276)] text-[length:var(--px-14)] playlist-share-button`} text="Share" customWidth="w-full" onClick={() => {
                                     withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => onShare?.());
                                 }} id={`playlist-hero-share-button`} />
                             </div>
                         )}
                         <div className="w-full flex flex-col">
-                            <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] menu-link" text="Close" customWidth="w-full" onClick={onClose || (() => { })} id={`beta-menu-close-button`} />
+                            <ButtonSleek transparent={true} className={`${WORKSPACE_BTN_SECONDARY} w-[var(--px-276)] text-[length:var(--px-14)] menu-link`} text="Close" customWidth="w-full" onClick={onClose || (() => { })} id={`beta-menu-close-button`} />
                         </div>
                     </div>
                 </div>

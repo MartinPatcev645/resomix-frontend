@@ -3,6 +3,7 @@ import { useTrackCountOptions } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 import { LockNudge } from "@/components/Entitlements/LockNudge.tsx";
 import { useEntitlementCta } from "@/utils/entitlementCta.ts";
+import { WORKSPACE_FOCUS_VISIBLE } from "./workspacePanelStyles.ts";
 import { DEPTH_LABEL } from "./workspaceCopy.ts";
 
 export const DepthControl: React.FC = () => {
@@ -14,12 +15,12 @@ export const DepthControl: React.FC = () => {
     <div className="flex flex-wrap items-center gap-[var(--px-8)]">
       <span
         id="workspace-depth-label"
-        className="font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-2)] opacity-50"
+        className="font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-muted)]"
       >
         {DEPTH_LABEL}
       </span>
       <div
-        className="flex border border-dotted border-slate-400"
+        className="flex overflow-hidden rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)]"
         role="group"
         aria-labelledby="workspace-depth-label"
       >
@@ -34,12 +35,13 @@ export const DepthControl: React.FC = () => {
               title={opt.locked ? opt.label : undefined}
               onClick={() => !opt.locked && setTopSk(opt.value)}
               className={[
-                "relative min-h-[var(--px-44)] min-w-[var(--px-44)] px-[var(--px-10)] font-fira text-[length:var(--px-11)] tracking-[var(--px-1)] transition-colors",
-                index < options.length - 1 ? "border-r border-dotted border-slate-400" : "",
+                WORKSPACE_FOCUS_VISIBLE,
+                "relative min-h-[var(--px-44)] min-w-[var(--px-44)] px-[var(--px-10)] font-fira text-[length:var(--px-11)] tracking-[var(--px-1)] transition-[background-color,color,border-color] duration-[var(--rx-duration-base)] ease-[var(--rx-ease-standard)]",
+                index < options.length - 1 ? "border-r border-[var(--rx-color-border-subtle)]" : "",
                 pressed
-                  ? "bg-[rgba(255,255,255,.08)] text-[var(--color-primary)]"
-                  : "text-[var(--color-primary)] opacity-70 hover:opacity-100",
-                opt.locked ? "cursor-not-allowed opacity-40" : "",
+                  ? "border-[var(--rx-color-border-strong)] bg-[rgba(255,255,255,0.06)] text-[var(--rx-color-text-primary)]"
+                  : "text-[var(--rx-color-text-secondary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--rx-color-text-primary)]",
+                opt.locked ? "cursor-not-allowed text-[var(--rx-color-disabled)]" : "",
               ].join(" ")}
             >
               {opt.value}

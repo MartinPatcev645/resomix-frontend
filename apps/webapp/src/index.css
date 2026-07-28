@@ -1,4 +1,34 @@
 :root {
+  /* Phase 1B precision-industrial tokens (verbatim from packages/ui design-system) */
+  --rx-color-canvas: #050505;
+  --rx-color-surface: #111111;
+  --rx-color-surface-raised: #171717;
+  --rx-color-overlay: rgba(255, 255, 255, 0.04);
+  --rx-color-text-primary: rgba(255, 255, 255, 0.96);
+  --rx-color-text-secondary: rgba(255, 255, 255, 0.8);
+  --rx-color-text-muted: rgba(255, 255, 255, 0.72);
+  --rx-color-border-subtle: rgba(255, 255, 255, 0.09);
+  --rx-color-border-default: rgba(255, 255, 255, 0.16);
+  --rx-color-border-strong: rgba(255, 255, 255, 0.24);
+  --rx-color-accent: #ee4a26;
+  --rx-color-accent-hover: #f46545;
+  --rx-color-accent-soft: rgba(238, 74, 38, 0.14);
+  --rx-color-focus: #ff8f74;
+  --rx-color-selected: rgba(238, 74, 38, 0.12);
+  --rx-color-playing: rgba(238, 74, 38, 0.2);
+  --rx-color-disabled: rgba(255, 255, 255, 0.42);
+  --rx-color-error: #ff7660;
+  --rx-color-score-fill: rgba(255, 255, 255, 0.52);
+  --rx-radius-panel: 0;
+  --rx-radius-control: 2px;
+  --rx-radius-tag: 2px;
+  --rx-notch-sm: 6px;
+  --rx-notch-md: 10px;
+  --rx-ring: 0 0 0 1px rgba(5, 5, 5, 0.95), 0 0 0 3px rgba(255, 143, 116, 0.92);
+  --rx-duration-fast: 120ms;
+  --rx-duration-base: 160ms;
+  --rx-ease-standard: ease;
+
   /* Dark theme (default) */
   --color-primary: #ffffff;
   --color-primary-background: #000;
@@ -214,5 +244,152 @@ html #stcm-wrapper .stcm-button-secondary:hover {
   .motion-safe\:animate-\[sd-pulse_2\.6s_ease-in-out_infinite\],
   .motion-safe\:animate-\[sd-dash_9s_linear_infinite\] {
     animation: none !important;
+  }
+}
+
+/* Workspace precision-industrial helpers (Stage A) */
+.ws-focus-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--rx-ring);
+}
+
+.ws-btn-primary {
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--rx-notch-sm)) 0,
+    100% var(--rx-notch-sm),
+    100% 100%,
+    0 100%
+  );
+}
+
+.ws-btn-primary:focus-visible {
+  clip-path: none;
+}
+
+.ws-mode-card-selected {
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--rx-notch-md)) 0,
+    100% var(--rx-notch-md),
+    100% 100%,
+    0 100%
+  );
+}
+
+.ws-mode-card-selected:focus-visible {
+  clip-path: none;
+}
+
+@media (max-width: 1023px) {
+  .ws-mode-card-selected {
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--rx-notch-sm)) 0,
+      100% var(--rx-notch-sm),
+      100% 100%,
+      0 100%
+    );
+  }
+
+  .ws-mode-card-selected:focus-visible {
+    clip-path: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-transition {
+    transition-duration: 0ms !important;
+  }
+}
+
+/* Playlist / results precision-industrial helpers (Stage B) */
+.pl-focus-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--rx-ring);
+}
+
+.pl-btn-primary {
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--rx-notch-sm)) 0,
+    100% var(--rx-notch-sm),
+    100% 100%,
+    0 100%
+  );
+}
+
+.pl-btn-primary:focus-visible {
+  clip-path: none;
+}
+
+.pl-score-rail {
+  position: relative;
+  width: 100%;
+  height: var(--px-8);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pl-score-rail::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent calc(10% - 1px),
+    rgba(255, 255, 255, 0.18) calc(10% - 1px),
+    rgba(255, 255, 255, 0.18) 10%
+  );
+  opacity: 0.55;
+}
+
+.pl-score-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--rx-color-score-fill);
+  z-index: 1;
+}
+
+.pl-row[data-hovered="true"] {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.pl-row[data-selected="true"] {
+  background: var(--rx-color-selected);
+  box-shadow: inset 3px 0 0 0 var(--rx-color-accent);
+}
+
+.pl-row[data-playing="true"] {
+  background: var(--rx-color-playing);
+  box-shadow: inset 3px 0 0 0 var(--rx-color-accent);
+}
+
+.pl-row[data-paused="true"] {
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 3px 0 0 0 var(--rx-color-border-strong);
+}
+
+.pl-row[data-unavailable="true"] .pl-unavailable-dim {
+  opacity: 0.68;
+}
+
+.pl-sticky-strip__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.pl-sticky-strip__text > * {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-transition {
+    transition-duration: 0ms !important;
   }
 }

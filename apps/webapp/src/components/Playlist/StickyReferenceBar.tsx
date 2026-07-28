@@ -82,7 +82,7 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
   if (!visible || !track) return null;
 
   const barClassName = [
-    "pointer-events-auto fixed inset-x-0 z-[40] border-b bg-[#0b0b0b]",
+    "pointer-events-auto fixed inset-x-0 z-[40] border-b bg-[#090909]",
     PLAYLIST_DIVIDER_STRONG,
   ].join(" ");
 
@@ -94,19 +94,19 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
       aria-label="Reference track context"
       data-testid="playlist-sticky-reference-bar"
     >
-      <div className="webapp-approved-container flex min-h-[3.5rem] items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] sm:px-[var(--px-32)]">
+      <div className={`webapp-approved-container flex min-h-[3.5rem] items-center gap-0 overflow-hidden border-x border-[var(--rx-color-border-default)] bg-[#090909] px-0 py-0 sm:px-0 ${isRefPlaying ? "shadow-[inset_3px_0_0_0_var(--rx-color-accent)]" : ""}`}>
         <button
           type="button"
           onClick={handlePlay}
           aria-label={isRefPlaying ? "Pause reference track" : "Play reference track"}
-          className="relative flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center rounded-full border border-solid border-[var(--playlist-divider-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
+          className={`relative flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center border-r border-[var(--rx-color-border-subtle)] bg-transparent pl-focus-ring ${isRefPlaying ? "border-[rgba(238,74,38,0.4)] bg-[rgba(238,74,38,0.16)]" : ""}`}
           id="playlist-sticky-ref-play"
         >
           <TrackArtwork
             artworkUrl={track.artwork_url}
-            className="absolute inset-[var(--px-4)] h-auto w-auto rounded-full"
+            className="absolute inset-[var(--px-4)] h-auto w-auto rounded-[var(--rx-radius-control)]"
           />
-          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45">
+          <span className="absolute inset-0 flex items-center justify-center bg-black/45">
             <img
               src={isRefPlaying ? PauseSvg : PlaySvg}
               alt=""
@@ -115,15 +115,15 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
             />
           </span>
         </button>
-        <div className="min-w-0 flex-1">
-          <div className="truncate font-helvetica text-[length:var(--px-13)] font-light uppercase leading-[var(--px-16)] text-[var(--color-primary)]">
+        <div className="pl-sticky-strip__text min-w-0 flex-1 px-[var(--px-12)] py-[var(--px-8)]">
+          <div className="font-helvetica text-[length:var(--px-13)] font-light uppercase leading-[var(--px-16)] text-[var(--rx-color-text-primary)]">
             {displayOrNA(track.title)}
           </div>
-          <div className="truncate font-helvetica text-[length:var(--px-12)] font-light leading-[var(--px-15)] text-[var(--color-primary-hover)]">
+          <div className="font-helvetica text-[length:var(--px-12)] font-light leading-[var(--px-15)] text-[var(--rx-color-text-secondary)]">
             {displayOrNA(track.artist)}
           </div>
         </div>
-        <div className="shrink-0 font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-75">
+        <div className="shrink-0 whitespace-nowrap border-l border-[var(--rx-color-border-subtle)] px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">
           {resultCount} result{resultCount === 1 ? "" : "s"}
         </div>
       </div>

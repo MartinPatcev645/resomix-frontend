@@ -13,7 +13,7 @@ import {
   ANALYSE_TRACK_CTA,
   UPLOAD_PRIVACY_NOTE,
 } from "./workspaceCopy.ts";
-import { WORKSPACE_PANEL_CLASS, WORKSPACE_STAGE_MIN_H } from "./workspacePanelStyles.ts";
+import { WORKSPACE_PANEL_CLASS, WORKSPACE_STAGE_MIN_H, WORKSPACE_BTN_PRIMARY, WORKSPACE_BTN_SECONDARY } from "./workspacePanelStyles.ts";
 import { SubmitPendingGlyph, WorkspaceStage } from "./WorkspaceStage.tsx";
 import {
   clearAnalysisCache,
@@ -115,7 +115,7 @@ export const WorkspaceAnalysisPanel: React.FC = () => {
             <button
               type="button"
               onClick={resetAll}
-              className="inline-flex min-h-[var(--px-44)] items-center justify-center rounded-full border border-[rgba(255,255,255,.14)] px-[var(--px-16)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] hover:bg-[rgba(255,255,255,.06)]"
+              className={WORKSPACE_BTN_SECONDARY}
             >
               Try again
             </button>
@@ -160,8 +160,8 @@ export const WorkspaceAnalysisPanel: React.FC = () => {
             ) : (
               <div
                 className={[
-                  "border border-dashed border-slate-400 px-[var(--px-20)] py-[var(--px-28)] text-center transition-colors",
-                  dragOver ? "bg-[rgba(255,255,255,.06)]" : "",
+                  "border border-dashed border-[var(--rx-color-border-default)] px-[var(--px-20)] py-[var(--px-28)] text-center transition-colors duration-[var(--rx-duration-base)]",
+                  dragOver ? "border-[var(--rx-color-accent)] bg-[var(--rx-color-accent-soft)]" : "bg-[rgba(255,255,255,0.02)]",
                 ].join(" ")}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -183,7 +183,7 @@ export const WorkspaceAnalysisPanel: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => inputRef.current?.click()}
-                  className="mt-[var(--px-14)] inline-block border border-[rgba(255,255,255,.14)] px-[var(--px-14)] py-[var(--px-8)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] hover:border-slate-300"
+                  className={`mt-[var(--px-14)] inline-block ${WORKSPACE_BTN_SECONDARY}`}
                 >
                   Choose file
                 </button>
@@ -211,7 +211,7 @@ export const WorkspaceAnalysisPanel: React.FC = () => {
                 type="button"
                 disabled={!pendingFile || submitPending}
                 onClick={submitAnalysis}
-                className="inline-flex min-h-[var(--px-44)] items-center justify-center rounded-full bg-[var(--color-primary)] px-[var(--px-22)] font-fira text-[length:var(--px-12)] font-medium uppercase tracking-[var(--px-2)] text-[var(--color-text-primary,#000)] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                className={WORKSPACE_BTN_PRIMARY}
               >
                 {ANALYSE_TRACK_CTA}
                 {submitPending ? <SubmitPendingGlyph /> : null}

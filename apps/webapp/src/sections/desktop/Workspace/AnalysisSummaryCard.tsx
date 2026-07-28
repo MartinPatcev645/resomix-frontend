@@ -35,6 +35,7 @@ import {
   READING_TAB_DJ,
   READING_TAB_PRODUCER,
 } from "./workspaceCopy.ts";
+import { WORKSPACE_BADGE, WORKSPACE_BTN_PRIMARY, WORKSPACE_BTN_SECONDARY, WORKSPACE_FOCUS_VISIBLE } from "./workspacePanelStyles.ts";
 
 const fmtDuration = (ms: number) => {
   if (!ms) return "N/A";
@@ -179,17 +180,17 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
         <h2
           id="analysis-summary-heading"
           tabIndex={-1}
-          className="m-0 font-helvetica text-[length:var(--px-18)] font-medium uppercase outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
+          className={`m-0 font-helvetica text-[length:var(--px-18)] font-medium uppercase outline-none ${WORKSPACE_FOCUS_VISIBLE}`}
         >
           {ANALYSIS_SUMMARY_HEADING}
         </h2>
-        <span className="border border-[rgba(255,255,255,.14)] px-[var(--px-10)] py-[var(--px-6)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-75">
+        <span className={WORKSPACE_BADGE}>
           {displayOrNA(data.identity.filename)}
         </span>
       </div>
 
       <div
-        className="grid grid-cols-2 border border-[rgba(255,255,255,.14)] bg-[#101010] sm:grid-cols-3 lg:grid-cols-5"
+        className="grid grid-cols-2 border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] sm:grid-cols-3 lg:grid-cols-5"
         role="group"
         aria-label="Core facts"
       >
@@ -214,7 +215,7 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
           {showEnergy && (
             <figure className="m-0">
               <div
-                className="border border-[rgba(255,255,255,.14)] bg-[#101010]"
+                className="border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)]"
                 role="img"
                 aria-labelledby="energy-journey-title energy-journey-desc"
               >
@@ -251,7 +252,7 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
               {moodChips.map((chip) => (
                 <span
                   key={chip.label}
-                  className="border border-[rgba(255,255,255,.14)] px-[var(--px-8)] py-[var(--px-4)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-75"
+                  className={WORKSPACE_BADGE}
                 >
                   {chip.label} {chip.value}
                 </span>
@@ -260,7 +261,7 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
           )}
         </div>
 
-        <div className="border border-[rgba(255,255,255,.14)] bg-[#101010] p-[var(--px-16)]">
+        <div className="border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] p-[var(--px-16)]">
           <div className="mb-[var(--px-12)] flex flex-wrap gap-[var(--px-4)]" role="tablist" aria-label="Reading">
             {readings.map((r) => (
               <button
@@ -270,10 +271,11 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
                 aria-selected={readingTab === r.key}
                 onClick={() => setReadingTab(r.key)}
                 className={[
-                  "min-h-[var(--px-44)] border px-[var(--px-10)] py-[var(--px-6)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-2)] transition-colors",
+                  WORKSPACE_FOCUS_VISIBLE,
+                  "min-h-[var(--px-44)] border px-[var(--px-10)] py-[var(--px-6)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-2)] transition-colors duration-[var(--rx-duration-base)]",
                   readingTab === r.key
-                    ? "border-[rgba(255,255,255,.14)] bg-[rgba(255,255,255,.04)] text-[var(--color-primary)] before:text-[var(--color-accent,#EE4A26)] before:content-['▸\\00a0']"
-                    : "border-transparent text-[var(--color-primary)] opacity-50 hover:opacity-80",
+                    ? "border-[var(--rx-color-border-default)] bg-[var(--rx-color-overlay)] text-[var(--rx-color-text-primary)] shadow-[inset_0_-2px_0_0_var(--rx-color-accent)]"
+                    : "border-transparent text-[var(--rx-color-text-muted)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--rx-color-text-primary)]",
                 ].join(" ")}
               >
                 {r.label}
@@ -285,7 +287,7 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
               <div
                 key={r.key}
                 role="tabpanel"
-                className="text-[length:var(--px-14)] font-helvetica font-light leading-[var(--px-22)] opacity-80"
+                className="text-[length:var(--px-14)] font-helvetica font-light leading-[var(--px-22)] text-[var(--rx-color-text-secondary)]"
               >
                 {r.body}
                 <span className="mt-[var(--px-8)] block text-[length:var(--px-12)] opacity-60">{r.closer}</span>
@@ -301,21 +303,21 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
           disabled={!playlistUuid}
           title={playlistUuid ? undefined : ANALYSIS_SIBLING_PLAYLIST_UNAVAILABLE}
           onClick={() => playlistUuid && navigate(`/sonic-discovery?id=${playlistUuid}`)}
-          className="inline-flex min-h-[var(--px-44)] items-center justify-center rounded-full bg-[var(--color-primary)] px-[var(--px-22)] font-fira text-[length:var(--px-12)] font-medium uppercase tracking-[var(--px-2)] text-[var(--color-text-primary,#000)] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className={WORKSPACE_BTN_PRIMARY}
         >
           {FIND_SIMILAR_FROM_ANALYSIS_CTA}
         </button>
         <button
           type="button"
           onClick={() => navigate(`/analysis?id=${analysisId}`)}
-          className="inline-flex min-h-[var(--px-44)] items-center justify-center rounded-full border border-[rgba(255,255,255,.14)] px-[var(--px-22)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--color-primary)] hover:border-slate-300"
+          className={WORKSPACE_BTN_SECONDARY}
         >
           {OPEN_FULL_INTELLIGENCE_CTA}
         </button>
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex min-h-[var(--px-44)] items-center justify-center rounded-full border border-[rgba(255,255,255,.14)] px-[var(--px-22)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--color-primary)] hover:border-slate-300"
+          className={WORKSPACE_BTN_SECONDARY}
         >
           {ANALYSE_ANOTHER_CTA}
         </button>
@@ -332,7 +334,7 @@ const FactCard: React.FC<{ value: string; label: string; className?: string }> =
 }) => (
   <div
     className={[
-      "border-l border-dotted border-[rgba(255,255,255,.08)] p-[var(--px-12)] first:border-l-0",
+      "border-l border-[var(--rx-color-border-subtle)] p-[var(--px-12)] first:border-l-0",
       className,
     ].join(" ")}
   >
@@ -380,7 +382,7 @@ const StructureStrip: React.FC<{ segments: MergedStructureSegment[]; durationMs:
     <div className={scrollable ? "overflow-x-auto overscroll-contain" : undefined}>
       <div
         className={[
-          "flex h-[var(--px-28)] overflow-hidden border border-[rgba(255,255,255,.14)]",
+          "flex h-[var(--px-28)] overflow-hidden border border-[var(--rx-color-border-default)]",
           scrollable ? "min-w-[140%]" : "",
         ].join(" ")}
         role="img"
@@ -394,7 +396,7 @@ const StructureStrip: React.FC<{ segments: MergedStructureSegment[]; durationMs:
             <span
               key={`${s.label}-${i}`}
               className={[
-                "flex min-w-0 items-center justify-center border-l border-dotted border-[rgba(255,255,255,.08)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] first:border-l-0",
+                "flex min-w-0 items-center justify-center border-l border-[var(--rx-color-border-subtle)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] first:border-l-0",
                 hot ? "bg-[rgba(238,74,38,.14)] text-[var(--color-primary)]" : "bg-[rgba(255,255,255,.02)] text-[var(--color-primary)] opacity-70",
               ].join(" ")}
               style={{ flex: `${flex} 0 0` }}

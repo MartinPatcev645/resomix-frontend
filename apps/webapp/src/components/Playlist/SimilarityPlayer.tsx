@@ -46,7 +46,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
   }, [ctl.attachOverviewElement, ctl.containerRef]);
 
   const skipClass =
-    "font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-9)] flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center gap-[var(--px-3)] px-[var(--px-4)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)] player-control";
+    "font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-9)] flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center gap-[var(--px-3)] rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-8)] text-[var(--rx-color-text-secondary)] cursor-pointer hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] player-control pl-focus-ring";
 
   const seekBar = ctl.isPreview ? (
     <PreviewProgressBar
@@ -120,7 +120,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
               type="button"
               onClick={ctl.toggleMute}
               aria-label={volume === 0 ? "Unmute" : "Mute"}
-              className="flex h-[var(--px-44)] w-[var(--px-16)] shrink-0 items-center justify-center player-control player-control-mute-toggle"
+              className="flex h-[var(--px-44)] min-w-[var(--px-44)] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)] transition-[background-color,border-color,color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] player-control player-control-mute-toggle pl-focus-ring"
             >
               {volume === 0 ? (
                 <img src={SoundMuteSvg} draggable={false} alt="" aria-hidden="true" className="h-full w-full" />
@@ -131,7 +131,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
               )}
             </button>
             <div className="relative flex min-w-0 flex-1 items-center">
-              <div className="absolute h-[var(--px-1)] w-full bg-white/20" />
+              <div className="absolute h-[var(--px-1)] w-full bg-[rgba(255,255,255,0.14)]" />
               <input
                 type="range"
                 min="0"
@@ -140,7 +140,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
                 value={volume}
                 onChange={ctl.handleVolumeChange}
                 aria-label="Volume"
-                className="relative z-10 h-[var(--px-44)] w-full cursor-pointer appearance-none bg-transparent [&::-moz-range-thumb]:h-[var(--px-8)] [&::-moz-range-thumb]:w-[var(--px-2)] [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-none [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-white [&::-moz-range-track]:h-[var(--px-1)] [&::-moz-range-track]:border-none [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:h-[var(--px-8)] [&::-webkit-slider-thumb]:w-[var(--px-2)] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-track]:h-[var(--px-1)] [&::-webkit-slider-track]:rounded-none [&::-webkit-slider-track]:bg-transparent player-control player-control-volume-slider"
+                className="relative z-10 h-[var(--px-44)] w-full cursor-pointer appearance-none bg-transparent pl-focus-ring [&::-moz-range-thumb]:h-[var(--px-8)] [&::-moz-range-thumb]:w-[var(--px-2)] [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-none [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-[rgba(255,255,255,0.8)] [&::-moz-range-track]:h-[var(--px-1)] [&::-moz-range-track]:border-none [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:h-[var(--px-8)] [&::-webkit-slider-thumb]:w-[var(--px-2)] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-none [&::-webkit-slider-thumb]:bg-[rgba(255,255,255,0.8)] [&::-webkit-slider-track]:h-[var(--px-1)] [&::-webkit-slider-track]:rounded-none [&::-webkit-slider-track]:bg-transparent player-control player-control-volume-slider"
               />
             </div>
           </div>

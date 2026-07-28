@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { getAllPlaylists } from "@resomix/api-client";
 import { displayArtistOrOmit, sanitizeWorkspaceTitle } from "@/utils/trackUtils.ts";
 import { useRecentAnalyses } from "@/pages/analysis/useRecentAnalyses.ts";
-import { PLAYLIST_DIVIDER_BORDER, PLAYLIST_DIVIDER_STRONG } from "@/utils/playlistChrome.ts";
+import { WORKSPACE_FOCUS_VISIBLE } from "./workspacePanelStyles.ts";
 import type { WorkspaceMode } from "./WorkspaceShell.tsx";
 
 interface RailPlaylist {
@@ -25,25 +25,25 @@ function relativeWhen(iso: string): string {
 }
 
 const primaryPanelClass =
-  `border ${PLAYLIST_DIVIDER_STRONG} bg-[rgba(255,255,255,.03)] px-[var(--px-18)] py-[var(--px-16)]`;
+  `border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] px-[var(--px-18)] py-[var(--px-16)]`;
 
 const secondaryPanelClass =
-  `border ${PLAYLIST_DIVIDER_BORDER} bg-[rgba(255,255,255,.015)] px-[var(--px-18)] py-[var(--px-16)] opacity-90`;
+  `border border-[var(--rx-color-border-subtle)] bg-[rgba(255,255,255,0.02)] px-[var(--px-18)] py-[var(--px-16)]`;
 
 const primaryHeadingClass =
-  "mb-[var(--px-10)] font-fira text-[length:var(--px-11)] font-medium uppercase tracking-[var(--px-2)] text-[var(--color-primary)]";
+  "mb-[var(--px-10)] font-fira text-[length:var(--px-11)] font-medium uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-primary)]";
 
 const secondaryHeadingClass =
-  "mb-[var(--px-8)] font-fira text-[length:var(--px-10)] font-medium uppercase tracking-[var(--px-2)] text-[var(--color-primary)] opacity-60";
+  "mb-[var(--px-8)] font-fira text-[length:var(--px-10)] font-medium uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-muted)]";
 
 const itemBtnClass =
-  "block w-full py-[var(--px-8)] text-left text-[length:var(--px-13)] font-helvetica font-light text-[var(--color-primary)] opacity-80 transition-opacity hover:opacity-100 min-h-[var(--px-44)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]";
+  `block w-full py-[var(--px-8)] text-left text-[length:var(--px-13)] font-helvetica font-light text-[var(--rx-color-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.035)] hover:text-[var(--rx-color-text-primary)] min-h-[var(--px-44)] ${WORKSPACE_FOCUS_VISIBLE}`;
 
 const activeItemBtnClass =
-  "relative block w-full border-l-[length:var(--px-3)] border-l-[var(--color-accent,#EE4A26)] bg-[rgba(238,74,38,.1)] py-[var(--px-8)] pl-[calc(var(--px-8)+var(--px-2))] text-left text-[length:var(--px-13)] font-helvetica font-light text-[var(--color-primary)] min-h-[var(--px-44)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]";
+  `relative block w-full border-l-[length:var(--px-3)] border-l-[var(--rx-color-accent)] bg-[var(--rx-color-selected)] py-[var(--px-8)] pl-[calc(var(--px-8)+var(--px-2))] text-left text-[length:var(--px-13)] font-helvetica font-light text-[var(--rx-color-text-primary)] min-h-[var(--px-44)] ${WORKSPACE_FOCUS_VISIBLE}`;
 
 const metaClass =
-  "mt-[var(--px-2)] block font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-55";
+  "mt-[var(--px-2)] block font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]";
 
 /**
  * Variant A signed-in rail — recent similarity playlists, recent analyses, Library link.
@@ -90,7 +90,7 @@ export const WorkspaceRail: React.FC<{ mode?: WorkspaceMode }> = ({ mode = "disc
         ) : null}
       </h2>
       {playlists.length === 0 ? (
-        <p className="font-fira text-[length:var(--px-10)] opacity-45">No playlists yet.</p>
+        <p className="font-fira text-[length:var(--px-10)] text-[var(--rx-color-disabled)]">No playlists yet.</p>
       ) : (
         <ul className={`divide-y divide-solid divide-[var(--playlist-divider)]`}>
           {playlists.map((p) => {
@@ -126,7 +126,7 @@ export const WorkspaceRail: React.FC<{ mode?: WorkspaceMode }> = ({ mode = "disc
         ) : null}
       </h2>
       {analyses.length === 0 ? (
-        <p className="font-fira text-[length:var(--px-10)] opacity-45">No analyses yet.</p>
+        <p className="font-fira text-[length:var(--px-10)] text-[var(--rx-color-disabled)]">No analyses yet.</p>
       ) : (
         <ul className={`divide-y divide-solid divide-[var(--playlist-divider)]`}>
           {analyses.map((a) => (

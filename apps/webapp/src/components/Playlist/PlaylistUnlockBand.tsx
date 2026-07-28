@@ -1,7 +1,11 @@
 import React from "react";
 import { ButtonSleek } from "@resomix/ui";
 import { useEntitlementCta } from "@/utils/entitlementCta.ts";
-import { WORKSPACE_PANEL_CLASS } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
+import {
+  WORKSPACE_BTN_PRIMARY,
+  WORKSPACE_BTN_SECONDARY,
+  WORKSPACE_PANEL_CLASS,
+} from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
 
 export interface PlaylistUnlockBandProps {
   isGuest: boolean;
@@ -54,20 +58,20 @@ export const PlaylistUnlockBand: React.FC<PlaylistUnlockBandProps> = ({
             <ButtonSleek
               text="Create Free Account"
               onClick={() => triggerCta("register")}
-              className="min-h-[var(--px-44)]"
+              className={`${WORKSPACE_BTN_PRIMARY} min-h-[var(--px-44)]`}
             />
             <ButtonSleek
               text="Log In"
               onClick={() => triggerCta("login")}
               transparent
-              className="min-h-[var(--px-44)]"
+              className={`${WORKSPACE_BTN_SECONDARY} min-h-[var(--px-44)]`}
             />
           </>
         ) : (
           <ButtonSleek
             text="Subscribe"
             onClick={() => triggerCta("subscribe")}
-            className="min-h-[var(--px-44)]"
+            className={`${WORKSPACE_BTN_PRIMARY} min-h-[var(--px-44)]`}
           />
         )}
       </div>
