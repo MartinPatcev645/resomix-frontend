@@ -94,6 +94,9 @@ export const ANALYSIS_UPLOAD_QUOTA_HINT =
   "Counts against your monthly upload allowance.";
 export const ANALYSE_TRACK_CTA = "Analyse track";
 
+/** Shown first while the file uploads — carries a live neon upload-% counter. */
+export const ANALYSIS_UPLOAD_STEP = "Uploading file";
+
 export const ANALYSIS_PROCESSING_STEPS = [
   "Queued",
   "Processing — PYXIS-1 full analysis",

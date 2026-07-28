@@ -5,6 +5,7 @@ import { useAuthStore } from "@resomix/stores";
 import { useTrackAnalysis } from "@/pages/analysis/useTrackAnalysis.ts";
 import { AnalysisProcessingPanel } from "./AnalysisProcessingPanel.tsx";
 import { AnalysisSummaryCard } from "./AnalysisSummaryCard.tsx";
+import { ReferenceChip } from "./ReferenceChip.tsx";
 import {
   ANALYSIS_UPLOAD_FORMAT,
   ANALYSIS_UPLOAD_HEADING,
@@ -66,9 +67,6 @@ export const WorkspaceAnalysisPanel: React.FC = () => {
     reset();
     if (inputRef.current) inputRef.current.value = "";
   };
-
-  const processingStep =
-    status === "uploading" ? 0 : status === "analyzing" ? (progress >= 85 ? 2 : 1) : status === "done" ? 2 : 0;
 
   const showSummary = status === "done" && data && analysisId;
   const showProcessing = status === "uploading" || status === "analyzing";
@@ -134,7 +132,7 @@ export const WorkspaceAnalysisPanel: React.FC = () => {
         )}
 
         {showProcessing && !showError && (
-          <AnalysisProcessingPanel activeStep={processingStep} fileName={fileName} />
+          <AnalysisProcessingPanel status={status} progress={progress} fileName={fileName} />
         )}
 
         {!showSummary && !showProcessing && !showError && (
@@ -146,41 +144,51 @@ export const WorkspaceAnalysisPanel: React.FC = () => {
               className="hidden"
               onChange={(e) => pickFile(e.target.files?.[0])}
             />
-            <div
-              className={[
-                "border border-dashed border-slate-400 px-[var(--px-20)] py-[var(--px-28)] text-center transition-colors",
-                dragOver ? "bg-[rgba(255,255,255,.06)]" : "",
-              ].join(" ")}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragOver(true);
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragOver(false);
-                pickFile(e.dataTransfer.files?.[0]);
-              }}
-            >
-              <p className="mb-[var(--px-4)] text-[length:var(--px-15)] font-helvetica font-light text-[var(--color-primary)]">
-                {ANALYSIS_UPLOAD_HEADING}
-              </p>
-              <p className="mt-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50">
-                {ANALYSIS_UPLOAD_FORMAT}
-              </p>
-              <button
-                type="button"
-                onClick={() => inputRef.current?.click()}
-                className="mt-[var(--px-14)] inline-block border border-[rgba(255,255,255,.14)] px-[var(--px-14)] py-[var(--px-8)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] hover:border-slate-300"
+            {pendingFile ? (
+              // Selected-file preview — same chip as the similarity upload flow, for consistency.
+              <ReferenceChip
+                reference={{
+                  title: pendingFile.name.replace(/\.[^.]+$/, ""),
+                  source: "upload",
+                  detail: pendingFile.name,
+                }}
+                onChange={() => {
+                  setPendingFile(null);
+                  if (inputRef.current) inputRef.current.value = "";
+                }}
+              />
+            ) : (
+              <div
+                className={[
+                  "border border-dashed border-slate-400 px-[var(--px-20)] py-[var(--px-28)] text-center transition-colors",
+                  dragOver ? "bg-[rgba(255,255,255,.06)]" : "",
+                ].join(" ")}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  pickFile(e.dataTransfer.files?.[0]);
+                }}
               >
-                Choose file
-              </button>
-              {pendingFile && (
-                <p className="mt-[var(--px-12)] truncate font-fira text-[length:var(--px-11)] opacity-70">
-                  {pendingFile.name}
+                <p className="mb-[var(--px-4)] text-[length:var(--px-15)] font-helvetica font-light text-[var(--color-primary)]">
+                  {ANALYSIS_UPLOAD_HEADING}
                 </p>
-              )}
-            </div>
+                <p className="mt-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50">
+                  {ANALYSIS_UPLOAD_FORMAT}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="mt-[var(--px-14)] inline-block border border-[rgba(255,255,255,.14)] px-[var(--px-14)] py-[var(--px-8)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] hover:border-slate-300"
+                >
+                  Choose file
+                </button>
+              </div>
+            )}
 
             <p className="mt-[var(--px-14)] text-[length:var(--px-12)] font-helvetica font-light leading-[var(--px-18)] opacity-70">
               {UPLOAD_PRIVACY_NOTE}{" "}
