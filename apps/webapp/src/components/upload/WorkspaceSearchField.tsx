@@ -2,8 +2,10 @@ import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { SearchResult } from "@resomix/hooks";
 import { useWorkspaceSearch } from "@/hooks/useWorkspaceSearch.ts";
 
+import { WORKSPACE_FIELD_CLASS, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
+
 const OVERLAY_CLASS =
-  "absolute left-0 right-0 top-full z-40 max-h-[22rem] overflow-y-auto overscroll-contain border border-[rgba(255,255,255,.14)] border-t-0 bg-[#0d0d0d] shadow-[0_8px_24px_rgba(0,0,0,.45)]";
+  "absolute left-0 right-0 top-full z-40 max-h-[22rem] overflow-y-auto overscroll-contain border border-[var(--rx-color-border-default)] border-t-0 bg-[var(--rx-color-surface)] shadow-[0_8px_24px_rgba(0,0,0,.45)]";
 
 interface WorkspaceSearchFieldProps {
   onTrackSelect?: (track: SearchResult) => void;
@@ -93,8 +95,8 @@ export const WorkspaceSearchField: React.FC<WorkspaceSearchFieldProps> = ({
     <div ref={rootRef} className="relative min-w-0 w-full flex-1">
       <div
         className={[
-          "flex h-[var(--px-52)] w-full border border-[rgba(255,255,255,.16)] bg-[#0b0b0b] transition-colors hover:border-[rgba(255,255,255,.28)] focus-within:border-[rgba(238,74,38,.55)]",
-          showDropdown ? "border-b-0" : "",
+          `flex ${WORKSPACE_FIELD_CLASS} focus-within:shadow-[var(--rx-ring)]`,
+          showDropdown ? "rounded-b-none" : "",
         ].join(" ")}
       >
         <input
@@ -125,7 +127,7 @@ export const WorkspaceSearchField: React.FC<WorkspaceSearchFieldProps> = ({
           onKeyDown={onInputKeyDown}
           placeholder="Search by artist or title…"
           aria-label="Search the Resomix index by artist or title"
-          className="min-w-0 flex-1 border-0 bg-transparent px-[var(--px-18)] font-fira text-[length:var(--px-15)] tracking-[0.02em] text-[var(--color-primary)] placeholder:font-fira placeholder:text-[rgba(255,255,255,.55)] focus:outline-none"
+          className="min-w-0 flex-1 border-0 bg-transparent px-[var(--px-18)] font-fira text-[length:var(--px-15)] tracking-[0.02em] text-[var(--rx-color-text-primary)] placeholder:font-fira placeholder:text-[var(--rx-color-text-muted)] focus:outline-none"
         />
       </div>
       {showDropdown && (
@@ -147,9 +149,9 @@ export const WorkspaceSearchField: React.FC<WorkspaceSearchFieldProps> = ({
                 id={`${listboxId}-opt-${index}`}
                 aria-selected={activeIndex === index}
                 className={[
-                  "search-dropdown-item flex w-full items-center justify-between px-[var(--px-14)] py-[var(--px-10)] text-left text-[length:var(--px-13)] text-[var(--color-primary)] hover:bg-[rgba(255,255,255,.05)]",
+                  `${WORKSPACE_FOCUS_VISIBLE} search-dropdown-item flex w-full items-center justify-between px-[var(--px-14)] py-[var(--px-10)] text-left text-[length:var(--px-13)] text-[var(--rx-color-text-primary)] hover:bg-[rgba(255,255,255,0.035)]`,
                   compact ? "gap-[var(--px-12)]" : "gap-[var(--px-16)]",
-                  activeIndex === index ? "bg-[rgba(255,255,255,.05)] opacity-100" : "opacity-75 hover:opacity-100",
+                  activeIndex === index ? "bg-[rgba(255,255,255,0.04)]" : "text-[var(--rx-color-text-secondary)] hover:text-[var(--rx-color-text-primary)]",
                 ].join(" ")}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => selectResult(item)}

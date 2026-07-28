@@ -22,11 +22,11 @@ interface InputPlayerProps {
 }
 
 const SKIP_DESKTOP_CLASS =
-  "font-fira text-[length:var(--px-9)] flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center gap-[var(--px-3)] px-[var(--px-4)] cursor-pointer hover:bg-[var(--color-primary-background)] transition-colors rounded-sm shadow-[0_0_0_1px_var(--color-primary-background)] player-control";
+  "font-fira text-[length:var(--px-9)] flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center gap-[var(--px-3)] rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-8)] text-[var(--rx-color-text-secondary)] cursor-pointer hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] player-control pl-focus-ring";
 
 /** Mobile — mono micro inline skips (no boxed chrome). */
 const SKIP_MOBILE_CLASS =
-  "font-fira text-[length:var(--px-9)] flex min-h-[var(--px-44)] min-w-[var(--px-44)] shrink-0 items-center justify-center gap-[var(--px-2)] px-[var(--px-4)] cursor-pointer opacity-75 hover:opacity-100 player-control";
+  "font-fira text-[length:var(--px-9)] flex min-h-[var(--px-44)] min-w-[var(--px-44)] shrink-0 items-center justify-center gap-[var(--px-2)] rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-8)] text-[var(--rx-color-text-secondary)] cursor-pointer hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] player-control pl-focus-ring";
 
 const InputPlayer: React.FC<InputPlayerProps> = ({
   trackId,
@@ -124,13 +124,13 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
 
   const volumeControl = (
     <div
-      className={`flex w-[var(--px-64)] shrink-0 items-center gap-[var(--px-6)] max-[767px]:min-w-0 max-[767px]:flex-1 ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
+      className={`player-control-volume-group flex w-[var(--px-64)] shrink-0 items-center gap-[var(--px-6)] max-[767px]:min-w-0 max-[767px]:flex-1 ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
     >
       <button
         type="button"
         onClick={ctl.toggleMute}
         aria-label={volume === 0 ? "Unmute" : "Mute"}
-        className="flex h-[var(--px-44)] w-[var(--px-16)] shrink-0 items-center justify-center player-control player-control-mute-toggle"
+        className="flex h-[var(--px-44)] min-w-[var(--px-44)] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)] transition-[background-color,border-color,color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] player-control player-control-mute-toggle pl-focus-ring"
       >
         {volume === 0 ? (
           <img src={SoundMuteSvg} draggable={false} alt="" aria-hidden="true" className="h-full w-full" />
@@ -141,7 +141,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
         )}
       </button>
       <div className="relative flex min-w-0 flex-1 items-center">
-        <div className="absolute h-[var(--px-1)] w-full bg-white/20" />
+        <div className="absolute h-[var(--px-1)] w-full bg-[rgba(255,255,255,0.14)]" />
         <input
           type="range"
           min="0"
@@ -150,7 +150,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
           value={volume}
           onChange={ctl.handleVolumeChange}
           aria-label="Volume"
-          className="relative z-10 h-[var(--px-44)] w-full cursor-pointer appearance-none bg-transparent [&::-moz-range-thumb]:h-[var(--px-8)] [&::-moz-range-thumb]:w-[var(--px-2)] [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-none [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-white [&::-moz-range-track]:h-[var(--px-1)] [&::-moz-range-track]:border-none [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:h-[var(--px-8)] [&::-webkit-slider-thumb]:w-[var(--px-2)] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-track]:h-[var(--px-1)] [&::-webkit-slider-track]:rounded-none [&::-webkit-slider-track]:bg-transparent player-control player-control-volume-slider"
+          className="relative z-10 h-[var(--px-44)] w-full cursor-pointer appearance-none bg-transparent pl-focus-ring [&::-moz-range-thumb]:h-[var(--px-8)] [&::-moz-range-thumb]:w-[var(--px-2)] [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-none [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-[rgba(255,255,255,0.8)] [&::-moz-range-track]:h-[var(--px-1)] [&::-moz-range-track]:border-none [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:h-[var(--px-8)] [&::-webkit-slider-thumb]:w-[var(--px-2)] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-none [&::-webkit-slider-thumb]:bg-[rgba(255,255,255,0.8)] [&::-webkit-slider-track]:h-[var(--px-1)] [&::-webkit-slider-track]:rounded-none [&::-webkit-slider-track]:bg-transparent player-control player-control-volume-slider"
         />
       </div>
     </div>
@@ -168,7 +168,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
             <>
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute -inset-1 animate-pulse rounded-full ring-2 ring-[#FFCC00]"
+                className="pointer-events-none absolute -inset-1 animate-pulse rounded-[var(--rx-radius-control)] ring-2 ring-[#FFCC00]"
               />
               <div
                 role="status"
@@ -182,7 +182,11 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
           <button
             type="button"
             id="input-player-play-pause"
-            className={`flex aspect-square w-[var(--px-44)] shrink-0 cursor-pointer items-center justify-center rounded-full border border-black bg-white text-black transition-colors hover:bg-[var(--color-primary-hover)] player-control player-control-play-pause ${isDeleted ? "cursor-not-allowed opacity-50" : ""}`}
+            className={`flex aspect-square w-[var(--px-44)] shrink-0 cursor-pointer items-center justify-center rounded-[var(--rx-radius-control)] border transition-[background-color,border-color,color] player-control player-control-play-pause pl-focus-ring ${
+              ctl.isPlaying
+                ? "border-[rgba(238,74,38,0.7)] bg-[rgba(238,74,38,0.16)] text-[var(--rx-color-text-primary)]"
+                : "border-[var(--rx-color-border-default)] bg-transparent text-[var(--rx-color-text-primary)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)]"
+            } ${isDeleted ? "cursor-not-allowed opacity-50" : ""}`}
             onClick={handlePlayClick}
             disabled={isDeleted}
             aria-label={ctl.isPlaying ? "Pause" : "Play"}
@@ -217,20 +221,20 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
         </div>
 
         <div
-          className={`hidden min-[768px]:flex shrink-0 items-center gap-[var(--px-2)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
+          className={`player-control-desktop-transport hidden min-[768px]:flex shrink-0 items-center gap-[var(--px-2)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
         >
           {skipBackButton(SKIP_DESKTOP_CLASS)}
           {skipForwardButton(SKIP_DESKTOP_CLASS)}
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-[var(--px-8)] max-[767px]:min-w-0 max-[767px]:flex-1 min-[768px]:basis-full min-[768px]:justify-end xl:ml-auto xl:basis-auto">
+        <div className="player-control-secondary-cluster flex shrink-0 items-center justify-end gap-[var(--px-8)] max-[767px]:min-w-0 max-[767px]:flex-1 min-[768px]:basis-full min-[768px]:justify-end xl:ml-auto xl:basis-auto">
           {volumeControl}
           {showAppleBadge && (
             <AppleMusicBadge
               deepLinkUrl={deepLinkUrl}
               playing
-              fullHeightClass="h-[var(--px-22)]"
-              className={controlsDimmed ? "pointer-events-none opacity-45" : ""}
+              fullHeightClass="player-control-apple-badge-lockup h-[var(--px-22)]"
+              className={`player-control-apple-badge ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
             />
           )}
         </div>

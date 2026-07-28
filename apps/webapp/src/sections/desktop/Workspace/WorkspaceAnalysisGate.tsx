@@ -5,7 +5,7 @@ import {
   ANALYSIS_GATE_CTA,
   ANALYSIS_GATE_PRIVACY,
 } from "./workspaceCopy.ts";
-import { WORKSPACE_PANEL_CLASS } from "./workspacePanelStyles.ts";
+import { WORKSPACE_PANEL_CLASS, WORKSPACE_BTN_PRIMARY } from "./workspacePanelStyles.ts";
 
 const ANALYSIS_RETURN_PATH = "/analysis";
 
@@ -26,7 +26,7 @@ export const WorkspaceAnalysisGate: React.FC = () => (
       <Link
         to={`/auth/login?redirect=${encodeURIComponent(ANALYSIS_RETURN_PATH)}`}
         state={{ from: ANALYSIS_RETURN_PATH }}
-        className="inline-flex min-h-[var(--px-44)] items-center justify-center rounded-full bg-[var(--color-primary)] px-[var(--px-22)] font-fira text-[length:var(--px-12)] font-medium uppercase tracking-[var(--px-2)] text-[var(--color-text-primary,#000)] hover:opacity-90"
+        className={WORKSPACE_BTN_PRIMARY}
       >
         {ANALYSIS_GATE_CTA}
       </Link>

@@ -10,6 +10,7 @@ import { DEMO_MODE } from "@resomix/config";
 import type { SearchResult } from "@resomix/hooks";
 import { WorkspaceSearchField } from "./WorkspaceSearchField.tsx";
 import { SEARCH_MODE_HINT, SEARCH_MODE_LABEL } from "@/sections/desktop/Workspace/workspaceCopy.ts";
+import { WORKSPACE_FIELD_CLASS, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
 
 interface SearchComponentProps {
     onUploadClick?: () => void;
@@ -115,7 +116,7 @@ export const SearchComponent: React.FC<SearchComponentProps> = ({
                 {searchModeHelpOpen && (
                     <p
                         id="search-mode-help"
-                        className="mx-[var(--px-4)] mb-[var(--px-12)] border border-dashed border-[rgba(238,74,38,.4)] px-[var(--px-16)] py-[var(--px-12)] text-[length:var(--px-13)] font-helvetica font-light leading-[var(--px-20)] text-[rgba(255,255,255,.7)]"
+                        className="mx-[var(--px-4)] mb-[var(--px-12)] border border-[var(--rx-color-border-default)] px-[var(--px-16)] py-[var(--px-12)] text-[length:var(--px-13)] font-helvetica font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)]"
                     >
                         {SEARCH_MODE_HINT}
                     </p>
@@ -273,15 +274,16 @@ const SearchModeField: React.FC<{
     onToggleHelp: () => void;
 }> = ({ id, value, onChange, helpOpen, onToggleHelp }) => (
     <div className="flex min-w-0 flex-col gap-[var(--px-7)] min-[1024px]:min-w-[var(--px-184)]">
-        <span className="flex items-center gap-[var(--px-7)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[rgba(255,255,255,.55)]" id={`${id}-label`}>
+        <span className="flex items-center gap-[var(--px-7)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]" id={`${id}-label`}>
             {SEARCH_MODE_LABEL}
             <button
                 type="button"
                 className={[
-                    "inline-flex h-[var(--px-17)] w-[var(--px-17)] shrink-0 items-center justify-center rounded-full border font-fira text-[length:var(--px-10)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]",
+                    WORKSPACE_FOCUS_VISIBLE,
+                    "inline-flex h-[var(--px-17)] w-[var(--px-17)] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border font-fira text-[length:var(--px-10)] transition-colors duration-[var(--rx-duration-base)]",
                     helpOpen
-                        ? "border-[var(--color-accent,#EE4A26)] text-[var(--color-accent,#EE4A26)]"
-                        : "border-[rgba(255,255,255,.09)] text-[rgba(255,255,255,.55)] hover:border-[var(--color-accent,#EE4A26)] hover:text-[var(--color-accent,#EE4A26)]",
+                        ? "border-[var(--rx-color-accent)] text-[var(--rx-color-accent)]"
+                        : "border-[var(--rx-color-border-subtle)] text-[var(--rx-color-text-muted)] hover:border-[var(--rx-color-accent)] hover:text-[var(--rx-color-accent)]",
                 ].join(" ")}
                 aria-expanded={helpOpen}
                 aria-controls="search-mode-help"
@@ -297,7 +299,7 @@ const SearchModeField: React.FC<{
             aria-describedby={helpOpen ? "search-mode-help" : undefined}
             value={value}
             onChange={onChange}
-            className="h-[var(--px-52)] min-w-0 appearance-none border border-[rgba(255,255,255,.16)] bg-[#0b0b0b] bg-[length:var(--px-10)] bg-[position:right_var(--px-14)_center] bg-no-repeat px-[var(--px-14)] font-fira text-[length:var(--px-14)] tracking-[var(--px-0-5)] text-[var(--color-primary)] hover:border-[rgba(255,255,255,.28)] focus:border-[rgba(238,74,38,.55)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)] min-[1024px]:min-w-[var(--px-184)]"
+            className={`${WORKSPACE_FIELD_CLASS} appearance-none bg-[length:var(--px-10)] bg-[position:right_var(--px-14)_center] bg-no-repeat px-[var(--px-14)] font-fira text-[length:var(--px-14)] tracking-[var(--px-0-5)] min-[1024px]:min-w-[var(--px-184)]`}
             style={{
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23B9B9B9' stroke-width='1.2'/%3E%3C/svg%3E")`,
             }}

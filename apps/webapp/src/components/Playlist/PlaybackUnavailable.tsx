@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 
+import { WORKSPACE_BTN_SECONDARY, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
+
 interface PlaybackUnavailableProps {
   onRetry: () => void;
   /** Fits inside the inline seek-bar slot (single compact row). */
@@ -34,8 +36,8 @@ export function PlaybackUnavailable({ onRetry, compact = false, detail }: Playba
         onClick={onRetry}
         className={
           compact
-            ? "shrink-0 min-h-[var(--px-44)] min-w-[var(--px-44)] px-[var(--px-8)] border border-dotted border-slate-200/60 hover:border-slate-200 hover:opacity-100"
-            : "min-h-[var(--px-44)] min-w-[var(--px-44)] px-[var(--px-12)] py-[var(--px-6)] border border-dotted border-slate-200 hover:opacity-100"
+            ? `${WORKSPACE_BTN_SECONDARY} ${WORKSPACE_FOCUS_VISIBLE} shrink-0 px-[var(--px-8)]`
+            : `${WORKSPACE_BTN_SECONDARY} ${WORKSPACE_FOCUS_VISIBLE} px-[var(--px-12)] py-[var(--px-6)]`
         }
       >
         Retry

@@ -9,6 +9,7 @@ import { usePlayerStore } from "@resomix/stores";
 import type { SearchResult } from "@resomix/hooks";
 import { WorkspaceSearchField } from "./WorkspaceSearchField.tsx";
 import { SEARCH_MODE_HINT, SEARCH_MODE_LABEL } from "@/sections/desktop/Workspace/workspaceCopy.ts";
+import { WORKSPACE_FIELD_CLASS, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
 
 interface SearchComponentProps {
     onUploadClick?: () => void;
@@ -51,10 +52,11 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({
                             <button
                                 type="button"
                                 className={[
-                                    "inline-flex h-[var(--px-17)] w-[var(--px-17)] shrink-0 items-center justify-center rounded-full border font-fira text-[length:var(--px-10)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]",
+                                    WORKSPACE_FOCUS_VISIBLE,
+                                    "inline-flex h-[var(--px-17)] w-[var(--px-17)] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border font-fira text-[length:var(--px-10)] transition-colors duration-[var(--rx-duration-base)]",
                                     searchModeHelpOpen
-                                        ? "border-[var(--color-accent,#EE4A26)] text-[var(--color-accent,#EE4A26)]"
-                                        : "border-[rgba(255,255,255,.09)] text-[rgba(255,255,255,.55)] hover:border-[var(--color-accent,#EE4A26)] hover:text-[var(--color-accent,#EE4A26)]",
+                                        ? "border-[var(--rx-color-accent)] text-[var(--rx-color-accent)]"
+                                        : "border-[var(--rx-color-border-subtle)] text-[var(--rx-color-text-muted)] hover:border-[var(--rx-color-accent)] hover:text-[var(--rx-color-accent)]",
                                 ].join(" ")}
                                 aria-expanded={searchModeHelpOpen}
                                 aria-controls="search-mode-help-mobile"
@@ -70,7 +72,7 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({
                             aria-describedby={searchModeHelpOpen ? "search-mode-help-mobile" : undefined}
                             value={searchMode}
                             onChange={handleSearchModeChange}
-                            className="h-[var(--px-52)] w-full appearance-none border border-[rgba(255,255,255,.16)] bg-[#0b0b0b] bg-[length:var(--px-10)] bg-[position:right_var(--px-14)_center] bg-no-repeat px-[var(--px-14)] font-fira text-[length:var(--px-14)] text-[var(--color-primary)] hover:border-[rgba(255,255,255,.28)] focus:border-[rgba(238,74,38,.55)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
+                            className={`${WORKSPACE_FIELD_CLASS} w-full appearance-none bg-[length:var(--px-10)] bg-[position:right_var(--px-14)_center] bg-no-repeat px-[var(--px-14)] font-fira text-[length:var(--px-14)]`}
                             style={{
                                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23B9B9B9' stroke-width='1.2'/%3E%3C/svg%3E")`,
                             }}
@@ -84,7 +86,7 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({
                 {searchModeHelpOpen && (
                     <p
                         id="search-mode-help-mobile"
-                        className="mb-[var(--px-12)] border border-dashed border-[rgba(238,74,38,.4)] px-[var(--px-16)] py-[var(--px-12)] text-[length:var(--px-13)] font-helvetica font-light leading-[var(--px-20)] text-[rgba(255,255,255,.7)]"
+                        className="mb-[var(--px-12)] border border-[var(--rx-color-border-default)] px-[var(--px-16)] py-[var(--px-12)] text-[length:var(--px-13)] font-helvetica font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)]"
                     >
                         {SEARCH_MODE_HINT}
                     </p>
