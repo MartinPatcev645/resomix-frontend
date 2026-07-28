@@ -1,3 +1,5 @@
-# SPA fallback: serve index.html for /playlist/<uuid> and any deep link. The app reads the UUID
-# from the path or the ?id= query itself.
-/*    /index.html   200
+# SPA fallback ONLY for path-style deep links (/playlist/<uuid>). The embed is normally loaded via
+# `/?id=<uuid>` (a query on `/`), which needs no rule. Scoping to /playlist/* is important: a broad
+# `/*  /index.html  200` catch-all would shadow /assets/*.js and serve index.html (text/html) for
+# them, which the browser refuses to run as a module (MIME mismatch under X-Content-Type-Options).
+/playlist/*   /index.html   200
