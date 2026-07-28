@@ -39,6 +39,10 @@
   transform: translateY(-50%);
   display: flex;
   align-items: center;
+  /* The transform above makes each column its own stacking context, so the account column must sit
+     above .nav-rail2 (also transformed, and later in the DOM) — otherwise the profile dropdown,
+     which drops down through the rail2 row, renders behind the Catalogue/Try buttons. */
+  z-index: 2;
 }
 
 .nav-cl-left {
@@ -84,6 +88,8 @@
   display: flex;
   align-items: center;
   gap: 0.875rem;
+  /* Keep the CTA rail below the account column so the profile dropdown overlays it (see .nav-cl). */
+  z-index: 1;
 }
 
 .nav-hnav ul {

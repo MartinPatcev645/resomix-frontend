@@ -38,7 +38,7 @@ export const HOW_IT_WORKS_TITLE = "How Sonic Discovery works";
 export const HOW_IT_WORKS_STEPS = [
   "Choose a reference",
   "Audition ranked matches",
-  "Save a playlist or use a result as a new reference",
+  "Save playlist or use result as a new reference",
 ] as const;
 
 export const SEARCH_MODE_LABEL = "Search mode";

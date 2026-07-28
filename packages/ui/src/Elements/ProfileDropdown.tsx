@@ -127,26 +127,31 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           role="presentation"
         >
           <div
-            className="min-w-[var(--px-200)] bg-[var(--color-secondary)] border border-dotted border-slate-200/60 rounded-xs shadow-2xl overflow-hidden animate-[fadeSlideIn_0.15s_ease-out]"
+            className="relative min-w-[var(--px-200)] bg-[#0c0c0c] border border-solid border-[rgba(255,255,255,0.14)] rounded-md shadow-[0_1.5rem_3rem_rgba(0,0,0,0.5)] overflow-hidden animate-[fadeSlideIn_0.15s_ease-out]"
             role="menu"
             aria-label="Account menu"
           >
+            {/* Orange accent tick — mirrors the mega-menu panel (.nav-mm-panel::before) */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute left-[var(--px-16)] top-0 h-px w-[1.75rem] bg-[var(--color-primary,#ee4a26)]"
+            />
             {items.map((item, index) => {
               const inner = (
                 <>
-                  <span className="flex-shrink-0 w-[var(--px-16)] h-[var(--px-16)] flex items-center justify-center">
+                  <span className="flex-shrink-0 w-[var(--px-16)] h-[var(--px-16)] flex items-center justify-center text-[#8a8a8a] transition-colors duration-150 group-hover:text-[var(--color-primary,#ee4a26)]">
                     {item.icon}
                   </span>
-                  <span className="text-[length:var(--px-11)] font-light font-helvetica whitespace-nowrap leading-none">
+                  <span className="text-[length:var(--px-12)] font-light font-helvetica whitespace-nowrap leading-none text-[#e9e9e9] transition-colors duration-150 group-hover:text-white">
                     {item.label}
                   </span>
                 </>
               );
-              const itemClass = "w-full flex items-center gap-[var(--px-14)] px-[var(--px-20)] py-[var(--px-12)] text-[var(--color-primary)] no-underline hover:bg-white/5 active:bg-white/10 transition-colors duration-150 cursor-pointer";
+              const itemClass = "group w-full flex items-center gap-[var(--px-14)] px-[var(--px-20)] py-[var(--px-12)] no-underline hover:bg-white/[0.045] active:bg-white/[0.07] transition-colors duration-150 cursor-pointer";
               return (
                 <React.Fragment key={item.id}>
                   {index > 0 && (
-                    <div className={`border-t border-dotted ${item.separated ? 'border-slate-200/60' : 'border-slate-200/30'} mx-[var(--px-12)]`} />
+                    <div className={`border-t border-dotted ${item.separated ? 'border-[rgba(255,255,255,0.16)]' : 'border-[rgba(255,255,255,0.06)]'} mx-[var(--px-12)]`} />
                   )}
                   {item.href ? (
                     <a

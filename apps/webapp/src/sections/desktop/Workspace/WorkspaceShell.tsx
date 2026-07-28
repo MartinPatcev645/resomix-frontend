@@ -122,7 +122,7 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({ mode, children }
           {!guideCollapsed && (
             <ol
               id="workspace-how-it-works"
-              className="grid gap-[var(--px-10)] border-t border-dotted border-[rgba(255,255,255,.09)] px-[var(--px-20)] pb-[var(--px-17)] pt-[var(--px-4)] sm:grid-cols-3 sm:gap-[var(--px-32)]"
+              className="grid gap-[var(--px-10)] border-t border-dotted border-[rgba(255,255,255,.09)] px-[var(--px-20)] pb-[var(--px-10)] pt-[var(--px-10)] sm:grid-cols-3 sm:gap-[var(--px-32)] items-center"
             >
               {HOW_IT_WORKS_STEPS.map((step, index) => (
                 <li key={step} className="flex items-baseline gap-[var(--px-10)]">
