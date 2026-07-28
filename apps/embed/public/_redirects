@@ -1,0 +1,3 @@
+# SPA fallback: serve index.html for /playlist/<uuid> and any deep link. The app reads the UUID
+# from the path or the ?id= query itself.
+/*    /index.html   200

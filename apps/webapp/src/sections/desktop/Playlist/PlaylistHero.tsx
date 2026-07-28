@@ -9,6 +9,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport, PlaylistShare } from "@/components/index.ts";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
+import EmbedModal from "@/components/Modals/Transfer/EmbedModal.tsx";
 import RenameSvg from "@/assets/icons/rename.svg";
 import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ExportSvg from "@/assets/icons/export.svg";
@@ -36,6 +37,7 @@ const PlaylistHero: React.FC = () => {
   const [showExportMenu, setShowExportMenu] = React.useState(false);
   const [showDownloadExport, setShowDownloadExport] = React.useState(false);
   const [showAppleExport, setShowAppleExport] = React.useState(false);
+  const [showEmbed, setShowEmbed] = React.useState(false);
 
   const [showStatus, setShowStatus] = React.useState(false);
   const [statusType, setStatusType] = React.useState<'loading' | 'success' | 'error'>('loading');
@@ -233,6 +235,21 @@ const PlaylistHero: React.FC = () => {
     }
   };
 
+  // Embed — open for everyone; the modal itself guards on public/private (embedding needs a public
+  // playlist, and the "make public" action inside is owner-only via the visibility endpoint).
+  const handleEmbedClick = () => {
+    setShowExportMenu(false);
+    setShowEmbed(true);
+  };
+
+  // Make the current playlist public (used by the embed modal's guard). Returns success.
+  const handleMakePublicForEmbed = async (): Promise<boolean> => {
+    const id = playlistData?.playlist?.id;
+    if (!id) return false;
+    const res = await setVisibility(id, true);
+    return !!res?.ok;
+  };
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -399,6 +416,14 @@ const PlaylistHero: React.FC = () => {
                 id="export-menu-apple"
               >
                 Export to Apple Music
+              </button>
+              <button
+                role="menuitem"
+                className={`w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-white hover:text-black transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)] border-t ${PLAYLIST_DIVIDER_BORDER}`}
+                onClick={handleEmbedClick}
+                id="export-menu-embed"
+              >
+                Embed (iframe)
               </button>
             </div>
           )}
@@ -663,6 +688,15 @@ const PlaylistHero: React.FC = () => {
         onClose={() => setShowAppleExport(false)}
         onStatusChange={handleStatusChange}
         initialPlaylistId={playlistData?.playlist?.id}
+      />
+
+      <EmbedModal
+        isOpen={showEmbed}
+        onClose={() => setShowEmbed(false)}
+        playlistUuid={playlistData?.playlist?.id ?? ""}
+        isPublic={!!playlistData?.playlist?.is_public}
+        onMakePublic={handleMakePublicForEmbed}
+        onStatusChange={handleStatusChange}
       />
 
       {/* Status Message */}

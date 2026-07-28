@@ -13,6 +13,8 @@ interface BaseModalProps {
 
   containerClassName?: string;
   contentClassName?: string;
+  /** Override the default responsive width (e.g. a narrower modal). */
+  widthClassName?: string;
 }
 const BaseExportModal: React.FC<BaseModalProps> = ({
                                                isOpen,
@@ -24,7 +26,8 @@ const BaseExportModal: React.FC<BaseModalProps> = ({
                                                iconAlt,
                                                header,
                                                containerClassName,
-                                               contentClassName
+                                               contentClassName,
+                                               widthClassName = "max-w-[var(--px-800)] w-full lg:w-[var(--px-600)]"
                                              }) => {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -80,7 +83,7 @@ const BaseExportModal: React.FC<BaseModalProps> = ({
         onClick={onClose}
       />
       <div
-        className={`relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-800)] w-full lg:w-[var(--px-600)] ${containerClassName || ''}`}
+        className={`relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] ${widthClassName} ${containerClassName || ''}`}
       >
         {renderHeader()}
         <div className={`w-full ${contentClassName || ''}`}>

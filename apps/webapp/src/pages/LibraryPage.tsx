@@ -8,6 +8,7 @@ import { PlaylistCoverEditor } from "@/components/Playlist/PlaylistCoverEditor.t
 import { ExportSubmenu } from "@/components/Library/ExportSubmenu.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
+import EmbedModal from "@/components/Modals/Transfer/EmbedModal.tsx";
 import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
 import { TrackMetaRow, PlaylistRenameModal, LibraryFilters, PlaylistShare } from "@/components/index.ts";
 
@@ -90,6 +91,8 @@ export default function LibraryPage() {
   const access = useAccess();
   const [exportPlaylistId, setExportPlaylistId] = useState<string | null>(null);
   const [exportGate, setExportGate] = useState<{ reason: string; title: string; body: string } | null>(null);
+  // Embed (iframe) — open for everyone; the modal guards on public/private itself.
+  const [embedFor, setEmbedFor] = useState<{ uuid: string; isPublic: boolean } | null>(null);
 
   const handleExportApple = (uuid: string) => {
     setActiveMenuId(null);
@@ -112,6 +115,11 @@ export default function LibraryPage() {
         body: "Sending your playlist straight to your Apple Music library is a Pro feature. Upgrade your plan to unlock Apple Music export.",
       });
     }
+  };
+
+  const handleExportEmbed = (uuid: string, isPublic: boolean) => {
+    setActiveMenuId(null);
+    setEmbedFor({ uuid, isPublic });
   };
 
   // Cover changed from inside the rename modal: sync the row, close every modal, confirm.
@@ -603,7 +611,7 @@ export default function LibraryPage() {
 
                             {/* Export → secondary flyout of targets (Apple Music for now). */}
                             <div className="border-t border-dotted border-slate-200/30 mx-[var(--px-12)] my-[var(--px-4)]" />
-                            <ExportSubmenu onExportApple={() => handleExportApple(playlist.uuid)} />
+                            <ExportSubmenu onExportApple={() => handleExportApple(playlist.uuid)} onEmbed={() => handleExportEmbed(playlist.uuid, playlist.is_public)} />
 
                             {/* Delete (separated, destructive). */}
                             <div className="border-t border-dotted border-slate-200/60 mx-[var(--px-12)] my-[var(--px-4)]" />
@@ -919,6 +927,20 @@ export default function LibraryPage() {
         title={exportGate?.title}
         body={exportGate?.body}
         onClose={() => setExportGate(null)}
+      />
+
+      {/* Embed (iframe) — public-only; guarded inside the modal. */}
+      <EmbedModal
+        isOpen={!!embedFor}
+        onClose={() => setEmbedFor(null)}
+        playlistUuid={embedFor?.uuid ?? ""}
+        isPublic={!!embedFor?.isPublic}
+        onMakePublic={async () => {
+          if (!embedFor) return false;
+          const res = await setPlaylistVisibility(embedFor.uuid, true);
+          return !!res?.success;
+        }}
+        onStatusChange={handleStatusChange}
       />
     </section>
   );

@@ -11,6 +11,8 @@ const SUB_ITEM_CLASS =
 interface ExportSubmenuProps {
   /** Chosen an export target (Apple Music for now). Parent runs the entitlement gate + modal. */
   onExportApple: () => void;
+  /** Chosen the iframe embed target. Parent opens the Embed modal (public-only, guarded there). */
+  onEmbed: () => void;
 }
 
 /**
@@ -19,7 +21,7 @@ interface ExportSubmenuProps {
  * (down-chevron) to expand the export targets (Apple Music for now; more later) directly below it,
  * within the same dropdown. The dropdown just grows taller — nothing flies off-screen.
  */
-export const ExportSubmenu: React.FC<ExportSubmenuProps> = ({ onExportApple }) => {
+export const ExportSubmenu: React.FC<ExportSubmenuProps> = ({ onExportApple, onEmbed }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -59,6 +61,19 @@ export const ExportSubmenu: React.FC<ExportSubmenuProps> = ({ onExportApple }) =
               </svg>
             </span>
             <span className="whitespace-nowrap leading-none">Apple Music</span>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setExpanded(false); onEmbed(); }}
+            className={SUB_ITEM_CLASS}
+            id="library-export-embed"
+          >
+            <span className="flex-shrink-0 w-[var(--px-16)] h-[var(--px-16)] flex items-center justify-center">
+              <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.7" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 6l-2 12" />
+              </svg>
+            </span>
+            <span className="whitespace-nowrap leading-none">Embed (iframe)</span>
           </button>
         </div>
       )}

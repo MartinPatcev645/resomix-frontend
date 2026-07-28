@@ -1,0 +1,13 @@
+# Cloudflare Pages headers for the embed widget.
+# The whole point of this project: allow it to be framed on ANY site.
+# We do NOT set X-Frame-Options (Pages doesn't add it by default), and we explicitly permit
+# framing via CSP frame-ancestors. To restrict WHO may embed, replace `*` with a space-separated
+# allowlist, e.g.  Content-Security-Policy: frame-ancestors https://*.example.com https://foo.com
+/*
+  Content-Security-Policy: frame-ancestors *
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer-when-downgrade
+
+# Long-cache the hashed build assets.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

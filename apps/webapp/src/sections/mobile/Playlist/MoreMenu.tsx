@@ -20,9 +20,11 @@ interface MoreMenuProps {
     onShare?: () => void;
     /** Open the Apple Music export modal (owned by the parent, same reason as onShare). */
     onAppleExport?: () => void;
+    /** Open the Embed (iframe) modal (owned by the parent). */
+    onEmbed?: () => void;
 }
 
-const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, name, label, duration, score = null, onShare, onAppleExport }) => {
+const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, name, label, duration, score = null, onShare, onAppleExport, onEmbed }) => {
     const { playlistData, trackRatings = {}, setTrackRating, removeTrackRating } = usePlaylistStore();
     const { exportAndDownloadPlaylist, canExport } = usePlaylistExport();
     // Rate / export / share are gated through the single source of truth (useAccess) — one verdict
@@ -97,6 +99,11 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
         } else {
             setGate({ reason: "upgrade_required", title: "Upgrade to export to Apple Music", body: "Sending your playlist straight to your Apple Music library is a Pro feature. Upgrade your plan to unlock Apple Music export." });
         }
+    };
+
+    // Embed — open for everyone; the modal guards on public/private itself.
+    const handleEmbed = () => {
+        onEmbed?.();
     };
 
     React.useEffect(() => {
@@ -210,6 +217,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                             <div className="w-full flex gap-2 flex-col">
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button" text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-apple-export-button" text="Export to Apple Music" customWidth="w-full" onClick={handleAppleExport} id={`playlist-hero-apple-export-button`} />
+                                <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-embed-button" text="Embed (iframe)" customWidth="w-full" onClick={handleEmbed} id={`playlist-hero-embed-button`} />
                                 <ButtonSleek transparent={true} className="w-[var(--px-276)] text-[length:var(--px-14)] playlist-share-button" text="Share" customWidth="w-full" onClick={() => {
                                     withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => onShare?.());
                                 }} id={`playlist-hero-share-button`} />

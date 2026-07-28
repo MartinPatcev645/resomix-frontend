@@ -3,15 +3,18 @@ import { PlaylistHero, PlaylistTable } from "@/sections/mobile/index.ts";
 import MoreMenu from "@/sections/mobile/Playlist/MoreMenu.tsx";
 import { PlaylistShare } from "@/components/index.ts";
 import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
+import EmbedModal from "@/components/Modals/Transfer/EmbedModal.tsx";
 import { BASE_BETA_URL } from "@resomix/config";
 import { usePlaylistStore } from "@resomix/stores";
-import { AudioProvider, usePlaylistLoader } from "@resomix/hooks";
+import { AudioProvider, usePlaylistLoader, usePlaylistVisibility } from "@resomix/hooks";
 import { Error404 } from "@resomix/ui";
 
 export function PlaylistMobile() {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showAppleExport, setShowAppleExport] = useState(false);
+  const [showEmbed, setShowEmbed] = useState(false);
+  const { setVisibility } = usePlaylistVisibility();
   const [selectedTrack, setSelectedTrack] = useState<{ id: string; name: string; label: string; duration: number; score?: number | null; isInput: boolean } | null>(null);
 
   // Scroll to top when component mounts
@@ -72,6 +75,7 @@ export function PlaylistMobile() {
                 isInput={selectedTrack?.isInput || false}
                 onShare={() => { handleMoreMenuClose(); setShowShare(true); }}
                 onAppleExport={() => { handleMoreMenuClose(); setShowAppleExport(true); }}
+                onEmbed={() => { handleMoreMenuClose(); setShowEmbed(true); }}
               />
             </div>
           )}
@@ -89,6 +93,19 @@ export function PlaylistMobile() {
             onClose={() => setShowAppleExport(false)}
             onStatusChange={() => { /* AppleExportPanel surfaces its own status inline */ }}
             initialPlaylistId={playlistData?.playlist?.id}
+          />
+
+          <EmbedModal
+            isOpen={showEmbed}
+            onClose={() => setShowEmbed(false)}
+            playlistUuid={playlistData?.playlist?.id ?? ""}
+            isPublic={!!playlistData?.playlist?.is_public}
+            onMakePublic={async () => {
+              const id = playlistData?.playlist?.id;
+              if (!id) return false;
+              const res = await setVisibility(id, true);
+              return !!res?.ok;
+            }}
           />
         </div>
       ) : (
