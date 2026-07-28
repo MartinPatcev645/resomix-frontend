@@ -242,7 +242,7 @@
   height: 0.9375rem;
 }
 
-/* Burger row — 1024–1179 band */
+/* Burger row — shown below 1024 */
 .nav-mrow {
   display: none;
 }
@@ -641,7 +641,9 @@
   width: 36rem;
 }
 
-@media (max-width: 1179px) {
+/* Burger row: mobile-style header. Below 1024 only — at ≥1024 the full desktop nav shows, matching
+   the JS variant switch in LandingLayout (useResponsive → innerWidth >= 1024). */
+@media (max-width: 1023px) {
   .nav-cl,
   .nav-rail2,
   .nav-sticky {
