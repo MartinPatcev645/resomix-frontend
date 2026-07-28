@@ -7,7 +7,9 @@ const POPULAR_TRACKS: SearchResult[] = [
   { id: "c564c7a7-a608-5ad1-850c-b8614173e1b2", title: "Sticky Fingers", artist: "Full Bloom", duration: "5:13" },
   { id: "b3a3264d-c26f-5ffe-b721-59d45684a51f", title: "4 Love", artist: "Nick Curly", duration: "6:56" },
   { id: "26999457-fe02-5f87-888b-a1bff3c2df21", title: "Unfinished", artist: "nthng", duration: "4:09" },
-  { id: "78130a18-f58c-59a4-b6be-71a3b83ba26a", title: "Exos", artist: "Alex Niggemann", duration: "7:19" }
+  { id: "78130a18-f58c-59a4-b6be-71a3b83ba26a", title: "Exos", artist: "Alex Niggemann", duration: "7:19" },
+  { id: "e34934a2-b65c-5390-9daa-f8c7bf47ddc5", title: "Alive (Extended Mix)", artist: "Franky Wah & Vintage Culture", duration: "6:45" },
+  { id: "723ccf06-c2ea-5096-9f59-9d2a3136549e", title: "Mdfk", artist: "Shoke", duration: "5:33" }
 ];
 
 export const usePopularTracks = () => {
