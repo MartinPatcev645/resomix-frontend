@@ -92,6 +92,203 @@
             "join_the_resomix_universe": "Join the Resomix<br />Universe"
         }
     },
+    "home": {
+        "hero": {
+            "beta": "Production beta · Powered by PYXIS-1",
+            "title": "Hear the Invisible",
+            "platform": "Resomix listens to the sound itself — and turns it into discovery, understanding, and catalogue intelligence.",
+            "tryCta": "Try Resomix",
+            "exploreCta": "Explore the Product",
+            "pilotLink": "Start a Catalogue Pilot",
+            "figureAria": "One piece of music enters Resomix, PYXIS-1 builds a sonic profile from its five measurable dimensions, and three intelligences emerge: Sonic Discovery, Track Intelligence and Catalogue Intelligence",
+            "refIn": "Reference in",
+            "pyxisProfile": "PYXIS-1 · Sonic profile",
+            "destSd": "Sonic Discovery",
+            "destSdSub": "Ranked shortlist",
+            "destTi": "Track Intelligence",
+            "destTiSub": "Track profile & structure",
+            "destCi": "Catalogue Intelligence",
+            "destCiSub": "Private index relationships",
+            "dimWaveform": "Waveform",
+            "dimStructure": "Structure",
+            "dimEnergy": "Energy",
+            "dimHarmony": "Harmony",
+            "dimTimbre": "Timbre"
+        },
+        "statement": {
+            "head": "Resomix brings the art of selection into the age of algorithmic precision",
+            "sub": "Beyond charts, metadata and release-date logic — selection by how the music actually sounds.",
+            "capSound": "The sound itself",
+            "capChars": "70+ measurable audio characteristics",
+            "capResult": "A ranked, usable result"
+        },
+        "products": {
+            "eyebrow": "One engine · Three products",
+            "head": "One signal in. Three intelligences out.",
+            "footnote": "Powered by PYXIS-1 · 70+ measurable audio characteristics · ranked sonic relationships",
+            "reference": "Reference",
+            "privateIndex": "Private partner index",
+            "humanReviewed": "☑ Human-reviewed",
+            "resurfaced": "Resurfaced",
+            "intro": "Intro",
+            "build": "Build",
+            "break": "Break",
+            "drop": "Drop",
+            "outro": "Outro",
+            "brief": "Brief",
+            "sonic": {
+                "name": "Sonic Discovery",
+                "outcome": "Go from one reference to a focused shortlist faster.",
+                "description": "Search a known track or upload a reference; PYXIS-1 returns ranked similar tracks you can audition — your similarity playlist, created automatically.",
+                "link": "Explore Sonic Discovery"
+            },
+            "track": {
+                "name": "Track Intelligence",
+                "outcome": "Understand what a track is made of before deciding how to use it.",
+                "description": "BPM, key and Camelot, structure, energy journey, loudness, harmony, timbre, genre, mood — read plainly, with confidence where available.",
+                "link": "Explore Track Intelligence"
+            },
+            "catalogue": {
+                "name": "Catalogue Intelligence",
+                "outcome": "Make authorised catalogue relationships discoverable through sound.",
+                "description": "A private index of your own repertoire — surfacing back catalogue and underexposed recordings by ranked sonic relationships.",
+                "link": "Explore Catalogue Intelligence"
+            }
+        },
+        "how": {
+            "eyebrow": "How Resomix works",
+            "head": "Start with a track.",
+            "step01": "Search a known track or upload a reference",
+            "step01sub": "Start from the catalogue — or drop your own audio.",
+            "tileSearchK": "Instant Catalogue Search",
+            "tileSearchD": "Type an artist or title — use any result as your reference.",
+            "tileDropK": "Drop a track. We'll listen.",
+            "tileDropD": "MP3, WAV, FLAC or AIFF. Processed privately, deleted no later than 24 hours after upload or analysis.",
+            "step02": "PYXIS-1 builds a sonic profile",
+            "step02body": "70+ measurable audio characteristics, read from the recording itself.",
+            "step03": "Get a ranked shortlist",
+            "step03sub": "A similarity playlist, created automatically — audition it track by track.",
+            "step04": "Analyse a track",
+            "step04opt": "Optional",
+            "step04sub": "Read structure, energy, harmony and character before you decide.",
+            "tryCta": "Try Resomix",
+            "note": "Free to start · production beta"
+        },
+        "trackIntelligence": {
+            "eyebrow": "Track Intelligence",
+            "texture": "Resomix reads the texture of your reference track — rhythm, harmonic content, energy, timbre.",
+            "body": "Then it shows you where the track builds, peaks and releases — so you can decide where it belongs before you play it.",
+            "exploreLink": "Explore Track Intelligence",
+            "figureAria": "An explanatory Track Intelligence reading: the energy journey across one recording, its structural regions, a marked drop moment, and its key, tempo, loudness and style",
+            "calloutRhythm": "Rhythm — steady 124 BPM grid",
+            "calloutHarmony": "Harmony — G minor centre",
+            "calloutEnergy": "Energy — builds patiently",
+            "calloutPeaks": "Peaks at the drop",
+            "calloutTimbre": "Timbre — brightens into the drop",
+            "mkKey": "Key · Camelot",
+            "mkTempo": "Tempo",
+            "mkLoudness": "Loudness",
+            "mkStyle": "Style indicator",
+            "reading": "Builds patiently · peaks at the drop · releases clean",
+            "capOne": "One recording · read plainly",
+            "capConf": "Confidence shown where available",
+            "panelLabel": "Sonic anatomy · one recording",
+            "sampleData": "SAMPLE DATA",
+            "intro": "Intro",
+            "build": "Build",
+            "breakdown": "Breakdown",
+            "break": "Break",
+            "drop": "Drop",
+            "outro": "Outro"
+        },
+        "catalogue": {
+            "eyebrow": "For catalogues",
+            "head": "Your repertoire, discoverable by sound",
+            "body": "Older and underexposed recordings don't stop being relevant — they stop being found. Catalogue Intelligence builds a private, partner-scoped index of authorised material and surfaces the relationships inside it.",
+            "item1": "Guided Private Catalogue Pilot with an agreed scorecard",
+            "item2": "Managed ingestion into a private catalogue index",
+            "item3": "Search, Similarity and Track Analysis on your own repertoire",
+            "item4": "Human-reviewed evaluation — partner-scoped, agreement-bound",
+            "pilotCta": "Start a Catalogue Pilot",
+            "exploreLink": "Explore Catalogue Intelligence",
+            "figureAria": "A private catalogue field with three sonic clusters, one brief entering the map, a focused set surfaced from the full catalogue, a dormant recording resurfacing, and human-review markers inside a partner boundary",
+            "mapTitle": "Private partner index · agreement-bound",
+            "mapTitleShort": "Private partner index",
+            "humanReviewed": "☑ Human-reviewed",
+            "underexposed": "Underexposed zone",
+            "refBrief": "Reference / brief",
+            "resurfaced": "Resurfaced · 2011",
+            "legend1": "Full authorised catalogue",
+            "legend2": "Sonic clusters",
+            "legend3": "Reference / brief",
+            "legend4": "Surfaced set"
+        },
+        "api": {
+            "eyebrow": "Developers",
+            "head": "One partner-scoped API",
+            "figureAria": "Four stages: an authorised partner catalogue enters isolated Resomix processing, which is partner-scoped with no shared pool, runs Search, Similarity or Track Analysis against the private index, and returns a structured response delivered inside the partner's own product",
+            "s01t": "Authorised partner catalogue",
+            "s01d": "Your repertoire, under agreement.",
+            "s02t": "Isolated Resomix processing",
+            "s02tag": "Partner-scoped · No shared pool",
+            "s02d": "Runs only against your private index.",
+            "s03t": "Structured response",
+            "s04t": "Inside your product",
+            "s04d": "Results delivered in your own product or workflow.",
+            "laneSearch": "Search",
+            "laneSimilarity": "Similarity",
+            "laneAnalysis": "Track Analysis",
+            "truth": "No public sandbox — the guided pilot is the evaluation path.",
+            "exploreCta": "Explore the API"
+        },
+        "audiences": {
+            "srTitle": "Audiences",
+            "eyebrow": "Built for people who work in sound",
+            "djs": {
+                "label": "DJs",
+                "outcome": "Less blind digging, more auditioning tracks that fit the set."
+            },
+            "producers": {
+                "label": "Producers",
+                "outcome": "Study references through structure, energy and texture."
+            },
+            "curators": {
+                "label": "Curators",
+                "outcome": "Build playlists from sound, not only titles and dates."
+            },
+            "labels": {
+                "label": "Labels & Distributors",
+                "outcome": "Put back catalogue back to work."
+            },
+            "platforms": {
+                "label": "Platforms & Music Tech",
+                "outcome": "Served through Developers and the pilot."
+            }
+        },
+        "trust": {
+            "srTitle": "Trust, rights and security",
+            "eyebrow": "Trust, rights & security",
+            "z1t": "Temporary uploads",
+            "z1d": "Uploaded source audio is deleted no later than 24 hours after upload or analysis. Never public. Never used to train or fine-tune PYXIS-1.",
+            "z2t": "Private library",
+            "z2d": "Your saved work stays yours — retained for the service you asked for, with deletion under your control.",
+            "z3t": "Partner catalogues",
+            "z3d": "Logically isolated, agreement-bound, restricted to authorised access. A production beta with its controls stated plainly.",
+            "link": "View Trust, Rights & Security"
+        },
+        "final": {
+            "head": "You bring the vision — we surface the sound",
+            "body": "Resomix maps the measurable character of a track and surfaces its closest sonic relationships — regardless of who released it, or when. That's what music discovery should be.",
+            "capIndiv": "Individual professionals",
+            "capCatalogues": "Catalogues & platforms",
+            "fork1who": "For DJs, producers and curators",
+            "fork1d": "Start with a track — search the catalogue or upload a reference, and audition a ranked shortlist in minutes.",
+            "fork1cta": "Try Resomix",
+            "fork2who": "For labels, publishers and platforms",
+            "fork2d": "Evaluate Resomix against your own authorised catalogue in a guided pilot with an agreed scorecard.",
+            "fork2cta": "Start a Catalogue Pilot"
+        }
+    },
     "product": {
         "hero": {
             "status": "STATUS: BETA · SCORED BY PYXIS-1",

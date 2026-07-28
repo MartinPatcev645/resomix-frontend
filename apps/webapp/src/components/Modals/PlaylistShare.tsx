@@ -235,7 +235,7 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
                     id="playlist-share-link"
                     aria-label="Copy playlist link"
                 >
-                    <img src={BrakesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="absolute top-0 left-0 pointer-events-none" />
+                    <img src={BrakesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" width={302} height={27} className="absolute top-0 left-0 h-[var(--px-27)] w-full pointer-events-none" />
                     {link || 'Generating link...'}
                 </button>
 

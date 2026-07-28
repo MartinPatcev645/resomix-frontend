@@ -82,7 +82,7 @@ export const CAPABILITY_BRANCHES: CapabilityBranch[] = [
       'analyse catalogue audio · build sonic relationships',
       'surface older + underexposed tracks · human review',
     ],
-    dest: '/product/catalogue-intelligence',
+    dest: '/product/catalog-intelligence',
     y: 60,
   },
   {

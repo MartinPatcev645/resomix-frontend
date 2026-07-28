@@ -14,14 +14,14 @@ import { savePlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 import {
   SOURCE_TAB_SEARCH,
   SOURCE_TAB_UPLOAD,
-  TRY_EXAMPLE_ACTION,
-  TRY_EXAMPLE_HINT,
+  UPLOAD_OUTCOME_LINE,
   UPLOAD_PRIVACY_NOTE,
   FIND_SIMILAR_CTA,
 } from "./workspaceCopy.ts";
 import { ReferenceChip, type WorkspaceReference } from "./ReferenceChip.tsx";
 import { DepthControl } from "./DepthControl.tsx";
 import { DiscoveryProcessingPanel } from "./DiscoveryProcessingPanel.tsx";
+import { DiscoveryEmptyGuide } from "./DiscoveryEmptyGuide.tsx";
 import { WORKSPACE_PANEL_CLASS, WORKSPACE_STAGE_MIN_H } from "./workspacePanelStyles.ts";
 import { SubmitPendingGlyph, WorkspaceStage } from "./WorkspaceStage.tsx";
 import {
@@ -29,6 +29,7 @@ import {
   patchDiscoveryCache,
   clearDiscoveryReferenceCache,
 } from "./workspaceStateCache.ts";
+import { withViewTransition } from "@/utils/viewTransition.ts";
 
 export const WorkspaceDiscoveryPanel: React.FC = () => {
   const cached = getDiscoveryCache();
@@ -92,6 +93,11 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
     setIsSubmitting(false);
   };
 
+  const switchSource = (next: "search" | "upload") => {
+    if (next === source) return;
+    withViewTransition(() => setSource(next));
+  };
+
   const onCatalogueSelect = (track: SearchResult) => {
     setCatalogueTrackId(String(track.id));
     setPendingUpload(null);
@@ -134,10 +140,11 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
   };
 
   const showProcessing = isSubmitting;
+  const showEmptyGuide = !showProcessing && !reference && source === "search";
 
   return (
     <section
-      className={[WORKSPACE_PANEL_CLASS, WORKSPACE_STAGE_MIN_H].join(" ")}
+      className={[WORKSPACE_PANEL_CLASS, WORKSPACE_STAGE_MIN_H, "px-0 pt-0"].join(" ")}
       aria-labelledby="workspace-discovery-heading"
     >
       <h2 id="workspace-discovery-heading" className="sr-only">
@@ -146,24 +153,29 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
 
       <WorkspaceStage stageKey={stageKey}>
         {!showProcessing && (
-          <div className="mb-[var(--px-18)] flex flex-wrap gap-[var(--px-6)]" role="tablist" aria-label="Reference source">
+          <div
+            className="relative flex border-b border-[rgba(255,255,255,.09)] max-[640px]:grid max-[640px]:grid-cols-2"
+            role="tablist"
+            aria-label="Reference source"
+          >
             <SourceTab
               selected={source === "search"}
-              onClick={() => setSource("search")}
+              onClick={() => switchSource("search")}
               label={SOURCE_TAB_SEARCH}
             />
             <SourceTab
               selected={source === "upload"}
-              onClick={() => setSource("upload")}
+              onClick={() => switchSource("upload")}
               label={SOURCE_TAB_UPLOAD}
             />
           </div>
         )}
 
+        <div className={showProcessing ? "p-[var(--px-22)]" : "px-[var(--px-22)] pb-[var(--px-8)]"}>
         {showProcessing ? (
           <DiscoveryProcessingPanel />
         ) : reference ? (
-          <div className="space-y-[var(--px-16)]">
+          <div className="space-y-[var(--px-16)] pt-[var(--px-18)]">
             <ReferenceChip reference={reference} onChange={clearReference} />
             <div className="flex flex-wrap items-end justify-between gap-[var(--px-12)]">
               <DepthControl />
@@ -171,7 +183,7 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
                 type="button"
                 disabled={isSubmitting}
                 onClick={() => void submitDiscovery()}
-                className="inline-flex min-h-[var(--px-44)] items-center justify-center rounded-full bg-[var(--color-primary)] px-[var(--px-22)] font-fira text-[length:var(--px-12)] font-medium uppercase tracking-[var(--px-2)] text-[var(--color-text-primary,#000)] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex min-h-[var(--px-44)] items-center justify-center rounded-full bg-[var(--color-primary)] px-[var(--px-22)] font-fira text-[length:var(--px-12)] font-medium uppercase tracking-[var(--px-2)] text-[var(--color-text-primary,#000)] hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
               >
                 {FIND_SIMILAR_CTA}
                 {isSubmitting ? <SubmitPendingGlyph /> : null}
@@ -184,37 +196,37 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
               <SearchComponent
                 variant="workspace"
                 hideSourceTabs
-                onUploadClick={() => setSource("upload")}
+                onUploadClick={() => switchSource("upload")}
                 onTrackSelect={onCatalogueSelect}
               />
             ) : (
               <SearchComponentMobile
                 variant="workspace"
                 hideSourceTabs
-                onUploadClick={() => setSource("upload")}
+                onUploadClick={() => switchSource("upload")}
                 onTrackSelect={onCatalogueSelect}
               />
             )}
-            <p className="mt-[var(--px-12)] font-fira text-[length:var(--px-12)] tracking-[var(--px-1)] text-[var(--color-primary)] opacity-60">
-              {TRY_EXAMPLE_HINT}{" "}
-              <button
-                type="button"
-                className="underline underline-offset-[var(--px-3)] opacity-80 hover:opacity-100"
-                onClick={tryExample}
-              >
-                {TRY_EXAMPLE_ACTION}
-              </button>
-            </p>
+            {showEmptyGuide && (
+              <DiscoveryEmptyGuide
+                examples={popularTracks}
+                onTryExample={tryExample}
+                onSelectExample={onCatalogueSelect}
+              />
+            )}
           </div>
         ) : (
-          <div>
+          <div className="pb-[var(--px-8)] pt-[var(--px-8)]">
+            <p className="mb-[var(--px-18)] text-[length:var(--px-16)] font-helvetica font-light leading-[var(--px-24)] text-[#d4d4d4]">
+              {UPLOAD_OUTCOME_LINE}
+            </p>
             {isDesktop ? (
               <UploadComponent
                 variant="workspace"
                 hideSourceTabs
                 deferSubmit
                 onFileSelected={onUploadSelected}
-                onSearchClick={() => setSource("search")}
+                onSearchClick={() => switchSource("search")}
                 onAnalysis={onAnalysis}
               />
             ) : (
@@ -223,7 +235,7 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
                 hideSourceTabs
                 deferSubmit
                 onFileSelected={onUploadSelected}
-                onSearchClick={() => setSource("search")}
+                onSearchClick={() => switchSource("search")}
                 onAnalysis={onAnalysis}
               />
             )}
@@ -249,6 +261,7 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
             </p>
           </div>
         )}
+        </div>
       </WorkspaceStage>
     </section>
   );
@@ -265,10 +278,10 @@ const SourceTab: React.FC<{ selected: boolean; label: string; onClick: () => voi
     aria-selected={selected}
     onClick={onClick}
     className={[
-      "min-h-[var(--px-44)] border px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-2)] transition-colors",
+      "relative top-px min-h-[var(--px-46)] shrink-0 border-b-2 px-[var(--px-24)] py-[var(--px-12)] font-fira text-[length:var(--px-12)] uppercase tracking-[var(--px-1)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)] max-[640px]:min-h-[var(--px-44)] max-[640px]:px-[var(--px-8)] max-[640px]:text-center",
       selected
-        ? "border-slate-200 bg-[rgba(255,255,255,.04)] text-[var(--color-primary)] before:text-[var(--color-accent,#EE4A26)] before:content-['▸\\00a0']"
-        : "border-transparent text-[var(--color-primary)] opacity-50 hover:opacity-80",
+        ? "border-[var(--color-accent,#EE4A26)] text-[var(--color-primary)]"
+        : "border-transparent text-[rgba(255,255,255,.55)] hover:text-[rgba(255,255,255,.7)]",
     ].join(" ")}
   >
     {label}

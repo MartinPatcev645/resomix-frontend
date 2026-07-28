@@ -10,6 +10,10 @@
   --color-text-secondary: #ffffff;
   --color-light-theme: #B9B9B9;
   --color-neon-orange: #EE4A26;
+  /* Playlist / similarity-results separators — near-background, never bright white */
+  --playlist-divider: rgba(255, 255, 255, 0.09);
+  --playlist-divider-strong: rgba(255, 255, 255, 0.14);
+  --playlist-compact-bar-h: 0px;
   /* Transparency levels (black base) */
   --opacity-10: rgba(0, 0, 0, 0.10);
   --opacity-15: rgba(0, 0, 0, 0.15);
@@ -180,19 +184,35 @@ html #stcm-wrapper .stcm-button-secondary:hover {
   border: 1px dotted #000000 !important; /* black dotted border on hover */
 }
 
-@keyframes workspace-stage-in {
+@keyframes sd-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes sd-dash {
+  to {
+    stroke-dashoffset: -120;
+  }
+}
+
+/* Workspace panel / stage mount — opacity only (no transform / layout animation). */
+@keyframes workspace-panel-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .motion-safe\:animate-\[workspace-stage-in_200ms_ease-out_both\] {
+  .motion-safe\:animate-\[workspace-panel-in_150ms_ease-out_both\] {
+    animation: none !important;
+  }
+
+  .motion-safe\:animate-\[sd-pulse_2\.6s_ease-in-out_infinite\],
+  .motion-safe\:animate-\[sd-dash_9s_linear_infinite\] {
     animation: none !important;
   }
 }

@@ -32,7 +32,7 @@ export const PlaylistLockedRegion: React.FC<PlaylistLockedRegionProps> = ({
       <div
         aria-hidden="true"
         inert
-        className="pointer-events-none relative select-none overflow-hidden border-t border-dotted border-slate-200"
+        className="pointer-events-none relative select-none overflow-hidden border-t border-solid border-[var(--playlist-divider)]"
         style={{
           maxHeight,
           filter: "blur(7px)",

@@ -55,7 +55,7 @@ export function PlatformOverview() {
       desc: t('product.overview.p3desc'),
       status: t('product.overview.p3status'),
       link: t('product.overview.p3link'),
-      onClick: () => navigate('/product/catalogue-intelligence'),
+      onClick: () => navigate('/product/catalog-intelligence'),
     },
   ];
 

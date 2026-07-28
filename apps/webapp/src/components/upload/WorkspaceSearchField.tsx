@@ -90,10 +90,10 @@ export const WorkspaceSearchField: React.FC<WorkspaceSearchFieldProps> = ({
       : undefined;
 
   return (
-    <div ref={rootRef} className="relative min-w-[min(100%,20rem)] flex-1">
+    <div ref={rootRef} className="relative min-w-0 w-full flex-1">
       <div
         className={[
-          "flex w-full border border-dotted border-slate-400 bg-transparent",
+          "flex h-[var(--px-52)] w-full border border-[rgba(255,255,255,.16)] bg-[#0b0b0b] transition-colors hover:border-[rgba(255,255,255,.28)] focus-within:border-[rgba(238,74,38,.55)]",
           showDropdown ? "border-b-0" : "",
         ].join(" ")}
       >
@@ -125,7 +125,7 @@ export const WorkspaceSearchField: React.FC<WorkspaceSearchFieldProps> = ({
           onKeyDown={onInputKeyDown}
           placeholder="Search by artist or title…"
           aria-label="Search the Resomix index by artist or title"
-          className="min-w-0 flex-1 border-0 bg-transparent px-[var(--px-14)] py-[var(--px-12)] font-fira text-[length:var(--px-13)] text-[var(--color-primary)] placeholder:font-fira placeholder:opacity-50 focus:outline-none"
+          className="min-w-0 flex-1 border-0 bg-transparent px-[var(--px-18)] font-fira text-[length:var(--px-15)] tracking-[0.02em] text-[var(--color-primary)] placeholder:font-fira placeholder:text-[rgba(255,255,255,.55)] focus:outline-none"
         />
       </div>
       {showDropdown && (

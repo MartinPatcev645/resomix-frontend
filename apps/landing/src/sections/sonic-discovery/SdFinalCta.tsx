@@ -30,7 +30,7 @@ export function SdFinalCta() {
             <button
               type="button"
               className="sd-pill sd-pill-line uppercase"
-              onClick={() => navigate('/product/catalogue-intelligence')}
+              onClick={() => navigate('/product/catalog-intelligence')}
             >
               {t('sonicDiscovery.cta.rightBtn')}
             </button>

@@ -21,10 +21,13 @@ import InfoSvg from "@/assets/icons/info.svg";
 import { CoverTextOverlay } from "@/components/Playlist/CoverTextOverlay.tsx";
 import { CoverCropModal } from "@/components/Playlist/CoverCropModal.tsx";
 import { playlistAccessChrome, PLAYLIST_LOCK_MARK } from "@/utils/playlistAccessChrome.ts";
+import { StickyReferenceBar } from "@/components/Playlist/StickyReferenceBar.tsx";
+import { PLAYLIST_DIVIDER_BORDER, PLAYLIST_DIVIDER_STRONG } from "@/utils/playlistChrome.ts";
 
 const InputTrackStatus = "Loading..."
 
 const PlaylistHero: React.FC = () => {
+  const stickySentinelRef = React.useRef<HTMLDivElement | null>(null);
   const [showMeta, setShowMeta] = React.useState(false);
   const [showRating, setShowRating] = React.useState(false);
   const [showRename, setShowRename] = React.useState(false);
@@ -315,7 +318,7 @@ const PlaylistHero: React.FC = () => {
               e.preventDefault();
               navigate("/library");
             }}
-            className="inline-flex items-center rounded-full border border-dotted border-slate-200 px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-80 hover:opacity-100 playlist-nav-link"
+            className={`inline-flex items-center rounded-full border ${PLAYLIST_DIVIDER_STRONG} px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-90 hover:opacity-100 playlist-nav-link`}
             id="playlist-hero-back-link"
           >
             ‹ Back to Library
@@ -328,7 +331,7 @@ const PlaylistHero: React.FC = () => {
               e.preventDefault();
               navigate("/sonic-discovery");
             }}
-            className="inline-flex items-center rounded-full border border-dotted border-slate-200 px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-80 hover:opacity-100 playlist-nav-link"
+            className={`inline-flex items-center rounded-full border ${PLAYLIST_DIVIDER_STRONG} px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-90 hover:opacity-100 playlist-nav-link`}
             id="playlist-hero-back-link"
           >
             ‹ Back to search
@@ -379,7 +382,7 @@ const PlaylistHero: React.FC = () => {
               ref={exportMenuRef}
               role="menu"
               aria-label="Export options"
-              className="absolute right-0 top-[calc(100%+var(--px-6))] z-50 min-w-[var(--px-220)] bg-[var(--color-secondary-background)] text-white border border-dotted border-slate-200 shadow-lg"
+              className={`absolute right-0 top-[calc(100%+var(--px-6))] z-50 min-w-[var(--px-220)] bg-[var(--color-secondary-background)] text-white border ${PLAYLIST_DIVIDER_STRONG} shadow-lg`}
             >
               <button
                 role="menuitem"
@@ -391,7 +394,7 @@ const PlaylistHero: React.FC = () => {
               </button>
               <button
                 role="menuitem"
-                className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-white hover:text-black transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)] border-t border-dotted border-slate-200/40"
+                className={`w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-white hover:text-black transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)] border-t ${PLAYLIST_DIVIDER_BORDER}`}
                 onClick={handleAppleExportClick}
                 id="export-menu-apple"
               >
@@ -416,12 +419,12 @@ const PlaylistHero: React.FC = () => {
         </Tooltip>
       </div>
 
-      {/* Header card */}
+      {/* Header card — restrained orange tick connects reference to results below */}
       <div
-        className="relative grid gap-[var(--px-20)] border border-dotted border-slate-200 bg-[rgba(255,255,255,.02)] p-[var(--px-18)]"
+        className={`relative grid gap-[var(--px-20)] border ${PLAYLIST_DIVIDER_STRONG} bg-[rgba(255,255,255,.02)] p-[var(--px-18)] before:absolute before:left-[var(--px-18)] before:top-0 before:block before:w-[var(--px-28)] before:border-t before:border-[var(--color-accent,#EE4A26)] before:content-['']`}
         style={autoFluidGridStyle}
       >
-        <div className="relative w-[var(--px-120)] h-[var(--px-120)] shrink-0 border border-dotted border-slate-200">
+        <div className={`relative w-[var(--px-120)] h-[var(--px-120)] shrink-0 border ${PLAYLIST_DIVIDER_BORDER}`}>
           {!DEMO_MODE ? (
             <img src={(hasCustomCover ? customCoverUrl : null) || DefaultCover} onLoad={() => setCoverLoaded(true)} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="block w-full h-full object-cover" />
           ) : (
@@ -583,7 +586,7 @@ const PlaylistHero: React.FC = () => {
                 name="Rate these Results"
                 onClick={() => setShowRating(true)}
                 title={rateChrome.title}
-                className={"inline-flex items-center gap-[var(--px-8)] border border-dotted border-slate-200 px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] hover:opacity-100 playlist-rating-button min-h-[var(--px-44)]" + (rateChrome.showLock ? " opacity-45" : " opacity-80")}
+                className={`inline-flex items-center gap-[var(--px-8)] border ${PLAYLIST_DIVIDER_STRONG} px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] hover:border-[rgba(255,255,255,.28)] hover:opacity-100 playlist-rating-button min-h-[var(--px-44)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]` + (rateChrome.showLock ? " opacity-45" : " opacity-90")}
                 id="playlist-hero-rating-button"
                 aria-label="Rate these Results"
                 aria-expanded={showRating}
@@ -608,10 +611,16 @@ const PlaylistHero: React.FC = () => {
           </div>
         </div>
       </div>
+      <div ref={stickySentinelRef} aria-hidden="true" className="h-px w-full" data-testid="playlist-ref-sentinel" />
 
       <p className="mt-[var(--px-12)] mb-[var(--px-16)] flex items-center gap-[var(--px-10)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-50 before:block before:w-[var(--px-20)] before:border-t before:border-[var(--color-accent,#EE4A26)] before:content-['']">
         Sonic match found — scored by PYXIS-1
       </p>
+
+      <StickyReferenceBar
+        sentinelRef={stickySentinelRef}
+        resultCount={playlistData?.similar_tracks?.length ?? 0}
+      />
 
       {/* Modals */}
       <CoverCropModal

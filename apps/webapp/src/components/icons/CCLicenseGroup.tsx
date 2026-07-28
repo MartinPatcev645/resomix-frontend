@@ -56,7 +56,9 @@ export function CCLicenseGroup({
                             src={icon.src}
                             alt={icon.alt}
                             draggable={false}
-                            className="cc-license-icon"
+                            width={88}
+                            height={31}
+                            className="cc-license-icon aspect-[88/31]"
                             style={{
                                 height: `var(--px-${size})`,
                                 width: 'auto',

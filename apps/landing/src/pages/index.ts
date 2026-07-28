@@ -1,8 +1,6 @@
-import { HomePage } from "./desktop/HomePage.tsx";
 import { AboutPage } from "./desktop/AboutPage.tsx";
 
 
-import { HomeMobile } from "./mobile/HomeMobile.tsx";
 import { AboutMobile } from "./mobile/AboutMobile.tsx";
 
 import InfoPage from "./InfoPage.tsx";
@@ -18,11 +16,11 @@ import CatalogueIntelligencePage from "./CatalogueIntelligencePage.tsx";
 import DevelopersPage from "./DevelopersPage.tsx";
 import PartnersPilotPage from "./PartnersPilotPage.tsx";
 import TrustPage from "./TrustPage.tsx";
+import HomePage from "./HomePage.tsx";
 
 export {
     HomePage,
     AboutPage,
-    HomeMobile,
     AboutMobile,
     InfoPage,
     AuthPage,
