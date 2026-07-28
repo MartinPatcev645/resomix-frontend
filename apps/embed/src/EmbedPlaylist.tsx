@@ -124,7 +124,6 @@ function ReadyView({
 }) {
   const cover = data.tracks.find((t) => t.artwork_url)?.artwork_url || null
   const title = data.name || 'Sonic Discovery'
-  const count = data.num_tracks ?? data.tracks.length
 
   return (
     <>
@@ -137,7 +136,7 @@ function ReadyView({
           <a className="embed-title" href={fullUrl} target="_blank" rel="noopener noreferrer">
             {title}
           </a>
-          <div className="embed-sub">{count} tracks · similarity playlist</div>
+          <div className="embed-sub">{data.total} tracks · similarity playlist</div>
         </div>
       </div>
 
@@ -176,6 +175,14 @@ function ReadyView({
           )
         })}
       </ol>
+
+      {data.hiddenCount > 0 && (
+        <div className="embed-viewmore">
+          <a className="embed-viewmore-btn" href={fullUrl} target="_blank" rel="noopener noreferrer">
+            View more tracks ↗
+          </a>
+        </div>
+      )}
 
       <footer className="embed-foot">
         <a href={fullUrl} target="_blank" rel="noopener noreferrer">

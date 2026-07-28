@@ -27,13 +27,21 @@ export interface EmbedTrack {
 export interface EmbedPlaylistData {
   uuid: string
   name?: string | null
-  num_tracks?: number | null
+  /** Total tracks in the playlist (incl. any locked for anonymous viewers). */
+  total: number
+  /** Real, playable tracks shown in the widget. */
   tracks: EmbedTrack[]
+  /** How many tracks are locked/redacted for anonymous viewers (shown as a CTA, not rows). */
+  hiddenCount: number
 }
 
 type Result =
   | { ok: true; data: EmbedPlaylistData }
   | { ok: false; error: 'not_found' | 'not_public' | 'network' | 'empty' }
+
+// The similarity endpoint redacts locked tracks for anonymous viewers into placeholder rows that
+// all share this fake id (no preview/art). We drop those and surface a "+N more" CTA instead.
+const isRedacted = (t: EmbedTrack): boolean => !t?.id || String(t.id).startsWith('dEm0')
 
 /** Fetch a public playlist's tracks by UUID. */
 export async function fetchPublicPlaylist(uuid: string): Promise<Result> {
@@ -51,17 +59,21 @@ export async function fetchPublicPlaylist(uuid: string): Promise<Result> {
       return { ok: false, error: body?.reason === 'not_public' ? 'not_public' : 'not_found' }
     }
 
-    const playlist = body.playlist ?? {}
-    const tracks: EmbedTrack[] = Array.isArray(body.similar_tracks) ? body.similar_tracks : []
-    if (!tracks.length) return { ok: false, error: 'empty' }
+    // The payload is nested under `data` ({ success, data: { playlist, similar_tracks } }).
+    const payload = body.data ?? body
+    const playlist = payload.playlist ?? {}
+    const all: EmbedTrack[] = Array.isArray(payload.similar_tracks) ? payload.similar_tracks : []
+    if (!all.length) return { ok: false, error: 'empty' }
 
+    const tracks = all.filter((t) => !isRedacted(t))
     return {
       ok: true,
       data: {
         uuid,
         name: playlist.name ?? null,
-        num_tracks: playlist.num_tracks ?? tracks.length,
+        total: all.length,
         tracks,
+        hiddenCount: all.length - tracks.length,
       },
     }
   } catch {
