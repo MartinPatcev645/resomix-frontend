@@ -79,6 +79,7 @@ import ProfileContent from "./Content/ProfileContent";
 import ChangePasswordContent from "./Content/ChangePasswordContent";
 import SessionsContent from "./Content/SessionsContent";
 import { fetchSessionId, fetchGenerationTime } from "./utils/fetching";
+export * from "./design-system";
 
 export {
   Navbar,

@@ -13,6 +13,7 @@ const WorkspaceMobile = lazy(() => import("@/pages/mobile/WorkspaceMobile.tsx").
 const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
 const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
 const SubscribePage = lazy(() => import("@/pages/SubscribePage.tsx"));
+const UiSystemSpecimenPage = lazy(() => import("@/pages/UiSystemSpecimenPage.tsx"));
 // const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
 // const TestTwo = lazy(() => import("@/pages/TestTwo.tsx"));
 // const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
@@ -134,6 +135,7 @@ function App() {
             <Route path="/playlist" element={<PlaylistRedirect />} />
             <Route path="/analysis" element={<OptionalAuthRoute><AnalysisLanding /></OptionalAuthRoute>} />
             <Route path="/subscribe" element={<SubscribePage />} />
+            {import.meta.env.DEV ? <Route path="/__ui-system" element={<UiSystemSpecimenPage />} /> : null}
 
             {/* Protected Auth Routes */}
             <Route element={<ProtectedRoute />}>
