@@ -195,6 +195,13 @@ const PlaylistHero: React.FC = () => {
   // where it's hit (matches the requirement: the Apple option is visible to free users but gated).
   const handleExportButtonClick = () => {
     if (isExporting) return;
+    // Guests can't use any export option (TXT/Apple/Embed all require login), so show the login
+    // gate directly rather than opening a menu of locked items. verdict("export") is "login" only
+    // for guests — free/pro resolve to "allowed" and get the menu.
+    if (access.verdict("export") === "login") {
+      setGate({ reason: "login_required", title: "Log in to export", body: "Create a free account or log in to export your playlists." });
+      return;
+    }
     setShowExportMenu((v) => !v);
   };
 
@@ -541,21 +548,27 @@ const PlaylistHero: React.FC = () => {
             <Tooltip message={
               isAuthenticated
                 ? (playlistData?.playlist?.is_public ? "Public — click to make private" : "Private — click to make public")
-                : (playlistData?.playlist?.is_public ? "Playlist is Public" : "Playlist is Private!")
+                : "Log in to change visibility"
             }>
-              {React.createElement(
-                isAuthenticated ? 'button' : 'div',
-                {
-                  ...(isAuthenticated
-                    ? {
-                        type: 'button',
-                        onClick: () => setVisibilityConfirm(true),
-                        'aria-label': playlistData?.playlist?.is_public ? 'Make playlist private' : 'Make playlist public',
-                      }
-                    : {}),
-                  className: `flex-none shrink-0 px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase ${isAuthenticated ? 'cursor-pointer hover:brightness-125 transition-[filter]' : 'cursor-default'} ${playlistData?.playlist?.is_public ? 'text-[#5C5C5C]' : 'text-white'}`,
-                },
-                playlistData?.playlist?.is_public ? (
+              <button
+                type="button"
+                onClick={() => {
+                  // Guests can't change visibility (owner-only, login required) — prompt to log in
+                  // rather than silently doing nothing.
+                  if (isAuthenticated) {
+                    setVisibilityConfirm(true);
+                  } else {
+                    setGate({ reason: "login_required", title: "Log in to update visibility", body: "Log in to make this playlist private or public." });
+                  }
+                }}
+                aria-label={
+                  isAuthenticated
+                    ? (playlistData?.playlist?.is_public ? 'Make playlist private' : 'Make playlist public')
+                    : 'Log in to change visibility'
+                }
+                className={`flex-none shrink-0 px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase cursor-pointer hover:brightness-125 transition-[filter] ${playlistData?.playlist?.is_public ? 'text-[#5C5C5C]' : 'text-white'}`}
+              >
+                {playlistData?.playlist?.is_public ? (
                   <>
                     <PublicIcon customWidth="10" customHeight="10" className="text-[#5C5C5C] mb-[var(--px-2)]" disableHover={true} />
                     Public
@@ -565,8 +578,8 @@ const PlaylistHero: React.FC = () => {
                     <PrivateIcon customWidth="12" customHeight="12" className="text-white" disableHover={true} />
                     Private
                   </>
-                )
-              )}
+                )}
+              </button>
             </Tooltip>
           </div>
 

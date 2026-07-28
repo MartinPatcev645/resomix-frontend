@@ -154,6 +154,13 @@ const PlaylistHero: React.FC = () => {
 
   const handleExportButtonClick = () => {
     if (isExporting) return;
+    // Guests can't use any export option (TXT/Apple all require login), so show the login gate
+    // directly rather than opening a menu of locked items. verdict("export") is "login" only for
+    // guests — free/pro resolve to "allowed" and get the menu.
+    if (access.verdict("export") === "login") {
+      setGate({ reason: "login_required", title: "Log in to export", body: "Create a free account or log in to export your playlists." });
+      return;
+    }
     setShowExportMenu((v) => !v);
   };
 
@@ -423,19 +430,25 @@ const PlaylistHero: React.FC = () => {
               </>
             )}
           </button>
-          {React.createElement(
-            isAuthenticated ? "button" : "div",
-            {
-              ...(isAuthenticated
-                ? {
-                    type: "button",
-                    onClick: () => setVisibilityConfirm(true),
-                    "aria-label": playlistData?.playlist?.is_public ? "Make playlist private" : "Make playlist public",
-                  }
-                : {}),
-              className: `inline-flex min-h-[var(--px-44)] flex-none shrink-0 items-center gap-[var(--px-4)] border border-[rgba(255,255,255,.14)] px-[var(--px-8)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] ${isAuthenticated ? "cursor-pointer" : ""}`,
-            },
-            playlistData?.playlist?.is_public ? (
+          <button
+            type="button"
+            onClick={() => {
+              // Guests can't change visibility (owner-only, login required) — prompt to log in
+              // rather than silently doing nothing.
+              if (isAuthenticated) {
+                setVisibilityConfirm(true);
+              } else {
+                setGate({ reason: "login_required", title: "Log in to update visibility", body: "Log in to make this playlist private or public." });
+              }
+            }}
+            aria-label={
+              isAuthenticated
+                ? (playlistData?.playlist?.is_public ? "Make playlist private" : "Make playlist public")
+                : "Log in to change visibility"
+            }
+            className="inline-flex min-h-[var(--px-44)] flex-none shrink-0 items-center gap-[var(--px-4)] border border-[rgba(255,255,255,.14)] px-[var(--px-8)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] cursor-pointer"
+          >
+            {playlistData?.playlist?.is_public ? (
               <>
                 <PublicIcon customWidth="8" customHeight="8" className="opacity-60" disableHover={true} />
                 Public
@@ -445,8 +458,8 @@ const PlaylistHero: React.FC = () => {
                 <PrivateIcon customWidth="8" customHeight="8" disableHover={true} />
                 Private
               </>
-            ),
-          )}
+            )}
+          </button>
         </div>
 
         <p className="m-0 font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] opacity-60">
