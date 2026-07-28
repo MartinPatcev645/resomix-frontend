@@ -73,7 +73,7 @@ export const AnalysisProcessingPanel: React.FC<AnalysisProcessingPanelProps> = (
               <span
                 aria-hidden="true"
                 className={[
-                  "block h-[var(--px-8)] w-[var(--px-8)] rounded-full border",
+                  "block h-[var(--px-8)] w-[var(--px-8)] rounded-[var(--rx-radius-control)] border",
                   state === "now"
                     ? "border-[var(--color-accent,#EE4A26)] bg-[var(--color-accent,#EE4A26)] motion-safe:animate-pulse"
                     : state === "done"

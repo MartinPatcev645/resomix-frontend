@@ -1,5 +1,10 @@
 import React, { useEffect } from 'react'
 import { ButtonSleek } from '@resomix/ui'
+import {
+    WORKSPACE_BTN_PRIMARY,
+    WORKSPACE_BTN_SECONDARY,
+    WORKSPACE_FIELD_CLASS,
+} from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
 
 interface PlaylistRenameModalProps {
     isOpen: boolean
@@ -81,7 +86,7 @@ export const PlaylistRenameModal: React.FC<PlaylistRenameModalProps> = ({
             />
 
             {/* Modal content */}
-            <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl p-[var(--px-50)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-20)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
+            <div className="relative z-10 flex w-full max-w-[var(--px-400)] flex-col items-center gap-[var(--px-20)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] p-[var(--px-50)] text-[var(--rx-color-text-primary)] shadow-2xl lg:w-[var(--px-393)]">
                 <div className="text-center w-full">
                     <h2 id="rename-dialog-title" className="text-[length:var(--px-19)] font-semibold uppercase font-helvetica leading-[var(--px-24)]">
                         Rename Playlist
@@ -93,7 +98,7 @@ export const PlaylistRenameModal: React.FC<PlaylistRenameModalProps> = ({
                     <label htmlFor="playlist-name-input" className="sr-only">New playlist name</label>
                     <input
                         id="playlist-name-input"
-                        className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica"
+                        className={`${WORKSPACE_FIELD_CLASS} px-[var(--px-8)] text-[length:var(--px-16)] font-light font-helvetica lg:text-[length:var(--px-10)]`}
                         placeholder="Type new playlist name..."
                         value={newName}
                         onChange={(e) => setNewName(e.target.value)}
@@ -103,8 +108,8 @@ export const PlaylistRenameModal: React.FC<PlaylistRenameModalProps> = ({
                 </div>
 
                 <div className="flex justify-center items-center gap-[var(--px-10)]">
-                    <ButtonSleek text={submitting ? 'Renaming...' : 'Rename'} onClick={handleSubmit} className="cta-button primary" id="playlist-rename-submit-button" />
-                    <ButtonSleek text="Cancel" onClick={onClose} transparent={true} className="cta-button secondary" id="playlist-rename-cancel-button" />
+                    <ButtonSleek text={submitting ? 'Renaming...' : 'Rename'} onClick={handleSubmit} className={`${WORKSPACE_BTN_PRIMARY} cta-button primary`} id="playlist-rename-submit-button" />
+                    <ButtonSleek text="Cancel" onClick={onClose} transparent={true} className={`${WORKSPACE_BTN_SECONDARY} cta-button secondary`} id="playlist-rename-cancel-button" />
                 </div>
             </div>
         </div>

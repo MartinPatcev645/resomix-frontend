@@ -23,7 +23,8 @@ import { CoverTextOverlay } from "@/components/Playlist/CoverTextOverlay.tsx";
 import { CoverCropModal } from "@/components/Playlist/CoverCropModal.tsx";
 import { playlistAccessChrome, PLAYLIST_LOCK_MARK } from "@/utils/playlistAccessChrome.ts";
 import { StickyReferenceBar } from "@/components/Playlist/StickyReferenceBar.tsx";
-import { PLAYLIST_DIVIDER_BORDER, PLAYLIST_DIVIDER_STRONG } from "@/utils/playlistChrome.ts";
+import { PLAYLIST_DIVIDER_BORDER } from "@/utils/playlistChrome.ts";
+import { WORKSPACE_BTN_PRIMARY, WORKSPACE_BTN_SECONDARY, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
 
 const InputTrackStatus = "Loading..."
 
@@ -335,7 +336,7 @@ const PlaylistHero: React.FC = () => {
               e.preventDefault();
               navigate("/library");
             }}
-            className={`inline-flex items-center rounded-full border ${PLAYLIST_DIVIDER_STRONG} px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-90 hover:opacity-100 playlist-nav-link`}
+            className={`inline-flex min-h-[var(--px-44)] items-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] playlist-nav-link ${WORKSPACE_FOCUS_VISIBLE}`}
             id="playlist-hero-back-link"
           >
             ‹ Back to Library
@@ -348,7 +349,7 @@ const PlaylistHero: React.FC = () => {
               e.preventDefault();
               navigate("/sonic-discovery");
             }}
-            className={`inline-flex items-center rounded-full border ${PLAYLIST_DIVIDER_STRONG} px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-90 hover:opacity-100 playlist-nav-link`}
+            className={`inline-flex min-h-[var(--px-44)] items-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] playlist-nav-link ${WORKSPACE_FOCUS_VISIBLE}`}
             id="playlist-hero-back-link"
           >
             ‹ Back to search
@@ -373,7 +374,7 @@ const PlaylistHero: React.FC = () => {
               onClick={() => withAccess("rename", "Log in to rename", "Create a free account or log in to rename your playlists.", () => setShowRename(true))}
               icon={<img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
               hoverIcon={<img src={RenameBlackSvg} aria-label="Rename" draggable={false} alt="Rename" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-              className={"playlist-action-button" + renameChrome.className}
+              className={`playlist-action-button !rounded-[var(--rx-radius-control)] !outline-[var(--rx-color-border-default)] !bg-transparent hover:!bg-[rgba(255,255,255,0.06)] !min-h-[var(--px-44)] ${WORKSPACE_FOCUS_VISIBLE}${renameChrome.className}`}
               id="playlist-hero-rename-button"
             />
           </span>
@@ -389,7 +390,7 @@ const PlaylistHero: React.FC = () => {
                 disabled={isExporting}
                 icon={<img src={ExportSvg} draggable={false} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
                 hoverIcon={<img src={ExportBlackSvg} draggable={false} alt="Export" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-                className={"playlist-action-button" + exportChrome.className}
+                className={`playlist-action-button !rounded-[var(--rx-radius-control)] !outline-[var(--rx-color-border-default)] !bg-transparent hover:!bg-[rgba(255,255,255,0.06)] !min-h-[var(--px-44)] ${WORKSPACE_FOCUS_VISIBLE}${exportChrome.className}`}
                 id="playlist-hero-export-button"
               />
             </span>
@@ -399,11 +400,11 @@ const PlaylistHero: React.FC = () => {
               ref={exportMenuRef}
               role="menu"
               aria-label="Export options"
-              className={`absolute right-0 top-[calc(100%+var(--px-6))] z-50 min-w-[var(--px-220)] bg-[var(--color-secondary-background)] text-white border ${PLAYLIST_DIVIDER_STRONG} shadow-lg`}
+              className={`absolute right-0 top-[calc(100%+var(--px-6))] z-50 min-w-[var(--px-220)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] text-[var(--rx-color-text-primary)] shadow-lg`}
             >
               <button
                 role="menuitem"
-                className="w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-white hover:text-black transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)]"
+                className={`w-full px-[var(--px-12)] py-[var(--px-10)] text-left font-fira text-[length:var(--px-9)] font-light tracking-[var(--px-0-25)] text-[var(--rx-color-text-primary)] transition-colors hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} flex items-center gap-[var(--px-8)]`}
                 onClick={handleDownloadExportClick}
                 id="export-menu-download"
               >
@@ -411,7 +412,7 @@ const PlaylistHero: React.FC = () => {
               </button>
               <button
                 role="menuitem"
-                className={`w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-white hover:text-black transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)] border-t ${PLAYLIST_DIVIDER_BORDER}`}
+                className={`w-full px-[var(--px-12)] py-[var(--px-10)] text-left font-fira text-[length:var(--px-9)] font-light tracking-[var(--px-0-25)] text-[var(--rx-color-text-primary)] transition-colors hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} flex items-center gap-[var(--px-8)] border-t ${PLAYLIST_DIVIDER_BORDER}`}
                 onClick={handleAppleExportClick}
                 id="export-menu-apple"
               >
@@ -419,7 +420,7 @@ const PlaylistHero: React.FC = () => {
               </button>
               <button
                 role="menuitem"
-                className={`w-full text-left px-[var(--px-12)] py-[var(--px-10)] hover:bg-white hover:text-black transition-colors text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira flex items-center gap-[var(--px-8)] border-t ${PLAYLIST_DIVIDER_BORDER}`}
+                className={`w-full px-[var(--px-12)] py-[var(--px-10)] text-left font-fira text-[length:var(--px-9)] font-light tracking-[var(--px-0-25)] text-[var(--rx-color-text-primary)] transition-colors hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} flex items-center gap-[var(--px-8)] border-t ${PLAYLIST_DIVIDER_BORDER}`}
                 onClick={handleEmbedClick}
                 id="export-menu-embed"
               >
@@ -437,7 +438,7 @@ const PlaylistHero: React.FC = () => {
               onClick={() => withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => setShowShare(true))}
               icon={<img src={ShareSvg} draggable={false} alt="Share" aria-label="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
               hoverIcon={<img src={ShareBlackSvg} aria-label="Share" draggable={false} alt="Share" className="w-[var(--px-16)] h-[var(--px-16)]" />}
-              className={"playlist-action-button" + shareChrome.className}
+              className={`playlist-action-button !rounded-[var(--rx-radius-control)] !outline-[var(--rx-color-border-default)] !bg-transparent hover:!bg-[rgba(255,255,255,0.06)] !min-h-[var(--px-44)] ${WORKSPACE_FOCUS_VISIBLE}${shareChrome.className}`}
               id="playlist-hero-share-button"
             />
           </span>
@@ -446,10 +447,10 @@ const PlaylistHero: React.FC = () => {
 
       {/* Header card — restrained orange tick connects reference to results below */}
       <div
-        className={`relative grid gap-[var(--px-20)] border ${PLAYLIST_DIVIDER_STRONG} bg-[rgba(255,255,255,.02)] p-[var(--px-18)] before:absolute before:left-[var(--px-18)] before:top-0 before:block before:w-[var(--px-28)] before:border-t before:border-[var(--color-accent,#EE4A26)] before:content-['']`}
+        className={`relative grid gap-[var(--px-20)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] p-[var(--px-18)] before:absolute before:left-[var(--px-18)] before:top-0 before:block before:w-[var(--px-28)] before:border-t before:border-[var(--color-accent,#EE4A26)] before:content-['']`}
         style={autoFluidGridStyle}
       >
-        <div className={`relative w-[var(--px-120)] h-[var(--px-120)] shrink-0 border ${PLAYLIST_DIVIDER_BORDER}`}>
+        <div className={`relative h-[var(--px-120)] w-[var(--px-120)] shrink-0 border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface-raised)]`}>
           {!DEMO_MODE ? (
             <img src={(hasCustomCover ? customCoverUrl : null) || DefaultCover} onLoad={() => setCoverLoaded(true)} onError={(e) => { e.currentTarget.src = DefaultCover; }} draggable={false} aria-label="Playlist Cover" alt="Playlist Cover" className="block w-full h-full object-cover" />
           ) : (
@@ -472,7 +473,7 @@ const PlaylistHero: React.FC = () => {
               disabled={coverUploading}
               aria-label="Change cover image"
               title="Change cover image"
-              className="absolute -top-[var(--px-10)] -right-[var(--px-10)] w-[var(--px-26)] h-[var(--px-26)] flex items-center justify-center rounded-full bg-[var(--color-secondary-background)] text-white cursor-pointer shadow-[0_var(--px-3)_var(--px-8)_rgba(0,0,0,0.55)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] hover:scale-110 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`absolute -right-[var(--px-10)] -top-[var(--px-10)] flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface-raised)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] duration-[var(--rx-duration-base)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} disabled:cursor-not-allowed disabled:opacity-50`}
               id="playlist-hero-cover-edit-button"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[var(--px-12)] h-[var(--px-12)]" aria-hidden="true">
@@ -509,7 +510,7 @@ const PlaylistHero: React.FC = () => {
                 id="playlist-results-heading"
                 tabIndex={-1}
                 title={playlistData?.playlist?.name || undefined}
-                className="m-0 min-w-0 flex-1 basis-0 truncate text-[length:var(--px-19)] font-medium uppercase font-helvetica leading-[var(--px-24)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
+                className={`m-0 min-w-0 flex-1 basis-0 truncate text-[length:var(--px-19)] font-medium uppercase font-helvetica leading-[var(--px-24)] outline-none ${WORKSPACE_FOCUS_VISIBLE}`}
               >
                 {playlistData?.playlist?.name || "No playlist data"}
               </h1>
@@ -521,7 +522,7 @@ const PlaylistHero: React.FC = () => {
                 aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
                 aria-pressed={isFavorite}
                 title={favoriteChrome.title}
-                className={"flex-none shrink-0 cursor-pointer bg-transparent border-0 p-0 flex items-center justify-center transition-transform hover:scale-110 active:scale-90 playlist-favorite-button" + favoriteChrome.className}
+                className={`flex-none shrink-0 cursor-pointer rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent p-[var(--px-10)] flex items-center justify-center transition-[background-color,border-color,transform] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:scale-110 active:scale-90 playlist-favorite-button ${WORKSPACE_FOCUS_VISIBLE}${favoriteChrome.className}`}
                 id="playlist-hero-favorite-button"
               >
                 {isFavorite ? (
@@ -611,7 +612,7 @@ const PlaylistHero: React.FC = () => {
                 name="Rate these Results"
                 onClick={() => setShowRating(true)}
                 title={rateChrome.title}
-                className={`inline-flex items-center gap-[var(--px-8)] border ${PLAYLIST_DIVIDER_STRONG} px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] hover:border-[rgba(255,255,255,.28)] hover:opacity-100 playlist-rating-button min-h-[var(--px-44)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]` + (rateChrome.showLock ? " opacity-45" : " opacity-90")}
+                className={`inline-flex min-h-[var(--px-44)] items-center gap-[var(--px-8)] border border-[var(--rx-color-border-default)] px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] playlist-rating-button ${WORKSPACE_FOCUS_VISIBLE}` + (rateChrome.showLock ? " opacity-45" : " opacity-90")}
                 id="playlist-hero-rating-button"
                 aria-label="Rate these Results"
                 aria-expanded={showRating}
@@ -739,14 +740,14 @@ const PlaylistHero: React.FC = () => {
           <button
             onClick={() => setVisibilityConfirm(false)}
             disabled={visibilityBusy}
-            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+            className={`${WORKSPACE_BTN_SECONDARY} flex-1`}
           >
             Cancel
           </button>
           <button
             onClick={handleConfirmVisibility}
             disabled={visibilityBusy}
-            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-secondary)] hover:opacity-90 text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer flex justify-center items-center disabled:opacity-50"
+            className={`${WORKSPACE_BTN_PRIMARY} flex-1`}
           >
             {visibilityBusy ? "Updating…" : (playlistData?.playlist?.is_public ? "Make Private" : "Make Public")}
           </button>

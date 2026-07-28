@@ -38,12 +38,12 @@ export function PreviewProgressBar({
       <div
         className={
           compact
-            ? "relative h-[var(--px-2)] w-full overflow-hidden rounded-full bg-[var(--color-primary)]/15"
-            : "relative h-[var(--px-6)] w-full overflow-hidden rounded-full bg-white/15"
+            ? "relative h-[var(--px-2)] w-full overflow-hidden bg-[rgba(255,255,255,0.14)]"
+            : "relative h-[var(--px-6)] w-full overflow-hidden bg-[rgba(255,255,255,0.14)]"
         }
       >
         <div
-          className="absolute inset-y-0 left-0 bg-[var(--color-primary-hover)] transition-[width] duration-150"
+          className="absolute inset-y-0 left-0 bg-[var(--rx-color-text-secondary)] transition-[width] duration-150"
           style={{ width: `${pct}%` }}
         />
       </div>
