@@ -4,6 +4,7 @@ import { getAllPlaylists } from "@resomix/api-client";
 import { displayArtistOrOmit, sanitizeWorkspaceTitle } from "@/utils/trackUtils.ts";
 import { useRecentAnalyses } from "@/pages/analysis/useRecentAnalyses.ts";
 import { PLAYLIST_DIVIDER_BORDER, PLAYLIST_DIVIDER_STRONG } from "@/utils/playlistChrome.ts";
+import type { WorkspaceMode } from "./WorkspaceShell.tsx";
 
 interface RailPlaylist {
   uuid: string;
@@ -47,13 +48,15 @@ const metaClass =
 /**
  * Variant A signed-in rail — recent similarity playlists, recent analyses, Library link.
  * Hidden below 1024px and when signed out (parent controls visibility).
+ * Section hierarchy follows the active workspace mode.
  */
-export const WorkspaceRail: React.FC = () => {
+export const WorkspaceRail: React.FC<{ mode?: WorkspaceMode }> = ({ mode = "discovery" }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const activePlaylistId = searchParams.get("id");
   const { items: analyses } = useRecentAnalyses(true, 5);
   const [playlists, setPlaylists] = useState<RailPlaylist[]>([]);
+  const playlistsPrimary = mode === "discovery";
 
   useEffect(() => {
     let cancelled = false;
@@ -78,62 +81,88 @@ export const WorkspaceRail: React.FC = () => {
     };
   }, []);
 
+  const playlistsPanel = (
+    <div className={playlistsPrimary ? primaryPanelClass : secondaryPanelClass}>
+      <h2 className={playlistsPrimary ? primaryHeadingClass : secondaryHeadingClass}>
+        Similarity playlists
+        {playlistsPrimary && playlists.length > 0 ? (
+          <span className="ml-[var(--px-8)] font-normal opacity-55">({playlists.length})</span>
+        ) : null}
+      </h2>
+      {playlists.length === 0 ? (
+        <p className="font-fira text-[length:var(--px-10)] opacity-45">No playlists yet.</p>
+      ) : (
+        <ul className={`divide-y divide-solid divide-[var(--playlist-divider)]`}>
+          {playlists.map((p) => {
+            const isActive = activePlaylistId === p.uuid;
+            return (
+              <li key={p.uuid}>
+                <button
+                  type="button"
+                  className={isActive ? activeItemBtnClass : itemBtnClass}
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={() => navigate(`/sonic-discovery?id=${p.uuid}`)}
+                >
+                  {p.name}
+                  <span className={metaClass}>
+                    {p.trackCount} track{p.trackCount === 1 ? "" : "s"}
+                    {p.createdAt ? ` · ${relativeWhen(p.createdAt)}` : ""}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+
+  const analysesPanel = (
+    <div className={playlistsPrimary ? secondaryPanelClass : primaryPanelClass}>
+      <h2 className={playlistsPrimary ? secondaryHeadingClass : primaryHeadingClass}>
+        Recent analyses
+        {!playlistsPrimary && analyses.length > 0 ? (
+          <span className="ml-[var(--px-8)] font-normal opacity-55">({analyses.length})</span>
+        ) : null}
+      </h2>
+      {analyses.length === 0 ? (
+        <p className="font-fira text-[length:var(--px-10)] opacity-45">No analyses yet.</p>
+      ) : (
+        <ul className={`divide-y divide-solid divide-[var(--playlist-divider)]`}>
+          {analyses.map((a) => (
+            <li key={a.analysisUuid}>
+              <button
+                type="button"
+                className={itemBtnClass}
+                onClick={() => navigate(`/analysis?id=${a.analysisUuid}`)}
+              >
+                {sanitizeWorkspaceTitle(a.title)}
+                <span className={metaClass}>
+                  Completed
+                  {displayArtistOrOmit(a.artist) ? ` · ${displayArtistOrOmit(a.artist)}` : ""}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+
   return (
     <aside className="hidden lg:block lg:sticky lg:top-[var(--nav-sticky-h)] lg:self-start" aria-label="Recent work">
       <div className="space-y-[var(--px-16)]">
-        <div className={primaryPanelClass}>
-          <h2 className={primaryHeadingClass}>Similarity playlists</h2>
-          {playlists.length === 0 ? (
-            <p className="font-fira text-[length:var(--px-10)] opacity-45">No playlists yet.</p>
-          ) : (
-            <ul className={`divide-y divide-solid divide-[var(--playlist-divider)]`}>
-              {playlists.map((p) => {
-                const isActive = activePlaylistId === p.uuid;
-                return (
-                  <li key={p.uuid}>
-                    <button
-                      type="button"
-                      className={isActive ? activeItemBtnClass : itemBtnClass}
-                      aria-current={isActive ? "page" : undefined}
-                      onClick={() => navigate(`/sonic-discovery?id=${p.uuid}`)}
-                    >
-                      {p.name}
-                      <span className={metaClass}>
-                        {p.trackCount} track{p.trackCount === 1 ? "" : "s"}
-                        {p.createdAt ? ` · ${relativeWhen(p.createdAt)}` : ""}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-
-        <div className={secondaryPanelClass}>
-          <h2 className={secondaryHeadingClass}>Recent analyses</h2>
-          {analyses.length === 0 ? (
-            <p className="font-fira text-[length:var(--px-10)] opacity-45">No analyses yet.</p>
-          ) : (
-            <ul className={`divide-y divide-solid divide-[var(--playlist-divider)]`}>
-              {analyses.map((a) => (
-                <li key={a.analysisUuid}>
-                  <button
-                    type="button"
-                    className={itemBtnClass}
-                    onClick={() => navigate(`/analysis?id=${a.analysisUuid}`)}
-                  >
-                    {sanitizeWorkspaceTitle(a.title)}
-                    <span className={metaClass}>
-                      Completed
-                      {displayArtistOrOmit(a.artist) ? ` · ${displayArtistOrOmit(a.artist)}` : ""}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {playlistsPrimary ? (
+          <>
+            {playlistsPanel}
+            {analysesPanel}
+          </>
+        ) : (
+          <>
+            {analysesPanel}
+            {playlistsPanel}
+          </>
+        )}
 
         <div className={secondaryPanelClass}>
           <h2 className={secondaryHeadingClass}>Library</h2>

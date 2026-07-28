@@ -51,8 +51,10 @@ export function WorkspaceMobile({ mode }: { mode: WorkspaceMode }) {
     }
   }, [showFullAnalysis, urlId, loadCachedResponse, setPlaylistResponse, navigate, handleSelectTrack]);
 
+  // Discovery-only: a leftover successful upload/search response must not bounce
+  // /analysis back to /sonic-discovery (that made Analyse appear unselectable).
   React.useEffect(() => {
-    if (showFullAnalysis) return;
+    if (mode !== "discovery" || showFullAnalysis) return;
     if (response && response.success) {
       setUrlDiscoveryActive(false);
       setPlaylistResponse(response as Parameters<typeof setPlaylistResponse>[0]);
@@ -64,7 +66,7 @@ export function WorkspaceMobile({ mode }: { mode: WorkspaceMode }) {
         navigate("/sonic-discovery");
       }
     }
-  }, [showFullAnalysis, response, setPlaylistResponse, navigate]);
+  }, [mode, showFullAnalysis, response, setPlaylistResponse, navigate]);
 
   if (showFullAnalysis) {
     return (

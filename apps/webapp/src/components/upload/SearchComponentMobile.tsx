@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import searchIcon from "@/assets/icons/search.svg";
 import uploadIcon from "@/assets/icons/arrow_upload.svg";
 import SoundWavesSvg from "@/assets/icons/sound_waves.svg";
@@ -8,6 +8,7 @@ import { useSearch } from "@resomix/hooks";
 import { usePlayerStore } from "@resomix/stores";
 import type { SearchResult } from "@resomix/hooks";
 import { WorkspaceSearchField } from "./WorkspaceSearchField.tsx";
+import { SEARCH_MODE_HINT, SEARCH_MODE_LABEL } from "@/sections/desktop/Workspace/workspaceCopy.ts";
 
 interface SearchComponentProps {
     onUploadClick?: () => void;
@@ -27,6 +28,7 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({
     variant = "legacy",
 }) => {
     const sectionRef = useRef<HTMLDivElement | null>(null);
+    const [searchModeHelpOpen, setSearchModeHelpOpen] = useState(false);
     const { query, results, isLoading, handleQueryChange } = useSearch();
 
     const { searchMode, setSearchMode } = usePlayerStore();
@@ -38,23 +40,55 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({
     if (variant === "workspace") {
         return (
             <div ref={sectionRef}>
-                <div className="flex flex-wrap items-stretch gap-[var(--px-10)]">
+                <div className="grid grid-cols-1 items-stretch gap-[var(--px-16)] py-[var(--px-20)]">
                     <WorkspaceSearchField compact onTrackSelect={onTrackSelect} />
-                    <select
-                        id="search-mode-dropdown-mobile"
-                        aria-label="Search mode"
-                        value={searchMode}
-                        onChange={handleSearchModeChange}
-                        className="min-h-[var(--px-44)] appearance-none border border-dotted border-slate-400 bg-[#0e0e0e] bg-[length:var(--px-10)] bg-[position:right_var(--px-10)_center] bg-no-repeat px-[var(--px-10)] py-[var(--px-10)] pr-[var(--px-28)] font-fira text-[length:var(--px-11)] text-[var(--color-primary)] opacity-75"
-                        style={{
-                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23B9B9B9' stroke-width='1.2'/%3E%3C/svg%3E")`,
-                        }}
-                    >
-                        <option value="auto">Auto</option>
-                        <option value="artist">Artist</option>
-                        <option value="title">Title</option>
-                    </select>
+                    <div className="flex min-w-0 flex-col gap-[var(--px-7)]">
+                        <span
+                            className="flex items-center gap-[var(--px-7)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[rgba(255,255,255,.55)]"
+                            id="search-mode-dropdown-mobile-label"
+                        >
+                            {SEARCH_MODE_LABEL}
+                            <button
+                                type="button"
+                                className={[
+                                    "inline-flex h-[var(--px-17)] w-[var(--px-17)] shrink-0 items-center justify-center rounded-full border font-fira text-[length:var(--px-10)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]",
+                                    searchModeHelpOpen
+                                        ? "border-[var(--color-accent,#EE4A26)] text-[var(--color-accent,#EE4A26)]"
+                                        : "border-[rgba(255,255,255,.09)] text-[rgba(255,255,255,.55)] hover:border-[var(--color-accent,#EE4A26)] hover:text-[var(--color-accent,#EE4A26)]",
+                                ].join(" ")}
+                                aria-expanded={searchModeHelpOpen}
+                                aria-controls="search-mode-help-mobile"
+                                aria-label="About search mode"
+                                onClick={() => setSearchModeHelpOpen((v) => !v)}
+                            >
+                                i
+                            </button>
+                        </span>
+                        <select
+                            id="search-mode-dropdown-mobile"
+                            aria-labelledby="search-mode-dropdown-mobile-label"
+                            aria-describedby={searchModeHelpOpen ? "search-mode-help-mobile" : undefined}
+                            value={searchMode}
+                            onChange={handleSearchModeChange}
+                            className="h-[var(--px-52)] w-full appearance-none border border-[rgba(255,255,255,.16)] bg-[#0b0b0b] bg-[length:var(--px-10)] bg-[position:right_var(--px-14)_center] bg-no-repeat px-[var(--px-14)] font-fira text-[length:var(--px-14)] text-[var(--color-primary)] hover:border-[rgba(255,255,255,.28)] focus:border-[rgba(238,74,38,.55)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
+                            style={{
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23B9B9B9' stroke-width='1.2'/%3E%3C/svg%3E")`,
+                            }}
+                        >
+                            <option value="auto">Auto</option>
+                            <option value="artist">Artist</option>
+                            <option value="title">Title</option>
+                        </select>
+                    </div>
                 </div>
+                {searchModeHelpOpen && (
+                    <p
+                        id="search-mode-help-mobile"
+                        className="mb-[var(--px-12)] border border-dashed border-[rgba(238,74,38,.4)] px-[var(--px-16)] py-[var(--px-12)] text-[length:var(--px-13)] font-helvetica font-light leading-[var(--px-20)] text-[rgba(255,255,255,.7)]"
+                    >
+                        {SEARCH_MODE_HINT}
+                    </p>
+                )}
             </div>
         );
     }
