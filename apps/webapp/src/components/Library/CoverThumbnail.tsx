@@ -37,7 +37,9 @@ export const CoverThumbnail: React.FC<CoverThumbnailProps> = ({ uuid, playlistUu
       onError={(e) => { e.currentTarget.src = DefaultCover; }}
       draggable={false}
       alt="Cover"
-      className={className}
+      width={120}
+      height={120}
+      className={["aspect-square", className].filter(Boolean).join(" ")}
     />
   );
 };

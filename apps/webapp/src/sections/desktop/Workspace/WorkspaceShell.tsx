@@ -19,6 +19,7 @@ import {
 } from "./workspaceCopy.ts";
 import { WorkspaceRail } from "./WorkspaceRail.tsx";
 import { isPlaylistUuid } from "@/utils/urlIdKind.ts";
+import { withViewTransition } from "@/utils/viewTransition.ts";
 
 export type WorkspaceMode = "discovery" | "analysis";
 
@@ -49,7 +50,9 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({ mode, children }
 
   const selectTask = (next: WorkspaceMode) => {
     if (next === mode) return;
-    navigate(next === "discovery" ? "/sonic-discovery" : "/analysis");
+    withViewTransition(() => {
+      navigate(next === "discovery" ? "/sonic-discovery" : "/analysis");
+    });
   };
 
   return (

@@ -142,7 +142,7 @@ export const PlaylistExport: React.FC<PlaylistExportProps> = ({
                 </div>
 
                 <div className='relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center my-[var(--px-8)]'>
-                    <img src={BrakesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Brakes" className="absolute top-0 left-0 pointer-events-none" />
+                    <img src={BrakesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Brakes" width={302} height={27} className="absolute top-0 left-0 h-[var(--px-27)] w-full pointer-events-none" />
                     <span className="">
                         {filename || 'Preparing filename...'}
                     </span>

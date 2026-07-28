@@ -52,6 +52,21 @@
   <meta name="apple-itunes-app" content="app-argument=resomix-audio">
   <meta property="og:type" content="music.radio_station">
   <meta property="og:audio" content="https://media.resomix.com/">
+
+  <!-- Critical app fonts (@font-face families actually used: Helvetica_Neue, Fira Code, Benzin).
+       Montserrat / Auger Mono faces exist in fonts.css but are unused in webapp src — not preloaded.
+       FiraCode-VariableFont_wght.ttf is in public/fonts/ but has no @font-face — not preloaded. -->
+  <link rel="preload" href="/fonts/HelveticaNeueLight.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/HelveticaNeueRoman.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/HelveticaNeueMedium.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/HelveticaNeueBold.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/HelveticaNeueUltraLight.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="/fonts/FiraCode-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="/fonts/FiraCode-Light.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="/fonts/FiraCode-Medium.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="/fonts/FiraCode-SemiBold.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="/fonts/FiraCode-Bold.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="/fonts/benzin-bold.ttf" as="font" type="font/ttf" crossorigin>
 </head>
 
 <body class="bg-[var(--color-secondary)]">

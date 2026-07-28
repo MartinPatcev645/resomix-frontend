@@ -4,7 +4,7 @@ import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useSilkt
 import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
-import { ProtectedRoute, GuestRoute, WebLayout, SessionExpiredModal, OptionalAuthRoute } from "@/components/index.ts";
+import { ProtectedRoute, GuestRoute, WebLayout, SessionExpiredModal, OptionalAuthRoute, RouteFallback } from "@/components/index.ts";
 import { MetricsOverlay } from "@/components/metrics/MetricsOverlay.js";
 
 // Lazy-load pages
@@ -123,7 +123,7 @@ function App() {
           (desktop + mobile); raised in every tab via the reason-carrying logout broadcast. */}
       <SessionExpiredModal />
 
-      <Suspense fallback={null}>
+      <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* Group A: Routes wrapped in persistent WebLayout shell */}
           <Route element={<WebLayout />}>

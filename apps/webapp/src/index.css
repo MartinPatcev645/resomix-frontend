@@ -196,19 +196,18 @@ html #stcm-wrapper .stcm-button-secondary:hover {
   }
 }
 
-@keyframes workspace-stage-in {
+/* Workspace panel / stage mount — opacity only (no transform / layout animation). */
+@keyframes workspace-panel-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .motion-safe\:animate-\[workspace-stage-in_200ms_ease-out_both\] {
+  .motion-safe\:animate-\[workspace-panel-in_150ms_ease-out_both\] {
     animation: none !important;
   }
 

@@ -29,6 +29,7 @@ import {
   patchDiscoveryCache,
   clearDiscoveryReferenceCache,
 } from "./workspaceStateCache.ts";
+import { withViewTransition } from "@/utils/viewTransition.ts";
 
 export const WorkspaceDiscoveryPanel: React.FC = () => {
   const cached = getDiscoveryCache();
@@ -90,6 +91,11 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
     setCatalogueTrackId(null);
     setPendingUpload(null);
     setIsSubmitting(false);
+  };
+
+  const switchSource = (next: "search" | "upload") => {
+    if (next === source) return;
+    withViewTransition(() => setSource(next));
   };
 
   const onCatalogueSelect = (track: SearchResult) => {
@@ -154,12 +160,12 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
           >
             <SourceTab
               selected={source === "search"}
-              onClick={() => setSource("search")}
+              onClick={() => switchSource("search")}
               label={SOURCE_TAB_SEARCH}
             />
             <SourceTab
               selected={source === "upload"}
-              onClick={() => setSource("upload")}
+              onClick={() => switchSource("upload")}
               label={SOURCE_TAB_UPLOAD}
             />
           </div>
@@ -190,14 +196,14 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
               <SearchComponent
                 variant="workspace"
                 hideSourceTabs
-                onUploadClick={() => setSource("upload")}
+                onUploadClick={() => switchSource("upload")}
                 onTrackSelect={onCatalogueSelect}
               />
             ) : (
               <SearchComponentMobile
                 variant="workspace"
                 hideSourceTabs
-                onUploadClick={() => setSource("upload")}
+                onUploadClick={() => switchSource("upload")}
                 onTrackSelect={onCatalogueSelect}
               />
             )}
@@ -220,7 +226,7 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
                 hideSourceTabs
                 deferSubmit
                 onFileSelected={onUploadSelected}
-                onSearchClick={() => setSource("search")}
+                onSearchClick={() => switchSource("search")}
                 onAnalysis={onAnalysis}
               />
             ) : (
@@ -229,7 +235,7 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
                 hideSourceTabs
                 deferSubmit
                 onFileSelected={onUploadSelected}
-                onSearchClick={() => setSource("search")}
+                onSearchClick={() => switchSource("search")}
                 onAnalysis={onAnalysis}
               />
             )}
