@@ -1,5 +1,5 @@
 import React from "react";
-import { REFERENCE_CHANGE, REFERENCE_SELECTED_LABEL } from "./workspaceCopy.ts";
+import { REFERENCE_SELECTED_LABEL } from "./workspaceCopy.ts";
 import { displayArtistOrOmit, sanitizeWorkspaceTitle } from "@/utils/trackUtils.ts";
 
 export type ReferenceSource = "catalogue" | "upload";
@@ -14,9 +14,9 @@ export interface WorkspaceReference {
 
 export const ReferenceChip: React.FC<{
   reference: WorkspaceReference;
-  onChange: () => void;
-  onCancel?: () => void;
-}> = ({ reference, onChange, onCancel }) => (
+  /** Clears the selection and returns to a fresh screen. */
+  onCancel: () => void;
+}> = ({ reference, onCancel }) => (
   <div className="relative flex flex-wrap items-center gap-x-[var(--px-14)] gap-y-[var(--px-8)] border border-[rgba(238,74,38,.5)] bg-[linear-gradient(to_right,rgba(238,74,38,.05),rgba(238,74,38,.012)_55%,transparent)] p-[var(--px-14)] transition-[border-color,background-color] duration-150 ease-out motion-reduce:transition-none">
     <span
       aria-hidden="true"
@@ -44,19 +44,10 @@ export const ReferenceChip: React.FC<{
     </span>
     <button
       type="button"
-      onClick={onChange}
-      className="min-h-[var(--px-44)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-2)] opacity-75 hover:opacity-100"
+      onClick={onCancel}
+      className="min-h-[var(--px-44)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-2)] text-[var(--color-neon-orange,#EE4A26)] opacity-75 hover:opacity-100"
     >
-      {REFERENCE_CHANGE}
+      Cancel
     </button>
-    {onCancel && (
-      <button
-        type="button"
-        onClick={onCancel}
-        className="min-h-[var(--px-44)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-2)] text-[var(--color-neon-orange,#EE4A26)] opacity-75 hover:opacity-100"
-      >
-        Cancel
-      </button>
-    )}
   </div>
 );

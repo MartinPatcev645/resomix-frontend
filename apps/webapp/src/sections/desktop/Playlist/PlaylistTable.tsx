@@ -355,7 +355,7 @@ const PlaylistTable: React.FC = () => {
                                 type="button"
                                 className="flex h-[var(--px-44)] w-[var(--px-36)] items-center justify-center hover:cursor-pointer playlist-sonic-discovery-button bg-transparent border-0 p-0 opacity-80 hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent,#EE4A26)]"
                                 onClick={() => {
-                                    window.open(`${BASE_BETA_URL}/?id=${track.id}`, '_blank');
+                                    window.open(`${BASE_BETA_URL}/sonic-discovery?discover=${track.id}`, '_blank');
                                 }}
                                 id={`playlist-table-sonic-discovery-${track.id}`}
                                 aria-label="Chain Discover"
