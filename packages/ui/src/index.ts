@@ -36,6 +36,7 @@ import { Remains } from "./Animations/Remains";
 import { RockRing } from "./Animations/RockRing";
 import { Terrain } from "./Animations/Terrain";
 import { StaticNoise } from "./Animations/StaticNoise";
+import { VoidField } from "./Backgrounds/VoidField";
 import { Tunnel } from "./Animations/Tunnel";
 import { MobileNavbar } from "./Layout/MobileNavbar";
 import { ToggleButton } from "./Buttons/ToggleButton";
@@ -165,6 +166,7 @@ export {
   // Cart
   CartIcon,
   ProfileDropdown,
+  VoidField,
   fetchSessionId,
   fetchGenerationTime,
 };

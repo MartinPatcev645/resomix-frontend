@@ -1,10 +1,14 @@
 import React, { useMemo } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { StaticNoise, GlobalFooter, GlobalMobileFooter, SideLines } from "@resomix/ui";
+import { VoidField, GlobalFooter, GlobalMobileFooter, SideLines } from "@resomix/ui";
 import { LogoRFooter } from "../LogoRFooter.tsx";
 import { OptionalAuthRoute } from "../OptionalAuthRoute.tsx";
 import { SiteHeader } from "../Navigation/SiteHeader.tsx";
 import { MobileDrawer } from "../Navigation/MobileDrawer.tsx";
+import voidPlateDark from "@/assets/void-field/void-field-dark.webp";
+import voidPlateLight from "@/assets/void-field/void-field-light.webp";
+import voidGrainDark from "@/assets/void-field/void-grain-dark.png";
+import voidGrainLight from "@/assets/void-field/void-grain-light.png";
 import { useResponsive } from "@resomix/hooks";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 
@@ -93,8 +97,17 @@ export function LandingLayout() {
     return (
         <OptionalAuthRoute>
             <div id="landing-page-root" className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen relative`}>
-                {/* {isDesktop && <StaticNoise />} */}
-                {!['home', 'product', 'product/sonic-discovery', 'product/track-intelligence', 'product/catalog-intelligence', 'developers', 'partners', 'partners/pilot', 'trust'].includes(mode) && <StaticNoise />}
+                {/* Shared void-field backdrop for pages that don't render their own (the marketing
+                    pages in the list below already ship their page-scoped void-field). Keeps every
+                    page on the same home-style background. */}
+                {!['home', 'product', 'product/sonic-discovery', 'product/track-intelligence', 'product/catalog-intelligence', 'developers', 'partners', 'partners/pilot', 'trust'].includes(mode) && (
+                    <VoidField
+                        plateDark={voidPlateDark}
+                        plateLight={voidPlateLight}
+                        grainDark={voidGrainDark}
+                        grainLight={voidGrainLight}
+                    />
+                )}
                 <div className="mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]">
                     <SideLines
                         navbar={isDesktop ? undefined : mobileNavbar}
