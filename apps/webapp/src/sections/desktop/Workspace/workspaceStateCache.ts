@@ -55,13 +55,19 @@ export function clearAnalysisCache(): void {
   analysisCache.pendingFile = null;
 }
 
-/** Scroll the working panel top into view only when it sits above the viewport. */
+/**
+ * Recover the working panel into view when it is off-screen:
+ * scrolled past (top above viewport) or fully below the fold.
+ * Do not scroll when the panel is already visible — its natural resting
+ * position under the mode cards sits past 35% of many viewports, and the
+ * old threshold jumped the page on every WorkspaceStage remount/mode switch.
+ */
 export function scrollWorkspacePanelIntoView(panelId = "workspace-active-panel"): void {
   requestAnimationFrame(() => {
     const el = document.getElementById(panelId);
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    if (rect.top < 0 || rect.top > window.innerHeight * 0.35) {
+    if (rect.top < 0 || rect.top > window.innerHeight) {
       el.scrollIntoView({ block: "start", behavior: "auto" });
     }
   });
