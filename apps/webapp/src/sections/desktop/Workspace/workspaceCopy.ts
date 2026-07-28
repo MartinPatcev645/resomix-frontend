@@ -70,6 +70,7 @@ export const FIND_SIMILAR_CTA = "Find similar tracks";
 export const DEPTH_LABEL = "Results";
 
 export const REFERENCE_CHANGE = "Change";
+export const REFERENCE_SELECTED_LABEL = "Reference selected";
 
 export const PROCESSING_STEPS_CATALOGUE = [
   "Preparing reference",
