@@ -152,7 +152,7 @@ export const WorkspaceAnalysisPanel: React.FC = () => {
                   source: "upload",
                   detail: pendingFile.name,
                 }}
-                onChange={() => {
+                onCancel={() => {
                   setPendingFile(null);
                   if (inputRef.current) inputRef.current.value = "";
                 }}

@@ -22,6 +22,12 @@ export function WorkspaceMobile({ mode }: { mode: WorkspaceMode }) {
   const [searchParams] = useSearchParams();
   const urlId = searchParams.get("id");
   const urlState = searchParams.get("state");
+  // Explicit chain-discover seed. Catalogue track ids are UUIDs (indistinguishable in shape from a
+  // playlist uuid), so a dedicated `?discover=<track-uuid>` triggers "create similarity by this
+  // track" unambiguously — while `?id=<uuid>` keeps meaning "open this playlist". A numeric `?id=`
+  // is still honoured as a legacy chain-discover seed for back-compat.
+  const urlDiscover = searchParams.get("discover");
+  const seedTrackId = urlDiscover || (urlId && isCatalogueTrackId(urlId) ? urlId : null);
 
   const { response, error, setError, gateReason, gateTitle, gateBody, setGateReason } = useUploadStore();
   const { setPlaylistResponse, loadCachedResponse } = usePlaylistStore();
@@ -33,11 +39,12 @@ export function WorkspaceMobile({ mode }: { mode: WorkspaceMode }) {
 
   const showFullAnalysis = mode === "analysis" && !!urlId;
 
+  // `?discover=<track>` (or a legacy numeric `?id=`) → chain-discover: create similarity by track.
   React.useEffect(() => {
     if (showFullAnalysis) return;
-    if (!urlId || !isCatalogueTrackId(urlId)) return;
+    if (!seedTrackId) return;
 
-    const cachedResponse = loadCachedResponse(urlId);
+    const cachedResponse = loadCachedResponse(seedTrackId);
     if (cachedResponse) {
       setPlaylistResponse(cachedResponse);
       const playlistId = cachedResponse.data?.playlist?.id || null;
@@ -45,11 +52,11 @@ export function WorkspaceMobile({ mode }: { mode: WorkspaceMode }) {
       return;
     }
 
-    if (claimDiscoveryTrigger(urlId)) {
+    if (claimDiscoveryTrigger(seedTrackId)) {
       setUrlDiscoveryActive(true);
-      handleSelectTrack(urlId, true);
+      handleSelectTrack(seedTrackId, true);
     }
-  }, [showFullAnalysis, urlId, loadCachedResponse, setPlaylistResponse, navigate, handleSelectTrack]);
+  }, [showFullAnalysis, seedTrackId, loadCachedResponse, setPlaylistResponse, navigate, handleSelectTrack]);
 
   // Discovery-only: a leftover successful upload/search response must not bounce
   // /analysis back to /sonic-discovery (that made Analyse appear unselectable).

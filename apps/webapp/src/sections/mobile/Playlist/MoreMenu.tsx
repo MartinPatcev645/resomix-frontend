@@ -210,7 +210,7 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                             <div className="w-full flex flex-col">
                                 <ButtonSleek transparent={true} className={`${WORKSPACE_BTN_SECONDARY} w-[var(--px-276)] text-[length:var(--px-14)] playlist-sonic-discovery-button`} text="Chain Discover using this Track" customWidth="w-full" onClick={() => {
                                     onClose?.();
-                                    window.open(`${BASE_BETA_URL}/?id=${trackId}`, '_blank');
+                                    window.open(`${BASE_BETA_URL}/sonic-discovery?discover=${trackId}`, '_blank');
                                 }} id={`playlist-table-sonic-discovery-${trackId}`} />
                             </div>
                         )}

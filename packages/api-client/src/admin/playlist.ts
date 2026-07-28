@@ -10,12 +10,35 @@ export interface PlaylistItem {
   id: number;
   uuid: string;
   user_id: string | null;
+  /** Creator's username for registered-user playlists; null for guests. */
+  creator_username?: string | null;
+  /** Hashed guest visitor id for anonymously-created playlists; null for registered users. */
+  guest_visitor_id?: string | null;
   name: string;
   is_public: boolean;
   type: 'custom' | 'similarity' | 'waiting_segments';
   seed_track_id: number | null;
   created_at: string; // ISO datetime string
   fork_id?: string;
+}
+
+/** Who created a playlist (from the admin detail endpoint). */
+export interface PlaylistCreator {
+  type: 'user' | 'guest' | 'unknown';
+  // Registered-user fields
+  id?: number | null;
+  uuid?: string | null;
+  username?: string | null;
+  email?: string | null;
+  name?: string | null;
+  is_active?: boolean | null;
+  is_email_verified?: boolean | null;
+  created_at?: string | null;
+  // Guest fields
+  visitor_id?: string | null;
+  ip?: string | null;
+  user_agent?: string | null;
+  seen_at?: string | null;
 }
 
 export interface PlaylistListParams {
@@ -83,6 +106,7 @@ export interface PlaylistDetailsResponse {
       id: number;
       uuid: string;
       user_id: string | null;
+      guest_visitor_id?: string | null;
       name: string;
       is_public: boolean;
       type: 'custom' | 'similarity' | 'waiting_segments';
@@ -91,6 +115,7 @@ export interface PlaylistDetailsResponse {
       track_count: number;
       fork_id?: string;
     };
+    creator?: PlaylistCreator;
     seed_track: {
       id: number;
       uuid: string;

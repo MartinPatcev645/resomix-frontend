@@ -355,7 +355,7 @@ const PlaylistTable: React.FC = () => {
                                 type="button"
                                 className={`flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent p-[var(--px-10)] text-[var(--rx-color-text-secondary)] transition-[background-color,border-color,color] hover:cursor-pointer hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] playlist-sonic-discovery-button ${WORKSPACE_FOCUS_VISIBLE}`}
                                 onClick={() => {
-                                    window.open(`${BASE_BETA_URL}/?id=${track.id}`, '_blank');
+                                    window.open(`${BASE_BETA_URL}/sonic-discovery?discover=${track.id}`, '_blank');
                                 }}
                                 id={`playlist-table-sonic-discovery-${track.id}`}
                                 aria-label="Chain Discover"

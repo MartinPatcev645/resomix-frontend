@@ -199,7 +199,7 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
           <DiscoveryProcessingPanel />
         ) : reference ? (
           <div className="space-y-[var(--px-16)] pt-[var(--px-18)]">
-            <ReferenceChip reference={reference} onChange={clearReference} onCancel={cancelReference} />
+            <ReferenceChip reference={reference} onCancel={cancelReference} />
             <div className="flex flex-wrap items-end justify-between gap-[var(--px-12)]">
               <DepthControl />
               <button

@@ -1,10 +1,41 @@
-import { useState } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Table, Tag, Dropdown, Button, Modal } from 'antd'
+import { Table, Tag, Dropdown, Button, Modal, Spin } from 'antd'
 import type { TableColumnsType, MenuProps } from 'antd'
-import { Trash2, MoreVertical, Eye, Lock, Unlock, Expand, Star } from 'lucide-react'
+import { Trash2, MoreVertical, Eye, Lock, Unlock, Expand, Star, User, Globe } from 'lucide-react'
 import type { PlaylistItem } from '@/hooks/usePlaylist.ts'
 import { useConfirmDialog } from '@resomix/hooks'
+import { getPlaylistDetails, type PlaylistCreator } from '@resomix/api-client'
+
+/** Small label/value row used inside the details modal. */
+function Detail({
+  label,
+  value,
+  mono,
+  breakAll,
+  span,
+}: {
+  label: string
+  value?: ReactNode
+  mono?: boolean
+  breakAll?: boolean
+  span?: boolean
+}) {
+  return (
+    <div className={span ? 'col-span-2' : ''}>
+      <p className="text-sm text-secondary">{label}</p>
+      <p
+        className={[
+          mono ? 'font-mono text-xs' : 'text-sm',
+          'text-primary',
+          breakAll ? 'break-all' : '',
+        ].join(' ')}
+      >
+        {value === null || value === undefined || value === '' ? '—' : value}
+      </p>
+    </div>
+  )
+}
 
 interface PlaylistTableProps {
   data: PlaylistItem[]
@@ -40,6 +71,34 @@ function PlaylistTable({
   const { confirmDelete } = useConfirmDialog()
   const navigate = useNavigate()
   const [viewingPlaylist, setViewingPlaylist] = useState<PlaylistItem | null>(null)
+  const [creator, setCreator] = useState<PlaylistCreator | null>(null)
+  const [creatorLoading, setCreatorLoading] = useState(false)
+
+  // When the details modal opens, load the full creator (registered user or guest) from the
+  // detail endpoint — the list rows only carry the username/guest id, not the richer fields.
+  useEffect(() => {
+    if (!viewingPlaylist) {
+      setCreator(null)
+      return
+    }
+    let cancelled = false
+    setCreatorLoading(true)
+    setCreator(null)
+    getPlaylistDetails(viewingPlaylist.uuid)
+      .then((res) => {
+        if (cancelled) return
+        setCreator(res.success && 'data' in res ? res.data?.creator ?? null : null)
+      })
+      .catch(() => {
+        if (!cancelled) setCreator(null)
+      })
+      .finally(() => {
+        if (!cancelled) setCreatorLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [viewingPlaylist])
 
   const handleDeleteSingle = (record: PlaylistItem) => {
     confirmDelete({
@@ -181,6 +240,27 @@ function PlaylistTable({
       render: (name: string) => (
         <span className="text-primary font-medium">{name}</span>
       ),
+    },
+    {
+      title: 'Creator',
+      key: 'creator',
+      width: 180,
+      render: (_, record) =>
+        record.creator_username ? (
+          <span className="inline-flex items-center gap-1.5 text-primary">
+            <User size={14} /> {record.creator_username}
+          </span>
+        ) : record.guest_visitor_id ? (
+          <Tag
+            color="orange"
+            icon={<Globe size={12} />}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
+          >
+            Guest
+          </Tag>
+        ) : (
+          <span className="text-secondary">—</span>
+        ),
     },
     {
       title: 'Visibility',
@@ -341,6 +421,74 @@ function PlaylistTable({
                   {new Date(viewingPlaylist.created_at).toLocaleString()}
                 </p>
               </div>
+            </div>
+
+            {/* Creator — registered user or anonymous guest */}
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--color-background-secondary)' }}>
+              <p className="text-sm font-medium text-primary mb-3 flex items-center gap-2">
+                {creator?.type === 'guest' ? <Globe size={16} /> : <User size={16} />}
+                Creator
+                {creator?.type === 'guest'
+                  ? ' (Guest)'
+                  : creator?.type === 'user'
+                    ? ' (Registered user)'
+                    : ''}
+              </p>
+
+              {creatorLoading ? (
+                <div className="py-4 flex justify-center">
+                  <Spin size="small" />
+                </div>
+              ) : creator?.type === 'user' ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <Detail label="Username" value={creator.username} mono />
+                  <Detail label="Email" value={creator.email} />
+                  <Detail label="Name" value={creator.name} />
+                  <Detail label="User ID" value={creator.id != null ? String(creator.id) : null} mono />
+                  <Detail label="User UUID" value={creator.uuid} mono breakAll span />
+                  <Detail
+                    label="Status"
+                    value={
+                      <Tag color={creator.is_active ? 'green' : 'red'}>
+                        {creator.is_active ? 'Active' : 'Inactive'}
+                      </Tag>
+                    }
+                  />
+                  <Detail
+                    label="Email verified"
+                    value={
+                      <Tag color={creator.is_email_verified ? 'green' : 'default'}>
+                        {creator.is_email_verified ? 'Verified' : 'Unverified'}
+                      </Tag>
+                    }
+                  />
+                  <Detail
+                    label="Joined"
+                    value={creator.created_at ? new Date(creator.created_at).toLocaleString() : null}
+                    span
+                  />
+                </div>
+              ) : creator?.type === 'guest' ? (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Detail label="Visitor ID" value={creator.visitor_id} mono breakAll span />
+                    <Detail label="IP address" value={creator.ip} mono />
+                    <Detail
+                      label="First seen"
+                      value={creator.seen_at ? new Date(creator.seen_at).toLocaleString() : null}
+                    />
+                    <Detail label="User agent" value={creator.user_agent} breakAll span />
+                  </div>
+                  <p className="mt-3 text-xs text-secondary">
+                    The visitor id is a privacy-preserving hash we store on the playlist. The IP /
+                    user-agent are the best-effort values from the request logs and may be unavailable.
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-secondary">
+                  No creator information is recorded for this playlist.
+                </p>
+              )}
             </div>
           </div>
         )}
