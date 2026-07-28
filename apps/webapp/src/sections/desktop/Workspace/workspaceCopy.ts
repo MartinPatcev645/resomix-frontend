@@ -86,7 +86,7 @@ export const PROCESSING_STEPS_UPLOAD = [
 ] as const;
 
 export const PROCESSING_NOTE =
-  "Catalogue references typically return in ~1–2 s; uploads in ~10–15 s depending on load. Observed, not a service-level commitment.";
+  "Search references typically return in ~5–6 s; uploads in ~12–20 s depending on load. Observed, not a service-level commitment.";
 
 export const ANALYSIS_UPLOAD_HEADING = "Drop a track to analyse";
 export const ANALYSIS_UPLOAD_FORMAT = "MP3 · WAV · FLAC · AIFF — up to 100 MB";
