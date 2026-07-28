@@ -41,7 +41,7 @@ export const ReferenceChip: React.FC<{
     </span>
     <button
       type="button"
-      onClick={onChange}
+      onClick={onCancel}
       className={`min-h-[var(--px-44)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)] hover:text-[var(--rx-color-text-primary)] ${WORKSPACE_FOCUS_VISIBLE}`}
     >
       Cancel
