@@ -124,7 +124,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
 
   const volumeControl = (
     <div
-      className={`flex w-[var(--px-64)] shrink-0 items-center gap-[var(--px-6)] max-[767px]:min-w-0 max-[767px]:flex-1 ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
+      className={`player-control-volume-group flex w-[var(--px-64)] shrink-0 items-center gap-[var(--px-6)] max-[767px]:min-w-0 max-[767px]:flex-1 ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
     >
       <button
         type="button"
@@ -221,20 +221,20 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
         </div>
 
         <div
-          className={`hidden min-[768px]:flex shrink-0 items-center gap-[var(--px-2)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
+          className={`player-control-desktop-transport hidden min-[768px]:flex shrink-0 items-center gap-[var(--px-2)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
         >
           {skipBackButton(SKIP_DESKTOP_CLASS)}
           {skipForwardButton(SKIP_DESKTOP_CLASS)}
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-[var(--px-8)] max-[767px]:min-w-0 max-[767px]:flex-1 min-[768px]:basis-full min-[768px]:justify-end xl:ml-auto xl:basis-auto">
+        <div className="player-control-secondary-cluster flex shrink-0 items-center justify-end gap-[var(--px-8)] max-[767px]:min-w-0 max-[767px]:flex-1 min-[768px]:basis-full min-[768px]:justify-end xl:ml-auto xl:basis-auto">
           {volumeControl}
           {showAppleBadge && (
             <AppleMusicBadge
               deepLinkUrl={deepLinkUrl}
               playing
-              fullHeightClass="h-[var(--px-22)]"
-              className={controlsDimmed ? "pointer-events-none opacity-45" : ""}
+              fullHeightClass="player-control-apple-badge-lockup h-[var(--px-22)]"
+              className={`player-control-apple-badge ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
             />
           )}
         </div>

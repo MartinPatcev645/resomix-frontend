@@ -309,14 +309,14 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                             />
                         )}
                         {!isRestricted && (
-                            <div className="flex items-center justify-between gap-[var(--px-8)]">
-                                <div className="pl-unavailable-dim flex min-h-[var(--px-44)] items-center gap-[var(--px-4)]">
+                            <div className="flex min-w-0 items-center justify-between gap-[var(--px-12)]">
+                                <div className="pl-unavailable-dim flex min-h-[var(--px-44)] shrink-0 items-center gap-[8px]">
                                     <Tooltip message="Yes Similar to Input Track!">
                                         <button
                                             type="button"
                                             aria-label="Mark as similar"
                                             onClick={() => void handleTrackRating(track.id, 1)}
-                                            className={`flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center ${WORKSPACE_FOCUS_VISIBLE}`}
+                                            className={`flex h-[44px] w-[44px] shrink-0 items-center justify-center ${WORKSPACE_FOCUS_VISIBLE}`}
                                             id={`playlist-table-thumb-up-${track.id}`}
                                         >
                                             <ThumbIcon
@@ -329,7 +329,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                             type="button"
                                             aria-label="Mark as not similar"
                                             onClick={() => void handleTrackRating(track.id, 0)}
-                                            className={`flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center ${WORKSPACE_FOCUS_VISIBLE}`}
+                                            className={`flex h-[44px] w-[44px] shrink-0 items-center justify-center ${WORKSPACE_FOCUS_VISIBLE}`}
                                             id={`playlist-table-thumb-down-${track.id}`}
                                         >
                                             <ThumbIcon
@@ -338,13 +338,13 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         </button>
                                     </Tooltip>
                                 </div>
-                                <div className="pl-unavailable-dim flex min-h-[var(--px-44)] items-center gap-[var(--px-4)]">
+                                <div className="pl-unavailable-dim flex min-h-[var(--px-44)] min-w-0 shrink-0 items-center gap-[8px]">
                                     {track.type === "internal" && track.deep_link_url && !isThisPlaying && (
                                         <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
                                     )}
                                     <button
                                         type="button"
-                                        className={`flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)] playlist-sonic-discovery-button opacity-85 transition-[background-color,border-color,color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] ${WORKSPACE_FOCUS_VISIBLE}`}
+                                        className={`flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)] playlist-sonic-discovery-button opacity-85 transition-[background-color,border-color,color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] ${WORKSPACE_FOCUS_VISIBLE}`}
                                         onClick={() => {
                                             window.open(`${BASE_BETA_URL}/?id=${track.id}`, "_blank");
                                         }}

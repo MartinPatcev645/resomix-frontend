@@ -302,7 +302,7 @@ const PlaylistTable: React.FC = () => {
                         </div>
                     </div>
                     {!isRestricted && (
-                        <div className="pl-unavailable-dim flex items-center gap-[var(--px-4)]" role="cell">
+                        <div className="pl-unavailable-dim flex min-w-0 items-center justify-center gap-[var(--px-8)]" role="cell">
                             {(() => {
                                 const currentRating = trackRatings[track.id];
                                 const upSelected = currentRating === 1;
@@ -313,7 +313,7 @@ const PlaylistTable: React.FC = () => {
                                             <button
                                                 type="button"
                                                 aria-label="Mark as similar"
-                                                className={`flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center px-[var(--px-8)] ${WORKSPACE_FOCUS_VISIBLE}`}
+                                                className={`flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center ${WORKSPACE_FOCUS_VISIBLE}`}
                                                 onClick={() => void handleTrackRating(track.id, 1)}
                                             >
                                                 <ThumbIcon
@@ -330,7 +330,7 @@ const PlaylistTable: React.FC = () => {
                                             <button
                                                 type="button"
                                                 aria-label="Mark as not similar"
-                                                className={`flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center px-[var(--px-8)] ${WORKSPACE_FOCUS_VISIBLE}`}
+                                                className={`flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center ${WORKSPACE_FOCUS_VISIBLE}`}
                                                 onClick={() => void handleTrackRating(track.id, 0)}
                                             >
                                                 <ThumbIcon
@@ -350,7 +350,7 @@ const PlaylistTable: React.FC = () => {
                     )}
                     {isRestricted && <div role="cell" aria-hidden="true" />}
                     {!isRestricted && (
-                        <div role="cell" className="pl-unavailable-dim flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center">
+                        <div role="cell" className="pl-unavailable-dim flex min-h-[var(--px-44)] min-w-[var(--px-52)] items-center justify-center">
                             <button
                                 type="button"
                                 className={`flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent p-[var(--px-10)] text-[var(--rx-color-text-secondary)] transition-[background-color,border-color,color] hover:cursor-pointer hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] playlist-sonic-discovery-button ${WORKSPACE_FOCUS_VISIBLE}`}

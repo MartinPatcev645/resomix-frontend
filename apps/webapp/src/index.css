@@ -388,6 +388,48 @@ html #stcm-wrapper .stcm-button-secondary:hover {
   text-overflow: ellipsis;
 }
 
+/* Sticky header player keeps the same 44px practical targets, but trims visual chrome so the
+   transport cluster fits the nav slot without colliding with the links. */
+#site-header-sticky .player-control-desktop-transport,
+.nav-sticky .player-control-desktop-transport {
+  gap: var(--px-2);
+}
+
+#site-header-sticky .player-control-secondary-cluster,
+.nav-sticky .player-control-secondary-cluster {
+  gap: var(--px-6);
+}
+
+#site-header-sticky .player-control-volume-group,
+.nav-sticky .player-control-volume-group {
+  width: var(--px-52);
+  gap: var(--px-4);
+}
+
+#site-header-sticky .player-control-skip-backward,
+#site-header-sticky .player-control-skip-forward,
+#site-header-sticky .player-control-mute-toggle,
+.nav-sticky .player-control-skip-backward,
+.nav-sticky .player-control-skip-forward,
+.nav-sticky .player-control-mute-toggle {
+  border-color: transparent;
+  background: transparent;
+}
+
+#site-header-sticky .player-control-skip-backward,
+#site-header-sticky .player-control-skip-forward,
+.nav-sticky .player-control-skip-backward,
+.nav-sticky .player-control-skip-forward {
+  gap: var(--px-2);
+  padding-inline: var(--px-4);
+  font-size: var(--px-8);
+}
+
+#site-header-sticky .player-control-apple-badge-lockup,
+.nav-sticky .player-control-apple-badge-lockup {
+  height: var(--px-20);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pl-transition {
     transition-duration: 0ms !important;

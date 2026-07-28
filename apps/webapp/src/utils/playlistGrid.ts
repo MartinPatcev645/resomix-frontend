@@ -8,7 +8,7 @@ import type { CSSProperties } from "react";
  * apply via inline style (or real CSS) only.
  */
 export const PLAYLIST_GRID_TEMPLATE_COLUMNS =
-  "var(--px-24) var(--px-32) var(--px-36) var(--px-28) minmax(0,1.2fr) minmax(0,1.4fr) var(--px-108) var(--px-76) var(--px-126) var(--px-52) var(--px-32)";
+  "var(--px-24) var(--px-32) var(--px-36) var(--px-28) minmax(0,1fr) minmax(0,1.2fr) var(--px-97) var(--px-68) var(--px-108) var(--px-100) var(--px-52)";
 
 export const PLAYLIST_GRID_GAP = "var(--px-10)";
 
