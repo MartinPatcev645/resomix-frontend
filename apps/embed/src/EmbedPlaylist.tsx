@@ -53,6 +53,15 @@ export default function EmbedPlaylist() {
     }
   }, [uuid])
 
+  // Reflect the loaded playlist in the tab title (falls back to the static title otherwise).
+  useEffect(() => {
+    if (state.status === 'ready' && state.data.name) {
+      document.title = `${state.data.name} · Resomix Playlist`;
+    } else {
+      document.title = 'Resomix Embedded Playlist';
+    }
+  }, [state]);
+
   // Keep local play state in sync with the audio element.
   useEffect(() => {
     const a = audioRef.current

@@ -23,7 +23,7 @@ export const DiscoveryEmptyGuide: React.FC<DiscoveryEmptyGuideProps> = ({
   onTryExample,
   onSelectExample,
 }) => {
-  const chips = examples.slice(0, 3);
+  const chips = examples.slice(0, 5);
 
   return (
     <div className="-mx-[var(--px-22)] mt-[var(--px-8)] grid grid-cols-1 max-[1023px]:gap-0 min-[1024px]:grid-cols-[minmax(0,62fr)_minmax(0,38fr)]">
@@ -156,9 +156,8 @@ export const DiscoveryEmptyGuide: React.FC<DiscoveryEmptyGuideProps> = ({
           <ul className="m-0 flex list-none flex-col gap-[var(--px-8)] p-0">
             {chips.map((track) => {
               const artist = displayArtistOrOmit(track.artist);
-              const label = artist
-                ? `${sanitizeWorkspaceTitle(track.title)} — ${artist}`
-                : sanitizeWorkspaceTitle(track.title);
+              const title = sanitizeWorkspaceTitle(track.title);
+              const label = artist ? `${artist} — ${title}` : title;
               return (
                 <li key={String(track.id)}>
                   <button
@@ -170,7 +169,12 @@ export const DiscoveryEmptyGuide: React.FC<DiscoveryEmptyGuideProps> = ({
                       aria-hidden="true"
                       className="block h-[var(--px-7)] w-[var(--px-7)] shrink-0 rounded-full border border-[rgba(255,255,255,.55)] not-italic group-hover:border-[var(--color-accent,#EE4A26)]"
                     />
-                    <span className="min-w-0 truncate">{label}</span>
+                    <span className="min-w-0 flex-1 truncate">{label}</span>
+                    {track.duration && (
+                      <span className="shrink-0 font-fira text-[length:var(--px-11)] tabular-nums text-[rgba(255,255,255,.4)] group-hover:text-[rgba(238,74,38,.75)]">
+                        {track.duration}
+                      </span>
+                    )}
                   </button>
                 </li>
               );

@@ -3,9 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Resomix Playlist</title>
-    <meta name="robots" content="noindex" />
+
+    <title>Resomix Embedded Playlist</title>
+    <meta name="description" content="An embeddable Resomix sonic-discovery playlist — listen to previews and explore similar tracks." />
+
+    <!-- Widget pages shouldn't compete with the canonical playlist on the main site, but links should
+         still be followed. -->
+    <meta name="robots" content="noindex, follow" />
     <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0a0a0b" />
+
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+
+    <!-- Open Graph / Twitter — for when an embed URL is shared directly. -->
+    <meta property="og:type" content="music.playlist" />
+    <meta property="og:site_name" content="Resomix" />
+    <meta property="og:title" content="Resomix Embedded Playlist" />
+    <meta property="og:description" content="Listen to previews and explore similar tracks, powered by Resomix." />
+    <meta property="og:image" content="/logo.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Resomix Embedded Playlist" />
+    <meta name="twitter:description" content="Listen to previews and explore similar tracks, powered by Resomix." />
   </head>
   <body>
     <div id="root"></div>

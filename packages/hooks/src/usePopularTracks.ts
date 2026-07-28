@@ -2,11 +2,11 @@ import React from "react";
 import type { SearchResult } from "./useSearch";
 
 const POPULAR_TRACKS: SearchResult[] = [
-  { id: "bb9e0241-3ccc-4098-9b86-c25647fdc0b7", title: "Harry McFly", artist: "Lomov", duration: "5:45" },
-  { id: "7923b7c9-8e43-488c-a1d6-66814cd52e14", title: "About To Do It", artist: "Bobby Marleni", duration: "5:16" },
-  { id: "f726bc72-427c-4c7d-8032-745a040a5cd8", title: "Deelites", artist: "Bobby Marleni", duration: "6:52" },
-  { id: "e2b9e15e-fd94-4df8-9ea5-517999f06a5d", title: "Hi-4", artist: "Superbus feat. Loop Loops Clan", duration: "6:09" },
-  { id: "ea3f8387-5f26-43bf-b181-f0ac6ba3c5ca", title: "Cry Over You", artist: "Psychadelik Pedestrian", duration: "8:03" }
+  { id: "eb436061-2a26-53cc-8995-4399a6a0f400", title: "Cognitive Dissonance", artist: "J Tijn", duration: "6:01" },
+  { id: "2b8682c0-2c55-50d5-9810-207eec26a172", title: "Fire It Out (Fango Remix) [feat. Ruede Hagelstein]", artist: "Tiefschwarz", duration: "6:37" },
+  { id: "c564c7a7-a608-5ad1-850c-b8614173e1b2", title: "Sticky Fingers", artist: "Full Bloom", duration: "5:13" },
+  { id: "b3a3264d-c26f-5ffe-b721-59d45684a51f", title: "4 Love", artist: "Nick Curly", duration: "6:56" },
+  { id: "26999457-fe02-5f87-888b-a1bff3c2df21", title: "Unfinished", artist: "nthng", duration: "4:09" }
 ];
 
 export const usePopularTracks = () => {
