@@ -432,15 +432,17 @@ export default function LibraryPage() {
               </div>
             ) : (
               <div className="flex flex-col gap-[var(--px-12)] w-full">
-                {activePlaylists.map((playlist) => (
+                {activePlaylists.map((playlist) => {
+                  const metaLine = `${playlist.trackCount} tracks | ${playlist.duration} | Created ${new Date(playlist.createdAt).toLocaleDateString()}`;
+                  return (
                   <div
                     key={playlist.uuid}
-                    className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex justify-between items-center relative rounded-xs hover:bg-white/5 transition-colors"
+                    className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex flex-wrap md:flex-nowrap items-center md:justify-between gap-y-[var(--px-10)] relative rounded-xs hover:bg-white/5 transition-colors"
                   >
                     {/* Aligned top content layout. min-w-0 is REQUIRED: this column is flex-grow, and
                         without it a flex item won't shrink below its content's intrinsic width, so the
                         title's `truncate` never engages and a long name overflows the card. */}
-                    <div className="flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow min-w-0 pr-[var(--px-15)]">
+                    <div className="basis-full md:basis-auto flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow min-w-0 md:pr-[var(--px-15)]">
                       {/* Playlist link (image). Real <a> so right-click / ⌘-click open a new tab;
                           a plain click is intercepted for SPA navigation. */}
                       <a
@@ -473,7 +475,7 @@ export default function LibraryPage() {
                               e.preventDefault();
                               navigate(`/sonic-discovery?id=${playlist.uuid}`, { state: { from: "library" } });
                             }}
-                            className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer truncate min-w-0"
+                            className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer truncate min-w-0 grow md:grow-0"
                           >
                             {playlist.name}
                           </a>
@@ -504,17 +506,26 @@ export default function LibraryPage() {
                           </Tooltip>
                         </div>
 
-                        {/* Meta Info Row - always stacked below the title on right of image */}
-                        <div className="text-[length:var(--px-10)] font-light font-fira text-white/60">
-                          <p>
-                            {playlist.trackCount} tracks | {playlist.duration} | Created{" "}
-                            {new Date(playlist.createdAt).toLocaleDateString()}
-                          </p>
+                        {/* Meta row. Desktop: stacked under the title. Mobile: hidden here and shown
+                            on the bottom row (left of the actions) — see the mobile meta block below. */}
+                        <div className="hidden md:block text-[length:var(--px-10)] font-light font-fira text-white/60">
+                          <p>{metaLine}</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0 align-middle">
+                    {/* Bottom band. Mobile: its own row — meta on the left (wraps within the remaining
+                        space) and the action icons pinned to the right. Desktop: `md:contents` dissolves
+                        this wrapper so the action cluster becomes a direct card child and floats to the far
+                        right exactly as before (meta is shown under the title above instead). */}
+                    <div className="basis-full flex items-center justify-between gap-[var(--px-12)] md:contents">
+                      {/* Mobile-only meta — left of the icons; allowed to wrap over multiple lines. */}
+                      <div className="md:hidden min-w-0 flex-grow text-[length:var(--px-10)] font-light font-fira text-white/60">
+                        <p>{metaLine}</p>
+                      </div>
+
+                      {/* Action cluster — heart / visibility / kebab. */}
+                      <div className="flex items-center gap-[var(--px-10)] md:gap-[var(--px-15)] flex-shrink-0">
                       {/* Favorite heart — toggles favorite state inline (replaces the old Favorites tab). */}
                       <Tooltip message={playlist.is_favorite ? "Remove from Favorites" : "Add to Favorites"}>
                         <button
@@ -633,9 +644,11 @@ export default function LibraryPage() {
                           </div>
                         )}
                       </div>
+                      </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )
           ) : (
