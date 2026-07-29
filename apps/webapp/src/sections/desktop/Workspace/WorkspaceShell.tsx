@@ -35,7 +35,17 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({ mode, children }
   const urlId = searchParams.get("id");
   const viewingResults = mode === "discovery" && !!urlId && isPlaylistUuid(urlId);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const sessionExpired = useAuthStore((s) => s.sessionExpired);
   const [guideCollapsed, setGuideCollapsed] = useState(false);
+
+  // Session badge — the dot carries the state as colour, so it reads at a glance without parsing
+  // the label. Expired outranks the others: it is signed-out too, but "Guest session" would hide
+  // the fact that something went wrong.
+  const session = sessionExpired
+    ? { label: "Session expired", dot: "bg-[var(--rx-color-error)]" }
+    : isAuthenticated
+      ? { label: "Signed in", dot: "bg-[var(--rx-color-success)]" }
+      : { label: "Guest session", dot: "bg-[var(--rx-color-accent)]" };
 
   useEffect(() => {
     setGuideCollapsed(localStorage.getItem(HOW_IT_WORKS_COLLAPSED_KEY) === "true");
@@ -76,12 +86,16 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({ mode, children }
             {WORKSPACE_SUBLINE}
           </p>
         </div>
-        <span className="mt-[var(--px-2)] inline-flex items-center gap-[var(--px-8)] justify-self-start border border-[var(--rx-color-border-default)] px-[var(--px-13)] py-[var(--px-7)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)] sm:justify-self-end">
+        {/* Right-aligned on every width, and pinned to the BOTTOM of the header's right column on
+            sm+ (self-end) so it always sits directly above the task cards instead of riding up
+            beside the heading, under the floating Catalogue-pilot / Feedback buttons. Single-column
+            widths stack it under the subline, still right-aligned, on the header's own row gap. */}
+        <span className="inline-flex items-center gap-[var(--px-8)] justify-self-end border border-[var(--rx-color-border-default)] px-[var(--px-13)] py-[var(--px-7)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)] sm:self-end">
           <i
             aria-hidden="true"
-            className="block h-[var(--px-6)] w-[var(--px-6)] rounded-full bg-[rgba(255,255,255,.45)] not-italic"
+            className={`block h-[var(--px-6)] w-[var(--px-6)] rounded-full not-italic ${session.dot}`}
           />
-          {isAuthenticated ? "Signed in" : "Guest session"}
+          {session.label}
         </span>
       </header>
 

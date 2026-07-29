@@ -18,6 +18,7 @@
   --rx-color-playing: rgba(238, 74, 38, 0.2);
   --rx-color-disabled: rgba(255, 255, 255, 0.42);
   --rx-color-error: #ff7660;
+  --rx-color-success: #63d28f;
   --rx-color-score-fill: rgba(255, 255, 255, 0.52);
   --rx-radius-panel: 0;
   --rx-radius-control: 2px;
