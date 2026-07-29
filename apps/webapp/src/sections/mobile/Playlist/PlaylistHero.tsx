@@ -335,63 +335,138 @@ const PlaylistHero: React.FC = () => {
 
       {/* Header card — stacked mobile anatomy */}
       <div className={`relative flex flex-col gap-[var(--px-14)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] p-[var(--px-16)] before:absolute before:left-[var(--px-16)] before:top-0 before:block before:w-[var(--px-28)] before:border-t before:border-[var(--color-accent,#EE4A26)] before:content-['']`}>
-        <div className={`relative h-[var(--px-88)] w-[var(--px-88)] shrink-0 border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface-raised)]`}>
-          {!DEMO_MODE ? (
-            <img
-              src={(hasCustomCover ? customCoverUrl : null) || DefaultCover}
-              onLoad={() => setCoverLoaded(true)}
-              onError={(e) => {
-                e.currentTarget.src = DefaultCover;
-              }}
-              draggable={false}
-              aria-label="Playlist Cover"
-              alt="Playlist Cover"
-              className="block h-full w-full object-cover"
+        {/* Cover + quick actions — cover on the left, favourite/visibility pinned to the top of the
+            space beside it, rating button underneath them. */}
+        <div className="flex items-start gap-[var(--px-14)]">
+          <div className={`relative h-[var(--px-88)] w-[var(--px-88)] shrink-0 border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface-raised)]`}>
+            {!DEMO_MODE ? (
+              <img
+                src={(hasCustomCover ? customCoverUrl : null) || DefaultCover}
+                onLoad={() => setCoverLoaded(true)}
+                onError={(e) => {
+                  e.currentTarget.src = DefaultCover;
+                }}
+                draggable={false}
+                aria-label="Playlist Cover"
+                alt="Playlist Cover"
+                className="block h-full w-full object-cover"
+              />
+            ) : (
+              <img
+                src={DefaultCover}
+                onLoad={() => setCoverLoaded(true)}
+                draggable={false}
+                alt="Playlist Cover"
+                aria-label="Playlist Cover"
+                className="block h-full w-full object-cover"
+              />
+            )}
+            <CoverTextOverlay
+              text={playlistData?.playlist?.name}
+              active={coverLoaded}
+              className="pointer-events-none absolute inset-0 h-full w-full"
             />
-          ) : (
-            <img
-              src={DefaultCover}
-              onLoad={() => setCoverLoaded(true)}
-              draggable={false}
-              alt="Playlist Cover"
-              aria-label="Playlist Cover"
-              className="block h-full w-full object-cover"
+            {coverUploading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                <span className="h-[var(--px-16)] w-[var(--px-16)] animate-spin rounded-full border-2 border-white/40 border-t-white" aria-label="Uploading cover" />
+              </div>
+            )}
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleCoverSelected}
+              aria-hidden="true"
+              tabIndex={-1}
             />
-          )}
-          <CoverTextOverlay
-            text={playlistData?.playlist?.name}
-            active={coverLoaded}
-            className="pointer-events-none absolute inset-0 h-full w-full"
-          />
-          {coverUploading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-              <span className="h-[var(--px-16)] w-[var(--px-16)] animate-spin rounded-full border-2 border-white/40 border-t-white" aria-label="Uploading cover" />
+          </div>
+
+          <div className="flex min-w-0 flex-1 flex-col gap-[var(--px-8)]">
+            {/* Cover edit sits next to the cover it acts on; `ml-auto` on the pair below keeps
+                favourite/visibility flush right whether or not the edit button renders. */}
+            <div className="flex items-center gap-[var(--px-8)]">
+              {!DEMO_MODE && isOwner && (
+                <button
+                  type="button"
+                  onClick={handleCoverPick}
+                  disabled={coverUploading}
+                  aria-label="Change cover image"
+                  className={`flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface-raised)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} disabled:opacity-50`}
+                  id="playlist-hero-cover-edit-button"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-[var(--px-10)] w-[var(--px-10)]" aria-hidden="true">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                  </svg>
+                </button>
+              )}
+              <div className="ml-auto flex items-center gap-[var(--px-8)]">
+                <button
+                  type="button"
+                  onClick={handleFavoriteClick}
+                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                  title={favoriteChrome.title}
+                  className={`flex h-[var(--px-44)] w-[var(--px-44)] flex-none shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent p-0 playlist-favorite-button ${WORKSPACE_FOCUS_VISIBLE}${favoriteChrome.className}`}
+                  id="playlist-hero-favorite-button"
+                >
+                  {isFavorite ? (
+                    <HeartFilledIcon customWidth="20" customHeight="20" className="text-[var(--color-accent,#EE4A26)]" disableHover={true} />
+                  ) : (
+                    <>
+                      <HeartStrokeIcon customWidth="20" customHeight="20" className="text-white/70" />
+                      {favoriteChrome.showLock && (
+                        <span aria-hidden="true" className="ml-[var(--px-2)] font-fira text-[length:var(--px-9)]">
+                          {PLAYLIST_LOCK_MARK}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Guests can't change visibility (owner-only, login required) — prompt to log in
+                    // rather than silently doing nothing.
+                    if (isAuthenticated) {
+                      setVisibilityConfirm(true);
+                    } else {
+                      setGate({ reason: "login_required", title: "Log in to update visibility", body: "Log in to make this playlist private or public." });
+                    }
+                  }}
+                  aria-label={
+                    isAuthenticated
+                      ? (playlistData?.playlist?.is_public ? "Make playlist private" : "Make playlist public")
+                      : "Log in to change visibility"
+                  }
+                  className="inline-flex min-h-[var(--px-44)] flex-none shrink-0 items-center gap-[var(--px-4)] border border-[rgba(255,255,255,.14)] px-[var(--px-8)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] cursor-pointer"
+                >
+                  {playlistData?.playlist?.is_public ? (
+                    <>
+                      <PublicIcon customWidth="8" customHeight="8" className="opacity-60" disableHover={true} />
+                      Public
+                    </>
+                  ) : (
+                    <>
+                      <PrivateIcon customWidth="8" customHeight="8" disableHover={true} />
+                      Private
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-          )}
-          {!DEMO_MODE && isOwner && (
             <button
               type="button"
-              onClick={handleCoverPick}
-              disabled={coverUploading}
-              aria-label="Change cover image"
-              className={`absolute -right-[var(--px-6)] -top-[var(--px-6)] flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface-raised)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} disabled:opacity-50`}
-              id="playlist-hero-cover-edit-button"
+              onClick={() => setShowRating(true)}
+              title={rateChrome.title}
+              className={`flex min-h-[var(--px-44)] w-full items-center justify-center gap-[var(--px-8)] whitespace-nowrap border border-[var(--rx-color-border-default)] px-[var(--px-12)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] playlist-rating-button ${WORKSPACE_FOCUS_VISIBLE}` + (rateChrome.showLock ? " opacity-45" : " opacity-80")}
+              id="playlist-hero-rating-button"
+              aria-label="Rate these results"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-[var(--px-10)] w-[var(--px-10)]" aria-hidden="true">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-              </svg>
+              <img src={StarSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-12)] w-[var(--px-12)]" />
+              Rate these results{rateChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
             </button>
-          )}
-          <input
-            ref={coverInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={handleCoverSelected}
-            aria-hidden="true"
-            tabIndex={-1}
-          />
+          </div>
         </div>
 
         <div className="flex min-w-0 items-center gap-[var(--px-8)] overflow-hidden">
@@ -403,57 +478,6 @@ const PlaylistHero: React.FC = () => {
           >
             {playlistData?.playlist?.name || ""}
           </h1>
-          <button
-            type="button"
-            onClick={handleFavoriteClick}
-            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-            title={favoriteChrome.title}
-            className={`flex h-[var(--px-44)] w-[var(--px-44)] flex-none shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent p-0 playlist-favorite-button ${WORKSPACE_FOCUS_VISIBLE}${favoriteChrome.className}`}
-            id="playlist-hero-favorite-button"
-          >
-            {isFavorite ? (
-              <HeartFilledIcon customWidth="20" customHeight="20" className="text-[var(--color-accent,#EE4A26)]" disableHover={true} />
-            ) : (
-              <>
-                <HeartStrokeIcon customWidth="20" customHeight="20" className="text-white/70" />
-                {favoriteChrome.showLock && (
-                  <span aria-hidden="true" className="ml-[var(--px-2)] font-fira text-[length:var(--px-9)]">
-                    {PLAYLIST_LOCK_MARK}
-                  </span>
-                )}
-              </>
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              // Guests can't change visibility (owner-only, login required) — prompt to log in
-              // rather than silently doing nothing.
-              if (isAuthenticated) {
-                setVisibilityConfirm(true);
-              } else {
-                setGate({ reason: "login_required", title: "Log in to update visibility", body: "Log in to make this playlist private or public." });
-              }
-            }}
-            aria-label={
-              isAuthenticated
-                ? (playlistData?.playlist?.is_public ? "Make playlist private" : "Make playlist public")
-                : "Log in to change visibility"
-            }
-            className="inline-flex min-h-[var(--px-44)] flex-none shrink-0 items-center gap-[var(--px-4)] border border-[rgba(255,255,255,.14)] px-[var(--px-8)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] cursor-pointer"
-          >
-            {playlistData?.playlist?.is_public ? (
-              <>
-                <PublicIcon customWidth="8" customHeight="8" className="opacity-60" disableHover={true} />
-                Public
-              </>
-            ) : (
-              <>
-                <PrivateIcon customWidth="8" customHeight="8" disableHover={true} />
-                Private
-              </>
-            )}
-          </button>
         </div>
 
         <p className="m-0 font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] opacity-60">
@@ -480,17 +504,6 @@ const PlaylistHero: React.FC = () => {
         )}
 
         <div className="flex items-center gap-[var(--px-10)]">
-          <button
-            type="button"
-            onClick={() => setShowRating(true)}
-            title={rateChrome.title}
-            className={`inline-flex min-h-[var(--px-44)] items-center gap-[var(--px-8)] whitespace-nowrap border border-[var(--rx-color-border-default)] px-[var(--px-12)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] playlist-rating-button ${WORKSPACE_FOCUS_VISIBLE}` + (rateChrome.showLock ? " opacity-45" : " opacity-80")}
-            id="playlist-hero-rating-button"
-            aria-label="Rate these results"
-          >
-            <img src={StarSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-12)] w-[var(--px-12)]" />
-            Rate these results{rateChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
-          </button>
           <button
             type="button"
             onClick={() => setShowMeta((v) => !v)}
