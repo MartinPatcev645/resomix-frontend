@@ -10,7 +10,7 @@ import React from "react";
  * `mask-image` approach rendered as solid white blocks and is gone).
  */
 export const HERO_TOOLBAR_BTN =
-  "group inline-flex min-h-[var(--px-44)] items-center justify-center gap-[var(--px-6)] whitespace-nowrap " +
+  "group inline-flex min-h-[var(--px-44)] cursor-pointer items-center justify-center gap-[var(--px-6)] whitespace-nowrap " +
   "rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent " +
   "px-[var(--px-14)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] " +
   "text-[var(--rx-color-text-primary)] transition-[color,border-color] duration-[var(--rx-duration-base,150ms)] ease-out " +

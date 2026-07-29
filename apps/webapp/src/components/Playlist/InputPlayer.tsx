@@ -35,15 +35,12 @@ interface InputPlayerProps {
   controlRowActions?: React.ReactNode;
 }
 
-const SKIP_DESKTOP_CLASS =
-  "font-fira text-[length:var(--px-9)] flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center gap-[var(--px-3)] rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-8)] text-[var(--rx-color-text-secondary)] cursor-pointer hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] player-control pl-focus-ring";
-
 /**
- * Mobile — a fixed 35×35 square, the same chrome the result rows below use for ⋯ / 10s
- * (SimilarityPlayer's `mobile` branch), so the whole page reads as one control set. The arrow and
- * "10s" stack: side by side, a legible arrow plus the label does not fit 35px of width.
+ * A fixed 35×35 square on BOTH layouts, the same chrome the result rows use for ⋯ / 10s
+ * (SimilarityPlayer's `mobile` branch), so the whole page reads as one control set. The arrow sits
+ * ABOVE the label: side by side, a legible arrow plus "10s" does not fit 35px of width.
  */
-const SKIP_MOBILE_CLASS =
+const SKIP_BTN_CLASS =
   "font-fira text-[length:var(--px-8)] flex h-[var(--px-35)] w-[var(--px-35)] shrink-0 flex-col items-center justify-center leading-none rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)] cursor-pointer hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] player-control pl-focus-ring";
 
 const InputPlayer: React.FC<InputPlayerProps> = ({
@@ -108,7 +105,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
 
   /** Elapsed readout — last item of the control row on both layouts. */
   const elapsedTime = (
-    <time className="shrink-0 font-fira text-[length:var(--px-9)] font-light tabular-nums opacity-75">
+    <time className="shrink-0 font-fira text-[length:var(--px-12)] font-light tabular-nums opacity-75">
       {formatTime(ctl.uiTime)}
     </time>
   );
@@ -120,68 +117,55 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
       <PreviewProgressBar compact currentTime={ctl.uiTime} duration={seekDuration} onSeek={ctl.seekTo} />
     );
 
-  // `stacked` = the 35×35 mobile square: a bigger arrow sitting ABOVE the label. The desktop pill
-  // keeps them side by side with the arrow on the outside edge of each button.
-  const skipIconClass = (stacked: boolean) =>
-    stacked ? "h-[var(--px-14)] w-[var(--px-14)] shrink-0" : "h-[var(--px-8)] w-[var(--px-8)]";
+  // Desktop matches the toolbar icons (16px); mobile stays a touch smaller inside the same 35px box.
+  const skipIconClass = `${mobile ? "h-[var(--px-14)] w-[var(--px-14)]" : "h-[var(--px-16)] w-[var(--px-16)]"} shrink-0`;
 
-  const skipBackButton = (className: string, stacked = false) => (
+  const skipBackButton = (
     <button
       type="button"
       onClick={ctl.skipBackward}
       aria-label="Skip back 10 seconds"
-      className={`${className} player-control-skip-backward`}
+      className={`${SKIP_BTN_CLASS} player-control-skip-backward`}
     >
-      <img
-        src={NextTrackSvg}
-        draggable={false}
-        alt=""
-        aria-hidden="true"
-        className={`${skipIconClass(stacked)} rotate-180`}
-      />
-      <span className={stacked ? "mt-[var(--px-1)]" : ""}>10s</span>
+      <img src={NextTrackSvg} draggable={false} alt="" aria-hidden="true" className={`${skipIconClass} rotate-180`} />
+      <span className="mt-[var(--px-1)]">10s</span>
     </button>
   );
 
-  const skipForwardButton = (className: string, stacked = false) => {
-    const icon = (
-      <img src={NextTrackSvg} draggable={false} alt="" aria-hidden="true" className={skipIconClass(stacked)} />
-    );
-    const label = <span className={stacked ? "mt-[var(--px-1)]" : ""}>10s</span>;
-    return (
-      <button
-        type="button"
-        onClick={ctl.skipForward}
-        aria-label="Skip forward 10 seconds"
-        className={`${className} player-control-skip-forward`}
-      >
-        {stacked ? icon : label}
-        {stacked ? label : icon}
-      </button>
-    );
-  };
+  const skipForwardButton = (
+    <button
+      type="button"
+      onClick={ctl.skipForward}
+      aria-label="Skip forward 10 seconds"
+      className={`${SKIP_BTN_CLASS} player-control-skip-forward`}
+    >
+      <img src={NextTrackSvg} draggable={false} alt="" aria-hidden="true" className={skipIconClass} />
+      <span className="mt-[var(--px-1)]">10s</span>
+    </button>
+  );
 
+  // One 35px-tall bordered pill holding the mute toggle AND the slider, so the volume reads as a
+  // single control sitting at the same height as the 10s squares beside it.
+  const volumeIconClass = "h-[var(--px-16)] w-[var(--px-16)] shrink-0";
   const volumeControl = (
     <div
-      className={`player-control-volume-group flex w-[var(--px-140)] shrink-0 items-center gap-[var(--px-8)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
+      className={`player-control-volume-group flex h-[var(--px-35)] w-[var(--px-140)] shrink-0 items-center gap-[var(--px-8)] rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-10)] transition-[border-color] hover:border-[var(--rx-color-border-strong)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
     >
       <button
         type="button"
         onClick={ctl.toggleMute}
         aria-label={volume === 0 ? "Unmute" : "Mute"}
-        className="flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)] transition-[background-color,border-color,color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] player-control player-control-mute-toggle pl-focus-ring"
+        className="flex h-full shrink-0 cursor-pointer items-center justify-center bg-transparent text-[var(--rx-color-text-secondary)] transition-colors hover:text-[var(--rx-color-text-primary)] player-control player-control-mute-toggle pl-focus-ring"
       >
-        {/* A 20px glyph inside the 44px box, matching the play button's proportions — the icon used
-            to be `h-full w-full`, filling the button edge to edge. */}
         {volume === 0 ? (
-          <img src={SoundMuteSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-20)] w-[var(--px-20)]" />
+          <img src={SoundMuteSvg} draggable={false} alt="" aria-hidden="true" className={volumeIconClass} />
         ) : volume < 0.5 ? (
-          <img src={SoundLowSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-20)] w-[var(--px-20)]" />
+          <img src={SoundLowSvg} draggable={false} alt="" aria-hidden="true" className={volumeIconClass} />
         ) : (
-          <img src={SoundLoudSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-20)] w-[var(--px-20)]" />
+          <img src={SoundLoudSvg} draggable={false} alt="" aria-hidden="true" className={volumeIconClass} />
         )}
       </button>
-      <div className="relative flex min-w-0 flex-1 items-center">
+      <div className="relative flex h-full min-w-0 flex-1 items-center">
         <div className="pointer-events-none absolute h-[var(--px-2)] w-full bg-[rgba(255,255,255,0.14)]" />
         {/* Filled portion up to the thumb — the rail alone gave no read of the current level. */}
         <div
@@ -196,7 +180,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
           value={volume}
           onChange={ctl.handleVolumeChange}
           aria-label="Volume"
-          className="relative z-10 h-[var(--px-44)] w-full cursor-pointer appearance-none bg-transparent pl-focus-ring [&::-moz-range-thumb]:h-[var(--px-8)] [&::-moz-range-thumb]:w-[var(--px-2)] [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-none [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-[rgba(255,255,255,0.8)] [&::-moz-range-track]:h-[var(--px-1)] [&::-moz-range-track]:border-none [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:h-[var(--px-8)] [&::-webkit-slider-thumb]:w-[var(--px-2)] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-none [&::-webkit-slider-thumb]:bg-[rgba(255,255,255,0.8)] [&::-webkit-slider-track]:h-[var(--px-1)] [&::-webkit-slider-track]:rounded-none [&::-webkit-slider-track]:bg-transparent player-control player-control-volume-slider"
+          className="relative z-10 h-full w-full cursor-pointer appearance-none bg-transparent pl-focus-ring [&::-moz-range-thumb]:h-[var(--px-8)] [&::-moz-range-thumb]:w-[var(--px-2)] [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-none [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-[rgba(255,255,255,0.8)] [&::-moz-range-track]:h-[var(--px-1)] [&::-moz-range-track]:border-none [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:h-[var(--px-8)] [&::-webkit-slider-thumb]:w-[var(--px-2)] [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-none [&::-webkit-slider-thumb]:bg-[rgba(255,255,255,0.8)] [&::-webkit-slider-track]:h-[var(--px-1)] [&::-webkit-slider-track]:rounded-none [&::-webkit-slider-track]:bg-transparent player-control player-control-volume-slider"
         />
       </div>
     </div>
@@ -274,8 +258,8 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
           className={`flex min-h-[var(--px-44)] w-full items-center gap-[var(--px-8)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
         >
           <div className="flex shrink-0 items-center gap-[var(--px-6)]">
-            {skipBackButton(SKIP_MOBILE_CLASS, true)}
-            {skipForwardButton(SKIP_MOBILE_CLASS, true)}
+            {skipBackButton}
+            {skipForwardButton}
           </div>
           <div className="player-control-secondary-cluster flex min-w-0 flex-1 items-center justify-end gap-[var(--px-8)]">
             {appleBadge}
@@ -302,10 +286,10 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
           grouped at the right so the row reads as two clusters instead of one long drift. */}
       <div className="flex min-h-[var(--px-44)] w-full flex-wrap items-center gap-x-[var(--px-16)] gap-y-[var(--px-8)]">
         <div
-          className={`player-control-desktop-transport flex shrink-0 items-center gap-[var(--px-2)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
+          className={`player-control-desktop-transport flex shrink-0 items-center gap-[var(--px-6)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
         >
-          {skipBackButton(SKIP_DESKTOP_CLASS)}
-          {skipForwardButton(SKIP_DESKTOP_CLASS)}
+          {skipBackButton}
+          {skipForwardButton}
         </div>
 
         {volumeControl}

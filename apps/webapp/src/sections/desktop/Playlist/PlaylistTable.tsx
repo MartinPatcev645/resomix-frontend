@@ -266,29 +266,56 @@ const PlaylistTable: React.FC = () => {
                         </button>
                     </div>
                     {/* select-none overrides the row's `select-text`: artist/title are not copyable
-                        (both platforms), while the rest of the row stays selectable. */}
-                    <div
-                        className="pl-unavailable-dim min-w-0 select-none truncate text-center text-[length:var(--px-13)] font-helvetica font-light text-[var(--rx-color-text-secondary)]"
-                        role="cell"
-                        title={displayOrNA(track.artist)}
-                    >
-                        {displayOrNA(track.artist)}
-                    </div>
-                    <div
-                        className="pl-unavailable-dim min-w-0 select-none truncate text-center text-[length:var(--px-14)] font-helvetica font-light uppercase text-[var(--rx-color-text-primary)]"
-                        role="cell"
-                        title={displayOrNA(track.title)}
-                    >
-                        {displayOrNA(track.title)}
-                    </div>
+                        (both platforms), while the rest of the row stays selectable.
+                        While playing, the two columns merge into one left-aligned cell stacking
+                        title over artist — everything else keeps its normal column treatment. */}
+                    {isTrackPlaying && !isRestricted ? (
+                        <div
+                            className="pl-unavailable-dim min-w-0 select-none text-left leading-[var(--px-18)]"
+                            role="cell"
+                            style={{ gridColumn: "span 2" }}
+                        >
+                            <div
+                                className="truncate text-[length:var(--px-14)] font-helvetica font-light uppercase text-[var(--rx-color-text-primary)]"
+                                title={displayOrNA(track.title)}
+                            >
+                                {displayOrNA(track.title)}
+                            </div>
+                            <div
+                                className="truncate text-[length:var(--px-13)] font-helvetica font-light text-[var(--rx-color-text-secondary)]"
+                                title={displayOrNA(track.artist)}
+                            >
+                                {displayOrNA(track.artist)}
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <div
+                                className="pl-unavailable-dim min-w-0 select-none truncate text-center text-[length:var(--px-13)] font-helvetica font-light text-[var(--rx-color-text-secondary)]"
+                                role="cell"
+                                title={displayOrNA(track.artist)}
+                            >
+                                {displayOrNA(track.artist)}
+                            </div>
+                            <div
+                                className="pl-unavailable-dim min-w-0 select-none truncate text-center text-[length:var(--px-14)] font-helvetica font-light uppercase text-[var(--rx-color-text-primary)]"
+                                role="cell"
+                                title={displayOrNA(track.title)}
+                            >
+                                {displayOrNA(track.title)}
+                            </div>
+                        </>
+                    )}
+                    {/* Label/genre stay in their own cells while playing — the player row no longer
+                        repeats them in its meta line. */}
                     <div className="pl-unavailable-dim min-w-0 text-center font-fira text-[length:var(--px-11)] leading-[var(--px-15)] text-[var(--rx-color-text-secondary)]" role="cell">
-                        {!isTrackPlaying && resolveLabel(track.label) && (
+                        {resolveLabel(track.label) && (
                             <div className="truncate" title={resolveLabel(track.label) || undefined}>{resolveLabel(track.label)}</div>
                         )}
                         <div className="opacity-90">{track.year ?? "—"}</div>
                     </div>
                     <div className="pl-unavailable-dim min-w-0 text-center font-fira text-[length:var(--px-11)] leading-[var(--px-15)] text-[var(--rx-color-text-secondary)]" role="cell">
-                        {!isTrackPlaying && firstGenre(track.genre) && (
+                        {firstGenre(track.genre) && (
                             <div className="truncate" title={firstGenre(track.genre) || undefined}>{firstGenre(track.genre)}</div>
                         )}
                         <div className="opacity-90">{formatDuration(track.duration)}</div>

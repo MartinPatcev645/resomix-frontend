@@ -326,6 +326,13 @@ const PlaylistHero: React.FC = () => {
    * Favourite + visibility. They belong to the playlist rather than to playback, but they sit at the
    * right end of the player's seek row: the title and meta rows then run edge to edge, and the space
    * the bar leaves at the end of its row is exactly what these two need.
+   *
+   * Both wear the toolbar chrome (Back / Autoplay / Rename / …) so the card reads as one control set:
+   * one border, one hover — neon text + border, no scale bounce. The icon components each render
+   * their OWN <button> internally, which is why these used to have two hover states and two click
+   * targets stacked on each other; `disableHover` + `pointer-events-none` collapse that back to a
+   * single button, and dropping their colour classes lets them inherit the hover through
+   * `currentColor`.
    */
   const quickActions = (
     <>
@@ -336,16 +343,16 @@ const PlaylistHero: React.FC = () => {
           aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           aria-pressed={isFavorite}
           title={favoriteChrome.title}
-          className={`flex-none shrink-0 cursor-pointer rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent p-[var(--px-10)] flex items-center justify-center transition-[background-color,border-color,transform] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:scale-110 active:scale-90 playlist-favorite-button ${WORKSPACE_FOCUS_VISIBLE}${favoriteChrome.className}`}
+          className={`${HERO_TOOLBAR_BTN} !px-[var(--px-10)] playlist-favorite-button ${WORKSPACE_FOCUS_VISIBLE}${favoriteChrome.className}`}
           id="playlist-hero-favorite-button"
         >
           {isFavorite ? (
-            <HeartFilledIcon customWidth="24" customHeight="24" className="text-[var(--color-accent,#EE4A26)]" disableHover={true} />
+            <HeartFilledIcon customWidth="18" customHeight="18" className="pointer-events-none text-[var(--color-accent,#EE4A26)]" disableHover={true} />
           ) : (
             <>
-              <HeartStrokeIcon customWidth="24" customHeight="24" className="text-white/60 hover:text-white" />
+              <HeartStrokeIcon customWidth="18" customHeight="18" className="pointer-events-none" disableHover={true} />
               {favoriteChrome.showLock && (
-                <span aria-hidden="true" className="ml-[var(--px-4)] font-fira text-[length:var(--px-10)]">
+                <span aria-hidden="true" className="font-fira text-[length:var(--px-10)]">
                   {PLAYLIST_LOCK_MARK}
                 </span>
               )}
@@ -374,16 +381,19 @@ const PlaylistHero: React.FC = () => {
               ? (playlistData?.playlist?.is_public ? 'Make playlist private' : 'Make playlist public')
               : 'Log in to change visibility'
           }
-          className={`flex-none shrink-0 px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase cursor-pointer hover:brightness-125 transition-[filter] ${playlistData?.playlist?.is_public ? 'text-[#5C5C5C]' : 'text-white'}`}
+          className={`${HERO_TOOLBAR_BTN} !px-[var(--px-12)] ${WORKSPACE_FOCUS_VISIBLE}`}
+          id="playlist-hero-visibility-button"
         >
+          {/* Both states read the same — white, plainly clickable. Public used to be greyed out,
+              which made a perfectly valid state look disabled. */}
           {playlistData?.playlist?.is_public ? (
             <>
-              <PublicIcon customWidth="10" customHeight="10" className="text-[#5C5C5C] mb-[var(--px-2)]" disableHover={true} />
+              <PublicIcon customWidth="16" customHeight="16" className="pointer-events-none" disableHover={true} />
               Public
             </>
           ) : (
             <>
-              <PrivateIcon customWidth="12" customHeight="12" className="text-white" disableHover={true} />
+              <PrivateIcon customWidth="16" customHeight="16" className="pointer-events-none" disableHover={true} />
               Private
             </>
           )}
@@ -404,7 +414,7 @@ const PlaylistHero: React.FC = () => {
       aria-expanded={showRating}
       data-playlist-id={playlistData?.playlist?.id}
     >
-      <img src={StarSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-12)] h-[var(--px-12)]" />
+      <img src={StarSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)] shrink-0" />
       Rate these results{rateChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
     </button>
   );
@@ -561,7 +571,7 @@ const PlaylistHero: React.FC = () => {
               disabled={coverUploading}
               aria-label="Change cover image"
               title="Change cover image"
-              className={`absolute -right-[var(--px-10)] -top-[var(--px-10)] flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface-raised)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] duration-[var(--rx-duration-base)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} disabled:cursor-not-allowed disabled:opacity-50`}
+              className={`absolute -right-[var(--px-10)] -top-[var(--px-10)] flex h-[var(--px-44)] w-[var(--px-44)] cursor-pointer items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface-raised)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] duration-[var(--rx-duration-base)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} disabled:cursor-not-allowed disabled:opacity-50`}
               id="playlist-hero-cover-edit-button"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[var(--px-12)] h-[var(--px-12)]" aria-hidden="true">

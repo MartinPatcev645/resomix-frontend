@@ -388,7 +388,7 @@ const PlaylistHero: React.FC = () => {
                   onClick={handleCoverPick}
                   disabled={coverUploading}
                   aria-label="Change cover image"
-                  className={`flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface-raised)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} disabled:opacity-50`}
+                  className={`flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 cursor-pointer items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface-raised)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} disabled:opacity-50`}
                   id="playlist-hero-cover-edit-button"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-[var(--px-10)] w-[var(--px-10)]" aria-hidden="true">
