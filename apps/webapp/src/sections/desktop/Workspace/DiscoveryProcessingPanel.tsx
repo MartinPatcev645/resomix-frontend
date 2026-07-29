@@ -21,9 +21,22 @@ const CATALOGUE_SCHEDULE_MS = [0, 1800, 3600];
 const UPLOAD_POST_UPLOAD_SCHEDULE_MS = [0, 4000, 8000];
 
 export const DiscoveryProcessingPanel: React.FC = () => {
-  const { isFileUpload, progress } = useUploadStore();
+  const { isFileUpload, progress, showOverlay } = useUploadStore();
   const steps = isFileUpload ? PROCESSING_STEPS_UPLOAD : PROCESSING_STEPS_CATALOGUE;
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // These steps ARE the progress UI, so the full-screen upload loader must stay down while they
+  // are on screen — it would cover them (the shell also blanks the page behind it). The similarity
+  // hooks raise that overlay for every path, so this panel owns suppressing it: that way each entry
+  // point gets the same treatment, including chain-discover (`?discover=<track>`), which renders
+  // this panel straight from the workspace page and used to show the loader instead of the steps.
+  useEffect(() => {
+    if (showOverlay) useUploadStore.getState().setOverlay(false);
+  }, [showOverlay]);
+
+  // Also clear it on the way out: on success the overlay is still raised when this unmounts, and
+  // it would flash over the results for a frame.
+  useEffect(() => () => useUploadStore.getState().setOverlay(false), []);
 
   // Search cycle — time-based across all steps. (Excludes `progress` so the 0→100 the search path
   // emits at completion can't reset the steps just before the panel unmounts.)
