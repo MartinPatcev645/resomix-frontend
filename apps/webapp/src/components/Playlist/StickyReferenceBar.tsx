@@ -51,7 +51,7 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
         // Show ONLY once the reference card has scrolled UP past the sticky line (we're now down in
         // the tracks). `!isIntersecting` is ALSO true when the card sits BELOW the viewport — i.e. the
         // user scrolled back ABOVE the reference — so guard on the card's top edge to stay hidden there.
-        setVisible(!entry.isIntersecting && entry.boundingClientRect.top < stickyPx);
+        setVisible(!entry.isIntersecting && entry.boundingClientRect.top <= stickyPx);
       },
       { root: null, threshold: 0, rootMargin: `-${stickyPx}px 0px 0px 0px` },
     );
@@ -98,7 +98,11 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
       aria-label="Reference track context"
       data-testid="playlist-sticky-reference-bar"
     >
-      <div className={`webapp-approved-container flex min-h-[3.5rem] items-center gap-0 overflow-hidden border-x border-[var(--rx-color-border-default)] bg-[#090909] px-0 py-0 sm:px-0 ${isRefPlaying ? "shadow-[inset_3px_0_0_0_var(--rx-color-accent)]" : ""}`}>
+      {/* Match the page frame: centre to the same max-width column as the page content, then inset by
+          the side-line margin so the bar's content and vertical borders land inside the dotted
+          side-lines (px-20 on mobile, px-63 on desktop) instead of bleeding edge-to-edge. */}
+      <div className="mx-auto w-full max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]">
+        <div className={`mx-[var(--px-20)] lg:mx-[var(--px-63)] flex min-h-[3.5rem] items-center gap-0 overflow-hidden border-x border-[var(--rx-color-border-default)] bg-[#090909] ${isRefPlaying ? "shadow-[inset_3px_0_0_0_var(--rx-color-accent)]" : ""}`}>
         <button
           type="button"
           onClick={handlePlay}
@@ -130,6 +134,7 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
         </div>
         <div className="shrink-0 whitespace-nowrap border-l border-[var(--rx-color-border-subtle)] px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">
           {resultCount} result{resultCount === 1 ? "" : "s"}
+        </div>
         </div>
       </div>
     </div>
