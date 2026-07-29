@@ -10,7 +10,7 @@ import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
 import EmbedModal from "@/components/Modals/Transfer/EmbedModal.tsx";
 import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
-import { TrackMetaRow, PlaylistRenameModal, LibraryFilters, PlaylistShare } from "@/components/index.ts";
+import { TrackMetaRow, PlaylistRenameModal, LibraryFilters, PlaylistShare, BackToHomeButton } from "@/components/index.ts";
 
 export default function LibraryPage() {
   const navigate = useNavigate();
@@ -342,6 +342,11 @@ export default function LibraryPage() {
   return (
     <section className="pt-[var(--px-120)] px-[var(--px-3)] md:px-0 tracking-[var(--px-1)]">
       <div className="w-full text-[var(--color-primary)]">
+        {/* Mobile places Back above the heading; desktop moves it onto the tab row (below). */}
+        <div className="mb-[var(--px-16)] flex px-[var(--px-10)] md:hidden">
+          <BackToHomeButton id="library-back-link-mobile" />
+        </div>
+
         <header className="mb-[var(--px-28)] text-center">
           <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
             Library
@@ -352,28 +357,39 @@ export default function LibraryPage() {
         </header>
 
         <div className="mx-auto w-full max-w-4xl px-[var(--px-10)] md:px-0">
-          {/* Tab Switcher */}
-          <div className="flex justify-center gap-[var(--px-30)] mb-[var(--px-40)] border-b border-dotted border-slate-200/30 pb-[var(--px-15)]">
-            <button
-              onClick={() => setSearchParams({ tab: "playlists" }, { replace: true })}
-              className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
-                activeTab === "playlists"
-                  ? "text-[var(--color-primary-hover)] border-b border-[var(--color-primary)]"
-                  : "text-slate-400 hover:text-[var(--color-primary)]"
-              }`}
-            >
-              Playlists ({playlistsTotal})
-            </button>
-            <button
-              onClick={() => setSearchParams({ tab: "tracks" }, { replace: true })}
-              className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
-                activeTab === "tracks"
-                  ? "text-[var(--color-primary-hover)] border-b border-[var(--color-primary)]"
-                  : "text-slate-400 hover:text-[var(--color-primary)]"
-              }`}
-            >
-              Uploads ({tracksTotal})
-            </button>
+          {/* Tab Switcher. Three columns — Back · tabs · spacer — so the tabs stay optically
+              centred with the Back button beside them on desktop. The side cells are always in the
+              grid (only their contents hide below md), otherwise the tabs would fall into the
+              first column and lose their centring. */}
+          <div className="mb-[var(--px-40)] grid grid-cols-[1fr_auto_1fr] items-center gap-[var(--px-10)] border-b border-dotted border-slate-200/30 pb-[var(--px-15)]">
+            <div className="flex justify-start">
+              <div className="hidden md:block">
+                <BackToHomeButton id="library-back-link" />
+              </div>
+            </div>
+            <div className="flex justify-center gap-[var(--px-30)]">
+              <button
+                onClick={() => setSearchParams({ tab: "playlists" }, { replace: true })}
+                className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
+                  activeTab === "playlists"
+                    ? "text-[var(--color-primary-hover)] border-b border-[var(--color-primary)]"
+                    : "text-slate-400 hover:text-[var(--color-primary)]"
+                }`}
+              >
+                Playlists ({playlistsTotal})
+              </button>
+              <button
+                onClick={() => setSearchParams({ tab: "tracks" }, { replace: true })}
+                className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
+                  activeTab === "tracks"
+                    ? "text-[var(--color-primary-hover)] border-b border-[var(--color-primary)]"
+                    : "text-slate-400 hover:text-[var(--color-primary)]"
+                }`}
+              >
+                Uploads ({tracksTotal})
+              </button>
+            </div>
+            <span aria-hidden="true" />
           </div>
 
           {/* Persistent controls: a Filters toggle (reveals the collapsible filter panel) next to

@@ -29,6 +29,7 @@ import { CCLicenseGroup } from "./icons/CCLicenseGroup.tsx";
 import { SessionExpiredModal } from "./Auth/SessionExpiredModal.tsx";
 import { TrackMetaRow } from "./Library/TrackMetaRow.tsx";
 import { LibraryFilters } from "./Library/LibraryFilters.tsx";
+import { BackToHomeButton } from "./Library/BackToHomeButton.tsx";
 import { RouteFallback } from "./RouteFallback.tsx";
 
 import { WebLayout } from "./Layout/WebLayout.tsx";
@@ -65,6 +66,7 @@ export {
     SessionExpiredModal,
     TrackMetaRow,
     LibraryFilters,
+    BackToHomeButton,
     RouteFallback,
     WebLayout,
 }
