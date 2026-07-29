@@ -10,9 +10,6 @@ import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport, PlaylistSh
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
 import EmbedModal from "@/components/Modals/Transfer/EmbedModal.tsx";
-import RenameSvg from "@/assets/icons/rename.svg";
-import ExportSvg from "@/assets/icons/export.svg";
-import ShareSvg from "@/assets/icons/share.svg";
 import StarSvg from "@/assets/icons/star.svg";
 import DefaultCover from "@/assets/default-playlist-cover.jpg";
 import InfoSvg from "@/assets/icons/info.svg";
@@ -22,7 +19,7 @@ import { playlistAccessChrome, PLAYLIST_LOCK_MARK } from "@/utils/playlistAccess
 import { StickyReferenceBar } from "@/components/Playlist/StickyReferenceBar.tsx";
 import { PLAYLIST_DIVIDER_BORDER } from "@/utils/playlistChrome.ts";
 import { WORKSPACE_BTN_PRIMARY, WORKSPACE_BTN_SECONDARY, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
-import { HERO_TOOLBAR_BTN, HeroMaskIcon, HeroChevronLeft, HeroAutoplayIcon } from "@/components/Playlist/heroToolbar.tsx";
+import { HERO_TOOLBAR_BTN, HeroChevronLeft, HeroAutoplayToggle, RenameIcon, ExportIcon, ShareIcon } from "@/components/Playlist/heroToolbar.tsx";
 
 const InputTrackStatus = "Loading..."
 
@@ -372,7 +369,7 @@ const PlaylistHero: React.FC = () => {
             className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}`}
             id="playlist-hero-autoplay-toggle"
           >
-            <HeroAutoplayIcon on={autoplay} />
+            <HeroAutoplayToggle on={autoplay} />
             Autoplay
           </button>
         </Tooltip>
@@ -385,7 +382,7 @@ const PlaylistHero: React.FC = () => {
             className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}${renameChrome.className}`}
             id="playlist-hero-rename-button"
           >
-            <HeroMaskIcon src={RenameSvg} />
+            <RenameIcon />
             Rename{renameChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
           </button>
         </Tooltip>
@@ -400,7 +397,7 @@ const PlaylistHero: React.FC = () => {
               className={`${HERO_TOOLBAR_BTN} disabled:cursor-not-allowed ${WORKSPACE_FOCUS_VISIBLE}${exportChrome.className}`}
               id="playlist-hero-export-button"
             >
-              <HeroMaskIcon src={ExportSvg} />
+              <ExportIcon />
               {isExporting ? "Exporting..." : "Export"}{exportChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
             </button>
           </Tooltip>
@@ -447,7 +444,7 @@ const PlaylistHero: React.FC = () => {
             className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}${shareChrome.className}`}
             id="playlist-hero-share-button"
           >
-            <HeroMaskIcon src={ShareSvg} />
+            <ShareIcon />
             Share{shareChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
           </button>
         </Tooltip>

@@ -7,9 +7,6 @@ import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import { CoverCropModal } from "@/components/Playlist/CoverCropModal.tsx";
 import { CoverTextOverlay } from "@/components/Playlist/CoverTextOverlay.tsx";
 import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
-import RenameSvg from "@/assets/icons/rename.svg";
-import ExportSvg from "@/assets/icons/export.svg";
-import ShareSvg from "@/assets/icons/share.svg";
 import StarSvg from "@/assets/icons/star_white.svg";
 import DefaultCover from "@/assets/default-playlist-cover.jpg";
 import InfoSvg from "@/assets/icons/info.svg";
@@ -20,7 +17,7 @@ import { playlistAccessChrome, PLAYLIST_LOCK_MARK } from "@/utils/playlistAccess
 import { StickyReferenceBar } from "@/components/Playlist/StickyReferenceBar.tsx";
 import { PLAYLIST_DIVIDER_BORDER } from "@/utils/playlistChrome.ts";
 import { WORKSPACE_BTN_PRIMARY, WORKSPACE_BTN_SECONDARY, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
-import { HERO_TOOLBAR_BTN, HeroMaskIcon, HeroChevronLeft, HeroAutoplayIcon } from "@/components/Playlist/heroToolbar.tsx";
+import { HERO_TOOLBAR_BTN, HeroChevronLeft, HeroAutoplayToggle, RenameIcon, ExportIcon, ShareIcon } from "@/components/Playlist/heroToolbar.tsx";
 
 const InputTrackStatus = "Loading...";
 
@@ -227,7 +224,7 @@ const PlaylistHero: React.FC = () => {
     <div className="relative w-full select-none pt-[var(--px-20)]">
       {/* Toolbar — two compact rows */}
       <div className="mb-[var(--px-12)] flex flex-col gap-[var(--px-8)]">
-        <div className="flex items-center gap-[var(--px-8)]">
+        <div className="flex items-center gap-[var(--px-3)]">
           {location.state?.from === "library" ? (
             <a
               href="/library"
@@ -266,34 +263,34 @@ const PlaylistHero: React.FC = () => {
             className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}`}
             id="playlist-hero-autoplay-toggle"
           >
-            <HeroAutoplayIcon on={autoplay} />
+            <HeroAutoplayToggle on={autoplay} />
             Autoplay
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-[var(--px-8)]">
+        <div className="flex items-stretch gap-[var(--px-8)]">
           <button
             type="button"
             title={renameChrome.title}
             aria-label="Rename"
             onClick={() => withAccess("rename", "Log in to rename", "Create a free account or log in to rename your playlists.", () => setShowRename(true))}
-            className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}${renameChrome.className}`}
+            className={`${HERO_TOOLBAR_BTN} flex-1 basis-0 min-w-0 !px-[var(--px-8)] ${WORKSPACE_FOCUS_VISIBLE}${renameChrome.className}`}
             id="playlist-hero-rename-button"
           >
-            <HeroMaskIcon src={RenameSvg} />
+            <RenameIcon />
             Rename{renameChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
           </button>
-          <div ref={exportButtonWrapRef} className="relative">
+          <div ref={exportButtonWrapRef} className="relative flex-1 basis-0 min-w-0">
             <button
               type="button"
               title={exportChrome.title}
               aria-label="Export"
               onClick={handleExportButtonClick}
               disabled={isExporting}
-              className={`${HERO_TOOLBAR_BTN} disabled:cursor-not-allowed ${WORKSPACE_FOCUS_VISIBLE}${exportChrome.className}`}
+              className={`${HERO_TOOLBAR_BTN} w-full !px-[var(--px-8)] disabled:cursor-not-allowed ${WORKSPACE_FOCUS_VISIBLE}${exportChrome.className}`}
               id="playlist-hero-export-button"
             >
-              <HeroMaskIcon src={ExportSvg} />
+              <ExportIcon />
               {isExporting ? "Exporting..." : "Export"}{exportChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
             </button>
             {showExportMenu && (
@@ -305,7 +302,7 @@ const PlaylistHero: React.FC = () => {
               >
                 <button
                   role="menuitem"
-                  className={`flex w-full items-center gap-[var(--px-8)] px-[var(--px-12)] py-[var(--px-10)] text-left font-fira text-[length:var(--px-9)] font-light tracking-[var(--px-0-25)] text-[var(--rx-color-text-primary)] transition-colors hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE}`}
+                  className={`flex w-full items-center gap-[var(--px-8)] px-[var(--px-14)] py-[var(--px-10)] text-left font-fira text-[length:var(--px-9)] font-light tracking-[var(--px-0-25)] text-[var(--rx-color-text-primary)] transition-colors hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE}`}
                   onClick={handleDownloadExportClick}
                   id="export-menu-download"
                 >
@@ -327,10 +324,10 @@ const PlaylistHero: React.FC = () => {
             title={shareChrome.title}
             aria-label="Share"
             onClick={() => withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => setShowShare(true))}
-            className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}${shareChrome.className}`}
+            className={`${HERO_TOOLBAR_BTN} flex-1 basis-0 min-w-0 !px-[var(--px-6)] ${WORKSPACE_FOCUS_VISIBLE}${shareChrome.className}`}
             id="playlist-hero-share-button"
           >
-            <HeroMaskIcon src={ShareSvg} />
+            <ShareIcon />
             Share{shareChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
           </button>
         </div>
