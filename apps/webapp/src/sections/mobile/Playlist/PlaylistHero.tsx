@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { IconButton, StatusMessage, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon, ToggleButton } from "@resomix/ui";
+import { StatusMessage, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon } from "@resomix/ui";
 import { formatDuration, usePlaylistExport, useAccess, useFavoritePlaylist, usePlaylistVisibility, usePlaylistCover, type AccessAction } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport, PlaylistShare } from "@/components/index.ts";
@@ -8,11 +8,8 @@ import { CoverCropModal } from "@/components/Playlist/CoverCropModal.tsx";
 import { CoverTextOverlay } from "@/components/Playlist/CoverTextOverlay.tsx";
 import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
 import RenameSvg from "@/assets/icons/rename.svg";
-import RenameBlackSvg from "@/assets/icons/rename_black.svg";
 import ExportSvg from "@/assets/icons/export.svg";
-import ExportBlackSvg from "@/assets/icons/export_black.svg";
 import ShareSvg from "@/assets/icons/share.svg";
-import ShareBlackSvg from "@/assets/icons/share_black.svg";
 import StarSvg from "@/assets/icons/star_white.svg";
 import DefaultCover from "@/assets/default-playlist-cover.jpg";
 import InfoSvg from "@/assets/icons/info.svg";
@@ -23,10 +20,9 @@ import { playlistAccessChrome, PLAYLIST_LOCK_MARK } from "@/utils/playlistAccess
 import { StickyReferenceBar } from "@/components/Playlist/StickyReferenceBar.tsx";
 import { PLAYLIST_DIVIDER_BORDER } from "@/utils/playlistChrome.ts";
 import { WORKSPACE_BTN_PRIMARY, WORKSPACE_BTN_SECONDARY, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
+import { HERO_TOOLBAR_BTN, HeroMaskIcon, HeroChevronLeft, HeroAutoplayIcon } from "@/components/Playlist/heroToolbar.tsx";
 
 const InputTrackStatus = "Loading...";
-
-const TOOLBAR_PILL = "min-w-[var(--px-80)]";
 
 const PlaylistHero: React.FC = () => {
   const stickySentinelRef = React.useRef<HTMLDivElement | null>(null);
@@ -239,11 +235,12 @@ const PlaylistHero: React.FC = () => {
                 e.preventDefault();
                 navigate("/library");
               }}
-              className={`inline-flex min-h-[var(--px-44)] items-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-12)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)] opacity-90 transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] playlist-nav-link ${WORKSPACE_FOCUS_VISIBLE}`}
+              className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}`}
               id="playlist-hero-back-link"
               aria-label="Back to Library"
             >
-              ‹ Back to Library
+              <HeroChevronLeft />
+              Back to Library
             </a>
           ) : (
             <a
@@ -252,52 +249,53 @@ const PlaylistHero: React.FC = () => {
                 e.preventDefault();
                 navigate("/sonic-discovery");
               }}
-              className={`inline-flex min-h-[var(--px-44)] items-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-12)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)] opacity-90 transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] playlist-nav-link ${WORKSPACE_FOCUS_VISIBLE}`}
+              className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}`}
               id="playlist-hero-back-link"
               aria-label="Back to search"
             >
-              ‹ Back to search
+              <HeroChevronLeft />
+              Back to search
             </a>
           )}
           <span className="flex-1" />
-          <ToggleButton
-            text="Autoplay"
-            customWidth="min-w-[var(--px-100)]"
-            isOn={autoplay}
-            onToggle={setAutoplay}
+          <button
+            type="button"
+            aria-pressed={autoplay}
+            aria-label={autoplay ? "Turn off Autoplay" : "Turn on Autoplay"}
+            onClick={() => setAutoplay(!autoplay)}
+            className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}`}
             id="playlist-hero-autoplay-toggle"
-          />
+          >
+            <HeroAutoplayIcon on={autoplay} />
+            Autoplay
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-[var(--px-8)]">
-          <span title={renameChrome.title}>
-            <IconButton
-              text={`Rename${renameChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}`}
-              transparent={true}
-              customWidth={TOOLBAR_PILL}
-              mobile={true}
-              onClick={() => withAccess("rename", "Log in to rename", "Create a free account or log in to rename your playlists.", () => setShowRename(true))}
-              icon={<img src={RenameSvg} draggable={false} alt="Rename" aria-label="Rename" className="h-[var(--px-12)] w-[var(--px-12)]" />}
-              hoverIcon={<img src={RenameBlackSvg} draggable={false} alt="Rename" aria-label="Rename" className="h-[var(--px-12)] w-[var(--px-12)]" />}
-              className={`playlist-action-button !rounded-[var(--rx-radius-control)] !outline-[var(--rx-color-border-default)] !bg-transparent hover:!bg-[rgba(255,255,255,0.06)] !min-h-[var(--px-44)] ${WORKSPACE_FOCUS_VISIBLE}${renameChrome.className}`}
-              id="playlist-hero-rename-button"
-            />
-          </span>
+          <button
+            type="button"
+            title={renameChrome.title}
+            aria-label="Rename"
+            onClick={() => withAccess("rename", "Log in to rename", "Create a free account or log in to rename your playlists.", () => setShowRename(true))}
+            className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}${renameChrome.className}`}
+            id="playlist-hero-rename-button"
+          >
+            <HeroMaskIcon src={RenameSvg} />
+            Rename{renameChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
+          </button>
           <div ref={exportButtonWrapRef} className="relative">
-            <span title={exportChrome.title}>
-              <IconButton
-                text={`${isExporting ? "Exporting..." : "Export"}${exportChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}`}
-                transparent={true}
-                customWidth={TOOLBAR_PILL}
-                mobile={true}
-                onClick={handleExportButtonClick}
-                disabled={isExporting}
-                icon={<img src={ExportSvg} draggable={false} alt="Export" className="h-[var(--px-12)] w-[var(--px-12)]" />}
-                hoverIcon={<img src={ExportBlackSvg} draggable={false} alt="Export" className="h-[var(--px-12)] w-[var(--px-12)]" />}
-                className={`playlist-action-button !rounded-[var(--rx-radius-control)] !outline-[var(--rx-color-border-default)] !bg-transparent hover:!bg-[rgba(255,255,255,0.06)] !min-h-[var(--px-44)] ${WORKSPACE_FOCUS_VISIBLE}${exportChrome.className}`}
-                id="playlist-hero-export-button"
-              />
-            </span>
+            <button
+              type="button"
+              title={exportChrome.title}
+              aria-label="Export"
+              onClick={handleExportButtonClick}
+              disabled={isExporting}
+              className={`${HERO_TOOLBAR_BTN} disabled:cursor-not-allowed ${WORKSPACE_FOCUS_VISIBLE}${exportChrome.className}`}
+              id="playlist-hero-export-button"
+            >
+              <HeroMaskIcon src={ExportSvg} />
+              {isExporting ? "Exporting..." : "Export"}{exportChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
+            </button>
             {showExportMenu && (
               <div
                 ref={exportMenuRef}
@@ -324,19 +322,17 @@ const PlaylistHero: React.FC = () => {
               </div>
             )}
           </div>
-          <span title={shareChrome.title}>
-            <IconButton
-              text={`Share${shareChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}`}
-              transparent={true}
-              customWidth={TOOLBAR_PILL}
-              mobile={true}
-              onClick={() => withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => setShowShare(true))}
-              icon={<img src={ShareSvg} draggable={false} alt="Share" aria-label="Share" className="h-[var(--px-12)] w-[var(--px-12)]" />}
-              hoverIcon={<img src={ShareBlackSvg} aria-label="Share" draggable={false} alt="Share" className="h-[var(--px-12)] w-[var(--px-12)]" />}
-              className={`playlist-action-button !rounded-[var(--rx-radius-control)] !outline-[var(--rx-color-border-default)] !bg-transparent hover:!bg-[rgba(255,255,255,0.06)] !min-h-[var(--px-44)] ${WORKSPACE_FOCUS_VISIBLE}${shareChrome.className}`}
-              id="playlist-hero-share-button"
-            />
-          </span>
+          <button
+            type="button"
+            title={shareChrome.title}
+            aria-label="Share"
+            onClick={() => withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => setShowShare(true))}
+            className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}${shareChrome.className}`}
+            id="playlist-hero-share-button"
+          >
+            <HeroMaskIcon src={ShareSvg} />
+            Share{shareChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
+          </button>
         </div>
       </div>
 
