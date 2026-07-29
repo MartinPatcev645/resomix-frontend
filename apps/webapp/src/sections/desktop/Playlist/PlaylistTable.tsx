@@ -414,14 +414,13 @@ const PlaylistTable: React.FC = () => {
                 style={{ ...playlistRowGridStyle, top: PLAYLIST_STICKY_HEADER_TOP }}
                 role="row"
             >
-                {/* Headers sit centred over their cells. The stacked pairs mirror the two-line
-                    values below them (label over year, genre over length) instead of joining the
-                    two words with a separator dot. Artist/Title stay left, aligned with their
-                    truncating text. */}
+                {/* Every header sits centred over its cell, matching the values below. The stacked
+                    pairs mirror the two-line values (label over year, genre over length) instead of
+                    joining the two words with a separator dot. */}
                 <div role="columnheader" className="text-center">#</div>
                 <div role="columnheader" aria-label="Play" />
-                <div role="columnheader">Artist</div>
-                <div role="columnheader">Title</div>
+                <div role="columnheader" className="text-center">Artist</div>
+                <div role="columnheader" className="text-center">Title</div>
                 <div role="columnheader" className="text-center leading-[var(--px-12)]">
                     <div>Label</div>
                     <div>Year</div>
