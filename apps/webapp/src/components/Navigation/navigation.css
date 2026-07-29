@@ -16,6 +16,10 @@
   --nav-panel-top: calc(var(--line-y) + var(--rail2-h) + 0.5rem);
   --nav-bridge-h: calc(var(--nav-panel-top) - var(--nav-y-center) - 0.9375rem);
   --nav-sticky-h: 3.25rem;
+  /* Top of the playlist sticky stack (reference bar + column headers). Desktop: sits under the
+     fixed compact nav. Mobile (<1024px): there is NO fixed nav — the header scrolls away — so the
+     stack pins to the very top instead of leaving an empty nav-height gap. */
+  --playlist-sticky-stack-top: var(--nav-sticky-h);
 }
 
 .nav-site {
@@ -697,6 +701,8 @@ button.nav-cta-primary:hover {
     --header-height: 3.5rem;
     --header-safe-left: 0;
     --header-safe-right: 0;
+    /* No fixed nav below 1024px — pin the playlist sticky stack to the very top (no gap). */
+    --playlist-sticky-stack-top: 0px;
   }
 
   .nav-site {

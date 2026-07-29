@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useGlobalAudioController } from "@resomix/hooks";
+import { useGlobalAudioController, formatDuration } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { DEMO_MODE } from "@resomix/config";
 import { displayOrNA } from "@/utils/trackUtils.ts";
@@ -37,17 +37,21 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
     const el = sentinelRef.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
 
-    // IntersectionObserver rootMargin only accepts px/% — convert --nav-sticky-h (often rem).
+    // IntersectionObserver rootMargin only accepts px/% — resolve the sticky-stack top (rem/0)
+    // to px. It's 0 on mobile (no fixed nav) and the compact-nav height on desktop.
     const probe = document.createElement("div");
     probe.style.cssText =
-      "position:absolute;visibility:hidden;height:var(--nav-sticky-h,3.25rem);pointer-events:none";
+      "position:absolute;visibility:hidden;height:var(--playlist-sticky-stack-top,var(--nav-sticky-h,3.25rem));pointer-events:none";
     document.body.appendChild(probe);
-    const stickyPx = Math.max(1, Math.round(probe.getBoundingClientRect().height)) || 52;
+    const stickyPx = Math.max(0, Math.round(probe.getBoundingClientRect().height));
     probe.remove();
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setVisible(!entry.isIntersecting);
+        // Show ONLY once the reference card has scrolled UP past the sticky line (we're now down in
+        // the tracks). `!isIntersecting` is ALSO true when the card sits BELOW the viewport — i.e. the
+        // user scrolled back ABOVE the reference — so guard on the card's top edge to stay hidden there.
+        setVisible(!entry.isIntersecting && entry.boundingClientRect.top < stickyPx);
       },
       { root: null, threshold: 0, rootMargin: `-${stickyPx}px 0px 0px 0px` },
     );
@@ -121,6 +125,7 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
           </div>
           <div className="font-helvetica text-[length:var(--px-12)] font-light leading-[var(--px-15)] text-[var(--rx-color-text-secondary)]">
             {displayOrNA(track.artist)}
+            {track.duration ? ` · ${formatDuration(Math.floor(track.duration))}` : ""}
           </div>
         </div>
         <div className="shrink-0 whitespace-nowrap border-l border-[var(--rx-color-border-subtle)] px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">

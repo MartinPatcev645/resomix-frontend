@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Error404 } from "@resomix/ui";
 import { AudioProvider, usePlaylistLoader } from "@resomix/hooks";
 import { usePlaylistStore } from "@resomix/stores";
@@ -7,6 +7,7 @@ import { PlaylistHero, PlaylistTable } from "@/sections/mobile/index.ts";
 import MoreMenu from "@/sections/mobile/Playlist/MoreMenu.tsx";
 import { PlaylistShare } from "@/components/index.ts";
 import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
+import { scrollToPlaylistHero } from "@/utils/scrollToPlaylistHero.ts";
 
 /** Mobile playlist results — live handlers unchanged; composed inside the workspace shell (Stage 3). */
 export const WorkspaceDiscoveryResults: React.FC = () => {
@@ -23,10 +24,14 @@ export const WorkspaceDiscoveryResults: React.FC = () => {
   } | null>(null);
 
   const { playlistData, isLoading, error } = usePlaylistStore();
+  const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (playlistData?.playlist?.id) {
       document.getElementById("playlist-results-heading")?.focus({ preventScroll: true });
+      // Opening a playlist (?id=…) should land on the hero, not the workspace header/task cards
+      // above it — smooth-scroll the hero to the top once it has rendered.
+      scrollToPlaylistHero(heroRef.current);
     }
   }, [playlistData?.playlist?.id]);
 
@@ -57,7 +62,9 @@ export const WorkspaceDiscoveryResults: React.FC = () => {
     <AudioProvider>
       {playlistData ? (
         <div>
-          <PlaylistHero />
+          <div ref={heroRef}>
+            <PlaylistHero />
+          </div>
           <div className="relative z-20">
             <PlaylistTable onMoreClick={handleMoreMenuOpen} />
           </div>
