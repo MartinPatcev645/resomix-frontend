@@ -9,7 +9,6 @@ import { CoverTextOverlay } from "@/components/Playlist/CoverTextOverlay.tsx";
 import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
 import StarSvg from "@/assets/icons/star_white.svg";
 import DefaultCover from "@/assets/default-playlist-cover.jpg";
-import InfoSvg from "@/assets/icons/info.svg";
 import { DEMO_MODE } from "@resomix/config";
 import { resolveLabel } from "@/utils/trackUtils.ts";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -17,13 +16,10 @@ import { playlistAccessChrome, PLAYLIST_LOCK_MARK } from "@/utils/playlistAccess
 import { StickyReferenceBar } from "@/components/Playlist/StickyReferenceBar.tsx";
 import { PLAYLIST_DIVIDER_BORDER } from "@/utils/playlistChrome.ts";
 import { WORKSPACE_BTN_PRIMARY, WORKSPACE_BTN_SECONDARY, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
-import { HERO_TOOLBAR_BTN, HeroChevronLeft, HeroAutoplayToggle, RenameIcon, ExportIcon, ShareIcon } from "@/components/Playlist/heroToolbar.tsx";
-
-const InputTrackStatus = "Loading...";
+import { HERO_TOOLBAR_BTN, HeroChevronLeft, HeroAutoplayToggle, HeroClockIcon, RenameIcon, ExportIcon, ShareIcon } from "@/components/Playlist/heroToolbar.tsx";
 
 const PlaylistHero: React.FC = () => {
   const stickySentinelRef = React.useRef<HTMLDivElement | null>(null);
-  const [showMeta, setShowMeta] = React.useState(false);
   const [showRating, setShowRating] = React.useState(false);
   const [showRename, setShowRename] = React.useState(false);
   const [showShare, setShowShare] = React.useState(false);
@@ -481,7 +477,8 @@ const PlaylistHero: React.FC = () => {
         </div>
 
         <p className="m-0 font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] opacity-60">
-          ⧖ {playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : "--:--"}
+          <HeroClockIcon />{" "}
+          {playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : "--:--"}
           {" · "}{playlistData?.queried_track.year ?? "—"}
           {resolveLabel(playlistData?.queried_track.label) ? ` · ${resolveLabel(playlistData?.queried_track.label)}` : ""}
           {playlistData?.similar_tracks?.length ? ` · ${playlistData.similar_tracks.length} results` : ""}
@@ -503,26 +500,6 @@ const PlaylistHero: React.FC = () => {
           />
         )}
 
-        <div className="flex items-center gap-[var(--px-10)]">
-          <button
-            type="button"
-            onClick={() => setShowMeta((v) => !v)}
-            aria-label={showMeta ? "Hide Meta Info" : "Show Meta Info"}
-            aria-expanded={showMeta}
-            className={`flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] opacity-60 transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] playlist-meta-toggle ${WORKSPACE_FOCUS_VISIBLE}`}
-            id="playlist-hero-meta-toggle"
-          >
-            <img draggable={false} src={InfoSvg} alt="" aria-hidden="true" className="h-[var(--px-14)] w-[var(--px-14)]" />
-          </button>
-        </div>
-
-        {showMeta && (
-          <div className="flex flex-wrap gap-[var(--px-6)] font-fira text-[length:var(--px-9)] opacity-50">
-            <span>ID: {playlistData?.queried_track.id}</span>
-            <span>|</span>
-            <span>Status: {InputTrackStatus}</span>
-          </div>
-        )}
       </div>
       <div ref={stickySentinelRef} aria-hidden="true" className="h-px w-full" data-testid="playlist-ref-sentinel" />
 

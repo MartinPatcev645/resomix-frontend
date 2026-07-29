@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import PlaySvg from "@/assets/icons/play.svg";
-import PauseSvg from "@/assets/icons/pause.svg";
+// White variants: the plain play.svg / pause.svg are filled #000 and rendered near-invisible on the
+// player's dark, transparent-backed button.
+import PlaySvg from "@/assets/icons/play_white.svg";
+import PauseSvg from "@/assets/icons/pause_white.svg";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import SoundLoudSvg from "@/assets/icons/sound_loud.svg";
 import SoundMuteSvg from "@/assets/icons/sound_mute.svg";
@@ -24,9 +26,13 @@ interface InputPlayerProps {
 const SKIP_DESKTOP_CLASS =
   "font-fira text-[length:var(--px-9)] flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center gap-[var(--px-3)] rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-8)] text-[var(--rx-color-text-secondary)] cursor-pointer hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] player-control pl-focus-ring";
 
-/** Mobile — mono micro inline skips (no boxed chrome). */
+/**
+ * Mobile — a fixed 35×35 square, the same chrome the result rows below use for ⋯ / 10s
+ * (SimilarityPlayer's `mobile` branch), so the whole page reads as one control set. The arrow and
+ * "10s" stack: side by side, a legible arrow plus the label does not fit 35px of width.
+ */
 const SKIP_MOBILE_CLASS =
-  "font-fira text-[length:var(--px-9)] flex min-h-[var(--px-44)] min-w-[var(--px-44)] shrink-0 items-center justify-center gap-[var(--px-2)] rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-8)] text-[var(--rx-color-text-secondary)] cursor-pointer hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] player-control pl-focus-ring";
+  "font-fira text-[length:var(--px-8)] flex h-[var(--px-35)] w-[var(--px-35)] shrink-0 flex-col items-center justify-center leading-none rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)] cursor-pointer hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] player-control pl-focus-ring";
 
 const InputPlayer: React.FC<InputPlayerProps> = ({
   trackId,
@@ -85,6 +91,14 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
     ? ctl.getPlayableDuration()
     : Math.max(totalDuration, ctl.getPlayableDuration() || 0);
 
+  /** Elapsed readout — rendered twice with breakpoint visibility, since desktop and mobile want it
+   *  in different places in the row (see the two call sites). */
+  const elapsedTime = (visibility: string) => (
+    <time className={`shrink-0 font-fira text-[length:var(--px-9)] font-light tabular-nums opacity-75 ${visibility}`}>
+      {formatTime(ctl.uiTime)}
+    </time>
+  );
+
   const seekSlot =
     playbackFailed && !isDeleted ? (
       <PlaybackUnavailable onRetry={retryPlayback} compact detail={playbackDetail} />
@@ -92,7 +106,12 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
       <PreviewProgressBar compact currentTime={ctl.uiTime} duration={seekDuration} onSeek={ctl.seekTo} />
     );
 
-  const skipBackButton = (className: string) => (
+  // `stacked` = the 35×35 mobile square: a bigger arrow sitting ABOVE the label. The desktop pill
+  // keeps them side by side with the arrow on the outside edge of each button.
+  const skipIconClass = (stacked: boolean) =>
+    stacked ? "h-[var(--px-14)] w-[var(--px-14)] shrink-0" : "h-[var(--px-8)] w-[var(--px-8)]";
+
+  const skipBackButton = (className: string, stacked = false) => (
     <button
       type="button"
       onClick={ctl.skipBackward}
@@ -104,27 +123,33 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
         draggable={false}
         alt=""
         aria-hidden="true"
-        className="h-[var(--px-8)] w-[var(--px-8)] rotate-180"
+        className={`${skipIconClass(stacked)} rotate-180`}
       />
-      <span>10s</span>
+      <span className={stacked ? "mt-[var(--px-1)]" : ""}>10s</span>
     </button>
   );
 
-  const skipForwardButton = (className: string) => (
-    <button
-      type="button"
-      onClick={ctl.skipForward}
-      aria-label="Skip forward 10 seconds"
-      className={`${className} player-control-skip-forward`}
-    >
-      <span>10s</span>
-      <img src={NextTrackSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-8)] w-[var(--px-8)]" />
-    </button>
-  );
+  const skipForwardButton = (className: string, stacked = false) => {
+    const icon = (
+      <img src={NextTrackSvg} draggable={false} alt="" aria-hidden="true" className={skipIconClass(stacked)} />
+    );
+    const label = <span className={stacked ? "mt-[var(--px-1)]" : ""}>10s</span>;
+    return (
+      <button
+        type="button"
+        onClick={ctl.skipForward}
+        aria-label="Skip forward 10 seconds"
+        className={`${className} player-control-skip-forward`}
+      >
+        {stacked ? icon : label}
+        {stacked ? label : icon}
+      </button>
+    );
+  };
 
   const volumeControl = (
     <div
-      className={`player-control-volume-group flex w-[var(--px-64)] shrink-0 items-center gap-[var(--px-6)] max-[767px]:min-w-0 max-[767px]:flex-1 ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
+      className={`player-control-volume-group hidden w-[var(--px-64)] shrink-0 items-center gap-[var(--px-6)] min-[768px]:flex ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
     >
       <button
         type="button"
@@ -161,7 +186,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
       className="flex w-full flex-col gap-[var(--px-8)] min-[768px]:min-h-[var(--px-44)] min-[768px]:flex-row min-[768px]:flex-wrap min-[768px]:items-center min-[768px]:gap-x-[var(--px-8)] min-[768px]:gap-y-[var(--px-6)]"
       data-testid="input-player"
     >
-      {/* Row A (mobile): play · seek · elapsed · −10s */}
+      {/* Row A (mobile): play · seek — the bar takes every pixel left over. */}
       <div className="flex min-h-[var(--px-44)] min-w-0 items-center gap-[var(--px-8)] max-[767px]:w-full min-[768px]:contents">
         <div className="relative shrink-0">
           {DEMO_MODE && showPreviewHint && (
@@ -182,10 +207,12 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
           <button
             type="button"
             id="input-player-play-pause"
-            className={`flex aspect-square w-[var(--px-44)] shrink-0 cursor-pointer items-center justify-center rounded-[var(--rx-radius-control)] border transition-[background-color,border-color,color] player-control player-control-play-pause pl-focus-ring ${
+            className={`flex aspect-square w-[var(--px-44)] shrink-0 cursor-pointer items-center justify-center rounded-[var(--rx-radius-control)] border transition-[background-color,border-color,color] max-[767px]:w-[var(--px-35)] max-[767px]:rounded-full player-control player-control-play-pause pl-focus-ring ${
               ctl.isPlaying
                 ? "border-[rgba(238,74,38,0.7)] bg-[rgba(238,74,38,0.16)] text-[var(--rx-color-text-primary)]"
-                : "border-[var(--rx-color-border-default)] bg-transparent text-[var(--rx-color-text-primary)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)]"
+                : // Mobile gets a solid white ring: the 16%-white default is so faint on a phone that
+                  // it reads as a broken/dotted outline rather than a button.
+                  "border-[var(--rx-color-border-default)] max-[767px]:border-white/70 bg-transparent text-[var(--rx-color-text-primary)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)]"
             } ${isDeleted ? "cursor-not-allowed opacity-50" : ""}`}
             onClick={handlePlayClick}
             disabled={isDeleted}
@@ -196,29 +223,30 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
               src={ctl.isPlaying ? PauseSvg : PlaySvg}
               alt=""
               aria-hidden="true"
-              className="h-[var(--px-18)] w-[var(--px-18)]"
+              className="h-[var(--px-18)] w-[var(--px-18)] max-[767px]:h-[var(--px-14)] max-[767px]:w-[var(--px-14)]"
             />
           </button>
         </div>
 
         <div className="min-w-0 flex-1 min-[768px]:min-w-[14rem] min-[768px]:basis-[14rem]">{seekSlot}</div>
-
-        <time className="shrink-0 font-fira text-[length:var(--px-9)] font-light tabular-nums opacity-75">
-          {formatTime(ctl.uiTime)}
-        </time>
-
-        <div className={`max-[767px]:flex min-[768px]:hidden ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}>
-          {skipBackButton(SKIP_MOBILE_CLASS)}
-        </div>
       </div>
 
-      {/* Row B (mobile): +10s · volume · Apple badge — dimmed in place on playback error */}
+      {/* Row B (mobile): −10s/+10s · elapsed · Apple badge — dimmed in place on playback error.
+          On desktop this wrapper is `contents`, so its children flatten back into the single row in
+          source order (elapsed still lands right after the seek bar, ahead of the transport). */}
       <div
         className={`flex min-h-[var(--px-44)] w-full items-center gap-[var(--px-8)] max-[767px]:flex min-[768px]:contents ${controlsDimmed ? "max-[767px]:pointer-events-none max-[767px]:opacity-45" : ""}`}
       >
-        <div className={`max-[767px]:flex min-[768px]:hidden ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}>
-          {skipForwardButton(SKIP_MOBILE_CLASS)}
+        {/* Mobile transport — both skips paired at the start of the row. No dim class of its own:
+            the row already dims on mobile and nested opacity would double up. */}
+        <div className="flex shrink-0 items-center gap-[var(--px-6)] min-[768px]:hidden">
+          {skipBackButton(SKIP_MOBILE_CLASS, true)}
+          {skipForwardButton(SKIP_MOBILE_CLASS, true)}
         </div>
+
+        {/* Desktop keeps the elapsed readout right after the seek bar; mobile shows it at the far
+            right of this row instead (rendered again inside the cluster below, past the badge). */}
+        {elapsedTime("hidden min-[768px]:block")}
 
         <div
           className={`player-control-desktop-transport hidden min-[768px]:flex shrink-0 items-center gap-[var(--px-2)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
@@ -234,9 +262,10 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
               deepLinkUrl={deepLinkUrl}
               playing
               fullHeightClass="player-control-apple-badge-lockup h-[var(--px-22)]"
-              className={`player-control-apple-badge ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
+              className={`player-control-apple-badge shrink-0 ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
             />
           )}
+          {elapsedTime("min-[768px]:hidden")}
         </div>
       </div>
 

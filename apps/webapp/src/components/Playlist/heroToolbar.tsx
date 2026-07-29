@@ -57,6 +57,27 @@ export const ShareIcon: React.FC = () => (
 );
 
 /**
+ * Duration marker for the hero meta line. Replaces the `⧖` glyph, which renders as a thin, uneven
+ * hourglass (or a tofu box) depending on the platform font. `inline-block` + baseline nudge keeps it
+ * in the text flow, so the meta line still wraps naturally.
+ */
+export const HeroClockIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    className="inline-block h-[var(--px-11)] w-[var(--px-11)] shrink-0 align-[-0.15em]"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="9" />
+    <polyline points="12 6.75 12 12 15.5 14" />
+  </svg>
+);
+
+/**
  * Autoplay control glyph — a real toggle switch (track + knob), NOT a play icon. Persisted state,
  * independent of hover: ON → neon, knob to the right; OFF → white, knob to the left.
  */

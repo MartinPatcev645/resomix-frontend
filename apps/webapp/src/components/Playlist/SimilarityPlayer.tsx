@@ -17,9 +17,16 @@ interface SimilarityPlayerProps {
   /** Label + genre — shown in the control row while the track plays (row columns hide them). */
   label?: string | null;
   genre?: string | null;
+  /**
+   * Mobile layout: a full-width seek bar on its own row, then skips + meta. It drops the volume
+   * control (phones have hardware volume) and `genre` (the collapsed row above already shows it),
+   * and is a distinct structure rather than a responsive variant of the desktop row, so the two
+   * are kept as separate branches below.
+   */
+  mobile?: boolean;
 }
 
-const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration, label, genre }) => {
+const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration, label, genre, mobile = false }) => {
   const volume = usePlayerStore((s) => s.volume);
   const networkError = usePlayerStore((s) => s.networkError);
   const networkErrorReason = usePlayerStore((s) => s.networkErrorReason);
@@ -34,6 +41,9 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
   };
 
   const elapsed = formatTime(ctl.uiTime);
+  // What is actually playable (a preview is shorter than the track's own duration), so it is 0
+  // until the engine has loaded — the mobile meta line just omits the total until then.
+  const playableDuration = ctl.getPlayableDuration();
   const metaLine = useMemo(() => {
     const parts = [label, genre].filter(Boolean);
     return parts.length > 0 ? `${parts.join(" · ")} · ${elapsed}` : elapsed;
@@ -45,8 +55,25 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     }
   }, [ctl.attachOverviewElement, ctl.containerRef]);
 
-  const skipClass =
-    "font-fira text-[length:var(--px-10)] lg:text-[length:var(--px-9)] flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center gap-[var(--px-3)] rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-8)] text-[var(--rx-color-text-secondary)] cursor-pointer hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] player-control pl-focus-ring";
+  const skipChrome =
+    "font-fira rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] " +
+    "text-[var(--rx-color-text-secondary)] cursor-pointer hover:border-[var(--rx-color-border-strong)] " +
+    "hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] " +
+    "transition-[background-color,border-color,color] player-control pl-focus-ring";
+
+  // Mobile: a fixed 35×35 square matching the row's ⋯ / Chain Discover boxes. The arrow and "10s"
+  // stack instead of sitting side by side — side by side, a legible arrow plus the label does not
+  // fit 35px of width, and shrinking either to make it fit is what made the icons look tiny.
+  const skipClass = [
+    skipChrome,
+    mobile
+      ? "flex h-[var(--px-35)] w-[var(--px-35)] shrink-0 flex-col items-center justify-center leading-none text-[length:var(--px-8)]"
+      : "flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center gap-[var(--px-3)] px-[var(--px-8)] text-[length:var(--px-10)] lg:text-[length:var(--px-9)]",
+  ].join(" ");
+
+  const skipIconClass = mobile
+    ? "h-[var(--px-14)] w-[var(--px-14)] shrink-0"
+    : "h-[var(--px-10)] w-[var(--px-10)] lg:h-[var(--px-8)] lg:w-[var(--px-8)]";
 
   const seekBar = ctl.isPreview ? (
     <PreviewProgressBar
@@ -69,6 +96,88 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
     </div>
   );
 
+  const skipBackButton = (
+    <button
+      type="button"
+      onClick={ctl.skipBackward}
+      aria-label="Skip back 10 seconds"
+      className={`${skipClass} player-control-skip-backward`}
+    >
+      <img
+        src={NextTrackSvg}
+        draggable={false}
+        alt=""
+        aria-hidden="true"
+        className={`${skipIconClass} rotate-180`}
+      />
+      <span className="mt-[var(--px-1)]">10s</span>
+    </button>
+  );
+
+  const skipForwardIcon = (
+    <img
+      src={NextTrackSvg}
+      draggable={false}
+      alt=""
+      aria-hidden="true"
+      className={`${skipIconClass} mt-[var(--px-1)]`}
+    />
+  );
+
+  // Stacked (mobile) puts the arrow above "10s" on BOTH buttons; the side-by-side desktop pill
+  // keeps the arrow on the outside, so the label leads on the forward button.
+  const skipForwardButton = (
+    <button
+      type="button"
+      onClick={ctl.skipForward}
+      aria-label="Skip forward 10 seconds"
+      className={`${skipClass} player-control-skip-forward`}
+    >
+      {mobile ? skipForwardIcon : <span className="mt-[var(--px-1)]">10s</span>}
+      {mobile ? <span className="mt-[var(--px-1)]">10s</span> : skipForwardIcon}
+    </button>
+  );
+
+  if (mobile) {
+    const metaClass =
+      "font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-75";
+    const separator = <span className={`${metaClass} shrink-0 opacity-40`}>·</span>;
+
+    return (
+      <div className="flex w-full flex-col gap-[var(--px-10)] py-[var(--px-4)]">
+        {/* Row 1 — seek bar spans the row. Any failure replaces it, centred and full white. */}
+        <div className="flex min-h-[var(--px-20)] w-full min-w-0 items-center">
+          {playbackFailed ? (
+            <PlaybackUnavailable onRetry={retryPlayback} compact centered detail={playbackDetail} />
+          ) : (
+            seekBar
+          )}
+        </div>
+
+        {/* Row 2 — skips pinned left, meta fills the rest and truncates before it can overflow.
+            No genre here: the collapsed row above already shows it. */}
+        <div className="flex w-full min-w-0 items-center gap-[var(--px-8)]">
+          <div className="flex shrink-0 items-center gap-[var(--px-6)]">
+            {skipBackButton}
+            {skipForwardButton}
+          </div>
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-[var(--px-6)]">
+            {label && (
+              <span className={`${metaClass} min-w-0 max-w-[var(--px-160)] truncate`} title={label}>
+                {label}
+              </span>
+            )}
+            {label && separator}
+            <span className={`${metaClass} shrink-0 whitespace-nowrap tabular-nums`}>
+              {elapsed}
+              {playableDuration > 0 ? ` / ${formatTime(playableDuration)}` : ""}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex w-full flex-col gap-[var(--px-6)] py-[var(--px-4)]">
       {/* Desktop: seek · skips · volume · meta on one row. Mobile: controls row then meta row. */}
@@ -83,36 +192,8 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
           </div>
 
           <div className="flex shrink-0 items-center gap-[var(--px-2)]">
-            <button
-              type="button"
-              onClick={ctl.skipBackward}
-              aria-label="Skip back 10 seconds"
-              className={`${skipClass} player-control-skip-backward`}
-            >
-              <img
-                src={NextTrackSvg}
-                draggable={false}
-                alt=""
-                aria-hidden="true"
-                className="h-[var(--px-10)] w-[var(--px-10)] rotate-180 lg:h-[var(--px-8)] lg:w-[var(--px-8)]"
-              />
-              <span className="mt-[var(--px-1)]">10s</span>
-            </button>
-            <button
-              type="button"
-              onClick={ctl.skipForward}
-              aria-label="Skip forward 10 seconds"
-              className={`${skipClass} player-control-skip-forward`}
-            >
-              <span className="mt-[var(--px-1)]">10s</span>
-              <img
-                src={NextTrackSvg}
-                draggable={false}
-                alt=""
-                aria-hidden="true"
-                className="mt-[var(--px-1)] h-[var(--px-10)] w-[var(--px-10)] lg:h-[var(--px-8)] lg:w-[var(--px-8)]"
-              />
-            </button>
+            {skipBackButton}
+            {skipForwardButton}
           </div>
 
           <div className="flex w-[var(--px-64)] shrink-0 items-center gap-[var(--px-6)]">

@@ -1,16 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SimilarityPlayer } from "@/components/index.ts";
+import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
+import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import { PlaylistUnlockBand } from "@/components/Playlist/PlaylistUnlockBand.tsx";
 import { LOCKED_BLUR_VISIBLE_ROWS, PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
+import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import { formatDuration, formatPercentage, useGlobalAudioController, useAccess } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
-import { getMyPlaylistRatings } from "@resomix/api-client";
+import { rateTrack, deleteTrackRating, getMyPlaylistRatings } from "@resomix/api-client";
 import { HoverFlow } from "@resomix/ui";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import PlaySvg from "@/assets/icons/play_white.svg";
 import MoreSvg from "@/assets/icons/more.svg";
-import { DEMO_MODE } from "@resomix/config";
+import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
+import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 import { prefetchAudio } from "@/utils/prefetchAudio.ts";
@@ -25,8 +28,19 @@ interface PlaylistTableProps {
     onMoreClick?: (trackId: string, name: string, label: string, duration: number, score: number, isInput?: boolean) => void;
 }
 
+/**
+ * The row's square control chrome — a fixed 35×35 bordered box, sized off the ⋯ menu button.
+ * Shared by ⋯ and every action in the expanded player (thumbs, Chain Discover) so they read as one
+ * set; the player's own 10s skips match it via SimilarityPlayer's `mobile` branch.
+ */
+const ROW_ACTION_BTN =
+    "flex h-[var(--px-35)] w-[var(--px-35)] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] " +
+    "border border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)] opacity-85 " +
+    "transition-[background-color,border-color,color] hover:border-[var(--rx-color-border-strong)] " +
+    `hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] ${WORKSPACE_FOCUS_VISIBLE}`;
+
 const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
-    const { playlistData, setTrackRatings } = usePlaylistStore();
+    const { playlistData, trackRatings = {}, setTrackRating, setTrackRatings, removeTrackRating } = usePlaylistStore();
     const tracks = useMemo(
         () => playlistData?.similar_tracks ?? [],
         [playlistData?.similar_tracks],
@@ -38,6 +52,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     );
 
     const access = useAccess();
+    const [rateGate, setRateGate] = useState<"login_required" | "upgrade_required" | null>(null);
     const maxUnlocked = access.unlockedTracks;
     const isGuest = access.isGuestForCopy;
     const maxTracksPerPlaylist = access.unlockedTracks;
@@ -78,9 +93,8 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Hydrate the user's existing thumbs for THIS playlist from the server (per-playlist source
-    // of truth). Replaces the map so un-rated tracks show no thumb. The rows themselves no longer
-    // render thumbs — rating lives in the ⋯ menu — but that menu reads this same store, so the
-    // hydration has to stay here (it is the only component mounted for every playlist load).
+    // of truth). Replaces the map so un-rated tracks show no thumb. Shared with the ⋯ menu, which
+    // reads the same store.
     const loadPlaylistId = playlistData?.playlist?.id;
     useEffect(() => {
         if (!loadPlaylistId) return;
@@ -96,6 +110,35 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
         })();
         return () => { cancelled = true; };
     }, [loadPlaylistId, setTrackRatings]);
+
+    const handleTrackRating = async (trackId: string, rating: number) => {
+        const v = access.verdict("rateTrack");
+        if (v === "pending") return;
+        if (v !== "allowed") {
+            setRateGate(v === "login" ? "login_required" : "upgrade_required");
+            return;
+        }
+        const pid = playlistData?.playlist?.id || null;
+        if (!pid) return;
+        // Optimistic, with rollback if the server call fails — otherwise a failed POST leaves a
+        // thumb showing "rated" while nothing was saved.
+        const prev = trackRatings[trackId];
+        const restore = () => (prev === undefined ? removeTrackRating(trackId) : setTrackRating(trackId, prev));
+        try {
+            if (prev === rating) {
+                removeTrackRating(trackId);          // tap the active thumb → un-rate (optimistic)
+                const res = await deleteTrackRating(trackId, pid);
+                if (!res?.success) restore();
+            } else {
+                setTrackRating(trackId, rating);
+                const res = await rateTrack(trackId, rating, pid);
+                if (!res?.success) restore();
+            }
+        } catch (error) {
+            console.error("Failed to rate track:", error);
+            restore();
+        }
+    };
 
     const handlePlayButtonClick = useCallback((trackId: string) => {
         if (!DEMO_MODE) {
@@ -235,16 +278,17 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                     <span className="shrink-0">{formatDuration(track.duration)}</span>
                                     {/* Capped so a long genre string can never push into the score column. */}
                                     {genreText && (
-                                        <span className="min-w-0 max-w-[var(--px-110)] truncate" title={genreText}>
+                                        <span className="min-w-0 max-w-[var(--px-90)] truncate" title={genreText}>
                                             {genreText}
                                         </span>
                                     )}
                                 </div>
                             </div>
                             {/* Actions column: ⋯ pinned to the top, score + meter pinned to the
-                                bottom. self-stretch + justify-between keeps them at the row's
-                                corners however tall the text column ends up. */}
-                            <div className="flex shrink-0 flex-col items-end justify-between gap-[var(--px-10)] self-stretch">
+                                bottom via mt-auto (works whether or not the ⋯ renders — locked
+                                rows have no button). The gap is the minimum breathing room when
+                                the row is too short for the two to separate on their own. */}
+                            <div className="flex shrink-0 flex-col items-end gap-[var(--px-5)] self-stretch">
                                 {!isRestricted && (
                                     <button
                                         type="button"
@@ -259,13 +303,13 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                                 false,
                                             )
                                         }
-                                        className={`flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)] opacity-80 transition-[background-color,border-color,color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] playlist-more-button ${WORKSPACE_FOCUS_VISIBLE}`}
+                                        className={`${ROW_ACTION_BTN} playlist-more-button`}
                                         id={`playlist-table-more-${track.id}`}
                                     >
                                         <img src={MoreSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-14)] w-[var(--px-19)]" />
                                     </button>
                                 )}
-                                <div className="pl-unavailable-dim flex w-[var(--px-44)] shrink-0 flex-col items-end gap-[var(--px-3)]">
+                                <div className="pl-unavailable-dim mt-auto flex w-[var(--px-44)] shrink-0 flex-col items-center gap-[var(--px-3)]">
                                     <span
                                         className={`font-fira text-[length:var(--px-9)] leading-none tracking-[var(--px-0-5)] ${scoreAccent ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--rx-color-text-muted)]"}`}
                                         title={`Match ${formatPercentage(track.score, 2)}`}
@@ -287,13 +331,69 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                             </div>
                         </div>
                         {isThisPlaying && !isRestricted && (
-                            <SimilarityPlayer
-                                trackId={track.id}
-                                isPlaying={isThisPlaying}
-                                totalDuration={track.duration}
-                                label={labelText}
-                                genre={genreText}
-                            />
+                            <>
+                                {/* No `genre` — the collapsed row's meta line already carries it. */}
+                                <SimilarityPlayer
+                                    mobile
+                                    trackId={track.id}
+                                    isPlaying={isThisPlaying}
+                                    totalDuration={track.duration}
+                                    label={labelText}
+                                />
+                                {/* Expanded-row actions. A 3-column grid rather than
+                                    justify-between so the Apple lockup is centred against the ROW,
+                                    not against whatever space the side controls leave over. */}
+                                <div className="grid w-full grid-cols-3 items-center gap-[var(--px-8)]">
+                                    <div className="flex items-center gap-[var(--px-6)] justify-self-start">
+                                        <button
+                                            type="button"
+                                            aria-label="Mark as similar"
+                                            title="Yes — similar to the input track"
+                                            onClick={() => void handleTrackRating(track.id, 1)}
+                                            className={ROW_ACTION_BTN}
+                                            id={`playlist-table-thumb-up-${track.id}`}
+                                        >
+                                            <ThumbIcon
+                                                className={`h-[var(--px-18)] w-[var(--px-18)] ${trackRatings[track.id] === 1 ? "fill-current" : "fill-transparent"}`}
+                                            />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            aria-label="Mark as not similar"
+                                            title="No — not similar to the input track"
+                                            onClick={() => void handleTrackRating(track.id, 0)}
+                                            className={ROW_ACTION_BTN}
+                                            id={`playlist-table-thumb-down-${track.id}`}
+                                        >
+                                            <ThumbIcon
+                                                className={`h-[var(--px-18)] w-[var(--px-18)] rotate-180 ${trackRatings[track.id] === 0 ? "fill-current" : "fill-transparent"}`}
+                                            />
+                                        </button>
+                                    </div>
+                                    <div className="flex min-w-0 items-center justify-center justify-self-center">
+                                        {track.type === "internal" && track.deep_link_url && (
+                                            <AppleMusicBadge
+                                                deepLinkUrl={track.deep_link_url}
+                                                playing
+                                                fullHeightClass="h-[var(--px-20)]"
+                                            />
+                                        )}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className={`${ROW_ACTION_BTN} justify-self-end playlist-sonic-discovery-button`}
+                                        onClick={() => {
+                                            window.open(`${BASE_BETA_URL}/sonic-discovery?discover=${track.id}`, "_blank");
+                                        }}
+                                        id={`playlist-table-sonic-discovery-${track.id}`}
+                                        aria-label="Chain Discover"
+                                        title="Chain Discover — use as new reference"
+                                        data-track-id={track.id}
+                                    >
+                                        <img src={SonicDiscoverySvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-16)] w-[var(--px-16)]" />
+                                    </button>
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>
@@ -368,12 +468,13 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                 {footerTopMatch ? ` · Top match: ${footerTopMatch}` : ""}
                 {footerAnalysisTime ? ` · Analysis: ${footerAnalysisTime}` : ""}
             </p>
-            {/* Legend tracks what the row actually shows — the score bars, Apple badge and inline
-                Chain Discover button are gone from mobile rows, so their entries went with them. */}
+            {/* Legend tracks what the row actually shows: a collapsed row has only the play button,
+                the ⋯ menu and the score; rating, Apple and Chain Discover appear when it expands. */}
             <div className="mt-[var(--px-12)] flex flex-wrap gap-x-[var(--px-16)] gap-y-[var(--px-6)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-50">
                 <span>▶ Authorised preview / playback</span>
-                <span>⋯ Rate, Chain Discover and track details</span>
-                <span>Scores compare within this shortlist — they sit in a tight band by design</span>
+                <span>Play a track to rate it, open it in Apple Music or Chain Discover from it</span>
+                <span>⋯ Track details and the same actions</span>
+                <span>Match scores sit in a tight band by design</span>
             </div>
             <p className="mt-[var(--px-8)] font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] text-[var(--color-primary)] opacity-60">
                 {access.isGuestForCopy
@@ -383,6 +484,15 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
             <p className="mt-[var(--px-6)] font-fira text-[length:var(--px-9)] tracking-[var(--px-1)] text-[var(--color-primary)] opacity-45">
                 Apple Music is a trademark of Apple Inc. Resomix is not affiliated with or endorsed by Apple.
             </p>
+
+            <GateCtaModal
+                reason={rateGate}
+                title={rateGate === "upgrade_required" ? "Upgrade to rate tracks" : "Log in to rate tracks"}
+                body={rateGate === "upgrade_required"
+                    ? "Your current plan does not include track rating. Subscribe to rate tracks."
+                    : "Rating individual tracks needs an account. Log in or create a free account to rate."}
+                onClose={() => setRateGate(null)}
+            />
         </section>
     );
 };
