@@ -71,8 +71,19 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
   }, [showOverlay]);
 
   useEffect(() => {
-    if (response?.success || error || gateReason) {
+    // Failures (error / gate) keep us on this panel → leave the processing state so the user can
+    // retry. On SUCCESS the parent navigates to the results view, so KEEP the processing panel up
+    // until this component unmounts: flipping back here would revert to the reference preview (the
+    // chip + "Find similar tracks" button) for a frame before the route swaps to the playlist —
+    // that momentary revert was the blink. The one exception is a success with no playlist to open
+    // (shouldn't happen): drop back so the panel can't get stuck on the processing view.
+    if (error || gateReason) {
       setIsSubmitting(false);
+      return;
+    }
+    if (response?.success) {
+      const playlistId = (response as { data?: { playlist?: { id?: string } } }).data?.playlist?.id;
+      if (!playlistId) setIsSubmitting(false);
     }
   }, [response, error, gateReason]);
 

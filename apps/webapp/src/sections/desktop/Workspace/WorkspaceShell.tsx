@@ -52,7 +52,13 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({ mode, children }
   const selectTask = (next: WorkspaceMode) => {
     if (next === mode) return;
     withViewTransition(() => {
-      navigate(next === "discovery" ? "/sonic-discovery" : "/analysis");
+      // Tag this as a deliberate task switch so the destination panel does its smooth reveal-scroll.
+      // A plain landing / redirect onto the page carries no such state, so the visitor stays at the
+      // top (see WorkspaceStage). Navigation state (not a URL param) keeps the address clean and
+      // auto-clears on refresh.
+      navigate(next === "discovery" ? "/sonic-discovery" : "/analysis", {
+        state: { workspaceModeSwitch: true },
+      });
     });
   };
 

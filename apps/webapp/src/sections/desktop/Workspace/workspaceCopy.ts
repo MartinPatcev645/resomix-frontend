@@ -99,7 +99,7 @@ export const ANALYSIS_UPLOAD_STEP = "Uploading track";
 export const ANALYSIS_PROCESSING_STEPS = [
   "Queued",
   "Processing — PYXIS-1 full analysis",
-  "Completed",
+  "Optimising results",
 ] as const;
 
 export const ANALYSIS_PROCESSING_NOTE =
