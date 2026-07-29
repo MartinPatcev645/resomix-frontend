@@ -21,7 +21,7 @@ export function RouteFallback() {
   return (
     <div
       aria-hidden="true"
-      className="webapp-approved-container px-[var(--px-32)] pb-[var(--px-40)] pt-[var(--px-28)]"
+      className="webapp-approved-container px-[var(--px-12)] pb-[var(--px-40)] pt-[var(--px-28)]"
     >
       <div
         className={[

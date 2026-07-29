@@ -238,7 +238,7 @@ export default function VerifyEmailContent({
   // Verifying state
   if (mode === "verify" && verifying) {
     return (
-      <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+      <section className="pt-[var(--px-120)] px-[var(--px-10)] md:px-0 tracking-[var(--px-1)]">
         <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
           <header className="mb-[var(--px-28)] text-center">
             <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
@@ -263,7 +263,7 @@ export default function VerifyEmailContent({
 
   // Email sent confirmation state
   return (
-    <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+    <section className="pt-[var(--px-120)] px-[var(--px-10)] md:px-0 tracking-[var(--px-1)]">
       <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
         <header className="mb-[var(--px-28)] text-center">
           <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">

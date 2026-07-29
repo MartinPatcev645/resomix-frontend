@@ -61,7 +61,7 @@ export default function ProfileContent({
 
   if (loading) {
     return (
-      <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+      <section className="pt-[var(--px-120)] px-[var(--px-3)] md:px-0 tracking-[var(--px-1)]">
         <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
           <div className="flex justify-center items-center h-[200px] w-full max-w-[var(--px-300)]">
             <SineWaves />
@@ -73,7 +73,7 @@ export default function ProfileContent({
 
   if (!user) {
     return (
-      <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+      <section className="pt-[var(--px-120)] px-[var(--px-3)] md:px-0 tracking-[var(--px-1)]">
         <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
           <p>Unable to load profile. Please try again.</p>
         </div>
@@ -82,7 +82,7 @@ export default function ProfileContent({
   }
 
   return (
-    <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+    <section className="pt-[var(--px-120)] px-[var(--px-3)] md:px-0 tracking-[var(--px-1)]">
       <div className="w-full text-[var(--color-primary)]">
         <header className="mb-[var(--px-28)] text-center">
           <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
@@ -104,7 +104,7 @@ export default function ProfileContent({
             </a>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[clamp(260px,22vw,340px)_1fr] gap-[var(--px-24)] px-[var(--px-20)] lg:px-0 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-[clamp(260px,22vw,340px)_1fr] gap-[var(--px-24)] px-[var(--px-10)] lg:px-0 items-start">
             <aside className="space-y-[var(--px-20)] lg:sticky lg:top-[var(--px-120)] h-max">
               <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
                 <div className="flex items-center gap-[var(--px-12)]">

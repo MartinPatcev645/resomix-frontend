@@ -39,7 +39,7 @@ export default function ContactContent({ baseUrl = "https://resomix.com" }: Cont
     }
   };
   return (
-    <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-0 tracking-[var(--px-1)]">
+    <section className="pt-[var(--px-120)] px-[var(--px-10)] md:px-0 tracking-[var(--px-1)]">
       <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
 
         <header className="mb-[var(--px-28)] text-center">

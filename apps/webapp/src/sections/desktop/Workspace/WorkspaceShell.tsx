@@ -63,7 +63,7 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({ mode, children }
   };
 
   return (
-    <div className="webapp-approved-container px-[var(--px-32)] pb-[var(--px-40)]">
+    <div className="webapp-approved-container px-[var(--px-12)] pb-[var(--px-40)]">
       <header className="mb-[var(--px-28)] grid grid-cols-1 items-start gap-[var(--px-16)] sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-x-[var(--px-32)]">
         <div>
           <p className="mb-[var(--px-16)] flex items-center gap-[var(--px-10)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--color-primary)] opacity-75 before:block before:w-[var(--px-32)] before:border-t before:border-[var(--color-accent,#EE4A26)] before:content-['']">
