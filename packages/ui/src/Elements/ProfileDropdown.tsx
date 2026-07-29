@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 
 interface ProfileDropdownItem {
   label: string;
@@ -29,6 +29,14 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Only wire hover-open/close on devices that actually hover (desktop). On touch, the browser
+  // synthesizes a mouseenter→mouseleave around a tap, and the leave's close timer would snap the
+  // menu shut the instant it opened — so touch relies solely on the click toggle.
+  const hoverCapable = useMemo(
+    () => typeof window !== "undefined" && !!window.matchMedia?.("(hover: hover)").matches,
+    [],
+  );
 
   // --- Click outside to close ---
   const handleClickOutside = useCallback((event: MouseEvent) => {
@@ -96,8 +104,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     <div
       ref={dropdownRef}
       className="relative"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      {...(hoverCapable ? { onMouseEnter: handleMouseEnter, onMouseLeave: handleMouseLeave } : {})}
     >
       {/* Trigger */}
       <div

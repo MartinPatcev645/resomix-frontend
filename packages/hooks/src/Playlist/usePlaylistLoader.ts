@@ -13,6 +13,13 @@ import { getPlaylistSimilarity } from '@resomix/api-client';
  */
 const inFlight = new Map<string, Promise<any>>();
 
+/**
+ * How long after a creation the store's authoritative copy is trusted as a "fresh hand-off". Within
+ * this window a load serves that copy (revalidating silently) instead of a visible clear→refetch;
+ * outside it, the normal clear→refetch runs so a later revisit never shows stale data.
+ */
+const FRESH_HANDOFF_MS = 10_000;
+
 function loadSimilarityOnce(id: string): Promise<any> {
   let promise = inFlight.get(id);
   if (!promise) {
@@ -54,6 +61,38 @@ export function usePlaylistLoader() {
     }
 
     let cancelled = false;
+
+    // Fresh hand-off: the app JUST created/resolved this exact playlist and already placed the
+    // authoritative response in the store (a page/hook called setPlaylistResponse). Keep it on
+    // screen — no clear, no loader — and revalidate quietly in the background so any server-only
+    // fields still land, swapping in place. This removes the blink where the just-created playlist
+    // flashed, blanked to the loader, then showed again. Bounded by FRESH_HANDOFF_MS and revalidated
+    // against the store id, so a later revisit (e.g. a guest preview after login) still refetches.
+    const isFreshHandoff =
+      store.playlistData?.playlist?.id === id &&
+      store.lastResolvedId === id &&
+      Date.now() - store.lastResolvedAt < FRESH_HANDOFF_MS;
+
+    if (isFreshHandoff) {
+      store.setLoading(false);
+      loadSimilarityOnce(id)
+        .then((resp) => {
+          if (cancelled) return;
+          const s = usePlaylistStore.getState();
+          // Only swap on success; on failure keep the in-store creation copy (never surface an
+          // error over already-good data).
+          if (resp?.success) {
+            if (resp.data) s.setPlaylistData(resp.data as any);
+            else s.setPlaylistResponse(resp as any);
+          }
+        })
+        .catch(() => {
+          /* keep the in-store copy */
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
 
     // Drop any existing (possibly stale / guest-preview) copy and show the loader until the fresh
     // response arrives, then populate the store with it.

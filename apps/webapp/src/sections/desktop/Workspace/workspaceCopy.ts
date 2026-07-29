@@ -78,7 +78,7 @@ export const PROCESSING_STEPS_CATALOGUE = [
 ] as const;
 
 export const PROCESSING_STEPS_UPLOAD = [
-  "Preparing reference",
+  "Uploading reference",
   "Analysing upload",
   "Searching the index",
   "Building ranked results",
@@ -94,7 +94,7 @@ export const ANALYSIS_UPLOAD_QUOTA_HINT =
 export const ANALYSE_TRACK_CTA = "Analyse track";
 
 /** Shown first while the file uploads — carries a live neon upload-% counter. */
-export const ANALYSIS_UPLOAD_STEP = "Uploading file";
+export const ANALYSIS_UPLOAD_STEP = "Uploading track";
 
 export const ANALYSIS_PROCESSING_STEPS = [
   "Queued",

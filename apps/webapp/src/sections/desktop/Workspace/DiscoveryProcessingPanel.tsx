@@ -5,6 +5,7 @@ import {
   PROCESSING_STEPS_CATALOGUE,
   PROCESSING_STEPS_UPLOAD,
 } from "./workspaceCopy.ts";
+import { useLastStepBlink } from "./useLastStepBlink.ts";
 
 /**
  * Search: purely time-based cycle across all 3 steps; reaches the last by ~3.6 s (inside ~5–6 s).
@@ -49,6 +50,9 @@ export const DiscoveryProcessingPanel: React.FC = () => {
   }, [isFileUpload, progress]);
 
   const active = Math.min(steps.length - 1, activeIndex);
+  // Once we settle on the final step (which absorbs the remaining server wait), start a gentle
+  // blink on its neon block after 3s so the panel never looks stuck.
+  const blinkLast = useLastStepBlink(active === steps.length - 1);
 
   return (
     <div
@@ -60,6 +64,7 @@ export const DiscoveryProcessingPanel: React.FC = () => {
       <ol className="space-y-[var(--px-10)]">
         {steps.map((label, index) => {
           const state = index < active ? "done" : index === active ? "now" : "pending";
+          const isLast = index === steps.length - 1;
           // Upload's first step shows the live file-upload %: neon while active, and inheriting the
           // (dimmed) step colour once done so it matches the rest of that completed row.
           const showPercent = isFileUpload && index === 0;
@@ -80,6 +85,9 @@ export const DiscoveryProcessingPanel: React.FC = () => {
                     : state === "done"
                       ? "border-slate-300 bg-slate-300"
                       : "border-slate-500",
+                  state === "now" && isLast && blinkLast
+                    ? "motion-safe:animate-[sd-pulse_2.6s_ease-in-out_infinite]"
+                    : "",
                 ].join(" ")}
               />
               {showPercent && (

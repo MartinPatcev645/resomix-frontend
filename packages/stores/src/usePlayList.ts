@@ -103,6 +103,12 @@ interface PlaylistStore {
   isLoading: boolean
   error: string | null
   trackRatings: Record<string, number>
+  // Bookkeeping for usePlaylistLoader's fresh-handoff fast-path (NOT for rendering): which playlist
+  // id was last written by an authoritative setter, and when. A load that arrives right after a
+  // creation serves that in-store copy (revalidating silently) instead of a visible clear→refetch,
+  // which flashed the playlist, blanked to the loader, then showed it again ("the blink").
+  lastResolvedId: string | null
+  lastResolvedAt: number
 
   // Actions
   setPlaylistData: (data: PlaylistData) => void
@@ -137,22 +143,31 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   isLoading: false,
   error: null,
   trackRatings: {},
+  lastResolvedId: null,
+  lastResolvedAt: 0,
 
   // Actions
   setPlaylistData: (data) => {
     const processedData = ensurePlaylistObject({ ...data });
     set({
       playlistData: processedData,
-      error: null
+      error: null,
+      lastResolvedId: processedData?.playlist?.id ?? null,
+      lastResolvedAt: Date.now(),
     });
   },
 
   setPlaylistResponse: (response) => {
     if (response.success) {
       const processedData = ensurePlaylistObject({ ...response.data });
-      set({ playlistData: processedData, error: null })
+      set({
+        playlistData: processedData,
+        error: null,
+        lastResolvedId: processedData?.playlist?.id ?? null,
+        lastResolvedAt: Date.now(),
+      })
     } else {
-      set({ error: 'Failed to load playlist data', playlistData: null })
+      set({ error: 'Failed to load playlist data', playlistData: null, lastResolvedId: null })
     }
   },
 
@@ -168,13 +183,13 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     return { trackRatings: next };
   }),
 
-  clearPlaylistData: () => set({ playlistData: null, error: null }),
+  clearPlaylistData: () => set({ playlistData: null, error: null, lastResolvedId: null }),
 
   setLoading: (loading) => set({ isLoading: loading }),
 
   setError: (error) => set({ error }),
 
-  reset: () => set({ playlistData: null, isLoading: false, error: null, trackRatings: {} }),
+  reset: () => set({ playlistData: null, isLoading: false, error: null, trackRatings: {}, lastResolvedId: null, lastResolvedAt: 0 }),
 
   // Cache actions
   saveResponseToCache,

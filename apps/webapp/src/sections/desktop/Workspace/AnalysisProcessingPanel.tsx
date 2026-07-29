@@ -5,6 +5,7 @@ import {
   ANALYSIS_PROCESSING_STEPS,
   ANALYSIS_UPLOAD_STEP,
 } from "./workspaceCopy.ts";
+import { useLastStepBlink } from "./useLastStepBlink.ts";
 
 /**
  * Once the file has finished uploading (status → "analyzing"), cycle the three analysis steps over
@@ -43,6 +44,9 @@ export const AnalysisProcessingPanel: React.FC<AnalysisProcessingPanelProps> = (
   }, [status]);
 
   const active = Math.min(steps.length - 1, activeIndex);
+  // The last step ("Completed") holds while the async job finishes — blink its dot after 3s so it
+  // doesn't read as frozen.
+  const blinkLast = useLastStepBlink(active === steps.length - 1);
   // Upload-% counter: climbs with the real byte progress while uploading, then pinned at 100%.
   const uploadPct = status === "uploading" ? Math.min(100, Math.max(0, Math.round(progress))) : 100;
 
@@ -61,7 +65,8 @@ export const AnalysisProcessingPanel: React.FC<AnalysisProcessingPanelProps> = (
       <ol className="space-y-[var(--px-10)]">
         {steps.map((label, index) => {
           const state = index < active ? "done" : index === active ? "now" : "pending";
-          const showPercent = index === 0; // the "Uploading file" step
+          const isLast = index === steps.length - 1;
+          const showPercent = index === 0; // the upload-% step
           return (
             <li
               key={label}
@@ -75,10 +80,13 @@ export const AnalysisProcessingPanel: React.FC<AnalysisProcessingPanelProps> = (
                 className={[
                   "block h-[var(--px-8)] w-[var(--px-8)] rounded-[var(--rx-radius-control)] border",
                   state === "now"
-                    ? "border-[var(--color-accent,#EE4A26)] bg-[var(--color-accent,#EE4A26)] motion-safe:animate-pulse"
+                    ? "border-[var(--color-accent,#EE4A26)] bg-[var(--color-accent,#EE4A26)]"
                     : state === "done"
                       ? "border-slate-300 bg-slate-300"
                       : "border-slate-500",
+                  state === "now" && isLast && blinkLast
+                    ? "motion-safe:animate-[sd-pulse_2.6s_ease-in-out_infinite]"
+                    : "",
                 ].join(" ")}
               />
               {showPercent && (
