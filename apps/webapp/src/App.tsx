@@ -4,7 +4,7 @@ import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useSilkt
 import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
-import { ProtectedRoute, GuestRoute, WebLayout, SessionExpiredModal, OptionalAuthRoute, RouteFallback } from "@/components/index.ts";
+import { ProtectedRoute, GuestRoute, WebLayout, SessionExpiredModal, RouteFallback } from "@/components/index.ts";
 import { MetricsOverlay } from "@/components/metrics/MetricsOverlay.js";
 
 // Lazy-load pages
@@ -131,9 +131,12 @@ function App() {
             {/* Optional Auth Routes (work with or without login) */}
             <Route path="/" element={<HomeLanding />} />
             {/* Canonical discovery workspace + playlist results (?id=). /playlist redirects here (back-compat). */}
-            <Route path="/sonic-discovery" element={<OptionalAuthRoute><DiscoveryLanding /></OptionalAuthRoute>} />
+            {/* NOTE: no OptionalAuthRoute here — WebLayout already wraps its whole subtree in one,
+                so every route in this group gets the beta/verification banners. Wrapping again
+                rendered the beta notice twice (once above the navbar, once inside <main>). */}
+            <Route path="/sonic-discovery" element={<DiscoveryLanding />} />
             <Route path="/playlist" element={<PlaylistRedirect />} />
-            <Route path="/analysis" element={<OptionalAuthRoute><AnalysisLanding /></OptionalAuthRoute>} />
+            <Route path="/analysis" element={<AnalysisLanding />} />
             <Route path="/subscribe" element={<SubscribePage />} />
             {import.meta.env.DEV ? <Route path="/__ui-system" element={<UiSystemSpecimenPage />} /> : null}
 
