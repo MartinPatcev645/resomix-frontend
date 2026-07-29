@@ -358,18 +358,16 @@ html #stcm-wrapper .stcm-button-secondary:hover {
   background: rgba(255, 255, 255, 0.035);
 }
 
+/* Row state is carried by the inset left border ONLY — no background tint. Both platforms. */
 .pl-row[data-selected="true"] {
-  background: var(--rx-color-selected);
   box-shadow: inset 3px 0 0 0 var(--rx-color-accent);
 }
 
 .pl-row[data-playing="true"] {
-  background: var(--rx-color-playing);
   box-shadow: inset 3px 0 0 0 var(--rx-color-accent);
 }
 
 .pl-row[data-paused="true"] {
-  background: rgba(255, 255, 255, 0.03);
   box-shadow: inset 3px 0 0 0 var(--rx-color-border-strong);
 }
 
