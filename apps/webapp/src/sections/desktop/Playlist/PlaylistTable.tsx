@@ -1,19 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
-import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
-import { IconComp, Tooltip } from "@resomix/ui";
+import { Tooltip } from "@resomix/ui";
 import { formatDuration, useGlobalAudioController, useAccess } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { rateTrack, deleteTrackRating, getMyPlaylistRatings } from "@resomix/api-client";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
-import PlaySvg from "@/assets/icons/play.svg";
-import PauseSvg from "@/assets/icons/pause.svg";
+import PlaySvg from "@/assets/icons/play_white.svg";
+import PauseSvg from "@/assets/icons/pause_white.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
-import { scoreBandWidthPct, shortlistScoreRange } from "@/utils/scoreBand.ts";
 import { prefetchAudio } from "@/utils/prefetchAudio.ts";
 import { PlaylistUnlockBand } from "@/components/Playlist/PlaylistUnlockBand.tsx";
 import { LOCKED_BLUR_VISIBLE_ROWS, PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
@@ -31,6 +29,12 @@ import {
   WORKSPACE_BTN_SECONDARY,
   WORKSPACE_FOCUS_VISIBLE,
 } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
+
+/**
+ * One icon size across the row's three glyphs — play/pause, feedback thumbs and Chain Discover —
+ * so they read as a set. Change here and all three follow.
+ */
+const ROW_ICON = "h-[var(--px-18)] w-[var(--px-18)]";
 
 const PlaylistTable: React.FC = () => {
     const { playlistData, trackRatings = {}, setTrackRating, setTrackRatings, removeTrackRating } = usePlaylistStore();
@@ -110,11 +114,6 @@ const PlaylistTable: React.FC = () => {
         () => lockedTracks.slice(0, LOCKED_BLUR_VISIBLE_ROWS),
         [lockedTracks],
     );
-    const scoreRange = useMemo(
-        () => shortlistScoreRange(tracks.map((t) => t.score)),
-        [tracks],
-    );
-
     const analysis = playlistId ? loadPlaylistAnalysis(playlistId) : null;
     const footerResultCount = analysis?.resultCount ?? tracks.length;
     const footerTopMatch = analysis?.topMatchScore != null
@@ -177,7 +176,9 @@ const PlaylistTable: React.FC = () => {
         const isTrackPlaying = isSelected && isPlaying;
         const isUnavailable = isSelected && networkError;
         const isTopRank = track.rank === 1;
-        const bandPct = scoreBandWidthPct(track.score, scoreRange.min, scoreRange.max);
+        // Absolute fill: 0.8 → 80% of the rail. NOT normalised against the shortlist's own
+        // min/max, which is what the old band width did — that made the top row look like 100%.
+        const bandPct = Math.max(0, Math.min(100, (track.score ?? 0) * 100));
         const scorePctLabel = `${(track.score * 100).toFixed(2)}%`;
         const isAlternate = rowIndex % 2 === 1;
         const playLabel = isTrackPlaying ? "Pause" : "Play";
@@ -206,7 +207,7 @@ const PlaylistTable: React.FC = () => {
                     style={playlistRowGridStyle}
                     role="row"
                 >
-                    <div className={`pl-unavailable-dim font-fira text-[length:var(--px-11)] ${isTopRank && !isRestricted ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--rx-color-text-muted)]"}`} role="cell">
+                    <div className={`pl-unavailable-dim text-center font-fira text-[length:var(--px-11)] ${isTopRank && !isRestricted ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--rx-color-text-muted)]"}`} role="cell">
                         {isRestricted && (
                             <span aria-hidden="true" className="mr-[var(--px-2)] text-[length:var(--px-10)]">
                                 ⌾
@@ -227,68 +228,71 @@ const PlaylistTable: React.FC = () => {
                                 Demo mode - Audio playback limited while we complete licensing
                             </div>
                         )}
-                        <IconComp
+                        {/* Cover fills the play box (it used to sit in its own smaller column), with
+                            the white transport glyph over a scrim so it reads on any artwork. */}
+                        <button
+                            type="button"
+                            aria-label={playLabel}
+                            aria-hidden={restrictedMode === "blur" ? true : undefined}
+                            tabIndex={restrictedMode === "blur" ? -1 : undefined}
+                            disabled={restrictedMode === "blur"}
+                            onClick={() => handlePlayButtonClick(track.id)}
                             className={[
-                                "relative z-20 flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] playlist-play-button",
+                                "relative z-20 flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center overflow-hidden rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent transition-[background-color,border-color,color] playlist-play-button",
                                 WORKSPACE_FOCUS_VISIBLE,
                                 isTrackPlaying
-                                  ? "border-[rgba(238,74,38,0.7)] bg-[rgba(238,74,38,0.16)]"
-                                  : "hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)]",
+                                  ? "border-[rgba(238,74,38,0.7)]"
+                                  : "hover:cursor-pointer hover:border-[var(--rx-color-border-strong)]",
                             ].join(" ")}
-                            svg={<img
-                                src={isTrackPlaying ? PauseSvg : PlaySvg}
-                                alt={playLabel}
-                                className='w-[var(--px-11)] h-[var(--px-11)] opacity-90'
-                            />}
-                            padding='p-[var(--px-10)]'
-                            backgroundColor='bg-transparent'
-                            borderColor='outline-[var(--rx-color-border-default)]'
-                            onClick={restrictedMode === "blur" ? undefined : () => handlePlayButtonClick(track.id)}
-                            asDiv={restrictedMode === "blur"}
                             id={`playlist-table-play-button-${track.id}`}
-                            dataAttributes={{
-                                'data-testid': 'table-play-button',
-                                'data-track-id': track.id,
-                                'data-track-artist': track.artist,
-                                'data-track-title': track.title,
-                                'data-track-name': track.title,
-                            }}
-                        />
-                    </div>
-                    <TrackArtwork artworkUrl={track.artwork_url} className="pl-unavailable-dim h-[var(--px-32)] w-[var(--px-32)] rounded-[var(--rx-radius-control)]" />
-                    <div className="flex items-center justify-center" role="cell">
-                        {track.type === "internal" && track.deep_link_url && !isTrackPlaying && (
-                            <AppleMusicBadge deepLinkUrl={track.deep_link_url} />
-                        )}
+                            data-testid="table-play-button"
+                            data-track-id={track.id}
+                            data-track-artist={track.artist}
+                            data-track-title={track.title}
+                            data-track-name={track.title}
+                        >
+                            <TrackArtwork
+                                artworkUrl={track.artwork_url}
+                                className="pl-unavailable-dim absolute inset-0 h-full w-full rounded-[var(--rx-radius-control)] border-0"
+                            />
+                            <span className={`absolute inset-0 flex items-center justify-center rounded-[var(--rx-radius-control)] ${isTrackPlaying ? "bg-[rgba(238,74,38,0.28)]" : "bg-black/40"}`}>
+                                <img
+                                    src={isTrackPlaying ? PauseSvg : PlaySvg}
+                                    alt=""
+                                    aria-hidden="true"
+                                    className={`${ROW_ICON} drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]`}
+                                />
+                            </span>
+                        </button>
                     </div>
                     <div
-                        className="pl-unavailable-dim min-w-0 truncate text-[length:var(--px-13)] font-helvetica font-light text-[var(--rx-color-text-secondary)]"
+                        className="pl-unavailable-dim min-w-0 truncate text-center text-[length:var(--px-13)] font-helvetica font-light text-[var(--rx-color-text-secondary)]"
                         role="cell"
                         title={displayOrNA(track.artist)}
                     >
                         {displayOrNA(track.artist)}
                     </div>
                     <div
-                        className="pl-unavailable-dim min-w-0 truncate text-[length:var(--px-14)] font-helvetica font-light uppercase text-[var(--rx-color-text-primary)]"
+                        className="pl-unavailable-dim min-w-0 truncate text-center text-[length:var(--px-14)] font-helvetica font-light uppercase text-[var(--rx-color-text-primary)]"
                         role="cell"
                         title={displayOrNA(track.title)}
                     >
                         {displayOrNA(track.title)}
                     </div>
-                    <div className="pl-unavailable-dim font-fira text-[length:var(--px-11)] leading-[var(--px-15)] text-[var(--rx-color-text-secondary)]" role="cell">
+                    <div className="pl-unavailable-dim min-w-0 text-center font-fira text-[length:var(--px-11)] leading-[var(--px-15)] text-[var(--rx-color-text-secondary)]" role="cell">
                         {!isTrackPlaying && resolveLabel(track.label) && (
                             <div className="truncate" title={resolveLabel(track.label) || undefined}>{resolveLabel(track.label)}</div>
                         )}
                         <div className="opacity-90">{track.year ?? "—"}</div>
                     </div>
-                    <div className="pl-unavailable-dim font-fira text-[length:var(--px-11)] leading-[var(--px-15)] text-[var(--rx-color-text-secondary)]" role="cell">
+                    <div className="pl-unavailable-dim min-w-0 text-center font-fira text-[length:var(--px-11)] leading-[var(--px-15)] text-[var(--rx-color-text-secondary)]" role="cell">
                         {!isTrackPlaying && firstGenre(track.genre) && (
                             <div className="truncate" title={firstGenre(track.genre) || undefined}>{firstGenre(track.genre)}</div>
                         )}
                         <div className="opacity-90">{formatDuration(track.duration)}</div>
                     </div>
                     <div className="pl-unavailable-dim flex min-w-0 flex-col gap-[var(--px-4)]" role="cell">
-                        <div className={`font-fira text-[length:var(--px-11)] ${isTopRank || isTrackPlaying ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--rx-color-text-primary)]"}`}>
+                        <div className={`text-center font-fira text-[length:var(--px-11)] ${isTopRank || isTrackPlaying ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--rx-color-text-primary)]"}`}>
                             {scorePctLabel}
                             {isTopRank && (
                                 <span className="ml-[var(--px-6)] text-[length:var(--px-8)] uppercase tracking-[var(--px-1)] text-[var(--color-accent,#EE4A26)]">TOP</span>
@@ -302,7 +306,7 @@ const PlaylistTable: React.FC = () => {
                         </div>
                     </div>
                     {!isRestricted && (
-                        <div className="pl-unavailable-dim flex min-w-0 items-center justify-center gap-[var(--px-8)]" role="cell">
+                        <div className="pl-unavailable-dim flex min-w-0 items-center justify-center gap-[var(--px-2)]" role="cell">
                             {(() => {
                                 const currentRating = trackRatings[track.id];
                                 const upSelected = currentRating === 1;
@@ -313,11 +317,11 @@ const PlaylistTable: React.FC = () => {
                                             <button
                                                 type="button"
                                                 aria-label="Mark as similar"
-                                                className={`flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center ${WORKSPACE_FOCUS_VISIBLE}`}
+                                                className={`flex h-[var(--px-28)] w-[var(--px-28)] shrink-0 items-center justify-center ${WORKSPACE_FOCUS_VISIBLE}`}
                                                 onClick={() => void handleTrackRating(track.id, 1)}
                                             >
                                                 <ThumbIcon
-                                                    className={`h-[var(--px-16)] w-[var(--px-16)] ${upSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} text-[var(--rx-color-text-primary)] opacity-80 hover:opacity-100 hover:cursor-pointer playlist-rating-thumb-up`}
+                                                    className={`${ROW_ICON} ${upSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} text-[var(--rx-color-text-primary)] opacity-80 hover:opacity-100 hover:cursor-pointer playlist-rating-thumb-up`}
                                                     id={`playlist-table-thumb-up-${track.id}`}
                                                     data-track-id={track.id}
                                                     data-track-artist={track.artist}
@@ -330,11 +334,11 @@ const PlaylistTable: React.FC = () => {
                                             <button
                                                 type="button"
                                                 aria-label="Mark as not similar"
-                                                className={`flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center ${WORKSPACE_FOCUS_VISIBLE}`}
+                                                className={`flex h-[var(--px-28)] w-[var(--px-28)] shrink-0 items-center justify-center ${WORKSPACE_FOCUS_VISIBLE}`}
                                                 onClick={() => void handleTrackRating(track.id, 0)}
                                             >
                                                 <ThumbIcon
-                                                    className={`h-[var(--px-16)] w-[var(--px-16)] rotate-180 ${downSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} text-[var(--rx-color-text-primary)] opacity-80 hover:opacity-100 hover:cursor-pointer playlist-rating-thumb-down`}
+                                                    className={`${ROW_ICON} rotate-180 ${downSelected ? 'fill-current' : 'fill-transparent hover:fill-current'} text-[var(--rx-color-text-primary)] opacity-80 hover:opacity-100 hover:cursor-pointer playlist-rating-thumb-down`}
                                                     id={`playlist-table-thumb-down-${track.id}`}
                                                     data-track-id={track.id}
                                                     data-track-artist={track.artist}
@@ -353,7 +357,7 @@ const PlaylistTable: React.FC = () => {
                         <div role="cell" className="pl-unavailable-dim flex min-h-[var(--px-44)] min-w-[var(--px-52)] items-center justify-center">
                             <button
                                 type="button"
-                                className={`flex min-h-[var(--px-44)] min-w-[var(--px-44)] items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent p-[var(--px-10)] text-[var(--rx-color-text-secondary)] transition-[background-color,border-color,color] hover:cursor-pointer hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] playlist-sonic-discovery-button ${WORKSPACE_FOCUS_VISIBLE}`}
+                                className={`flex h-[var(--px-35)] w-[var(--px-35)] items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent text-[var(--rx-color-text-secondary)] transition-[background-color,border-color,color] hover:cursor-pointer hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] playlist-sonic-discovery-button ${WORKSPACE_FOCUS_VISIBLE}`}
                                 onClick={() => {
                                     window.open(`${BASE_BETA_URL}/sonic-discovery?discover=${track.id}`, '_blank');
                                 }}
@@ -365,7 +369,7 @@ const PlaylistTable: React.FC = () => {
                                 data-track-name={track.title}
                             >
                                 <Tooltip message="Use this track as a new reference to find more matches">
-                                    <img src={SonicDiscoverySvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-16)] h-[var(--px-16)] hover:scale-110 transition-transform duration-200" />
+                                    <img src={SonicDiscoverySvg} draggable={false} alt="" aria-hidden="true" className={`${ROW_ICON} hover:scale-110 transition-transform duration-200`} />
                                 </Tooltip>
                             </button>
                         </div>
@@ -410,17 +414,25 @@ const PlaylistTable: React.FC = () => {
                 style={{ ...playlistRowGridStyle, top: PLAYLIST_STICKY_HEADER_TOP }}
                 role="row"
             >
-                <div role="columnheader">#</div>
+                {/* Headers sit centred over their cells. The stacked pairs mirror the two-line
+                    values below them (label over year, genre over length) instead of joining the
+                    two words with a separator dot. Artist/Title stay left, aligned with their
+                    truncating text. */}
+                <div role="columnheader" className="text-center">#</div>
                 <div role="columnheader" aria-label="Play" />
-                <div role="columnheader" aria-label="Cover" />
-                <div role="columnheader" aria-label="Apple Music" />
                 <div role="columnheader">Artist</div>
                 <div role="columnheader">Title</div>
-                <div role="columnheader">Label · Year</div>
-                <div role="columnheader">Genre · Length</div>
-                <div role="columnheader">Match</div>
-                <div role="columnheader">Feedback</div>
-                <div role="columnheader">Chain</div>
+                <div role="columnheader" className="text-center leading-[var(--px-12)]">
+                    <div>Label</div>
+                    <div>Year</div>
+                </div>
+                <div role="columnheader" className="text-center leading-[var(--px-12)]">
+                    <div>Genre</div>
+                    <div>Length</div>
+                </div>
+                <div role="columnheader" className="text-center">Match</div>
+                <div role="columnheader" className="text-center">Feedback</div>
+                <div role="columnheader" className="text-center">Chain</div>
             </div>
 
             <div className={`${PLAYLIST_PANEL_BORDER} border-t-0 bg-[rgba(255,255,255,.02)]`}>
@@ -484,9 +496,8 @@ const PlaylistTable: React.FC = () => {
 
             <div className="mt-[var(--px-12)] flex flex-wrap gap-x-[var(--px-16)] gap-y-[var(--px-6)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-50">
                 <span>▶ Authorised preview / playback</span>
-                <span>Apple badge — catalogue tracks with a link</span>
                 <span>⇄ Chain Discover — use as new reference</span>
-                <span>Score bars compare within this shortlist — scores sit in a tight band by design</span>
+                <span>Score bars show the match outright — scores sit in a tight band by design</span>
             </div>
 
             <p className="mt-[var(--px-12)] font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] text-[var(--color-primary)] opacity-60">

@@ -486,6 +486,7 @@ const PlaylistHero: React.FC = () => {
 
         {playlistData?.queried_track.id && (
           <InputPlayer
+            mobile
             trackId={playlistData.queried_track.id}
             totalDuration={playlistData.queried_track.duration ?? 0}
             trackType={playlistData.queried_track.type}

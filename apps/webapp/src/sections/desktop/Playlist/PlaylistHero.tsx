@@ -3,29 +3,26 @@ import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartStrokeIcon, Heart
 import { formatDuration, usePlaylistExport, useAccess, useFavoritePlaylist, usePlaylistVisibility, usePlaylistCover, type AccessAction } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
-import { resolveLabel } from "@/utils/trackUtils.ts";
+import { resolveLabel, firstGenre } from "@/utils/trackUtils.ts";
 import { autoFluidGridStyle } from "@/utils/playlistGrid.ts";
 import { useNavigate, useLocation } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport, PlaylistShare } from "@/components/index.ts";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx";
 import EmbedModal from "@/components/Modals/Transfer/EmbedModal.tsx";
-import StarSvg from "@/assets/icons/star.svg";
+// star.svg is stroked black — invisible on the dark rating button. Mobile already uses this one.
+import StarSvg from "@/assets/icons/star_white.svg";
 import DefaultCover from "@/assets/default-playlist-cover.jpg";
-import InfoSvg from "@/assets/icons/info.svg";
 import { CoverTextOverlay } from "@/components/Playlist/CoverTextOverlay.tsx";
 import { CoverCropModal } from "@/components/Playlist/CoverCropModal.tsx";
 import { playlistAccessChrome, PLAYLIST_LOCK_MARK } from "@/utils/playlistAccessChrome.ts";
 import { StickyReferenceBar } from "@/components/Playlist/StickyReferenceBar.tsx";
 import { PLAYLIST_DIVIDER_BORDER } from "@/utils/playlistChrome.ts";
 import { WORKSPACE_BTN_PRIMARY, WORKSPACE_BTN_SECONDARY, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
-import { HERO_TOOLBAR_BTN, HeroChevronLeft, HeroAutoplayToggle, RenameIcon, ExportIcon, ShareIcon } from "@/components/Playlist/heroToolbar.tsx";
-
-const InputTrackStatus = "Loading..."
+import { HERO_TOOLBAR_BTN, HeroChevronLeft, HeroAutoplayToggle, HeroClockIcon, RenameIcon, ExportIcon, ShareIcon } from "@/components/Playlist/heroToolbar.tsx";
 
 const PlaylistHero: React.FC = () => {
   const stickySentinelRef = React.useRef<HTMLDivElement | null>(null);
-  const [showMeta, setShowMeta] = React.useState(false);
   const [showRating, setShowRating] = React.useState(false);
   const [showRename, setShowRename] = React.useState(false);
   const [showShare, setShowShare] = React.useState(false);
@@ -325,6 +322,92 @@ const PlaylistHero: React.FC = () => {
   // Check if playlist is already forked (either from server or locally)
   // const isForked = playlistData?.playlist.fork_id && playlistData.playlist.fork_id.trim() !== '' || hasForkedThisPlaylist;
 
+  /**
+   * Favourite + visibility. They belong to the playlist rather than to playback, but they sit at the
+   * right end of the player's seek row: the title and meta rows then run edge to edge, and the space
+   * the bar leaves at the end of its row is exactly what these two need.
+   */
+  const quickActions = (
+    <>
+      <Tooltip message={isFavorite ? "Remove from favorites" : "Add to favorites"}>
+        <button
+          type="button"
+          onClick={handleFavoriteClick}
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          aria-pressed={isFavorite}
+          title={favoriteChrome.title}
+          className={`flex-none shrink-0 cursor-pointer rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent p-[var(--px-10)] flex items-center justify-center transition-[background-color,border-color,transform] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:scale-110 active:scale-90 playlist-favorite-button ${WORKSPACE_FOCUS_VISIBLE}${favoriteChrome.className}`}
+          id="playlist-hero-favorite-button"
+        >
+          {isFavorite ? (
+            <HeartFilledIcon customWidth="24" customHeight="24" className="text-[var(--color-accent,#EE4A26)]" disableHover={true} />
+          ) : (
+            <>
+              <HeartStrokeIcon customWidth="24" customHeight="24" className="text-white/60 hover:text-white" />
+              {favoriteChrome.showLock && (
+                <span aria-hidden="true" className="ml-[var(--px-4)] font-fira text-[length:var(--px-10)]">
+                  {PLAYLIST_LOCK_MARK}
+                </span>
+              )}
+            </>
+          )}
+        </button>
+      </Tooltip>
+      <Tooltip message={
+        isAuthenticated
+          ? (playlistData?.playlist?.is_public ? "Public — click to make private" : "Private — click to make public")
+          : "Log in to change visibility"
+      }>
+        <button
+          type="button"
+          onClick={() => {
+            // Guests can't change visibility (owner-only, login required) — prompt to log in
+            // rather than silently doing nothing.
+            if (isAuthenticated) {
+              setVisibilityConfirm(true);
+            } else {
+              setGate({ reason: "login_required", title: "Log in to update visibility", body: "Log in to make this playlist private or public." });
+            }
+          }}
+          aria-label={
+            isAuthenticated
+              ? (playlistData?.playlist?.is_public ? 'Make playlist private' : 'Make playlist public')
+              : 'Log in to change visibility'
+          }
+          className={`flex-none shrink-0 px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase cursor-pointer hover:brightness-125 transition-[filter] ${playlistData?.playlist?.is_public ? 'text-[#5C5C5C]' : 'text-white'}`}
+        >
+          {playlistData?.playlist?.is_public ? (
+            <>
+              <PublicIcon customWidth="10" customHeight="10" className="text-[#5C5C5C] mb-[var(--px-2)]" disableHover={true} />
+              Public
+            </>
+          ) : (
+            <>
+              <PrivateIcon customWidth="12" customHeight="12" className="text-white" disableHover={true} />
+              Private
+            </>
+          )}
+        </button>
+      </Tooltip>
+    </>
+  );
+
+  const ratingButton = (
+    <button
+      type="button"
+      name="Rate these Results"
+      onClick={() => setShowRating(true)}
+      title={rateChrome.title}
+      className={`inline-flex min-h-[var(--px-44)] shrink-0 items-center gap-[var(--px-8)] whitespace-nowrap border border-[var(--rx-color-border-default)] px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] playlist-rating-button ${WORKSPACE_FOCUS_VISIBLE}` + (rateChrome.showLock ? " opacity-45" : " opacity-90")}
+      id="playlist-hero-rating-button"
+      aria-label="Rate these Results"
+      aria-expanded={showRating}
+      data-playlist-id={playlistData?.playlist?.id}
+    >
+      <img src={StarSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-12)] h-[var(--px-12)]" />
+      Rate these results{rateChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
+    </button>
+  );
 
   return (
     <div className="relative w-full">
@@ -505,7 +588,8 @@ const PlaylistHero: React.FC = () => {
             </div>
           )}
 
-          <div className="flex min-w-0 items-center gap-[var(--px-10)] overflow-hidden">
+          {/* Row 1 — title, edge to edge. */}
+          <div className="flex min-w-0 items-center overflow-hidden">
             {isLoading ? (
               <div className="text-[length:var(--px-19)] font-light uppercase font-helvetica leading-[var(--px-24)]">
                 Loading playlist...
@@ -520,132 +604,45 @@ const PlaylistHero: React.FC = () => {
                 {playlistData?.playlist?.name || "No playlist data"}
               </h1>
             )}
-            <Tooltip message={isFavorite ? "Remove from favorites" : "Add to favorites"}>
-              <button
-                type="button"
-                onClick={handleFavoriteClick}
-                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                aria-pressed={isFavorite}
-                title={favoriteChrome.title}
-                className={`flex-none shrink-0 cursor-pointer rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent p-[var(--px-10)] flex items-center justify-center transition-[background-color,border-color,transform] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:scale-110 active:scale-90 playlist-favorite-button ${WORKSPACE_FOCUS_VISIBLE}${favoriteChrome.className}`}
-                id="playlist-hero-favorite-button"
-              >
-                {isFavorite ? (
-                  <HeartFilledIcon customWidth="24" customHeight="24" className="text-[var(--color-accent,#EE4A26)]" disableHover={true} />
-                ) : (
-                  <>
-                    <HeartStrokeIcon customWidth="24" customHeight="24" className="text-white/60 hover:text-white" />
-                    {favoriteChrome.showLock && (
-                      <span aria-hidden="true" className="ml-[var(--px-4)] font-fira text-[length:var(--px-10)]">
-                        {PLAYLIST_LOCK_MARK}
-                      </span>
-                    )}
-                  </>
-                )}
-              </button>
-            </Tooltip>
-            <Tooltip message={
-              isAuthenticated
-                ? (playlistData?.playlist?.is_public ? "Public — click to make private" : "Private — click to make public")
-                : "Log in to change visibility"
-            }>
-              <button
-                type="button"
-                onClick={() => {
-                  // Guests can't change visibility (owner-only, login required) — prompt to log in
-                  // rather than silently doing nothing.
-                  if (isAuthenticated) {
-                    setVisibilityConfirm(true);
-                  } else {
-                    setGate({ reason: "login_required", title: "Log in to update visibility", body: "Log in to make this playlist private or public." });
-                  }
-                }}
-                aria-label={
-                  isAuthenticated
-                    ? (playlistData?.playlist?.is_public ? 'Make playlist private' : 'Make playlist public')
-                    : 'Log in to change visibility'
-                }
-                className={`flex-none shrink-0 px-[var(--px-8)] py-[var(--px-4)] rounded-3xl inline-flex justify-center items-center gap-[var(--px-8)] bg-[var(--color-secondary-background)] text-[length:var(--px-9)] tracking-[var(--px-0-25)] font-light font-fira uppercase cursor-pointer hover:brightness-125 transition-[filter] ${playlistData?.playlist?.is_public ? 'text-[#5C5C5C]' : 'text-white'}`}
-              >
-                {playlistData?.playlist?.is_public ? (
-                  <>
-                    <PublicIcon customWidth="10" customHeight="10" className="text-[#5C5C5C] mb-[var(--px-2)]" disableHover={true} />
-                    Public
-                  </>
-                ) : (
-                  <>
-                    <PrivateIcon customWidth="12" customHeight="12" className="text-white" disableHover={true} />
-                    Private
-                  </>
-                )}
-              </button>
-            </Tooltip>
           </div>
 
+          {/* Row 2 — reference-track facts, edge to edge: duration · year · genre · label, then the
+              size of the playlist itself. */}
           <p className="font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] text-[var(--color-primary)] opacity-60 m-0">
-            ⧖ {playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}
+            <HeroClockIcon />{' '}
+            {playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}
             {' · '}{playlistData?.queried_track.year ?? '—'}
+            {firstGenre(playlistData?.queried_track.genre) ? ` · ${firstGenre(playlistData?.queried_track.genre)}` : ''}
             {resolveLabel(playlistData?.queried_track.label) ? ` · ${resolveLabel(playlistData?.queried_track.label)}` : ''}
-            {' · Similarity playlist — created automatically from your reference'}
-            {playlistData?.similar_tracks?.length ? ` · ${playlistData.similar_tracks.length} results` : ''}
+            {playlistData?.similar_tracks?.length ? ` · ${playlistData.similar_tracks.length} tracks` : ''}
           </p>
 
-          <div className="flex flex-col gap-[var(--px-8)]">
-            <div className={`flex gap-[var(--px-5)] tracking-[var(--px-0-1)] text-[length:var(--px-7)] font-light font-fira leading-[var(--px-14)] items-center h-[var(--px-14)] min-h-[var(--px-14)] ${showMeta ? '' : 'hidden'}`}>
-              <div>ID: {playlistData?.queried_track.id}</div>
-              <div>|</div>
-              <div>Duration: {playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}</div>
-              <div>|</div>
-              <div>Status: {InputTrackStatus}</div>
-              <div>|</div>
-              <div>Mode: Independent</div>
-              <div>|</div>
-              <div>Instance: Input Track</div>
-            </div>
-            {playlistData?.queried_track.id && (
-              <InputPlayer
-                trackId={playlistData.queried_track.id}
-                totalDuration={playlistData.queried_track.duration ?? 0}
-                trackType={playlistData.queried_track.type}
-                deepLinkUrl={playlistData.queried_track.deep_link_url}
-                playButtonDataAttributes={{
-                  'data-testid': 'play-button',
-                  'data-track-id': playlistData?.queried_track.id,
-                  'data-track-artist': playlistData?.queried_track.artist || '',
-                  'data-track-title': playlistData?.queried_track.title || '',
-                  'data-track-name': playlistData?.queried_track.title || '',
-                }}
-              />
-            )}
+          {/* Rows 3 & 4 — the player owns both rows; the hero hands it the controls that belong to
+              the playlist (favourite/visibility inline with the seek bar, rating in the control row). */}
+          {playlistData?.queried_track.id ? (
+            <InputPlayer
+              trackId={playlistData.queried_track.id}
+              totalDuration={playlistData.queried_track.duration ?? 0}
+              trackType={playlistData.queried_track.type}
+              deepLinkUrl={playlistData.queried_track.deep_link_url}
+              seekRowEnd={quickActions}
+              controlRowActions={ratingButton}
+              playButtonDataAttributes={{
+                'data-testid': 'play-button',
+                'data-track-id': playlistData?.queried_track.id,
+                'data-track-artist': playlistData?.queried_track.artist || '',
+                'data-track-title': playlistData?.queried_track.title || '',
+                'data-track-name': playlistData?.queried_track.title || '',
+              }}
+            />
+          ) : (
+            // No playable reference — keep the same controls reachable rather than losing them with
+            // the player.
             <div className="flex flex-wrap items-center gap-[var(--px-10)]">
-              <button
-                type="button"
-                name="Rate these Results"
-                onClick={() => setShowRating(true)}
-                title={rateChrome.title}
-                className={`inline-flex min-h-[var(--px-44)] items-center gap-[var(--px-8)] border border-[var(--rx-color-border-default)] px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] playlist-rating-button ${WORKSPACE_FOCUS_VISIBLE}` + (rateChrome.showLock ? " opacity-45" : " opacity-90")}
-                id="playlist-hero-rating-button"
-                aria-label="Rate these Results"
-                aria-expanded={showRating}
-                data-playlist-id={playlistData?.playlist?.id}
-              >
-                <img src={StarSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-12)] h-[var(--px-12)]" />
-                Rate these results{rateChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
-              </button>
-              <Tooltip message={showMeta ? "Hide Meta Info" : "Show Meta Info"}>
-                <button
-                  type="button"
-                  onClick={() => setShowMeta((v) => !v)}
-                  aria-label={showMeta ? "Hide Meta Info" : "Show Meta Info"}
-                  aria-expanded={showMeta}
-                  className="hover:cursor-pointer playlist-meta-toggle opacity-60 hover:opacity-100"
-                  id="playlist-hero-meta-toggle"
-                >
-                  <img draggable={false} src={InfoSvg} alt="" aria-hidden="true" className="w-[var(--px-14)] h-[var(--px-14)]" />
-                </button>
-              </Tooltip>
+              {ratingButton}
+              <div className="ml-auto flex items-center gap-[var(--px-10)]">{quickActions}</div>
             </div>
-          </div>
+          )}
         </div>
       </div>
       <div ref={stickySentinelRef} aria-hidden="true" className="h-px w-full" data-testid="playlist-ref-sentinel" />

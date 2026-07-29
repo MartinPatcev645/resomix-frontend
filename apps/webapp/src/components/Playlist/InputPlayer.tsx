@@ -21,6 +21,18 @@ interface InputPlayerProps {
   deepLinkUrl?: string | null;
   trackType?: string;
   playButtonDataAttributes?: Record<string, string>;
+  /**
+   * Phone layout: play + seek on one row, transport + attribution + elapsed on the next, and no
+   * volume (phones have hardware volume). It is a different structure rather than a responsive
+   * variant of the desktop row, so the two are separate branches below — the caller picks, exactly
+   * as SimilarityPlayer does, which also keeps the choice tied to which hero is mounted instead of
+   * to a second breakpoint that disagreed with it.
+   */
+  mobile?: boolean;
+  /** Desktop only — sits at the right end of the seek row (the hero's favourite / visibility). */
+  seekRowEnd?: React.ReactNode;
+  /** Desktop only — sits in the control row, between the volume and the Apple badge. */
+  controlRowActions?: React.ReactNode;
 }
 
 const SKIP_DESKTOP_CLASS =
@@ -40,6 +52,9 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
   deepLinkUrl,
   trackType,
   playButtonDataAttributes,
+  mobile = false,
+  seekRowEnd,
+  controlRowActions,
 }) => {
   const volume = usePlayerStore((s) => s.volume);
   const networkError = usePlayerStore((s) => s.networkError);
@@ -91,10 +106,9 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
     ? ctl.getPlayableDuration()
     : Math.max(totalDuration, ctl.getPlayableDuration() || 0);
 
-  /** Elapsed readout — rendered twice with breakpoint visibility, since desktop and mobile want it
-   *  in different places in the row (see the two call sites). */
-  const elapsedTime = (visibility: string) => (
-    <time className={`shrink-0 font-fira text-[length:var(--px-9)] font-light tabular-nums opacity-75 ${visibility}`}>
+  /** Elapsed readout — last item of the control row on both layouts. */
+  const elapsedTime = (
+    <time className="shrink-0 font-fira text-[length:var(--px-9)] font-light tabular-nums opacity-75">
       {formatTime(ctl.uiTime)}
     </time>
   );
@@ -149,24 +163,31 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
 
   const volumeControl = (
     <div
-      className={`player-control-volume-group hidden w-[var(--px-64)] shrink-0 items-center gap-[var(--px-6)] min-[768px]:flex ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
+      className={`player-control-volume-group flex w-[var(--px-140)] shrink-0 items-center gap-[var(--px-8)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
     >
       <button
         type="button"
         onClick={ctl.toggleMute}
         aria-label={volume === 0 ? "Unmute" : "Mute"}
-        className="flex h-[var(--px-44)] min-w-[var(--px-44)] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)] transition-[background-color,border-color,color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] player-control player-control-mute-toggle pl-focus-ring"
+        className="flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)] transition-[background-color,border-color,color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] player-control player-control-mute-toggle pl-focus-ring"
       >
+        {/* A 20px glyph inside the 44px box, matching the play button's proportions — the icon used
+            to be `h-full w-full`, filling the button edge to edge. */}
         {volume === 0 ? (
-          <img src={SoundMuteSvg} draggable={false} alt="" aria-hidden="true" className="h-full w-full" />
+          <img src={SoundMuteSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-20)] w-[var(--px-20)]" />
         ) : volume < 0.5 ? (
-          <img src={SoundLowSvg} draggable={false} alt="" aria-hidden="true" className="h-full w-full" />
+          <img src={SoundLowSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-20)] w-[var(--px-20)]" />
         ) : (
-          <img src={SoundLoudSvg} draggable={false} alt="" aria-hidden="true" className="h-full w-full" />
+          <img src={SoundLoudSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-20)] w-[var(--px-20)]" />
         )}
       </button>
       <div className="relative flex min-w-0 flex-1 items-center">
-        <div className="absolute h-[var(--px-1)] w-full bg-[rgba(255,255,255,0.14)]" />
+        <div className="pointer-events-none absolute h-[var(--px-2)] w-full bg-[rgba(255,255,255,0.14)]" />
+        {/* Filled portion up to the thumb — the rail alone gave no read of the current level. */}
+        <div
+          className="pointer-events-none absolute h-[var(--px-2)] bg-[var(--rx-color-text-secondary)]"
+          style={{ width: `${Math.round(volume * 100)}%` }}
+        />
         <input
           type="range"
           min="0"
@@ -181,99 +202,122 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
     </div>
   );
 
-  return (
-    <div
-      className="flex w-full flex-col gap-[var(--px-8)] min-[768px]:min-h-[var(--px-44)] min-[768px]:flex-row min-[768px]:flex-wrap min-[768px]:items-center min-[768px]:gap-x-[var(--px-8)] min-[768px]:gap-y-[var(--px-6)]"
-      data-testid="input-player"
-    >
-      {/* Row A (mobile): play · seek — the bar takes every pixel left over. */}
-      <div className="flex min-h-[var(--px-44)] min-w-0 items-center gap-[var(--px-8)] max-[767px]:w-full min-[768px]:contents">
-        <div className="relative shrink-0">
-          {DEMO_MODE && showPreviewHint && (
-            <>
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute -inset-1 animate-pulse rounded-[var(--rx-radius-control)] ring-2 ring-[#FFCC00]"
-              />
-              <div
-                role="status"
-                aria-live="polite"
-                className="absolute -top-9 left-2 z-20 whitespace-nowrap rounded bg-[#FFCC00] px-2 py-1 text-[length:var(--px-10)] font-semibold text-black shadow-md ring-2 ring-black/10"
-              >
-                Demo mode - Audio playback limited while we complete licensing
-              </div>
-            </>
-          )}
-          <button
-            type="button"
-            id="input-player-play-pause"
-            className={`flex aspect-square w-[var(--px-44)] shrink-0 cursor-pointer items-center justify-center rounded-[var(--rx-radius-control)] border transition-[background-color,border-color,color] max-[767px]:w-[var(--px-35)] max-[767px]:rounded-full player-control player-control-play-pause pl-focus-ring ${
-              ctl.isPlaying
-                ? "border-[rgba(238,74,38,0.7)] bg-[rgba(238,74,38,0.16)] text-[var(--rx-color-text-primary)]"
-                : // Mobile gets a solid white ring: the 16%-white default is so faint on a phone that
-                  // it reads as a broken/dotted outline rather than a button.
-                  "border-[var(--rx-color-border-default)] max-[767px]:border-white/70 bg-transparent text-[var(--rx-color-text-primary)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)]"
-            } ${isDeleted ? "cursor-not-allowed opacity-50" : ""}`}
-            onClick={handlePlayClick}
-            disabled={isDeleted}
-            aria-label={ctl.isPlaying ? "Pause" : "Play"}
-            {...(playButtonDataAttributes as Record<string, string> | undefined)}
+  const playButton = (
+    <div className="relative shrink-0">
+      {DEMO_MODE && showPreviewHint && (
+        <>
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-1 animate-pulse rounded-full ring-2 ring-[#FFCC00]"
+          />
+          <div
+            role="status"
+            aria-live="polite"
+            className="absolute -top-9 left-2 z-20 whitespace-nowrap rounded bg-[#FFCC00] px-2 py-1 text-[length:var(--px-10)] font-semibold text-black shadow-md ring-2 ring-black/10"
           >
-            <img
-              src={ctl.isPlaying ? PauseSvg : PlaySvg}
-              alt=""
-              aria-hidden="true"
-              className="h-[var(--px-18)] w-[var(--px-18)] max-[767px]:h-[var(--px-14)] max-[767px]:w-[var(--px-14)]"
-            />
-          </button>
+            Demo mode - Audio playback limited while we complete licensing
+          </div>
+        </>
+      )}
+      <button
+        type="button"
+        id="input-player-play-pause"
+        className={`flex aspect-square ${mobile ? "w-[var(--px-35)]" : "w-[var(--px-44)]"} shrink-0 cursor-pointer items-center justify-center rounded-full border transition-[background-color,border-color,color] player-control player-control-play-pause pl-focus-ring ${
+          ctl.isPlaying
+            ? "border-[rgba(238,74,38,0.7)] bg-[rgba(238,74,38,0.16)] text-[var(--rx-color-text-primary)]"
+            : // A solid white ring: the 16%-white default is faint enough to read as a broken
+              // outline rather than a button, especially at phone pixel densities.
+              "border-white/70 bg-transparent text-[var(--rx-color-text-primary)] hover:border-white hover:bg-[rgba(255,255,255,0.06)]"
+        } ${isDeleted ? "cursor-not-allowed opacity-50" : ""}`}
+        onClick={handlePlayClick}
+        disabled={isDeleted}
+        aria-label={ctl.isPlaying ? "Pause" : "Play"}
+        {...(playButtonDataAttributes as Record<string, string> | undefined)}
+      >
+        <img
+          src={ctl.isPlaying ? PauseSvg : PlaySvg}
+          alt=""
+          aria-hidden="true"
+          className={mobile ? "h-[var(--px-14)] w-[var(--px-14)]" : "h-[var(--px-18)] w-[var(--px-18)]"}
+        />
+      </button>
+    </div>
+  );
+
+  const appleBadge = showAppleBadge ? (
+    <AppleMusicBadge
+      deepLinkUrl={deepLinkUrl}
+      playing
+      fullHeightClass="player-control-apple-badge-lockup h-[var(--px-22)]"
+      className={`player-control-apple-badge shrink-0 ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
+    />
+  ) : null;
+
+  const deletedNote = isDeleted ? (
+    <p className="w-full font-fira text-[length:var(--px-9)] text-red-500 opacity-90">
+      Your uploaded track has been deleted.
+    </p>
+  ) : null;
+
+  if (mobile) {
+    return (
+      <div className="flex w-full flex-col gap-[var(--px-8)]" data-testid="input-player">
+        {/* Row 1 — play · seek. The bar takes every pixel left over. */}
+        <div className="flex min-h-[var(--px-44)] w-full min-w-0 items-center gap-[var(--px-8)]">
+          {playButton}
+          <div className="min-w-0 flex-1">{seekSlot}</div>
         </div>
 
-        <div className="min-w-0 flex-1 min-[768px]:min-w-[14rem] min-[768px]:basis-[14rem]">{seekSlot}</div>
+        {/* Row 2 — the transport pair on the left; attribution then elapsed pinned right. Dimmed as
+            one row on playback error (no nested dim classes — opacity multiplies). */}
+        <div
+          className={`flex min-h-[var(--px-44)] w-full items-center gap-[var(--px-8)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
+        >
+          <div className="flex shrink-0 items-center gap-[var(--px-6)]">
+            {skipBackButton(SKIP_MOBILE_CLASS, true)}
+            {skipForwardButton(SKIP_MOBILE_CLASS, true)}
+          </div>
+          <div className="player-control-secondary-cluster flex min-w-0 flex-1 items-center justify-end gap-[var(--px-8)]">
+            {appleBadge}
+            {elapsedTime}
+          </div>
+        </div>
+
+        {deletedNote}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-[var(--px-12)]" data-testid="input-player">
+      {/* Row 1 — play · seek · the hero's own actions. The bar stops short of the row end so the
+          favourite / visibility controls sit in line with it rather than on a row of their own. */}
+      <div className="flex min-h-[var(--px-44)] w-full min-w-0 items-center gap-[var(--px-12)]">
+        {playButton}
+        <div className="min-w-0 flex-1">{seekSlot}</div>
+        {seekRowEnd && <div className="flex shrink-0 items-center gap-[var(--px-10)]">{seekRowEnd}</div>}
       </div>
 
-      {/* Row B (mobile): −10s/+10s · elapsed · Apple badge — dimmed in place on playback error.
-          On desktop this wrapper is `contents`, so its children flatten back into the single row in
-          source order (elapsed still lands right after the seek bar, ahead of the transport). */}
-      <div
-        className={`flex min-h-[var(--px-44)] w-full items-center gap-[var(--px-8)] max-[767px]:flex min-[768px]:contents ${controlsDimmed ? "max-[767px]:pointer-events-none max-[767px]:opacity-45" : ""}`}
-      >
-        {/* Mobile transport — both skips paired at the start of the row. No dim class of its own:
-            the row already dims on mobile and nested opacity would double up. */}
-        <div className="flex shrink-0 items-center gap-[var(--px-6)] min-[768px]:hidden">
-          {skipBackButton(SKIP_MOBILE_CLASS, true)}
-          {skipForwardButton(SKIP_MOBILE_CLASS, true)}
-        </div>
-
-        {/* Desktop keeps the elapsed readout right after the seek bar; mobile shows it at the far
-            right of this row instead (rendered again inside the cluster below, past the badge). */}
-        {elapsedTime("hidden min-[768px]:block")}
-
+      {/* Row 2 — transport + volume on the left, then the page's actions, attribution and elapsed
+          grouped at the right so the row reads as two clusters instead of one long drift. */}
+      <div className="flex min-h-[var(--px-44)] w-full flex-wrap items-center gap-x-[var(--px-16)] gap-y-[var(--px-8)]">
         <div
-          className={`player-control-desktop-transport hidden min-[768px]:flex shrink-0 items-center gap-[var(--px-2)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
+          className={`player-control-desktop-transport flex shrink-0 items-center gap-[var(--px-2)] ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
         >
           {skipBackButton(SKIP_DESKTOP_CLASS)}
           {skipForwardButton(SKIP_DESKTOP_CLASS)}
         </div>
 
-        <div className="player-control-secondary-cluster flex shrink-0 items-center justify-end gap-[var(--px-8)] max-[767px]:min-w-0 max-[767px]:flex-1 min-[768px]:basis-full min-[768px]:justify-end xl:ml-auto xl:basis-auto">
-          {volumeControl}
-          {showAppleBadge && (
-            <AppleMusicBadge
-              deepLinkUrl={deepLinkUrl}
-              playing
-              fullHeightClass="player-control-apple-badge-lockup h-[var(--px-22)]"
-              className={`player-control-apple-badge shrink-0 ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
-            />
-          )}
-          {elapsedTime("min-[768px]:hidden")}
+        {volumeControl}
+
+        <div className="player-control-secondary-cluster ml-auto flex min-w-0 items-center justify-end gap-[var(--px-12)]">
+          {controlRowActions}
+          {appleBadge}
+          {elapsedTime}
         </div>
       </div>
 
-      {isDeleted && (
-        <p className="w-full font-fira text-[length:var(--px-9)] text-red-500 opacity-90">
-          Your uploaded track has been deleted.
-        </p>
-      )}
+      {deletedNote}
     </div>
   );
 };
