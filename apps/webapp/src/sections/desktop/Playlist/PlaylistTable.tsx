@@ -410,12 +410,14 @@ const PlaylistTable: React.FC = () => {
                             style={{ gridColumn: "1 / -1" }}
                             role="cell"
                         >
+                            {/* No label/genre — they stay in their own columns now, so the player's
+                                meta line carries only the elapsed time. The Apple lockup closes the
+                                control row (its column was removed from the collapsed row). */}
                             <SimilarityPlayer
                                 trackId={track.id}
                                 isPlaying={isTrackPlaying}
                                 totalDuration={track.duration}
-                                label={resolveLabel(track.label)}
-                                genre={firstGenre(track.genre)}
+                                appleDeepLinkUrl={track.type === "internal" ? track.deep_link_url : null}
                             />
                         </div>
                     )}
