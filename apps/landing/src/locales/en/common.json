@@ -2136,7 +2136,8 @@
         "cta": {
             "tryResomix": "Try Resomix",
             "startPilot": "Start a Catalogue Pilot",
-            "cataloguePilot": "Catalogue Pilot"
+            "cataloguePilot": "Catalogue Pilot",
+            "about": "About"
         },
         "utility": {
             "about": "About",

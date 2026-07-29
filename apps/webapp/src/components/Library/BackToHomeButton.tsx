@@ -20,7 +20,7 @@ export function BackToHomeButton({ id }: BackToHomeButtonProps) {
   return (
     <a
       href="/"
-      aria-label="Back to home"
+      aria-label="Sonic Discovery"
       onClick={(e) => {
         e.preventDefault();
         navigate("/");
@@ -29,7 +29,7 @@ export function BackToHomeButton({ id }: BackToHomeButtonProps) {
       id={id}
     >
       <HeroChevronLeft />
-      Back to home
+      Sonic Discovery
     </a>
   );
 }

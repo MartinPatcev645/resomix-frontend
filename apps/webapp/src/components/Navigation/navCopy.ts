@@ -67,6 +67,7 @@ const NAV_COPY: Record<string, string> = {
   'nav.status.comingNext': 'Coming next',
   'nav.status.scopingAvailable': 'Scoping available',
   'nav.status.currentPage': 'Current page',
+  'nav.cta.about': 'About',
   'nav.cta.cataloguePilot': 'Catalogue Pilot',
   'nav.cta.feedback': 'Feedback',
   'nav.utility.about': 'About',

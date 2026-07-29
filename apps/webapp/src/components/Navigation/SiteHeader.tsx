@@ -6,6 +6,7 @@ import { LogoHeader } from '../icons/LogoHeader.tsx';
 import { MenuIcon } from '../icons/MenuIcon.tsx';
 import {
   BETA_URL,
+  ABOUT_HREF,
   CATALOGUE_PILOT_HREF,
   NAV_TOP_GROUPS,
   getNavSectionForPath,
@@ -203,6 +204,22 @@ export function SiteHeader({
     </a>
   );
 
+  // Left-edge counterpart to the CTA rail. Cross-domain (the About page lives on the landing site),
+  // so this is a full-page navigation like the Catalogue Pilot link beside it.
+  const aboutCta = (
+    <a
+      className="nav-cta nav-cta-secondary"
+      href={ABOUT_HREF}
+      id="nav-about-button"
+      onClick={(e) => {
+        e.preventDefault();
+        window.location.href = ABOUT_HREF;
+      }}
+    >
+      {navT('nav.cta.about')}
+    </a>
+  );
+
   const logoLink = (
     <a href="/" aria-label="Resomix home" onClick={handleLogoClick}>
       <LogoHeader className="nav-logo-mark" />
@@ -343,6 +360,8 @@ export function SiteHeader({
             </nav>
             {accountControl}
           </div>
+
+          <div className="nav-rail2 nav-rail2-left">{aboutCta}</div>
 
           <div className="nav-rail2">
             {secondaryCta}

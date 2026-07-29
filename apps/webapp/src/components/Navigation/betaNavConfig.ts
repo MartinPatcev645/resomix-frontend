@@ -58,6 +58,8 @@ export function landingHref(path: string): string {
 
 export const CATALOGUE_PILOT_HREF = landingHref('/partners/pilot');
 
+export const ABOUT_HREF = landingHref('/about');
+
 export const NAV_TOP_GROUPS: NavTopGroup[] = [
   {
     key: 'product',

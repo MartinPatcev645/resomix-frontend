@@ -5,7 +5,7 @@
   --line-y: 4.0625rem;
   --valley-depth: 2.5394rem;
   --rail2-h: 2.5394rem;
-  --header-height: calc(var(--line-y) + var(--rail2-h));
+  --header-height: calc(var(--line-y) + var(--rail2-h) + 3rem);
   --header-safe-left: 1.75rem;
   --header-safe-right: 1.75rem;
   --logo-safe-width: 13.75rem;
@@ -94,6 +94,13 @@
   gap: 0.875rem;
   /* Keep the CTA rail below the account column so the profile dropdown overlays it (see .nav-cl). */
   z-index: 1;
+}
+
+/* Mirror of the CTA rail on the opposite edge, for the About link. Carries .nav-rail2 as well, so
+   it inherits the shared vertical placement and the hide rules (sticky header, <1024px). */
+.nav-rail2-left {
+  right: auto;
+  left: var(--header-safe-left);
 }
 
 .nav-hnav ul {

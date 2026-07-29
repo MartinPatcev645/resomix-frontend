@@ -223,6 +223,18 @@ export function SiteHeader({
     </a>
   );
 
+  // Left-edge counterpart to the CTA rail. The About page is on this site, so it routes in-app.
+  const aboutCta = (
+    <a
+      className="nav-cta nav-cta-secondary"
+      href="/about"
+      id="nav-about-button"
+      onClick={(e) => handleCtaClick(e, '/about')}
+    >
+      {t('nav.cta.about')}
+    </a>
+  );
+
   const logoLink = (
     <a href={BASE_LANDING_URL} aria-label="Resomix home" onClick={handleLogoClick}>
       <LogoHeader className="nav-logo-mark" />
@@ -364,6 +376,8 @@ export function SiteHeader({
             </nav>
             {accountControl}
           </div>
+
+          <div className="nav-rail2 nav-rail2-left">{aboutCta}</div>
 
           <div className="nav-rail2">
             {secondaryCta}
