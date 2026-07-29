@@ -63,7 +63,7 @@ export const ShareIcon: React.FC = () => (
 export const HeroAutoplayToggle: React.FC<{ on: boolean }> = ({ on }) => (
   <svg
     viewBox="0 0 28 16"
-    className={`h-[var(--px-16)] w-[var(--px-28)] shrink-0 ${on ? "text-[var(--color-primary,#EE4A26)]" : "text-white"}`}
+    className={`h-[var(--px-16)] w-[var(--px-28)] shrink-0 ${on ? "text-[var(--rx-color-accent)]" : "text-white"}`}
     fill="none"
     aria-hidden="true"
   >
