@@ -17,7 +17,6 @@ import { PlaylistUnlockBand } from "@/components/Playlist/PlaylistUnlockBand.tsx
 import { LOCKED_BLUR_VISIBLE_ROWS, PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
 import { PLAYLIST_ROW_GRID_CLASS, playlistRowGridStyle } from "@/utils/playlistGrid.ts";
 import {
-  PLAYLIST_DIVIDER_BORDER,
   PLAYLIST_DIVIDER_STRONG,
   PLAYLIST_PANEL_BORDER,
   PLAYLIST_ROW_SEPARATOR,
@@ -406,7 +405,7 @@ const PlaylistTable: React.FC = () => {
                     {isRestricted && <div role="cell" aria-hidden="true" />}
                     {isTrackPlaying && !isRestricted && (
                         <div
-                            className={`col-span-full border-t ${PLAYLIST_DIVIDER_BORDER} pt-[var(--px-8)]`}
+                            className="col-span-full pt-[var(--px-4)]"
                             style={{ gridColumn: "1 / -1" }}
                             role="cell"
                         >
