@@ -45,6 +45,11 @@ const activeItemBtnClass =
 const metaClass =
   "mt-[var(--px-2)] block font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]";
 
+// "See more" link under a rail list — white by default, neon on hover, pointer cursor. Opens the
+// matching Library tab.
+const seeMoreClass =
+  `mt-[var(--px-8)] inline-flex items-center gap-[var(--px-6)] py-[var(--px-6)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-white transition-colors hover:text-[var(--rx-color-accent)] cursor-pointer ${WORKSPACE_FOCUS_VISIBLE}`;
+
 /**
  * Variant A signed-in rail — recent similarity playlists, recent analyses, Library link.
  * Hidden below 1024px and when signed out (parent controls visibility).
@@ -92,27 +97,32 @@ export const WorkspaceRail: React.FC<{ mode?: WorkspaceMode }> = ({ mode = "disc
       {playlists.length === 0 ? (
         <p className="font-fira text-[length:var(--px-10)] text-[var(--rx-color-disabled)]">No playlists yet.</p>
       ) : (
-        <ul className={`divide-y divide-solid divide-[var(--playlist-divider)]`}>
-          {playlists.map((p) => {
-            const isActive = activePlaylistId === p.uuid;
-            return (
-              <li key={p.uuid}>
-                <button
-                  type="button"
-                  className={isActive ? activeItemBtnClass : itemBtnClass}
-                  aria-current={isActive ? "page" : undefined}
-                  onClick={() => navigate(`/sonic-discovery?id=${p.uuid}`)}
-                >
-                  {p.name}
-                  <span className={metaClass}>
-                    {p.trackCount} track{p.trackCount === 1 ? "" : "s"}
-                    {p.createdAt ? ` · ${relativeWhen(p.createdAt)}` : ""}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          <ul className={`divide-y divide-solid divide-[var(--playlist-divider)]`}>
+            {playlists.map((p) => {
+              const isActive = activePlaylistId === p.uuid;
+              return (
+                <li key={p.uuid}>
+                  <button
+                    type="button"
+                    className={isActive ? activeItemBtnClass : itemBtnClass}
+                    aria-current={isActive ? "page" : undefined}
+                    onClick={() => navigate(`/sonic-discovery?id=${p.uuid}`)}
+                  >
+                    {p.name}
+                    <span className={metaClass}>
+                      {p.trackCount} track{p.trackCount === 1 ? "" : "s"}
+                      {p.createdAt ? ` · ${relativeWhen(p.createdAt)}` : ""}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <button type="button" className={seeMoreClass} onClick={() => navigate("/library?tab=playlists")}>
+            See more
+          </button>
+        </>
       )}
     </div>
   );
@@ -128,23 +138,28 @@ export const WorkspaceRail: React.FC<{ mode?: WorkspaceMode }> = ({ mode = "disc
       {analyses.length === 0 ? (
         <p className="font-fira text-[length:var(--px-10)] text-[var(--rx-color-disabled)]">No analyses yet.</p>
       ) : (
-        <ul className={`divide-y divide-solid divide-[var(--playlist-divider)]`}>
-          {analyses.map((a) => (
-            <li key={a.analysisUuid}>
-              <button
-                type="button"
-                className={itemBtnClass}
-                onClick={() => navigate(`/analysis?id=${a.analysisUuid}`)}
-              >
-                {sanitizeWorkspaceTitle(a.title)}
-                <span className={metaClass}>
-                  Completed
-                  {displayArtistOrOmit(a.artist) ? ` · ${displayArtistOrOmit(a.artist)}` : ""}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className={`divide-y divide-solid divide-[var(--playlist-divider)]`}>
+            {analyses.map((a) => (
+              <li key={a.analysisUuid}>
+                <button
+                  type="button"
+                  className={itemBtnClass}
+                  onClick={() => navigate(`/analysis?id=${a.analysisUuid}`)}
+                >
+                  {sanitizeWorkspaceTitle(a.title)}
+                  <span className={metaClass}>
+                    Completed
+                    {displayArtistOrOmit(a.artist) ? ` · ${displayArtistOrOmit(a.artist)}` : ""}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button type="button" className={seeMoreClass} onClick={() => navigate("/library?tab=tracks")}>
+            See more
+          </button>
+        </>
       )}
     </div>
   );

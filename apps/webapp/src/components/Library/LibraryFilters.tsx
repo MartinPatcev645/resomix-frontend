@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { HeartFilledIcon, HeartStrokeIcon } from "@resomix/ui";
 import type { LibraryFilters as LibraryFiltersValue } from "@resomix/stores";
 
 type LibraryTab = "playlists" | "tracks";
@@ -55,8 +54,10 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({
 
   const set = (patch: Partial<LibraryFiltersValue>) => setDraft((d) => ({ ...d, ...patch }));
 
+  // NOTE: favoritesOnly is intentionally excluded — it now lives as a standalone toggle next to
+  // Filters/Refresh (applied immediately), not as part of this panel's draft/Apply/Clear.
   const hasContent = (f: LibraryFiltersValue) =>
-    Boolean(f.search.trim() || f.startDate || f.endDate || f.numTracks || f.favoritesOnly);
+    Boolean(f.search.trim() || f.startDate || f.endDate || f.numTracks);
   // Apply only makes sense once the user has entered something; Clear only when there's
   // something to clear — either an unapplied draft OR filters currently applied.
   const draftHasContent = hasContent(draft);
@@ -124,26 +125,6 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({
               <option key={o.label} value={o.value ?? ""}>{o.label}</option>
             ))}
           </select>
-        </div>
-      )}
-
-      {/* Favorites-only toggle (playlists only). Stacks with the other filters on Apply. */}
-      {!isTracks && (
-        <div className="flex flex-col">
-          <label className={labelClass}>Favorites</label>
-          <button
-            type="button"
-            onClick={() => set({ favoritesOnly: !draft.favoritesOnly })}
-            aria-pressed={draft.favoritesOnly}
-            className={`${fieldClass} flex items-center gap-[var(--px-6)] cursor-pointer whitespace-nowrap ${
-              draft.favoritesOnly ? "border-[var(--color-primary)] text-[var(--color-primary)]" : ""
-            }`}
-          >
-            {draft.favoritesOnly
-              ? <HeartFilledIcon customWidth="12" customHeight="12" disableHover />
-              : <HeartStrokeIcon customWidth="12" customHeight="12" disableHover />}
-            Only favorites
-          </button>
         </div>
       )}
 

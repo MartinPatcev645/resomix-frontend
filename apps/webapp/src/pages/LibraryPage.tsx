@@ -50,6 +50,16 @@ export default function LibraryPage() {
   const filtersActive = Boolean(
     activeFilters.search || activeFilters.startDate || activeFilters.endDate || activeFilters.numTracks || activeFilters.favoritesOnly
   );
+  // The Filters panel button reflects ONLY the panel's own filters — favorites now has its own
+  // standalone toggle next to Filters/Refresh, so it must not light up the Filters button.
+  const panelFiltersActive = Boolean(
+    activeFilters.search || activeFilters.startDate || activeFilters.endDate || activeFilters.numTracks
+  );
+  // Favorites is a playlists-only, apply-immediately toggle (maps to own_favorites). Flipping it
+  // preserves any other applied filters.
+  const favoritesOnly = activeTab === "playlists" && playlistsFilters.favoritesOnly;
+  const toggleFavoritesOnly = () =>
+    applyFilters("playlists", { ...playlistsFilters, favoritesOnly: !playlistsFilters.favoritesOnly });
 
   // Whether the collapsible filter panel is shown (hidden by default to keep the view clean).
   const [showFilters, setShowFilters] = useState(false);
@@ -362,19 +372,42 @@ export default function LibraryPage() {
                   : "text-slate-400 hover:text-[var(--color-primary)]"
               }`}
             >
-              Tracks ({tracksTotal})
+              Uploads ({tracksTotal})
             </button>
           </div>
 
           {/* Persistent controls: a Filters toggle (reveals the collapsible filter panel) next to
               Refresh. Keeping filters hidden by default keeps the list clean. */}
-          <div className="flex justify-end items-center gap-[var(--px-8)] mb-[var(--px-15)]">
+          <div className="flex flex-wrap justify-end items-center gap-[var(--px-8)] mb-[var(--px-15)]">
+            {activeTab === "playlists" && (
+              <button
+                type="button"
+                onClick={toggleFavoritesOnly}
+                disabled={activeLoading}
+                aria-pressed={favoritesOnly}
+                aria-label={favoritesOnly ? "Show all playlists" : "Show only favorites"}
+                className="flex items-center gap-[var(--px-8)] px-[var(--px-14)] py-[var(--px-6)] border border-dotted border-white/20 hover:border-white/50 disabled:opacity-40 disabled:cursor-not-allowed text-white/80 text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer rounded-xs"
+              >
+                Favorites
+                {/* Switch glyph — same treatment as the playlist Autoplay toggle: neon + knob right
+                    when on, white + knob left when off. */}
+                <svg
+                  viewBox="0 0 28 16"
+                  className={`h-[var(--px-16)] w-[var(--px-28)] shrink-0 ${favoritesOnly ? "text-[var(--rx-color-accent)]" : "text-white/70"}`}
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <rect x="1" y="1" width="26" height="14" rx="7" stroke="currentColor" strokeWidth="1.6" />
+                  <circle cx={favoritesOnly ? 20 : 8} cy="8" r="4" fill="currentColor" />
+                </svg>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowFilters((v) => !v)}
               aria-expanded={showFilters}
               className={`flex items-center gap-[var(--px-8)] px-[var(--px-14)] py-[var(--px-6)] border border-dotted text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer rounded-xs ${
-                showFilters || filtersActive
+                showFilters || panelFiltersActive
                   ? "border-[var(--color-primary)] text-[var(--color-primary)]"
                   : "border-white/20 hover:border-white/50 text-white/80"
               }`}
@@ -383,7 +416,7 @@ export default function LibraryPage() {
                 <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
               </svg>
               Filters
-              {filtersActive && <span aria-hidden="true" className="w-[var(--px-6)] h-[var(--px-6)] rounded-full bg-[var(--color-primary)]" />}
+              {panelFiltersActive && <span aria-hidden="true" className="w-[var(--px-6)] h-[var(--px-6)] rounded-full bg-[var(--color-primary)]" />}
             </button>
             <button
               type="button"
