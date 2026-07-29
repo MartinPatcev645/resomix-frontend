@@ -265,15 +265,17 @@ const PlaylistTable: React.FC = () => {
                             </span>
                         </button>
                     </div>
+                    {/* select-none overrides the row's `select-text`: artist/title are not copyable
+                        (both platforms), while the rest of the row stays selectable. */}
                     <div
-                        className="pl-unavailable-dim min-w-0 truncate text-center text-[length:var(--px-13)] font-helvetica font-light text-[var(--rx-color-text-secondary)]"
+                        className="pl-unavailable-dim min-w-0 select-none truncate text-center text-[length:var(--px-13)] font-helvetica font-light text-[var(--rx-color-text-secondary)]"
                         role="cell"
                         title={displayOrNA(track.artist)}
                     >
                         {displayOrNA(track.artist)}
                     </div>
                     <div
-                        className="pl-unavailable-dim min-w-0 truncate text-center text-[length:var(--px-14)] font-helvetica font-light uppercase text-[var(--rx-color-text-primary)]"
+                        className="pl-unavailable-dim min-w-0 select-none truncate text-center text-[length:var(--px-14)] font-helvetica font-light uppercase text-[var(--rx-color-text-primary)]"
                         role="cell"
                         title={displayOrNA(track.title)}
                     >

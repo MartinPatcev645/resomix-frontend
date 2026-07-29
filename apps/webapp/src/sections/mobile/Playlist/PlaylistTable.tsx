@@ -257,7 +257,8 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 line and ellipsis right before the ⋯ button. */}
                             <div className="min-w-0 flex-1">
                                 <div className="flex min-w-0 items-baseline gap-[var(--px-6)]">
-                                    <div className="pl-unavailable-dim min-w-0 flex-1 text-[length:var(--px-14)] font-helvetica font-light uppercase leading-[var(--px-18)] text-[var(--rx-color-text-primary)]">
+                                    {/* select-none: title/artist are not copyable (both platforms). */}
+                                    <div className="pl-unavailable-dim min-w-0 flex-1 select-none text-[length:var(--px-14)] font-helvetica font-light uppercase leading-[var(--px-18)] text-[var(--rx-color-text-primary)]">
                                         {isThisPlaying ? (
                                             <HoverFlow text={displayOrNA(track.title)} maxChars={32} delay={800} speed={40} endPause={1000} maxWidth="100%" flowAlways={true} />
                                         ) : (
@@ -270,7 +271,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         </span>
                                     )}
                                 </div>
-                                <div className="pl-unavailable-dim mt-[var(--px-2)] truncate text-[length:var(--px-12)] font-helvetica font-light text-[var(--rx-color-text-secondary)]">
+                                <div className="pl-unavailable-dim mt-[var(--px-2)] select-none truncate text-[length:var(--px-12)] font-helvetica font-light text-[var(--rx-color-text-secondary)]">
                                     {displayOrNA(track.artist)}
                                 </div>
                                 <div className="pl-unavailable-dim mt-[var(--px-6)] flex min-w-0 flex-wrap gap-x-[var(--px-10)] gap-y-[var(--px-2)] font-fira text-[length:var(--px-11)] tracking-[var(--px-0-5)] text-[var(--rx-color-text-secondary)]">
