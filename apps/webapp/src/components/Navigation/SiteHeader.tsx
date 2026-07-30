@@ -160,29 +160,49 @@ export function SiteHeader({
     onNavigate('/');
   };
 
-  const accountControl = isAuthenticated ? (
-    <ProfileDropdown
-      align="right"
-      items={profileMenuItems}
-      trigger={
-        <button type="button" className="nav-acct" aria-label={navT('nav.account')}>
-          <AccountIcon />
-        </button>
-      }
-    />
-  ) : (
-    <a
-      className="nav-acct"
-      href={loginHref}
-      aria-label={navT('nav.account')}
-      onClick={(e) => {
-        e.preventDefault();
-        onNavigate(loginHref);
-      }}
-    >
-      <AccountIcon />
-    </a>
+  /**
+   * Logout only — derived from the full list rather than rebuilt, so the item keeps a single
+   * definition (id, icon, handler) and can never drift from the desktop one.
+   */
+  const mobileProfileMenuItems = profileMenuItems.filter(
+    (item) => item.id === 'nav-logout-menu-item',
   );
+
+  /**
+   * The header account control.
+   *
+   * Signed out → straight to the beta login page. Signed in → the account dropdown, whose contents
+   * differ by variant: desktop carries the full set, MOBILE offers Logout only. Every other
+   * destination (Profile, Library, Analysis) is already one tap away in the mobile drawer, so
+   * repeating them in a second, smaller menu is a duplicate navigation surface.
+   */
+  const renderAccountControl = (items: typeof profileMenuItems) =>
+    isAuthenticated ? (
+      <ProfileDropdown
+        align="right"
+        items={items}
+        trigger={
+          <button type="button" className="nav-acct" aria-label={navT('nav.account')}>
+            <AccountIcon />
+          </button>
+        }
+      />
+    ) : (
+      <a
+        className="nav-acct"
+        href={loginHref}
+        aria-label={navT('nav.account')}
+        onClick={(e) => {
+          e.preventDefault();
+          onNavigate(loginHref);
+        }}
+      >
+        <AccountIcon />
+      </a>
+    );
+
+  const accountControl = renderAccountControl(profileMenuItems);
+  const mobileAccountControl = renderAccountControl(mobileProfileMenuItems);
 
   const feedbackCta = (
     <button
@@ -333,7 +353,7 @@ export function SiteHeader({
           <div className="nav-mrow">
             <div className="nav-mrow-logo">{logoLink}</div>
             <div className="nav-mrow-right">
-              {accountControl}
+              {mobileAccountControl}
               {menuButton}
             </div>
           </div>

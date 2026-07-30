@@ -131,7 +131,17 @@ export function SiteHeader({
   const leftGroups = NAV_TOP_GROUPS.filter((g) => g.side === 'left');
   const rightGroups = NAV_TOP_GROUPS.filter((g) => g.side === 'right');
 
-  const loginHref = `${BETA_URL}/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+  /**
+   * Signing in always happens on the WEBAPP (beta), never on the landing site, and lands you in
+   * the workspace afterwards.
+   *
+   * `redirect` is resolved by the webapp's AuthPage against ITS OWN routes, so it has to be a
+   * webapp path. This used to pass the current landing path, which sent you to
+   * beta.resomix.com/<landing-route> after login — e.g. /partners, which does not exist there, so
+   * a successful sign-in dropped you on a 404. '/' is the workspace root (it forwards to
+   * /sonic-discovery).
+   */
+  const loginHref = `${BETA_URL}/auth/login?redirect=${encodeURIComponent('/')}`;
 
   const handleLogout = useCallback(async () => {
     try {
@@ -183,29 +193,48 @@ export function SiteHeader({
     else onNavigate(href);
   };
 
-  const accountControl = isAuthenticated ? (
-    <ProfileDropdown
-      align="right"
-      items={profileMenuItems}
-      trigger={
-        <button type="button" className="nav-acct" aria-label={t('nav.account')}>
-          <AccountIcon />
-        </button>
-      }
-    />
-  ) : (
-    <a
-      className="nav-acct"
-      href={loginHref}
-      aria-label={t('nav.account')}
-      onClick={(e) => {
-        e.preventDefault();
-        onNavigate(loginHref);
-      }}
-    >
-      <AccountIcon />
-    </a>
+  /**
+   * Logout only — derived from the full list rather than rebuilt, so the item keeps a single
+   * definition (id, icon, handler) and can never drift from the desktop one.
+   */
+  const mobileProfileMenuItems = profileMenuItems.filter(
+    (item) => item.id === 'nav-logout-menu-item',
   );
+
+  /**
+   * The header account control.
+   *
+   * Signed out → straight to the beta login page. Signed in → the account dropdown, whose contents
+   * differ by variant: desktop carries the full set, MOBILE offers Logout only, matching the
+   * webapp header. Anything else the menu could link to already lives in the mobile drawer.
+   */
+  const renderAccountControl = (items: typeof profileMenuItems) =>
+    isAuthenticated ? (
+      <ProfileDropdown
+        align="right"
+        items={items}
+        trigger={
+          <button type="button" className="nav-acct" aria-label={t('nav.account')}>
+            <AccountIcon />
+          </button>
+        }
+      />
+    ) : (
+      <a
+        className="nav-acct"
+        href={loginHref}
+        aria-label={t('nav.account')}
+        onClick={(e) => {
+          e.preventDefault();
+          onNavigate(loginHref);
+        }}
+      >
+        <AccountIcon />
+      </a>
+    );
+
+  const accountControl = renderAccountControl(profileMenuItems);
+  const mobileAccountControl = renderAccountControl(mobileProfileMenuItems);
 
   const primaryCta = (
     <a
@@ -353,7 +382,7 @@ export function SiteHeader({
           <div className="nav-mrow">
             <div className="nav-mrow-logo">{logoLink}</div>
             <div className="nav-mrow-right">
-              {accountControl}
+              {mobileAccountControl}
               {menuButton}
             </div>
           </div>
