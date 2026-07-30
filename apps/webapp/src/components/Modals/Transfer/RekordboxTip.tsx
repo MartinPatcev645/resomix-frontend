@@ -50,8 +50,9 @@ const RekordboxTip: React.FC = () => {
       // `flex` so the wrapper shrink-wraps the button exactly — a block wrapper adds ~3px of
       // line-box leading, which made the halo span (inset-0) taller than the pill and pushed the
       // ring off-centre (gap at the top). top offset ≥ the halo's 15px reach so the ring clears the
-      // modal's top edge; extra right offset on mobile so it doesn't clip the narrow modal's edge.
-      className="absolute flex top-[var(--px-20)] right-[var(--px-28)] sm:right-[var(--px-16)] z-20"
+      // modal's top edge. The right offset clears the dialog shell's ✕ (28px wide at a 10px inset)
+      // plus room for the halo, so the pill can never sit under the close button.
+      className="absolute flex top-[var(--px-20)] right-[var(--px-48)] z-20"
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
@@ -63,18 +64,18 @@ const RekordboxTip: React.FC = () => {
         aria-expanded={visible}
         aria-describedby={visible ? tipId : undefined}
         className={
-          'relative inline-flex items-center gap-[var(--px-6)] rounded-full ' +
-          'px-[var(--px-10)] py-[var(--px-4)] border border-dotted ' +
-          'border-[var(--color-primary)]/40 bg-[var(--color-primary)]/5 ' +
-          'text-[length:var(--px-9)] uppercase tracking-[var(--px-0-5)] font-fira ' +
-          'text-[var(--color-primary)]/70 hover:text-[var(--color-primary)] ' +
-          'hover:border-[var(--color-primary)]/70 transition-colors cursor-pointer'
+          'relative inline-flex items-center gap-[var(--px-6)] rounded-[var(--rx-radius-control)] ' +
+          'px-[var(--px-10)] py-[var(--px-4)] border border-[var(--rx-color-border-default)] ' +
+          'bg-[rgba(255,255,255,0.03)] ' +
+          'text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] font-fira ' +
+          'text-[var(--rx-color-text-muted)] hover:text-[var(--rx-color-text-primary)] ' +
+          'hover:border-[var(--rx-color-border-strong)] transition-colors cursor-pointer'
         }
       >
         {/* Blinking accent dot — stops once the tip has been opened */}
         <span
           className={
-            'inline-block w-[var(--px-6)] h-[var(--px-6)] rounded-full bg-green-400 ' +
+            'inline-block w-[var(--px-6)] h-[var(--px-6)] rounded-full bg-[var(--rx-color-success)] ' +
             (seen ? '' : 'animate-pulse')
           }
           aria-hidden="true"
@@ -94,9 +95,11 @@ const RekordboxTip: React.FC = () => {
               100% { box-shadow: 0 0 0 15px rgba(74, 222, 128, 0); }
             }
           `}</style>
+          {/* Square radius so the halo follows the pill's own (square) edge — it used to be a
+              rounded ring around a square pill. */}
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 rounded-full"
+            className="pointer-events-none absolute inset-0 rounded-[var(--rx-radius-control)]"
             style={{ animation: 'rbxTipRing 2.2s ease-out infinite' }}
           />
         </>
@@ -109,7 +112,7 @@ const RekordboxTip: React.FC = () => {
           role="tooltip"
           className={
             'absolute right-0 top-[calc(100%+var(--px-8))] w-[var(--px-280)] max-w-[80vw] ' +
-            'bg-[var(--color-secondary)] border border-dotted border-[var(--color-primary)]/60 ' +
+            'bg-[var(--rx-color-surface-raised)] border border-[var(--rx-color-border-default)] ' +
             'shadow-2xl px-[var(--px-14)] py-[var(--px-12)] text-left z-30'
           }
         >
@@ -121,18 +124,18 @@ const RekordboxTip: React.FC = () => {
               draggable={false}
               className="w-[var(--px-16)] h-[var(--px-16)]"
             />
-            <span className="text-[length:var(--px-10)] uppercase tracking-[var(--px-0-5)] font-fira font-semibold text-[var(--color-primary)]/90">
+            <span className="font-fira text-[length:var(--px-10)] font-medium uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)]">
               Using this in rekordbox
             </span>
           </div>
 
-          <p className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-15)] text-[var(--color-primary)]/75">
+          <p className="font-helvetica text-[length:var(--px-12)] font-light leading-[var(--px-18)] text-[var(--rx-color-text-secondary)] opacity-85">
             Once your Resomix sonic discovery is exported, open the playlist in rekordbox and you’ll
             find the same tracks waiting under your Apple Music playlists. No re-import, no manual
             matching — rekordbox reads the playlist straight from Apple Music.
           </p>
 
-          <p className="mt-[var(--px-8)] text-[length:var(--px-9)] font-light font-fira leading-[var(--px-13)] text-[var(--color-primary)]/45">
+          <p className="mt-[var(--px-8)] font-helvetica text-[length:var(--px-11)] font-light leading-[var(--px-16)] text-[var(--rx-color-text-muted)] opacity-60">
             Requires an active Apple Music subscription and a rekordbox plan that supports streaming
             integration.
           </p>

@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { ButtonSleek } from '@resomix/ui'
+import { Dialog, PAGE_FIELD_LABEL } from '@resomix/ui'
 import { changePlaylistVisibility } from '@resomix/api-client';
 import { usePlaylistStore } from '@resomix/stores';
-import BrakesSvg from "@/assets/icons/brakes.svg";
-import SuccessSvg from "@/assets/icons/success.svg"
 import { BASE_BETA_URL } from '@resomix/config';
 
 interface PlaylistShareProps {
@@ -196,62 +194,36 @@ export const PlaylistShare: React.FC<PlaylistShareProps> = ({
         }
     }
 
-    if (!isOpen) return null
-
     return (
-        <div
-            className="fixed inset-0 z-50 flex items-center justify-center"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="share-dialog-title"
+        <Dialog
+            isOpen={isOpen}
+            onClose={onClose}
+            size="sm"
+            eyebrow="Playlist // Share"
+            title="Playlist shared"
+            subtitle={activeIsPublic
+                ? "Your playlist is publicly accessible."
+                : "Your playlist is now publicly accessible."}
+            ariaLabel="Playlist shared"
+            actions={[
+                // No Cancel/Close action — the shell's ✕ is the universal exit.
+                { label: buttonText, onClick: handlePrimaryAction, tone: "primary", id: "playlist-share-action-button" },
+            ]}
         >
-            <div
-                className="absolute inset-0 bg-black/20 backdrop-blur-sm modal-backdrop"
-                onClick={onClose}
-                id="playlist-share-backdrop"
-                aria-hidden="true"
-            />
-
-            <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
-
-                <img src={SuccessSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" className="w-[var(--px-58)] h-[var(--px-58)] mb-[var(--px-20)]" />
-
-                <div className="text-center w-full">
-                    <h2 id="share-dialog-title" className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-                        PLAYLIST SHARED!
-                    </h2>
-                    <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
-                        {activeIsPublic
-                            ? "Your playlist is publicly accessible."
-                            : "Your playlist is now publicly accessible."
-                        }
-                    </div>
-                </div>
-
+            <div className="flex flex-col gap-[var(--px-10)] pb-[var(--px-4)]">
+                <span className={PAGE_FIELD_LABEL}>Share link</span>
+                {/* The link doubles as the copy control, as before. */}
                 <button
                     type="button"
                     onClick={handlePrimaryAction}
-                    className='relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center hover:cursor-pointer my-[var(--px-8)] share-link'
+                    className="flex min-h-[var(--px-40)] w-full items-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-[#0a0a0a] px-[var(--px-10)] text-left font-fira text-[length:var(--px-10)] text-[var(--rx-color-text-secondary)] transition-colors hover:border-[var(--rx-color-border-strong)] hover:text-[var(--rx-color-text-primary)] hover:cursor-pointer share-link"
                     id="playlist-share-link"
                     aria-label="Copy playlist link"
                 >
-                    <img src={BrakesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="" width={302} height={27} className="absolute top-0 left-0 h-[var(--px-27)] w-full pointer-events-none" />
-                    {link || 'Generating link...'}
+                    <span className="min-w-0 truncate">{link || 'Generating link...'}</span>
                 </button>
-
-                <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] w-full text-center">
-                    {activeIsPublic
-                        ? "Your playlist is publicly accessible."
-                        : "Your playlist is now publicly accessible."
-                    }
-                </div>
-
-                <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
-                    <ButtonSleek text={buttonText} onClick={handlePrimaryAction} className="cta-button primary" id="playlist-share-action-button" />
-                    <ButtonSleek text="Cancel" onClick={onClose} transparent={true} className="cta-button secondary" id="playlist-share-cancel-button" />
-                </div>
             </div>
-        </div>
+        </Dialog>
     )
 }
 

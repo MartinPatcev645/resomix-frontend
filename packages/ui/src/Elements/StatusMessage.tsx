@@ -1,22 +1,25 @@
-import React, { useEffect } from 'react'
-import { createPortal } from 'react-dom'
-import { ButtonSleek } from "../Buttons/ButtonSleek";
+import React from 'react'
 import { SineWaves } from "../Animations/SineWaves";
+import { Dialog, type DialogAction } from "../Modals/Dialog";
+import { StatusDialog } from "../Modals/StatusDialog";
 
-const SuccessIcon = () => (
-    <svg viewBox="0 0 59 58" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[var(--px-58)] h-[var(--px-58)]" aria-hidden="true">
-        <path d="M39.7773 20L28.1107 36L20.7773 29" stroke="white" strokeWidth="0.37" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="29.7773" cy="29" r="28.815" stroke="white" strokeWidth="0.37" />
-    </svg>
-);
-
-const ErrorIcon = () => (
-    <svg viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[var(--px-58)] h-[var(--px-58)]" aria-hidden="true">
-        <rect x="19.4297" y="19.3071" width="27.5033" height="0.172978" transform="rotate(45 19.4297 19.3071)" fill="#B8B8B8" stroke="white" strokeWidth="0.172978" />
-        <rect x="19.3079" y="38.7554" width="27.5033" height="0.172978" transform="rotate(-45 19.3079 38.7554)" fill="#B8B8B8" stroke="white" strokeWidth="0.172978" />
-        <circle cx="29" cy="29" r="28.815" stroke="white" strokeWidth="0.37" />
-    </svg>
-);
+/**
+ * StatusMessage — compatibility layer over the unified modal system.
+ * =================================================================
+ *
+ * This is the app's most-used modal (~30 render sites across both apps), so rather than touch every
+ * call site it now delegates to `Dialog` / `StatusDialog` while keeping its public API byte-for-byte.
+ * Every one of those sites therefore picks up the shared shell — portal, one stacking layer, focus
+ * trap and restore, ref-counted scroll lock, the universal ✕, and the new surface — with no change
+ * to how it is called.
+ *
+ * It used to be its own overlay with three inconsistencies worth naming: a dotted border on a pure
+ * `--color-secondary` (black) card, which is why it looked nothing like the export modals; three
+ * different widths across its own variants (390 / 393 / 400); and a `z-50` success state against
+ * `z-120` for loading and error, so the success card sat BELOW the nav.
+ *
+ * Prefer `StatusDialog` / `ConfirmDialog` / `PromptDialog` directly in new code.
+ */
 
 type StatusType = 'loading' | 'success' | 'error' | 'custom';
 
@@ -37,182 +40,60 @@ interface StatusMessageProps {
     children?: React.ReactNode
 }
 
-/**
- * Portaled to document.body so the modal escapes any page-level stacking context (e.g. the
- * `z-30` content wrapper) and its overlay/buttons are never covered by fixed chrome (nav/player).
- */
-export const StatusMessage: React.FC<StatusMessageProps> = (props) => {
-    if (typeof document === 'undefined') return null;
-    return createPortal(<StatusMessageInner {...props} />, document.body);
-};
-
-const StatusMessageInner: React.FC<StatusMessageProps> = ({
+export const StatusMessage: React.FC<StatusMessageProps> = ({
     isOpen,
     onClose,
     status,
     title,
     message,
     additionalButton,
-    children
+    children,
 }) => {
-    // Prevent body scroll when modal is open
-    useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden'
-        } else {
-            document.body.style.overflow = 'unset'
-        }
-
-        // Cleanup on unmount
-        return () => {
-            document.body.style.overflow = 'unset'
-        }
-    }, [isOpen])
-
-    // Close modal on escape key
-    useEffect(() => {
-        const handleEscape = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                onClose()
-            }
-        }
-
-        if (isOpen) {
-            document.addEventListener('keydown', handleEscape)
-        }
-
-        return () => {
-            document.removeEventListener('keydown', handleEscape)
-        }
-    }, [isOpen, onClose])
-
-    if (!isOpen) return null
-
-    // Custom content state
+    // `custom` hosts bespoke content (the confirm dialogs, the cover cropper). It supplies its own
+    // heading and buttons, so the shell contributes only the frame.
     if (status === 'custom') {
         return (
-            <div className="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none">
-                {/* Backdrop with blur effect */}
-                <div
-                    className="absolute inset-0 bg-black/40 backdrop-blur-md pointer-events-auto"
-                    style={{ WebkitBackdropFilter: 'blur(12px)' }}
-                    onClick={onClose}
-                />
-
-                {/* Custom card content */}
-                <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-15)] max-w-[var(--px-480)] w-full mx-[var(--px-20)] pointer-events-auto">
+            <Dialog isOpen={isOpen} onClose={onClose} size="sm" elevation="top" ariaLabel={title || 'Notice'}>
+                <div className="flex flex-col items-center gap-[var(--px-15)] py-[var(--px-20)] text-center">
                     {children}
                 </div>
-            </div>
-        )
+            </Dialog>
+        );
     }
 
-    // Loading state
+    // Loading kept the brand waveform and stayed dismissible (the old backdrop closed it), so both
+    // are preserved here rather than swapped for StatusDialog's non-dismissible spinner.
     if (status === 'loading') {
         return (
-            <div className="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none">
-                {/* Backdrop with blur effect only */}
-                <div
-                    className="absolute inset-0 bg-black/40 backdrop-blur-md pointer-events-auto"
-                    style={{ WebkitBackdropFilter: 'blur(12px)' }}
-                    onClick={onClose}
-                />
-
-                {/* Loading content */}
-                <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-390)] w-full lg:w-[var(--px-393)] pointer-events-auto">
+            <Dialog isOpen={isOpen} onClose={onClose} size="sm" elevation="top" ariaLabel={title || 'Working'}>
+                <div className="flex items-center justify-center py-[var(--px-20)]">
                     <SineWaves />
                 </div>
-            </div>
-        )
+            </Dialog>
+        );
     }
 
-    // Error state
-    if (status === 'error') {
-        return (
-            <div className="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none">
-                {/* Backdrop with blur effect only */}
-                <div
-                    className="absolute inset-0 bg-black/40 backdrop-blur-md pointer-events-auto"
-                    style={{ WebkitBackdropFilter: 'blur(12px)' }}
-                    onClick={onClose}
-                />
+    // The old "Close" button is gone: the shell's ✕ is the universal exit. `additionalButton` is a
+    // real follow-up action and, as before, does NOT close the dialog by itself.
+    const action: DialogAction | undefined = additionalButton
+        ? {
+            label: additionalButton.text,
+            onClick: additionalButton.onClick,
+            tone: additionalButton.transparent ? 'secondary' : 'primary',
+            disabled: additionalButton.disabled,
+        }
+        : undefined;
 
-                {/* Error content */}
-                <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-390)] w-full lg:w-[var(--px-393)] pointer-events-auto">
-
-                    <ErrorIcon />
-
-                    <div className="text-center w-full">
-                        <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-                            {title ? (
-                                title
-                            ) : (
-                                <>
-                                    Oops! Something<br />went wrong
-                                </>
-                            )}
-                        </div>
-                        <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] text-[var(--color-neon-orange)]">
-                            {message}
-                        </div>
-                    </div>
-
-                    <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
-                        <ButtonSleek text="Close" onClick={onClose} transparent={true} />
-                        {additionalButton && (
-                            <ButtonSleek
-                                text={additionalButton.text}
-                                onClick={additionalButton.onClick}
-                                transparent={additionalButton.transparent}
-                                disabled={additionalButton.disabled}
-                            />
-                        )}
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    // Success state (default)
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-            {/* Backdrop with blur effect only */}
-            <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-md pointer-events-auto"
-                style={{ WebkitBackdropFilter: 'blur(12px)' }}
-                onClick={onClose}
-            />
-
-            {/* Success content */}
-            <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)] pointer-events-auto">
-
-                <SuccessIcon />
-
-                <div className="text-center w-full">
-                    <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-                        {title}
-                    </div>
-                    {message && (
-                        <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
-                            {message}
-                        </div>
-                    )}
-                </div>
-
-                <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
-                    <ButtonSleek text="Close" onClick={onClose} transparent={true} />
-                    {additionalButton && (
-                        <ButtonSleek
-                            text={additionalButton.text}
-                            onClick={additionalButton.onClick}
-                            transparent={additionalButton.transparent}
-                            disabled={additionalButton.disabled}
-                        />
-                    )}
-                </div>
-            </div>
-        </div>
-    )
-}
+        <StatusDialog
+            isOpen={isOpen}
+            onClose={onClose}
+            status={status}
+            title={title || (status === 'error' ? 'Something went wrong' : undefined)}
+            message={message}
+            action={action}
+        />
+    );
+};
 
 export default StatusMessage;

@@ -57,6 +57,23 @@ import { StatusMessage } from "./Elements/StatusMessage";
 import { StatusModal } from "./Modals/StatusModal";
 import { ConfirmModal } from "./Modals/ConfirmModal";
 import { InputModal } from "./Modals/InputModal";
+// Unified modal system — one shell (Dialog) + three patterns. Everything that pops over the page
+// should compose these; the older StatusMessage / StatusModal / ConfirmModal / InputModal remain
+// only until their call sites are migrated.
+import { Dialog } from "./Modals/Dialog";
+import { StatusDialog } from "./Modals/StatusDialog";
+import { ConfirmDialog } from "./Modals/ConfirmDialog";
+import { PromptDialog } from "./Modals/PromptDialog";
+
+export type {
+  DialogProps,
+  DialogAction,
+  DialogActionTone,
+  DialogSize,
+} from "./Modals/Dialog";
+export type { StatusDialogProps, StatusKind } from "./Modals/StatusDialog";
+export type { ConfirmDialogProps } from "./Modals/ConfirmDialog";
+export type { PromptDialogProps } from "./Modals/PromptDialog";
 import { FormInput } from "./Elements/FormInput";
 import { PasswordInput } from "./Elements/PasswordInput";
 import { FormError } from "./Elements/FormError";
@@ -138,6 +155,10 @@ export {
   StatusModal,
   ConfirmModal,
   InputModal,
+  Dialog,
+  StatusDialog,
+  ConfirmDialog,
+  PromptDialog,
   // Auth components
   FormInput,
   PasswordInput,

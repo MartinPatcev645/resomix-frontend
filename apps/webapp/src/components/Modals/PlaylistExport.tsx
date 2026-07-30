@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { ButtonSleek } from '@resomix/ui'
+import { Dialog, PAGE_FIELD_LABEL } from '@resomix/ui'
 import { usePlaylistExport } from '@resomix/hooks';
-import SuccessSvg from "@/assets/icons/success.svg"
-import BrakesSvg from "@/assets/icons/brakes.svg";
 
 interface PlaylistExportProps {
     isOpen: boolean
@@ -116,54 +114,33 @@ export const PlaylistExport: React.FC<PlaylistExportProps> = ({
         }
     }
 
-    if (!isOpen) return null
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Backdrop with blur effect */}
-            <div
-                className="absolute inset-0 bg-black/20 backdrop-blur-sm modal-backdrop"
-                onClick={onClose}
-                id="playlist-export-backdrop"
-            />
-
-            {/* Modal content */}
-            <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl px-[var(--px-50)] pb-[var(--px-50)] pt-[var(--px-30)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-10)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)]">
-
-                <img src={SuccessSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Success" className="w-[var(--px-58)] h-[var(--px-58)] mb-[var(--px-20)]" />
-
-                <div className="text-center w-full">
-                    <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-                        PLAYLIST READY!
-                    </div>
-                    <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)]">
-                        Your playlist is ready to be downloaded as a text file.
-                    </div>
-                </div>
-
-                <div className='relative text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] w-full text-center my-[var(--px-8)]'>
-                    <img src={BrakesSvg} aria-hidden="true" loading="lazy" draggable={false} alt="Brakes" width={302} height={27} className="absolute top-0 left-0 h-[var(--px-27)] w-full pointer-events-none" />
-                    <span className="">
-                        {filename || 'Preparing filename...'}
-                    </span>
-                </div>
-
-                <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] mt-[var(--px-10)] w-full text-center">
-                    Click download to save the playlist to your device.
-                </div>
-
-                <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
-                    <ButtonSleek
-                        text={isReady ? buttonText : "Preparing..."}
-                        onClick={handleDownload}
-                        disabled={!isReady}
-                        className="cta-button primary"
-                        id="playlist-export-download-button"
-                    />
-                    <ButtonSleek text="Cancel" onClick={onClose} transparent={true} className="cta-button secondary" id="playlist-export-cancel-button" />
+        <Dialog
+            isOpen={isOpen}
+            onClose={onClose}
+            size="sm"
+            eyebrow="Playlist // Export"
+            title="Playlist ready"
+            subtitle="Your playlist is ready to be downloaded as a text file."
+            ariaLabel="Playlist ready"
+            actions={[
+                // No Cancel action — the shell's ✕ is the universal exit.
+                {
+                    label: isReady ? buttonText : 'Preparing...',
+                    onClick: handleDownload,
+                    tone: 'primary',
+                    disabled: !isReady,
+                    id: 'playlist-export-download-button',
+                },
+            ]}
+        >
+            <div className="flex flex-col gap-[var(--px-10)] pb-[var(--px-4)]">
+                <span className={PAGE_FIELD_LABEL}>File</span>
+                <div className="flex min-h-[var(--px-40)] w-full items-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-[#0a0a0a] px-[var(--px-10)] font-fira text-[length:var(--px-10)] text-[var(--rx-color-text-secondary)]">
+                    <span className="min-w-0 truncate">{filename || 'Preparing filename...'}</span>
                 </div>
             </div>
-        </div>
+        </Dialog>
     )
 }
 

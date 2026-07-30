@@ -12,8 +12,7 @@ import EmbedModal from "@/components/Modals/Transfer/EmbedModal.tsx";
 import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
 import { TrackMetaRow, PlaylistRenameModal, LibraryFilters, PlaylistShare, BackToHomeButton } from "@/components/index.ts";
 import {
-  PAGE_BTN_DANGER,
-  PAGE_BTN_PRIMARY,
+  ConfirmDialog,
   PAGE_BTN_SECONDARY,
   PAGE_PANEL_PLAIN,
   PAGE_SUBLABEL,
@@ -880,90 +879,37 @@ export default function LibraryPage() {
         title={statusTitle}
       />
 
-      <StatusMessage
-        isOpen={!!trackToDelete}
+      <DeleteTrackConfirm
+        track={trackToDelete}
         onClose={() => setTrackToDelete(null)}
-        status="custom"
-      >
-        <DeleteTrackModalContent
-          trackName={trackToDelete?.title || ""}
-          onClose={() => setTrackToDelete(null)}
-          onConfirm={handleConfirmDeleteTrack}
-          isOpen={!!trackToDelete}
-        />
-      </StatusMessage>
+        onConfirm={handleConfirmDeleteTrack}
+      />
 
-      <StatusMessage
+      <ConfirmDialog
         isOpen={!!playlistToDelete}
         onClose={() => setPlaylistToDelete(null)}
-        status="custom"
-      >
-        {/* Warning icon */}
-        <svg viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[var(--px-58)] h-[var(--px-58)]" aria-hidden="true">
-          <circle cx="29" cy="29" r="28.815" stroke="white" strokeWidth="0.37" />
-          <path d="M29 20v12" stroke="white" strokeWidth="0.37" strokeLinecap="round" />
-          <circle cx="29" cy="38" r="1.5" fill="white" />
-        </svg>
-
-        <div className="text-center w-full">
-          <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-            Delete Playlist
-          </div>
-          <div className="text-[length:var(--px-11)] font-light font-fira leading-[var(--px-15)] mt-[var(--px-10)]">
-            Are you sure you want to delete this playlist? This action is non-recoverable.
-          </div>
-        </div>
-
-        <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)] w-full">
-          <button
-            onClick={() => setPlaylistToDelete(null)}
-            className={`${PAGE_BTN_SECONDARY} flex-1`}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirmDeletePlaylist}
-            className={`${PAGE_BTN_DANGER} flex-1`}
-          >
-            Delete
-          </button>
-        </div>
-      </StatusMessage>
+        onConfirm={handleConfirmDeletePlaylist}
+        eyebrow="Playlist // Delete"
+        title="Delete playlist"
+        message="Are you sure you want to delete this playlist? This action is non-recoverable."
+        confirmLabel="Delete"
+        tone="danger"
+      />
 
       {/* Visibility (public/private) toggle confirmation */}
-      <StatusMessage
+      <ConfirmDialog
         isOpen={!!visibilityFor}
         onClose={() => setVisibilityFor(null)}
-        status="custom"
-      >
-        <div className="text-center w-full">
-          <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-            {visibilityFor?.isPublic ? "Make Playlist Private" : "Make Playlist Public"}
-          </div>
-          <div className="text-[length:var(--px-11)] font-light font-fira leading-[var(--px-15)] mt-[var(--px-10)]">
-            {visibilityFor?.isPublic
-              ? "This playlist will no longer be reachable by its share link — only you can open it."
-              : "Anyone with the link will be able to open this playlist."}
-          </div>
-        </div>
-
-        <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)] w-full">
-          <button
-            onClick={() => setVisibilityFor(null)}
-            disabled={visibilityBusy}
-            className={`${PAGE_BTN_SECONDARY} flex-1`}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirmVisibility}
-            disabled={visibilityBusy}
-            className={`${PAGE_BTN_PRIMARY} flex-1`}
-          >
-            {visibilityBusy ? "Updating…" : (visibilityFor?.isPublic ? "Make Private" : "Make Public")}
-          </button>
-        </div>
-      </StatusMessage>
+        onConfirm={handleConfirmVisibility}
+        eyebrow="Playlist // Visibility"
+        title={visibilityFor?.isPublic ? "Make playlist private" : "Make playlist public"}
+        message={visibilityFor?.isPublic
+          ? "This playlist will no longer be reachable by its share link — only you can open it."
+          : "Anyone with the link will be able to open this playlist."}
+        confirmLabel={visibilityFor?.isPublic ? "Make Private" : "Make Public"}
+        busy={visibilityBusy}
+        busyLabel="Updating…"
+      />
 
       {/* Share (mobile) — the SAME modal the playlist page uses; its Share button opens the native
           share sheet. We pass an already-public playlist so it only builds the link + shares. */}
@@ -1025,14 +971,21 @@ export default function LibraryPage() {
   );
 }
 
-interface DeleteTrackModalContentProps {
-  isOpen: boolean;
-  trackName: string;
+/**
+ * Delete-track confirm. Keeps the deliberate 4-second countdown that gates the destructive button,
+ * and the "what this removes" list, but the frame, typography and buttons now come from the shared
+ * ConfirmDialog rather than being hand-built inside a generic modal slot.
+ */
+function DeleteTrackConfirm({
+  track,
+  onClose,
+  onConfirm,
+}: {
+  track: { id: string; title: string } | null;
   onClose: () => void;
   onConfirm: () => void;
-}
-
-function DeleteTrackModalContent({ isOpen, trackName, onClose, onConfirm }: DeleteTrackModalContentProps) {
+}) {
+  const isOpen = !!track;
   const [countdown, setCountdown] = useState(4);
 
   useEffect(() => {
@@ -1051,53 +1004,23 @@ function DeleteTrackModalContent({ isOpen, trackName, onClose, onConfirm }: Dele
   }, [isOpen]);
 
   return (
-    <>
-      {/* Warning icon */}
-      <svg viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[var(--px-58)] h-[var(--px-58)]" aria-hidden="true">
-        <circle cx="29" cy="29" r="28.815" stroke="white" strokeWidth="0.37" />
-        <path d="M29 20v12" stroke="white" strokeWidth="0.37" strokeLinecap="round" />
-        <circle cx="29" cy="38" r="1.5" fill="white" />
-      </svg>
-
-      <div className="text-center w-full">
-        <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-          Delete Track
-        </div>
-        <div className="text-[length:var(--px-11)] font-light font-fira leading-[var(--px-15)] mt-[var(--px-10)] text-slate-300">
-          Are you sure you want to delete <span className="font-semibold text-white">"{trackName}"</span>?
-        </div>
-        <div className="mt-[var(--px-15)] border border-[var(--rx-color-border-subtle)] bg-[rgba(255,255,255,0.02)] p-[var(--px-15)] text-left">
-          <p className="text-[length:var(--px-11)] font-semibold font-helvetica text-white uppercase tracking-wider mb-[var(--px-8)]">
-            This action is non-recoverable and will permanently delete:
-          </p>
-          <ul className="list-disc pl-[var(--px-15)] font-fira text-[length:var(--px-11)] font-light text-[var(--rx-color-text-secondary)] opacity-70 flex flex-col gap-[var(--px-4)]">
-            <li>His playback 30s chunk and peaks</li>
-            <li>The embedding fingerprint from pyxis 1</li>
-            <li>The playlist created by that track</li>
-            <li>The analysis created by that track</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)] w-full">
-        <button
-          onClick={onClose}
-          className={`${PAGE_BTN_SECONDARY} flex-1`}
-        >
-          Cancel
-        </button>
-        <button
-          disabled={countdown > 0}
-          onClick={onConfirm}
-          className={`${PAGE_BTN_DANGER} flex-1 ${
-            countdown > 0
-              ? 'pointer-events-none opacity-40'
-              : ''
-          }`}
-        >
-          {countdown > 0 ? `Delete (${countdown}s)` : 'Delete'}
-        </button>
-      </div>
-    </>
+    <ConfirmDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      onConfirm={onConfirm}
+      eyebrow="Upload // Delete"
+      title="Delete track"
+      message={<>Are you sure you want to delete <strong className="font-medium text-[var(--rx-color-text-primary)]">&ldquo;{track?.title}&rdquo;</strong>?</>}
+      confirmLabel={countdown > 0 ? `Delete (${countdown}s)` : "Delete"}
+      confirmDisabled={countdown > 0}
+      tone="danger"
+      detailsTitle="This action is non-recoverable and will permanently delete:"
+      details={[
+        "His playback 30s chunk and peaks",
+        "The embedding fingerprint from pyxis 1",
+        "The playlist created by that track",
+        "The analysis created by that track",
+      ]}
+    />
   );
 }

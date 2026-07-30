@@ -1,5 +1,5 @@
 import React from 'react';
-import { ButtonSleek } from '@resomix/ui';
+import { PAGE_BTN_PRIMARY, PAGE_BTN_SECONDARY } from '@resomix/ui';
 import AppleMusicIcon from '@/assets/icons/cc/apple-music.svg';
 
 export type AppleNotice = { kind: 'success' | 'error' | 'info'; text: string } | null;
@@ -19,7 +19,6 @@ interface Props {
   onConnect: () => void;
   onTransfer: () => void;
   onDisconnect: () => void;
-  onClose: () => void;
 }
 
 const AppleExportPanel: React.FC<Props> = ({
@@ -36,7 +35,6 @@ const AppleExportPanel: React.FC<Props> = ({
   onConnect,
   onTransfer,
   onDisconnect,
-  onClose,
 }) => {
   const busy = connectLoading || transferLoading;
 
@@ -53,9 +51,9 @@ const AppleExportPanel: React.FC<Props> = ({
     : (connectLoading ? 'Connecting…' : ready ? 'Connect Apple Music' : 'Preparing…');
 
   return (
-    <div className="w-full flex flex-col gap-[var(--px-14)] mt-[var(--px-14)]">
+    <div className="mt-[var(--px-6)] flex w-full flex-col gap-[var(--px-14)] text-left">
       {/* Connection status */}
-      <div className="flex items-center gap-[var(--px-8)] text-[length:var(--px-11)] font-fira">
+      <div className="flex items-center gap-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)]">
         {/* Apple Music mark, to the left of the connection state */}
         <img
           src={AppleMusicIcon}
@@ -66,54 +64,49 @@ const AppleExportPanel: React.FC<Props> = ({
         <span
           className={
             'inline-block w-[var(--px-8)] h-[var(--px-8)] rounded-full ' +
-            (statusLoading ? 'bg-slate-400 animate-pulse' : connected ? 'bg-green-400' : 'bg-slate-500')
+            (statusLoading
+              ? 'bg-[var(--rx-color-text-muted)] animate-pulse'
+              : connected
+                ? 'bg-[var(--rx-color-success)]'
+                : 'bg-[var(--rx-color-border-strong)]')
           }
           aria-hidden="true"
         />
-        <span className="text-[var(--color-primary)]/80">
+        <span className="text-[var(--rx-color-text-secondary)]">
           {statusLoading ? 'Checking your Apple Music connection…' : connected ? 'Connected' : 'Not connected'}
         </span>
         {connected && storefront && (
-          <span className="ml-[var(--px-4)] uppercase tracking-[var(--px-0-5)] text-[length:var(--px-9)] text-[var(--color-primary)]/50 border border-dotted border-slate-200/40 px-[var(--px-6)] py-[var(--px-1)] rounded-full">
+          <span className="ml-[var(--px-4)] rounded-[var(--rx-radius-tag,2px)] border border-[var(--rx-color-border-default)] px-[var(--px-6)] py-[var(--px-1)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">
             {storefront}
           </span>
         )}
       </div>
 
       {!statusLoading && (
-        <p className="text-[length:var(--px-11)] font-light font-fira leading-[var(--px-16)] text-[var(--color-primary)]/70">
+        <p className="font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)] opacity-85">
           {connected
             ? 'Your account is linked. Add this playlist to your Apple Music library — a new playlist will be created there.'
             : 'Link your Apple Music account to send this playlist straight to your library. You only need to connect once — we’ll remember it. An active Apple Music subscription is required.'}
         </p>
       )}
 
-      {/* Actions — side by side on wider screens, stacked when space is tight */}
-      <div className="flex flex-col sm:flex-row gap-[var(--px-10)] w-full">
-        <ButtonSleek
-          text={primaryText}
-          onClick={connected ? onTransfer : onConnect}
-          disabled={busy || statusLoading || (!connected && !ready) || (connected && !hasPlaylist)}
-          customWidth="w-full sm:flex-1"
-          className="cta-button primary"
-          id={connected ? 'apple-export-transfer' : 'apple-export-connect'}
-        />
-        <ButtonSleek
-          text="Close"
-          onClick={onClose}
-          transparent
-          customWidth="w-full sm:flex-1"
-          className="cta-button secondary"
-          id="apple-export-close"
-        />
-      </div>
+      {/* Single action. No Close button — the dialog shell's ✕ is the universal exit. */}
+      <button
+        type="button"
+        onClick={connected ? onTransfer : onConnect}
+        disabled={busy || statusLoading || (!connected && !ready) || (connected && !hasPlaylist)}
+        className={`${PAGE_BTN_PRIMARY} self-center px-[var(--px-24)]`}
+        id={connected ? 'apple-export-transfer' : 'apple-export-connect'}
+      >
+        {primaryText}
+      </button>
 
       {connected && (
         <button
           type="button"
           onClick={onDisconnect}
           disabled={busy}
-          className="self-start text-[length:var(--px-10)] font-light font-fira text-[var(--color-primary)]/50 hover:text-[var(--color-primary)]/80 underline underline-offset-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="self-start font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)] underline underline-offset-2 transition-colors hover:text-[var(--rx-color-text-primary)] disabled:cursor-not-allowed disabled:opacity-40"
           id="apple-export-disconnect"
         >
           Disconnect Apple Music
@@ -125,12 +118,12 @@ const AppleExportPanel: React.FC<Props> = ({
         <div
           role="status"
           className={
-            'text-[length:var(--px-10)] font-light font-fira leading-[var(--px-15)] px-[var(--px-10)] py-[var(--px-8)] border border-dotted ' +
+            'border px-[var(--px-10)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase leading-[var(--px-15)] tracking-[var(--px-1)] ' +
             (notice.kind === 'success'
-              ? 'text-green-300 border-green-400/40 bg-green-400/5'
+              ? 'border-[var(--rx-color-success)] bg-[rgba(99,210,143,0.08)] text-[var(--rx-color-success)]'
               : notice.kind === 'error'
-                ? 'text-red-300 border-red-400/40 bg-red-400/5'
-                : 'text-[var(--color-primary)]/70 border-slate-200/30')
+                ? 'border-[var(--rx-color-error)] bg-[rgba(255,118,96,0.08)] text-[var(--rx-color-error)]'
+                : 'border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)]')
           }
         >
           {notice.text}
@@ -143,7 +136,7 @@ const AppleExportPanel: React.FC<Props> = ({
           href={playlistUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full flex items-center justify-center gap-[var(--px-8)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider px-[var(--px-20)] py-[var(--px-10)] transition-colors"
+          className={`${PAGE_BTN_SECONDARY} self-center gap-[var(--px-8)] px-[var(--px-24)]`}
           id="apple-export-open-playlist"
         >
           <span>Open in Apple Music</span>
@@ -159,13 +152,13 @@ const AppleExportPanel: React.FC<Props> = ({
       {log.length > 0 && (
         <div
           ref={logRef}
-          className="border border-dotted border-slate-200/30 bg-black/30 px-[var(--px-10)] py-[var(--px-8)] max-h-[var(--px-72)] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="max-h-[var(--px-72)] overflow-y-auto border border-[var(--rx-color-border-subtle)] bg-black/30 px-[var(--px-10)] py-[var(--px-8)] text-left [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           aria-label="Apple Music activity log"
         >
           {log.map((line, i) => (
             <div
               key={i}
-              className="text-[length:var(--px-9)] font-light font-fira leading-[var(--px-14)] text-[var(--color-primary)]/45 whitespace-pre-wrap break-words"
+              className="whitespace-pre-wrap break-words text-left font-fira text-[length:var(--px-9)] leading-[var(--px-14)] text-[var(--rx-color-text-muted)] opacity-70"
             >
               {line}
             </div>

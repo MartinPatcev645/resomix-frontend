@@ -4,7 +4,9 @@
   /* Phase 1B precision-industrial tokens (verbatim from packages/ui design-system). Needed here so
      shared @resomix/ui content built on the newer theme (e.g. Error404) renders correctly on this
      app too — webapp carries the same copy. */
+  --rx-color-canvas: #050505;
   --rx-color-surface: #111111;
+  --rx-color-surface-raised: #171717;
   --rx-color-text-primary: rgba(255, 255, 255, 0.96);
   --rx-color-text-secondary: rgba(255, 255, 255, 0.8);
   --rx-color-text-muted: rgba(255, 255, 255, 0.72);
@@ -13,9 +15,14 @@
   --rx-color-border-strong: rgba(255, 255, 255, 0.24);
   --rx-color-accent: #ee4a26;
   --rx-color-accent-hover: #f46545;
+  --rx-color-accent-soft: rgba(238, 74, 38, 0.14);
   --rx-color-disabled: rgba(255, 255, 255, 0.42);
   --rx-color-error: #ff7660;
+  --rx-color-success: #63d28f;
   --rx-radius-control: 2px;
+  --rx-radius-tag: 2px;
+  --rx-ring: 0 0 0 1px rgba(5, 5, 5, 0.95), 0 0 0 3px rgba(255, 143, 116, 0.92);
+  --rx-duration-fast: 120ms;
   --rx-duration-base: 160ms;
   --rx-ease-standard: ease;
 
@@ -179,4 +186,21 @@ html #stcm-wrapper .stcm-button-secondary:hover {
   background-color: #ffffff !important;
   color: #000000 !important;
   border: 1px dotted #000000 !important; /* black dotted border on hover */
+}
+
+/* Shared @resomix/ui dialogs use this mount fade (verbatim from the webapp, which owns the
+   original). Opacity only — no transform, so nothing shifts as a modal appears. */
+@keyframes workspace-panel-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe\:animate-\[workspace-panel-in_150ms_ease-out_both\] {
+    animation: none !important;
+  }
 }

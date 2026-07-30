@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { ButtonSleek } from '@resomix/ui'
+import { Dialog, PAGE_FIELD, PAGE_FIELD_LABEL } from '@resomix/ui'
 import { GoodIcon, BadIcon, FineIcon, FireIcon } from '@/components/index.ts'
 import { ratePlaylist } from '@resomix/api-client';
 import { usePlaylistStore } from '@resomix/stores';
@@ -94,30 +94,28 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
         return hoveredRating === rating ? 'var(--color-primary-hover)' : undefined
     }
 
-    if (!isOpen) return null
-
     return (
-        <div 
-            className="fixed inset-0 z-50 flex items-center justify-center" 
-            role="dialog" 
-            aria-modal="true" 
-            aria-labelledby="rating-dialog-title"
+        <Dialog
+            isOpen={isOpen}
+            onClose={onClose}
+            size="md"
+            eyebrow="Playlist // Feedback"
+            title="Rate these results"
+            subtitle="How well did the similarity results match your reference?"
+            ariaLabel="Rate these results"
+            actions={[
+                // No Cancel action — the shell's ✕ is the universal exit.
+                {
+                    label: 'Submit Feedback',
+                    onClick: handleSubmit,
+                    tone: 'primary',
+                    busy: submitting,
+                    busyLabel: 'Submitting...',
+                    id: 'playlist-rating-submit-button',
+                },
+            ]}
         >
-            {/* Backdrop with blur effect */}
-            <div
-                className="absolute inset-0 bg-black/20 backdrop-blur-sm modal-backdrop"
-                onClick={onClose}
-                id="playlist-rating-backdrop"
-                aria-hidden="true"
-            />
-
-            {/* Modal content */}
-            <div className="relative z-10 bg-[var(--color-secondary)] rounded-xs shadow-2xl p-[var(--px-50)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] flex flex-col items-center gap-[var(--px-20)]">
-                <div className="text-center mb-[var(--px-24)] w-full">
-                    <h2 id="rating-dialog-title" className="text-[length:var(--px-19)] font-semibold uppercase font-helvetica leading-[var(--px-24)]">
-                        "Rate the similarity results of this playlist"
-                    </h2>
-                </div>
+            <div className="flex flex-col gap-[var(--px-20)] pb-[var(--px-4)]">
 
                 <fieldset className='flex items-center w-full justify-evenly mb-[var(--px-10)]'>
                     <legend className="sr-only">Rate the playlist</legend>
@@ -217,12 +215,12 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
                 </fieldset>
 
                 <div className="flex flex-col items-start gap-[var(--px-10)] w-full">
-                    <label htmlFor="rating-feedback" className="text-[length:var(--px-11)] font-medium leading-[var(--px-16)] font-fira">
-                        Share your experience <span className="text-[length:var(--px-10)] opacity-80 font-extralight">(optional)</span>
+                    <label htmlFor="rating-feedback" className={PAGE_FIELD_LABEL}>
+                        Share your experience <span className="opacity-70">(optional)</span>
                     </label>
                     <textarea
                         id="rating-feedback"
-                        className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-10)] font-light font-helvetica"
+                        className={`${PAGE_FIELD} py-[var(--px-8)] leading-[var(--px-18)]`}
                         rows={4}
                         placeholder="Please describe your rating or feedback in detail..."
                         value={feedback}
@@ -230,12 +228,8 @@ export const PlaylistRating: React.FC<PlaylistRatingProps> = ({
                     />
                 </div>
 
-                <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)]">
-                    <ButtonSleek text={submitting ? 'Submitting...' : 'Submit Feedback'} onClick={handleSubmit} className="cta-button primary" id="playlist-rating-submit-button" />
-                    <ButtonSleek text="Cancel" onClick={onClose} transparent={true} className="cta-button secondary" id="playlist-rating-cancel-button" />
-                </div>
             </div>
-        </div>
+        </Dialog>
     )
 }
 

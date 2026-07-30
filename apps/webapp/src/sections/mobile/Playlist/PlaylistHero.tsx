@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { StatusMessage, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon } from "@resomix/ui";
+import { ConfirmDialog, StatusMessage, PrivateIcon, PublicIcon, HeartStrokeIcon, HeartFilledIcon } from "@resomix/ui";
 import { formatDuration, usePlaylistExport, useAccess, useFavoritePlaylist, usePlaylistVisibility, usePlaylistCover, type AccessAction } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport, PlaylistShare } from "@/components/index.ts";
@@ -15,7 +15,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { playlistAccessChrome, PLAYLIST_LOCK_MARK } from "@/utils/playlistAccessChrome.ts";
 import { StickyReferenceBar } from "@/components/Playlist/StickyReferenceBar.tsx";
 import { PLAYLIST_DIVIDER_BORDER } from "@/utils/playlistChrome.ts";
-import { WORKSPACE_BTN_PRIMARY, WORKSPACE_BTN_SECONDARY, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
+import { WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
 import { HERO_TOOLBAR_BTN, HeroChevronLeft, HeroAutoplayToggle, HeroClockIcon, RenameIcon, ExportIcon, ShareIcon } from "@/components/Playlist/heroToolbar.tsx";
 
 const PlaylistHero: React.FC = () => {
@@ -534,34 +534,20 @@ const PlaylistHero: React.FC = () => {
         title={statusTitle}
       />
 
-      <StatusMessage isOpen={visibilityConfirm} onClose={() => setVisibilityConfirm(false)} status="custom">
-        <div className="w-full text-center">
-          <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-            {playlistData?.playlist?.is_public ? "Make Playlist Private" : "Make Playlist Public"}
-          </div>
-          <div className="mt-[var(--px-10)] text-[length:var(--px-11)] font-light font-fira leading-[var(--px-15)]">
-            {playlistData?.playlist?.is_public
-              ? "This playlist will no longer be reachable by its share link — only you can open it."
-              : "Anyone with the link will be able to open this playlist."}
-          </div>
-        </div>
-        <div className="mt-[var(--px-20)] flex w-full items-center justify-center gap-[var(--px-10)]">
-          <button
-            onClick={() => setVisibilityConfirm(false)}
-            disabled={visibilityBusy}
-            className={`${WORKSPACE_BTN_SECONDARY} flex-1`}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirmVisibility}
-            disabled={visibilityBusy}
-            className={`${WORKSPACE_BTN_PRIMARY} flex flex-1 items-center justify-center`}
-          >
-            {visibilityBusy ? "Updating…" : playlistData?.playlist?.is_public ? "Make Private" : "Make Public"}
-          </button>
-        </div>
-      </StatusMessage>
+      {/* Public/private toggle confirmation */}
+      <ConfirmDialog
+        isOpen={visibilityConfirm}
+        onClose={() => setVisibilityConfirm(false)}
+        onConfirm={handleConfirmVisibility}
+        eyebrow="Playlist // Visibility"
+        title={playlistData?.playlist?.is_public ? "Make playlist private" : "Make playlist public"}
+        message={playlistData?.playlist?.is_public
+          ? "This playlist will no longer be reachable by its share link — only you can open it."
+          : "Anyone with the link will be able to open this playlist."}
+        confirmLabel={playlistData?.playlist?.is_public ? "Make Private" : "Make Public"}
+        busy={visibilityBusy}
+        busyLabel="Updating…"
+      />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
+import { Dialog } from "../Modals/Dialog";
 import { useFeedbackStore } from "@resomix/stores";
 import { useFeedbackSubmit } from "@resomix/hooks";
 import { StatusMessage } from "../Elements/StatusMessage";
@@ -50,23 +50,20 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-            {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/20 backdrop-blur-sm cursor-pointer"
-                onClick={handleClose}
-            />
-
-            {/* Content */}
-            <div
-                className="relative z-10 bg-[var(--color-primary-background)] text-[var(--color-primary)] rounded-xs shadow-2xl border border-dotted border-[var(--color-primary)] flex flex-col items-center p-[var(--px-50)] w-full lg:w-[var(--px-500)] gap-[var(--px-30)]"
-            >
-                <div className="text-center w-full">
-                    <div className="text-[length:var(--px-19)] font-medium font-helvetica uppercase leading-[var(--px-23)]">
-                        YOUR FEEDBACK
-                    </div>
-                </div>
-                <div className="flex flex-col w-full gap-[var(--px-15)]">
+        <Dialog
+            isOpen
+            onClose={handleClose}
+            size="md"
+            eyebrow="Resomix // Feedback"
+            title="Your feedback"
+            subtitle="Tell us how the results felt — it goes straight to the team."
+            ariaLabel="Your feedback"
+            actions={[
+                // No Close action — the shell's ✕ is the universal exit.
+                { label: 'Submit', onClick: submitHandler, tone: 'primary' },
+            ]}
+        >
+                <div className="flex flex-col w-full gap-[var(--px-15)] pb-[var(--px-4)]">
                     <div className="flex flex-col items-start text-left w-full">
                         <div className="text-[length:var(--px-14)] font-medium font-fira mb-[var(--px-10)]">
                             How satisfied are you with the results?
@@ -130,11 +127,6 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
                     </div>
                 </div>
 
-                <div className="flex justify-center items-center gap-[var(--px-10)]">
-                    <ButtonSleek text="Submit" onClick={submitHandler} />
-                    <ButtonSleek text="Close" transparent={true} onClick={handleClose} />
-                </div>
-
                 <StatusMessage
                     isOpen={showStatus}
                     onClose={() => {
@@ -144,7 +136,6 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onClose }) => {
                     status={statusType}
                     message={statusMessage}
                 />
-            </div>
-        </div>
+        </Dialog>
     );
 };

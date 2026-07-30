@@ -1,7 +1,7 @@
 import React from 'react';
 import BaseModal from '@/components/Modals/BaseExportModal.js';
 import ExportSvg from '@/assets/icons/export.svg';
-import { ButtonSleek } from '@resomix/ui';
+import { PAGE_BTN_PRIMARY } from '@resomix/ui';
 
 interface EmbedModalProps {
   isOpen: boolean;
@@ -87,57 +87,50 @@ const EmbedModal: React.FC<EmbedModalProps> = ({
       iconAlt="Embed"
       title="Embed this playlist"
       subtitle="Drop this playlist into WordPress, your site, or anywhere that accepts HTML."
-      widthClassName="max-w-[var(--px-500)] w-full lg:w-[var(--px-480)]"
+      /* Width comes from BaseExportModal now, so every export/transfer modal matches. */
     >
-      <div className="w-full flex flex-col gap-[var(--px-14)] mt-[var(--px-14)]">
+      {/* Body copy is left-aligned; the shell centres its own header only. */}
+      <div className="mt-[var(--px-6)] flex w-full flex-col gap-[var(--px-14)] text-left">
         {!publicNow ? (
           <>
-            <p className="text-[length:var(--px-11)] font-light font-fira leading-[var(--px-16)] text-[var(--color-primary)]/70">
+            <p className="font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)] opacity-85">
               Embedding only works on <strong>public</strong> playlists. Make this playlist public to
               generate an embed code — you can make it private again anytime.
             </p>
-            <div className="flex flex-col sm:flex-row gap-[var(--px-10)] w-full">
-              <ButtonSleek
-                text={busy ? 'Making public…' : 'Make Public & Embed'}
-                onClick={makePublic}
-                disabled={busy}
-                customWidth="w-full sm:flex-1"
-                className="cta-button primary"
-                id="embed-make-public"
-              />
-              <ButtonSleek
-                text="Close"
-                onClick={onClose}
-                transparent
-                customWidth="w-full sm:flex-1"
-                className="cta-button secondary"
-                id="embed-close"
-              />
-            </div>
+            {/* No Close button — the dialog shell's ✕ is the universal exit. */}
+            <button
+              type="button"
+              onClick={makePublic}
+              disabled={busy}
+              className={`${PAGE_BTN_PRIMARY} self-center px-[var(--px-24)]`}
+              id="embed-make-public"
+            >
+              {busy ? 'Making public…' : 'Make Public & Embed'}
+            </button>
           </>
         ) : (
           <>
-            <p className="text-[length:var(--px-11)] font-light font-fira leading-[var(--px-16)] text-[var(--color-primary)]/70">
+            <p className="font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)] opacity-85">
               Copy this code and paste it into an HTML block. The player shows the tracks with 30-second
               previews, and stays contained — visitors can’t navigate away.
             </p>
 
             {/* Theme toggle — writes ?theme= into the snippet. */}
             <div className="flex items-center gap-[var(--px-8)]">
-              <span className="text-[length:var(--px-9)] uppercase tracking-[var(--px-0-5)] font-fira text-[var(--color-primary)]/50">
+              <span className="font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">
                 Theme
               </span>
-              <div className="inline-flex border border-dotted border-slate-200/30 rounded-full overflow-hidden">
+              <div className="inline-flex overflow-hidden rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)]">
                 {(['dark', 'light'] as const).map((t) => (
                   <button
                     key={t}
                     type="button"
                     onClick={() => setTheme(t)}
                     className={
-                      'px-[var(--px-12)] py-[var(--px-4)] text-[length:var(--px-9)] uppercase tracking-[var(--px-0-5)] font-fira transition-colors ' +
+                      'cursor-pointer px-[var(--px-12)] py-[var(--px-5)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] transition-colors ' +
                       (theme === t
-                        ? 'bg-[var(--color-primary)] text-[var(--color-secondary)]'
-                        : 'text-[var(--color-primary)]/60 hover:text-[var(--color-primary)]')
+                        ? 'bg-[var(--rx-color-accent)] text-[#050505]'
+                        : 'text-[var(--rx-color-text-muted)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)]')
                     }
                     id={`embed-theme-${t}`}
                   >
@@ -152,30 +145,21 @@ const EmbedModal: React.FC<EmbedModalProps> = ({
               readOnly
               value={snippet}
               onFocus={(e) => e.currentTarget.select()}
-              className="w-full h-[var(--px-90)] resize-none bg-black/40 border border-dotted border-slate-200/30 px-[var(--px-10)] py-[var(--px-8)] text-[length:var(--px-9)] font-fira text-[var(--color-primary)]/80 leading-[var(--px-14)]"
+              className="h-[var(--px-90)] w-full resize-none border border-[var(--rx-color-border-default)] bg-black/40 px-[var(--px-10)] py-[var(--px-8)] text-left font-fira text-[length:var(--px-9)] leading-[var(--px-14)] text-[var(--rx-color-text-secondary)]"
             />
 
-            <div className="flex flex-col sm:flex-row gap-[var(--px-10)] w-full">
-              <ButtonSleek
-                text={copied ? 'Copied ✓' : 'Copy embed code'}
-                onClick={copy}
-                customWidth="w-full sm:flex-1"
-                className="cta-button primary"
-                id="embed-copy"
-              />
-              <ButtonSleek
-                text="Close"
-                onClick={onClose}
-                transparent
-                customWidth="w-full sm:flex-1"
-                className="cta-button secondary"
-                id="embed-close"
-              />
-            </div>
+            <button
+              type="button"
+              onClick={copy}
+              className={`${PAGE_BTN_PRIMARY} self-center px-[var(--px-24)]`}
+              id="embed-copy"
+            >
+              {copied ? 'Copied ✓' : 'Copy embed code'}
+            </button>
 
-            <p className="text-[length:var(--px-9)] font-light font-fira leading-[var(--px-13)] text-[var(--color-primary)]/45">
-              Tip: adjust <span className="text-[var(--color-primary)]/70">height</span> to fit your
-              layout. On WordPress.com, paste it in a Custom HTML block.
+            <p className="font-helvetica text-[length:var(--px-11)] font-light leading-[var(--px-16)] text-[var(--rx-color-text-muted)] opacity-70">
+              Tip: adjust <span className="text-[var(--rx-color-text-secondary)]">height</span> to fit
+              your layout. On WordPress.com, paste it in a Custom HTML block.
             </p>
           </>
         )}

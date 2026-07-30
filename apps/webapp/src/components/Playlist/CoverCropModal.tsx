@@ -1,13 +1,13 @@
 import React from "react";
 import Cropper, { type Area, type Point } from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
-import { StatusMessage } from "@resomix/ui";
+import { Dialog, PAGE_FIELD_LABEL } from "@resomix/ui";
 
 /**
  * CoverCropModal
  * ==============
  *
- * Owner-only playlist-cover cropper, reusing the app's `StatusMessage` (custom) modal shell. The user
+ * Owner-only playlist-cover cropper, built on the shared `Dialog` shell. The user
  * picks any (non-square) image; here they pan + zoom and confirm a SQUARE crop. On confirm we render
  * the selected region to a canvas and hand back a square JPEG `Blob`, so the backend + media server
  * always receive a proper square.
@@ -89,19 +89,31 @@ export const CoverCropModal: React.FC<CoverCropModalProps> = ({ isOpen, imageSrc
   };
 
   return (
-    <StatusMessage isOpen={isOpen} onClose={processing ? () => {} : onCancel} status="custom">
-      <div className="w-full flex flex-col gap-[var(--px-15)]">
-        <div className="text-center">
-          <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-            Crop Your Cover
-          </div>
-          <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-14)] mt-[var(--px-6)] opacity-70">
-            Drag to reposition · scroll / pinch or use the slider to zoom · the cover is always square
-          </div>
-        </div>
-
+    <Dialog
+      isOpen={isOpen}
+      onClose={onCancel}
+      size="sm"
+      eyebrow="Playlist // Cover"
+      title="Crop your cover"
+      subtitle="Drag to reposition · scroll / pinch or use the slider to zoom · the cover is always square"
+      ariaLabel="Crop your cover"
+      // While the canvas render is in flight the dialog cannot be dismissed — the old shell did the
+      // same with a no-op onClose.
+      dismissible={!processing}
+      actions={[
+        { label: "Cancel", dismiss: true, disabled: processing },
+        {
+          label: "Apply",
+          onClick: handleApply,
+          tone: "primary",
+          busy: processing,
+          busyLabel: "Processing…",
+        },
+      ]}
+    >
+      <div className="flex w-full flex-col gap-[var(--px-15)] pb-[var(--px-4)]">
         {/* Cropper viewport (square). react-easy-crop fills this relatively-positioned box. */}
-        <div className="relative w-full aspect-square bg-black overflow-hidden rounded-xs border border-dotted border-[var(--color-primary)]/40">
+        <div className="relative aspect-square w-full overflow-hidden border border-[var(--rx-color-border-default)] bg-black">
           {imageSrc && (
             <Cropper
               image={imageSrc}
@@ -123,7 +135,7 @@ export const CoverCropModal: React.FC<CoverCropModalProps> = ({ isOpen, imageSrc
         </div>
 
         <div className="flex items-center gap-[var(--px-10)]">
-          <span className="text-[length:var(--px-9)] font-light font-fira uppercase tracking-wider opacity-70">Zoom</span>
+          <span className={PAGE_FIELD_LABEL}>Zoom</span>
           <input
             type="range"
             min={1}
@@ -132,30 +144,11 @@ export const CoverCropModal: React.FC<CoverCropModalProps> = ({ isOpen, imageSrc
             value={zoom}
             onChange={(e) => setZoom(Number(e.target.value))}
             aria-label="Zoom"
-            className="flex-1 accent-[var(--color-primary)] cursor-pointer"
+            className="flex-1 cursor-pointer accent-[var(--rx-color-accent)]"
           />
         </div>
-
-        <div className="mt-[var(--px-5)] flex justify-center items-center gap-[var(--px-10)] w-full">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={processing}
-            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleApply}
-            disabled={processing}
-            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-secondary)] hover:opacity-90 text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer flex justify-center items-center disabled:opacity-50"
-          >
-            {processing ? "Processing…" : "Apply"}
-          </button>
-        </div>
       </div>
-    </StatusMessage>
+    </Dialog>
   );
 };
 

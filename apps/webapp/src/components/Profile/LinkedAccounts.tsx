@@ -1,7 +1,7 @@
 import React from "react";
 import {
+  ConfirmDialog,
   GoogleSignInButton,
-  StatusMessage,
   PAGE_BTN_PRIMARY,
   PAGE_BTN_SECONDARY,
   PAGE_INSET_ROW,
@@ -271,26 +271,22 @@ export const LinkedAccounts: React.FC = () => {
         </div>
       )}
 
-      {/* "Set a password first" — Google is the only sign-in and there's no password. Close only. */}
-      <StatusMessage isOpen={showSetPw} onClose={() => setShowSetPw(false)} status="custom">
-        <div className="w-full flex flex-col items-center gap-[var(--px-15)] text-center">
-          <div className="text-[length:var(--px-19)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-            Set a password first
-          </div>
-          <div className="text-[length:var(--px-11)] font-light font-fira leading-[var(--px-16)] opacity-80">
-            Google is currently your only way to sign in. Set a password on your account first
-            (Personal → Password → <span className="font-medium">Set</span>) so you don’t get locked
-            out — then you can disconnect Google.
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowSetPw(false)}
-            className={`${PAGE_BTN_SECONDARY} mt-[var(--px-6)]`}
-          >
-            Got it
-          </button>
-        </div>
-      </StatusMessage>
+      {/* "Set a password first" — Google is the only sign-in and there's no password. Acknowledge
+          only: there is nothing to confirm, so the single button just closes. */}
+      <ConfirmDialog
+        isOpen={showSetPw}
+        onClose={() => setShowSetPw(false)}
+        onConfirm={() => setShowSetPw(false)}
+        acknowledgeOnly
+        eyebrow="Account // Security"
+        title="Set a password first"
+        message={<>
+          Google is currently your only way to sign in. Set a password on your account first
+          (Personal → Password → <strong className="font-medium text-[var(--rx-color-text-primary)]">Set</strong>)
+          so you don’t get locked out — then you can disconnect Google.
+        </>}
+        confirmLabel="Got it"
+      />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
+import { Dialog } from "../Modals/Dialog";
 import { BASE_LANDING_URL, BASE_BETA_URL } from "@resomix/config";
 
 interface TermsAcceptanceProps {
@@ -27,25 +27,22 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
     };
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-            {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/20 backdrop-blur-sm cursor-pointer"
-                onClick={onDismiss}
-            />
-
-            {/* Content */}
-            <div
-                className="relative z-10 bg-[var(--color-primary-background)] text-[var(--color-primary)] rounded-xs shadow-2xl border border-dotted border-[var(--color-primary)] flex flex-col items-center p-[var(--px-30)] max-w-[var(--px-400)] w-full lg:w-[var(--px-393)] gap-[var(--px-30)]"
-            >
-                <div className="text-center w-full">
-                    <div className="text-[length:var(--px-22)] font-semibold font-helvetica uppercase leading-[var(--px-24)]">
-                        Terms & Privacy
-                    </div>
-                    <div className="text-[length:var(--px-10)] font-light font-fira leading-[var(--px-13)] opacity-80 mt-[var(--px-10)]">
-                        Review and accept our privacy policy and terms of service, once accepted we'll start your playlist generation.
-                    </div>
-                </div>
+        <Dialog
+            isOpen
+            onClose={onDismiss}
+            size="sm"
+            eyebrow="Account // Consent"
+            title="Terms & Privacy"
+            subtitle="Review and accept our privacy policy and terms of service, once accepted we'll start your playlist generation."
+            ariaLabel="Terms and Privacy"
+            actions={[{
+                label: 'Accept Terms',
+                onClick: handleAccept,
+                tone: 'primary',
+                disabled: !canAccept,
+                id: 'terms-accept-button',
+            }]}
+        >
 
                 <div className="flex flex-col items-start w-full gap-[var(--px-20)]">
                     <div className="flex items-start gap-[var(--px-12)] w-full min-h-[var(--px-60)]">
@@ -111,15 +108,8 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                     </div>
                 </div>
 
-                <div className="flex flex-col items-center gap-[var(--px-20)]">
-                    <ButtonSleek
-                        text="Accept Terms"
-                        onClick={handleAccept}
-                        disabled={!canAccept}
-                        className="cta-button primary"
-                        id="terms-accept-button"
-                    />
-                    <div className="text-[length:var(--px-9)] font-light font-fira leading-[var(--px-12)] opacity-60 text-center">
+                <div className="flex flex-col items-start gap-[var(--px-20)]">
+                    <div className="font-helvetica text-[length:var(--px-11)] font-light leading-[var(--px-16)] text-[var(--rx-color-text-muted)] opacity-70">
                         Questions? Contact us at{" "}
                         <a
                             aria-label="Resomix contact"
@@ -134,7 +124,6 @@ export const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({ onAccept, onDi
                         </a>
                     </div>
                 </div>
-            </div>
-        </div>
+        </Dialog>
     );
 };

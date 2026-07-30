@@ -59,7 +59,6 @@ const AppleExportModal: React.FC<AppleExportModalProps> = ({
         onConnect={s.connect}
         onTransfer={s.transfer}
         onDisconnect={s.disconnect}
-        onClose={onClose}
       />
     </BaseModal>
   );
