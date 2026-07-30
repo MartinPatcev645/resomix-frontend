@@ -11,6 +11,13 @@ import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx"
 import EmbedModal from "@/components/Modals/Transfer/EmbedModal.tsx";
 import { TrackArtifactChips, trackHasPendingArtifact } from "@/components/TrackArtifactChips.tsx";
 import { TrackMetaRow, PlaylistRenameModal, LibraryFilters, PlaylistShare, BackToHomeButton } from "@/components/index.ts";
+import {
+  PAGE_BTN_DANGER,
+  PAGE_BTN_PRIMARY,
+  PAGE_BTN_SECONDARY,
+  PAGE_PANEL_PLAIN,
+  PAGE_SUBLABEL,
+} from "@resomix/ui";
 
 export default function LibraryPage() {
   const navigate = useNavigate();
@@ -340,50 +347,60 @@ export default function LibraryPage() {
   };
 
   return (
-    <section className="pt-[var(--px-120)] px-[var(--px-3)] md:px-0 tracking-[var(--px-1)]">
-      <div className="w-full text-[var(--color-primary)]">
+    // Spacing matches the workspace shell: a small inset from the vertical side lines (px-12) and
+    // no oversized top pad — the layout's <main> already offsets the header.
+    <section className="px-[var(--px-12)] pt-[var(--px-16)] pb-[var(--px-40)] tracking-[var(--px-1)]">
+      <div className="mx-auto w-full max-w-4xl text-[var(--rx-color-text-primary)]">
         {/* Mobile places Back above the heading; desktop moves it onto the tab row (below). */}
-        <div className="mb-[var(--px-16)] flex px-[var(--px-10)] md:hidden">
+        <div className="mb-[var(--px-16)] flex md:hidden">
           <BackToHomeButton id="library-back-link-mobile" />
         </div>
 
-        <header className="mb-[var(--px-28)] text-center">
-          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
+        {/* Header — accent rule + mono kicker, then a left-aligned heading, as on the workspace. */}
+        <header className="mb-[var(--px-24)]">
+          <p className="mb-[var(--px-16)] flex items-center gap-[var(--px-10)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-muted)] before:block before:w-[var(--px-32)] before:border-t before:border-[var(--rx-color-accent)] before:content-['']">
+            Account // Library
+          </p>
+          <h1 className="m-0 font-helvetica text-[length:var(--px-28)] font-medium uppercase leading-[var(--px-32)] md:text-[length:var(--px-36)] md:leading-[var(--px-40)]">
             Library
           </h1>
-          <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica">
+          <p className="mt-[var(--px-12)] font-helvetica text-[length:var(--px-15)] font-light leading-[var(--px-22)] text-[var(--rx-color-text-secondary)] opacity-70">
             Your saved playlists and track collections
           </p>
         </header>
 
-        <div className="mx-auto w-full max-w-4xl px-[var(--px-10)] md:px-0">
+        <div className="w-full">
           {/* Tab Switcher. Three columns — Back · tabs · spacer — so the tabs stay optically
               centred with the Back button beside them on desktop. The side cells are always in the
               grid (only their contents hide below md), otherwise the tabs would fall into the
               first column and lose their centring. */}
-          <div className="mb-[var(--px-40)] grid grid-cols-[1fr_auto_1fr] items-center gap-[var(--px-10)] border-b border-dotted border-slate-200/30 pb-[var(--px-15)]">
+          <div className="mb-[var(--px-24)] grid grid-cols-[1fr_auto_1fr] items-center gap-[var(--px-10)] border-b border-[var(--rx-color-border-subtle)] pb-[var(--px-14)]">
             <div className="flex justify-start">
               <div className="hidden md:block">
                 <BackToHomeButton id="library-back-link" />
               </div>
             </div>
-            <div className="flex justify-center gap-[var(--px-30)]">
+            {/* Tabs — mono uppercase with an accent underline on the active one, matching the
+                workspace's task cues rather than the old bold-helvetica links. */}
+            <div className="flex justify-center gap-[var(--px-24)]">
               <button
                 onClick={() => setSearchParams({ tab: "playlists" }, { replace: true })}
-                className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
+                aria-current={activeTab === "playlists" ? "page" : undefined}
+                className={`cursor-pointer whitespace-nowrap border-b-2 pb-[var(--px-6)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] transition-colors ${
                   activeTab === "playlists"
-                    ? "text-[var(--color-primary-hover)] border-b border-[var(--color-primary)]"
-                    : "text-slate-400 hover:text-[var(--color-primary)]"
+                    ? "border-[var(--rx-color-accent)] text-[var(--rx-color-text-primary)]"
+                    : "border-transparent text-[var(--rx-color-text-muted)] opacity-60 hover:opacity-100"
                 }`}
               >
                 Playlists ({playlistsTotal})
               </button>
               <button
                 onClick={() => setSearchParams({ tab: "tracks" }, { replace: true })}
-                className={`text-[length:var(--px-16)] font-semibold font-helvetica uppercase tracking-wider transition-colors cursor-pointer ${
+                aria-current={activeTab === "tracks" ? "page" : undefined}
+                className={`cursor-pointer whitespace-nowrap border-b-2 pb-[var(--px-6)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] transition-colors ${
                   activeTab === "tracks"
-                    ? "text-[var(--color-primary-hover)] border-b border-[var(--color-primary)]"
-                    : "text-slate-400 hover:text-[var(--color-primary)]"
+                    ? "border-[var(--rx-color-accent)] text-[var(--rx-color-text-primary)]"
+                    : "border-transparent text-[var(--rx-color-text-muted)] opacity-60 hover:opacity-100"
                 }`}
               >
                 Uploads ({tracksTotal})
@@ -402,14 +419,14 @@ export default function LibraryPage() {
                 disabled={activeLoading}
                 aria-pressed={favoritesOnly}
                 aria-label={favoritesOnly ? "Show all playlists" : "Show only favorites"}
-                className="flex items-center gap-[var(--px-8)] px-[var(--px-14)] py-[var(--px-6)] border border-dotted border-white/20 hover:border-white/50 disabled:opacity-40 disabled:cursor-not-allowed text-white/80 text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer rounded-xs"
+                className={`${PAGE_BTN_SECONDARY} gap-[var(--px-8)]`}
               >
                 Favorites
                 {/* Switch glyph — same treatment as the playlist Autoplay toggle: neon + knob right
                     when on, white + knob left when off. */}
                 <svg
                   viewBox="0 0 28 16"
-                  className={`h-[var(--px-16)] w-[var(--px-28)] shrink-0 ${favoritesOnly ? "text-[var(--rx-color-accent)]" : "text-white/70"}`}
+                  className={`h-[var(--px-16)] w-[var(--px-28)] shrink-0 ${favoritesOnly ? "text-[var(--rx-color-accent)]" : "text-[var(--rx-color-text-muted)]"}`}
                   fill="none"
                   aria-hidden="true"
                 >
@@ -422,23 +439,23 @@ export default function LibraryPage() {
               type="button"
               onClick={() => setShowFilters((v) => !v)}
               aria-expanded={showFilters}
-              className={`flex items-center gap-[var(--px-8)] px-[var(--px-14)] py-[var(--px-6)] border border-dotted text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer rounded-xs ${
+              className={`inline-flex min-h-[var(--px-36)] cursor-pointer items-center gap-[var(--px-8)] rounded-[var(--rx-radius-control)] border px-[var(--px-14)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] transition-colors duration-[var(--rx-duration-base)] ${
                 showFilters || panelFiltersActive
-                  ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-                  : "border-white/20 hover:border-white/50 text-white/80"
+                  ? "border-[var(--rx-color-accent)] text-[var(--rx-color-accent)]"
+                  : "border-[var(--rx-color-border-default)] text-[var(--rx-color-text-primary)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)]"
               }`}
             >
               <svg className="w-[var(--px-14)] h-[var(--px-14)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
               </svg>
               Filters
-              {panelFiltersActive && <span aria-hidden="true" className="w-[var(--px-6)] h-[var(--px-6)] rounded-full bg-[var(--color-primary)]" />}
+              {panelFiltersActive && <span aria-hidden="true" className="w-[var(--px-6)] h-[var(--px-6)] rounded-full bg-[var(--rx-color-accent)]" />}
             </button>
             <button
               type="button"
               onClick={handleRefresh}
               disabled={activeLoading}
-              className="flex items-center gap-[var(--px-8)] px-[var(--px-14)] py-[var(--px-6)] border border-dotted border-white/20 hover:border-white/50 disabled:opacity-40 disabled:cursor-not-allowed text-white/80 text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer rounded-xs"
+              className={`${PAGE_BTN_SECONDARY} gap-[var(--px-8)]`}
               aria-label="Refresh"
             >
               <svg className={`w-[var(--px-14)] h-[var(--px-14)] ${activeLoading ? "animate-spin" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -461,19 +478,19 @@ export default function LibraryPage() {
           )}
 
           {error && (
-            <div className="p-[var(--px-20)] mb-[var(--px-20)] text-center border border-red-500/30 bg-red-500/5 text-red-400 font-fira text-[length:var(--px-14)] rounded-md">
+            <div className="mb-[var(--px-20)] border border-[var(--rx-color-error)] bg-[rgba(255,118,96,0.08)] p-[var(--px-16)] text-center font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-error)]">
               {error}
             </div>
           )}
 
           {activeLoading ? (
-            <div className="p-[var(--px-40)] text-center text-slate-400 font-fira">
+            <div className={`${PAGE_SUBLABEL} p-[var(--px-40)] text-center`}>
               Loading your library...
             </div>
           ) : activeTab === "playlists" ? (
             activePlaylists.length === 0 ? (
-              <div className="p-[var(--px-40)] border border-slate-200 border-dotted rounded-lg text-center">
-                <p className="text-[length:var(--px-14)] font-light font-helvetica opacity-60">
+              <div className={`${PAGE_PANEL_PLAIN} !p-[var(--px-40)] text-center`}>
+                <p className="font-helvetica text-[length:var(--px-14)] font-light text-[var(--rx-color-text-secondary)] opacity-70">
                   {filtersActive
                     ? "No playlists match your filters. Try adjusting or clearing them."
                     : "Your library has no playlists. Generate some playlists by searching or uploading a track."}
@@ -486,7 +503,7 @@ export default function LibraryPage() {
                   return (
                   <div
                     key={playlist.uuid}
-                    className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex flex-wrap md:flex-nowrap items-center md:justify-between gap-y-[var(--px-10)] relative rounded-xs hover:bg-white/5 transition-colors"
+                    className="relative flex w-full flex-wrap items-center gap-y-[var(--px-10)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] p-[var(--px-12)] transition-colors hover:border-[var(--rx-color-border-strong)] md:flex-nowrap md:justify-between md:p-[var(--px-16)]"
                   >
                     {/* Aligned top content layout. min-w-0 is REQUIRED: this column is flex-grow, and
                         without it a flex item won't shrink below its content's intrinsic width, so the
@@ -505,7 +522,7 @@ export default function LibraryPage() {
                       >
                         {/* Playlist cover precedence: custom playlist cover (by playlist uuid) →
                             seed track cover (by uuid + token) → bundled Resomix default. */}
-                        <div className="border border-dotted border-slate-200 bg-black/40 hover:border-[var(--color-primary-hover)] transition-colors overflow-hidden w-[var(--px-32)] h-[var(--px-32)] md:w-[var(--px-52)] md:h-[var(--px-52)]">
+                        <div className="border border-[var(--rx-color-border-default)] bg-black/40 hover:border-[var(--rx-color-accent)] transition-colors overflow-hidden w-[var(--px-32)] h-[var(--px-32)] md:w-[var(--px-52)] md:h-[var(--px-52)]">
                           <CoverThumbnail playlistUuid={playlist.uuid} hasCustomCover={playlist.hasCustomCover} bust={playlist.coverBust} className="w-full h-full object-cover" />
                         </div>
                       </a>
@@ -524,7 +541,7 @@ export default function LibraryPage() {
                               e.preventDefault();
                               navigate(`/sonic-discovery?id=${playlist.uuid}`, { state: { from: "library" } });
                             }}
-                            className="text-[length:var(--px-14)] md:text-[length:var(--px-16)] font-semibold font-helvetica uppercase leading-tight hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer truncate min-w-0 grow md:grow-0"
+                            className="min-w-0 grow truncate font-helvetica text-[length:var(--px-14)] font-medium uppercase leading-tight transition-colors cursor-pointer hover:text-[var(--rx-color-accent)] md:grow-0 md:text-[length:var(--px-15)]"
                           >
                             {playlist.name}
                           </a>
@@ -537,7 +554,7 @@ export default function LibraryPage() {
                                 setRenameFor({ uuid: playlist.uuid, name: playlist.name, hasCustomCover: !!playlist.hasCustomCover });
                               }}
                               aria-label="Rename playlist"
-                              className="flex-shrink-0 text-white/50 hover:text-[var(--color-primary-hover)] cursor-pointer flex items-center justify-center p-[var(--px-2)] hover:scale-110 active:scale-90 transition-all bg-transparent border-0 outline-none"
+                              className="flex-shrink-0 text-[var(--rx-color-text-muted)] hover:text-[var(--rx-color-accent)] cursor-pointer flex items-center justify-center p-[var(--px-2)] hover:scale-110 active:scale-90 transition-all bg-transparent border-0 outline-none"
                             >
                               {/* Pencil-with-underline (edit) — currentColor so the button's hover drives it. */}
                               <svg
@@ -557,7 +574,7 @@ export default function LibraryPage() {
 
                         {/* Meta row. Desktop: stacked under the title. Mobile: hidden here and shown
                             on the bottom row (left of the actions) — see the mobile meta block below. */}
-                        <div className="hidden md:block text-[length:var(--px-10)] font-light font-fira text-white/60">
+                        <div className="hidden md:block font-fira text-[length:var(--px-10)] tracking-[var(--px-0-5)] text-[var(--rx-color-text-secondary)] opacity-70">
                           <p>{metaLine}</p>
                         </div>
                       </div>
@@ -569,7 +586,7 @@ export default function LibraryPage() {
                         right exactly as before (meta is shown under the title above instead). */}
                     <div className="basis-full flex items-center justify-between gap-[var(--px-12)] md:contents">
                       {/* Mobile-only meta — left of the icons; allowed to wrap over multiple lines. */}
-                      <div className="md:hidden min-w-0 flex-grow text-[length:var(--px-10)] font-light font-fira text-white/60">
+                      <div className="md:hidden min-w-0 flex-grow font-fira text-[length:var(--px-10)] tracking-[var(--px-0-5)] text-[var(--rx-color-text-secondary)] opacity-70">
                         <p>{metaLine}</p>
                       </div>
 
@@ -582,12 +599,12 @@ export default function LibraryPage() {
                           onClick={(e) => handleToggleFavorite(playlist.uuid, playlist.is_favorite, e)}
                           aria-label={playlist.is_favorite ? "Remove from Favorites" : "Add to Favorites"}
                           aria-pressed={playlist.is_favorite}
-                          className="text-white/60 hover:text-white cursor-pointer flex items-center justify-center p-[var(--px-4)] hover:scale-110 active:scale-90 transition-all bg-transparent border-0 outline-none"
+                          className="flex cursor-pointer items-center justify-center border-0 bg-transparent p-[var(--px-4)] text-[var(--rx-color-text-muted)] outline-none transition-all hover:text-[var(--rx-color-text-primary)] hover:scale-110 active:scale-90"
                         >
                           {playlist.is_favorite ? (
-                            <HeartFilledIcon customWidth="18" customHeight="18" className="text-white" disableHover={true} />
+                            <HeartFilledIcon customWidth="18" customHeight="18" className="cursor-pointer text-[var(--rx-color-accent)]" disableHover={true} />
                           ) : (
-                            <HeartStrokeIcon customWidth="18" customHeight="18" className="text-white/70" disableHover={true} />
+                            <HeartStrokeIcon customWidth="18" customHeight="18" className="cursor-pointer text-[var(--rx-color-text-muted)]" disableHover={true} />
                           )}
                         </button>
                       </Tooltip>
@@ -601,12 +618,12 @@ export default function LibraryPage() {
                             setVisibilityFor({ uuid: playlist.uuid, isPublic: playlist.is_public });
                           }}
                           aria-label={playlist.is_public ? "Make playlist private" : "Make playlist public"}
-                          className="text-white/60 hover:text-white cursor-pointer flex items-center justify-center p-[var(--px-4)] hover:scale-110 active:scale-90 transition-all bg-transparent border-0 outline-none"
+                          className="flex cursor-pointer items-center justify-center border-0 bg-transparent p-[var(--px-4)] text-[var(--rx-color-text-muted)] outline-none transition-all hover:text-[var(--rx-color-text-primary)] hover:scale-110 active:scale-90"
                         >
                           {playlist.is_public ? (
-                            <PublicIcon customWidth="14" customHeight="14" disableHover />
+                            <PublicIcon customWidth="14" customHeight="14" className="cursor-pointer" disableHover />
                           ) : (
-                            <PrivateIcon customWidth="14" customHeight="14" disableHover />
+                            <PrivateIcon customWidth="14" customHeight="14" className="cursor-pointer" disableHover />
                           )}
                         </button>
                       </Tooltip>
@@ -615,16 +632,16 @@ export default function LibraryPage() {
                       <div className="relative" onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => setActiveMenuId(activeMenuId === playlist.uuid ? null : playlist.uuid)}
-                          className="p-[var(--px-6)] md:p-[var(--px-8)] text-white/60 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
+                          className="p-[var(--px-6)] md:p-[var(--px-8)] text-[var(--rx-color-text-muted)] hover:text-[var(--rx-color-text-primary)] transition-colors cursor-pointer flex items-center justify-center"
                           aria-label="Actions"
                         >
-                          <svg className="w-[var(--px-18)] h-[var(--px-18)] fill-current text-white/70 hover:text-white" viewBox="0 0 24 24">
+                          <svg className="w-[var(--px-18)] h-[var(--px-18)] fill-current" viewBox="0 0 24 24">
                             <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
                           </svg>
                         </button>
                         
                         {activeMenuId === playlist.uuid && (
-                          <div className="absolute right-0 mt-[var(--px-4)] w-[var(--px-180)] bg-[var(--color-secondary)] border border-dotted border-slate-200/60 rounded-xs shadow-2xl z-20 py-[var(--px-4)] text-[length:var(--px-11)] font-light font-helvetica">
+                          <div className="absolute right-0 mt-[var(--px-4)] w-[var(--px-180)] bg-[var(--rx-color-surface-raised,#171717)] border border-[var(--rx-color-border-default)] rounded-[var(--rx-radius-control)] shadow-2xl z-20 py-[var(--px-4)] text-[length:var(--px-11)] font-light font-helvetica">
                             {[
                               {
                                 id: `playlist-open-${playlist.uuid}`,
@@ -649,7 +666,7 @@ export default function LibraryPage() {
                             ].map((item, index) => (
                               <div key={item.id}>
                                 {index > 0 && (
-                                  <div className="border-t border-dotted border-slate-200/30 mx-[var(--px-12)] my-[var(--px-4)]" />
+                                  <div className="border-t border-[var(--rx-color-border-subtle)] mx-[var(--px-12)] my-[var(--px-4)]" />
                                 )}
                                 <button
                                   onClick={(e) => {
@@ -657,7 +674,7 @@ export default function LibraryPage() {
                                     setActiveMenuId(null);
                                     item.onClick(e);
                                   }}
-                                  className="w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] text-[length:var(--px-12)] font-light font-helvetica hover:bg-white/5 active:bg-white/10 transition-colors duration-150 cursor-pointer text-white/80 hover:text-white"
+                                  className="w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)] transition-colors duration-150 cursor-pointer hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] active:bg-[rgba(255,255,255,0.1)]"
                                 >
                                   <span className="flex-shrink-0 w-[var(--px-16)] h-[var(--px-16)] flex items-center justify-center">
                                     {item.icon}
@@ -670,18 +687,18 @@ export default function LibraryPage() {
                             ))}
 
                             {/* Export → secondary flyout of targets (Apple Music for now). */}
-                            <div className="border-t border-dotted border-slate-200/30 mx-[var(--px-12)] my-[var(--px-4)]" />
+                            <div className="border-t border-[var(--rx-color-border-subtle)] mx-[var(--px-12)] my-[var(--px-4)]" />
                             <ExportSubmenu onExportApple={() => handleExportApple(playlist.uuid)} onEmbed={() => handleExportEmbed(playlist.uuid, playlist.is_public)} />
 
                             {/* Delete (separated, destructive). */}
-                            <div className="border-t border-dotted border-slate-200/60 mx-[var(--px-12)] my-[var(--px-4)]" />
+                            <div className="border-t border-[var(--rx-color-border-default)] mx-[var(--px-12)] my-[var(--px-4)]" />
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setActiveMenuId(null);
                                 handleDeletePlaylist(playlist.uuid, e);
                               }}
-                              className="w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] text-[length:var(--px-12)] font-light font-helvetica hover:bg-white/5 active:bg-white/10 transition-colors duration-150 cursor-pointer text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                              className="w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-error)] transition-colors duration-150 cursor-pointer hover:bg-[rgba(255,118,96,0.12)]"
                             >
                               <span className="flex-shrink-0 w-[var(--px-16)] h-[var(--px-16)] flex items-center justify-center">
                                 <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
@@ -702,8 +719,8 @@ export default function LibraryPage() {
             )
           ) : (
             tracks.length === 0 ? (
-              <div className="p-[var(--px-40)] border border-slate-200 border-dotted rounded-lg text-center">
-                <p className="text-[length:var(--px-14)] font-light font-helvetica opacity-60">
+              <div className={`${PAGE_PANEL_PLAIN} !p-[var(--px-40)] text-center`}>
+                <p className="font-helvetica text-[length:var(--px-14)] font-light text-[var(--rx-color-text-secondary)] opacity-70">
                   {filtersActive
                     ? "No tracks match your filters. Try adjusting or clearing them."
                     : "No saved tracks. Upload tracks or find similarity matches to add to your track collection."}
@@ -731,7 +748,7 @@ export default function LibraryPage() {
                   return (
                     <div
                       key={track.id}
-                      className="w-full border border-dotted border-slate-200/60 p-[var(--px-12)] md:p-[var(--px-16)] flex flex-wrap justify-between items-center gap-y-[var(--px-10)] relative hover:bg-white/5 transition-colors"
+                      className="relative flex w-full flex-wrap items-center justify-between gap-y-[var(--px-10)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] p-[var(--px-12)] transition-colors hover:border-[var(--rx-color-border-strong)] md:p-[var(--px-16)]"
                     >
                       {/* Track identity block. The track title/image are NOT links — the track's
                           artifacts are reached via the capsules; the row itself doesn't navigate.
@@ -740,7 +757,7 @@ export default function LibraryPage() {
                         {/* Non-clickable cover: the uploaded track's cover (media server, by uuid),
                             else the bundled Resomix default — consistent with playlist covers. */}
                         <div className="flex-shrink-0">
-                          <div className="border border-dotted border-slate-200 bg-black/40 overflow-hidden w-[var(--px-32)] h-[var(--px-32)] md:w-[var(--px-52)] md:h-[var(--px-52)]">
+                          <div className="border border-[var(--rx-color-border-default)] bg-black/40 overflow-hidden w-[var(--px-32)] h-[var(--px-32)] md:w-[var(--px-52)] md:h-[var(--px-52)]">
                             <CoverThumbnail uuid={track.id} className="w-full h-full object-cover" />
                           </div>
                         </div>
@@ -764,20 +781,20 @@ export default function LibraryPage() {
                         <div className="relative">
                           <button
                             onClick={() => setActiveMenuId(activeMenuId === track.id ? null : track.id)}
-                            className="p-[var(--px-6)] md:p-[var(--px-8)] text-white/60 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
+                            className="p-[var(--px-6)] md:p-[var(--px-8)] text-[var(--rx-color-text-muted)] hover:text-[var(--rx-color-text-primary)] transition-colors cursor-pointer flex items-center justify-center"
                             aria-label="Actions"
                           >
-                            <svg className="w-[var(--px-18)] h-[var(--px-18)] fill-current text-white/70 hover:text-white" viewBox="0 0 24 24">
+                            <svg className="w-[var(--px-18)] h-[var(--px-18)] fill-current" viewBox="0 0 24 24">
                               <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
                             </svg>
                           </button>
                           
                           {activeMenuId === track.id && (
-                            <div className="absolute right-0 mt-[var(--px-4)] w-[var(--px-180)] bg-[var(--color-secondary)] border border-dotted border-slate-200/60 rounded-xs shadow-2xl z-20 py-[var(--px-4)] text-[length:var(--px-11)] font-light font-helvetica">
+                            <div className="absolute right-0 mt-[var(--px-4)] w-[var(--px-180)] bg-[var(--rx-color-surface-raised,#171717)] border border-[var(--rx-color-border-default)] rounded-[var(--rx-radius-control)] shadow-2xl z-20 py-[var(--px-4)] text-[length:var(--px-11)] font-light font-helvetica">
                               {trackDropdownItems.map((item, index) => (
                                 <div key={item.id}>
                                   {index > 0 && (
-                                    <div className={`border-t border-dotted ${item.separated ? 'border-slate-200/60' : 'border-slate-200/30'} mx-[var(--px-12)] my-[var(--px-4)]`} />
+                                    <div className={`border-t ${item.separated ? 'border-[var(--rx-color-border-default)]' : 'border-[var(--rx-color-border-subtle)]'} mx-[var(--px-12)] my-[var(--px-4)]`} />
                                   )}
                                   <button
                                     onClick={(e) => {
@@ -785,7 +802,7 @@ export default function LibraryPage() {
                                       setActiveMenuId(null);
                                       item.onClick(e);
                                     }}
-                                    className="w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] text-[length:var(--px-12)] font-light font-helvetica hover:bg-white/5 active:bg-white/10 transition-colors duration-150 cursor-pointer text-white/80 hover:text-white"
+                                    className="w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)] transition-colors duration-150 cursor-pointer hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] active:bg-[rgba(255,255,255,0.1)]"
                                   >
                                     <span className="flex-shrink-0 w-[var(--px-16)] h-[var(--px-16)] flex items-center justify-center">
                                       {item.icon}
@@ -836,17 +853,17 @@ export default function LibraryPage() {
               <button
                 disabled={activePage <= 1}
                 onClick={handlePrevPage}
-                className="px-[var(--px-16)] py-[var(--px-8)] border border-dotted border-white/20 hover:border-white/50 disabled:opacity-30 disabled:border-white/10 text-white/80 disabled:text-white/30 text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer disabled:cursor-not-allowed rounded-xs"
+                className={PAGE_BTN_SECONDARY}
               >
                 Prev
               </button>
-              <span className="text-[length:var(--px-14)] font-light font-fira text-white/80">
+              <span className="font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)]">
                 Page {activePage} of {activeTotalPages}
               </span>
               <button
                 disabled={activePage >= activeTotalPages}
                 onClick={handleNextPage}
-                className="px-[var(--px-16)] py-[var(--px-8)] border border-dotted border-white/20 hover:border-white/50 disabled:opacity-30 disabled:border-white/10 text-white/80 disabled:text-white/30 text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer disabled:cursor-not-allowed rounded-xs"
+                className={PAGE_BTN_SECONDARY}
               >
                 Next
               </button>
@@ -900,13 +917,13 @@ export default function LibraryPage() {
         <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)] w-full">
           <button
             onClick={() => setPlaylistToDelete(null)}
-            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer"
+            className={`${PAGE_BTN_SECONDARY} flex-1`}
           >
             Cancel
           </button>
           <button
             onClick={handleConfirmDeletePlaylist}
-            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-red-500 text-red-500 hover:bg-red-500 hover:text-white text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer flex justify-center items-center"
+            className={`${PAGE_BTN_DANGER} flex-1`}
           >
             Delete
           </button>
@@ -934,14 +951,14 @@ export default function LibraryPage() {
           <button
             onClick={() => setVisibilityFor(null)}
             disabled={visibilityBusy}
-            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+            className={`${PAGE_BTN_SECONDARY} flex-1`}
           >
             Cancel
           </button>
           <button
             onClick={handleConfirmVisibility}
             disabled={visibilityBusy}
-            className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-secondary)] hover:opacity-90 text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer flex justify-center items-center disabled:opacity-50"
+            className={`${PAGE_BTN_PRIMARY} flex-1`}
           >
             {visibilityBusy ? "Updating…" : (visibilityFor?.isPublic ? "Make Private" : "Make Public")}
           </button>
@@ -1049,11 +1066,11 @@ function DeleteTrackModalContent({ isOpen, trackName, onClose, onConfirm }: Dele
         <div className="text-[length:var(--px-11)] font-light font-fira leading-[var(--px-15)] mt-[var(--px-10)] text-slate-300">
           Are you sure you want to delete <span className="font-semibold text-white">"{trackName}"</span>?
         </div>
-        <div className="text-left bg-white/5 border border-dotted border-white/10 p-[var(--px-15)] mt-[var(--px-15)] rounded-xs">
+        <div className="mt-[var(--px-15)] border border-[var(--rx-color-border-subtle)] bg-[rgba(255,255,255,0.02)] p-[var(--px-15)] text-left">
           <p className="text-[length:var(--px-11)] font-semibold font-helvetica text-white uppercase tracking-wider mb-[var(--px-8)]">
             This action is non-recoverable and will permanently delete:
           </p>
-          <ul className="list-disc pl-[var(--px-15)] text-[length:var(--px-11)] font-light font-fira text-slate-400 flex flex-col gap-[var(--px-4)]">
+          <ul className="list-disc pl-[var(--px-15)] font-fira text-[length:var(--px-11)] font-light text-[var(--rx-color-text-secondary)] opacity-70 flex flex-col gap-[var(--px-4)]">
             <li>His playback 30s chunk and peaks</li>
             <li>The embedding fingerprint from pyxis 1</li>
             <li>The playlist created by that track</li>
@@ -1065,17 +1082,17 @@ function DeleteTrackModalContent({ isOpen, trackName, onClose, onConfirm }: Dele
       <div className="mt-[var(--px-20)] flex justify-center items-center gap-[var(--px-10)] w-full">
         <button
           onClick={onClose}
-          className="flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer"
+          className={`${PAGE_BTN_SECONDARY} flex-1`}
         >
           Cancel
         </button>
         <button
           disabled={countdown > 0}
           onClick={onConfirm}
-          className={`flex-1 px-[var(--px-20)] py-[var(--px-10)] border border-dotted text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer flex justify-center items-center ${
+          className={`${PAGE_BTN_DANGER} flex-1 ${
             countdown > 0
-              ? 'border-red-500/30 text-red-500/30 cursor-not-allowed'
-              : 'border-red-500 text-red-500 hover:bg-red-500 hover:text-white'
+              ? 'pointer-events-none opacity-40'
+              : ''
           }`}
         >
           {countdown > 0 ? `Delete (${countdown}s)` : 'Delete'}

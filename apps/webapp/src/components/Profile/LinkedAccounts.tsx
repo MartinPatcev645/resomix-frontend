@@ -2,13 +2,13 @@ import React from "react";
 import {
   GoogleSignInButton,
   StatusMessage,
-  PROFILE_BTN_PRIMARY,
-  PROFILE_BTN_SECONDARY,
-  PROFILE_INSET_ROW,
-  PROFILE_KICKER,
-  PROFILE_PANEL,
-  PROFILE_ROW_META,
-  PROFILE_ROW_TITLE,
+  PAGE_BTN_PRIMARY,
+  PAGE_BTN_SECONDARY,
+  PAGE_INSET_ROW,
+  PAGE_KICKER,
+  PAGE_PANEL,
+  PAGE_ROW_META,
+  PAGE_ROW_TITLE,
 } from "@resomix/ui";
 import { getMyProfile, unlinkProvider, linkGoogleProvider } from "@resomix/api-client";
 import { useAppleTransfer } from "@resomix/hooks";
@@ -83,17 +83,17 @@ function ProviderRow({
   action: React.ReactNode;
 }) {
   return (
-    <div className={`${PROFILE_INSET_ROW} flex-wrap`}>
+    <div className={`${PAGE_INSET_ROW} flex-wrap`}>
       <div className="flex items-center gap-[var(--px-10)] min-w-0">
         {icon}
         <div className="min-w-0">
-          <div className={`${PROFILE_ROW_TITLE} flex items-center gap-[var(--px-8)]`}>
+          <div className={`${PAGE_ROW_TITLE} flex items-center gap-[var(--px-8)]`}>
             {name}
             <span className="rounded-[var(--rx-radius-tag,2px)] border border-[var(--rx-color-border-default)] px-[var(--px-6)] py-[var(--px-1)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">
               {role}
             </span>
           </div>
-          <div className={`${PROFILE_ROW_META} flex items-center gap-[var(--px-6)]`}>
+          <div className={`${PAGE_ROW_META} flex items-center gap-[var(--px-6)]`}>
             <Dot on={connected} />
             <span className="truncate">{busy ? "Working…" : connected ? detail || "Connected" : "Not connected"}</span>
           </div>
@@ -186,8 +186,8 @@ export const LinkedAccounts: React.FC = () => {
   };
 
   return (
-    <div className={PROFILE_PANEL}>
-      <h3 className={PROFILE_KICKER}>Linked Accounts</h3>
+    <div className={PAGE_PANEL}>
+      <h3 className={PAGE_KICKER}>Linked Accounts</h3>
       <p className="mb-[var(--px-16)] mt-[var(--px-8)] font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)] opacity-70">
         Connect your accounts to sign in and export playlists. You can disconnect any of them at any time.
       </p>
@@ -207,7 +207,7 @@ export const LinkedAccounts: React.FC = () => {
                 type="button"
                 onClick={disconnectGoogle}
                 disabled={googleBusy}
-                className={PROFILE_BTN_SECONDARY}
+                className={PAGE_BTN_SECONDARY}
               >
                 Disconnect
               </button>
@@ -236,7 +236,7 @@ export const LinkedAccounts: React.FC = () => {
                 type="button"
                 onClick={disconnectApple}
                 disabled={apple.connectLoading || apple.statusLoading}
-                className={PROFILE_BTN_SECONDARY}
+                className={PAGE_BTN_SECONDARY}
               >
                 Disconnect
               </button>
@@ -245,7 +245,7 @@ export const LinkedAccounts: React.FC = () => {
                 type="button"
                 onClick={() => { setNotice(null); void apple.connect(); }}
                 disabled={apple.connectLoading || apple.statusLoading || !apple.ready}
-                className={PROFILE_BTN_PRIMARY}
+                className={PAGE_BTN_PRIMARY}
               >
                 {apple.connectLoading ? "Connecting…" : apple.ready ? "Connect" : "Preparing…"}
               </button>
@@ -285,7 +285,7 @@ export const LinkedAccounts: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowSetPw(false)}
-            className={`${PROFILE_BTN_SECONDARY} mt-[var(--px-6)]`}
+            className={`${PAGE_BTN_SECONDARY} mt-[var(--px-6)]`}
           >
             Got it
           </button>

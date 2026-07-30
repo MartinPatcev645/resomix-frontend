@@ -78,7 +78,7 @@ import VerifyEmailContent from "./Content/VerifyEmailContent";
 import Verify2FAContent from "./Content/Verify2FAContent";
 import ProfileContent from "./Content/ProfileContent";
 // Profile-screen chrome, so app-supplied panels (webapp's LinkedAccounts) match the page exactly.
-export * from "./Content/profileChrome";
+export * from "./Content/pageChrome";
 import ChangePasswordContent from "./Content/ChangePasswordContent";
 import SessionsContent from "./Content/SessionsContent";
 import { fetchSessionId, fetchGenerationTime } from "./utils/fetching";

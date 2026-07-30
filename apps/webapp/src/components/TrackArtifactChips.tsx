@@ -66,14 +66,21 @@ function Capsule({
   /** Stacked (mobile) variant: the capsule becomes a full-width row button. */
   fullWidth?: boolean;
 }) {
+  // Same chrome as the library's Refresh / Filters controls (square token-bordered mono block),
+  // just a touch shorter — 30px against their 36px — so the row's capsules stay secondary to it.
+  // The stacked mobile variant keeps the full 36px for a comfortable tap target.
   const base =
-    "inline-flex items-center gap-[var(--px-6)] px-[var(--px-12)] rounded-full border text-[length:var(--px-10)] font-fira uppercase tracking-wide whitespace-nowrap transition-colors select-none " +
-    (fullWidth ? "w-full justify-center py-[var(--px-8)]" : "py-[var(--px-5)]");
+    "inline-flex items-center gap-[var(--px-6)] whitespace-nowrap rounded-[var(--rx-radius-control)] border " +
+    "px-[var(--px-14)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] select-none " +
+    "transition-[background-color,border-color,color] duration-[var(--rx-duration-base)] " +
+    (fullWidth ? "w-full justify-center min-h-[var(--px-36)]" : "min-h-[var(--px-30)]");
   const byState: Record<CapsuleState, string> = {
     ready:
-      "border-[var(--color-primary-hover)]/50 text-white/90 hover:text-white hover:bg-[var(--color-primary-hover)]/15 hover:border-[var(--color-primary-hover)] cursor-pointer",
-    pending: "border-white/15 text-white/50 cursor-default animate-pulse",
-    muted: "border-white/10 text-white/40 hover:text-white/60 cursor-pointer",
+      "border-[var(--rx-color-border-default)] text-[var(--rx-color-text-primary)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] cursor-pointer",
+    pending:
+      "border-[var(--rx-color-border-subtle)] text-[var(--rx-color-disabled)] cursor-default animate-pulse",
+    muted:
+      "border-[var(--rx-color-border-subtle)] text-[var(--rx-color-text-muted)] opacity-60 hover:opacity-100 cursor-pointer",
   };
   const inner = (
     <>

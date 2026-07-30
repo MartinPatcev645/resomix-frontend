@@ -2,11 +2,11 @@ import React, { useState } from "react";
 
 // Menu-item styling (matches the parent library dropdown).
 const ITEM_CLASS =
-  "w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] text-[length:var(--px-12)] font-light font-helvetica hover:bg-white/5 active:bg-white/10 transition-colors duration-150 cursor-pointer text-white/80 hover:text-white";
+  "w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)] transition-colors duration-150 cursor-pointer hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] active:bg-[rgba(255,255,255,0.1)]";
 // Nested (sub-option) styling — indented so it reads as a child of "Export". Explicit pl/pr avoids
 // the px-/pl- collision.
 const SUB_ITEM_CLASS =
-  "w-full flex items-center gap-[var(--px-12)] pl-[var(--px-34)] pr-[var(--px-16)] py-[var(--px-8)] text-[length:var(--px-12)] font-light font-helvetica hover:bg-white/5 active:bg-white/10 transition-colors duration-150 cursor-pointer text-white/80 hover:text-white";
+  "w-full flex items-center gap-[var(--px-12)] pl-[var(--px-34)] pr-[var(--px-16)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)] transition-colors duration-150 cursor-pointer hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--rx-color-text-primary)] active:bg-[rgba(255,255,255,0.1)]";
 
 interface ExportSubmenuProps {
   /** Chosen an export target (Apple Music for now). Parent runs the entitlement gate + modal. */

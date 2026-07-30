@@ -5,15 +5,15 @@ import type {
   BillingUsageItem,
 } from "@resomix/api-client";
 import {
-  PROFILE_BTN_PRIMARY,
-  PROFILE_BTN_SECONDARY,
-  PROFILE_INSET_ROW,
-  PROFILE_KICKER,
-  PROFILE_PANEL,
-  PROFILE_ROW_META,
-  PROFILE_ROW_TITLE,
-  PROFILE_SUBLABEL,
-} from "../Content/profileChrome";
+  PAGE_BTN_PRIMARY,
+  PAGE_BTN_SECONDARY,
+  PAGE_INSET_ROW,
+  PAGE_KICKER,
+  PAGE_PANEL,
+  PAGE_ROW_META,
+  PAGE_ROW_TITLE,
+  PAGE_SUBLABEL,
+} from "../Content/pageChrome";
 
 /**
  * "Plan & Billing" card for the profile screen: current plan + status, this month's usage,
@@ -150,8 +150,8 @@ export function PlanBillingCard() {
   }
 
   return (
-    <div className={PROFILE_PANEL}>
-      <h2 className={`${PROFILE_KICKER} mb-[var(--px-16)]`}>Plan &amp; Billing</h2>
+    <div className={PAGE_PANEL}>
+      <h2 className={`${PAGE_KICKER} mb-[var(--px-16)]`}>Plan &amp; Billing</h2>
 
       {justSubscribed && (
         <div className="mb-[var(--px-14)] border border-[var(--rx-color-success,#63d28f)] bg-[rgba(99,210,143,0.08)] p-[var(--px-10)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-success,#63d28f)]">
@@ -160,20 +160,20 @@ export function PlanBillingCard() {
       )}
 
       {loading ? (
-        <div className={PROFILE_SUBLABEL}>Loading…</div>
+        <div className={PAGE_SUBLABEL}>Loading…</div>
       ) : (
         <div className="flex flex-col gap-[var(--px-18)]">
-          <div className={`${PROFILE_INSET_ROW} !items-start`}>
+          <div className={`${PAGE_INSET_ROW} !items-start`}>
             <div className="min-w-0">
-              <div className={PROFILE_ROW_TITLE}>
+              <div className={PAGE_ROW_TITLE}>
                 {planName}
                 {status === "past_due" ? " (past due)" : ""}
               </div>
-              {statusLine && <div className={PROFILE_ROW_META}>{statusLine}</div>}
+              {statusLine && <div className={PAGE_ROW_META}>{statusLine}</div>}
             </div>
             <div className="shrink-0">
               {isPaid ? (
-                <button type="button" onClick={goPortal} disabled={busy} className={PROFILE_BTN_SECONDARY}>
+                <button type="button" onClick={goPortal} disabled={busy} className={PAGE_BTN_SECONDARY}>
                   {busy ? "Opening…" : "Manage"}
                 </button>
               ) : (
@@ -183,7 +183,7 @@ export function PlanBillingCard() {
                     window.location.href = "/subscribe";
                   }}
                   disabled={busy}
-                  className={PROFILE_BTN_PRIMARY}
+                  className={PAGE_BTN_PRIMARY}
                 >
                   Upgrade
                 </button>
@@ -193,7 +193,7 @@ export function PlanBillingCard() {
 
           {summary?.usage?.length ? (
             <div className="flex flex-col gap-[var(--px-12)]">
-              <div className={PROFILE_SUBLABEL}>This month's usage</div>
+              <div className={PAGE_SUBLABEL}>This month's usage</div>
               {summary.usage.map((u) => (
                 <UsageMeter key={u.feature} item={u} />
               ))}
@@ -202,12 +202,12 @@ export function PlanBillingCard() {
 
           {invoices.length > 0 && (
             <div className="flex flex-col gap-[var(--px-8)]">
-              <div className={PROFILE_SUBLABEL}>Billing history</div>
+              <div className={PAGE_SUBLABEL}>Billing history</div>
               <div className="flex flex-col gap-[var(--px-6)]">
                 {invoices.slice(0, 6).map((inv) => (
                   <div
                     key={inv.stripe_invoice_id}
-                    className={`${PROFILE_INSET_ROW} !p-[var(--px-10)] gap-[var(--px-10)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)]`}
+                    className={`${PAGE_INSET_ROW} !p-[var(--px-10)] gap-[var(--px-10)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)]`}
                   >
                     <span className="shrink-0 tabular-nums text-[var(--rx-color-text-secondary)]">
                       {fmtDate(inv.created_at)}

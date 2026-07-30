@@ -7,19 +7,19 @@ import { PlanBillingCard } from "../Billing/PlanBillingCard";
 import { useProfileSettings } from "@resomix/hooks";
 
 import {
-  PROFILE_BTN_BASE as BTN_BASE,
-  PROFILE_BTN_DANGER as BTN_DANGER,
-  PROFILE_BTN_PRIMARY as BTN_PRIMARY,
-  PROFILE_BTN_SECONDARY as BTN_SECONDARY,
-  PROFILE_FIELD as FIELD,
-  PROFILE_FIELD_LABEL as FIELD_LABEL,
-  PROFILE_INSET_ROW as INSET_ROW,
-  PROFILE_KICKER as KICKER,
-  PROFILE_PANEL as PANEL,
-  PROFILE_PANEL_PLAIN as PANEL_PLAIN,
-  PROFILE_ROW_META,
-  PROFILE_ROW_TITLE,
-} from "./profileChrome";
+  PAGE_BTN_BASE as BTN_BASE,
+  PAGE_BTN_DANGER as BTN_DANGER,
+  PAGE_BTN_PRIMARY as BTN_PRIMARY,
+  PAGE_BTN_SECONDARY as BTN_SECONDARY,
+  PAGE_FIELD as FIELD,
+  PAGE_FIELD_LABEL as FIELD_LABEL,
+  PAGE_INSET_ROW as INSET_ROW,
+  PAGE_KICKER as KICKER,
+  PAGE_PANEL as PANEL,
+  PAGE_PANEL_PLAIN as PANEL_PLAIN,
+  PAGE_ROW_META,
+  PAGE_ROW_TITLE,
+} from "./pageChrome";
 
 interface ProfileContentProps {
   baseUrl?: string;
@@ -335,10 +335,10 @@ export default function ProfileContent({
               <div className="flex flex-col gap-[var(--px-10)]">
                 <div className={INSET_ROW}>
                   <div className="min-w-0">
-                    <div className={PROFILE_ROW_TITLE}>
+                    <div className={PAGE_ROW_TITLE}>
                       Password
                     </div>
-                    <div className={`${PROFILE_ROW_META} truncate`}>
+                    <div className={`${PAGE_ROW_META} truncate`}>
                       {/* Social-login accounts (has_password === false) haven't set one yet. */}
                       {user.has_password === false
                         ? "Set a password for your account"
@@ -355,10 +355,10 @@ export default function ProfileContent({
                 </div>
                 <div className={INSET_ROW}>
                   <div className="min-w-0">
-                    <div className={PROFILE_ROW_TITLE}>
+                    <div className={PAGE_ROW_TITLE}>
                       Two-Factor Authentication
                     </div>
-                    <div className={`${PROFILE_ROW_META} truncate`}>
+                    <div className={`${PAGE_ROW_META} truncate`}>
                       {twoFactorEnabled ? "Enabled" : "Disabled"}
                     </div>
                   </div>

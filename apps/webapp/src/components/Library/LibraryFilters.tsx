@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import type { LibraryFilters as LibraryFiltersValue } from "@resomix/stores";
+import { PAGE_BTN_PRIMARY, PAGE_BTN_SECONDARY, PAGE_FIELD, PAGE_FIELD_LABEL } from "@resomix/ui";
 
 type LibraryTab = "playlists" | "tracks";
 
@@ -21,12 +22,8 @@ const NUM_TRACKS_OPTIONS: { label: string; value: number | null }[] = [
   { label: "100+", value: 100 },
 ];
 
-const fieldClass =
-  "border border-dotted border-white/20 bg-transparent px-[var(--px-10)] py-[var(--px-6)] text-[length:var(--px-12)] font-fira text-white/90 rounded-xs focus:border-white/50 outline-none";
-const labelClass =
-  "text-[length:var(--px-9)] uppercase tracking-wide text-white/40 font-fira mb-[var(--px-4)]";
-const btnBase =
-  "flex items-center gap-[var(--px-8)] px-[var(--px-14)] py-[var(--px-6)] border border-dotted text-[length:var(--px-12)] font-fira tracking-wide uppercase transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 rounded-xs";
+const fieldClass = `${PAGE_FIELD} py-[var(--px-6)] font-fira text-[length:var(--px-12)]`;
+const labelClass = `${PAGE_FIELD_LABEL} mb-[var(--px-4)]`;
 
 /**
  * Library filter bar (search / date range / min-tracks) plus Apply, Clear and Refresh.
@@ -134,7 +131,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({
           type="button"
           onClick={() => onApply(draft)}
           disabled={applyDisabled}
-          className={`${btnBase} border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)]`}
+          className={PAGE_BTN_PRIMARY}
         >
           Apply
         </button>
@@ -142,7 +139,7 @@ export const LibraryFilters: React.FC<LibraryFiltersProps> = ({
           type="button"
           onClick={onClear}
           disabled={clearDisabled}
-          className={`${btnBase} border-white/20 hover:border-white/50 text-white/80`}
+          className={PAGE_BTN_SECONDARY}
         >
           Clear
         </button>
