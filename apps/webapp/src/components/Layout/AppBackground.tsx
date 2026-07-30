@@ -10,7 +10,7 @@ import voidGrainLight from "@/assets/void-field/void-grain-light.png";
  * `VoidField` takes its plate/grain as URLs so each app can bundle its own copy; binding them here
  * means every surface that needs a backdrop renders the same thing by construction. Use this rather
  * than reaching for an animation component directly — the app used to mix `VoidField` in the layout
- * with the older `StaticNoise` (aurora + stars) in the boot and upload loaders, so a hard refresh
+ * with the older `NebulaField` (aurora + stars) in the boot and upload loaders, so a hard refresh
  * flashed a background that no longer exists anywhere else in the product.
  */
 export function AppBackground() {

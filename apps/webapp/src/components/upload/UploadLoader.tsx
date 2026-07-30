@@ -86,7 +86,7 @@ const UploadLoader: React.FC = () => {
             aria-live="polite"
             aria-label="Loading playlist"
         >
-            {/* The app backdrop, not the old StaticNoise aurora — this overlay covers the whole
+            {/* The app backdrop, not the old NebulaField aurora — this overlay covers the whole
                 viewport, so a different background here read as the product changing skin. */}
             <AppBackground />
             <div className="absolute inset-0 w-full h-full">

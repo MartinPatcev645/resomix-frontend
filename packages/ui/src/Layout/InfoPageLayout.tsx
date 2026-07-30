@@ -14,7 +14,7 @@ export function InfoPageLayout({ LogoRFooter, children, mode, navbar, hero, base
         <div className="bg-[var(--color-primary-background)] lg:bg-[var(--color-secondary)] min-h-screen">
             {/* No background here on purpose: the app shell owns it (each app's AppBackground →
                 VoidField), so a layout must not paint its own or the two would disagree. This one
-                used to render the old StaticNoise aurora. */}
+                used to render the old NebulaField aurora. */}
 
             {/* Content layer */}
             <div

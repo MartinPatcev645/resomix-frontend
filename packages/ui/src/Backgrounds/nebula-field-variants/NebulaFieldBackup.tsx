@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export interface StaticNoiseProps {
+export interface NebulaFieldProps {
   /** Background colour on which the noise canvas sits (e.g. "#313132"). */
   color?: string;
   /** Opacity of the whole noise layer (0-1). */
@@ -18,7 +18,7 @@ export interface StaticNoiseProps {
  * By default it stretches to 100×100 % of its parent. Control placement (absolute / fixed …)
  * through the `className` prop just like any other element.
  */
-export const StaticNoise: React.FC<StaticNoiseProps> = ({
+export const NebulaField: React.FC<NebulaFieldProps> = ({
   color = "#313132",
   opacity = 1,
   zIndex,

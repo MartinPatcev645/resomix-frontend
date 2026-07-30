@@ -10,7 +10,7 @@ import { useResponsive } from "@resomix/hooks";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 
 /**
- * LandingLayout provides a persistent shell (Navbar, SideLines, Footer, StaticNoise)
+ * LandingLayout provides a persistent shell (Navbar, SideLines, Footer, AppBackground)
  * for the landing application.
  */
 export function LandingLayout() {

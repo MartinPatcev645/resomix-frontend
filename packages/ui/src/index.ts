@@ -35,7 +35,7 @@ import { ContourSphere } from "./Animations/ContourSphere";
 import { Remains } from "./Animations/Remains";
 import { RockRing } from "./Animations/RockRing";
 import { Terrain } from "./Animations/Terrain";
-import { StaticNoise } from "./Animations/StaticNoise";
+import { NebulaField } from "./Backgrounds/NebulaField";
 import { VoidField } from "./Backgrounds/VoidField";
 import { Tunnel } from "./Animations/Tunnel";
 import { MobileNavbar } from "./Layout/MobileNavbar";
@@ -134,7 +134,7 @@ export {
   Remains,
   RockRing,
   Terrain,
-  StaticNoise,
+  NebulaField,
   Tunnel,
   MobileNavbar,
   ToggleButton,

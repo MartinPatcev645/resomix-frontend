@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-export interface StaticNoiseProps {
+export interface NebulaFieldProps {
   /** Optional Tailwind/utility classes. Defaults to a fullscreen fixed overlay. */
   className?: string;
   /** Optional z-index so you can position above/below other layers. */
@@ -320,7 +320,19 @@ function buildProgram(
    React component
    ═══════════════════════════════════════════════════════════════════════════ */
 
-export const StaticNoise: React.FC<StaticNoiseProps> = ({
+/**
+ * NebulaField — the ORIGINAL app background: a WebGL emission nebula (deep red/pink, "seagull"
+ * shape) over a slowly rotating starfield with occasional shooting stars.
+ *
+ * It was called `StaticNoise`, which described neither the visuals nor the technique and made it
+ * easy to mistake for a grain/noise overlay — the product's grain actually lives in `VoidField`,
+ * which is the current background everywhere. This one is kept for reference and is NOT rendered by
+ * either app; see each app's `AppBackground` for what ships.
+ *
+ * Runtime behaviour if you do mount it: a single rAF loop, paused on `visibilitychange`, cancelled
+ * on unmount, with the GL context explicitly released via `loseContext()`.
+ */
+export const NebulaField: React.FC<NebulaFieldProps> = ({
   className = "pointer-events-none fixed inset-0",
   zIndex,
   fps = 60,
@@ -460,11 +472,11 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
     const handleContextLost = (event: Event) => {
       event.preventDefault();
       cancelAnimationFrame(raf);
-      console.warn("StaticNoise: WebGL context lost");
+      console.warn("NebulaField: WebGL context lost");
     };
 
     const handleContextRestored = () => {
-      console.log("StaticNoise: WebGL context restored");
+      console.log("NebulaField: WebGL context restored");
       initGL();
       start();
     };
@@ -524,4 +536,4 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
   );
 };
 
-export default StaticNoise;
+export default NebulaField;

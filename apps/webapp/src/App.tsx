@@ -84,7 +84,7 @@ function App() {
         backgroundColor: 'var(--color-secondary, #fff)',
         overflow: 'hidden'
       }}>
-        {/* Same backdrop as every other surface — this used to be StaticNoise, which is why a
+        {/* Same backdrop as every other surface — this used to be NebulaField, which is why a
             hard refresh flashed the old aurora/stars background before the shell mounted. */}
         <AppBackground />
         <div style={{

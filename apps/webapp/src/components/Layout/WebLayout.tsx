@@ -11,7 +11,7 @@ import { useResponsive, useUploadStore } from "@resomix/hooks";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 
 /**
- * WebLayout provides a persistent shell (Navigation, SideLines, Footer, StaticNoise)
+ * WebLayout provides a persistent shell (Navigation, SideLines, Footer, AppBackground)
  * that stays mounted during route transitions, preventing layout shifts.
  */
 export function WebLayout() {

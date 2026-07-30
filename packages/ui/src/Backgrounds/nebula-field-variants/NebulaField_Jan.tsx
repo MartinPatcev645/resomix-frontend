@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-export interface StaticNoiseProps {
+export interface NebulaFieldProps {
   /** Optional Tailwind/utility classes. Defaults to a fullscreen fixed overlay. */
   className?: string;
   /** Optional z-index so you can position above/below other layers. */
@@ -21,7 +21,7 @@ export interface StaticNoiseProps {
  * component. Behaviour, look and performance should be **identical** to the
  * HTML demo, merely wrapped for convenient reuse across pages.
  */
-export const StaticNoise: React.FC<StaticNoiseProps> = ({
+export const NebulaField: React.FC<NebulaFieldProps> = ({
   className = "pointer-events-none fixed inset-0",
   zIndex,
   fps = 20,
@@ -300,4 +300,4 @@ export const StaticNoise: React.FC<StaticNoiseProps> = ({
   );
 };
 
-export default StaticNoise;
+export default NebulaField;
