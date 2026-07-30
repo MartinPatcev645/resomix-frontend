@@ -1,13 +1,11 @@
 import React from "react";
-import { ButtonSleek, HoverFlow } from "@resomix/ui";
-import MenuSeparator from "@/assets/icons/menu_separator.svg";
+import { HoverFlow, PAGE_BTN_SECONDARY } from "@resomix/ui";
 import { ThumbIcon } from "@/components/index.ts";
 import { rateTrack, deleteTrackRating } from "@resomix/api-client";
 import { usePlaylistStore } from "@resomix/stores";
 import { BASE_BETA_URL } from "@resomix/config";
 import { formatDuration, formatPercentage, usePlaylistExport, useAccess, type AccessAction } from "@resomix/hooks";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
-import { WORKSPACE_BTN_SECONDARY } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
 
 interface MoreMenuProps {
     onClose?: () => void;
@@ -122,10 +120,29 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
     }, []);
 
     return (
-        <div className="w-full h-full min-h-screen relative overflow-hidden bg-[var(--color-primary-background)]">
-            <div className="flex flex-col justify-between h-full min-h-screen relative z-15 text-[var(--color-primary)] py-[var(--px-60)] px-[var(--px-40)] overflow-y-auto overflow-x-hidden">
-                <div className="flex flex-col gap-[var(--px-30)] items-center">
-                    <h2 className="text-[length:var(--px-22)] font-light uppercase font-helvetica text-center w-[var(--px-300)] truncate">
+        <div className="relative h-full min-h-screen w-full overflow-hidden bg-[var(--rx-color-surface-raised)] text-[var(--rx-color-text-primary)]">
+            {/* Header mirrors the mobile nav drawer: a sticky bar carrying the accent rule + mono
+                kicker, with the close control as a square token-bordered box. */}
+            <div className="sticky top-0 z-20 flex h-[var(--px-56)] items-center justify-between gap-[var(--px-12)] border-b border-[var(--rx-color-border-subtle)] bg-[var(--rx-color-surface-raised)] px-[var(--px-20)]">
+                <span className="flex min-w-0 items-center gap-[var(--px-10)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-muted)] before:block before:w-[var(--px-24)] before:shrink-0 before:border-t before:border-[var(--rx-color-accent)] before:content-['']">
+                    {isInput ? 'Playlist // Actions' : 'Track // Actions'}
+                </span>
+                <button
+                    type="button"
+                    onClick={onClose || (() => { })}
+                    aria-label="Close"
+                    id="beta-menu-close-button"
+                    className="flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 cursor-pointer items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)]"
+                >
+                    <svg viewBox="0 0 24 24" className="h-[var(--px-16)] w-[var(--px-16)]" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div className="relative z-15 flex h-full min-h-screen flex-col justify-between overflow-y-auto overflow-x-hidden px-[var(--px-20)] pb-[var(--px-60)] pt-[var(--px-24)]">
+                <div className="flex flex-col gap-[var(--px-24)]">
+                    <h2 className="min-w-0 truncate font-helvetica text-[length:var(--px-20)] font-medium uppercase leading-[var(--px-24)]">
                         <HoverFlow
                             text={name ?? ''}
                             maxChars={23}
@@ -135,29 +152,26 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                             maxWidth="300px"
                         />
                     </h2>
-                    <div className="">
-                        <img src={MenuSeparator} aria-hidden="true" loading="lazy" draggable={false} alt="MenuSeparator" className="w-[var(--px-4)] h-[var(--px-49)]" />
-                    </div>
                     <div className="flex flex-col gap-[var(--px-10)] w-full">
-                        <dl className="flex flex-col gap-[var(--px-10)] w-full">
+                        <dl className="flex w-full flex-col gap-[var(--px-10)] border border-[var(--rx-color-border-subtle)] bg-[rgba(255,255,255,0.02)] p-[var(--px-14)]">
                             <div className="flex w-full justify-between">
-                                <dt className="text-left text-[length:var(--px-14)] font-light font-fira">Label:</dt>
-                                <dd className="text-right text-[length:var(--px-14)] font-light font-fira truncate max-w-[var(--px-220)]">{label && label.trim() !== '' ? label : '-'}</dd>
+                                <dt className="text-left font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">Label:</dt>
+                                <dd className="max-w-[var(--px-220)] truncate text-right font-fira text-[length:var(--px-11)] text-[var(--rx-color-text-primary)]">{label && label.trim() !== '' ? label : '-'}</dd>
                             </div>
                             <div className="flex w-full justify-between">
-                                <dt className="text-left text-[length:var(--px-14)] font-light font-fira">Duration:</dt>
-                                <dd className="text-right text-[length:var(--px-14)] font-light font-fira truncate max-w-[var(--px-220)]">{duration !== undefined ? formatDuration(duration) : '--:--'}</dd>
+                                <dt className="text-left font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">Duration:</dt>
+                                <dd className="max-w-[var(--px-220)] truncate text-right font-fira text-[length:var(--px-11)] text-[var(--rx-color-text-primary)]">{duration !== undefined ? formatDuration(duration) : '--:--'}</dd>
                             </div>
                             {!isInput && (
                                 <div className="flex w-full justify-between">
-                                    <dt className="text-left text-[length:var(--px-14)] font-light font-fira">Score:</dt>
-                                    <dd className="text-right text-[length:var(--px-14)] font-light font-fira truncate max-w-[var(--px-220)]">{score !== null && score !== undefined ? formatPercentage(score, 2) : '—'}</dd>
+                                    <dt className="text-left font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">Score:</dt>
+                                    <dd className="max-w-[var(--px-220)] truncate text-right font-fira text-[length:var(--px-11)] text-[var(--rx-color-text-primary)]">{score !== null && score !== undefined ? formatPercentage(score, 2) : '—'}</dd>
                                 </div>
                             )}
 
                             {!isInput && (
                                 <div className="flex w-full justify-between mt-[var(--px-20)]">
-                                    <div className="text-left text-[length:var(--px-14)] font-light font-fira">Feedback:</div>
+                                    <div className="text-left font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">Feedback:</div>
                                     <div className="flex items-center justify-end w-[var(--px-80)] gap-[var(--px-30)]">
                                         {(() => {
                                             const currentRating = trackId ? trackRatings[trackId] : undefined;
@@ -188,45 +202,78 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                                 </div>
                             )}
                             <div className="flex w-full justify-between mt-[var(--px-20)]">
-                                <dt className="text-left text-[length:var(--px-14)] font-light font-fira">Status:</dt>
-                                <dd className="text-right text-[length:var(--px-14)] font-light font-fira truncate max-w-[var(--px-220)]">Active</dd>
+                                <dt className="text-left font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">Status:</dt>
+                                <dd className="max-w-[var(--px-220)] truncate text-right font-fira text-[length:var(--px-11)] text-[var(--rx-color-text-primary)]">Active</dd>
                             </div>
                             <div className="flex w-full justify-between">
-                                <dt className="text-left text-[length:var(--px-14)] font-light font-fira">Mode:</dt>
-                                <dd className="text-right text-[length:var(--px-14)] font-light font-fira truncate max-w-[var(--px-220)]">Universal</dd>
+                                <dt className="text-left font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">Mode:</dt>
+                                <dd className="max-w-[var(--px-220)] truncate text-right font-fira text-[length:var(--px-11)] text-[var(--rx-color-text-primary)]">Universal</dd>
                             </div>
                             <div className="flex w-full justify-between">
-                                <dt className="text-left text-[length:var(--px-14)] font-light font-fira">Peaks:</dt>
-                                <dd className="text-right text-[length:var(--px-14)] font-light font-fira truncate max-w-[var(--px-220)]">Loaded</dd>
+                                <dt className="text-left font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">Peaks:</dt>
+                                <dd className="max-w-[var(--px-220)] truncate text-right font-fira text-[length:var(--px-11)] text-[var(--rx-color-text-primary)]">Loaded</dd>
                             </div>
                             <div className="flex w-full justify-between">
-                                <dt className="text-left text-[length:var(--px-14)] font-light font-fira">ID:</dt>
-                                <dd className="text-right text-[length:var(--px-14)] font-light font-fira truncate max-w-[var(--px-220)]">{trackId}</dd>
+                                <dt className="text-left font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">ID:</dt>
+                                <dd className="max-w-[var(--px-220)] truncate text-right font-fira text-[length:var(--px-11)] text-[var(--rx-color-text-primary)]">{trackId}</dd>
                             </div>
                         </dl>
                     </div>
-                    <div className="flex flex-col gap-[var(--px-10)] w-full px-[var(--px-3)]">
+                    {/* Actions — plain buttons on the app's standard secondary control, replacing
+                        the old white ButtonSleek pills. No "Close" here: the header ✕ is the exit,
+                        as in every dialog. */}
+                    <div className="flex w-full flex-col gap-[var(--px-10)]">
                         {!isInput && (
-                            <div className="w-full flex flex-col">
-                                <ButtonSleek transparent={true} className={`${WORKSPACE_BTN_SECONDARY} w-[var(--px-276)] text-[length:var(--px-14)] playlist-sonic-discovery-button`} text="Chain Discover using this Track" customWidth="w-full" onClick={() => {
+                            <button
+                                type="button"
+                                className={`${PAGE_BTN_SECONDARY} w-full playlist-sonic-discovery-button`}
+                                onClick={() => {
                                     onClose?.();
                                     window.open(`${BASE_BETA_URL}/sonic-discovery?discover=${trackId}`, '_blank');
-                                }} id={`playlist-table-sonic-discovery-${trackId}`} />
-                            </div>
+                                }}
+                                id={`playlist-table-sonic-discovery-${trackId}`}
+                            >
+                                Chain Discover using this Track
+                            </button>
                         )}
                         {isInput && (
-                            <div className="w-full flex gap-2 flex-col">
-                                <ButtonSleek transparent={true} className={`${WORKSPACE_BTN_SECONDARY} w-[var(--px-276)] text-[length:var(--px-14)] playlist-export-button`} text={exportButtonText} customWidth="w-full" onClick={handleExportPlaylist} id={`playlist-hero-export-button`} />
-                                <ButtonSleek transparent={true} className={`${WORKSPACE_BTN_SECONDARY} w-[var(--px-276)] text-[length:var(--px-14)] playlist-apple-export-button`} text="Export to Apple Music" customWidth="w-full" onClick={handleAppleExport} id={`playlist-hero-apple-export-button`} />
-                                <ButtonSleek transparent={true} className={`${WORKSPACE_BTN_SECONDARY} w-[var(--px-276)] text-[length:var(--px-14)] playlist-embed-button`} text="Embed (iframe)" customWidth="w-full" onClick={handleEmbed} id={`playlist-hero-embed-button`} />
-                                <ButtonSleek transparent={true} className={`${WORKSPACE_BTN_SECONDARY} w-[var(--px-276)] text-[length:var(--px-14)] playlist-share-button`} text="Share" customWidth="w-full" onClick={() => {
-                                    withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => onShare?.());
-                                }} id={`playlist-hero-share-button`} />
-                            </div>
+                            <>
+                                <button
+                                    type="button"
+                                    className={`${PAGE_BTN_SECONDARY} w-full playlist-export-button`}
+                                    onClick={handleExportPlaylist}
+                                    id="playlist-hero-export-button"
+                                >
+                                    {exportButtonText}
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${PAGE_BTN_SECONDARY} w-full playlist-apple-export-button`}
+                                    onClick={handleAppleExport}
+                                    id="playlist-hero-apple-export-button"
+                                >
+                                    Export to Apple Music
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${PAGE_BTN_SECONDARY} w-full playlist-embed-button`}
+                                    onClick={handleEmbed}
+                                    id="playlist-hero-embed-button"
+                                >
+                                    Embed (iframe)
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${PAGE_BTN_SECONDARY} w-full playlist-share-button`}
+                                    onClick={() => {
+                                        withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => onShare?.());
+                                    }}
+                                    id="playlist-hero-share-button"
+                                >
+                                    Share
+                                </button>
+                            </>
                         )}
-                        <div className="w-full flex flex-col">
-                            <ButtonSleek transparent={true} className={`${WORKSPACE_BTN_SECONDARY} w-[var(--px-276)] text-[length:var(--px-14)] menu-link`} text="Close" customWidth="w-full" onClick={onClose || (() => { })} id={`beta-menu-close-button`} />
-                        </div>
                     </div>
                 </div>
             </div>

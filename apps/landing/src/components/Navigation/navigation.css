@@ -577,7 +577,7 @@
 }
 
 .nav-mm-note {
-  border-top: 1px dotted rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--rx-color-border-subtle, rgba(255, 255, 255, 0.09));
   margin-top: 1rem;
   padding-top: 0.75rem;
   font-family: var(--font-fira, 'Fira Code', monospace);
@@ -704,13 +704,18 @@
 }
 
 /* Mobile drawer */
+/* Drawer — same precision-industrial language as the dialogs and page panels: token colours,
+   square corners, and the accent rule marking the header. The backdrop matches the dialog shell
+   (black/60 + blur) so opening the drawer feels like the rest of the product. */
 .nav-drawer {
   position: fixed;
   inset: 0;
   height: 100dvh;
   z-index: 120;
   display: none;
-  background: rgba(6, 6, 6, 0.6);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .nav-drawer.is-open {
@@ -724,8 +729,8 @@
   bottom: 0;
   width: min(26.25rem, 100%);
   padding-top: env(safe-area-inset-top, 0);
-  background: #0b0b0b;
-  border-left: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--rx-color-surface-raised, #171717);
+  border-left: 1px solid var(--rx-color-border-default, rgba(255, 255, 255, 0.16));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -741,16 +746,29 @@
   justify-content: space-between;
   height: 3.5rem;
   padding: 0 1.25rem;
-  background: #0b0b0b;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--rx-color-surface-raised, #171717);
+  border-bottom: 1px solid var(--rx-color-border-subtle, rgba(255, 255, 255, 0.09));
 }
 
+/* Mono kicker preceded by the accent rule — the product's header signature, as on the workspace,
+   Library, Profile and every dialog. */
 .nav-drawer-top .nav-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
   font-family: var(--font-fira, 'Fira Code', monospace);
   font-size: 0.6875rem;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: #b9b9b9;
+  color: var(--rx-color-text-muted, rgba(255, 255, 255, 0.72));
+}
+
+.nav-drawer-top .nav-lbl::before {
+  content: "";
+  display: block;
+  width: 1.5rem;
+  flex: none;
+  border-top: 1px solid var(--rx-color-accent, #ee4a26);
 }
 
 .nav-drawer-x {
@@ -760,9 +778,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  color: #fff;
+  border: 1px solid var(--rx-color-border-default, rgba(255, 255, 255, 0.16));
+  border-radius: var(--rx-radius-control, 2px);
+  color: var(--rx-color-text-primary, #fff);
+  cursor: pointer;
+  transition: border-color var(--rx-duration-base, 160ms) ease,
+              background-color var(--rx-duration-base, 160ms) ease;
+}
+
+.nav-drawer-x:hover {
+  border-color: var(--rx-color-border-strong, rgba(255, 255, 255, 0.24));
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .nav-drawer-x svg {
@@ -785,7 +811,7 @@
 }
 
 .nav-acc {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--rx-color-border-subtle, rgba(255, 255, 255, 0.09));
 }
 
 .nav-acc-btn {
@@ -800,7 +826,8 @@
   font-size: 0.8125rem;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: #ffffff;
+  color: var(--rx-color-text-primary, #ffffff);
+  cursor: pointer;
 }
 
 .nav-acc-btn .nav-caret {
@@ -820,7 +847,7 @@
 }
 
 .nav-acc-btn[aria-expanded="true"] {
-  color: var(--color-primary, #ee4a26);
+  color: var(--rx-color-accent, #ee4a26);
 }
 
 .nav-acc-body {
@@ -867,7 +894,7 @@
 .nav-drawer .nav-mm-col + .nav-mm-col {
   border-left: 0;
   padding-left: 0;
-  border-top: 1px dotted rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--rx-color-border-subtle, rgba(255, 255, 255, 0.09));
   margin-top: 1.25rem;
   padding-top: 1.25rem;
 }
