@@ -1,9 +1,10 @@
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import '../i18n.ts';
 import { SiteHeader } from '../components/Navigation/SiteHeader.tsx';
+import { BASE_BETA_URL } from '@resomix/config';
 import { useAuthStore } from '@resomix/stores';
 
 vi.mock('@resomix/hooks', async (importOriginal) => {
@@ -30,10 +31,26 @@ function renderHeader(variant: 'desktop' | 'mobile', path = '/partners') {
   );
 }
 
-/** Open the account dropdown and return its menu. */
-function openAccountMenu() {
-  fireEvent.click(screen.getByRole('button', { name: /account/i }));
-  return screen.getByRole('menu', { name: /account menu/i });
+/**
+ * The account control lives in a different rail per variant.
+ *
+ * Queried through the DOM rather than by ARIA role on purpose: vitest runs with `css: true`, and
+ * `.nav-mrow` (the mobile row) is `display: none` in the base stylesheet — it is revealed by a
+ * max-width media query that jsdom never applies. That makes the whole mobile header invisible to
+ * `getByRole`, so role queries silently find nothing on the variant we most need to assert on.
+ */
+const rail = (variant: 'desktop' | 'mobile') =>
+  document.querySelector<HTMLElement>(
+    variant === 'mobile' ? '.nav-mrow-right' : '#site-header .nav-cl-right',
+  )!;
+
+/** Open the account dropdown in the given rail and return its item labels, in order. */
+function openAccountMenu(variant: 'desktop' | 'mobile'): string[] {
+  const trigger = rail(variant).querySelector<HTMLElement>('button.nav-acct')!;
+  fireEvent.click(trigger);
+  return Array.from(rail(variant).querySelectorAll('[role="menuitem"]')).map((el) =>
+    (el.textContent ?? '').trim(),
+  );
 }
 
 describe('landing header account control', () => {
@@ -46,20 +63,18 @@ describe('landing header account control', () => {
       useAuthStore.setState({ isAuthenticated: false, user: null } as never);
     });
 
-    // Signing in happens on the webapp, and the post-login redirect is resolved by the WEBAPP's
-    // router — so it must be a webapp path. Passing the landing path (e.g. /partners) used to
-    // land people on beta.resomix.com/partners, a 404, right after a successful sign-in.
+    // Signing in happens on the WEBAPP, and the post-login redirect is resolved by the webapp's
+    // router — so it has to be a webapp path. Passing the current landing path (e.g. /partners)
+    // used to drop people on beta.resomix.com/partners, a 404, right after a successful sign-in.
     it.each(['desktop', 'mobile'] as const)(
       'sends %s to the beta login and back to the workspace, not to a landing path',
       (variant) => {
         renderHeader(variant, '/partners');
 
-        const href = screen
-          .getAllByRole('link', { name: /account/i })[0]
-          .getAttribute('href')!;
+        const href = rail(variant).querySelector('a.nav-acct')!.getAttribute('href')!;
         const url = new URL(href);
 
-        expect(url.host).toContain('beta');
+        expect(href.startsWith(BASE_BETA_URL)).toBe(true);
         expect(url.pathname).toBe('/auth/login');
         expect(url.searchParams.get('redirect')).toBe('/');
         expect(href).not.toContain('partners');
@@ -77,21 +92,15 @@ describe('landing header account control', () => {
 
     it('offers only Logout on mobile', () => {
       renderHeader('mobile');
-      const menu = openAccountMenu();
-
-      const labels = within(menu)
-        .getAllByRole('menuitem')
-        .map((el) => el.textContent?.trim());
-
-      expect(labels).toEqual(['Logout']);
+      expect(openAccountMenu('mobile')).toEqual(['Logout']);
     });
 
     it('still offers the full menu on desktop', () => {
       renderHeader('desktop');
-      const menu = openAccountMenu();
+      const labels = openAccountMenu('desktop');
 
-      expect(within(menu).getByRole('menuitem', { name: /logout/i })).toBeInTheDocument();
-      expect(within(menu).getAllByRole('menuitem').length).toBeGreaterThan(1);
+      expect(labels).toContain('Logout');
+      expect(labels.length).toBeGreaterThan(1);
     });
   });
 });
