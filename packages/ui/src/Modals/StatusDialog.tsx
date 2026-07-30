@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Dialog, type DialogAction } from "./Dialog";
 
 /**
@@ -12,7 +12,16 @@ import { Dialog, type DialogAction } from "./Dialog";
  *
  * There is no "Close" button — the shell's ✕ is the universal exit, so a Close action would just
  * duplicate it. `action` is for a real follow-up ("View playlist", "Try again"), not for dismissing.
+ *
+ * These fire on almost every mutation (renamed, cover updated, rated, exported, link copied…), so a
+ * terminal status DISMISSES ITSELF after 2.5s rather than making the user close a modal that only
+ * says "done". Two states never auto-close, on purpose:
+ *   • `loading` — not terminal; it closes when the work finishes.
+ *   • anything with an `action` — the user has something to do here, so taking it away mid-reach
+ *     would be worse than leaving it up.
+ * Closing early via ✕ / backdrop / Escape works throughout; `autoDismiss={false}` opts out.
  */
+const AUTO_DISMISS_MS = 2500;
 export type StatusKind = "loading" | "success" | "error" | "info";
 
 export interface StatusDialogProps {
@@ -25,6 +34,8 @@ export interface StatusDialogProps {
   action?: DialogAction;
   /** Overrides the per-state mono kicker (e.g. "Playlist // Export"). */
   eyebrow?: string;
+  /** Opt out of the 2.5s self-dismiss for a message that must be read. Defaults to true. */
+  autoDismiss?: boolean;
 }
 
 /* ── Glyphs ────────────────────────────────────────────────────────────────────────────────────
@@ -100,9 +111,25 @@ export const StatusDialog: React.FC<StatusDialogProps> = ({
   message,
   action,
   eyebrow,
+  autoDismiss = true,
 }) => {
   const Glyph = GLYPH[status];
   const loading = status === "loading";
+  const hasAction = Boolean(action);
+
+  // Held in a ref so an inline `onClose={() => …}` (which most callers pass) can't restart the
+  // timer on every parent render — that would keep the dialog open indefinitely.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  useEffect(() => {
+    if (!isOpen || loading || hasAction || !autoDismiss) return;
+    const timer = window.setTimeout(() => onCloseRef.current(), AUTO_DISMISS_MS);
+    return () => window.clearTimeout(timer);
+    // Keyed on the open/status cycle only: a fresh status restarts the countdown, a re-render does not.
+  }, [isOpen, loading, hasAction, autoDismiss, status]);
 
   // No dismiss button — the ✕ closes it. Only a genuine follow-up action gets a footer.
   const actions: DialogAction[] =
