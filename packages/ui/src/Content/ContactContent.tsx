@@ -1,6 +1,6 @@
 import { useContactSubmit } from "@resomix/hooks";
 import { StatusMessage } from "../Elements/StatusMessage";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useAuthStore } from "@resomix/stores";
 
 import {
@@ -37,6 +37,16 @@ const MAIL_LINK =
 
 interface ContactContentProps {
   baseUrl?: string;
+  /**
+   * The "go back" control, supplied by the host app so the exit stays inside that app.
+   *
+   * This page renders in BOTH apps and they exit to different places: the landing site sends you
+   * to its own home, the webapp sends you to Sonic Discovery. The webapp passes its
+   * `BackToHomeButton`, which navigates client-side (staying in the SPA) exactly like the one on
+   * the Library page. Omit it — as the landing site does — and the `baseUrl` "Home" link below is
+   * used instead.
+   */
+  backControl?: ReactNode;
 }
 
 /** One support channel — rendered as a panel in the aside. */
@@ -65,7 +75,10 @@ function ChannelPanel({
   );
 }
 
-export default function ContactContent({ baseUrl = "https://resomix.com" }: ContactContentProps) {
+export default function ContactContent({
+  baseUrl = "https://resomix.com",
+  backControl,
+}: ContactContentProps) {
   const { user, isAuthenticated } = useAuthStore();
   const { form, handleChange, handleSubmit, submitting, setFormValues } = useContactSubmit();
 
@@ -114,14 +127,18 @@ export default function ContactContent({ baseUrl = "https://resomix.com" }: Cont
           </p>
         </header>
 
-        {/* Same control and label treatment as the Library and Profile back buttons. */}
+        {/* Back control — app-supplied when the host needs to stay inside itself (the webapp
+            passes its Sonic Discovery button); otherwise the landing "Home" link. Same chrome and
+            chevron as the Library and Profile back buttons either way. */}
         <div className="mb-[var(--px-24)]">
-          <a href={baseUrl} aria-label="Home" className={`${BTN_SECONDARY} gap-[var(--px-6)]`}>
-            <svg viewBox="0 0 24 24" className="h-[var(--px-14)] w-[var(--px-14)] shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Home
-          </a>
+          {backControl ?? (
+            <a href={baseUrl} aria-label="Back to Home" className={`${BTN_SECONDARY} gap-[var(--px-6)]`}>
+              <svg viewBox="0 0 24 24" className="h-[var(--px-14)] w-[var(--px-14)] shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              Back to Home
+            </a>
+          )}
         </div>
 
         {/* Form gets the wide column; channels sit alongside on desktop. DOM order puts the form

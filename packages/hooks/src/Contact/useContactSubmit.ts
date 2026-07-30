@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { submitContactForm } from '@resomix/api-client';
 
 export interface ContactFormState {
@@ -32,9 +32,18 @@ export const useContactSubmit = () => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const setFormValues = (values: Partial<ContactFormState>) => {
+  /**
+   * MUST stay referentially stable. ContactContent pre-fills the signed-in user's name/email from
+   * an effect that lists this in its dependency array — when a fresh function was returned on every
+   * render, that effect re-ran on every render, setForm produced a new object, and the re-render
+   * produced another new function: an infinite loop ("Maximum update depth exceeded") that froze
+   * the page and blocked router navigations away from it.
+   *
+   * The functional setState form means there is nothing to depend on, so `[]` is correct here.
+   */
+  const setFormValues = useCallback((values: Partial<ContactFormState>) => {
     setForm(prev => ({ ...prev, ...values }));
-  };
+  }, []);
 
   const handleSubmit = async (): Promise<{ success: boolean; message?: string }> => {
     const error = validate();
