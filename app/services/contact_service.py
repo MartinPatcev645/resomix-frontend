@@ -72,8 +72,18 @@ class ContactService:
             if contact_type not in ('consumer', 'partner'):
                 contact_type = 'consumer'
             company_name = contact_data.get('company_name')
+            role = contact_data.get('role')
+            partner_type = contact_data.get('partner_type')
+            preferred_path = contact_data.get('preferred_path')
+            catalog_context = contact_data.get('catalog_context')
             catalog_size = contact_data.get('catalog_size')
             estimated_calls = contact_data.get('estimated_calls')
+
+            # The B2B fields only ever belong to a partner submission. Drop them defensively for
+            # consumer contacts so a stray payload can't put partner data on a /contact row.
+            if contact_type != 'partner':
+                company_name = role = partner_type = preferred_path = None
+                catalog_context = catalog_size = estimated_calls = None
 
             # Give partner requests a useful default subject for the admin list.
             if contact_type == 'partner' and not subject:
@@ -90,6 +100,10 @@ class ContactService:
                 message=message,
                 contact_type=contact_type,
                 company_name=company_name,
+                role=role,
+                partner_type=partner_type,
+                preferred_path=preferred_path,
+                catalog_context=catalog_context,
                 catalog_size=catalog_size,
                 estimated_calls=estimated_calls,
             )
@@ -118,6 +132,10 @@ class ContactService:
                     "subject": subject,
                     "message": message,
                     "company_name": company_name,
+                    "role": role,
+                    "partner_type": partner_type,
+                    "preferred_path": preferred_path,
+                    "catalog_context": catalog_context,
                     "catalog_size": catalog_size,
                     "estimated_calls": estimated_calls,
                     "is_signed_in": bool(current_user),
@@ -317,11 +335,14 @@ class ContactService:
             with open(os.path.join(export_dir, filename), 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
                 writer.writerow(['ID', 'Type', 'User ID', 'Name', 'Email', 'Phone', 'Subject', 'Message',
-                                 'Company', 'Catalog Size', 'Est. Monthly Calls', 'Status', 'Submitted At'])
+                                 'Company', 'Role', 'Partner Type', 'Preferred Path', 'Catalogue Context',
+                                 'Catalog Size', 'Est. Monthly Calls', 'Status', 'Submitted At'])
                 for c in contact_list:
                     writer.writerow([c.id, getattr(c, 'contact_type', '') or '', c.user_id or '', c.name or '',
                                    c.email or '', c.phone or '', c.subject or '', c.message or '',
-                                   getattr(c, 'company_name', '') or '', getattr(c, 'catalog_size', '') or '',
+                                   getattr(c, 'company_name', '') or '', getattr(c, 'role', '') or '',
+                                   getattr(c, 'partner_type', '') or '', getattr(c, 'preferred_path', '') or '',
+                                   getattr(c, 'catalog_context', '') or '', getattr(c, 'catalog_size', '') or '',
                                    getattr(c, 'estimated_calls', '') or '', c.status,
                                    c.submitted_at.isoformat() if c.submitted_at else ''])
             

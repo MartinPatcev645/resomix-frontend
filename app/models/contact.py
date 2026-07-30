@@ -61,8 +61,18 @@ class Contact(Base):
         server_default='consumer',
         index=True,
     )
-    # B2B partner-request fields (the /partners developer form). NULL for consumer contacts.
+    # B2B partner-request fields. NULL for consumer contacts (/contact), which never set them.
+    #
+    # Two landing forms write partner rows and they ask different questions, so a given partner
+    # submission fills only the subset its form collects — every one of these stays nullable:
+    #   • /partners       → role, partner_type, preferred_path, catalog_context
+    #   • /partners-pilot → role, partner_type, catalog_size
+    # `estimated_calls` is retained for historical rows; no current form collects it.
     company_name: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
+    role: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)             # job title / role
+    partner_type: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)      # label, distributor, store…
+    preferred_path: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)    # pilot, API+ingestion, …
+    catalog_context: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # catalogue / product context
     catalog_size: Mapped[Optional[str]] = mapped_column(String(60), nullable=True)      # est. catalog tracks (free text)
     estimated_calls: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)  # est. monthly API calls / tier
 

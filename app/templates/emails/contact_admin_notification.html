@@ -54,9 +54,16 @@
                 {% if phone %}<tr><td class="k">Phone</td><td class="v">{{ phone }}</td></tr>{% endif %}
                 {% if subject %}<tr><td class="k">Subject</td><td class="v">{{ subject }}</td></tr>{% endif %}
                 {% if contact_type == 'partner' %}
+                {# Each partner form asks a different subset, so show only the answers we actually
+                   got — a row of "Not specified" per unasked question is just noise. Company is
+                   always required on both forms, so it stays unconditional. #}
                 <tr><td class="k">Company / legal name</td><td class="v">{{ company_name or '—' }}</td></tr>
-                <tr><td class="k">Estimated catalog size</td><td class="v">{{ catalog_size or 'Not specified' }}</td></tr>
-                <tr><td class="k">Estimated monthly calls</td><td class="v">{{ estimated_calls or 'Not specified' }}</td></tr>
+                {% if role %}<tr><td class="k">Role</td><td class="v">{{ role }}</td></tr>{% endif %}
+                {% if partner_type %}<tr><td class="k">Partner type</td><td class="v">{{ partner_type }}</td></tr>{% endif %}
+                {% if preferred_path %}<tr><td class="k">Preferred path</td><td class="v">{{ preferred_path }}</td></tr>{% endif %}
+                {% if catalog_context %}<tr><td class="k">Catalogue / product context</td><td class="v">{{ catalog_context }}</td></tr>{% endif %}
+                {% if catalog_size %}<tr><td class="k">Estimated catalog size</td><td class="v">{{ catalog_size }}</td></tr>{% endif %}
+                {% if estimated_calls %}<tr><td class="k">Estimated monthly calls</td><td class="v">{{ estimated_calls }}</td></tr>{% endif %}
                 {% endif %}
                 <tr><td class="k">Submitted at</td><td class="v">{{ submitted_at }}</td></tr>
             </table>

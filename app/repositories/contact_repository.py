@@ -59,12 +59,16 @@ class ContactRepository(BaseRepository[Contact]):
         message: Optional[str],
         contact_type: str = "consumer",
         company_name: Optional[str] = None,
+        role: Optional[str] = None,
+        partner_type: Optional[str] = None,
+        preferred_path: Optional[str] = None,
+        catalog_context: Optional[str] = None,
         catalog_size: Optional[str] = None,
         estimated_calls: Optional[str] = None,
     ) -> Contact:
         """
         Create a new contact submission.
-        
+
         Args:
             db: Database session
             user_id: Optional user ID
@@ -73,7 +77,11 @@ class ContactRepository(BaseRepository[Contact]):
             subject: Optional subject
             phone: Optional phone number
             message: Contact message
-            
+            contact_type: 'consumer' or 'partner'
+            company_name, role, partner_type, preferred_path, catalog_context,
+            catalog_size, estimated_calls: B2B qualification fields — each landing
+                partner form fills only the subset it asks for; the rest stay NULL.
+
         Returns:
             Created contact record
         """
@@ -86,6 +94,10 @@ class ContactRepository(BaseRepository[Contact]):
             message=message,
             contact_type=contact_type if contact_type in ("consumer", "partner") else "consumer",
             company_name=company_name,
+            role=role,
+            partner_type=partner_type,
+            preferred_path=preferred_path,
+            catalog_context=catalog_context,
             catalog_size=catalog_size,
             estimated_calls=estimated_calls,
             status='open'

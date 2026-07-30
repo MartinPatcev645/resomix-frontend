@@ -31,6 +31,39 @@ from app.models.user import User
 logger = logging.getLogger(__name__)
 
 
+def _serialize_contact(contact) -> Dict[str, Any]:
+    """Serialize a Contact row for the admin API.
+
+    Single source of truth for the shape, because there are three endpoints that return a contact
+    (list, detail, mark-status) and they used to each build their own dict by hand. All three
+    omitted ``contact_type`` and the B2B fields, so the admin table rendered every partner
+    submission as "Consumer" — the payload simply never carried the type.
+
+    ``getattr`` defaults keep this safe against a database that predates the partner columns.
+    """
+    return {
+        "id": contact.id,
+        "user_id": contact.user_id,
+        "name": contact.name,
+        "email": contact.email,
+        "subject": contact.subject,
+        "phone": contact.phone,
+        "message": contact.message,
+        "contact_type": getattr(contact, "contact_type", None) or "consumer",
+        # B2B qualification fields — NULL on consumer contacts and on whichever questions the
+        # submitting partner form does not ask.
+        "company_name": getattr(contact, "company_name", None),
+        "role": getattr(contact, "role", None),
+        "partner_type": getattr(contact, "partner_type", None),
+        "preferred_path": getattr(contact, "preferred_path", None),
+        "catalog_context": getattr(contact, "catalog_context", None),
+        "catalog_size": getattr(contact, "catalog_size", None),
+        "estimated_calls": getattr(contact, "estimated_calls", None),
+        "status": contact.status,
+        "submitted_at": contact.submitted_at.isoformat() if contact.submitted_at else None,
+    }
+
+
 class ContactController:
     """Controller for contact operations."""
     
@@ -212,18 +245,8 @@ class ContactController:
             contact = await self.contact_service.get_contact_by_id(db, contact_id)
             
             if contact:
-                contact_data = {
-                    "id": contact.id,
-                    "user_id": contact.user_id,
-                    "name": contact.name,
-                    "email": contact.email,
-                    "subject": contact.subject,
-                    "phone": contact.phone,
-                    "message": contact.message,
-                    "status": contact.status,
-                    "submitted_at": contact.submitted_at.isoformat() if contact.submitted_at else None
-                }
-                
+                contact_data = _serialize_contact(contact)
+
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = format_response(success=True, data=contact_data)
                 self.logging_service.log(
@@ -465,10 +488,7 @@ class ContactController:
         try:
             result = await self.contact_service.get_contact_list_admin(db, filters)
             if result.get("success"):
-                contact_list = [{"id": c.id, "user_id": c.user_id, "name": c.name, "email": c.email,
-                                "subject": c.subject, "phone": c.phone, "message": c.message, "status": c.status,
-                                "submitted_at": c.submitted_at.isoformat() if c.submitted_at else None}
-                               for c in result.get("data", [])]
+                contact_list = [_serialize_contact(c) for c in result.get("data", [])]
                 duration_ms = (time.time() - start_time) * 1000
                 response_data = {"success": True, "data": contact_list, "pagination": result.get("pagination")}
                 self.logging_service.log(async_db=db, level="INFO", category="ADMIN_ACTION",
@@ -601,11 +621,7 @@ class ContactController:
                     )
                     await db.commit()
 
-                contact = result.get("data")
-                contact_data = {"id": contact.id, "user_id": contact.user_id, "name": contact.name,
-                              "email": contact.email, "subject": contact.subject, "phone": contact.phone,
-                              "message": contact.message, "status": contact.status,
-                              "submitted_at": contact.submitted_at.isoformat() if contact.submitted_at else None}
+                contact_data = _serialize_contact(result.get("data"))
                 return JSONResponse(status_code=status.HTTP_200_OK,
                     content={"success": True, "data": contact_data, "message": result.get("message")})
             else:

@@ -34,8 +34,14 @@ class ContactRequest(BaseModel):
 
     # Which form this came from — drives admin categorization + which confirmation copy is sent.
     contact_type: Optional[str] = Field("consumer", description="'consumer' or 'partner'")
-    # B2B partner-request fields (ignored for consumer contacts).
+    # B2B partner-request fields (ignored for consumer contacts). Each landing form fills only the
+    # subset it asks for — /partners sends role/partner_type/preferred_path/catalog_context, the
+    # /partners-pilot form sends role/partner_type/catalog_size — so all of these stay optional.
     company_name: Optional[str] = Field(None, description="Legal / company name (B2B)", max_length=150)
+    role: Optional[str] = Field(None, description="Submitter's role / job title (B2B)", max_length=120)
+    partner_type: Optional[str] = Field(None, description="Partner type: label, distributor, store… (B2B)", max_length=80)
+    preferred_path: Optional[str] = Field(None, description="Preferred engagement path (B2B)", max_length=80)
+    catalog_context: Optional[str] = Field(None, description="Catalogue or product context, free text (B2B)", max_length=255)
     catalog_size: Optional[str] = Field(None, description="Estimated catalog size in tracks (B2B)", max_length=60)
     estimated_calls: Optional[str] = Field(None, description="Estimated monthly API calls / tier (B2B)", max_length=120)
 
@@ -121,6 +127,10 @@ class ContactEntity(BaseModel):
     message: Optional[str] = Field(None, description="Contact message")
     contact_type: Optional[str] = Field("consumer", description="'consumer' or 'partner'")
     company_name: Optional[str] = Field(None, description="Legal / company name (B2B)")
+    role: Optional[str] = Field(None, description="Submitter's role / job title (B2B)")
+    partner_type: Optional[str] = Field(None, description="Partner type (B2B)")
+    preferred_path: Optional[str] = Field(None, description="Preferred engagement path (B2B)")
+    catalog_context: Optional[str] = Field(None, description="Catalogue or product context (B2B)")
     catalog_size: Optional[str] = Field(None, description="Estimated catalog size in tracks (B2B)")
     estimated_calls: Optional[str] = Field(None, description="Estimated monthly API calls / tier (B2B)")
     status: StatusEnum = Field(StatusEnum.OPEN, description="Contact status")
