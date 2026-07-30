@@ -23,6 +23,8 @@ interface FormInputProps {
   disabled?: boolean;
   autoFocus?: boolean;
   autoComplete?: string;
+  /** Overrides the generated input id — only needed if two fields share a `name` on one page. */
+  id?: string;
 }
 
 export const FormInput: React.FC<FormInputProps> = ({
@@ -39,14 +41,20 @@ export const FormInput: React.FC<FormInputProps> = ({
   disabled = false,
   autoFocus = false,
   autoComplete,
+  id,
 }) => {
+  // A real <label for>, not a <span>: without it the input has NO accessible name, so assistive
+  // tech announces an unlabelled text field and clicking the label doesn't focus it.
+  const inputId = id ?? `field-${name}`;
+
   return (
     <div className="flex w-full flex-col items-start gap-[var(--px-8)]">
-      <span className={PAGE_FIELD_LABEL}>
+      <label htmlFor={inputId} className={PAGE_FIELD_LABEL}>
         {label}
         {optional && <span className="ml-[var(--px-6)] opacity-70">(optional)</span>}
-      </span>
+      </label>
       <input
+        id={inputId}
         name={name}
         type={type}
         value={value}

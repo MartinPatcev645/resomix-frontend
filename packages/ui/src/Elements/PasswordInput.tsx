@@ -15,6 +15,8 @@ interface PasswordInputProps {
   autoComplete?: string;
   showStrength?: boolean;
   strength?: "weak" | "medium" | "strong";
+  /** Overrides the generated input id — only needed if two fields share a `name` on one page. */
+  id?: string;
 }
 
 export const PasswordInput: React.FC<PasswordInputProps> = ({
@@ -31,8 +33,11 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
   autoComplete,
   showStrength = false,
   strength,
+  id,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+  // Matches FormInput: a real <label for> so the input has an accessible name.
+  const inputId = id ?? `field-${name}`;
 
   const getStrengthColor = () => {
     switch (strength) {
@@ -62,9 +67,10 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
 
   return (
     <div className="flex w-full flex-col items-start gap-[var(--px-8)]">
-      <span className={PAGE_FIELD_LABEL}>{label}</span>
+      <label htmlFor={inputId} className={PAGE_FIELD_LABEL}>{label}</label>
       <div className="relative w-full">
         <input
+          id={inputId}
           name={name}
           type={showPassword ? "text" : "password"}
           value={value}
