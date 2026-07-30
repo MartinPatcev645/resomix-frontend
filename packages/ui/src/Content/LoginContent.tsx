@@ -1,10 +1,41 @@
 import { useState, FormEvent, ChangeEvent, useEffect } from "react";
 import { useFormValidation, validateRequired } from "@resomix/hooks";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { FormInput } from "../Elements/FormInput";
 import { PasswordInput } from "../Elements/PasswordInput";
 import { GoogleSignInButton } from "../Auth/GoogleSignInButton";
+
+import {
+  PAGE_BTN_PRIMARY as BTN_PRIMARY,
+  PAGE_BTN_SECONDARY as BTN_SECONDARY,
+  PAGE_KICKER as KICKER,
+  PAGE_SUBLABEL as SUBLABEL,
+} from "./pageChrome";
+
+/**
+ * Sign-in screen in the precision-industrial theme, matching Profile / Library / Contact / 404:
+ * accent rule + mono kicker, large uppercase heading, then a single bordered panel on a solid
+ * surface carrying the credentials.
+ *
+ * Narrow single column on purpose — a login form has one job, so there is no sidebar and the
+ * primary action spans the panel.
+ *
+ * The sign-in logic is untouched: the same useFormValidation rules, the same login → 2FA /
+ * success / verify-email branches, and the same StatusMessage (including the resend-verification
+ * action).
+ *
+ * Two behavioural differences fall out of the markup, both fixes rather than redesign:
+ *  • Sign In is a real `type="submit"`. The old button was a ButtonSleek, which hardcodes
+ *    `type="button"` — so the form had NO submit control and pressing Enter in a field did
+ *    nothing. It now submits, as a login form should.
+ *  • Sign In disables itself while a request is in flight, so it cannot be double-fired.
+ */
+
+/** Small inline text link — "Forgot password?", "Register here". */
+const TEXT_LINK =
+  "cursor-pointer font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] " +
+  "text-[var(--rx-color-text-secondary)] underline-offset-2 transition-colors " +
+  "duration-[var(--rx-duration-base)] hover:text-[var(--rx-color-accent)] hover:underline";
 
 interface LoginContentProps {
   baseUrl?: string;
@@ -50,6 +81,18 @@ export default function LoginContent({
   const [showResendCTA, setShowResendCTA] = useState(false);
   const [resendPending, setResendPending] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+
+  /**
+   * Field errors stay hidden until the first submit attempt.
+   *
+   * The email field is autoFocused, so useFormValidation's blur validation fired the moment you
+   * clicked anywhere else on the page — greeting you with "Email or username is required" before
+   * you had typed a single character. Errors are only useful once you have actually tried to sign
+   * in; from that point they do live-update, because handleSubmit marks every field touched.
+   */
+  const fieldError = (name: keyof typeof form) =>
+    submitAttempted ? getFieldError(name) : undefined;
 
   useEffect(() => {
     try {
@@ -99,6 +142,11 @@ export default function LoginContent({
 
   const handleSubmit = async (e?: FormEvent) => {
     e?.preventDefault();
+
+    // Reveal errors from here on, and mark both fields touched so useFormValidation re-validates
+    // them as the user types — otherwise a message would sit there until the field was blurred.
+    setSubmitAttempted(true);
+    (Object.keys(form) as (keyof typeof form)[]).forEach((name) => setFieldTouched(name));
 
     if (!validateForm()) return;
 
@@ -225,29 +273,40 @@ export default function LoginContent({
   };
 
   return (
-    <section className="pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
-      <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-        <header className="mb-[var(--px-28)] text-center">
-          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
+    // Spacing matches the workspace shell and the other account pages: a small inset from the
+    // vertical side lines, no oversized top pad — the layout's <main> already offsets the header.
+    <section className="px-[var(--px-12)] pt-[var(--px-16)] pb-[var(--px-40)] tracking-[var(--px-1)]">
+      <div className="mx-auto w-full max-w-[var(--px-560)] text-[var(--rx-color-text-primary)]">
+        {/* Header — accent rule + mono kicker, then a left-aligned heading, as on Profile. */}
+        <header className="mb-[var(--px-24)]">
+          <p className="mb-[var(--px-16)] flex items-center gap-[var(--px-10)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-muted)] before:block before:w-[var(--px-32)] before:border-t before:border-[var(--rx-color-accent)] before:content-['']">
+            Account // Sign in
+          </p>
+          <h1 className="m-0 font-helvetica text-[length:var(--px-28)] font-medium uppercase leading-[var(--px-32)] md:text-[length:var(--px-36)] md:leading-[var(--px-40)]">
             Welcome Back
           </h1>
-          <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica">
-            Sign in to your account to continue
+          <p className="mt-[var(--px-12)] font-helvetica text-[length:var(--px-15)] font-light leading-[var(--px-22)] text-[var(--rx-color-text-secondary)] opacity-70">
+            Sign in to your account to continue.
           </p>
         </header>
 
-        <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
-          <div className="mb-[var(--px-24)]">
-            <a
-              href={baseUrl}
-              aria-label="Resomix home"
-              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
-            >
-              ← Back to Home
-            </a>
+        {/* baseUrl is the beta workspace in both apps, so this exits where Profile and Library do. */}
+        <div className="mb-[var(--px-24)]">
+          <a href={baseUrl} aria-label="Sonic Discovery" className={`${BTN_SECONDARY} gap-[var(--px-6)]`}>
+            <svg viewBox="0 0 24 24" className="h-[var(--px-14)] w-[var(--px-14)] shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Sonic Discovery
+          </a>
+        </div>
+
+        <div className="relative border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] before:absolute before:left-[var(--px-24)] before:top-0 before:block before:w-[var(--px-28)] before:border-t before:border-[var(--rx-color-accent)] before:content-['']">
+          <div className="flex flex-wrap items-center justify-between gap-[var(--px-12)] border-b border-[var(--rx-color-border-subtle)] bg-[rgba(255,255,255,0.02)] px-[var(--px-20)] py-[var(--px-14)]">
+            <p className={KICKER}>Credentials</p>
+            <span className={SUBLABEL}>Secure sign-in</span>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col w-full gap-[var(--px-20)]">
+          <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[var(--px-18)] p-[var(--px-20)]">
             <FormInput
               label="Email or Username"
               name="email_or_username"
@@ -259,7 +318,7 @@ export default function LoginContent({
               required
               autoFocus
               autoComplete="username"
-              error={getFieldError("email_or_username")}
+              error={fieldError("email_or_username")}
             />
 
             <PasswordInput
@@ -271,7 +330,7 @@ export default function LoginContent({
               placeholder="Enter your password"
               required
               autoComplete="current-password"
-              error={getFieldError("password")}
+              error={fieldError("password")}
             />
 
             <div className="flex justify-end">
@@ -281,72 +340,82 @@ export default function LoginContent({
                   e.preventDefault(); // prevents focus change (and blur)
                   onNavigateForgotPassword?.();
                 }}
-                className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
+                className={TEXT_LINK}
               >
-                Forgot Password?
+                Forgot password?
               </button>
             </div>
 
-            {/* Primary action + Google, side-by-side on wider screens (a vertical divider between),
-                stacked on mobile — keeps "Continue with Google" above the fold instead of below it. */}
-            <div className="mt-[var(--px-10)] flex flex-col sm:flex-row items-center justify-center gap-[var(--px-14)]">
-              <ButtonSleek
-                text={submitting ? "Signing in..." : "Sign In"}
-                onClick={handleSubmit}
-              />
+            {/* Sign In and Google sit side by side on one row. Sign In takes the leftover space;
+                the Google control cannot flex — GIS renders a fixed-width button and the wrapper
+                carries that width as an inline style — so it is the fixed member of the pair.
+                Below `sm` they stack, with an "or" between them.
+
+                `!` on the sizing because PAGE_BTN_BASE already sets min-h/px, and two arbitrary
+                values of the same utility resolve by stylesheet order, not by order in this
+                string. */}
+            <div className="flex flex-col items-stretch gap-[var(--px-12)] sm:flex-row sm:items-center">
+              <button
+                type="submit"
+                disabled={submitting}
+                className={`${BTN_PRIMARY} w-full !min-h-[var(--px-44)] !px-[var(--px-22)] sm:w-auto sm:flex-1`}
+              >
+                {submitting ? "Signing in..." : "Sign In"}
+              </button>
+
               {googleClientId && (
                 <>
-                  <span aria-hidden="true" className="hidden sm:block h-[var(--px-32)] w-px bg-current opacity-30" />
-                  <span aria-hidden="true" className="sm:hidden text-[length:var(--px-9)] font-light font-helvetica uppercase tracking-[var(--px-1)] opacity-50">
-                    or
-                  </span>
+                  <div aria-hidden="true" className="flex items-center gap-[var(--px-12)] sm:hidden">
+                    <span className="h-px flex-1 bg-[var(--rx-color-border-subtle)]" />
+                    <span className={SUBLABEL}>or</span>
+                    <span className="h-px flex-1 bg-[var(--rx-color-border-subtle)]" />
+                  </div>
+
                   <GoogleSignInButton
                     clientId={googleClientId}
                     onSuccess={handleGoogleSuccess}
                     onError={handleGoogleError}
                     width={240}
-                    className=""
+                    className="mx-auto shrink-0 sm:mx-0"
                   />
                 </>
               )}
             </div>
-
-            <div className="text-center mt-[var(--px-10)]">
-              <span className="text-[length:var(--px-11)] font-extralight font-helvetica">
-                Don't have an account?{" "}
-              </span>
-              <button
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault(); // prevents focus change (and blur)
-                  onNavigateRegister?.();
-                }}
-                className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
-              >
-                Register here
-              </button>
-            </div>
           </form>
 
-          <StatusMessage
-            isOpen={showStatus}
-            onClose={() => {
-              setShowStatus(false);
-            }}
-            status={statusType}
-            title={statusTitle}
-            message={statusMessage}
-            additionalButton={
-              showResendCTA
-                ? {
-                    text: resendPending ? "Sending..." : "Resend verification email",
-                    onClick: handleResendVerification,
-                    disabled: resendPending,
-                  }
-                : undefined
-            }
-          />
+          <div className="flex flex-wrap items-center justify-center gap-[var(--px-8)] border-t border-[var(--rx-color-border-subtle)] px-[var(--px-20)] py-[var(--px-16)]">
+            <span className={SUBLABEL}>Don't have an account?</span>
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault(); // prevents focus change (and blur)
+                onNavigateRegister?.();
+              }}
+              className={TEXT_LINK}
+            >
+              Register here
+            </button>
+          </div>
         </div>
+
+        <StatusMessage
+          isOpen={showStatus}
+          onClose={() => {
+            setShowStatus(false);
+          }}
+          status={statusType}
+          title={statusTitle}
+          message={statusMessage}
+          additionalButton={
+            showResendCTA
+              ? {
+                  text: resendPending ? "Sending..." : "Resend verification email",
+                  onClick: handleResendVerification,
+                  disabled: resendPending,
+                }
+              : undefined
+          }
+        />
       </div>
     </section>
   );

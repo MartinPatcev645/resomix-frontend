@@ -102,17 +102,28 @@ export function GoogleSignInButton({
   if (unavailable) return null;
 
   return (
-    <div className={`relative group ${className ?? 'mx-auto'}`} style={{ width }}>
-      {/* Visible pill (what the user sees). pointer-events-none so the click reaches the real button. */}
+    // `flex items-center` + a matching min-height so this lines up with a PAGE_BTN_* sibling when
+    // the two share a row: Google's own button is a little shorter than our 44px controls, and
+    // without this the pair looked ragged. Centring also keeps the real (invisible) button in the
+    // middle of the visible shell rather than pinned to its top.
+    <div
+      className={`relative group flex items-center min-h-[var(--px-44)] ${className ?? 'mx-auto'}`}
+      style={{ width }}
+    >
+      {/* Visible control (what the user sees). pointer-events-none so the click reaches the real
+          button. Wears the same chrome as PAGE_BTN_SECONDARY — square, token border, mono
+          uppercase — so it reads as a sibling of the Sign In button rather than a stray pill.
+          The Google "G" keeps its official colours; only the shell is ours. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-[var(--px-10)] rounded-full border border-dotted border-slate-300/60 bg-transparent text-[length:var(--px-12)] font-light font-helvetica tracking-[var(--px-0-25)] text-[var(--color-primary)] transition-colors duration-150 group-hover:border-slate-200 group-hover:bg-white/5"
+        className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-[var(--px-10)] rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color] duration-[var(--rx-duration-base)] ease-[var(--rx-ease-standard)] group-hover:border-[var(--rx-color-border-strong)] group-hover:bg-[rgba(255,255,255,0.06)]"
       >
         <GoogleGIcon />
         <span>{label}</span>
       </div>
-      {/* Real Google button on top, invisible — catches the click and returns the ID token. */}
-      <div ref={gsiRef} className="opacity-0" />
+      {/* Real Google button on top, invisible — catches the click and returns the ID token.
+          w-full so the flex parent can't shrink it away from the shell it sits behind. */}
+      <div ref={gsiRef} className="w-full opacity-0" />
     </div>
   );
 }

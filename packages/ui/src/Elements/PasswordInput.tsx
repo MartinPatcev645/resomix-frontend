@@ -75,6 +75,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
           disabled={disabled}
           autoFocus={autoFocus}
           autoComplete={autoComplete}
+          aria-invalid={error ? true : undefined}
           className={`${PAGE_FIELD} pr-[var(--px-52)] ${error ? "!border-[var(--rx-color-error)]" : ""}`}
         />
         <button
@@ -103,7 +104,10 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
       )}
       
       {error && (
-        <div className="font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-error)]">
+        <div
+          role="alert"
+          className="font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-error)]"
+        >
           {error}
         </div>
       )}

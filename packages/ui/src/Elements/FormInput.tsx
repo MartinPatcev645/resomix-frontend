@@ -1,5 +1,14 @@
 import { ChangeEvent } from "react";
+import { PAGE_FIELD, PAGE_FIELD_LABEL } from "../Content/pageChrome";
 
+/**
+ * Shared auth/form text field.
+ *
+ * Deliberately identical in structure and styling to PasswordInput — same label, same PAGE_FIELD
+ * surface, same error treatment — so the two sit flush next to each other on the auth screens.
+ * (PasswordInput was migrated to the precision-industrial theme first; this was left on dotted
+ * slate borders, which made every login/register form look half-finished.)
+ */
 interface FormInputProps {
   label: string;
   name: string;
@@ -32,15 +41,11 @@ export const FormInput: React.FC<FormInputProps> = ({
   autoComplete,
 }) => {
   return (
-    <div className="flex flex-col items-start gap-[var(--px-10)]">
-      <div className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
+    <div className="flex w-full flex-col items-start gap-[var(--px-8)]">
+      <span className={PAGE_FIELD_LABEL}>
         {label}
-        {optional && (
-          <span className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] lg:opacity-80 font-extralight font-helvetica ml-[var(--px-4)]">
-            (optional)
-          </span>
-        )}
-      </div>
+        {optional && <span className="ml-[var(--px-6)] opacity-70">(optional)</span>}
+      </span>
       <input
         name={name}
         type={type}
@@ -52,18 +57,17 @@ export const FormInput: React.FC<FormInputProps> = ({
         disabled={disabled}
         autoFocus={autoFocus}
         autoComplete={autoComplete}
-        className={`w-full border ${
-          error ? "border-red-500" : "border-slate-200"
-        } border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica ${
-          disabled ? "opacity-50 cursor-not-allowed" : ""
-        } focus:outline-none focus:border-[var(--color-primary)]`}
+        aria-invalid={error ? true : undefined}
+        className={`${PAGE_FIELD} ${error ? "!border-[var(--rx-color-error)]" : ""}`}
       />
       {error && (
-        <div className="text-[length:var(--px-10)] text-red-500 mt-[-var(--px-4)] font-light font-helvetica">
+        <div
+          role="alert"
+          className="font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-error)]"
+        >
           {error}
         </div>
       )}
     </div>
   );
 };
-
