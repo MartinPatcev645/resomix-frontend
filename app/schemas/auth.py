@@ -23,8 +23,11 @@ class RegisterRequest(BaseModel):
     """User registration request"""
 
     email: EmailStr = Field(..., description="User email address")
-    username: str = Field(
-        ..., min_length=3, max_length=50, description="Unique username"
+    # Optional: the sign-up form only asks for email + password. When omitted the server derives
+    # the username from the email's local part and resolves collisions itself — a client cannot do
+    # that safely (it would need to probe for availability and would still race).
+    username: Optional[str] = Field(
+        None, min_length=3, max_length=50, description="Unique username (derived from email if omitted)"
     )
     password: str = Field(..., min_length=8, description="User password")
     name: Optional[str] = Field(None, max_length=100, description="Display name")
@@ -32,11 +35,15 @@ class RegisterRequest(BaseModel):
     @validator("username")
     def validate_username_format(cls, v):
         """Validate username format"""
+        if v is None:
+            return v
         if not v[0].isalpha():
             raise ValueError("Username must start with a letter")
-        if not all(c.isalnum() or c in "_-" for c in v):
+        # Mirrors core.security.validate_username — dots included, since derived usernames keep
+        # the dots from the email local part.
+        if not all(c.isalnum() or c in "._-" for c in v):
             raise ValueError(
-                "Username can only contain letters, numbers, underscores, and hyphens"
+                "Username can only contain letters, numbers, dots, underscores, and hyphens"
             )
         return v
 

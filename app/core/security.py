@@ -247,12 +247,61 @@ def validate_username(username: str) -> tuple[bool, Optional[str]]:
     if len(username) > 50:
         return False, "Username cannot exceed 50 characters"
     
-    # Allow alphanumeric, underscores, and hyphens
-    if not re.match(r'^[a-zA-Z0-9_-]+$', username):
-        return False, "Username can only contain letters, numbers, underscores, and hyphens"
-    
+    # Allow alphanumeric, dots, underscores, and hyphens.
+    #
+    # Dots are permitted because registration derives the username from the email's local part
+    # ("usman.naeem2212@gmail.com" -> "usman.naeem2212"). Rejecting them here would make every
+    # auto-derived username with a dot in it unverifiable and un-editable from the profile page.
+    if not re.match(r'^[a-zA-Z0-9._-]+$', username):
+        return False, "Username can only contain letters, numbers, dots, underscores, and hyphens"
+
     # Must start with a letter
     if not username[0].isalpha():
         return False, "Username must start with a letter"
-    
+
     return True, None
+
+
+# Registration derives the username from the email, so the base needs room for a collision suffix
+# without breaking the 50-character ceiling above (which is also the DB column width).
+#
+# Kept together deliberately: the base cap is DERIVED from the suffix budget rather than written
+# out separately. When the two were independent numbers (40 + up to 12 "1"s) a long local part
+# that collided repeatedly produced a 52-character username — over the limit, so the insert would
+# have failed on the user's behalf.
+USERNAME_MAX_LENGTH = 50
+#: How many times the collision loop appends "1" before falling back to a random suffix.
+USERNAME_MAX_SUFFIX_ATTEMPTS = 12
+#: Random fallback is `secrets.token_hex(3)` — 6 characters.
+_USERNAME_RANDOM_SUFFIX_LENGTH = 6
+_USERNAME_BASE_MAX_LENGTH = USERNAME_MAX_LENGTH - max(
+    USERNAME_MAX_SUFFIX_ATTEMPTS, _USERNAME_RANDOM_SUFFIX_LENGTH
+)
+
+
+def derive_username_base(email: str) -> str:
+    """Build a *candidate* username from an email address.
+
+    The local part, lowercased, stripped of anything the username rules disallow, and nudged into
+    shape (must start with a letter, at least 3 characters, short enough to take a suffix). The
+    result is NOT guaranteed to be free — the caller resolves collisions.
+
+        usman.naeem2212@gmail.com -> usman.naeem2212
+        2212usman@gmail.com       -> u2212usman      (must start with a letter)
+        a.b@gmail.com             -> ab0             (padded to the 3-character minimum)
+    """
+    local = email.split("@", 1)[0].strip().lower()
+
+    # Drop everything outside the allowed set (spaces, +tags, quotes, unicode…).
+    cleaned = re.sub(r"[^a-z0-9._-]", "", local)
+    # Leading punctuation would fail the "starts with a letter" rule and reads badly.
+    cleaned = cleaned.lstrip("._-")
+
+    if not cleaned or not cleaned[0].isalpha():
+        cleaned = f"u{cleaned}"
+
+    # Pad to the minimum length. Zeros rather than letters so it stays obviously generated.
+    while len(cleaned) < 3:
+        cleaned += "0"
+
+    return cleaned[:_USERNAME_BASE_MAX_LENGTH]

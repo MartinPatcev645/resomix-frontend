@@ -73,7 +73,9 @@ class AuthController:
             user, verification_token = await self.auth_service.register_user(
                 db=db,
                 email=registration_data["email"],
-                username=registration_data["username"],
+                # Absent for sign-ups from the web form (email + password only) — the service
+                # derives it from the email and de-duplicates.
+                username=registration_data.get("username"),
                 password=registration_data["password"],
                 name=registration_data.get("name"),
                 guest_visitor_id=self._guest_visitor_id(request),

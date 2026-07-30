@@ -13,6 +13,7 @@ Date: October 23, 2025
 from typing import Optional, Dict, Any, Tuple
 from datetime import datetime, timedelta, timezone
 import logging
+import secrets
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
@@ -34,6 +35,9 @@ from app.core.security import (
     verify_password,
     validate_password_strength,
     validate_username,
+    derive_username_base,
+    _USERNAME_BASE_MAX_LENGTH,
+    USERNAME_MAX_SUFFIX_ATTEMPTS as _MAX_USERNAME_SUFFIX_ATTEMPTS,
     create_access_token,
     create_refresh_token,
     generate_verification_token,
@@ -171,12 +175,37 @@ class AuthService:
         except Exception as exc:
             logger.warning("Default-plan assignment failed for user %s: %s", user.id, exc)
 
+    async def _resolve_derived_username(self, db: AsyncSession, email: str) -> str:
+        """Pick a free username for a sign-up that didn't supply one.
+
+        Starts from the email's local part and appends "1" per collision, as agreed:
+
+            usman.naeem2212 -> usman.naeem22121 -> usman.naeem221211 -> …
+
+        Capped so a pathological run can't loop forever; past the cap it falls back to a random
+        suffix, which is effectively certain to be free.
+
+        NOTE: this is check-then-create, so two simultaneous sign-ups deriving the same base can
+        still collide on the DB's unique index. The window is tiny and the loser gets a clean 400
+        rather than a corrupt row; the unique constraint remains the real guarantee.
+        """
+        base = derive_username_base(email)
+
+        candidate = base
+        for _ in range(_MAX_USERNAME_SUFFIX_ATTEMPTS):
+            if not await self.user_repo.async_get_by_username(db, candidate):
+                return candidate
+            candidate = f"{candidate}1"
+
+        # Cap reached — stop lengthening and take a random tail instead.
+        return f"{base[:_USERNAME_BASE_MAX_LENGTH]}{secrets.token_hex(3)}"
+
     async def register_user(
         self,
         db: AsyncSession,
         email: str,
-        username: str,
-        password: str,
+        username: Optional[str] = None,
+        password: str = "",
         name: Optional[str] = None,
         guest_visitor_id: Optional[str] = None,
     ) -> Tuple[User, str]:
@@ -186,7 +215,8 @@ class AuthService:
         Args:
             db: Database session
             email: User email address
-            username: Unique username
+            username: Unique username. Optional — when omitted (the sign-up form only collects
+                email + password) it is derived from the email and de-duplicated server-side.
             password: Plain text password
             name: Optional display name
 
@@ -196,13 +226,6 @@ class AuthService:
         Raises:
             HTTPException: If validation fails or user already exists
         """
-        # Validate username
-        is_valid_username, username_error = validate_username(username)
-        if not is_valid_username:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=username_error
-            )
-
         # Validate password strength
         is_valid_password, password_error = validate_password_strength(password)
         if not is_valid_password:
@@ -210,7 +233,9 @@ class AuthService:
                 status_code=status.HTTP_400_BAD_REQUEST, detail=password_error
             )
 
-        # Check if email already exists
+        # Check if email already exists. Kept BEFORE username resolution so a returning user gets
+        # "this email is already registered" (the frontend turns that into a sign-in prompt)
+        # instead of silently burning a derived username.
         existing_user = await self.user_repo.async_get_by_email(db, email)
         if existing_user:
             raise HTTPException(
@@ -218,12 +243,20 @@ class AuthService:
                 detail="Email already registered",
             )
 
-        # Check if username already exists
-        existing_username = await self.user_repo.async_get_by_username(db, username)
-        if existing_username:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
-            )
+        if username:
+            # Caller supplied one explicitly — validate and require it to be free, as before.
+            is_valid_username, username_error = validate_username(username)
+            if not is_valid_username:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail=username_error
+                )
+            existing_username = await self.user_repo.async_get_by_username(db, username)
+            if existing_username:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
+                )
+        else:
+            username = await self._resolve_derived_username(db, email)
 
         # Hash password
         password_hash = hash_password(password)
