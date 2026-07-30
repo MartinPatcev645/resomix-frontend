@@ -4,14 +4,14 @@ import { useFirstVisit, useResponsive, useAuthInit, useSilktide } from "@resomix
 import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, SineWaves, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
-import { ProtectedRoute, GuestRoute, LandingLayout } from "@/components/index.ts";
+import { LandingLayout } from "@/components/index.ts";
 import { AppBackground } from "@/components/Layout/AppBackground.tsx";
+import { BetaAuthRedirect } from "@/components/BetaAuthRedirect.tsx";
 // Lazy-load pages directly for proper code-splitting
 const HomePage = lazy(() => import("@/pages/HomePage.tsx"));
 const AboutPage = lazy(() => import("@/pages/desktop/AboutPage.tsx").then(m => ({ default: m.AboutPage })));
 const AboutMobile = lazy(() => import("@/pages/mobile/AboutMobile.tsx").then(m => ({ default: m.AboutMobile })));
 const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
-const AuthPage = lazy(() => import("@/pages/AuthPage.tsx"));
 const PartnersPage = lazy(() => import("@/pages/PartnersPage.tsx"));
 const PricingPage = lazy(() => import("@/pages/PricingPage.tsx"));
 const ProductPage = lazy(() => import("@/pages/ProductPage.tsx"));
@@ -84,24 +84,22 @@ function App() {
 
       <Suspense fallback={null}>
         <Routes>
+          {/* Auth and account screens are served ONLY by the web app. These forward to the same
+              path on beta, carrying the query string — see BetaAuthRedirect for why that matters
+              for emailed verify/reset links. The wildcard means a path we never listed (or one the
+              backend adds later) still lands somewhere real instead of the 404.
+
+              OUTSIDE LandingLayout on purpose: we are leaving the site, so painting the marketing
+              nav and footer for one frame would just be a flash of the wrong thing.
+
+              Deliberately NOT wrapped in GuestRoute/ProtectedRoute either — beta owns those
+              decisions now, and a guard here would swallow the redirect for signed-in visitors. */}
+          <Route path="/auth/*" element={<BetaAuthRedirect />} />
+          <Route path="/profile" element={<BetaAuthRedirect />} />
+          <Route path="/sessions" element={<BetaAuthRedirect />} />
+          <Route path="/change-password" element={<BetaAuthRedirect />} />
+
           <Route element={<LandingLayout />}>
-            {/* Guest-Only Auth Routes */}
-            <Route path="/auth/login" element={<GuestRoute><AuthPage mode="login" /></GuestRoute>} />
-            <Route path="/auth/register" element={<GuestRoute><AuthPage mode="register" /></GuestRoute>} />
-            <Route path="/auth/forgot-password" element={<GuestRoute><AuthPage mode="forgot-password" /></GuestRoute>} />
-
-            {/* Auth Routes that work regardless of login state */}
-            <Route path="/auth/reset-password" element={<AuthPage mode="reset-password" />} />
-            <Route path="/auth/verify-email" element={<AuthPage mode="verify-email" />} />
-            <Route path="/auth/verify-2fa" element={<AuthPage mode="verify-2fa" />} />
-
-            {/* Protected Auth Routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/profile" element={<AuthPage mode="profile" />} />
-              <Route path="/sessions" element={<AuthPage mode="sessions" />} />
-              <Route path="/change-password" element={<AuthPage mode="change-password" />} />
-            </Route>
-
             {/* Optional Auth Routes */}
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<UsedAboutPage />} />

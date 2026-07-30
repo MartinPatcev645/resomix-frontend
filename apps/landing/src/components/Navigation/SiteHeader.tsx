@@ -151,9 +151,11 @@ export function SiteHeader({
       console.error('Logout error:', error);
     } finally {
       useAuthStore.getState().logout();
-      onNavigate('/auth/login');
+      // Straight to beta's login rather than the local '/auth/login', which now only exists as a
+      // redirect to exactly this URL — going through it would just add a hop and a loader frame.
+      onNavigate(loginHref);
     }
-  }, [onNavigate]);
+  }, [onNavigate, loginHref]);
 
   const profileMenuItems = [
     {

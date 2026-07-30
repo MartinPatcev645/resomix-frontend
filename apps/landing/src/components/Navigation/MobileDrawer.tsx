@@ -79,7 +79,15 @@ export function MobileDrawer({
 
   const [cookieSettingsEnabled] = useState(isCookiePreferencesAvailable);
   const currentSection = getNavSectionForPath(location.pathname);
-  const loginHref = `${BETA_URL}/auth/login?redirect=${encodeURIComponent(location.pathname)}`;
+  /**
+   * Signing in always happens on the WEBAPP, and lands you in the workspace afterwards.
+   *
+   * `redirect` is resolved by the webapp's AuthPage against ITS OWN routes, so it must be a webapp
+   * path. This used to pass the current landing path, which sent you to
+   * beta.resomix.com/<landing-route> after a successful sign-in — e.g. /partners, which does not
+   * exist there. '/' is the workspace root. (Same fix as the desktop header.)
+   */
+  const loginHref = `${BETA_URL}/auth/login?redirect=${encodeURIComponent('/')}`;
 
   useLayoutEffect(() => {
     if (!isOpen) return;
@@ -117,10 +125,12 @@ export function MobileDrawer({
       console.error('Logout error:', error);
     } finally {
       useAuthStore.getState().logout();
-      onNavigate('/auth/login');
+      // Straight to beta's login rather than the local '/auth/login', which now only exists as a
+      // redirect to exactly this URL — going through it would just add a hop and a loader frame.
+      onNavigate(loginHref);
       onClose();
     }
-  }, [onClose, onNavigate]);
+  }, [onClose, onNavigate, loginHref]);
 
   const profileMenuItems = [
     {
