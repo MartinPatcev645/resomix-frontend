@@ -1,12 +1,25 @@
 import type { ReactNode } from "react";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { InputModal } from "../Modals/InputModal";
-import { FormInput } from "../Elements/FormInput";
 import { SineWaves } from "../Animations/SineWaves";
 import { ProfileIcon } from "../Vectors/ProfileIcon";
 import { PlanBillingCard } from "../Billing/PlanBillingCard";
 import { useProfileSettings } from "@resomix/hooks";
+
+import {
+  PROFILE_BTN_BASE as BTN_BASE,
+  PROFILE_BTN_DANGER as BTN_DANGER,
+  PROFILE_BTN_PRIMARY as BTN_PRIMARY,
+  PROFILE_BTN_SECONDARY as BTN_SECONDARY,
+  PROFILE_FIELD as FIELD,
+  PROFILE_FIELD_LABEL as FIELD_LABEL,
+  PROFILE_INSET_ROW as INSET_ROW,
+  PROFILE_KICKER as KICKER,
+  PROFILE_PANEL as PANEL,
+  PROFILE_PANEL_PLAIN as PANEL_PLAIN,
+  PROFILE_ROW_META,
+  PROFILE_ROW_TITLE,
+} from "./profileChrome";
 
 interface ProfileContentProps {
   baseUrl?: string;
@@ -61,8 +74,8 @@ export default function ProfileContent({
 
   if (loading) {
     return (
-      <section className="pt-[var(--px-120)] px-[var(--px-3)] md:px-0 tracking-[var(--px-1)]">
-        <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
+      <section className="px-[var(--px-12)] pt-[var(--px-16)] pb-[var(--px-40)] tracking-[var(--px-1)]">
+        <div className="w-full flex flex-col items-center text-[var(--rx-color-text-primary)]">
           <div className="flex justify-center items-center h-[200px] w-full max-w-[var(--px-300)]">
             <SineWaves />
           </div>
@@ -73,342 +86,354 @@ export default function ProfileContent({
 
   if (!user) {
     return (
-      <section className="pt-[var(--px-120)] px-[var(--px-3)] md:px-0 tracking-[var(--px-1)]">
-        <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-          <p>Unable to load profile. Please try again.</p>
+      <section className="px-[var(--px-12)] pt-[var(--px-16)] pb-[var(--px-40)] tracking-[var(--px-1)]">
+        <div className="w-full flex flex-col items-center text-[var(--rx-color-text-primary)]">
+          <p className="font-helvetica text-[length:var(--px-15)] font-light">
+            Unable to load profile. Please try again.
+          </p>
         </div>
       </section>
     );
   }
 
   return (
-    <section className="pt-[var(--px-120)] px-[var(--px-3)] md:px-0 tracking-[var(--px-1)]">
-      <div className="w-full text-[var(--color-primary)]">
-        <header className="mb-[var(--px-28)] text-center">
-          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
+    // Spacing matches the workspace shell: a small inset from the vertical side lines (px-12) and
+    // no oversized top pad — the layout's <main> already offsets the header.
+    <section className="px-[var(--px-12)] pt-[var(--px-16)] pb-[var(--px-40)] tracking-[var(--px-1)]">
+      <div className="mx-auto w-full max-w-6xl text-[var(--rx-color-text-primary)]">
+        {/* Header — accent rule + mono kicker, then a left-aligned heading, as on the workspace. */}
+        <header className="mb-[var(--px-24)]">
+          <p className="mb-[var(--px-16)] flex items-center gap-[var(--px-10)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-muted)] before:block before:w-[var(--px-32)] before:border-t before:border-[var(--rx-color-accent)] before:content-['']">
+            Account // Settings
+          </p>
+          <h1 className="m-0 font-helvetica text-[length:var(--px-28)] font-medium uppercase leading-[var(--px-32)] md:text-[length:var(--px-36)] md:leading-[var(--px-40)]">
             Profile Settings
           </h1>
-          <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica">
+          <p className="mt-[var(--px-12)] font-helvetica text-[length:var(--px-15)] font-light leading-[var(--px-22)] text-[var(--rx-color-text-secondary)] opacity-70">
             Manage your account settings and preferences
           </p>
         </header>
 
-        <div className="mx-auto w-full max-w-6xl">
-          <div className="mb-[var(--px-24)] px-[var(--px-20)] lg:px-0">
-            <a
-              href={baseUrl}
-              aria-label="Resomix home"
-              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
-            >
-              ← Back to Home
-            </a>
-          </div>
+        <div className="mb-[var(--px-24)]">
+          <a href={baseUrl} aria-label="Resomix home" className={BTN_SECONDARY}>
+            ← Back to Home
+          </a>
+        </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[clamp(260px,22vw,340px)_1fr] gap-[var(--px-24)] px-[var(--px-10)] lg:px-0 items-start">
-            <aside className="space-y-[var(--px-20)] lg:sticky lg:top-[var(--px-120)] h-max">
-              <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
-                <div className="flex items-center gap-[var(--px-12)]">
-                  <ProfileIcon
-                    className="text-[var(--color-primary-hover)]"
-                    customWidth="40"
-                    customHeight="40"
-                  />
-                  {/* min-w-0 lets the truncated children actually shrink inside the flex row —
-                      without it a long username/email pushes past the card border. */}
-                  <div className="w-full min-w-0">
-                    <div
-                      className="text-[length:var(--px-18)] font-medium font-helvetica truncate"
-                      title={user.username}
-                    >
-                      {user.username}
-                    </div>
-                    {/* Email-verified row — its own labelled line between username and email,
-                        with a neutral tick/cross (no traffic-light colours). */}
-                    <div className="flex items-center justify-between gap-[var(--px-8)] mt-[var(--px-4)]">
-                      <span className="flex items-center gap-[var(--px-6)] text-[length:var(--px-10)] font-light font-fira uppercase tracking-[var(--px-0-5)] text-[var(--color-primary-hover)] whitespace-nowrap">
-                        Email verified:
-                        {user.is_email_verified ? (
-                          <svg viewBox="0 0 24 24" aria-label="Verified" className="w-[var(--px-11)] h-[var(--px-11)] text-[var(--color-primary)]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20 6L9 17l-5-5" />
-                          </svg>
-                        ) : (
-                          <svg viewBox="0 0 24 24" aria-label="Not verified" className="w-[var(--px-11)] h-[var(--px-11)] text-[var(--color-primary)] opacity-80" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                          </svg>
-                        )}
-                      </span>
-                      {!user.is_email_verified && (
-                        <ButtonSleek
-                          text={resendingVerification ? "Sending..." : "Verify"}
-                          onClick={handleResendVerification}
-                          customWidth="min-w-[var(--px-60)]"
-                          transparent={true}
-                          disabled={resendingVerification}
-                        />
+        <div className="grid grid-cols-1 lg:grid-cols-[clamp(260px,22vw,340px)_1fr] gap-[var(--px-24)] items-start">
+          <aside className="space-y-[var(--px-16)] lg:sticky lg:top-[var(--px-120)] h-max">
+            <div className={PANEL}>
+              <div className="flex items-center gap-[var(--px-12)]">
+                <ProfileIcon
+                  className="text-[var(--rx-color-accent)]"
+                  customWidth="40"
+                  customHeight="40"
+                />
+                {/* min-w-0 lets the truncated children actually shrink inside the flex row —
+                    without it a long username/email pushes past the card border. */}
+                <div className="w-full min-w-0">
+                  <div
+                    className="font-helvetica text-[length:var(--px-16)] font-medium truncate"
+                    title={user.username}
+                  >
+                    {user.username}
+                  </div>
+                  {/* Email-verified row — its own labelled line between username and email,
+                      with a neutral tick/cross (no traffic-light colours). */}
+                  <div className="flex items-center justify-between gap-[var(--px-8)] mt-[var(--px-6)]">
+                    <span className="flex items-center gap-[var(--px-6)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)] whitespace-nowrap">
+                      Email verified:
+                      {user.is_email_verified ? (
+                        <svg viewBox="0 0 24 24" aria-label="Verified" className="w-[var(--px-11)] h-[var(--px-11)] text-[var(--rx-color-text-primary)]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" aria-label="Not verified" className="w-[var(--px-11)] h-[var(--px-11)] text-[var(--rx-color-text-primary)] opacity-80" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
                       )}
-                    </div>
-                    <div
-                      className="text-[length:var(--px-11)] font-light font-helvetica truncate mt-[var(--px-4)]"
-                      title={user.email}
-                    >
-                      {user.email}
-                    </div>
+                    </span>
+                    {!user.is_email_verified && (
+                      <button
+                        type="button"
+                        onClick={handleResendVerification}
+                        disabled={resendingVerification}
+                        className={`${BTN_SECONDARY} shrink-0`}
+                      >
+                        {resendingVerification ? "Sending..." : "Verify"}
+                      </button>
+                    )}
+                  </div>
+                  <div
+                    className="mt-[var(--px-6)] font-helvetica text-[length:var(--px-11)] font-light truncate text-[var(--rx-color-text-secondary)] opacity-80"
+                    title={user.email}
+                  >
+                    {user.email}
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Tab nav — TABS, not feature boxes. Mobile: the three sit side-by-side as a
-                  segmented row (active highlighted, others dimmed). Desktop: same column position
-                  as before, but plain rows with a left indicator bar instead of bordered boxes,
-                  so they read as navigation rather than actions. */}
-              <nav
-                aria-label="Profile sections"
-                className="p-[var(--px-8)] lg:p-[var(--px-12)] border border-slate-200 border-dotted rounded-lg grid grid-cols-3 gap-[var(--px-6)] lg:flex lg:flex-col lg:gap-[var(--px-4)]"
-              >
-                {([
-                  { id: "personal", label: "Personal", labelLg: "Personal Information", hint: "Profile, password & security" },
-                  { id: "billing", label: "Billing", labelLg: "Billing & Subscription", hint: "Plan, usage & invoices" },
-                  { id: "account", label: "Account", labelLg: "Account", hint: "Delete account" },
-                ] as const).map((t) => {
-                  const active = activeTab === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => setActiveTab(t.id)}
-                      aria-current={active ? "page" : undefined}
-                      className={`text-center lg:text-left px-[var(--px-8)] py-[var(--px-8)] lg:px-[var(--px-10)] lg:py-[var(--px-8)] rounded-xs transition-all cursor-pointer lg:border-l-2 lg:rounded-none ${
-                        active
-                          ? "bg-[var(--color-primary)]/10 lg:bg-white/5 lg:border-[var(--color-primary)]"
-                          : "opacity-50 hover:opacity-90 lg:border-transparent"
-                      }`}
-                    >
-                      {/* Mobile: compact label only. Desktop: full label + hint. */}
-                      <span className="block lg:hidden text-[length:var(--px-11)] font-medium font-helvetica whitespace-nowrap">
-                        {t.label}
+            {/* Tab nav — TABS, not feature boxes. Mobile: the three sit side-by-side as a
+                segmented row (active highlighted, others dimmed). Desktop: same column position
+                as before, but plain rows with a left indicator bar instead of bordered boxes,
+                so they read as navigation rather than actions. */}
+            <nav
+              aria-label="Profile sections"
+              className={`${PANEL_PLAIN} !p-[var(--px-8)] lg:!p-[var(--px-10)] grid grid-cols-3 gap-[var(--px-6)] lg:flex lg:flex-col lg:gap-[var(--px-2)]`}
+            >
+              {([
+                { id: "personal", label: "Personal", labelLg: "Personal Information", hint: "Profile, password & security" },
+                { id: "billing", label: "Billing", labelLg: "Billing & Subscription", hint: "Plan, usage & invoices" },
+                { id: "account", label: "Account", labelLg: "Account", hint: "Delete account" },
+              ] as const).map((t) => {
+                const active = activeTab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveTab(t.id)}
+                    aria-current={active ? "page" : undefined}
+                    className={`cursor-pointer px-[var(--px-8)] py-[var(--px-8)] text-center transition-colors duration-[var(--rx-duration-base)] lg:border-l-2 lg:px-[var(--px-12)] lg:text-left ${
+                      active
+                        ? "bg-[var(--rx-color-accent-soft,rgba(238,74,38,0.14))] lg:border-[var(--rx-color-accent)] lg:bg-[rgba(255,255,255,0.04)]"
+                        : "opacity-55 hover:opacity-100 lg:border-transparent"
+                    }`}
+                  >
+                    {/* Mobile: compact label only. Desktop: full label + hint. */}
+                    <span className="block lg:hidden font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] whitespace-nowrap">
+                      {t.label}
+                    </span>
+                    <span className="hidden lg:block min-w-0">
+                      <span className="block font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] truncate">
+                        {t.labelLg}
                       </span>
-                      <span className="hidden lg:block min-w-0">
-                        <span className="block text-[length:var(--px-12)] font-medium font-helvetica truncate">{t.labelLg}</span>
-                        <span className="block text-[length:var(--px-10)] font-helvetica opacity-60 truncate">{t.hint}</span>
+                      <span className="mt-[var(--px-2)] block font-helvetica text-[length:var(--px-11)] font-light text-[var(--rx-color-text-secondary)] opacity-60 truncate">
+                        {t.hint}
                       </span>
-                    </button>
-                  );
-                })}
-              </nav>
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
 
-              <button
-                onClick={handleLogout}
-                className="w-full px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 hover:text-[var(--color-secondary)] transition-colors cursor-pointer rounded"
-              >
-                Logout
-              </button>
-            </aside>
+            <button onClick={handleLogout} className={`${BTN_SECONDARY} w-full`}>
+              Logout
+            </button>
+          </aside>
 
-            <main className="space-y-[var(--px-20)] min-w-0">
-              {activeTab === "personal" && (
-              <>
-              <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
-                <div className="flex justify-between items-center mb-[var(--px-10)]">
-                  <h2 className="text-[length:var(--px-14)] font-medium font-helvetica">
-                    Personal Information
-                  </h2>
-                  {!isEditing && (
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
-                    >
-                      Edit
-                    </button>
-                  )}
-                </div>
+          <main className="space-y-[var(--px-16)] min-w-0">
+            {activeTab === "personal" && (
+            <>
+            <div className={PANEL}>
+              <div className="flex justify-between items-center mb-[var(--px-16)] gap-[var(--px-12)]">
+                <h2 className={KICKER}>Personal Information</h2>
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    className={`${BTN_SECONDARY} shrink-0`}
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
 
-                <form onSubmit={handleUpdate} className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--px-12)]">
-                  <FormInput
-                    label="Name"
+              <form onSubmit={handleUpdate} className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--px-14)]">
+                <div className="flex flex-col gap-[var(--px-8)]">
+                  <label htmlFor="profile-name" className={FIELD_LABEL}>
+                    Name <span className="opacity-70">(optional)</span>
+                  </label>
+                  <input
+                    id="profile-name"
                     name="name"
                     type="text"
                     value={form.name}
                     onChange={handleChange}
                     placeholder="Your full name"
-                    optional
                     disabled={!isEditing}
+                    className={FIELD}
                   />
+                </div>
 
-                  <div className="flex flex-col gap-[var(--px-10)]">
-                    <label className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
-                      Language <span className="text-[length:var(--px-14)] lg:text-[length:var(--px-10)] lg:opacity-80 font-extralight font-helvetica">(optional)</span>
+                <div className="flex flex-col gap-[var(--px-8)]">
+                  <label htmlFor="profile-language" className={FIELD_LABEL}>
+                    Language <span className="opacity-70">(optional)</span>
+                  </label>
+                  <select
+                    id="profile-language"
+                    name="language"
+                    value={form.language}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    className={`${FIELD} cursor-pointer`}
+                    style={{ colorScheme: "dark" }}
+                  >
+                    <option value="">Select language</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                  </select>
+                </div>
+
+                <div className="lg:col-span-2">
+                  <div className="flex flex-col gap-[var(--px-8)]">
+                    <label htmlFor="profile-timezone" className={FIELD_LABEL}>
+                      Timezone
                     </label>
                     <select
-                      name="language"
-                      value={form.language}
+                      id="profile-timezone"
+                      name="timezone"
+                      value={form.timezone}
                       onChange={handleChange}
                       disabled={!isEditing}
-                      className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica disabled:opacity-50 bg-black text-slate-100"
+                      className={`${FIELD} cursor-pointer`}
+                      style={{ colorScheme: "dark" }}
                     >
-                      <option value="">Select language</option>
-                      <option value="en">English</option>
-                      <option value="es">Español</option>
-                      <option value="fr">Français</option>
-                      <option value="de">Deutsch</option>
+                      <option value="">Select timezone</option>
+                      {timezones.map((tz) => (
+                        <option key={tz.value} value={tz.value}>
+                          {tz.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
+                </div>
 
-                  <div className="lg:col-span-2">
-                    <div className="flex flex-col gap-[var(--px-10)]">
-                      <label className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
-                        Timezone
-                      </label>
-                      <select
-                        name="timezone"
-                        value={form.timezone}
-                        onChange={handleChange}
-                        disabled={!isEditing}
-                        className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica disabled:opacity-50 bg-black text-slate-100"
-                      >
-                        <option value="">Select timezone</option>
-                        {timezones.map((tz) => (
-                          <option key={tz.value} value={tz.value}>
-                            {tz.label}
-                          </option>
-                        ))}
-                      </select>
+                {isEditing && (
+                  <div className="lg:col-span-2 flex gap-[var(--px-10)] mt-[var(--px-6)] justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditing(false);
+                        setForm({
+                          name: user.name || "",
+                          language: user.language || "",
+                          timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+                        });
+                      }}
+                      className={BTN_SECONDARY}
+                    >
+                      Cancel
+                    </button>
+                    {/* type="button" + onClick, as before: the form's onSubmit is the same handler,
+                        so a submit button would run handleUpdate twice per click. */}
+                    <button type="button" onClick={handleUpdate} className={BTN_PRIMARY}>
+                      {submitting ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
+                )}
+              </form>
+            </div>
+
+            <div className={PANEL}>
+              <h2 className={`${KICKER} mb-[var(--px-16)]`}>Security</h2>
+
+              {/* Each row: text block (truncating, min-w-0) + a proper compact button pinned
+                  right with a guaranteed gap — the bare "Change →" text link used to float
+                  mid-row and crowd the description. */}
+              <div className="flex flex-col gap-[var(--px-10)]">
+                <div className={INSET_ROW}>
+                  <div className="min-w-0">
+                    <div className={PROFILE_ROW_TITLE}>
+                      Password
+                    </div>
+                    <div className={`${PROFILE_ROW_META} truncate`}>
+                      {/* Social-login accounts (has_password === false) haven't set one yet. */}
+                      {user.has_password === false
+                        ? "Set a password for your account"
+                        : "Change your account password"}
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={onNavigateChangePassword ?? (() => {})}
+                    className={`${BTN_SECONDARY} shrink-0`}
+                  >
+                    {user.has_password === false ? "Set" : "Change"}
+                  </button>
+                </div>
+                <div className={INSET_ROW}>
+                  <div className="min-w-0">
+                    <div className={PROFILE_ROW_TITLE}>
+                      Two-Factor Authentication
+                    </div>
+                    <div className={`${PROFILE_ROW_META} truncate`}>
+                      {twoFactorEnabled ? "Enabled" : "Disabled"}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handle2FAToggle}
+                    className={`${BTN_SECONDARY} shrink-0`}
+                  >
+                    {twoFactorEnabled ? "Disable" : "Enable"}
+                  </button>
+                </div>
+              </div>
+            </div>
+            </>
+            )}
 
-                  {isEditing && (
-                    <div className="lg:col-span-2 flex gap-[var(--px-10)] mt-[var(--px-10)] justify-end">
-                      <ButtonSleek
-                        text={submitting ? "Saving..." : "Save Changes"}
-                        onClick={handleUpdate}
-                      />
+            {activeTab === "billing" && <PlanBillingCard />}
+
+            {activeTab === "account" && (
+            <>
+            {/* Linked accounts (Google / Apple) — provided by the app; sits above Danger Zone. */}
+            {linkedAccounts}
+
+            <div className="relative border border-[var(--rx-color-error)] bg-[var(--rx-color-surface)] p-[var(--px-18)] before:absolute before:left-[var(--px-20)] before:top-0 before:block before:w-[var(--px-28)] before:border-t before:border-[var(--rx-color-error)] before:content-['']">
+              <h3 className={`${KICKER} mb-[var(--px-16)] !text-[var(--rx-color-error)]`}>
+                Danger Zone
+              </h3>
+
+              <div className="flex flex-col gap-[var(--px-10)]">
+                {!showDeleteConfirm ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className={`${BTN_DANGER} self-start`}
+                  >
+                    Delete Account
+                  </button>
+                ) : (
+                  <div className="border border-[var(--rx-color-border-subtle)] bg-[rgba(255,255,255,0.02)] p-[var(--px-12)]">
+                    <p className="mb-[var(--px-12)] font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-error)]">
+                      This action cannot be undone. Enter your password to confirm:
+                    </p>
+                    <input
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      placeholder="Enter your password"
+                      className={`${FIELD} mb-[var(--px-12)]`}
+                    />
+                    <div className="flex flex-wrap gap-[var(--px-10)]">
+                      <button
+                        type="button"
+                        onClick={handleDeleteAccount}
+                        className={`${BTN_BASE} border border-[var(--rx-color-error)] bg-[var(--rx-color-error)] font-medium text-[#050505] hover:opacity-90`}
+                      >
+                        Confirm Delete
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
-                          setIsEditing(false);
-                          setForm({
-                            name: user.name || "",
-                            language: user.language || "",
-                            timezone: user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-                          });
+                          setShowDeleteConfirm(false);
+                          setDeletePassword("");
                         }}
-                        className="px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 transition-colors"
+                        className={BTN_SECONDARY}
                       >
                         Cancel
                       </button>
                     </div>
-                  )}
-                </form>
-              </div>
-
-              <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
-                <h2 className="text-[length:var(--px-14)] font-medium font-helvetica mb-[var(--px-10)]">
-                  Security
-                </h2>
-
-                {/* Each row: text block (truncating, min-w-0) + a proper compact button pinned
-                    right with a guaranteed gap — the bare "Change →" text link used to float
-                    mid-row and crowd the description. */}
-                <div className="flex flex-col gap-[var(--px-10)]">
-                  <div className="flex justify-between items-center gap-[var(--px-16)] p-[var(--px-10)] border border-slate-200 border-dotted rounded">
-                    <div className="min-w-0">
-                      <div className="text-[length:var(--px-11)] font-light font-helvetica">
-                        Password
-                      </div>
-                      <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80 truncate">
-                        {/* Social-login accounts (has_password === false) haven't set one yet. */}
-                        {user.has_password === false
-                          ? "Set a password for your account"
-                          : "Change your account password"}
-                      </div>
-                    </div>
-                    <div className="shrink-0">
-                      <ButtonSleek
-                        text={user.has_password === false ? "Set" : "Change"}
-                        onClick={onNavigateChangePassword ?? (() => {})}
-                        customWidth="min-w-[var(--px-70)]"
-                        transparent={true}
-                      />
-                    </div>
                   </div>
-                  <div className="flex justify-between items-center gap-[var(--px-16)] p-[var(--px-10)] border border-slate-200 border-dotted rounded">
-                    <div className="min-w-0">
-                      <div className="text-[length:var(--px-11)] font-light font-helvetica">
-                        Two-Factor Authentication
-                      </div>
-                      <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80 truncate">
-                        {twoFactorEnabled ? "Enabled" : "Disabled"}
-                      </div>
-                    </div>
-                    <div className="shrink-0">
-                      <ButtonSleek
-                        text={twoFactorEnabled ? "Disable" : "Enable"}
-                        onClick={handle2FAToggle}
-                        customWidth="min-w-[var(--px-70)]"
-                        transparent={true}
-                      />
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
-              </>
-              )}
-
-              {activeTab === "billing" && <PlanBillingCard />}
-
-              {activeTab === "account" && (
-              <>
-              {/* Linked accounts (Google / Apple) — provided by the app; sits above Danger Zone. */}
-              {linkedAccounts}
-
-              <div className="p-[var(--px-16)] border border-[var(--color-neon-orange)] border-dotted rounded-lg">
-                <h3 className="text-[length:var(--px-14)] font-medium font-helvetica mb-[var(--px-10)] text-[var(--color-neon-orange)]">
-                  Danger Zone
-                </h3>
-
-                <div className="flex flex-col gap-[var(--px-10)]">
-                  {!showDeleteConfirm ? (
-                    <button
-                      onClick={() => setShowDeleteConfirm(true)}
-                      className="px-[var(--px-20)] py-[var(--px-10)] border border-[var(--color-neon-orange)] text-[var(--color-neon-orange)] text-[length:var(--px-11)] font-light font-helvetica hover:bg-white/10 transition-colors cursor-pointer rounded"
-                    >
-                      Delete Account
-                    </button>
-                  ) : (
-                    <div className="border border-[var(--color-neon-orange)] p-[var(--px-10)] rounded">
-                      <p className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-neon-orange)] mb-[var(--px-10)]">
-                        This action cannot be undone. Enter your password to confirm:
-                      </p>
-                      <input
-                        type="password"
-                        value={deletePassword}
-                        onChange={(e) => setDeletePassword(e.target.value)}
-                        placeholder="Enter your password"
-                        className="w-full border border-slate-200 border-dotted p-[var(--px-8)] text-[length:var(--px-11)] font-light font-helvetica mb-[var(--px-10)] rounded"
-                      />
-                      <div className="flex gap-[var(--px-10)]">
-                        <button
-                          onClick={handleDeleteAccount}
-                          className="px-[var(--px-20)] py-[var(--px-10)] bg-red-500 text-white text-[length:var(--px-11)] font-light font-helvetica hover:bg-red-600 transition-colors rounded"
-                        >
-                          Confirm Delete
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowDeleteConfirm(false);
-                            setDeletePassword("");
-                          }}
-                          className="px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 transition-colors rounded"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              </>
-              )}
-            </main>
-          </div>
+            </div>
+            </>
+            )}
+          </main>
         </div>
 
         <StatusMessage

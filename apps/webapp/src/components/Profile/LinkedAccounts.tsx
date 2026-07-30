@@ -1,5 +1,15 @@
 import React from "react";
-import { GoogleSignInButton, StatusMessage } from "@resomix/ui";
+import {
+  GoogleSignInButton,
+  StatusMessage,
+  PROFILE_BTN_PRIMARY,
+  PROFILE_BTN_SECONDARY,
+  PROFILE_INSET_ROW,
+  PROFILE_KICKER,
+  PROFILE_PANEL,
+  PROFILE_ROW_META,
+  PROFILE_ROW_TITLE,
+} from "@resomix/ui";
 import { getMyProfile, unlinkProvider, linkGoogleProvider } from "@resomix/api-client";
 import { useAppleTransfer } from "@resomix/hooks";
 
@@ -28,8 +38,8 @@ function Dot({ on }: { on: boolean }) {
     <span
       aria-hidden="true"
       className={
-        "inline-block w-[var(--px-8)] h-[var(--px-8)] rounded-full shrink-0 " +
-        (on ? "bg-green-400" : "bg-slate-500")
+        "inline-block w-[var(--px-6)] h-[var(--px-6)] rounded-full shrink-0 " +
+        (on ? "bg-[var(--rx-color-success)]" : "bg-[var(--rx-color-border-strong)]")
       }
     />
   );
@@ -48,7 +58,7 @@ function GoogleG() {
 
 function AppleLogo() {
   return (
-    <svg width="15" height="18" viewBox="0 0 14 17" fill="currentColor" aria-hidden="true" className="shrink-0 text-[var(--color-primary)]">
+    <svg width="15" height="18" viewBox="0 0 14 17" fill="currentColor" aria-hidden="true" className="shrink-0 text-[var(--rx-color-text-primary)]">
       <path d="M11.6 9c0-1.5.7-2.6 2-3.3-.7-1-1.8-1.6-3.2-1.7-1.4-.1-2.8.8-3.4.8-.6 0-1.8-.8-2.9-.8C2.7 4 1.3 4.9.6 6.3c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1-.04 1.4-.7 2.7-.7 1.3 0 1.6.7 2.7.6 1.1-.02 1.8-1 2.5-2 .5-.8.9-1.6 1.1-2.5-1.4-.5-2.4-1.9-2.4-3.3zM9.5 2.9c.6-.7 1-1.7.9-2.7-.9.04-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.6 1 .08 1.9-.5 2.5-1.2z" />
     </svg>
   );
@@ -73,17 +83,17 @@ function ProviderRow({
   action: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap justify-between items-center gap-[var(--px-12)] p-[var(--px-10)] border border-slate-200 border-dotted rounded">
+    <div className={`${PROFILE_INSET_ROW} flex-wrap`}>
       <div className="flex items-center gap-[var(--px-10)] min-w-0">
         {icon}
         <div className="min-w-0">
-          <div className="text-[length:var(--px-11)] font-light font-helvetica flex items-center gap-[var(--px-8)]">
+          <div className={`${PROFILE_ROW_TITLE} flex items-center gap-[var(--px-8)]`}>
             {name}
-            <span className="text-[length:var(--px-9)] uppercase tracking-wider opacity-60 border border-dotted border-slate-300/50 rounded-full px-[var(--px-6)] py-[var(--px-1)]">
+            <span className="rounded-[var(--rx-radius-tag,2px)] border border-[var(--rx-color-border-default)] px-[var(--px-6)] py-[var(--px-1)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">
               {role}
             </span>
           </div>
-          <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80 flex items-center gap-[var(--px-6)] mt-[var(--px-2)]">
+          <div className={`${PROFILE_ROW_META} flex items-center gap-[var(--px-6)]`}>
             <Dot on={connected} />
             <span className="truncate">{busy ? "Working…" : connected ? detail || "Connected" : "Not connected"}</span>
           </div>
@@ -176,11 +186,9 @@ export const LinkedAccounts: React.FC = () => {
   };
 
   return (
-    <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
-      <h3 className="text-[length:var(--px-14)] font-medium font-helvetica mb-[var(--px-4)]">
-        Linked Accounts
-      </h3>
-      <p className="text-[length:var(--px-10)] font-extralight font-helvetica opacity-70 mb-[var(--px-12)]">
+    <div className={PROFILE_PANEL}>
+      <h3 className={PROFILE_KICKER}>Linked Accounts</h3>
+      <p className="mb-[var(--px-16)] mt-[var(--px-8)] font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)] opacity-70">
         Connect your accounts to sign in and export playlists. You can disconnect any of them at any time.
       </p>
 
@@ -199,7 +207,7 @@ export const LinkedAccounts: React.FC = () => {
                 type="button"
                 onClick={disconnectGoogle}
                 disabled={googleBusy}
-                className="px-[var(--px-16)] py-[var(--px-8)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-white/10 transition-colors rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                className={PROFILE_BTN_SECONDARY}
               >
                 Disconnect
               </button>
@@ -228,7 +236,7 @@ export const LinkedAccounts: React.FC = () => {
                 type="button"
                 onClick={disconnectApple}
                 disabled={apple.connectLoading || apple.statusLoading}
-                className="px-[var(--px-16)] py-[var(--px-8)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-white/10 transition-colors rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                className={PROFILE_BTN_SECONDARY}
               >
                 Disconnect
               </button>
@@ -237,7 +245,7 @@ export const LinkedAccounts: React.FC = () => {
                 type="button"
                 onClick={() => { setNotice(null); void apple.connect(); }}
                 disabled={apple.connectLoading || apple.statusLoading || !apple.ready}
-                className="px-[var(--px-16)] py-[var(--px-8)] border border-dotted border-[var(--color-primary)] text-[length:var(--px-11)] font-light font-helvetica hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] transition-colors rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                className={PROFILE_BTN_PRIMARY}
               >
                 {apple.connectLoading ? "Connecting…" : apple.ready ? "Connect" : "Preparing…"}
               </button>
@@ -251,12 +259,12 @@ export const LinkedAccounts: React.FC = () => {
         <div
           role="status"
           className={
-            "mt-[var(--px-12)] text-[length:var(--px-10)] font-light font-fira leading-[var(--px-15)] px-[var(--px-10)] py-[var(--px-8)] border border-dotted rounded " +
+            "mt-[var(--px-14)] border px-[var(--px-10)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase leading-[var(--px-15)] tracking-[var(--px-1)] " +
             ((notice?.kind ?? apple.notice?.kind) === "success"
-              ? "text-green-300 border-green-400/40 bg-green-400/5"
+              ? "border-[var(--rx-color-success)] bg-[rgba(99,210,143,0.08)] text-[var(--rx-color-success)]"
               : (notice?.kind ?? apple.notice?.kind) === "error"
-                ? "text-red-300 border-red-400/40 bg-red-400/5"
-                : "text-[var(--color-primary)]/70 border-slate-200/30")
+                ? "border-[var(--rx-color-error)] bg-[rgba(255,118,96,0.08)] text-[var(--rx-color-error)]"
+                : "border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)]")
           }
         >
           {notice?.text || apple.notice?.text}
@@ -277,7 +285,7 @@ export const LinkedAccounts: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowSetPw(false)}
-            className="mt-[var(--px-6)] px-[var(--px-24)] py-[var(--px-10)] border border-dotted border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] text-[length:var(--px-11)] font-light font-helvetica uppercase tracking-wider transition-colors cursor-pointer"
+            className={`${PROFILE_BTN_SECONDARY} mt-[var(--px-6)]`}
           >
             Got it
           </button>

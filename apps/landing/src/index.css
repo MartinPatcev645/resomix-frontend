@@ -13,6 +13,8 @@
   --rx-color-border-strong: rgba(255, 255, 255, 0.24);
   --rx-color-accent: #ee4a26;
   --rx-color-accent-hover: #f46545;
+  --rx-color-disabled: rgba(255, 255, 255, 0.42);
+  --rx-color-error: #ff7660;
   --rx-radius-control: 2px;
   --rx-duration-base: 160ms;
   --rx-ease-standard: ease;

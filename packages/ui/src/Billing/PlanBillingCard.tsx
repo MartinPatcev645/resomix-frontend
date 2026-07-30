@@ -1,10 +1,19 @@
 import { useEffect, useState } from "react";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
 import type {
   BillingSubscriptionSummary,
   BillingInvoice,
   BillingUsageItem,
 } from "@resomix/api-client";
+import {
+  PROFILE_BTN_PRIMARY,
+  PROFILE_BTN_SECONDARY,
+  PROFILE_INSET_ROW,
+  PROFILE_KICKER,
+  PROFILE_PANEL,
+  PROFILE_ROW_META,
+  PROFILE_ROW_TITLE,
+  PROFILE_SUBLABEL,
+} from "../Content/profileChrome";
 
 /**
  * "Plan & Billing" card for the profile screen: current plan + status, this month's usage,
@@ -43,14 +52,17 @@ function UsageMeter({ item }: { item: BillingUsageItem }) {
   const unlimited = limit === null || (typeof limit === "number" && limit < 0);
   const pct = unlimited || !limit ? 0 : Math.min(100, Math.round((used / limit) * 100));
   return (
-    <div className="flex flex-col gap-[var(--px-4)]">
-      <div className="flex justify-between text-[length:var(--px-10)] font-light font-helvetica">
-        <span>{label}</span>
-        <span className="lg:opacity-80">{unlimited ? `${used} / ∞` : `${used} / ${limit ?? 0}`}</span>
+    <div className="flex flex-col gap-[var(--px-6)]">
+      <div className="flex justify-between gap-[var(--px-10)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)]">
+        <span className="min-w-0 truncate text-[var(--rx-color-text-secondary)]">{label}</span>
+        <span className="shrink-0 tabular-nums text-[var(--rx-color-text-primary)]">
+          {unlimited ? `${used} / ∞` : `${used} / ${limit ?? 0}`}
+        </span>
       </div>
-      <div className="w-full h-[var(--px-4)] bg-white/10 rounded-full overflow-hidden outline outline-white/20 outline-dotted">
+      {/* Square meter on a token border — same treatment as the playlist match meter. */}
+      <div className="h-[var(--px-4)] w-full overflow-hidden rounded-[var(--px-2)] border border-[var(--rx-color-border-default)]">
         <div
-          className="h-full bg-[var(--color-primary)] rounded-full transition-all duration-300"
+          className="h-full bg-[var(--rx-color-accent)] transition-[width] duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -138,49 +150,50 @@ export function PlanBillingCard() {
   }
 
   return (
-    <div className="p-[var(--px-16)] border border-slate-200 border-dotted rounded-lg">
-      <h2 className="text-[length:var(--px-14)] font-medium font-helvetica mb-[var(--px-10)]">Plan & Billing</h2>
+    <div className={PROFILE_PANEL}>
+      <h2 className={`${PROFILE_KICKER} mb-[var(--px-16)]`}>Plan &amp; Billing</h2>
 
       {justSubscribed && (
-        <div className="mb-[var(--px-10)] p-[var(--px-8)] border border-green-500 border-dotted rounded text-[length:var(--px-10)] font-light font-helvetica text-green-500">
+        <div className="mb-[var(--px-14)] border border-[var(--rx-color-success,#63d28f)] bg-[rgba(99,210,143,0.08)] p-[var(--px-10)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-success,#63d28f)]">
           You're subscribed — thank you! It may take a moment to reflect.
         </div>
       )}
 
       {loading ? (
-        <div className="text-[length:var(--px-11)] font-light font-helvetica lg:opacity-80">Loading…</div>
+        <div className={PROFILE_SUBLABEL}>Loading…</div>
       ) : (
-        <div className="flex flex-col gap-[var(--px-14)]">
-          <div className="flex justify-between items-start gap-[var(--px-10)] p-[var(--px-10)] border border-slate-200 border-dotted rounded">
-            <div>
-              <div className="text-[length:var(--px-12)] font-medium font-helvetica">
+        <div className="flex flex-col gap-[var(--px-18)]">
+          <div className={`${PROFILE_INSET_ROW} !items-start`}>
+            <div className="min-w-0">
+              <div className={PROFILE_ROW_TITLE}>
                 {planName}
                 {status === "past_due" ? " (past due)" : ""}
               </div>
-              {statusLine && (
-                <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80 mt-[var(--px-4)]">
-                  {statusLine}
-                </div>
-              )}
+              {statusLine && <div className={PROFILE_ROW_META}>{statusLine}</div>}
             </div>
             <div className="shrink-0">
               {isPaid ? (
-                <ButtonSleek text={busy ? "Opening…" : "Manage"} onClick={goPortal} transparent disabled={busy} />
+                <button type="button" onClick={goPortal} disabled={busy} className={PROFILE_BTN_SECONDARY}>
+                  {busy ? "Opening…" : "Manage"}
+                </button>
               ) : (
-                <ButtonSleek
-                  text="Upgrade"
+                <button
+                  type="button"
                   onClick={() => {
                     window.location.href = "/subscribe";
                   }}
                   disabled={busy}
-                />
+                  className={PROFILE_BTN_PRIMARY}
+                >
+                  Upgrade
+                </button>
               )}
             </div>
           </div>
 
           {summary?.usage?.length ? (
-            <div className="flex flex-col gap-[var(--px-10)]">
-              <div className="text-[length:var(--px-11)] font-light font-helvetica">This month's usage</div>
+            <div className="flex flex-col gap-[var(--px-12)]">
+              <div className={PROFILE_SUBLABEL}>This month's usage</div>
               {summary.usage.map((u) => (
                 <UsageMeter key={u.feature} item={u} />
               ))}
@@ -189,15 +202,17 @@ export function PlanBillingCard() {
 
           {invoices.length > 0 && (
             <div className="flex flex-col gap-[var(--px-8)]">
-              <div className="text-[length:var(--px-11)] font-light font-helvetica">Billing history</div>
-              <div className="flex flex-col gap-[var(--px-4)]">
+              <div className={PROFILE_SUBLABEL}>Billing history</div>
+              <div className="flex flex-col gap-[var(--px-6)]">
                 {invoices.slice(0, 6).map((inv) => (
                   <div
                     key={inv.stripe_invoice_id}
-                    className="flex justify-between items-center gap-[var(--px-8)] text-[length:var(--px-10)] font-light font-helvetica p-[var(--px-6)] border border-slate-200 border-dotted rounded"
+                    className={`${PROFILE_INSET_ROW} !p-[var(--px-10)] gap-[var(--px-10)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)]`}
                   >
-                    <span>{fmtDate(inv.created_at)}</span>
-                    <span className="lg:opacity-80">
+                    <span className="shrink-0 tabular-nums text-[var(--rx-color-text-secondary)]">
+                      {fmtDate(inv.created_at)}
+                    </span>
+                    <span className="min-w-0 truncate text-[var(--rx-color-text-primary)]">
                       {fmtMoney(inv.amount_paid_cents, inv.currency)} · {inv.status}
                     </span>
                     {inv.hosted_invoice_url ? (
@@ -205,12 +220,12 @@ export function PlanBillingCard() {
                         href={inv.hosted_invoice_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
+                        className="shrink-0 text-[var(--rx-color-text-primary)] underline underline-offset-2 transition-colors hover:text-[var(--rx-color-accent)]"
                       >
                         View
                       </a>
                     ) : (
-                      <span className="opacity-40">—</span>
+                      <span className="shrink-0 opacity-40">—</span>
                     )}
                   </div>
                 ))}
@@ -218,7 +233,11 @@ export function PlanBillingCard() {
             </div>
           )}
 
-          {error && <div className="text-[length:var(--px-10)] font-light font-helvetica text-red-500">{error}</div>}
+          {error && (
+            <div className="font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-error)]">
+              {error}
+            </div>
+          )}
         </div>
       )}
     </div>
