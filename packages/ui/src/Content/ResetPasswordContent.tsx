@@ -1,7 +1,17 @@
 import { useState, FormEvent, ChangeEvent, useEffect } from "react";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { PasswordInput } from "../Elements/PasswordInput";
+import { AuthScreen } from "./AuthScreen";
+import { AuthDone } from "./AuthDone";
+import { PasswordRequirements } from "./PasswordRequirements";
+import { PAGE_BTN_PRIMARY as BTN_PRIMARY } from "./pageChrome";
+
+/**
+ * Password reset (from an emailed token), on the shared AuthScreen shell.
+ *
+ * Two states: the invalid/expired-token dead end, and the form. Reset logic is unchanged; the
+ * submit is now a real `type="submit"` rather than a ButtonSleek, so Enter works.
+ */
 
 interface ResetPasswordContentProps {
   baseUrl?: string;
@@ -170,122 +180,83 @@ export default function ResetPasswordContent({
   // If token is invalid, show error state
   if (!tokenValid) {
     return (
-      <section className="pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
-        <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-          <header className="mb-[var(--px-28)] text-center">
-            <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
-              Invalid Reset Link
-            </h1>
-          </header>
-
-          <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
-            <div className="flex flex-col items-center gap-[var(--px-20)] text-center">
-              <div className="text-[length:var(--px-60)] text-red-500">✕</div>
-              <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica">
-                This password reset link is invalid or has expired. Please request a new password
-                reset link.
-              </p>
-              <div className="mt-[var(--px-10)]">
-                <ButtonSleek
-                  text="Request New Reset Link"
-                  onClick={() => onNavigateForgotPassword?.()}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <AuthScreen
+        eyebrow="Account // Reset"
+        title="Invalid Reset Link"
+        backUrl={baseUrl}
+        panelLabel="Link expired"
+      >
+        <AuthDone
+          tone="error"
+          message="This password reset link is invalid or has expired. Please request a new password reset link."
+          actions={
+            <button
+              type="button"
+              onClick={() => onNavigateForgotPassword?.()}
+              className={`${BTN_PRIMARY} !min-h-[var(--px-44)] !px-[var(--px-22)]`}
+            >
+              Request New Reset Link
+            </button>
+          }
+        />
+      </AuthScreen>
     );
   }
 
   return (
-    <section className="pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
-      <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-        <header className="mb-[var(--px-28)] text-center">
-          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
-            Reset Password
-          </h1>
-          <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica">
-            Enter your new password below
-          </p>
-        </header>
-
-        <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
-          <div className="mb-[var(--px-24)]">
-            <a
-              href={baseUrl}
-              aria-label="Resomix home"
-              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors"
-            >
-              ← Back to Home
-            </a>
-          </div>
-
-          <form onSubmit={handleSubmit} className="flex flex-col w-full gap-[var(--px-20)]">
-            <PasswordInput
-              label="New Password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Create a strong password"
-              required
-              autoFocus
-              autoComplete="new-password"
-              error={errors.password}
-              showStrength={true}
-              strength={passwordStrength}
-            />
-
-            {form.password && (
-              <div className="flex flex-col gap-[var(--px-8)] -mt-[var(--px-10)]">
-                <div className="text-[length:var(--px-10)] font-extralight font-helvetica">
-                  Password requirements:
-                </div>
-                {passwordRequirements.map((req, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-[var(--px-8)] text-[length:var(--px-10)] font-light font-helvetica"
-                  >
-                    <span className={req.met ? "text-green-500" : "text-gray-400"}>
-                      {req.met ? "✓" : "○"}
-                    </span>
-                    <span className={req.met ? "text-green-500" : "text-gray-400"}>
-                      {req.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <PasswordInput
-              label="Confirm New Password"
-              name="confirmPassword"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              placeholder="Re-enter your new password"
-              required
-              autoComplete="new-password"
-              error={errors.confirmPassword}
-            />
-
-            <div className="mt-[var(--px-10)] flex justify-center">
-              <ButtonSleek
-                text={submitting ? "Resetting Password..." : "Reset Password"}
-                onClick={handleSubmit}
-              />
-            </div>
-          </form>
-
-          <StatusMessage
-            isOpen={showStatus}
-            onClose={() => setShowStatus(false)}
-            status={statusType}
-            title={statusTitle}
-            message={statusMessage}
+    <AuthScreen
+      eyebrow="Account // Reset"
+      title="Reset Password"
+      lead="Enter your new password below."
+      backUrl={baseUrl}
+      panelLabel="New password"
+    >
+      <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[var(--px-18)] p-[var(--px-20)]">
+        <div>
+          <PasswordInput
+            label="New Password"
+            name="password"
+            value={form.password}
+            onChange={handleChange}
+            placeholder="Create a strong password"
+            required
+            autoFocus
+            autoComplete="new-password"
+            error={errors.password}
+            showStrength={true}
+            strength={passwordStrength}
           />
+          {form.password && <PasswordRequirements requirements={passwordRequirements} />}
         </div>
-      </div>
-    </section>
+
+        <PasswordInput
+          label="Confirm New Password"
+          name="confirmPassword"
+          value={form.confirmPassword}
+          onChange={handleChange}
+          placeholder="Re-enter your new password"
+          required
+          autoComplete="new-password"
+          error={errors.confirmPassword}
+        />
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className={`${BTN_PRIMARY} w-full !min-h-[var(--px-44)] !px-[var(--px-22)]`}
+        >
+          {submitting ? "Resetting Password..." : "Reset Password"}
+        </button>
+      </form>
+
+      <StatusMessage
+        isOpen={showStatus}
+        onClose={() => setShowStatus(false)}
+        status={statusType}
+        title={statusTitle}
+        message={statusMessage}
+      />
+    </AuthScreen>
   );
 }
 

@@ -94,6 +94,14 @@ import ResetPasswordContent from "./Content/ResetPasswordContent";
 import VerifyEmailContent from "./Content/VerifyEmailContent";
 import Verify2FAContent from "./Content/Verify2FAContent";
 import ProfileContent from "./Content/ProfileContent";
+// Shared auth-screen building blocks — the frame, the terminal-state body, and the password
+// checklist. Every auth page composes these instead of hand-rolling its own chrome.
+import { AuthScreen } from "./Content/AuthScreen";
+import { AuthDone } from "./Content/AuthDone";
+import { PasswordRequirements } from "./Content/PasswordRequirements";
+export type { AuthScreenProps } from "./Content/AuthScreen";
+export type { AuthDoneProps, AuthDoneTone } from "./Content/AuthDone";
+export type { PasswordRequirement } from "./Content/PasswordRequirements";
 // Profile-screen chrome, so app-supplied panels (webapp's LinkedAccounts) match the page exactly.
 export * from "./Content/pageChrome";
 import ChangePasswordContent from "./Content/ChangePasswordContent";
@@ -180,6 +188,9 @@ export {
   ProfileContent,
   ChangePasswordContent,
   SessionsContent,
+  AuthScreen,
+  AuthDone,
+  PasswordRequirements,
   // Vectors
   ProfileIcon,
   PublicIcon,

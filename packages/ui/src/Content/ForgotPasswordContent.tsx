@@ -1,8 +1,23 @@
 import { useState, FormEvent, ChangeEvent } from "react";
 import { validateEmail } from "@resomix/hooks";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { FormInput } from "../Elements/FormInput";
+import { AuthScreen } from "./AuthScreen";
+import { AuthDone } from "./AuthDone";
+import {
+  PAGE_BTN_PRIMARY as BTN_PRIMARY,
+  PAGE_BTN_SECONDARY as BTN_SECONDARY,
+  PAGE_SUBLABEL as SUBLABEL,
+  PAGE_TEXT_LINK as TEXT_LINK,
+} from "./pageChrome";
+
+/**
+ * Password-reset request, on the shared AuthScreen shell.
+ *
+ * Behaviour unchanged, including the deliberate security property that a submit always reports
+ * success whether or not the address exists. The submit is now a real `type="submit"` (the old
+ * ButtonSleek hardcodes `type="button"`, so Enter did nothing).
+ */
 
 interface ForgotPasswordContentProps {
   baseUrl?: string;
@@ -102,92 +117,88 @@ export default function ForgotPasswordContent({
   };
 
   return (
-    <section className="pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
-      <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-        <header className="mb-[var(--px-28)] text-center">
-          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
-            Forgot Password?
-          </h1>
-          <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica">
-            Enter your email address and we'll send you a reset link
-          </p>
-        </header>
-
-        <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
-          <div className="mb-[var(--px-24)]">
+    <AuthScreen
+      eyebrow="Account // Reset"
+      title="Forgot Password?"
+      lead="Enter your email address and we'll send you a reset link."
+      backControl={
+        <button type="button" onClick={onNavigateLogin} className={`${BTN_SECONDARY} gap-[var(--px-6)]`}>
+          <svg viewBox="0 0 24 24" className="h-[var(--px-14)] w-[var(--px-14)] shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back to Login
+        </button>
+      }
+      panelLabel={submitted ? "Link sent" : "Recover access"}
+      footer={
+        submitted ? undefined : (
+          <>
+            <span className={SUBLABEL}>Remember your password?</span>
             <button
-              onClick={onNavigateLogin}
-              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault(); // prevents focus change (and blur)
+                onNavigateLogin?.();
+              }}
+              className={TEXT_LINK}
             >
-              ← Back to Login
+              Sign in here
             </button>
-          </div>
+          </>
+        )
+      }
+    >
+      {!submitted ? (
+        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[var(--px-18)] p-[var(--px-20)]">
+          <p className="m-0 font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)] opacity-80">
+            Enter the email address associated with your account and we'll send you a link to reset
+            your password.
+          </p>
 
-          {!submitted ? (
-            <form onSubmit={handleSubmit} className="flex flex-col w-full gap-[var(--px-20)]">
-              <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-extralight font-helvetica lg:opacity-80">
-                Enter the email address associated with your account and we'll send you a link
-                to reset your password.
-              </p>
-
-              <FormInput
-                label="Email Address"
-                name="email"
-                type="email"
-                value={email}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder="your@email.com"
-                required
-                autoFocus
-                autoComplete="email"
-                error={error}
-              />
-
-              <div className="mt-[var(--px-10)] flex justify-center">
-                <ButtonSleek
-                  text={submitting ? "Sending..." : "Send Reset Link"}
-                  onClick={handleSubmit}
-                />
-              </div>
-
-              <div className="text-center mt-[var(--px-10)]">
-                <span className="text-[length:var(--px-11)] font-extralight font-helvetica">
-                  Remember your password?{" "}
-                </span>
-                <button
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault(); // prevents focus change (and blur)
-                    onNavigateLogin?.();
-                  }}
-                  className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
-                >
-                  Sign in here
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="flex flex-col items-center gap-[var(--px-20)] text-center">
-              <div className="text-[length:var(--px-60)] text-green-500">✓</div>
-              <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica">
-                Check your email for a link to reset your password. If it doesn't appear within
-                a few minutes, check your spam folder.
-              </p>
-              <div className="mt-[var(--px-10)]">
-                <ButtonSleek text="Back to Login" onClick={() => onNavigateLogin?.()} />
-              </div>
-            </div>
-          )}
-
-          <StatusMessage
-            isOpen={showStatus}
-            onClose={() => setShowStatus(false)}
-            status={statusType}
-            message={statusMessage}
+          <FormInput
+            label="Email Address"
+            name="email"
+            type="email"
+            value={email}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            placeholder="your@email.com"
+            required
+            autoFocus
+            autoComplete="email"
+            error={error}
           />
-        </div>
-      </div>
-    </section>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className={`${BTN_PRIMARY} w-full !min-h-[var(--px-44)] !px-[var(--px-22)]`}
+          >
+            {submitting ? "Sending..." : "Send Reset Link"}
+          </button>
+        </form>
+      ) : (
+        <AuthDone
+          eyebrow="Status // Sent"
+          message="Check your email for a link to reset your password. If it doesn't appear within a few minutes, check your spam folder."
+          actions={
+            <button
+              type="button"
+              onClick={() => onNavigateLogin?.()}
+              className={`${BTN_PRIMARY} !min-h-[var(--px-44)] !px-[var(--px-22)]`}
+            >
+              Back to Login
+            </button>
+          }
+        />
+      )}
+
+      <StatusMessage
+        isOpen={showStatus}
+        onClose={() => setShowStatus(false)}
+        status={statusType}
+        message={statusMessage}
+      />
+    </AuthScreen>
   );
 }

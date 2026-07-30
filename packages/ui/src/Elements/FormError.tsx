@@ -10,8 +10,10 @@ export const FormError: React.FC<FormErrorProps> = ({
   if (!visible || !message) return null;
 
   return (
-    <div 
-      className="text-[length:var(--px-10)] text-red-500 mt-[var(--px-4)] font-light font-helvetica"
+    // Matches the inline errors rendered by FormInput / PasswordInput, so a form-level message and
+    // a field-level one read as the same thing.
+    <div
+      className="mt-[var(--px-4)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-error)]"
       role="alert"
       aria-live="polite"
     >

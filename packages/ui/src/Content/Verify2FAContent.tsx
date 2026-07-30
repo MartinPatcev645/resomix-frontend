@@ -1,6 +1,29 @@
 import { useState, FormEvent, ChangeEvent, useEffect } from "react";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
+import { AuthScreen } from "./AuthScreen";
+import { AuthDone } from "./AuthDone";
+import {
+  PAGE_BTN_PRIMARY as BTN_PRIMARY,
+  PAGE_BTN_SECONDARY as BTN_SECONDARY,
+  PAGE_FIELD_LABEL as FIELD_LABEL,
+  PAGE_SUBLABEL as SUBLABEL,
+  PAGE_TEXT_LINK as TEXT_LINK,
+} from "./pageChrome";
+
+/**
+ * Two-factor code entry, on the shared AuthScreen shell.
+ *
+ * Unchanged: digits-only filtering, the 6-digit auto-submit, the resend cooldown, and the rate-
+ * limit vs generic failure titles. The submit is now a real `type="submit"` rather than a
+ * ButtonSleek, so Enter works alongside the auto-submit.
+ */
+
+/** Monospaced 6-digit entry — wide tracking so the code reads as discrete characters. */
+const CODE_FIELD =
+  "w-full border bg-[#0a0a0a] px-[var(--px-12)] py-[var(--px-14)] text-center font-fira " +
+  "text-[length:var(--px-28)] font-light tracking-[var(--px-10)] text-[var(--rx-color-text-primary)] " +
+  "transition-[border-color] duration-[var(--rx-duration-base)] focus:outline-none " +
+  "focus:border-[var(--rx-color-border-strong)]";
 
 interface Verify2FAContentProps {
   baseUrl?: string;
@@ -166,126 +189,106 @@ export default function Verify2FAContent({
   // If no userId, redirect to login
   if (!userId && !propUserId) {
     return (
-      <section className="pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
-        <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-          <header className="mb-[var(--px-28)] text-center">
-            <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
-              Invalid Session
-            </h1>
-          </header>
-
-          <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
-            <div className="flex flex-col items-center gap-[var(--px-20)] text-center">
-              <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica">
-                Your session has expired. Please log in again to continue.
-              </p>
-              <div className="mt-[var(--px-10)]">
-                <ButtonSleek text="Back to Login" onClick={() => onNavigateLogin?.()} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <AuthScreen
+        eyebrow="Account // Two-factor"
+        title="Invalid Session"
+        backUrl={baseUrl}
+        panelLabel="Session expired"
+      >
+        <AuthDone
+          tone="error"
+          message="Your session has expired. Please log in again to continue."
+          actions={
+            <button
+              type="button"
+              onClick={() => onNavigateLogin?.()}
+              className={`${BTN_PRIMARY} !min-h-[var(--px-44)] !px-[var(--px-22)]`}
+            >
+              Back to Login
+            </button>
+          }
+        />
+      </AuthScreen>
     );
   }
 
   return (
-    <section className="pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
-      <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-        <header className="mb-[var(--px-28)] text-center">
-          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
-            Two-Factor Authentication
-          </h1>
-          <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica">
-            Enter the 6-digit code sent to your email
-          </p>
-        </header>
-
-        <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
-          <div className="mb-[var(--px-24)]">
-            <button
-              onClick={onNavigateLogin}
-              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors"
-            >
-              ← Back to Login
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="flex flex-col w-full gap-[var(--px-20)]">
-            <div className="flex flex-col items-center gap-[var(--px-20)]">
-              <div className="text-[length:var(--px-60)]">🔐</div>
-              
-              <div className="w-full flex flex-col gap-[var(--px-10)]">
-                <label
-                  htmlFor="code"
-                  className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica text-center"
-                >
-                  Verification Code
-                </label>
-                <input
-                  id="code"
-                  name="code"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={code}
-                  onChange={handleChange}
-                  placeholder="000000"
-                  autoFocus
-                  autoComplete="one-time-code"
-                  className={`w-full border ${
-                    error ? "border-red-500" : "border-slate-200"
-                  } border-dotted p-[var(--px-12)] text-[length:var(--px-32)] lg:text-[length:var(--px-24)] font-light font-helvetica text-center tracking-[var(--px-8)] focus:outline-none focus:border-[var(--color-primary)]`}
-                  maxLength={6}
-                />
-                {error && (
-                  <div className="text-[length:var(--px-10)] text-red-500 text-center font-light font-helvetica">
-                    {error}
-                  </div>
-                )}
-              </div>
-
-              <p className="text-[length:var(--px-11)] font-extralight font-helvetica lg:opacity-80 text-center">
-                Please enter the 6-digit code we sent to your email address.
-              </p>
-            </div>
-
-            <div className="mt-[var(--px-10)] flex justify-center">
-              <ButtonSleek
-                text={submitting ? "Verifying..." : "Verify Code"}
-                onClick={handleSubmit}
-              />
-            </div>
-
-            <div className="border-t border-slate-200 border-dotted pt-[var(--px-20)] text-center">
-              <p className="text-[length:var(--px-11)] font-extralight font-helvetica mb-[var(--px-10)]">
-                Didn't receive the code?
-              </p>
-              <button
-                type="button"
-                onClick={handleResend}
-                disabled={resendCountdown > 0}
-                className={`text-[length:var(--px-11)] font-light font-helvetica ${
-                  resendCountdown > 0
-                    ? "text-gray-400 cursor-not-allowed"
-                    : "text-[var(--color-primary)] hover:text-[var(--color-primary-hover)]"
-                } transition-colors`}
-              >
-                {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : "Resend Code"}
-              </button>
-            </div>
-          </form>
-
-          <StatusMessage
-            isOpen={showStatus}
-            onClose={() => setShowStatus(false)}
-            status={statusType}
-            title={statusTitle}
-            message={statusMessage}
+    <AuthScreen
+      eyebrow="Account // Two-factor"
+      title="Two-Factor Authentication"
+      lead="Enter the 6-digit code sent to your email."
+      backControl={
+        <button type="button" onClick={onNavigateLogin} className={`${BTN_SECONDARY} gap-[var(--px-6)]`}>
+          <svg viewBox="0 0 24 24" className="h-[var(--px-14)] w-[var(--px-14)] shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back to Login
+        </button>
+      }
+      panelLabel="Verification code"
+      footer={
+        <>
+          <span className={SUBLABEL}>Didn't receive the code?</span>
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resendCountdown > 0}
+            className={`${TEXT_LINK} disabled:cursor-not-allowed disabled:text-[var(--rx-color-disabled)] disabled:no-underline disabled:hover:text-[var(--rx-color-disabled)]`}
+          >
+            {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : "Resend Code"}
+          </button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[var(--px-18)] p-[var(--px-20)]">
+        <div className="flex flex-col gap-[var(--px-8)]">
+          <label htmlFor="code" className={`${FIELD_LABEL} text-center`}>
+            Verification Code
+          </label>
+          <input
+            id="code"
+            name="code"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={code}
+            onChange={handleChange}
+            placeholder="000000"
+            autoFocus
+            autoComplete="one-time-code"
+            aria-invalid={error ? true : undefined}
+            className={`${CODE_FIELD} ${
+              error ? "border-[var(--rx-color-error)]" : "border-[var(--rx-color-border-default)]"
+            }`}
+            maxLength={6}
           />
+          {error && (
+            <div
+              role="alert"
+              className="text-center font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-error)]"
+            >
+              {error}
+            </div>
+          )}
         </div>
-      </div>
-    </section>
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className={`${BTN_PRIMARY} w-full !min-h-[var(--px-44)] !px-[var(--px-22)]`}
+        >
+          {submitting ? "Verifying..." : "Verify Code"}
+        </button>
+      </form>
+
+      <StatusMessage
+        isOpen={showStatus}
+        onClose={() => setShowStatus(false)}
+        status={statusType}
+        title={statusTitle}
+        message={statusMessage}
+      />
+    </AuthScreen>
   );
 }
 

@@ -5,11 +5,11 @@ import { FormInput } from "../Elements/FormInput";
 import { PasswordInput } from "../Elements/PasswordInput";
 import { GoogleSignInButton } from "../Auth/GoogleSignInButton";
 
+import { AuthScreen } from "./AuthScreen";
 import {
   PAGE_BTN_PRIMARY as BTN_PRIMARY,
-  PAGE_BTN_SECONDARY as BTN_SECONDARY,
-  PAGE_KICKER as KICKER,
   PAGE_SUBLABEL as SUBLABEL,
+  PAGE_TEXT_LINK as TEXT_LINK,
 } from "./pageChrome";
 
 /**
@@ -30,12 +30,6 @@ import {
  *    nothing. It now submits, as a login form should.
  *  • Sign In disables itself while a request is in flight, so it cannot be double-fired.
  */
-
-/** Small inline text link — "Forgot password?", "Register here". */
-const TEXT_LINK =
-  "cursor-pointer font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] " +
-  "text-[var(--rx-color-text-secondary)] underline-offset-2 transition-colors " +
-  "duration-[var(--rx-duration-base)] hover:text-[var(--rx-color-accent)] hover:underline";
 
 interface LoginContentProps {
   baseUrl?: string;
@@ -273,40 +267,31 @@ export default function LoginContent({
   };
 
   return (
-    // Spacing matches the workspace shell and the other account pages: a small inset from the
-    // vertical side lines, no oversized top pad — the layout's <main> already offsets the header.
-    <section className="px-[var(--px-12)] pt-[var(--px-16)] pb-[var(--px-40)] tracking-[var(--px-1)]">
-      <div className="mx-auto w-full max-w-[var(--px-560)] text-[var(--rx-color-text-primary)]">
-        {/* Header — accent rule + mono kicker, then a left-aligned heading, as on Profile. */}
-        <header className="mb-[var(--px-24)]">
-          <p className="mb-[var(--px-16)] flex items-center gap-[var(--px-10)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-muted)] before:block before:w-[var(--px-32)] before:border-t before:border-[var(--rx-color-accent)] before:content-['']">
-            Account // Sign in
-          </p>
-          <h1 className="m-0 font-helvetica text-[length:var(--px-28)] font-medium uppercase leading-[var(--px-32)] md:text-[length:var(--px-36)] md:leading-[var(--px-40)]">
-            Welcome Back
-          </h1>
-          <p className="mt-[var(--px-12)] font-helvetica text-[length:var(--px-15)] font-light leading-[var(--px-22)] text-[var(--rx-color-text-secondary)] opacity-70">
-            Sign in to your account to continue.
-          </p>
-        </header>
-
-        {/* baseUrl is the beta workspace in both apps, so this exits where Profile and Library do. */}
-        <div className="mb-[var(--px-24)]">
-          <a href={baseUrl} aria-label="Sonic Discovery" className={`${BTN_SECONDARY} gap-[var(--px-6)]`}>
-            <svg viewBox="0 0 24 24" className="h-[var(--px-14)] w-[var(--px-14)] shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Sonic Discovery
-          </a>
-        </div>
-
-        <div className="relative border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] before:absolute before:left-[var(--px-24)] before:top-0 before:block before:w-[var(--px-28)] before:border-t before:border-[var(--rx-color-accent)] before:content-['']">
-          <div className="flex flex-wrap items-center justify-between gap-[var(--px-12)] border-b border-[var(--rx-color-border-subtle)] bg-[rgba(255,255,255,0.02)] px-[var(--px-20)] py-[var(--px-14)]">
-            <p className={KICKER}>Credentials</p>
-            <span className={SUBLABEL}>Secure sign-in</span>
-          </div>
-
-          <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[var(--px-18)] p-[var(--px-20)]">
+    <AuthScreen
+      eyebrow="Account // Sign in"
+      title="Welcome Back"
+      lead="Sign in to your account to continue."
+      // baseUrl is the beta workspace in both apps, so this exits where Profile and Library do.
+      backUrl={baseUrl}
+      panelLabel="Credentials"
+      panelNote="Secure sign-in"
+      footer={
+        <>
+          <span className={SUBLABEL}>Don't have an account?</span>
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault(); // prevents focus change (and blur)
+              onNavigateRegister?.();
+            }}
+            className={TEXT_LINK}
+          >
+            Register here
+          </button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[var(--px-18)] p-[var(--px-20)]">
             <FormInput
               label="Email or Username"
               name="email_or_username"
@@ -381,43 +366,27 @@ export default function LoginContent({
                 </>
               )}
             </div>
-          </form>
+      </form>
 
-          <div className="flex flex-wrap items-center justify-center gap-[var(--px-8)] border-t border-[var(--rx-color-border-subtle)] px-[var(--px-20)] py-[var(--px-16)]">
-            <span className={SUBLABEL}>Don't have an account?</span>
-            <button
-              type="button"
-              onMouseDown={(e) => {
-                e.preventDefault(); // prevents focus change (and blur)
-                onNavigateRegister?.();
-              }}
-              className={TEXT_LINK}
-            >
-              Register here
-            </button>
-          </div>
-        </div>
-
-        <StatusMessage
-          isOpen={showStatus}
-          onClose={() => {
-            setShowStatus(false);
-          }}
-          status={statusType}
-          title={statusTitle}
-          message={statusMessage}
-          additionalButton={
-            showResendCTA
-              ? {
-                  text: resendPending ? "Sending..." : "Resend verification email",
-                  onClick: handleResendVerification,
-                  disabled: resendPending,
-                }
-              : undefined
-          }
-        />
-      </div>
-    </section>
+      <StatusMessage
+        isOpen={showStatus}
+        onClose={() => {
+          setShowStatus(false);
+        }}
+        status={statusType}
+        title={statusTitle}
+        message={statusMessage}
+        additionalButton={
+          showResendCTA
+            ? {
+                text: resendPending ? "Sending..." : "Resend verification email",
+                onClick: handleResendVerification,
+                disabled: resendPending,
+              }
+            : undefined
+        }
+      />
+    </AuthScreen>
   );
 }
 

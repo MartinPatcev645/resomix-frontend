@@ -256,9 +256,10 @@ export default function ChangePasswordContent({
               <button type="button" onClick={onCancel} className={PAGE_BTN_SECONDARY}>
                 Cancel
               </button>
-              {/* type="button" + onClick, matching the previous ButtonSleek: the form's onSubmit is
-                  the same handler, so a submit button would run it twice per click. */}
-              <button type="button" onClick={handleSubmit} className={PAGE_BTN_PRIMARY}>
+              {/* A real submit with NO onClick — the form's onSubmit is the single entry point, so
+                  it runs once per click AND Enter works. (It fired twice only in the previous
+                  shape, which had both an onClick and an implicit submit.) */}
+              <button type="submit" disabled={submitting} className={PAGE_BTN_PRIMARY}>
                 {submitting
                   ? hasPassword
                     ? "Changing Password..."

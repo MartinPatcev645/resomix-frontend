@@ -1,8 +1,38 @@
 import { useState, useEffect, useRef, ChangeEvent } from "react";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { FormInput } from "../Elements/FormInput";
 import { SineWaves } from "../Animations/SineWaves";
+import { AuthScreen } from "./AuthScreen";
+import { AuthDone } from "./AuthDone";
+import {
+  PAGE_BTN_PRIMARY as BTN_PRIMARY,
+  PAGE_BTN_SECONDARY as BTN_SECONDARY,
+  PAGE_SUBLABEL as SUBLABEL,
+  PAGE_TEXT_LINK as TEXT_LINK,
+} from "./pageChrome";
+
+/**
+ * Email verification, on the shared AuthScreen shell. Four states: verifying (token in flight),
+ * verified, failed/expired, and "we sent you a link".
+ *
+ * All logic is unchanged — the one-shot verify guard, the escalating resend cooldown (60s then
+ * 5 min), and the resend-target fallback all behave exactly as before.
+ */
+
+/** Envelope for the "check your email" state — replaces a remote PNG from resomix.com. */
+function EnvelopeMark() {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center border border-[var(--rx-color-accent)] text-[var(--rx-color-accent)]"
+    >
+      <svg viewBox="0 0 24 24" className="h-[var(--px-20)] w-[var(--px-20)]" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2.5" y="5" width="19" height="14" />
+        <polyline points="2.5 6.5 12 13 21.5 6.5" />
+      </svg>
+    </span>
+  );
+}
 
 interface VerifyEmailContentProps {
   baseUrl?: string;
@@ -157,186 +187,147 @@ export default function VerifyEmailContent({
   // Success state
   if (mode === "success") {
     return (
-      <section className="pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
-        <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-          <header className="mb-[var(--px-28)] text-center">
-            <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
-              Email Verified!
-            </h1>
-          </header>
-
-          <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
-            <div className="flex flex-col items-center gap-[var(--px-20)] text-center">
-              <div className="text-[length:var(--px-60)] text-green-500">✓</div>
-              <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica">
-                Your email has been successfully verified! You can now sign in to your account.
-              </p>
-              <div className="mt-[var(--px-10)]">
-                <ButtonSleek text="Go to Login" onClick={() => onNavigateLogin?.()} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <AuthScreen
+        eyebrow="Account // Verify"
+        title="Email Verified"
+        backUrl={baseUrl}
+        panelLabel="Verified"
+      >
+        <AuthDone
+          eyebrow="Status // Verified"
+          message="Your email has been successfully verified. You can now sign in to your account."
+          actions={
+            <button
+              type="button"
+              onClick={() => onNavigateLogin?.()}
+              className={`${BTN_PRIMARY} !min-h-[var(--px-44)] !px-[var(--px-22)]`}
+            >
+              Go to Login
+            </button>
+          }
+        />
+      </AuthScreen>
     );
   }
 
   // Error state
   if (mode === "error") {
     return (
-      <section className="pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
-        <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-          <header className="mb-[var(--px-28)] text-center">
-            <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
-              Verification Failed
-            </h1>
-          </header>
+      <AuthScreen
+        eyebrow="Account // Verify"
+        title="Verification Failed"
+        backUrl={baseUrl}
+        panelLabel="Link expired"
+      >
+        <div className="flex flex-col gap-[var(--px-18)] p-[var(--px-20)]">
+          <AuthDone
+            tone="error"
+            message="This verification link is invalid or has expired. Request a new one below."
+          />
 
-          <div className="max-w-[var(--px-550)]  p-[var(--px-20)] w-full">
-            <div className="flex flex-col items-center gap-[var(--px-20)] text-center">
-              <div className="text-[length:var(--px-60)] text-red-500">✕</div>
-              <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica">
-                This verification link is invalid or has expired. Please request a new verification
-                email.
-              </p>
+          <FormInput
+            label="Email Address"
+            name="email"
+            type="email"
+            value={emailInput}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setEmailInput(e.target.value)}
+            placeholder="your@email.com"
+          />
 
-              <div className="w-full flex flex-col gap-[var(--px-10)]">
-                <FormInput
-                  label="Email Address"
-                  name="email"
-                  type="email"
-                  value={emailInput}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setEmailInput(e.target.value)}
-                  placeholder="your@email.com"
-                />
-              </div>
-
-              <div className="mt-[var(--px-10)]">
-                <ButtonSleek
-                  text={
-                    resendCountdown > 0
-                      ? `Resend in ${resendCountdown}s`
-                      : "Resend Verification Email"
-                  }
-                  onClick={handleResend}
-                />
-              </div>
-            </div>
-
-            <StatusMessage
-              isOpen={showStatus}
-              onClose={() => setShowStatus(false)}
-              status={statusType}
-              message={statusMessage}
-            />
-          </div>
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resendCountdown > 0}
+            className={`${BTN_PRIMARY} w-full !min-h-[var(--px-44)] !px-[var(--px-22)]`}
+          >
+            {resendLabel}
+          </button>
         </div>
-      </section>
+
+        <StatusMessage
+          isOpen={showStatus}
+          onClose={() => setShowStatus(false)}
+          status={statusType}
+          message={statusMessage}
+        />
+      </AuthScreen>
     );
   }
 
   // Verifying state
   if (mode === "verify" && verifying) {
     return (
-      <section className="pt-[var(--px-120)] px-[var(--px-10)] md:px-0 tracking-[var(--px-1)]">
-        <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-          <header className="mb-[var(--px-28)] text-center">
-            <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
-              Verifying Email
-            </h1>
-          </header>
-
-          <div className="max-w-[var(--px-550)] border-2 border-[#222222] rounded-[var(--px-10)] p-[var(--px-20)] w-full">
-            <div className="flex flex-col items-center gap-[var(--px-20)] text-center">
-              <div className="w-full max-w-[var(--px-300)] h-[150px]">
-                <SineWaves />
-              </div>
-              <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica">
-                Please wait while we verify your email...
-              </p>
-            </div>
+      <AuthScreen eyebrow="Account // Verify" title="Verifying Email" panelLabel="Working">
+        <div className="flex flex-col items-center gap-[var(--px-12)] p-[var(--px-28)] text-center">
+          <div className="h-[var(--px-120)] w-full max-w-[var(--px-300)]">
+            <SineWaves />
           </div>
+          <p className="m-0 font-helvetica text-[length:var(--px-13)] font-light text-[var(--rx-color-text-secondary)]">
+            Please wait while we verify your email…
+          </p>
         </div>
-      </section>
+      </AuthScreen>
     );
   }
 
   // Email sent confirmation state
   return (
-    <section className="pt-[var(--px-120)] px-[var(--px-10)] md:px-0 tracking-[var(--px-1)]">
-      <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-        <header className="mb-[var(--px-28)] text-center">
-          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
-            Check Your Email
-          </h1>
-        </header>
-
-        <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
-          <div className="mb-[var(--px-24)]">
-            <a
-              href={baseUrl}
-              aria-label="Resomix home"
-              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors"
-            >
-              ← Back to Home
-            </a>
-          </div>
-
-          <div className="flex flex-col items-center gap-[var(--px-20)] text-center">
-            <img 
-              src="https://resomix.com/letter.png" 
-              alt="Email icon" 
-              className="w-[var(--px-60)] h-auto"
-            />
-            <p className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica">
-              We've sent a verification link to your email address. Please check your inbox and
-              click the link to verify your account.
-            </p>
-            <p className="text-[length:var(--px-11)] font-extralight font-helvetica lg:opacity-80">
-              If you don't see the email, check your spam folder.
-            </p>
-
-            <div className="border-t border-slate-200 border-dotted pt-[var(--px-20)] w-full flex flex-col items-center gap-[var(--px-10)]">
-              <p className="text-[length:var(--px-11)] font-extralight font-helvetica">
-                Didn't receive the email?
-              </p>
-              {!email && (
-                <div className="w-full max-w-[var(--px-320)]">
-                  <FormInput
-                    label="Email Address"
-                    name="resend-email"
-                    type="email"
-                    value={emailInput}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => setEmailInput(e.target.value)}
-                    placeholder="your@email.com"
-                  />
-                </div>
-              )}
-              <ButtonSleek
-                text={resendLabel}
-                onClick={handleResend}
-              />
-            </div>
-
-            <div className="mt-[var(--px-10)]">
-              <button
-                onClick={onNavigateLogin}
-                className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
-              >
-                Back to Login
-              </button>
-            </div>
-          </div>
-
-          <StatusMessage
-            isOpen={showStatus}
-            onClose={() => setShowStatus(false)}
-            status={statusType}
-            message={statusMessage}
-          />
-        </div>
+    <AuthScreen
+      eyebrow="Account // Verify"
+      title="Check Your Email"
+      backUrl={baseUrl}
+      panelLabel="Verification sent"
+      footer={
+        <>
+          <span className={SUBLABEL}>Already verified?</span>
+          <button type="button" onClick={onNavigateLogin} className={TEXT_LINK}>
+            Back to Login
+          </button>
+        </>
+      }
+    >
+      <div className="flex flex-col items-center gap-[var(--px-14)] p-[var(--px-28)] text-center">
+        <EnvelopeMark />
+        <p className="m-0 max-w-[var(--px-400)] font-helvetica text-[length:var(--px-14)] font-light leading-[var(--px-21)] text-[var(--rx-color-text-secondary)]">
+          We've sent a verification link to your email address. Check your inbox and click the link
+          to verify your account.
+        </p>
+        <p className={SUBLABEL}>If you don't see it, check your spam folder.</p>
       </div>
-    </section>
+
+      <div className="flex flex-col items-stretch gap-[var(--px-12)] border-t border-dotted border-[var(--rx-color-border-subtle)] p-[var(--px-20)]">
+        <span className={`${SUBLABEL} text-center`}>Didn't receive the email?</span>
+
+        {!email && (
+          <FormInput
+            label="Email Address"
+            name="resend-email"
+            type="email"
+            value={emailInput}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setEmailInput(e.target.value)}
+            placeholder="your@email.com"
+          />
+        )}
+
+        {/* Disabled during the cooldown — the label already counts down, so the control should
+            not invite a click that handleResend would just drop. */}
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={resendCountdown > 0}
+          className={`${BTN_SECONDARY} w-full !min-h-[var(--px-44)] !px-[var(--px-22)]`}
+        >
+          {resendLabel}
+        </button>
+      </div>
+
+      <StatusMessage
+        isOpen={showStatus}
+        onClose={() => setShowStatus(false)}
+        status={statusType}
+        message={statusMessage}
+      />
+    </AuthScreen>
   );
 }
 

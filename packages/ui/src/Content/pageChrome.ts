@@ -54,6 +54,12 @@ export const PAGE_FIELD =
   "hover:border-[var(--rx-color-border-strong)] focus:border-[var(--rx-color-border-strong)] focus:outline-none " +
   "disabled:cursor-not-allowed disabled:opacity-50";
 
+/** Small inline text link — "Forgot password?", "Sign in here", "Resend email". */
+export const PAGE_TEXT_LINK =
+  "cursor-pointer font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] " +
+  "text-[var(--rx-color-text-secondary)] underline-offset-2 transition-colors " +
+  "duration-[var(--rx-duration-base)] hover:text-[var(--rx-color-accent)] hover:underline";
+
 /** Inset row inside a panel — subtler border than the panel that holds it. */
 export const PAGE_INSET_ROW =
   "flex items-center justify-between gap-[var(--px-16)] border border-[var(--rx-color-border-subtle)] " +

@@ -2,6 +2,19 @@ import { useState, useEffect } from "react";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { ConfirmModal } from "../Modals/ConfirmModal";
 import { SineWaves } from "../Animations/SineWaves";
+import { AuthScreen } from "./AuthScreen";
+import {
+  PAGE_BTN_DANGER as BTN_DANGER,
+  PAGE_BTN_SECONDARY as BTN_SECONDARY,
+  PAGE_ROW_META,
+  PAGE_ROW_TITLE,
+  PAGE_SUBLABEL as SUBLABEL,
+} from "./pageChrome";
+
+/**
+ * Active sessions list, on the shared AuthScreen shell. Session rows use the same inset-row chrome
+ * as the Profile page's panels. Revoke / logout-all behaviour is unchanged.
+ */
 
 interface UserSession {
   session_id: string;
@@ -153,121 +166,108 @@ export default function SessionsContent({
   };
 
   if (loading) {
+    // Same shell as the loaded state, so the header and frame don't jump when the list arrives.
     return (
-      <section className="pt-[var(--px-120)] px-[var(--px-10)] md:px-0 tracking-[var(--px-1)]">
-        <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-          <div className="flex justify-center items-center h-[200px] w-full max-w-[var(--px-300)]">
+      <AuthScreen
+        eyebrow="Account // Sessions"
+        title="Active Sessions"
+        lead="Manage the devices signed in to your account."
+        panelLabel="Loading"
+      >
+        <div className="flex items-center justify-center p-[var(--px-28)]">
+          <div className="h-[var(--px-120)] w-full max-w-[var(--px-300)]">
             <SineWaves />
           </div>
         </div>
-      </section>
+      </AuthScreen>
     );
   }
 
   return (
-    <section className="pt-[var(--px-120)] px-[var(--px-10)] md:px-0 tracking-[var(--px-1)]">
-      <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-        <header className="mb-[var(--px-28)] text-center">
-          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
-            Active Sessions
-          </h1>
-          <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica">
-            Manage your active login sessions
-          </p>
-        </header>
+    <AuthScreen
+      eyebrow="Account // Sessions"
+      title="Active Sessions"
+      lead="Manage the devices signed in to your account."
+      backControl={
+        <button type="button" onClick={onNavigateProfile} className={`${BTN_SECONDARY} gap-[var(--px-6)]`}>
+          <svg viewBox="0 0 24 24" className="h-[var(--px-14)] w-[var(--px-14)] shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back to Profile
+        </button>
+      }
+      panelLabel="Signed-in devices"
+      panelNote={`${sessions.length} active`}
+    >
+      <div className="flex flex-col gap-[var(--px-14)] p-[var(--px-20)]">
+        <p className="m-0 font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)] opacity-80">
+          These devices have logged into your account. Revoke any session you do not recognise.
+        </p>
 
-        <div className="max-w-[var(--px-550)] rounded-[var(--px-10)] p-[var(--px-20)] w-full">
-          <div className="mb-[var(--px-24)]">
-            <button
-              onClick={onNavigateProfile}
-              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors"
-            >
-              ← Back to Profile
-            </button>
-          </div>
-
-          <p className="text-[length:var(--px-11)] font-extralight font-helvetica lg:opacity-80 mb-[var(--px-20)]">
-            This is a list of devices that have logged into your account. Revoke any sessions that
-            you do not recognize.
-          </p>
-
-          {sessions.length === 0 ? (
-            <div className="text-center py-[var(--px-40)]">
-              <p className="text-[length:var(--px-14)] font-light font-helvetica">
-                No active sessions found
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-[var(--px-10)]">
-              {sessions.map((session) => (
-                <div
-                  key={session.session_id}
-                  className="p-[var(--px-12)] border border-slate-200 border-dotted"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-[var(--px-8)] mb-[var(--px-4)]">
-                        <div className="text-[length:var(--px-12)] font-medium font-helvetica">
-                          {session.user_agent || "Unknown Device"}
-                        </div>
-                      </div>
-                      <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80">
-                        IP: {maskIP(session.ip_address)}
-                      </div>
-                      <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80">
-                        Expires: {formatDate(session.expires_at)}
-                      </div>
-                      <div className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80">
-                        Created: {formatDate(session.created_at)}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleRevokeSession(session.session_id)}
-                      className="text-[length:var(--px-10)] font-light font-helvetica text-red-500 hover:text-red-700 transition-colors"
-                    >
-                      Revoke
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {sessions.length > 1 && (
-            <div className="mt-[var(--px-20)] pt-[var(--px-20)] border-t border-slate-200 border-dotted">
-              <button
-                onClick={confirmLogoutAll}
-                className="w-full px-[var(--px-20)] py-[var(--px-10)] border border-red-500 text-red-500 text-[length:var(--px-11)] font-light font-helvetica hover:bg-red-50 transition-colors"
+        {sessions.length === 0 ? (
+          <p className={`${SUBLABEL} py-[var(--px-28)] text-center`}>No active sessions found</p>
+        ) : (
+          <div className="flex flex-col gap-[var(--px-10)]">
+            {sessions.map((session) => (
+              <div
+                key={session.session_id}
+                className="flex items-start justify-between gap-[var(--px-16)] border border-[var(--rx-color-border-subtle)] bg-[rgba(255,255,255,0.02)] p-[var(--px-12)]"
               >
-                Logout All Other Devices
-              </button>
-              <p className="text-[length:var(--px-10)] font-extralight font-helvetica lg:opacity-80 text-center mt-[var(--px-8)]">
-                This will sign you out from all devices except this one
-              </p>
-            </div>
-          )}
+                <div className="min-w-0 flex-1">
+                  <div className={`${PAGE_ROW_TITLE} truncate`} title={session.user_agent || "Unknown Device"}>
+                    {session.user_agent || "Unknown Device"}
+                  </div>
+                  <div className={PAGE_ROW_META}>IP: {maskIP(session.ip_address)}</div>
+                  <div className={PAGE_ROW_META}>Created: {formatDate(session.created_at)}</div>
+                  <div className={PAGE_ROW_META}>Expires: {formatDate(session.expires_at)}</div>
+                </div>
 
-          <StatusMessage
-            isOpen={showStatus}
-            onClose={() => setShowStatus(false)}
-            status={statusType}
-            message={statusMessage}
-          />
-
-          <ConfirmModal
-            isOpen={showConfirmLogoutAll}
-            onClose={() => setShowConfirmLogoutAll(false)}
-            onConfirm={handleLogoutAll}
-            title="Logout All Devices"
-            message="Are you sure you want to logout from all other devices? You will need to login again on those devices."
-            confirmText="Logout All"
-            cancelText="Cancel"
-            confirmDanger={true}
-          />
-        </div>
+                <button
+                  type="button"
+                  onClick={() => handleRevokeSession(session.session_id)}
+                  className={`${BTN_DANGER} shrink-0`}
+                >
+                  Revoke
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-    </section>
+
+      {sessions.length > 1 && (
+        <div className="flex flex-col items-stretch gap-[var(--px-8)] border-t border-dotted border-[var(--rx-color-border-subtle)] p-[var(--px-20)]">
+          <button
+            type="button"
+            onClick={confirmLogoutAll}
+            className={`${BTN_DANGER} w-full !min-h-[var(--px-44)]`}
+          >
+            Logout All Other Devices
+          </button>
+          <p className={`${SUBLABEL} text-center`}>
+            Signs you out everywhere except this device
+          </p>
+        </div>
+      )}
+
+      <StatusMessage
+        isOpen={showStatus}
+        onClose={() => setShowStatus(false)}
+        status={statusType}
+        message={statusMessage}
+      />
+
+      <ConfirmModal
+        isOpen={showConfirmLogoutAll}
+        onClose={() => setShowConfirmLogoutAll(false)}
+        onConfirm={handleLogoutAll}
+        title="Logout All Devices"
+        message="Are you sure you want to logout from all other devices? You will need to login again on those devices."
+        confirmText="Logout All"
+        cancelText="Cancel"
+        confirmDanger={true}
+      />
+    </AuthScreen>
   );
 }
 

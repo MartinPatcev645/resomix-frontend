@@ -9,11 +9,43 @@ import {
   validateCheckbox,
   calculatePasswordStrength,
 } from "@resomix/hooks";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { FormInput } from "../Elements/FormInput";
 import { PasswordInput } from "../Elements/PasswordInput";
 import { GoogleSignInButton } from "../Auth/GoogleSignInButton";
+import { AuthScreen } from "./AuthScreen";
+import { PasswordRequirements } from "./PasswordRequirements";
+import {
+  PAGE_BTN_PRIMARY as BTN_PRIMARY,
+  PAGE_SUBLABEL as SUBLABEL,
+  PAGE_TEXT_LINK as TEXT_LINK,
+} from "./pageChrome";
+
+/**
+ * Registration screen, on the shared AuthScreen shell (see LoginContent for the same treatment).
+ *
+ * Wider panel than sign-in because the fields pair up two-per-row. Registration logic is
+ * unchanged — same validators, same confirm-password and terms checks, same register → verify
+ * email flow, same Google branch.
+ *
+ * The one behavioural fix, matching the sign-in page: Create Account is a real `type="submit"`
+ * instead of a ButtonSleek (which hardcodes `type="button"`), so the form actually has a submit
+ * control and Enter works.
+ */
+
+/** Square consent checkbox, accent when checked — the theme has no rounded controls. */
+const CHECKBOX =
+  "h-[var(--px-16)] w-[var(--px-16)] shrink-0 cursor-pointer appearance-none border " +
+  "border-[var(--rx-color-border-strong)] bg-transparent " +
+  "checked:border-[var(--rx-color-accent)] checked:bg-[var(--rx-color-accent)] " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rx-color-accent)]";
+
+const CONSENT_TEXT =
+  "font-helvetica text-[length:var(--px-12)] font-light leading-[var(--px-18)] text-[var(--rx-color-text-secondary)]";
+
+const CONSENT_LINK =
+  "text-[var(--rx-color-accent)] underline-offset-2 transition-colors hover:text-[var(--rx-color-accent-hover)] hover:underline";
+
 
 interface RegisterContentProps {
   baseUrl?: string;
@@ -207,30 +239,25 @@ export default function RegisterContent({
   };
 
   return (
-    <section className="pt-16 md:pt-24 lg:pt-[var(--px-120)] px-0 tracking-[var(--px-1)]">
-      <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-        <header className="mb-7 md:mb-[var(--px-28)] text-center">
-          <h1 className="text-4xl md:text-[length:var(--px-52)] leading-tight md:leading-[var(--px-60)] font-medium font-helvetica uppercase">
-            Create Account
-          </h1>
-          <p className="mt-2 md:mt-[var(--px-8)] text-sm md:text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica">
-            Join ResomiX today and discover similar music
-          </p>
-        </header>
-
-        <div className="w-full max-w-[var(--px-550)] lg:max-w-[var(--px-840)] p-5 md:p-[var(--px-20)]">
-          <div className="mb-[var(--px-24)]">
-            <a
-              href={baseUrl}
-              aria-label="Resomix home"
-              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer"
-            >
-              ← Back to Home
-            </a>
-          </div>
-
-          <form onSubmit={handleSubmit} className="flex flex-col w-full gap-5 md:gap-[var(--px-20)]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <AuthScreen
+      eyebrow="Account // Register"
+      title="Create Account"
+      lead="Join Resomix today and discover similar music."
+      backUrl={baseUrl}
+      width="lg"
+      panelLabel="Your details"
+      panelNote="All fields required unless marked"
+      footer={
+        <>
+          <span className={SUBLABEL}>Already have an account?</span>
+          <button type="button" onClick={onNavigateLogin} className={TEXT_LINK}>
+            Sign in here
+          </button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[var(--px-18)] p-[var(--px-20)]">
+        <div className="grid grid-cols-1 gap-x-[var(--px-20)] gap-y-[var(--px-18)] md:grid-cols-2">
               <FormInput
                 label="Email"
                 name="email"
@@ -259,172 +286,147 @@ export default function RegisterContent({
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <PasswordInput
-                  label="Password"
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  onBlur={() => handleBlur("password")}
-                  placeholder="Create a strong password"
-                  required
-                  autoComplete="new-password"
-                  error={getFieldError("password")}
-                  showStrength={true}
-                  strength={passwordStrength}
-                />
-
-                {form.password && (
-                  <div className="flex flex-col gap-2 mt-2">
-                    <div className="text-[length:var(--px-10)] font-extralight font-helvetica">
-                      Password requirements:
-                    </div>
-                    {passwordRequirements.map((req, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-[var(--px-8)] text-[length:var(--px-10)] font-light font-helvetica"
-                      >
-                        <span className={req.met ? "text-green-500" : "text-gray-400"}>
-                          {req.met ? "✓" : "○"}
-                        </span>
-                        <span className={req.met ? "text-green-500" : "text-gray-400"}>
-                          {req.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <PasswordInput
-                label="Confirm Password"
-                name="confirmPassword"
-                value={form.confirmPassword}
-                onChange={handleChange}
-                onBlur={handleConfirmPasswordBlur}
-                placeholder="Re-enter your password"
-                required
-                autoComplete="new-password"
-                error={confirmPasswordError}
-              />
-            </div>
-
-            <FormInput
-              label="Name"
-              name="name"
-              type="text"
-              value={form.name}
+        <div className="grid grid-cols-1 gap-x-[var(--px-20)] gap-y-[var(--px-18)] md:grid-cols-2">
+          <div>
+            <PasswordInput
+              label="Password"
+              name="password"
+              value={form.password}
               onChange={handleChange}
-              onBlur={() => handleBlur("name")}
-              placeholder="Your full name"
-              optional
-              autoComplete="name"
-              error={getFieldError("name")}
+              onBlur={() => handleBlur("password")}
+              placeholder="Create a strong password"
+              required
+              autoComplete="new-password"
+              error={getFieldError("password")}
+              showStrength={true}
+              strength={passwordStrength}
             />
 
-            <fieldset className="flex flex-col gap-[var(--px-10)] border-t border-slate-200 border-dotted pt-[var(--px-20)]">
-              <legend className="sr-only">Terms and Privacy</legend>
+            {form.password && <PasswordRequirements requirements={passwordRequirements} />}
+          </div>
 
-              <label className="flex items-center gap-[var(--px-10)] cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={termsAccepted}
-                  onChange={(e) => {
-                    setTermsAccepted(e.target.checked);
-                    if (e.target.checked && privacyAccepted) setTermsError(undefined);
-                  }}
-                  className="mt-[var(--px-1)] cursor-pointer w-5 h-5"
-                />
-                <span className="text-[length:var(--px-11)] font-light font-helvetica leading-relaxed">
-                  I agree to the{" "}
-                  <a
-                    href="https://support.resomix.com/hc/articles/1/3/11/terms-of-service"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] underline"
-                  >
-                    Terms of Service
-                  </a>
-                </span>
-              </label>
-
-              <label className="flex items-center gap-[var(--px-10)] cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={privacyAccepted}
-                  onChange={(e) => {
-                    setPrivacyAccepted(e.target.checked);
-                    if (e.target.checked && termsAccepted) setTermsError(undefined);
-                  }}
-                  className="mt-[var(--px-1)] cursor-pointer w-5 h-5"
-                />
-                <span className="text-[length:var(--px-11)] font-light font-helvetica leading-relaxed">
-                  I agree to the{" "}
-                  <a
-                    href="https://support.resomix.com/hc/articles/1/3/1/privacy-policy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] underline"
-                  >
-                    Privacy Policy
-                  </a>
-                </span>
-              </label>
-
-              {termsError && (
-                <div className="text-[length:var(--px-10)] text-red-500 font-light font-helvetica">
-                  {termsError}
-                </div>
-              )}
-            </fieldset>
-
-            {/* Primary action + Google, side-by-side on wider screens (a vertical divider between),
-                stacked on mobile — keeps "Continue with Google" above the fold instead of below it. */}
-            <div className="mt-2 flex flex-col sm:flex-row items-center justify-center gap-[var(--px-14)]">
-              <ButtonSleek
-                text={submitting ? "Creating Account..." : "Create Account"}
-                onClick={handleSubmit}
-              />
-              {googleClientId && (
-                <>
-                  <span aria-hidden="true" className="hidden sm:block h-[var(--px-32)] w-px bg-current opacity-30" />
-                  <span aria-hidden="true" className="sm:hidden text-[length:var(--px-9)] font-light font-helvetica uppercase tracking-[var(--px-1)] opacity-50">
-                    or
-                  </span>
-                  <GoogleSignInButton
-                    clientId={googleClientId}
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    width={240}
-                    className=""
-                  />
-                </>
-              )}
-            </div>
-
-            <div className="text-center mt-2">
-              <span className="text-[length:var(--px-11)] font-extralight font-helvetica">
-                Already have an account?{" "}
-              </span>
-              <button
-                type="button"
-                onClick={onNavigateLogin}
-                className="text-[length:var(--px-11)] font-light font-helvetica text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer underline-offset-4 hover:underline"
-              >
-                Sign in here
-              </button>
-            </div>
-          </form>
-
-          <StatusMessage
-            isOpen={showStatus}
-            onClose={() => setShowStatus(false)}
-            status={statusType}
-            message={statusMessage}
+          <PasswordInput
+            label="Confirm Password"
+            name="confirmPassword"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            onBlur={handleConfirmPasswordBlur}
+            placeholder="Re-enter your password"
+            required
+            autoComplete="new-password"
+            error={confirmPasswordError}
           />
         </div>
-      </div>
-    </section>
+
+        <FormInput
+          label="Name"
+          name="name"
+          type="text"
+          value={form.name}
+          onChange={handleChange}
+          onBlur={() => handleBlur("name")}
+          placeholder="Your full name"
+          optional
+          autoComplete="name"
+          error={getFieldError("name")}
+        />
+
+        <fieldset className="flex flex-col gap-[var(--px-12)] border-t border-dotted border-[var(--rx-color-border-subtle)] pt-[var(--px-18)]">
+          <legend className="sr-only">Terms and Privacy</legend>
+
+          <label className="flex cursor-pointer items-center gap-[var(--px-10)]">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => {
+                setTermsAccepted(e.target.checked);
+                if (e.target.checked && privacyAccepted) setTermsError(undefined);
+              }}
+              className={CHECKBOX}
+            />
+            <span className={CONSENT_TEXT}>
+              I agree to the{" "}
+              <a
+                href="https://support.resomix.com/hc/articles/1/3/11/terms-of-service"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={CONSENT_LINK}
+              >
+                Terms of Service
+              </a>
+            </span>
+          </label>
+
+          <label className="flex cursor-pointer items-center gap-[var(--px-10)]">
+            <input
+              type="checkbox"
+              checked={privacyAccepted}
+              onChange={(e) => {
+                setPrivacyAccepted(e.target.checked);
+                if (e.target.checked && termsAccepted) setTermsError(undefined);
+              }}
+              className={CHECKBOX}
+            />
+            <span className={CONSENT_TEXT}>
+              I agree to the{" "}
+              <a
+                href="https://support.resomix.com/hc/articles/1/3/1/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={CONSENT_LINK}
+              >
+                Privacy Policy
+              </a>
+            </span>
+          </label>
+
+          {termsError && (
+            <div
+              role="alert"
+              className="font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-error)]"
+            >
+              {termsError}
+            </div>
+          )}
+        </fieldset>
+
+        {/* Same pairing as the sign-in screen: the primary takes the leftover space, Google is the
+            fixed member (GIS renders a fixed-width button), stacking with an "or" below `sm`. */}
+        <div className="flex flex-col items-stretch gap-[var(--px-12)] sm:flex-row sm:items-center">
+          <button
+            type="submit"
+            disabled={submitting}
+            className={`${BTN_PRIMARY} w-full !min-h-[var(--px-44)] !px-[var(--px-22)] sm:w-auto sm:flex-1`}
+          >
+            {submitting ? "Creating Account..." : "Create Account"}
+          </button>
+
+          {googleClientId && (
+            <>
+              <div aria-hidden="true" className="flex items-center gap-[var(--px-12)] sm:hidden">
+                <span className="h-px flex-1 bg-[var(--rx-color-border-subtle)]" />
+                <span className={SUBLABEL}>or</span>
+                <span className="h-px flex-1 bg-[var(--rx-color-border-subtle)]" />
+              </div>
+
+              <GoogleSignInButton
+                clientId={googleClientId}
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                width={240}
+                className="mx-auto shrink-0 sm:mx-0"
+              />
+            </>
+          )}
+        </div>
+      </form>
+
+      <StatusMessage
+        isOpen={showStatus}
+        onClose={() => setShowStatus(false)}
+        status={statusType}
+        message={statusMessage}
+      />
+    </AuthScreen>
   );
 }

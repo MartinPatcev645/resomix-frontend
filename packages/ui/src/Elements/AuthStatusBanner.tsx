@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PAGE_TEXT_LINK } from "../Content/pageChrome";
 
 interface AuthStatusBannerProps {
   onResendVerification: () => void;
@@ -21,30 +22,50 @@ export const AuthStatusBanner: React.FC<AuthStatusBannerProps> = ({
   };
 
   return (
-    <div className="w-full bg-[var(--color-secondary)] border-l-4 border-yellow-400 p-[var(--px-12)] mb-[var(--px-20)] flex items-center justify-between gap-[var(--px-10)] relative z-10">
-      <div className="flex items-center gap-[var(--px-10)] flex-1">
-        <span className="text-yellow-400 text-[length:var(--px-18)] flex-shrink-0">⚠</span>
-        <div className="flex-1">
-          <p className="text-[length:var(--px-12)] lg:text-[length:var(--px-10)] font-light font-helvetica text-[var(--color-text-secondary)]">
-            <span className="font-medium">Please verify your email</span> to access all features.
-          </p>
-        </div>
+    // Accent left rule instead of the old yellow-400 bar — the theme has one attention colour, and
+    // this now matches the beta/verification notices it sits alongside.
+    <div className="relative z-10 mb-[var(--px-20)] flex w-full items-center justify-between gap-[var(--px-12)] border border-[var(--rx-color-border-subtle)] border-l-2 border-l-[var(--rx-color-accent)] bg-[var(--rx-color-surface)] p-[var(--px-12)]">
+      <div className="flex flex-1 items-center gap-[var(--px-10)]">
+        <svg
+          viewBox="0 0 24 24"
+          className="h-[var(--px-16)] w-[var(--px-16)] shrink-0 text-[var(--rx-color-accent)]"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 3L1.5 21h21L12 3z" />
+          <path d="M12 10v4" />
+          <path d="M12 17.5h.01" />
+        </svg>
+        <p className="m-0 font-helvetica text-[length:var(--px-12)] font-light text-[var(--rx-color-text-secondary)]">
+          <span className="font-medium text-[var(--rx-color-text-primary)]">
+            Please verify your email
+          </span>{" "}
+          to access all features.
+        </p>
       </div>
-      
-      <div className="flex items-center gap-[var(--px-8)] flex-shrink-0">
+
+      <div className="flex shrink-0 items-center gap-[var(--px-10)]">
         <button
+          type="button"
           onClick={handleResend}
           disabled={resending}
-          className="text-[length:var(--px-11)] lg:text-[length:var(--px-10)] font-light font-helvetica text-yellow-400 hover:text-yellow-300 underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`${PAGE_TEXT_LINK} disabled:cursor-not-allowed disabled:opacity-50`}
         >
           {resending ? "Sending..." : "Resend Email"}
         </button>
         <button
+          type="button"
           onClick={onDismiss}
-          className="text-[length:var(--px-14)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors ml-[var(--px-8)]"
+          className="inline-flex h-[var(--px-24)] w-[var(--px-24)] cursor-pointer items-center justify-center border border-[var(--rx-color-border-default)] text-[var(--rx-color-text-muted)] transition-colors hover:border-[var(--rx-color-border-strong)] hover:text-[var(--rx-color-text-primary)]"
           aria-label="Dismiss"
         >
-          ✕
+          <svg viewBox="0 0 24 24" className="h-[var(--px-11)] w-[var(--px-11)]" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
         </button>
       </div>
     </div>
