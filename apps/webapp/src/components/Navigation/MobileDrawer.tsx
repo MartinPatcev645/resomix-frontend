@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
-import { ProfileDropdown } from '@resomix/ui';
 import { useAuthStore, useFeedbackStore } from '@resomix/stores';
 import {
   BETA_URL,
@@ -39,6 +38,47 @@ export function MobileDrawer({
   const { showFeedbackForm } = useFeedbackStore();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+
+  /**
+   * "There's more below" affordance. The drawer's content runs past the fold, and with no visible
+   * scrollbar a first-time visitor can read the handful of visible rows as the whole menu. This
+   * tracks whether the list is scrollable AND not yet at the end; the chevron only exists in that
+   * window, and disappears once the bottom is reached.
+   */
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showScrollCue, setShowScrollCue] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!isOpen || !el) return;
+
+    const update = () => {
+      const remaining = el.scrollHeight - el.clientHeight - el.scrollTop;
+      setShowScrollCue(remaining > 24);
+    };
+
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    // Accordions open/close and images settle, so the scroll height changes after mount. Guarded:
+    // ResizeObserver is missing in jsdom and older browsers, and the cue must never break the menu.
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    if (ro) {
+      ro.observe(el);
+      if (el.firstElementChild) ro.observe(el.firstElementChild);
+    }
+    return () => {
+      el.removeEventListener('scroll', update);
+      ro?.disconnect();
+    };
+  }, [isOpen]);
+
+  const scrollToBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    el.scrollTo({ top: el.scrollHeight, behavior: reduce ? 'auto' : 'smooth' });
+  }, []);
+
   const [cookieSettingsEnabled] = useState(isCookiePreferencesAvailable);
   const currentSection = getNavSectionForPath(location.pathname);
   const loginHref = `${BETA_URL}/auth/login?redirect=${encodeURIComponent(location.pathname + location.search)}`;
@@ -138,7 +178,7 @@ export function MobileDrawer({
           </button>
         </div>
 
-        <div className="nav-drawer-scroll">
+        <div className="nav-drawer-scroll" ref={scrollRef}>
           {NAV_TOP_GROUPS.map((group) => {
             const expanded = openAccordion === group.key;
             const isSection = currentSection === group.key;
@@ -256,21 +296,23 @@ export function MobileDrawer({
             </div>
           ) : null}
 
+          {/* Feedback is the drawer's one accent-filled action. */}
           <button
             type="button"
-            className="nav-drawer-feedback"
+            className="nav-drawer-btn nav-drawer-btn--primary"
             id="nav-drawer-feedback-button"
             onClick={() => {
               showFeedbackForm();
               onClose();
             }}
+            style={{ marginTop: '1rem' }}
           >
             {navT('nav.cta.feedback')}
           </button>
 
           <div className="nav-drawer-cta">
             <a
-              className="nav-cta nav-cta-secondary"
+              className="nav-drawer-btn nav-drawer-btn--secondary"
               href={CATALOGUE_PILOT_HREF}
               onClick={(e) => {
                 e.preventDefault();
@@ -282,35 +324,80 @@ export function MobileDrawer({
             </a>
           </div>
 
+          {/* Signed in: the account items laid out flat. A dropdown here would be a menu inside an
+              already-open menu, and mobile has the room to just show them. Logout is accent-
+              outlined — clearly the accent action, without competing with the primary above. */}
           {isAuthenticated ? (
-            <ProfileDropdown
-              align="right"
-              items={profileMenuItems}
-              trigger={
-                <button type="button" className="nav-drawer-acct">
-                  <span className="nav-acct" aria-hidden="true">
-                    <AccountIcon />
-                  </span>
-                  {navT('nav.account')}
-                </button>
-              }
-            />
+            <div className="nav-drawer-account">
+              {profileMenuItems.map((item) => {
+                const isLogout = item.id === 'nav-logout-menu-item';
+                const cls = `nav-drawer-btn ${isLogout ? 'nav-drawer-btn--accent' : 'nav-drawer-btn--secondary'}`;
+                if (item.href && !isLogout) {
+                  return (
+                    <a
+                      key={item.id}
+                      id={item.id}
+                      className={cls}
+                      href={item.href}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        item.onClick();
+                        onClose();
+                      }}
+                    >
+                      <span className="nav-acct" aria-hidden="true">{item.icon}</span>
+                      {item.label}
+                    </a>
+                  );
+                }
+                return (
+                  <button
+                    key={item.id}
+                    id={item.id}
+                    type="button"
+                    className={cls}
+                    onClick={() => {
+                      item.onClick();
+                      onClose();
+                    }}
+                  >
+                    <span className="nav-acct" aria-hidden="true">{item.icon}</span>
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
           ) : (
-            <a
-              className="nav-drawer-acct"
-              href={loginHref}
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavigate(loginHref);
-              }}
-            >
-              <span className="nav-acct" aria-hidden="true">
-                <AccountIcon />
-              </span>
-              {navT('nav.account')}
-            </a>
+            <div className="nav-drawer-account">
+              <a
+                className="nav-drawer-btn nav-drawer-btn--secondary"
+                href={loginHref}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavigate(loginHref);
+                }}
+              >
+                <span className="nav-acct" aria-hidden="true">
+                  <AccountIcon />
+                </span>
+                {navT('nav.account')}
+              </a>
+            </div>
           )}
         </div>
+
+        {showScrollCue && (
+          <button
+            type="button"
+            className="nav-drawer-more"
+            onClick={scrollToBottom}
+            aria-label="Scroll to see more"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        )}
       </div>
     </div>,
     document.body,

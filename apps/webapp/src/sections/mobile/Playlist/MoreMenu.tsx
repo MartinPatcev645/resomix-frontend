@@ -1,5 +1,5 @@
 import React from "react";
-import { HoverFlow, PAGE_BTN_SECONDARY } from "@resomix/ui";
+import { HoverFlow, PAGE_BTN_PRIMARY, PAGE_BTN_SECONDARY } from "@resomix/ui";
 import { ThumbIcon } from "@/components/index.ts";
 import { rateTrack, deleteTrackRating } from "@resomix/api-client";
 import { usePlaylistStore } from "@resomix/stores";
@@ -222,11 +222,16 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                     {/* Actions — plain buttons on the app's standard secondary control, replacing
                         the old white ButtonSleek pills. No "Close" here: the header ✕ is the exit,
                         as in every dialog. */}
-                    <div className="flex w-full flex-col gap-[var(--px-10)]">
+                    <div className="flex flex-col gap-[var(--px-10)]">
+                        {/* Chain Discover is this sheet's one accent-filled action, matching the
+                            drawer's Feedback button. `self-center` is load-bearing: this is a
+                            flex-COLUMN, whose default `align-items: stretch` pulls a lone child to
+                            the full width — which is why it read as an orange bar rather than a
+                            button. The stacked playlist actions below DO want that full width. */}
                         {!isInput && (
                             <button
                                 type="button"
-                                className={`${PAGE_BTN_SECONDARY} w-full playlist-sonic-discovery-button`}
+                                className={`${PAGE_BTN_PRIMARY} self-center px-[var(--px-24)] playlist-sonic-discovery-button`}
                                 onClick={() => {
                                     onClose?.();
                                     window.open(`${BASE_BETA_URL}/sonic-discovery?discover=${trackId}`, '_blank');

@@ -975,6 +975,79 @@ button.nav-cta-primary:hover {
   flex-direction: column;
 }
 
+/* Drawer buttons — the app's standard control set, so the drawer matches every other surface:
+   square corners at the control radius, mono uppercase, token colours. Replaces the old white
+   rounded-pill CTAs. */
+.nav-drawer-btn {
+  width: 100%;
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--rx-radius-control, 2px);
+  border: 1px solid transparent;
+  font-family: var(--font-fira, 'Fira Code', monospace);
+  font-size: 0.6875rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--rx-duration-base, 160ms) ease,
+              border-color var(--rx-duration-base, 160ms) ease,
+              color var(--rx-duration-base, 160ms) ease;
+}
+
+/* One accent-filled action per drawer (Feedback on the webapp, Try Resomix on landing). */
+.nav-drawer-btn--primary {
+  background: var(--rx-color-accent, #ee4a26);
+  border-color: var(--rx-color-accent, #ee4a26);
+  color: #050505;
+  font-weight: 500;
+}
+
+.nav-drawer-btn--primary:hover {
+  background: var(--rx-color-accent-hover, #f46545);
+  border-color: var(--rx-color-accent-hover, #f46545);
+}
+
+.nav-drawer-btn--secondary {
+  background: transparent;
+  border-color: var(--rx-color-border-default, rgba(255, 255, 255, 0.16));
+  color: var(--rx-color-text-primary, rgba(255, 255, 255, 0.96));
+}
+
+.nav-drawer-btn--secondary:hover {
+  border-color: var(--rx-color-border-strong, rgba(255, 255, 255, 0.24));
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Accent-outlined: reads as the accent action without competing with the primary (Logout). */
+.nav-drawer-btn--accent {
+  background: transparent;
+  border-color: var(--rx-color-accent, #ee4a26);
+  color: var(--rx-color-text-primary, rgba(255, 255, 255, 0.96));
+}
+
+.nav-drawer-btn--accent:hover {
+  background: var(--rx-color-accent-soft, rgba(238, 74, 38, 0.14));
+}
+
+/* The signed-in account block: a flat list of the same buttons. Mobile has room, and a dropdown
+   inside an already-open drawer was a menu within a menu. */
+.nav-drawer-account {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 1.375rem;
+}
+
+.nav-drawer-account .nav-acct svg,
+.nav-drawer-btn .nav-acct svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
 .nav-drawer-feedback {
   width: 100%;
   margin: 1rem 0 0;
@@ -1008,7 +1081,7 @@ button.nav-cta-primary:hover {
 .nav-drawer-cta .nav-cta {
   display: flex;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--rx-radius-control, 2px);
   min-height: 3rem;
   align-items: center;
 }
@@ -1149,4 +1222,51 @@ body.nav-locked {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* "More below" cue — a small chevron pinned to the panel's bottom-right. Only rendered while the
+   list is scrollable and not yet at the end, so it reads as "there is more", not as a control. */
+.nav-drawer-more {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 2;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid var(--rx-color-border-default, rgba(255, 255, 255, 0.16));
+  border-radius: var(--rx-radius-control, 2px);
+  background: var(--rx-color-surface-raised, #171717);
+  color: var(--rx-color-text-muted, rgba(255, 255, 255, 0.72));
+  transition: border-color var(--rx-duration-base, 160ms) ease,
+              color var(--rx-duration-base, 160ms) ease;
+}
+
+.nav-drawer-more:hover {
+  border-color: var(--rx-color-border-strong, rgba(255, 255, 255, 0.24));
+  color: var(--rx-color-text-primary, #fff);
+}
+
+.nav-drawer-more svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .nav-drawer-more svg {
+    animation: nav-drawer-more-nudge 2s ease-in-out infinite;
+  }
+}
+
+@keyframes nav-drawer-more-nudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px); }
 }
