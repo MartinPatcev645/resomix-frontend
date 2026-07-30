@@ -9,12 +9,19 @@ import React from "react";
  * `currentColor`, so they follow the button's neon-on-hover text colour for free (the earlier CSS
  * `mask-image` approach rendered as solid white blocks and is gone).
  */
+/**
+ * THE hero control. Every button in the playlist hero uses this — Back, Rename, Export, Share,
+ * Autoplay, favourite heart, public/private, the cover pencil and Rate — so they all share one
+ * hover: border and glyph/text move to --color-primary together, background never changes.
+ * Icon-only controls override padding/size; the cover pencil also overrides the background,
+ * because it sits on the artwork and must stay opaque.
+ */
 export const HERO_TOOLBAR_BTN =
   "group inline-flex min-h-[var(--px-44)] cursor-pointer items-center justify-center gap-[var(--px-6)] whitespace-nowrap " +
   "rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent " +
   "px-[var(--px-14)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] " +
   "text-[var(--rx-color-text-primary)] transition-[color,border-color] duration-[var(--rx-duration-base,150ms)] ease-out " +
-  "hover:border-[var(--color-primary,#EE4A26)] hover:text-[var(--color-primary,#EE4A26)]";
+  "hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]";
 
 const ICON = "h-[var(--px-16)] w-[var(--px-16)] shrink-0";
 

@@ -408,7 +408,7 @@ const PlaylistHero: React.FC = () => {
       name="Rate these Results"
       onClick={() => setShowRating(true)}
       title={rateChrome.title}
-      className={`inline-flex min-h-[var(--px-44)] shrink-0 items-center gap-[var(--px-8)] whitespace-nowrap border border-[var(--rx-color-border-default)] px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)] cursor-pointer transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] playlist-rating-button ${WORKSPACE_FOCUS_VISIBLE}` + (rateChrome.showLock ? " opacity-45" : " opacity-90")}
+      className={`${HERO_TOOLBAR_BTN} !px-[var(--px-12)] gap-[var(--px-8)] playlist-rating-button ${WORKSPACE_FOCUS_VISIBLE}` + (rateChrome.showLock ? " opacity-45" : " opacity-90")}
       id="playlist-hero-rating-button"
       aria-label="Rate these Results"
       aria-expanded={showRating}
@@ -571,7 +571,10 @@ const PlaylistHero: React.FC = () => {
               disabled={coverUploading}
               aria-label="Change cover image"
               title="Change cover image"
-              className={`absolute -right-[var(--px-10)] -top-[var(--px-10)] flex h-[var(--px-44)] w-[var(--px-44)] cursor-pointer items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface-raised)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] duration-[var(--rx-duration-base)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} disabled:cursor-not-allowed disabled:opacity-50`}
+              // HERO_TOOLBAR_BTN so the hover matches Rename / Export / Share / heart / visibility
+              // exactly. Only the surface is overridden: this sits on the artwork, so it must stay
+              // opaque rather than the toolbar's transparent.
+              className={`${HERO_TOOLBAR_BTN} absolute -right-[var(--px-10)] -top-[var(--px-10)] h-[var(--px-44)] w-[var(--px-44)] !px-0 !bg-[var(--rx-color-surface-raised)] ${WORKSPACE_FOCUS_VISIBLE} disabled:cursor-not-allowed disabled:opacity-50`}
               id="playlist-hero-cover-edit-button"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[var(--px-12)] h-[var(--px-12)]" aria-hidden="true">
