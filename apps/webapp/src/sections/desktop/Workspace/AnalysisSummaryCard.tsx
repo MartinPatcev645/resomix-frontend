@@ -297,7 +297,10 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-[var(--px-12)]">
+      {/* Stacked and full-width below lg (matching the app's own desktop/mobile switch) so all
+          three read as one equal-width set instead of three content-width buttons; inline row on
+          desktop. */}
+      <div className="flex flex-col items-stretch gap-[var(--px-12)] lg:flex-row lg:flex-wrap lg:items-center">
         <button
           type="button"
           disabled={!playlistUuid}

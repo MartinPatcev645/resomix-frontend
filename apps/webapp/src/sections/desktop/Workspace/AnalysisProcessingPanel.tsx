@@ -29,19 +29,28 @@ export const AnalysisProcessingPanel: React.FC<AnalysisProcessingPanelProps> = (
   const steps = [ANALYSIS_UPLOAD_STEP, ...ANALYSIS_PROCESSING_STEPS];
   const [activeIndex, setActiveIndex] = useState(0);
 
+  /**
+   * The upload step ends when the last BYTE is sent, not when the POST resolves. `status` only
+   * flips to "analyzing" once the server has taken the file and answered with an analysis id — so
+   * gating on status alone left this pinned at "Uploading track — 100%" for that whole round trip,
+   * which read as a slow upload. That wait is the server accepting and enqueuing the job, which is
+   * precisely what the next step ("Queued") describes.
+   */
+  const uploadDone = status !== "uploading" || progress >= 100;
+
   useEffect(() => {
-    // Step 0 ("Uploading file") is gated on the real upload %.
-    if (status === "uploading") {
+    // Step 0 ("Uploading track") is gated on the real upload %.
+    if (!uploadDone) {
       setActiveIndex(0);
       return;
     }
-    // Upload done → move onto the analysis steps immediately, then cycle across ~22 s.
+    // Bytes are in → move onto the analysis steps immediately, then cycle across ~22 s.
     setActiveIndex(1);
     const timers = ANALYSIS_STEP_SCHEDULE_MS.map((at, i) =>
       window.setTimeout(() => setActiveIndex(i + 2), at),
     );
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [status]);
+  }, [uploadDone]);
 
   const active = Math.min(steps.length - 1, activeIndex);
   // The last step ("Completed") holds while the async job finishes — blink its dot after 3s so it
