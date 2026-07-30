@@ -35,6 +35,34 @@ const partnerFields = (c: ContactItem): PartnerField[] => {
   return all.flatMap((f) => (f.value ? [{ ...f, value: f.value }] : []))
 }
 
+interface SubmitterRow {
+  label: string
+  value: string
+  /** The account's copy differs from what was typed on the form — worth flagging. */
+  differs?: boolean
+}
+
+/**
+ * The account behind a submission, for BOTH consumer and partner contacts.
+ *
+ * Only rows that add something. The modal already shows the name and email as submitted, and the
+ * consumer form pre-fills both from the signed-in account, so echoing them back verbatim would be
+ * pure duplication — the account's own name/email appear only when they differ from what was
+ * typed, which is the case an admin actually needs to notice.
+ */
+const submitterRows = (c: ContactItem): SubmitterRow[] => {
+  if (!c.is_signed_in) return []
+  const u = c.user
+  // Signed in per the stored user_id, but the account row didn't come back.
+  if (!u) return [{ label: 'User ID', value: `#${c.user_id ?? '—'}` }]
+
+  const rows: SubmitterRow[] = [{ label: 'User ID', value: `#${u.id}` }]
+  if (u.username) rows.push({ label: 'Username', value: u.username })
+  if (u.name && u.name !== c.name) rows.push({ label: 'Account name', value: u.name, differs: true })
+  if (u.email && u.email !== c.email) rows.push({ label: 'Account email', value: u.email, differs: true })
+  return rows
+}
+
 interface ContactTableProps {
   data: ContactItem[]
   loading: boolean
@@ -70,6 +98,12 @@ function ContactTable({
   const { confirmDelete } = useConfirmDialog()
   const [viewingContact, setViewingContact] = useState<ContactItem | null>(null)
   const partnerDetails = viewingContact ? partnerFields(viewingContact) : []
+  const submitterDetails = viewingContact ? submitterRows(viewingContact) : []
+  // Only surfaced when something is off — a healthy account needs no badge.
+  const accountWarnings = [
+    viewingContact?.user?.is_email_verified === false ? 'Email not verified' : null,
+    viewingContact?.user?.is_active === false ? 'Account inactive' : null,
+  ].filter((w): w is string => w !== null)
 
   const handleDeleteSingle = (record: ContactItem) => {
     confirmDelete({
@@ -380,6 +414,48 @@ function ContactTable({
                 </div>
               </div>
             )}
+
+            {/* Submitted by — stored data, not runtime: `contacts.user_id` is persisted at submit
+                time, so this is accurate forever. Shown for consumer and partner alike. */}
+            <div>
+              <p className="text-sm text-secondary mb-2">Submitted by</p>
+              <div
+                className="grid grid-cols-2 gap-4 p-4 rounded-lg"
+                style={{ backgroundColor: 'var(--color-background-secondary)' }}
+              >
+                <div>
+                  <p className="text-sm text-secondary">Account</p>
+                  <Tag color={viewingContact.is_signed_in ? 'green' : 'default'}>
+                    {viewingContact.is_signed_in ? 'Signed in' : 'Anonymous'}
+                  </Tag>
+                </div>
+                {submitterDetails.map(({ label, value, differs }) => (
+                  <div key={label}>
+                    <p className="text-sm text-secondary">{label}</p>
+                    <p className="text-primary">
+                      {value}
+                      {differs && (
+                        <Tag color="orange" className="ml-2">
+                          differs from form
+                        </Tag>
+                      )}
+                    </p>
+                  </div>
+                ))}
+                {accountWarnings.length > 0 && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-secondary">Account status</p>
+                    <div className="flex flex-wrap gap-2">
+                      {accountWarnings.map((w) => (
+                        <Tag key={w} color="red">
+                          {w}
+                        </Tag>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Message */}
             <div>

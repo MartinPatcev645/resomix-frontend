@@ -6,9 +6,23 @@ import type { ApiResponse } from "../types/api";
 
 // ─── Types ─────────────────────────────────────────────────
 
+/** The account behind a submission. Null/absent when it was submitted anonymously. */
+export interface ContactSubmitter {
+  id: number;
+  uuid: string | null;
+  username: string | null;
+  name: string | null;
+  email: string | null;
+  is_active?: boolean | null;
+  is_email_verified?: boolean | null;
+}
+
 export interface ContactItem {
   id: number;
   user_id: string | null;
+  /** Derived from the stored user_id — true even if the account has since been deleted. */
+  is_signed_in?: boolean;
+  user?: ContactSubmitter | null;
   name: string | null;
   email: string | null;
   subject: string | null;

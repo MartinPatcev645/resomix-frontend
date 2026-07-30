@@ -7,6 +7,7 @@ import {
   exportContact,
   apiAxiosInstance,
   type ContactItem as ApiContactItem,
+  type ContactSubmitter,
   type ContactListParams,
   type ApiResponse
 } from '@resomix/api-client'
@@ -32,6 +33,10 @@ export interface ContactItem {
   status: 'open' | 'resolved'
   submitted_at: string
   user_id: string | null
+  /** Whether the submitter was signed in. Derived server-side from the stored user_id. */
+  is_signed_in: boolean
+  /** The account behind the submission — null when anonymous, or when it was since deleted. */
+  user: ContactSubmitter | null
 }
 
 export type ContactSearchColumn = ContactListParams['search_column']
@@ -55,6 +60,8 @@ const convertApiContact = (apiData: ApiContactItem): ContactItem => ({
   status: apiData.status,
   submitted_at: apiData.submitted_at,
   user_id: apiData.user_id,
+  is_signed_in: apiData.is_signed_in ?? apiData.user_id != null,
+  user: apiData.user ?? null,
 })
 
 interface UseContactOptions {
