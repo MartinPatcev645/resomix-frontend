@@ -33,26 +33,6 @@ export interface PartnerFieldErrors {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-function buildMessage(data: PartnerFormState): string {
-  const lines = [
-    'PARTNER INQUIRY',
-    '',
-    `Role: ${data.role.trim() || '—'}`,
-    `Partner type: ${data.partnerType.trim()}`,
-    `Preferred path: ${data.preferredPath.trim()}`,
-  ];
-
-  if (data.context.trim()) {
-    lines.push(`Catalogue or product context: ${data.context.trim()}`);
-  }
-
-  if (data.message.trim()) {
-    lines.push('', 'Message:', data.message.trim());
-  }
-
-  return lines.join('\n');
-}
-
 export function usePartners() {
   const [formData, setFormData] = useState<PartnerFormState>(initialFormState);
   const [fieldErrors, setFieldErrors] = useState<PartnerFieldErrors>({});
@@ -106,12 +86,20 @@ export function usePartners() {
 
     setIsSubmitting(true);
     try {
+      // Every qualification answer goes over the wire as its own field so it lands in its own
+      // `contacts` column and admin can read, filter and export it. `message` carries ONLY the
+      // submitter's free text — it used to be a flattened "PARTNER INQUIRY" blob with the answers
+      // pasted in, which made them unqueryable.
       const result: { success?: boolean; error?: string } = await submitContactForm({
         contact_type: 'partner',
         name: formData.name.trim(),
         email: formData.email.trim(),
         company_name: formData.company.trim(),
-        message: buildMessage(formData),
+        role: formData.role.trim() || undefined,
+        partner_type: formData.partnerType.trim(),
+        preferred_path: formData.preferredPath.trim(),
+        catalog_context: formData.context.trim() || undefined,
+        message: formData.message.trim() || undefined,
       });
 
       if (result?.success) {

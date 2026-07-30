@@ -124,11 +124,17 @@ export function usePilotInquiry() {
 
     setIsSubmitting(true);
     try {
+      // Role and partner type have their own `contacts` columns (shared with the /partners form),
+      // so send them structurally as well as inside the message — otherwise admin shows those
+      // fields blank for pilot submissions while filling them for /partners ones. The rest of the
+      // pilot-specific answers have no column and stay in the message blob.
       const result: { success?: boolean; error?: string } = await submitContactForm({
         contact_type: 'partner',
         name: formData.name.trim(),
         email: formData.email.trim(),
         company_name: formData.company.trim(),
+        role: formData.role.trim() || undefined,
+        partner_type: formData.partnerType.trim() || undefined,
         catalog_size: formData.catalogSize.trim() || undefined,
         message: buildMessage(formData),
       });

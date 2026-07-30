@@ -20,7 +20,13 @@ export interface ContactItem {
   phone: string | null
   message: string | null
   contact_type: 'consumer' | 'partner'
+  // B2B qualification fields. Null on consumer contacts, and on whichever questions the
+  // submitting partner form does not ask (/partners and /partners-pilot ask different sets).
   company_name: string | null
+  role: string | null
+  partner_type: string | null
+  preferred_path: string | null
+  catalog_context: string | null
   catalog_size: string | null
   estimated_calls: string | null
   status: 'open' | 'resolved'
@@ -40,6 +46,10 @@ const convertApiContact = (apiData: ApiContactItem): ContactItem => ({
   message: apiData.message,
   contact_type: apiData.contact_type === 'partner' ? 'partner' : 'consumer',
   company_name: apiData.company_name ?? null,
+  role: apiData.role ?? null,
+  partner_type: apiData.partner_type ?? null,
+  preferred_path: apiData.preferred_path ?? null,
+  catalog_context: apiData.catalog_context ?? null,
   catalog_size: apiData.catalog_size ?? null,
   estimated_calls: apiData.estimated_calls ?? null,
   status: apiData.status,

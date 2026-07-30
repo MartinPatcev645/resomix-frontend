@@ -15,7 +15,13 @@ export interface ContactItem {
   phone: string | null;
   message: string | null;
   contact_type?: 'consumer' | 'partner';
+  // B2B qualification fields. NULL on consumer contacts, and on whichever questions the
+  // submitting partner form does not ask.
   company_name?: string | null;
+  role?: string | null;
+  partner_type?: string | null;
+  preferred_path?: string | null;
+  catalog_context?: string | null;
   catalog_size?: string | null;
   estimated_calls?: string | null;
   status: 'open' | 'resolved';

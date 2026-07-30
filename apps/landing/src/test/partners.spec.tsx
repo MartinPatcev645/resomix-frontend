@@ -115,7 +115,7 @@ describe('PnContactForm', () => {
     expect(document.activeElement?.id).toBe('pn-f-email');
   });
 
-  it('submits with partner contract payload and shows success copy', async () => {
+  it('sends every qualification answer as its own field, not flattened into the message', async () => {
     mockedSubmit.mockResolvedValue({ success: true });
 
     render(
@@ -135,6 +135,11 @@ describe('PnContactForm', () => {
     fireEvent.change(screen.getByLabelText(/preferred path/i), {
       target: { value: 'Private Catalogue Pilot' },
     });
+    fireEvent.change(screen.getByLabelText(/role/i), { target: { value: 'Head of Catalogue' } });
+    fireEvent.change(screen.getByLabelText(/catalogue or product context/i), {
+      target: { value: '~40k tracks, own storefront' },
+    });
+    fireEvent.change(screen.getByLabelText(/message/i), { target: { value: 'Free text only.' } });
 
     fireEvent.click(screen.getByRole('button', { name: /contact partnerships/i }));
 
@@ -148,7 +153,13 @@ describe('PnContactForm', () => {
         name: 'Jane Doe',
         email: 'partner@example.com',
         company_name: 'Acme Label',
-        message: expect.stringContaining('PARTNER INQUIRY'),
+        role: 'Head of Catalogue',
+        partner_type: 'Label / label group',
+        preferred_path: 'Private Catalogue Pilot',
+        catalog_context: '~40k tracks, own storefront',
+        // `message` is the submitter's free text and nothing else — the answers above used to be
+        // pasted into it as a "PARTNER INQUIRY" blob, which left them unqueryable in admin.
+        message: 'Free text only.',
       }),
     );
 

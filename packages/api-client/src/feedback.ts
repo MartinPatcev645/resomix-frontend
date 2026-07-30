@@ -43,10 +43,18 @@ interface ContactData {
   subject?: string;
   phone?: string;
   user_id?: string;
-  /** Which form this came from — 'consumer' (default) or 'partner' (the /partners developer form). */
+  /** Which form this came from — 'consumer' (default) or 'partner' (the landing partner forms). */
   contact_type?: "consumer" | "partner";
-  /** B2B partner-request fields (ignored for consumer contacts). */
+  /**
+   * B2B partner-request fields — dropped server-side for consumer contacts. Each partner form
+   * sends only what it asks: /partners sends role, partner_type, preferred_path and
+   * catalog_context; /partners-pilot sends role, partner_type and catalog_size.
+   */
   company_name?: string;
+  role?: string;
+  partner_type?: string;
+  preferred_path?: string;
+  catalog_context?: string;
   catalog_size?: string;
   estimated_calls?: string;
 }

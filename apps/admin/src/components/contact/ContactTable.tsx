@@ -7,6 +7,34 @@ import { useConfirmDialog } from '@resomix/hooks'
 
 const { TextArea } = Input
 
+/**
+ * The B2B qualification answers, in the order the /partners form asks them, with the
+ * unanswered ones dropped.
+ *
+ * The two landing partner forms collect different subsets — /partners asks role, partner type,
+ * preferred path and catalogue context; /partners-pilot asks role, partner type and catalogue
+ * size — so a blank is normal, not missing data, and is simply not rendered.
+ */
+interface PartnerField {
+  label: string
+  value: string
+  /** Free text — give it the full row rather than half of one. */
+  wide?: boolean
+}
+
+const partnerFields = (c: ContactItem): PartnerField[] => {
+  const all: { label: string; value: string | null; wide?: boolean }[] = [
+    { label: 'Company', value: c.company_name },
+    { label: 'Role', value: c.role },
+    { label: 'Partner type', value: c.partner_type },
+    { label: 'Preferred path', value: c.preferred_path },
+    { label: 'Catalogue / product context', value: c.catalog_context, wide: true },
+    { label: 'Estimated catalogue size', value: c.catalog_size },
+    { label: 'Estimated monthly calls', value: c.estimated_calls },
+  ]
+  return all.flatMap((f) => (f.value ? [{ ...f, value: f.value }] : []))
+}
+
 interface ContactTableProps {
   data: ContactItem[]
   loading: boolean
@@ -41,6 +69,7 @@ function ContactTable({
   const { modal } = App.useApp()
   const { confirmDelete } = useConfirmDialog()
   const [viewingContact, setViewingContact] = useState<ContactItem | null>(null)
+  const partnerDetails = viewingContact ? partnerFields(viewingContact) : []
 
   const handleDeleteSingle = (record: ContactItem) => {
     confirmDelete({
@@ -322,24 +351,6 @@ function ContactTable({
                   {viewingContact.contact_type === 'partner' ? 'Partner' : 'Consumer'}
                 </Tag>
               </div>
-              {viewingContact.company_name && (
-                <div>
-                  <p className="text-sm text-secondary">Company</p>
-                  <p className="text-primary">{viewingContact.company_name}</p>
-                </div>
-              )}
-              {viewingContact.catalog_size && (
-                <div>
-                  <p className="text-sm text-secondary">Estimated catalog size</p>
-                  <p className="text-primary">{viewingContact.catalog_size}</p>
-                </div>
-              )}
-              {viewingContact.estimated_calls && (
-                <div>
-                  <p className="text-sm text-secondary">Estimated monthly calls</p>
-                  <p className="text-primary">{viewingContact.estimated_calls}</p>
-                </div>
-              )}
               {viewingContact.submitted_at && (
                 <div>
                   <p className="text-sm text-secondary">Submitted</p>
@@ -349,6 +360,26 @@ function ContactTable({
                 </div>
               )}
             </div>
+
+            {/* Partner qualification — its own section so the B2B answers don't get lost among the
+                generic contact details. Every field is optional: the two landing partner forms ask
+                different questions, so only what was actually answered is rendered. */}
+            {viewingContact.contact_type === 'partner' && partnerDetails.length > 0 && (
+              <div>
+                <p className="text-sm text-secondary mb-2">Partner qualification</p>
+                <div
+                  className="grid grid-cols-2 gap-4 p-4 rounded-lg"
+                  style={{ backgroundColor: 'var(--color-background-secondary)' }}
+                >
+                  {partnerDetails.map(({ label, value, wide }) => (
+                    <div key={label} className={wide ? 'col-span-2' : undefined}>
+                      <p className="text-sm text-secondary">{label}</p>
+                      <p className="text-primary">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Message */}
             <div>
