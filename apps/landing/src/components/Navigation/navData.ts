@@ -165,6 +165,9 @@ export interface NavUtilityLink {
 }
 
 export const NAV_UTILITY_LINKS: NavUtilityLink[] = [
+  // Mirrors the beta app's drawer, which lists Home first. Here it is an in-app route ('/'),
+  // since the landing site IS resomix.com — no full page load needed.
+  { key: 'home', route: '/' },
   { key: 'about', route: '/about' },
   { key: 'journal', route: 'https://resomix.com/blog', external: true, externalAriaKey: 'journalAria' },
   // TODO: confirm per-section support URLs

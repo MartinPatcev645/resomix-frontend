@@ -59,8 +59,13 @@ export interface TokenRefreshResponse {
 // Request Types
 export interface RegisterRequest {
   email: string;
-  username: string;
   password: string;
+  /**
+   * Optional. The sign-up form only collects email + password; when this is omitted the server
+   * derives the username from the email's local part and resolves collisions by appending "1"
+   * (usman.naeem2212 → usman.naeem22121 → …). Only pass it where a username is genuinely chosen.
+   */
+  username?: string;
   name?: string;
 }
 

@@ -4,8 +4,6 @@ import {
   validateEmail,
   validatePassword,
   validatePasswordConfirmation,
-  validateUsername,
-  validateName,
   validateCheckbox,
   calculatePasswordStrength,
 } from "@resomix/hooks";
@@ -46,6 +44,17 @@ const CONSENT_TEXT =
 const CONSENT_LINK =
   "text-[var(--rx-color-accent)] underline-offset-2 transition-colors hover:text-[var(--rx-color-accent-hover)] hover:underline";
 
+/**
+ * Does this API error mean "that address already has an account"?
+ *
+ * Matched on the message because the register endpoint returns a flat 400 for every validation
+ * failure with no machine-readable code. Kept loose so a reworded backend string still lands.
+ */
+function isEmailTakenError(error?: string): boolean {
+  const text = (error || "").toLowerCase();
+  return text.includes("email") && (text.includes("already") || text.includes("exists"));
+}
+
 
 interface RegisterContentProps {
   baseUrl?: string;
@@ -58,13 +67,18 @@ interface RegisterContentProps {
   onGoogleSuccess?: (data: any) => void;
 }
 
-// Define form type
+/**
+ * Sign-up collects the minimum: an email and a password (confirmed).
+ *
+ * There is deliberately no username or display-name field. The server derives the username from
+ * the email's local part and de-duplicates it by appending "1" per collision — a client cannot do
+ * that safely (it would have to probe for availability and would still race two simultaneous
+ * sign-ups). Both are editable afterwards from the profile page.
+ */
 type RegisterForm = {
   email: string;
-  username: string;
   password: string;
   confirmPassword: string;
-  name: string;
 };
 
 export default function RegisterContent({
@@ -77,10 +91,8 @@ export default function RegisterContent({
   // Form validation hook
   const initialValues: RegisterForm = {
     email: "",
-    username: "",
     password: "",
     confirmPassword: "",
-    name: "",
   };
 
   const {
@@ -93,9 +105,7 @@ export default function RegisterContent({
     setFormValues,
   } = useFormValidation<RegisterForm>(initialValues, {
     email: validateEmail,
-    username: validateUsername,
     password: validatePassword,
-    name: (value) => validateName(value, false),
   });
 
   const [confirmPasswordError, setConfirmPasswordError] = useState<string>();
@@ -114,6 +124,9 @@ export default function RegisterContent({
   const [showStatus, setShowStatus] = useState(false);
   const [statusType, setStatusType] = useState<"loading" | "success" | "error">("loading");
   const [statusMessage, setStatusMessage] = useState("");
+  const [statusTitle, setStatusTitle] = useState<string | undefined>(undefined);
+  /** Drives the "Sign in instead" action in the status dialog. */
+  const [emailTaken, setEmailTaken] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Password requirements (simplified based on user requirements)
@@ -197,11 +210,10 @@ export default function RegisterContent({
       // Import dynamically to avoid circular dependencies
       const { register } = await import("@resomix/api-client");
       const registeredEmail = form.email;
+      // No username: the server derives it from the email and de-duplicates.
       const result = await register({
         email: form.email,
-        username: form.username,
         password: form.password,
-        name: form.name || undefined,
       });
       if (result.success) {
         setStatusType("success");
@@ -212,10 +224,8 @@ export default function RegisterContent({
         // Clear form
         setFormValues({
           email: "",
-          username: "",
           password: "",
           confirmPassword: "",
-          name: "",
         });
         setTermsAccepted(false);
         setPrivacyAccepted(false);
@@ -227,11 +237,26 @@ export default function RegisterContent({
       } else {
         const errorResult = result as { success: false; error: string };
         setStatusType("error");
-        setStatusMessage(errorResult.error || "Registration failed. Please try again.");
+
+        // "Email already registered" is the one failure with an obvious next step, so say what to
+        // do and put a Sign in button in the dialog rather than leaving the raw API string.
+        if (isEmailTakenError(errorResult.error)) {
+          setStatusTitle("Email already registered");
+          setStatusMessage(
+            `An account already exists for ${form.email.trim()}. Sign in instead, or reset your password if you've forgotten it.`,
+          );
+          setEmailTaken(true);
+        } else {
+          setStatusTitle(undefined);
+          setStatusMessage(errorResult.error || "Registration failed. Please try again.");
+          setEmailTaken(false);
+        }
       }
     } catch (error) {
       console.error("Registration error:", error);
       setStatusType("error");
+      setStatusTitle(undefined);
+      setEmailTaken(false);
       setStatusMessage("Network error. Please check your connection and try again.");
     } finally {
       setSubmitting(false);
@@ -244,9 +269,8 @@ export default function RegisterContent({
       title="Create Account"
       lead="Join Resomix today and discover similar music."
       backUrl={baseUrl}
-      width="lg"
       panelLabel="Your details"
-      panelNote="All fields required unless marked"
+      panelNote="Email and password only"
       footer={
         <>
           <span className={SUBLABEL}>Already have an account?</span>
@@ -257,79 +281,52 @@ export default function RegisterContent({
       }
     >
       <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[var(--px-18)] p-[var(--px-20)]">
-        <div className="grid grid-cols-1 gap-x-[var(--px-20)] gap-y-[var(--px-18)] md:grid-cols-2">
-              <FormInput
-                label="Email"
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={handleChange}
-                onBlur={() => handleBlur("email")}
-                placeholder="your@email.com"
-                required
-                autoFocus
-                autoComplete="email"
-                error={getFieldError("email")}
-              />
+        <FormInput
+          label="Email"
+          name="email"
+          type="email"
+          value={form.email}
+          onChange={handleChange}
+          onBlur={() => handleBlur("email")}
+          placeholder="your@email.com"
+          required
+          autoFocus
+          autoComplete="email"
+          error={getFieldError("email")}
+        />
 
-              <FormInput
-                label="Username"
-                name="username"
-                type="text"
-                value={form.username}
-                onChange={handleChange}
-                onBlur={() => handleBlur("username")}
-                placeholder="Choose a username"
-                required
-                autoComplete="username"
-                error={getFieldError("username")}
-              />
-            </div>
-
-        <div className="grid grid-cols-1 gap-x-[var(--px-20)] gap-y-[var(--px-18)] md:grid-cols-2">
-          <div>
-            <PasswordInput
-              label="Password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              onBlur={() => handleBlur("password")}
-              placeholder="Create a strong password"
-              required
-              autoComplete="new-password"
-              error={getFieldError("password")}
-              showStrength={true}
-              strength={passwordStrength}
-            />
-
-            {form.password && <PasswordRequirements requirements={passwordRequirements} />}
-          </div>
-
+        {/* Stacked, not two columns: with only three fields left the form is short enough to read
+            straight down, and it matches the sign-in screen. */}
+        <div>
           <PasswordInput
-            label="Confirm Password"
-            name="confirmPassword"
-            value={form.confirmPassword}
+            label="Password"
+            name="password"
+            value={form.password}
             onChange={handleChange}
-            onBlur={handleConfirmPasswordBlur}
-            placeholder="Re-enter your password"
+            onBlur={() => handleBlur("password")}
+            placeholder="Create a strong password"
             required
             autoComplete="new-password"
-            error={confirmPasswordError}
+            error={getFieldError("password")}
+            showStrength={true}
+            strength={passwordStrength}
           />
+
+          {form.password && <PasswordRequirements requirements={passwordRequirements} />}
         </div>
 
-        <FormInput
-          label="Name"
-          name="name"
-          type="text"
-          value={form.name}
+        <PasswordInput
+          label="Confirm Password"
+          name="confirmPassword"
+          value={form.confirmPassword}
           onChange={handleChange}
-          onBlur={() => handleBlur("name")}
-          placeholder="Your full name"
-          optional
-          autoComplete="name"
-          error={getFieldError("name")}
+          onBlur={handleConfirmPasswordBlur}
+          placeholder="Re-enter your password"
+          required
+          autoComplete="new-password"
+          error={confirmPasswordError}
         />
+
 
         <fieldset className="flex flex-col gap-[var(--px-12)] border-t border-dotted border-[var(--rx-color-border-subtle)] pt-[var(--px-18)]">
           <legend className="sr-only">Terms and Privacy</legend>
@@ -425,7 +422,19 @@ export default function RegisterContent({
         isOpen={showStatus}
         onClose={() => setShowStatus(false)}
         status={statusType}
+        title={statusTitle}
         message={statusMessage}
+        additionalButton={
+          emailTaken
+            ? {
+                text: "Sign in instead",
+                onClick: () => {
+                  setShowStatus(false);
+                  onNavigateLogin?.();
+                },
+              }
+            : undefined
+        }
       />
     </AuthScreen>
   );

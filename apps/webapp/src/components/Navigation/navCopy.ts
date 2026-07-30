@@ -70,6 +70,7 @@ const NAV_COPY: Record<string, string> = {
   'nav.cta.about': 'About',
   'nav.cta.cataloguePilot': 'Catalogue Pilot',
   'nav.cta.feedback': 'Feedback',
+  'nav.utility.home': 'Home',
   'nav.utility.about': 'About',
   'nav.utility.journal': 'Journal',
   'nav.utility.help-centre': 'Help Centre',

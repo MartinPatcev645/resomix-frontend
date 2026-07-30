@@ -181,6 +181,9 @@ export interface NavUtilityLink {
 }
 
 export const NAV_UTILITY_LINKS: NavUtilityLink[] = [
+  // Home first: from the beta app there is otherwise no way back to the marketing site, and it
+  // reads as the natural top of this list. `landingHref('/')` is resomix.com.
+  { key: 'home', route: landingHref('/') },
   { key: 'about', route: landingHref('/about') },
   { key: 'journal', route: 'https://resomix.com/blog', external: true, externalAriaKey: 'journalAria' },
   { key: 'help-centre', route: 'https://support.resomix.com', external: true, externalAriaKey: 'helpCentreAria' },
