@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PAGE_TEXT_LINK } from "../Content/pageChrome";
+import { PAGE_MARK_STATIC, PAGE_TEXT_LINK } from "../Content/pageChrome";
 
 interface AuthStatusBannerProps {
   onResendVerification: () => void;
@@ -22,9 +22,10 @@ export const AuthStatusBanner: React.FC<AuthStatusBannerProps> = ({
   };
 
   return (
-    // Accent left rule instead of the old yellow-400 bar — the theme has one attention colour, and
-    // this now matches the beta/verification notices it sits alongside.
-    <div className="relative z-10 mb-[var(--px-20)] flex w-full items-center justify-between gap-[var(--px-12)] border border-[var(--rx-color-border-subtle)] border-l-2 border-l-[var(--rx-color-accent)] bg-[var(--rx-color-surface)] p-[var(--px-12)]">
+    // A notice, not a control: it reports something and offers actions, but the block itself isn't
+    // operable — so it wears the hairline mark, not the full-weight one. (It previously used an
+    // accent rule down the left edge; that treatment now means playback/selection state.)
+    <div className={`z-10 mb-[var(--px-20)] flex w-full items-center justify-between gap-[var(--px-12)] border border-[var(--rx-color-border-subtle)] bg-[var(--rx-color-surface)] p-[var(--px-12)] ${PAGE_MARK_STATIC}`}>
       <div className="flex flex-1 items-center gap-[var(--px-10)]">
         <svg
           viewBox="0 0 24 24"

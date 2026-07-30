@@ -7,11 +7,35 @@
  * font-benzin), since these render in both the landing site and the webapp.
  */
 
-/** Section panel — bordered surface with the accent tick at the top-left. */
-export const PAGE_PANEL =
-  "relative border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] p-[var(--px-18)] " +
-  "before:absolute before:left-[var(--px-20)] before:top-0 before:block before:w-[var(--px-28)] " +
-  "before:border-t before:border-[var(--rx-color-accent)] before:content-['']";
+/**
+ * THE block signifier — a short accent bar tucked into the top-left corner.
+ *
+ * Its WEIGHT carries the meaning: a few pixels means the block is something you operate, a
+ * hairline means it only presents. That single rule replaces the old full-height bar down the left
+ * edge, which is now reserved for *state* (playing, selected) rather than affordance — two
+ * different signals that were previously fighting over the same treatment.
+ *
+ * Same geometry either way, so blocks of both kinds line up along a shared top edge.
+ */
+const PAGE_MARK_BASE =
+  "relative before:absolute before:left-[var(--px-20)] before:top-0 before:block " +
+  "before:w-[var(--px-28)] before:border-[var(--rx-color-accent)] before:content-['']";
+
+/** The block itself is a control — a card you press, a row you open. */
+export const PAGE_MARK_INTERACTIVE = `${PAGE_MARK_BASE} before:border-t-[length:var(--px-3)]`;
+
+/** The block only presents. Hairline — present for alignment, not for attention. */
+export const PAGE_MARK_STATIC = `${PAGE_MARK_BASE} before:border-t`;
+
+/** Bordered surface, no mark — compose with one of the PAGE_MARK_* above. */
+const PAGE_SURFACE =
+  "border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] p-[var(--px-18)]";
+
+/** Section panel — presentational, so it wears the hairline mark. */
+export const PAGE_PANEL = `${PAGE_SURFACE} ${PAGE_MARK_STATIC}`;
+
+/** Section panel whose whole surface is an affordance — wears the full-weight mark. */
+export const PAGE_PANEL_INTERACTIVE = `${PAGE_SURFACE} ${PAGE_MARK_INTERACTIVE}`;
 
 /** Same surface, no accent tick — for sub-panels and the tab nav. */
 export const PAGE_PANEL_PLAIN =

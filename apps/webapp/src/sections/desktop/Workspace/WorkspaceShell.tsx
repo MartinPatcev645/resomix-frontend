@@ -18,6 +18,7 @@ import {
   WORKSPACE_SUBLINE,
 } from "./workspaceCopy.ts";
 import { WorkspaceRail } from "./WorkspaceRail.tsx";
+import { PAGE_MARK_INTERACTIVE } from "@resomix/ui";
 import { WORKSPACE_BADGE_ACCENT, WORKSPACE_FOCUS_VISIBLE } from "./workspacePanelStyles.ts";
 import { isPlaylistUuid } from "@/utils/urlIdKind.ts";
 import { withViewTransition } from "@/utils/viewTransition.ts";
@@ -193,10 +194,15 @@ const TaskCard: React.FC<{
       aria-pressed={pressed}
       onClick={onClick}
       className={[
-        "ws-transition relative grid min-h-0 grid-cols-[auto_minmax(0,1fr)] gap-x-[var(--px-16)] gap-y-[var(--px-6)] border bg-[var(--rx-color-surface)] p-[var(--px-17)] pb-[var(--px-16)] text-left transition-[border-color,background-color] duration-[var(--rx-duration-base)] ease-[var(--rx-ease-standard)] sm:min-h-[var(--px-108)] sm:p-[var(--px-20)] sm:pb-[var(--px-16)]",
+        "ws-transition grid min-h-0 grid-cols-[auto_minmax(0,1fr)] gap-x-[var(--px-16)] gap-y-[var(--px-6)] border bg-[var(--rx-color-surface)] p-[var(--px-17)] pb-[var(--px-16)] text-left transition-[border-color,background-color] duration-[var(--rx-duration-base)] ease-[var(--rx-ease-standard)] sm:min-h-[var(--px-108)] sm:p-[var(--px-20)] sm:pb-[var(--px-16)]",
+        // The whole card is a button, so it carries the full-weight top-left mark — on BOTH cards,
+        // because the mark says "operable", not "chosen". Which one is active is still carried by
+        // the selected background and the ▸ Active task badge, so nothing is lost by dropping the
+        // old inset bar down the left edge.
+        PAGE_MARK_INTERACTIVE,
         WORKSPACE_FOCUS_VISIBLE,
         pressed
-          ? "ws-mode-card-selected cursor-default border-[var(--rx-color-border-default)] bg-[var(--rx-color-selected)] shadow-[inset_4px_0_0_0_var(--rx-color-accent)]"
+          ? "ws-mode-card-selected cursor-default border-[var(--rx-color-border-default)] bg-[var(--rx-color-selected)]"
           : "cursor-pointer border-[var(--rx-color-border-default)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.035)]",
       ].join(" ")}
     >

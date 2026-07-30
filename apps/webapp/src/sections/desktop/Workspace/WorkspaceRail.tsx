@@ -39,8 +39,12 @@ const secondaryHeadingClass =
 const itemBtnClass =
   `block w-full py-[var(--px-8)] text-left text-[length:var(--px-13)] font-helvetica font-light text-[var(--rx-color-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.035)] hover:text-[var(--rx-color-text-primary)] min-h-[var(--px-44)] ${WORKSPACE_FOCUS_VISIBLE}`;
 
+// Active rail item. The accent used to run the full height of the left edge; that treatment is now
+// reserved for playback state, so the selected background carries "this is the one you're on".
+// No top-left mark here on purpose — these are dense list rows, and a mark on every one would
+// stripe the whole rail instead of pointing at anything.
 const activeItemBtnClass =
-  `relative block w-full border-l-[length:var(--px-3)] border-l-[var(--rx-color-accent)] bg-[var(--rx-color-selected)] py-[var(--px-8)] pl-[calc(var(--px-8)+var(--px-2))] text-left text-[length:var(--px-13)] font-helvetica font-light text-[var(--rx-color-text-primary)] min-h-[var(--px-44)] ${WORKSPACE_FOCUS_VISIBLE}`;
+  `relative block w-full bg-[var(--rx-color-selected)] py-[var(--px-8)] pl-[calc(var(--px-8)+var(--px-2))] text-left text-[length:var(--px-13)] font-helvetica font-light text-[var(--rx-color-text-primary)] min-h-[var(--px-44)] ${WORKSPACE_FOCUS_VISIBLE}`;
 
 const metaClass =
   "mt-[var(--px-2)] block font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]";

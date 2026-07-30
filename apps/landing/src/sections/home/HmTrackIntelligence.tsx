@@ -73,9 +73,17 @@ export function HmTrackIntelligence() {
               <rect className="hm-f" x="16" y="292" width="700" height="16" fill="url(#hm-tgrad)" opacity=".55"/>
             </svg>
               <svg className="hm-sl hm-ti-mob" viewBox="0 0 393 250" aria-hidden="true">
+              {/* Two callouts, two baselines. They used to share y=20: the energy label runs from
+                  x=8 and the peaks label is centred on the drop line at x=252, so in Fira Code at
+                  14px (~9.2px/char with the 0.06em tracking) they ran into each other around
+                  x=164–239 and the white and orange text overprinted.
+
+                  Stacking them fixes it at every width — the SVG scales with its container, so a
+                  fixed-coordinate collision like that never resolves itself on a wider phone. The
+                  drop line now starts below the second label instead of at y=28. */}
               <text x="8" y="20" fontSize="14" style={{fill: '#d8d8d8'}}>{t('home.trackIntelligence.calloutEnergy')}</text>
-              <text x="252" y="20" fontSize="14" style={{fill: '#EE4A26'}} textAnchor="middle">{t('home.trackIntelligence.calloutPeaks')}</text>
-              <line x1="252" y1="28" x2="252" y2="196" style={{color: 'rgba(238,74,38,.4)'}}/>
+              <text x="252" y="42" fontSize="14" style={{fill: '#EE4A26'}} textAnchor="middle">{t('home.trackIntelligence.calloutPeaks')}</text>
+              <line x1="252" y1="50" x2="252" y2="196" style={{color: 'rgba(238,74,38,.4)'}}/>
               <g style={{color: '#EE4A26'}}>
                 <polyline points="8,140 52,132 86,112 124,108 152,120 190,116 218,112 252,78 306,76 348,88 385,108" style={{strokeWidth: 2.2}}/>
               </g>
