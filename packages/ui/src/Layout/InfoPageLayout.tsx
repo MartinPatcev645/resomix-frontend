@@ -1,4 +1,4 @@
-import { StaticNoise, GlobalFooter, GlobalMobileFooter, SideLines } from "../index";
+import { GlobalFooter, GlobalMobileFooter, SideLines } from "../index";
 
 interface InfoPageLayoutProps {
     LogoRFooter: React.ReactNode;
@@ -12,11 +12,9 @@ interface InfoPageLayoutProps {
 export function InfoPageLayout({ LogoRFooter, children, mode, navbar, hero, baseUrl = "https://resomix.com" }: InfoPageLayoutProps) {
     return (
         <div className="bg-[var(--color-primary-background)] lg:bg-[var(--color-secondary)] min-h-screen">
-            {/* Static noise background for Desktop only */}
-            <div className="hidden lg:block">
-                {/* <StaticNoise color="#313132" opacity={0.5} zIndex={1} overscanVh={50} /> */}
-                <StaticNoise />
-            </div>
+            {/* No background here on purpose: the app shell owns it (each app's AppBackground →
+                VoidField), so a layout must not paint its own or the two would disagree. This one
+                used to render the old StaticNoise aurora. */}
 
             {/* Content layer */}
             <div

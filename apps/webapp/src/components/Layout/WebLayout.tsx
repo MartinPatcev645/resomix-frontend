@@ -1,14 +1,11 @@
 import React, { useMemo } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { VoidField, GlobalFooter, GlobalMobileFooter } from "@resomix/ui";
+import { GlobalFooter, GlobalMobileFooter } from "@resomix/ui";
+import { AppBackground } from "./AppBackground.tsx";
 import { LogoRFooter } from "../icons/LogoRFooter.tsx";
 import { OptionalAuthRoute } from "../OptionalAuthRoute.tsx";
 import UploadLoader from "../upload/UploadLoader.tsx";
 import { WebSideLines } from "./WebSideLines.tsx";
-import voidPlateDark from "@/assets/void-field/void-field-dark.webp";
-import voidPlateLight from "@/assets/void-field/void-field-light.webp";
-import voidGrainDark from "@/assets/void-field/void-grain-dark.png";
-import voidGrainLight from "@/assets/void-field/void-grain-light.png";
 import { SiteHeader, MobileDrawer } from "../Navigation/index.ts";
 import { useResponsive, useUploadStore } from "@resomix/hooks";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
@@ -87,12 +84,7 @@ export function WebLayout() {
                 id="webapp-page-root"
                 className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen flex flex-col relative overflow-x-hidden`}
             >
-                <VoidField
-                    plateDark={voidPlateDark}
-                    plateLight={voidPlateLight}
-                    grainDark={voidGrainDark}
-                    grainLight={voidGrainLight}
-                />
+                <AppBackground />
 
                 {showOverlay && (
                     <div className="fixed inset-0 z-[9999]" id="upload-loader-wrapper">

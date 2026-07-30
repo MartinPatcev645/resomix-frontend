@@ -5,6 +5,7 @@ import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, SineWaves, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
 import { ProtectedRoute, GuestRoute, LandingLayout } from "@/components/index.ts";
+import { AppBackground } from "@/components/Layout/AppBackground.tsx";
 // Lazy-load pages directly for proper code-splitting
 const HomePage = lazy(() => import("@/pages/HomePage.tsx"));
 const AboutPage = lazy(() => import("@/pages/desktop/AboutPage.tsx").then(m => ({ default: m.AboutPage })));
@@ -53,8 +54,11 @@ function App() {
   // Show simple loading during auth initialization to avoid flashes
   if (isLoading || !isInitialized) {
     return (
-      <div className="bg-[var(--color-secondary)] min-h-screen flex items-center justify-center">
-        <div className="w-full max-w-[300px] p-5">
+      <div className="relative flex min-h-screen items-center justify-center bg-[var(--color-secondary)]">
+        {/* The boot screen carries the app backdrop too, so the first paint already looks like the
+            product instead of a flat panel. */}
+        <AppBackground />
+        <div className="relative z-30 w-full max-w-[300px] p-5">
           <SineWaves />
         </div>
       </div>

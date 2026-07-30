@@ -2,9 +2,10 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useSilktide, useTelemetry } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
-import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, StaticNoise, GoogleOneTap } from "@resomix/ui";
+import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
 import { ProtectedRoute, GuestRoute, WebLayout, SessionExpiredModal, RouteFallback } from "@/components/index.ts";
+import { AppBackground } from "@/components/Layout/AppBackground.tsx";
 import { MetricsOverlay } from "@/components/metrics/MetricsOverlay.js";
 
 // Lazy-load pages
@@ -59,7 +60,6 @@ function App() {
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
   const { showTerms, acceptTerms, dismissTerms } = useTermsAcceptance();
-  const { isDesktop } = useResponsive();
 
   // Initialize authentication
   const { isInitialized, isLoading } = useAuthInit();
@@ -84,7 +84,9 @@ function App() {
         backgroundColor: 'var(--color-secondary, #fff)',
         overflow: 'hidden'
       }}>
-        {isDesktop && <StaticNoise />}
+        {/* Same backdrop as every other surface — this used to be StaticNoise, which is why a
+            hard refresh flashed the old aurora/stars background before the shell mounted. */}
+        <AppBackground />
         <div style={{
           position: 'relative',
           zIndex: 10,

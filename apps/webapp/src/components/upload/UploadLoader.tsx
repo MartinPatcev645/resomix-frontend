@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useUploadStore, useResponsive } from "@resomix/hooks";
-import { SineWaves, StaticNoise, CodeTyping } from "@resomix/ui";
+import { useUploadStore } from "@resomix/hooks";
+import { SineWaves, CodeTyping } from "@resomix/ui";
+import { AppBackground } from "@/components/Layout/AppBackground.tsx";
 import LoadingBubblesSvg from "@/assets/icons/loading_bubbles.svg";
 import ScaleSvg from "@/assets/icons/scale.svg";
 import ScaleMobileSvg from "@/assets/icons/scale_mobile.svg";
 
 const UploadLoader: React.FC = () => {
-    const { isDesktop } = useResponsive();
     const { progress, isFileUpload } = useUploadStore();
     const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
     const [usedMessages, setUsedMessages] = useState<Set<number>>(new Set([0])); // Start with first message used
@@ -86,11 +86,9 @@ const UploadLoader: React.FC = () => {
             aria-live="polite"
             aria-label="Loading playlist"
         >
-            {isDesktop && (
-                <div className="hidden lg:block">
-                    <StaticNoise />
-                </div>
-            )}
+            {/* The app backdrop, not the old StaticNoise aurora — this overlay covers the whole
+                viewport, so a different background here read as the product changing skin. */}
+            <AppBackground />
             <div className="absolute inset-0 w-full h-full">
                 <SineWaves />
             </div>
