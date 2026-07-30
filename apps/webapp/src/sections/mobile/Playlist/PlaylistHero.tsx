@@ -455,7 +455,7 @@ const PlaylistHero: React.FC = () => {
               type="button"
               onClick={() => setShowRating(true)}
               title={rateChrome.title}
-              className={`flex min-h-[var(--px-44)] w-full items-center justify-center gap-[var(--px-8)] whitespace-nowrap border border-[var(--rx-color-border-default)] px-[var(--px-12)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] playlist-rating-button ${WORKSPACE_FOCUS_VISIBLE}` + (rateChrome.showLock ? " opacity-45" : " opacity-80")}
+              className={`flex min-h-[var(--px-44)] w-full items-center justify-center gap-[var(--px-8)] whitespace-nowrap border border-[var(--rx-color-border-default)] px-[var(--px-12)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)] cursor-pointer transition-[background-color,border-color] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] playlist-rating-button ${WORKSPACE_FOCUS_VISIBLE}` + (rateChrome.showLock ? " opacity-45" : " opacity-80")}
               id="playlist-hero-rating-button"
               aria-label="Rate these results"
             >

@@ -1,8 +1,13 @@
 import { useState, FormEvent, ChangeEvent } from "react";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { PasswordInput } from "../Elements/PasswordInput";
 import { useAuthStore } from "@resomix/stores";
+import {
+  PAGE_BTN_PRIMARY,
+  PAGE_BTN_SECONDARY,
+  PAGE_PANEL,
+  PAGE_SUBLABEL,
+} from "./pageChrome";
 
 interface ChangePasswordContentProps {
   baseUrl?: string;
@@ -156,30 +161,36 @@ export default function ChangePasswordContent({
   };
 
   return (
-    <section className="pt-[var(--px-120)] px-[var(--px-3)] md:px-0 tracking-[var(--px-1)]">
-      <div className="w-full flex flex-col items-center text-[var(--color-primary)]">
-        <header className="mb-[var(--px-28)] text-center">
-          <h1 className="text-[length:var(--px-52)] leading-[var(--px-60)] font-medium font-helvetica uppercase">
+    // Spacing matches the workspace / profile shell: a small inset from the vertical side lines and
+    // no oversized top pad — the layout's <main> already offsets the header.
+    <section className="px-[var(--px-12)] pt-[var(--px-16)] pb-[var(--px-40)] tracking-[var(--px-1)]">
+      <div className="mx-auto w-full max-w-[var(--px-680)] text-[var(--rx-color-text-primary)]">
+        {/* Header — accent rule + mono kicker, then a left-aligned heading, as on the workspace. */}
+        <header className="mb-[var(--px-24)]">
+          <p className="mb-[var(--px-16)] flex items-center gap-[var(--px-10)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-muted)] before:block before:w-[var(--px-32)] before:border-t before:border-[var(--rx-color-accent)] before:content-['']">
+            Account // Security
+          </p>
+          <h1 className="m-0 font-helvetica text-[length:var(--px-28)] font-medium uppercase leading-[var(--px-32)] md:text-[length:var(--px-36)] md:leading-[var(--px-40)]">
             {hasPassword ? "Change Password" : "Set Password"}
           </h1>
-          <p className="mt-[var(--px-8)] text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80 font-helvetica">
+          <p className="mt-[var(--px-12)] font-helvetica text-[length:var(--px-15)] font-light leading-[var(--px-22)] text-[var(--rx-color-text-secondary)] opacity-70">
             {hasPassword
               ? "Update your account password"
               : "Add a password so you can also sign in with email — your Google sign-in keeps working"}
           </p>
         </header>
 
-        <div className="max-w-[var(--px-550)] p-[var(--px-20)] w-full">
-          <div className="mb-[var(--px-24)]">
-            <button
-              onClick={onCancel}
-              className="text-[length:var(--px-14)] lg:text-[length:var(--px-11)] font-light font-helvetica hover:text-[var(--color-primary-hover)] transition-colors"
-            >
-              ← Back to Profile
-            </button>
-          </div>
+        <div className="mb-[var(--px-24)]">
+          <button type="button" onClick={onCancel} className={`${PAGE_BTN_SECONDARY} gap-[var(--px-6)]`}>
+            <svg viewBox="0 0 24 24" className="h-[var(--px-14)] w-[var(--px-14)] shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to Profile
+          </button>
+        </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col w-full gap-[var(--px-20)]">
+        <div className={PAGE_PANEL}>
+          <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[var(--px-18)]">
             {hasPassword && (
               <PasswordInput
                 label="Current Password"
@@ -209,19 +220,20 @@ export default function ChangePasswordContent({
             />
 
             {form.newPassword && (
-              <div className="flex flex-col gap-[var(--px-8)] -mt-[var(--px-10)]">
-                <div className="text-[length:var(--px-10)] font-extralight font-helvetica">
-                  Password requirements:
-                </div>
+              <div className="-mt-[var(--px-8)] flex flex-col gap-[var(--px-6)] border border-[var(--rx-color-border-subtle)] bg-[rgba(255,255,255,0.02)] p-[var(--px-14)]">
+                <div className={PAGE_SUBLABEL}>Password requirements</div>
                 {passwordRequirements.map((req, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-[var(--px-8)] text-[length:var(--px-10)] font-light font-helvetica"
+                    className="flex items-center gap-[var(--px-8)] font-helvetica text-[length:var(--px-12)] font-light"
                   >
-                    <span className={req.met ? "text-green-500" : "text-gray-400"}>
-                      {req.met ? "✓" : "○"}
+                    <span
+                      aria-hidden="true"
+                      className={req.met ? "text-[var(--rx-color-success)]" : "text-[var(--rx-color-text-muted)]"}
+                    >
+                      {req.met ? "\u2713" : "\u25CB"}
                     </span>
-                    <span className={req.met ? "text-green-500" : "text-gray-400"}>
+                    <span className={req.met ? "text-[var(--rx-color-success)]" : "text-[var(--rx-color-text-secondary)] opacity-70"}>
                       {req.label}
                     </span>
                   </div>
@@ -240,38 +252,32 @@ export default function ChangePasswordContent({
               error={errors.confirmPassword}
             />
 
-            <div className="flex gap-[var(--px-10)] mt-[var(--px-10)]">
-              <ButtonSleek
-                text={
-                  submitting
-                    ? hasPassword
-                      ? "Changing Password..."
-                      : "Setting Password..."
-                    : hasPassword
-                      ? "Change Password"
-                      : "Set Password"
-                }
-                onClick={handleSubmit}
-              />
-              <button
-                type="button"
-                onClick={onCancel}
-                className="px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted text-[length:var(--px-11)] font-light font-helvetica hover:bg-gray-100 transition-colors"
-              >
+            <div className="mt-[var(--px-6)] flex flex-wrap justify-end gap-[var(--px-10)]">
+              <button type="button" onClick={onCancel} className={PAGE_BTN_SECONDARY}>
                 Cancel
+              </button>
+              {/* type="button" + onClick, matching the previous ButtonSleek: the form's onSubmit is
+                  the same handler, so a submit button would run it twice per click. */}
+              <button type="button" onClick={handleSubmit} className={PAGE_BTN_PRIMARY}>
+                {submitting
+                  ? hasPassword
+                    ? "Changing Password..."
+                    : "Setting Password..."
+                  : hasPassword
+                    ? "Change Password"
+                    : "Set Password"}
               </button>
             </div>
           </form>
-
-          <StatusMessage
-            isOpen={showStatus}
-            onClose={() => setShowStatus(false)}
-            status={statusType}
-            message={statusMessage}
-          />
         </div>
+
+        <StatusMessage
+          isOpen={showStatus}
+          onClose={() => setShowStatus(false)}
+          status={statusType}
+          message={statusMessage}
+        />
       </div>
     </section>
   );
 }
-

@@ -100,7 +100,7 @@ export const PlaylistCoverEditor: React.FC<PlaylistCoverEditorProps> = ({
           disabled={isUploading}
           aria-label="Change cover image"
           title="Change cover image"
-          className={`absolute -right-[var(--px-10)] -top-[var(--px-10)] flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface-raised)] text-[var(--rx-color-text-primary)] transition-[background-color,border-color,color] duration-[var(--rx-duration-base)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} disabled:cursor-not-allowed disabled:opacity-50`}
+          className={`absolute -right-[var(--px-10)] -top-[var(--px-10)] flex h-[var(--px-44)] w-[var(--px-44)] items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface-raised)] text-[var(--rx-color-text-primary)] cursor-pointer transition-[border-color,color] duration-[var(--rx-duration-base)] hover:border-[var(--rx-color-border-strong)] ${WORKSPACE_FOCUS_VISIBLE} disabled:cursor-not-allowed disabled:opacity-50`}
           id="playlist-cover-editor-edit-button"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[var(--px-12)] h-[var(--px-12)]" aria-hidden="true">

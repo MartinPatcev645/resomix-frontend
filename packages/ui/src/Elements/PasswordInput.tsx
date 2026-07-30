@@ -1,4 +1,5 @@
 import { ChangeEvent, useState } from "react";
+import { PAGE_FIELD, PAGE_FIELD_LABEL } from "../Content/pageChrome";
 
 interface PasswordInputProps {
   label: string;
@@ -36,13 +37,13 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
   const getStrengthColor = () => {
     switch (strength) {
       case "weak":
-        return "bg-red-500";
+        return "bg-[var(--rx-color-error)]";
       case "medium":
-        return "bg-yellow-500";
+        return "bg-[#e0a33c]";
       case "strong":
-        return "bg-green-500";
+        return "bg-[var(--rx-color-success)]";
       default:
-        return "bg-gray-300";
+        return "bg-[var(--rx-color-border-strong)]";
     }
   };
 
@@ -60,10 +61,8 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-start gap-[var(--px-10)]">
-      <div className="text-[length:var(--px-11)] font-extralight leading-[var(--px-16)] font-helvetica">
-        {label}
-      </div>
+    <div className="flex w-full flex-col items-start gap-[var(--px-8)]">
+      <span className={PAGE_FIELD_LABEL}>{label}</span>
       <div className="relative w-full">
         <input
           name={name}
@@ -76,16 +75,12 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
           disabled={disabled}
           autoFocus={autoFocus}
           autoComplete={autoComplete}
-          className={`w-full border ${
-            error ? "border-red-500" : "border-slate-200"
-          } border-dotted p-[var(--px-8)] pr-[var(--px-40)] text-[length:var(--px-16)] lg:text-[length:var(--px-10)] font-light font-helvetica ${
-            disabled ? "opacity-50 cursor-not-allowed" : ""
-          } focus:outline-none focus:border-[var(--color-primary)]`}
+          className={`${PAGE_FIELD} pr-[var(--px-52)] ${error ? "!border-[var(--rx-color-error)]" : ""}`}
         />
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-[var(--px-8)] top-1/2 -translate-y-1/2 text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors text-[length:var(--px-12)] font-light font-helvetica cursor-pointer"
+          className="absolute right-[var(--px-10)] top-1/2 -translate-y-1/2 cursor-pointer font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)] transition-colors hover:text-[var(--rx-color-text-primary)]"
           aria-label={showPassword ? "Hide password" : "Show password"}
         >
           {showPassword ? "Hide" : "Show"}
@@ -94,13 +89,13 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
       
       {showStrength && value.length > 0 && (
         <div className="w-full">
-          <div className="w-full h-[var(--px-2)] bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-[var(--px-4)] w-full overflow-hidden rounded-[var(--px-2)] border border-[var(--rx-color-border-default)]">
             <div
               className={`h-full transition-all duration-300 ${getStrengthColor()} ${getStrengthWidth()}`}
             />
           </div>
           {strength && (
-            <div className="text-[length:var(--px-10)] font-light font-helvetica mt-[var(--px-4)] capitalize">
+            <div className="mt-[var(--px-6)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">
               Password strength: {strength}
             </div>
           )}
@@ -108,7 +103,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
       )}
       
       {error && (
-        <div className="text-[length:var(--px-10)] text-red-500 mt-[-var(--px-4)] font-light font-helvetica">
+        <div className="font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-error)]">
           {error}
         </div>
       )}

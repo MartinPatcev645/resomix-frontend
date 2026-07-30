@@ -114,9 +114,14 @@ export default function ProfileContent({
           </p>
         </header>
 
+        {/* Same control and label as the Library's back button, so both account pages exit the
+            same way (baseUrl is the beta workspace in both apps). */}
         <div className="mb-[var(--px-24)]">
-          <a href={baseUrl} aria-label="Resomix home" className={BTN_SECONDARY}>
-            ← Back to Home
+          <a href={baseUrl} aria-label="Sonic Discovery" className={`${BTN_SECONDARY} gap-[var(--px-6)]`}>
+            <svg viewBox="0 0 24 24" className="h-[var(--px-14)] w-[var(--px-14)] shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Sonic Discovery
           </a>
         </div>
 

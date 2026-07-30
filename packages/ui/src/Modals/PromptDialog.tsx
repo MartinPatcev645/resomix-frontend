@@ -38,7 +38,9 @@ export interface PromptDialogProps {
   cancelLabel?: string;
   busy?: boolean;
   busyLabel?: string;
-  /** Rendered under the field — cover editor, hints, anything field-adjacent. */
+  /** Rendered ABOVE the field — for content the user acts on first (e.g. a cover editor). */
+  extraAbove?: React.ReactNode;
+  /** Rendered under the field — hints, anything field-adjacent. */
   extra?: React.ReactNode;
   autoComplete?: string;
 }
@@ -62,6 +64,7 @@ export const PromptDialog: React.FC<PromptDialogProps> = ({
   cancelLabel = "Cancel",
   busy = false,
   busyLabel,
+  extraAbove,
   extra,
   autoComplete,
 }) => {
@@ -110,6 +113,7 @@ export const PromptDialog: React.FC<PromptDialogProps> = ({
       dismissible={!busy}
       ariaLabel={title}
     >
+      {extraAbove}
       <div className="flex flex-col gap-[var(--px-8)] pb-[var(--px-4)]">
         {label && <span className={PAGE_FIELD_LABEL}>{label}</span>}
         <input

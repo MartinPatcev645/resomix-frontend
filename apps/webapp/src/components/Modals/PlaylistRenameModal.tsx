@@ -10,9 +10,10 @@ interface PlaylistRenameModalProps {
     /** Called with the validated, trimmed new name when the user confirms. */
     onSubmit: (newName: string) => void
     /**
-     * Optional cover slot rendered under the field (the library passes a `<PlaylistCoverEditor>`
-     * so the cover can be changed from there too). Omit it — as the playlist hero does — and the
-     * dialog renders with no extra markup or spacing.
+     * Optional cover slot rendered ABOVE the name field (the library passes a
+     * `<PlaylistCoverEditor>` so the cover can be changed from there too). The cover comes first
+     * because it is the thing you look at while deciding the name. Omit it — as the playlist hero
+     * does — and the dialog renders with no extra markup or spacing.
      */
     cover?: React.ReactNode
 }
@@ -55,7 +56,7 @@ export const PlaylistRenameModal: React.FC<PlaylistRenameModalProps> = ({
         submitLabel="Rename"
         busy={submitting}
         busyLabel="Renaming..."
-        extra={cover ? <div className="mt-[var(--px-16)] flex justify-center">{cover}</div> : undefined}
+        extraAbove={cover ? <div className="mb-[var(--px-18)] flex justify-center">{cover}</div> : undefined}
     />
 );
 
