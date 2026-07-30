@@ -96,13 +96,6 @@
   z-index: 1;
 }
 
-/* Mirror of the CTA rail on the opposite edge, for the About link. Carries .nav-rail2 as well, so
-   it inherits the shared vertical placement and the hide rules (sticky header, <1024px). */
-.nav-rail2-left {
-  right: auto;
-  left: var(--header-safe-left);
-}
-
 .nav-hnav ul {
   list-style: none;
   display: flex;

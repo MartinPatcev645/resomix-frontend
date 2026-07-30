@@ -1,6 +1,22 @@
 
 
 :root {
+  /* Phase 1B precision-industrial tokens (verbatim from packages/ui design-system). Needed here so
+     shared @resomix/ui content built on the newer theme (e.g. Error404) renders correctly on this
+     app too — webapp carries the same copy. */
+  --rx-color-surface: #111111;
+  --rx-color-text-primary: rgba(255, 255, 255, 0.96);
+  --rx-color-text-secondary: rgba(255, 255, 255, 0.8);
+  --rx-color-text-muted: rgba(255, 255, 255, 0.72);
+  --rx-color-border-subtle: rgba(255, 255, 255, 0.09);
+  --rx-color-border-default: rgba(255, 255, 255, 0.16);
+  --rx-color-border-strong: rgba(255, 255, 255, 0.24);
+  --rx-color-accent: #ee4a26;
+  --rx-color-accent-hover: #f46545;
+  --rx-radius-control: 2px;
+  --rx-duration-base: 160ms;
+  --rx-ease-standard: ease;
+
   /* Dark theme (default) */
   --color-primary: #ffffff;
   --color-primary-hover: #B9B9B9;

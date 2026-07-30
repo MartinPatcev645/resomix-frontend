@@ -12,7 +12,7 @@ export default function InfoPage({ mode }: InfoPageProps) {
       {mode === "contact" && <ContactContent baseUrl={BASE_LANDING_URL} />}
       {mode === "waitlist" && <WaitListContent baseUrl={BASE_LANDING_URL} />}
       {mode === "error" && <ErrorContent baseUrl={BASE_BETA_URL} />}
-      {mode === "404" && <Error404 baseUrl={BASE_LANDING_URL} />}
+      {mode === "404" && <Error404 baseUrl={BASE_LANDING_URL} eyebrow="Error // 404" />}
     </div>
   );
 }

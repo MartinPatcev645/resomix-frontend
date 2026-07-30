@@ -114,6 +114,7 @@ export function PlaylistMobile() {
         <Error404
           baseUrl={BASE_BETA_URL}
           loading={isResolving}
+          eyebrow="Access"
           title="Playlist is Private"
           description="This playlist is private. Make it public or share it to view, or go back to safety."
           buttonText="Go Back to Safety"

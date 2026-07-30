@@ -32,6 +32,7 @@ function NavGroupList({
   withPanels = true,
   idPrefix = '',
   setItemRef = megaMenu.setItemRef,
+  trailingItem,
 }: {
   groups: NavTopGroup[];
   megaMenu: MegaMenuApi;
@@ -43,6 +44,8 @@ function NavGroupList({
   withPanels?: boolean;
   idPrefix?: string;
   setItemRef?: MegaMenuApi['setItemRef'];
+  /** Extra <li> appended after the groups — used for plain links that have no mega panel. */
+  trailingItem?: React.ReactNode;
 }) {
   return (
     <ul>
@@ -104,6 +107,7 @@ function NavGroupList({
           </li>
         );
       })}
+      {trailingItem}
     </ul>
   );
 }
@@ -223,16 +227,29 @@ export function SiteHeader({
     </a>
   );
 
-  // Left-edge counterpart to the CTA rail. The About page is on this site, so it routes in-app.
-  const aboutCta = (
-    <a
-      className="nav-cta nav-cta-secondary"
-      href="/about"
-      id="nav-about-button"
-      onClick={(e) => handleCtaClick(e, '/about')}
-    >
-      {t('nav.cta.about')}
-    </a>
+  /**
+   * About wears the same chrome as the Product / Solutions triggers so the row reads as one set,
+   * but it is a plain link: no caret, no panel, no mega-menu index (it can't "open", so it stays
+   * out of the keyboard/pointer disclosure wiring entirely). `idPrefix` keeps the sticky header's
+   * copy from colliding with the main one.
+   */
+  // About is a page, not a nav section, so `currentSection` never reports it — match on the path.
+  const onAboutPage = currentPath === '/about';
+  const aboutNavItem = (idPrefix = '') => (
+    <li key="about" id={`${idPrefix}mi-about`} className={onAboutPage ? 'is-section' : ''}>
+      <div className="nav-mm-item-wrap">
+        <a
+          className="nav-mm-trigger"
+          href="/about"
+          id={`${idPrefix}nav-about-link`}
+          aria-current={onAboutPage ? 'page' : undefined}
+          onClick={(e) => handleCtaClick(e, '/about')}
+        >
+          {t('nav.cta.about')}
+          {onAboutPage ? <span className="nav-sr">{t('nav.status.currentPage')}</span> : null}
+        </a>
+      </div>
+    </li>
   );
 
   const logoLink = (
@@ -365,7 +382,12 @@ export function SiteHeader({
           </div>
 
           <nav className="nav-cl nav-cl-left nav-hnav" aria-label="Primary">
-            <NavGroupList groups={leftGroups} {...navListProps} setItemRef={mainItemRef} />
+            <NavGroupList
+              groups={leftGroups}
+              {...navListProps}
+              setItemRef={mainItemRef}
+              trailingItem={aboutNavItem()}
+            />
           </nav>
 
           <div className="nav-cl nav-cl-logo">{logoLink}</div>
@@ -376,8 +398,6 @@ export function SiteHeader({
             </nav>
             {accountControl}
           </div>
-
-          <div className="nav-rail2 nav-rail2-left">{aboutCta}</div>
 
           <div className="nav-rail2">
             {secondaryCta}
@@ -398,6 +418,7 @@ export function SiteHeader({
               {...navListProps}
               idPrefix="sticky-"
               setItemRef={stickyItemRef}
+              trailingItem={aboutNavItem('sticky-')}
             />
           </nav>
 
