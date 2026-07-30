@@ -272,7 +272,9 @@ class ContactService:
         Returns:
             Contact record or None if not found
         """
-        return await self.contact_repository.async_get_by_id(db, contact_id)
+        # With the submitting account eager-loaded: every admin caller serializes the result, and
+        # the `user` relationship is lazy (unusable in async context) unless loaded up front.
+        return await self.contact_repository.get_contact_with_user(db, contact_id)
     
     # ============================================================================
     # Admin Methods (similar to feedback_service.py)

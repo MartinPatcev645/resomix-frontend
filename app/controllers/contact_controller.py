@@ -18,6 +18,7 @@ Email: usman.naeem2212@gmail.com
 from typing import Dict, Any, List, Optional
 from fastapi.responses import JSONResponse
 from fastapi import status, Request
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 import time
 import logging
@@ -29,6 +30,39 @@ from app.models.user import User
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
+
+
+def _serialize_submitter(contact) -> Optional[Dict[str, Any]]:
+    """The account behind a submission, or None when it was submitted anonymously.
+
+    ``contacts.user_id`` is persisted at submit time, so "was this person signed in?" is real
+    stored data — the same thing the admin notification email reports — not something we can only
+    know at request time.
+
+    The relationship is lazy by default and this runs in async context, so touching an unloaded
+    ``contact.user`` would raise MissingGreenlet. Endpoints that want the account eager-load it;
+    the rest simply get ``None`` here rather than a crash.
+    """
+    if getattr(contact, "user_id", None) is None:
+        return None
+    try:
+        if "user" in sa_inspect(contact).unloaded:
+            return None
+    except Exception:
+        return None
+
+    user = contact.user
+    if user is None:
+        return None
+    return {
+        "id": user.id,
+        "uuid": str(user.uuid) if getattr(user, "uuid", None) else None,
+        "username": getattr(user, "username", None),
+        "name": getattr(user, "name", None),
+        "email": getattr(user, "email", None),
+        "is_active": getattr(user, "is_active", None),
+        "is_email_verified": getattr(user, "is_email_verified", None),
+    }
 
 
 def _serialize_contact(contact) -> Dict[str, Any]:
@@ -59,6 +93,11 @@ def _serialize_contact(contact) -> Dict[str, Any]:
         "catalog_context": getattr(contact, "catalog_context", None),
         "catalog_size": getattr(contact, "catalog_size", None),
         "estimated_calls": getattr(contact, "estimated_calls", None),
+        # Who submitted it. `is_signed_in` is derived from the stored user_id so the admin UI can
+        # say "anonymous" with confidence even when the account itself was since deleted (the FK is
+        # ON DELETE SET NULL) or was not eager-loaded.
+        "is_signed_in": getattr(contact, "user_id", None) is not None,
+        "user": _serialize_submitter(contact),
         "status": contact.status,
         "submitted_at": contact.submitted_at.isoformat() if contact.submitted_at else None,
     }

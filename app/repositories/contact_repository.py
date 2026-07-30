@@ -17,7 +17,7 @@ Email: usman.naeem2212@gmail.com
 
 from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import select, delete, func, and_, desc, asc, String
 from datetime import datetime
 from app.models.contact import Contact
@@ -109,6 +109,20 @@ class ContactRepository(BaseRepository[Contact]):
         
         return contact
     
+    async def get_contact_with_user(
+        self,
+        db: AsyncSession,
+        contact_id: int
+    ) -> Optional[Contact]:
+        """Get one contact with its submitting account eager-loaded.
+
+        `async_get_by_id` leaves the `user` relationship lazy, which cannot be resolved in async
+        context — use this wherever the contact is about to be serialized for admin.
+        """
+        stmt = select(Contact).options(selectinload(Contact.user)).where(Contact.id == contact_id)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_contacts_by_user(
         self,
         db: AsyncSession,
@@ -186,12 +200,14 @@ class ContactRepository(BaseRepository[Contact]):
         Returns:
             Updated contact record or None if not found
         """
-        contact = await self.async_get_by_id(db, contact_id)
+        # With the submitting account loaded — the admin mark-status response returns the full
+        # contact and renders it straight back into the details modal.
+        contact = await self.get_contact_with_user(db, contact_id)
         if contact:
             contact.status = status
             await db.flush()
             await db.refresh(contact)
-        
+
         return contact
     
     # ============================================================================
@@ -213,7 +229,10 @@ class ContactRepository(BaseRepository[Contact]):
         sort_order: str = "desc"
     ) -> Tuple[List[Contact], int]:
         """Get paginated contact list with filters for admin."""
-        query = select(Contact)
+        # Eager-load the submitting account: admin shows signed-in vs anonymous per row, and the
+        # relationship is lazy by default, which would blow up (MissingGreenlet) on async access.
+        # selectinload issues one extra query for the whole page rather than one per row.
+        query = select(Contact).options(selectinload(Contact.user))
         count_query = select(func.count(Contact.id))
         filters = []
 
