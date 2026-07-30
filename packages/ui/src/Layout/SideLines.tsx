@@ -9,8 +9,6 @@ interface SideLinesProps {
 }
 
 export const SideLines: React.FC<SideLinesProps> = ({ children, navbar, hero, mode = "about", className }) => {
-    const isHeroPage = mode === "about" || mode === "upload" || mode === "playlist" || mode === "home";
-
     return (
         <>
             <div className="hidden lg:block">
@@ -31,22 +29,22 @@ export const SideLines: React.FC<SideLinesProps> = ({ children, navbar, hero, mo
                     <div className="absolute right-0 top-0 bottom-0 border-r border-dotted border-slate-200" />
                 </div>
 
-                {!isHeroPage && (
-                    /* Display the top frame outline SVG on all other pages inside the content container */
-                    <svg
-                        viewBox="0 0 1152 628"
-                        preserveAspectRatio="none"
-                        className="absolute left-0 top-[var(--px-65)] w-full h-[length:var(--px-628)] pointer-events-none z-10"
-                    >
-                        <path d="M0.333008 1.07413H279.222L347.74 40.6333H779.963L848.481 1.07413H1152"
-                            stroke="#eceaeaff"
-                            strokeOpacity="1"
-                            strokeWidth="1"
-                            strokeDasharray="0.74 0.74"
-                            fill="none"
-                        />
-                    </svg>
-                )}
+                {/* Top frame outline — drawn on EVERY desktop page, so the navbar always sits on
+                    the same dotted frame. It used to be skipped on the hero pages (home / about),
+                    which left those pages with only the short side stubs and no line across. */}
+                <svg
+                    viewBox="0 0 1152 628"
+                    preserveAspectRatio="none"
+                    className="absolute left-0 top-[var(--px-65)] w-full h-[length:var(--px-628)] pointer-events-none z-10"
+                >
+                    <path d="M0.333008 1.07413H279.222L347.74 40.6333H779.963L848.481 1.07413H1152"
+                        stroke="#eceaeaff"
+                        strokeOpacity="1"
+                        strokeWidth="1"
+                        strokeDasharray="0.74 0.74"
+                        fill="none"
+                    />
+                </svg>
 
                 {children}
             </div>
