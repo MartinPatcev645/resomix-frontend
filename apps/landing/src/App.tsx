@@ -21,6 +21,7 @@ const CatalogueIntelligencePage = lazy(() => import("@/pages/CatalogueIntelligen
 const DevelopersPage = lazy(() => import("@/pages/DevelopersPage.tsx"));
 const PartnersPilotPage = lazy(() => import("@/pages/PartnersPilotPage.tsx"));
 const TrustPage = lazy(() => import("@/pages/TrustPage.tsx"));
+const RecordLabelsPage = lazy(() => import("@/pages/RecordLabelsPage.tsx"));
 const SubscribePage = lazy(() => import("@/pages/SubscribePage.tsx"));
 // const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
 import ReferenceSvg from "@/assets/icons/reference.svg";
@@ -113,6 +114,7 @@ function App() {
             <Route path="/developers" element={<DevelopersPage />} />
             <Route path="/partners/pilot" element={<PartnersPilotPage />} />
             <Route path="/trust" element={<TrustPage />} />
+            <Route path="/solutions/record-labels" element={<RecordLabelsPage />} />
             <Route path="/subscribe" element={<SubscribePage />} />
 
             {/* Info Pages */}

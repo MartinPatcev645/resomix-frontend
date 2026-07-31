@@ -75,7 +75,7 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
         groupLabelKey: 'rightsCatalogueLicensing',
         flex: '1 1 52%',
         items: [
-          { key: 'record-labels', glyph: 'record-labels', live: false, plannedRoute: '/solutions/record-labels', status: 'coming-next' },
+          { key: 'record-labels', glyph: 'record-labels', live: true, route: '/solutions/record-labels' },
           { key: 'music-publishers', glyph: 'music-publishers', live: false, plannedRoute: '/solutions/music-publishers', status: 'coming-next' },
           { key: 'sync-agencies', glyph: 'sync-agencies', live: false, plannedRoute: '/solutions/sync-agencies', status: 'coming-next' },
           { key: 'music-libraries', glyph: 'music-libraries', live: false, plannedRoute: '/solutions/music-libraries-sample-providers', status: 'coming-next' },

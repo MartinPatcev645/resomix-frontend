@@ -16,6 +16,7 @@ import CatalogueIntelligencePage from "./CatalogueIntelligencePage.tsx";
 import DevelopersPage from "./DevelopersPage.tsx";
 import PartnersPilotPage from "./PartnersPilotPage.tsx";
 import TrustPage from "./TrustPage.tsx";
+import RecordLabelsPage from "./RecordLabelsPage.tsx";
 import HomePage from "./HomePage.tsx";
 
 export {
@@ -35,4 +36,5 @@ export {
     DevelopersPage,
     PartnersPilotPage,
     TrustPage,
+    RecordLabelsPage,
 }
