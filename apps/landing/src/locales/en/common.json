@@ -2086,6 +2086,91 @@
             "youChoose": "You choose"
         }
     },
+    "syncAgencies": {
+        "hero": {
+            "chip": "Use case · Sync agencies",
+            "h1": "Translating tags into emotions",
+            "intro": "A talented sync agent can see opportunities where others don't; someone who can connect the dots, understand creative visions, and give musicians the spotlight they deserve.",
+            "figureAria": "Flat metadata tags pass through the Resomix gate and become a felt reading of the music — intimate, nostalgic, unsettling, uplifting"
+        },
+        "idea": {
+            "srTitle": "The idea behind Resomix",
+            "complexities": "The complexities surrounding music sync are notorious, from rights management to growing a catalogue and responding to increasingly specific creative briefs. One of the biggest challenges, however, is translating tags into emotions.",
+            "whatIf": "What if there was a similarity engine specifically designed to interpret the emotional and sonic characteristics of a song through carefully crafted audio analysis?",
+            "dream": "This was our dream when we started working on Resomix. Now, our deterministic engine is more than a similarity tool: it's a catalogue-exploring platform that helps sync agencies uncover hidden opportunities, save time, and deliver more accurate results. All with the human touch every sync agency needs."
+        },
+        "problems": {
+            "eyebrow": "The problem",
+            "h2": "When tags can't describe emotion",
+            "lead": "The larger a catalogue becomes, the harder it is to find the perfect track for every project.",
+            "items": {
+                "untagged": "A song that isn't properly tagged, no matter how good it is, will disappear into the catalogue. For sync agencies, this means not only missed licensing opportunities, but also fewer chances for artists to have their music discovered.",
+                "listeners": "The same song can be interpreted in many ways. Two people may listen to the same piece and experience completely different emotions. Personal taste is invaluable, but it can also make music discovery inconsistent, especially when working under tight deadlines.",
+                "subtleties": "Metadata is essential, but it rarely captures the subtleties that make a song feel intimate, nostalgic, unsettling, or uplifting."
+            },
+            "balance": "When consistency, speed, accuracy, and a personal touch are all equally important, how do you find the right balance?"
+        },
+        "workflows": {
+            "eyebrow": "Working as one",
+            "h2": "Sonic and human intelligence, working as one",
+            "lead1": "Resomix has brought to life a sonic similarity engine (PYXIS-1) that converts audio into detailed structural, harmonic, rhythmic, timbral, and emotional intelligence. Instead of relying on tags and release dates, it focuses on the sonic DNA of every song.",
+            "lead2": "For a sync agency, this makes it easier to:",
+            "items": {
+                "brief": "Respond to creative briefs with confidence and variety.",
+                "secondChance": "Rediscover forgotten tracks that deserve a second chance.",
+                "foundBySound": "Find songs based on how they sound, not just how they're tagged.",
+                "connection": "Find unexpected connections across an entire catalogue."
+            },
+            "close": "Resomix doesn't replace a person's knowledge or taste, but rather enhances and expands it. It shows that music can be interpreted in countless ways and explores the true power of a tagging system, in a way that you can understand and refine over time."
+        },
+        "expect": {
+            "eyebrow": "What to expect",
+            "h2": "What to expect from Resomix",
+            "p1": "In short, sync agencies and publishers employing PYXIS-1 will see connections they never thought existed, thanks to a cutting-edge algorithm designed to analyse the soul of a song, and not just how it was tagged.",
+            "p2": "It's the ultimate lateral thinking approach, organically applied to music discovery.",
+            "p3": "You're fully in control of your tagging system, but Resomix can help you uncover hidden gems you forgot about, showing you the gaps in your agency's catalogue, and giving you unique solutions that'll satisfy clients and artists alike.",
+            "figureAria": "A catalogue field where the expected path runs straight and grey while a lateral orange thread reaches a distant hidden gem; a dashed circle marks a coverage gap and a white ring marks the human choice"
+        },
+        "cta": {
+            "h2": "Ready to try our cutting-edge similarity engine?",
+            "line": "Get in touch today.",
+            "pilot": "Start a Catalogue Pilot",
+            "contact": "Get in touch",
+            "exploreCi": "Explore Catalogue Intelligence"
+        },
+        "figures": {
+            "whatTagsSay": "What the tags say",
+            "howMusicFeels": "How the music feels",
+            "pyxis1": "PYXIS-1",
+            "tagAmbient": "Ambient",
+            "tagBpm": "120 BPM",
+            "tagInstrumental": "Instrumental",
+            "tagYear": "2019",
+            "tagElectronic": "Electronic",
+            "feelIntimate": "Intimate",
+            "feelNostalgic": "Nostalgic",
+            "feelUnsettling": "Unsettling",
+            "feelUplifting": "Uplifting",
+            "tagged": "Tagged",
+            "noTagUnseen": "No tag · unseen",
+            "listenerOne": "Listener one",
+            "listenerTwo": "Listener two",
+            "theSubtleties": "The subtleties",
+            "briefIn": "Brief in",
+            "varied": "Varied",
+            "secondChance": "Second chance",
+            "tagAmbientChip": "Tag · Ambient",
+            "foundBySound": "Found by sound",
+            "unexpectedConnection": "Unexpected connection",
+            "yourCatalogue": "Your catalogue",
+            "expectedPath": "The expected path",
+            "hiddenGem": "Hidden gem",
+            "gapNoted": "A gap · noted",
+            "yourCall": "Your call",
+            "engineThinksLaterally": "The engine thinks laterally",
+            "youStayInControl": "You stay in control"
+        }
+    },
     "nav": {
         "topGroups": {
             "product": "Product",

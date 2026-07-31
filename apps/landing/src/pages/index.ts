@@ -17,6 +17,7 @@ import DevelopersPage from "./DevelopersPage.tsx";
 import PartnersPilotPage from "./PartnersPilotPage.tsx";
 import TrustPage from "./TrustPage.tsx";
 import RecordLabelsPage from "./RecordLabelsPage.tsx";
+import SyncAgenciesPage from "./SyncAgenciesPage.tsx";
 import HomePage from "./HomePage.tsx";
 
 export {
@@ -37,4 +38,5 @@ export {
     PartnersPilotPage,
     TrustPage,
     RecordLabelsPage,
+    SyncAgenciesPage,
 }
