@@ -18,6 +18,7 @@ import PartnersPilotPage from "./PartnersPilotPage.tsx";
 import TrustPage from "./TrustPage.tsx";
 import RecordLabelsPage from "./RecordLabelsPage.tsx";
 import SyncAgenciesPage from "./SyncAgenciesPage.tsx";
+import MusicLibrariesPage from "./MusicLibrariesPage.tsx";
 import HomePage from "./HomePage.tsx";
 
 export {
@@ -39,4 +40,5 @@ export {
     TrustPage,
     RecordLabelsPage,
     SyncAgenciesPage,
+    MusicLibrariesPage,
 }

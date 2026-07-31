@@ -2171,6 +2171,96 @@
             "youStayInControl": "You stay in control"
         }
     },
+    "musicLibraries": {
+        "hero": {
+            "chip": "Use case · Music libraries & sample providers",
+            "h1": "Turn your catalogue into a sonic discovery engine",
+            "intro": "The bigger a music library becomes, the more difficult it becomes to navigate.",
+            "figureAria": "A wall of sample tiles; one reference sound is selected and orange threads reach its sonic relatives in other packs across the library"
+        },
+        "statement": {
+            "srTitle": "The library problem",
+            "body": "Having thousands of samples, loops, presets, and sounds gives producers an almost infinite number of creative possibilities. And here's the downside: the more content you add to your library, the harder it becomes for users to find exactly what they're looking for. The perfect sound might already be there, simply buried underneath hundreds of similar results.",
+            "engine": "A carefully crafted similarity engine not only helps users find sounds faster, but also gives them new ways to explore a catalogue they might otherwise never fully discover."
+        },
+        "tags": {
+            "eyebrow": "The problem",
+            "h2": "Aren't tags enough?",
+            "p1": "Most sample libraries rely on metadata to help users navigate their catalogues. Genre, instrument, BPM, key, mood and other tags are helpful, but they can only describe a sound up to a certain point.",
+            "p2": "Two drum patterns might both be tagged as \"electronic\", but sound completely different. Two vocal samples might both be described as \"emotional\", while having very little in common sonically.",
+            "p3": "The problem is even more apparent when a producer doesn't know exactly what they're looking for: maybe a synth texture like one they heard in another track, or a drum loop that has the same energy as their reference, but they don't know what to search for.",
+            "figureAria": "Two drum patterns share the same electronic tag but their waveforms look nothing alike; below, a sound a producer can hear in their head sits beside a search field they cannot fill"
+        },
+        "values": {
+            "eyebrow": "For music libraries & sample providers",
+            "h2": "A new way to explore your catalogue",
+            "lead1": "Resomix can give music libraries and sample providers a new way to help users explore their catalogues.",
+            "lead2": "By analysing the sonic characteristics of individual sounds and loops, PYXIS-1 can identify subtle relationships that traditional metadata might miss.",
+            "lead3": "Instead of searching exclusively through tags, users of a sample library could start with a sound they already like and explore other elements that share its sonic DNA.",
+            "couldMean": "For music libraries and sample providers, this could mean:",
+            "items": {
+                "findFaster": {
+                    "label": "Help users find the right sounds faster",
+                    "text": "Start with a reference and discover relevant results without relying exclusively on keywords."
+                },
+                "discoverability": {
+                    "label": "Increase catalogue discoverability",
+                    "text": "Bring neglected sounds back into the user's field of view."
+                },
+                "connections": {
+                    "label": "Create unexpected connections",
+                    "text": "Help users move between different packs, instruments, and categories based on sound rather than labels."
+                },
+                "experience": {
+                    "label": "Improve the user experience",
+                    "text": "Make large catalogues easier and more intuitive to navigate."
+                },
+                "value": {
+                    "label": "Increase the value of existing content",
+                    "text": "Give users more reasons to explore the catalogue they already have access to."
+                }
+            },
+            "pull": "Instead of asking users what they're looking for, you can give them the freedom to discover it themselves, with a powerful and reliable discovery engine designed to dive deep into a catalogue."
+        },
+        "lost": {
+            "eyebrow": "The pay-off",
+            "h2": "Don't let your best sounds get lost",
+            "p1": "A music library can spend years building an incredible catalogue, but the value of that catalogue depends exclusively on how easily people can access it.",
+            "p2": "Resomix can help turn those hidden connections into new discovery opportunities, allowing users to explore a catalogue through the sound itself.",
+            "p3": "For sample providers and music libraries, this means moving beyond traditional search and giving producers a more intuitive way to find inspiration.",
+            "figureAria": "A deep stack of sample crates; one sound buried near the bottom glows and a thread lifts it to the user at the surface"
+        },
+        "cta": {
+            "h2": "Your catalogue is already full of possibilities.",
+            "line": "Resomix can help your users discover them more efficiently.",
+            "pilot": "Start a Catalogue Pilot",
+            "exploreApi": "Explore the API",
+            "contact": "Get in touch"
+        },
+        "figures": {
+            "oneSoundYouLike": "One sound you like",
+            "itsRelatives": "Its relatives across the library",
+            "yourReference": "Your reference",
+            "sonicRelatives": "Sonic relatives",
+            "packDrums": "Drums",
+            "packSynths": "Synths",
+            "packVocals": "Vocals",
+            "packTextures": "Textures",
+            "electronic": "Electronic",
+            "patternOne": "Pattern one",
+            "patternTwo": "Pattern two",
+            "soundInYourHead": "The sound in your head",
+            "nothingToType": "Nothing to type",
+            "sameTagDifferent": "Same tag · different sounds",
+            "hearCantType": "You can hear it — you can't type it",
+            "theCrate": "The crate",
+            "buried": "Buried",
+            "found": "Found",
+            "yearsOfBuilding": "Years of building",
+            "surfacedBySound": "Surfaced by sound",
+            "buriedInThePile": "Buried in the pile"
+        }
+    },
     "nav": {
         "topGroups": {
             "product": "Product",
