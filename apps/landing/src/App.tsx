@@ -24,6 +24,7 @@ const TrustPage = lazy(() => import("@/pages/TrustPage.tsx"));
 const RecordLabelsPage = lazy(() => import("@/pages/RecordLabelsPage.tsx"));
 const SyncAgenciesPage = lazy(() => import("@/pages/SyncAgenciesPage.tsx"));
 const MusicLibrariesPage = lazy(() => import("@/pages/MusicLibrariesPage.tsx"));
+const DjsPage = lazy(() => import("@/pages/DjsPage.tsx"));
 const SubscribePage = lazy(() => import("@/pages/SubscribePage.tsx"));
 // const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
 import ReferenceSvg from "@/assets/icons/reference.svg";
@@ -119,6 +120,7 @@ function App() {
             <Route path="/solutions/record-labels" element={<RecordLabelsPage />} />
             <Route path="/solutions/sync-agencies" element={<SyncAgenciesPage />} />
             <Route path="/solutions/music-libraries-sample-providers" element={<MusicLibrariesPage />} />
+            <Route path="/solutions/djs" element={<DjsPage />} />
             <Route path="/subscribe" element={<SubscribePage />} />
 
             {/* Info Pages */}

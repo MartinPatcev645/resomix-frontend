@@ -86,9 +86,8 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
         flex: '1 1 48%',
         featured: {
           key: 'djs',
-          live: false,
-          plannedRoute: '/solutions/djs',
-          status: 'coming-next',
+          live: true,
+          route: '/solutions/djs',
           featured: true,
         },
         items: [
