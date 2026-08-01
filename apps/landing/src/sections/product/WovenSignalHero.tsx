@@ -73,6 +73,38 @@ export function WovenSignalHero({ motionOn }: WovenSignalHeroProps) {
     );
   };
 
+  const labelNameStyle = {
+    fontFamily: "'Fira Code', monospace",
+    fontSize: 12,
+    letterSpacing: '0.03em',
+    fill: '#fff',
+    opacity: 0.85,
+  } as const;
+
+  const labelStatusStyle = {
+    fontFamily: "'Fira Code', monospace",
+    fontSize: 11,
+    letterSpacing: '0.05em',
+    fill: '#6a6a6a',
+    opacity: 0.9,
+  } as const;
+
+  const apiTitleStyle = {
+    fontFamily: "'Fira Code', monospace",
+    fontSize: 12,
+    letterSpacing: '0.03em',
+    fill: '#fff',
+    opacity: 0.7,
+  } as const;
+
+  const apiStatusStyle = {
+    fontFamily: "'Fira Code', monospace",
+    fontSize: 11,
+    letterSpacing: '0.05em',
+    fill: '#6a6a6a',
+    opacity: 0.85,
+  } as const;
+
   return (
     <section className="product-hero-stack relative" aria-label="Resomix platform introduction">
       <div className="product-hero-copy min-w-0">
@@ -102,7 +134,7 @@ export function WovenSignalHero({ motionOn }: WovenSignalHeroProps) {
       </div>
 
       <figure ref={figureRef} className="product-hero-figure m-0" aria-label={t('product.hero.figureAlt')}>
-        <svg viewBox="0 0 1400 460" role="img" className="w-full h-auto block">
+        <svg viewBox="0 0 1400 460" role="img" className="product-herosvg-d w-full h-auto block">
           <path
             className="product-fil product-draw product-f-in"
             d="M30 230 q12 -30 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0"
@@ -146,6 +178,79 @@ export function WovenSignalHero({ motionOn }: WovenSignalHeroProps) {
           <text x="470" y="345" className="product-slbl">
             {t('product.hero.bandLabel')}
           </text>
+        </svg>
+
+        {/* Mobile/tablet vertical variant — same figureAlt story, top-to-bottom */}
+        <svg
+          className="product-herosvg-m w-full h-auto"
+          viewBox="0 0 393 470"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path className="product-fil product-f-in" d="M24 44 q10 -24 20 0 t20 0 t20 0 t20 0 t20 0" />
+          <text x="24" y="20" className="product-slbl" style={{ fontSize: 10 }}>
+            {t('product.hero.inLabel')}
+          </text>
+          <g>
+            <path className="product-fil product-w1" d="M124 44 C 150 74, 60 104, 96 144 S 120 184, 84 209" />
+            <path className="product-fil product-w2" d="M124 44 C 96 82, 132 112, 84 152 S 60 190, 76 209" />
+            <path className="product-fil product-w3" d="M124 46 C 132 90, 72 116, 104 158 S 96 194, 80 207" />
+            <path className="product-fil product-w4" d="M124 42 C 108 70, 96 124, 66 154 S 88 196, 72 208" />
+            <path className="product-fil product-w5" d="M124 45 C 142 96, 84 100, 112 164 S 104 200, 86 210" />
+            <path className="product-fil product-w6" d="M124 43 C 88 64, 116 136, 74 166 S 68 200, 78 210" />
+            <path className="product-fil product-w7" d="M124 44 C 116 88, 92 128, 88 168 S 82 196, 80 209" />
+            <path
+              className="product-fil product-w-active dashflow"
+              d="M124 44 C 136 92, 76 122, 96 162 C 104 180, 84 198, 70 214 C 60 224, 50 230, 44 240"
+            />
+          </g>
+          <text x="150" y="130" className="product-slbl" style={{ fontSize: 10 }}>
+            {t('product.hero.bandLabel')}
+          </text>
+          <g className="product-outs">
+            <path className="product-fil" d="M78 210 C 66 218, 54 228, 44 240" />
+            <path className="product-fil" d="M80 210 C 64 218, 54 226, 53 246 C 52 274, 46 292, 44 306" />
+            <path className="product-fil" d="M82 210 C 60 220, 50 228, 48 248 C 46 296, 44 334, 44 372" />
+          </g>
+          <g aria-hidden="true">
+            <line x1="30" y1="240" x2="30" y2="428" className="product-api-rail-line" />
+            <line x1="30" y1="240" x2="38" y2="240" className="product-api-rail-tick" />
+            <line x1="30" y1="306" x2="38" y2="306" className="product-api-rail-tick" />
+            <line x1="30" y1="372" x2="38" y2="372" className="product-api-rail-tick" />
+            <line x1="30" y1="428" x2="44" y2="428" className="product-api-rail-tick" />
+          </g>
+          <circle cx="44" cy="240" r="10" fill="rgba(238,74,38,.16)" className="glowp" />
+          <circle cx="44" cy="240" r="4.5" className="product-end-node product-end-active pulse" />
+          <circle cx="44" cy="306" r="4" className="product-end-node" />
+          <circle cx="44" cy="372" r="4" className="product-end-node" />
+          <text x="64" y="244" style={labelNameStyle}>
+            {t('product.hero.ep1')}
+          </text>
+          <text x="64" y="260" style={labelStatusStyle}>
+            {t('product.hero.ep1s')}
+          </text>
+          <text x="64" y="310" style={labelNameStyle}>
+            {t('product.hero.ep2')}
+          </text>
+          <text x="64" y="326" style={labelStatusStyle}>
+            {t('product.hero.ep2s')}
+          </text>
+          <text x="64" y="376" style={labelNameStyle}>
+            {t('product.hero.ep3')}
+          </text>
+          <text x="64" y="392" style={labelStatusStyle}>
+            {t('product.hero.ep3s')}
+          </text>
+          <text x="64" y="432" style={apiTitleStyle}>
+            {t('product.hero.ep4')}
+          </text>
+          <text x="64" y="448" style={apiStatusStyle}>
+            {t('product.hero.ep4s')}
+          </text>
+          <g aria-hidden="true">
+            <path className="product-reg" d="M352 36 h16 M360 28 v16" />
+            <path className="product-reg" d="M24 452 h16 M32 444 v16" />
+          </g>
         </svg>
 
         <ul className="product-hero-labels-overlay list-none m-0 p-0">
