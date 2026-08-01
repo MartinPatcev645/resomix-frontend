@@ -52,6 +52,15 @@
   border-bottom: none;
 }
 
+/* The hero sits directly beneath the navbar, so it does not need the full inter-section rhythm
+   above it — that 6rem stacked with .pn-hero-head's own 3.5rem and pushed the page 9.5rem down,
+   roughly three times the solutions pages. Only the TOP is zeroed: the section keeps its bottom
+   padding and its rule, and every other section is untouched. Targeted by id (not :first-of-type)
+   because a background element precedes it. */
+.pn-page #hero {
+  padding-top: 0;
+}
+
 .pn-page a {
   color: inherit;
   text-decoration: none;
@@ -284,7 +293,9 @@
 /* hero + junction */
 .pn-page .pn-hero-head {
   max-width: 58rem;
-  padding-top: var(--px-56);
+  /* 3.25rem — the solutions pages' desktop hero top. With #hero's own top zeroed above,
+     this is the ONLY top spacing, so it carries the full value (was 3.5rem, 0.25rem too much). */
+  padding-top: 3.25rem;
 }
 
 .pn-page .pn-hero-head .pn-sub {
@@ -961,7 +972,9 @@
   }
 
   .pn-page .pn-hero-head {
-    padding-top: var(--px-32);
+    /* 2.75rem — the solutions pages' mobile hero top. With the section's own top now
+       zeroed, this is the ONLY top spacing, so it carries the full value. */
+    padding-top: 2.75rem;
   }
 
   .pn-page .pn-junction {

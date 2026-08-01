@@ -113,8 +113,17 @@
   cursor: pointer;
 }
 
+/* Hero top spacing — matches the Solutions pages (3.25rem desktop).
+   The hero carries `.tr-section`, so its 5rem top padding stacked with
+   `.tr-hero-read`'s 3rem for 8rem above the first line. Scoped to #hero so the
+   shared 5rem section rhythm (and every bottom padding) stays untouched. */
+.tr-page #hero {
+  padding-top: 3.25rem;
+}
+
+/* Zeroed: the hero section above now owns the full top gap on its own. */
 .tr-page .tr-hero-read {
-  padding-top: 3rem;
+  padding-top: 0;
 }
 
 .tr-page .tr-eyebrow {
@@ -649,6 +658,12 @@
 
   .tr-page .tr-section {
     padding-block: 3.25rem;
+  }
+
+  /* Hero top spacing — mobile baseline 2.75rem, overriding the desktop
+     3.25rem set on #hero above (same breakpoint as the Solutions pages). */
+  .tr-page #hero {
+    padding-top: 2.75rem;
   }
 
   .tr-page .tr-dim-intro {

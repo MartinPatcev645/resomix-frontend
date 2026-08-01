@@ -340,9 +340,17 @@
 }
 
 /* hero */
+/* padding-top removed: it stacked on .pp-section's 6rem padding-block, pushing the
+   hero to 9.5rem. All hero top space now lives on #hero below. */
 .pp-page .pp-hero-head {
   max-width: 58rem;
-  padding-top: var(--px-56);
+}
+
+/* Hero-only top padding — matches the standard landing hero spacing (3.25rem).
+   Scoped to #hero so the shared .pp-section padding-block (and every other
+   section's rhythm and bottom padding) stays untouched. */
+.pp-page #hero {
+  padding-top: 3.25rem;
 }
 
 .pp-page .pp-sub {
@@ -1301,8 +1309,9 @@
     font-size: var(--px-22);
   }
 
-  .pp-page .pp-hero-head {
-    padding-top: var(--px-32);
+  /* Hero top spacing at mobile: 2.75rem total (was 4rem section + 2rem hero-head). */
+  .pp-page #hero {
+    padding-top: 2.75rem;
   }
 
   .pp-page .pp-protocol {

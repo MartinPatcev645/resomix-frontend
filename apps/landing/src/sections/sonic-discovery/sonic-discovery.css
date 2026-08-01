@@ -380,7 +380,14 @@
    ============================================================== */
 .sd-page .sd-hero-head {
   max-width: var(--px-1000);
-  padding-top: var(--px-56);
+}
+
+/* Hero top spacing normalised to the site-wide 3.25rem: the shared
+   .sd-section padding-top (6rem) used to stack with .sd-hero-head's
+   3.5rem = 9.5rem. Scoped by id so the .sd-section rhythm and the
+   hero's bottom padding stay untouched. */
+.sd-page #sd-hero {
+  padding-top: 3.25rem;
 }
 
 .sd-page .sd-hero-head .sd-sub {
@@ -1656,8 +1663,11 @@
     font-size: var(--px-17);
   }
 
-  .sd-page .sd-hero-head {
-    padding-top: var(--px-32);
+  /* Mobile hero top spacing: 2.75rem site standard (was 4rem section
+     padding-top + 2rem head padding-top = 6rem). Top only — the mobile
+     .sd-section bottom padding is left as is. */
+  .sd-page #sd-hero {
+    padding-top: 2.75rem;
   }
 
   .sd-page .sd-herofig .sd-herosvg-d {

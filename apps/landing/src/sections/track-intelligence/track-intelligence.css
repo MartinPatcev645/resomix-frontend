@@ -413,15 +413,18 @@
 }
 
 /* hero */
+/* Hero top spacing is owned by #ti-hero below (3.25rem desktop / 2.75rem mobile,
+   matching the Solutions pages). The head's own padding-top used to stack on top of
+   .ti-section's padding-block, so it is removed here. */
 .ti-page .ti-hero-head {
   max-width: 60rem;
-  padding-top: var(--px-32);
 }
 
-@media (min-width: 1024px) {
-  .ti-page .ti-hero-head {
-    padding-top: var(--px-56);
-  }
+/* Hero-only override of .ti-section's 6rem top padding — lands the total space above
+   the hero's first line on the canonical 3.25rem. Bottom padding and every other
+   section keep the shared rhythm. */
+.ti-page #ti-hero {
+  padding-top: 3.25rem;
 }
 
 .ti-page .ti-hero-head .ti-sub {
@@ -1210,6 +1213,11 @@
 
   .ti-page .ti-section {
     padding-block: 4rem;
+  }
+
+  /* Hero-only: canonical 2.75rem top on mobile (overrides the 4rem section top). */
+  .ti-page #ti-hero {
+    padding-top: 2.75rem;
   }
 
   .ti-page .ti-anatomy .ti-hudtop-r {

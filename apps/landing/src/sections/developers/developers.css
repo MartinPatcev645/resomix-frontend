@@ -52,6 +52,14 @@
   border-bottom: none;
 }
 
+/* Same as partners: the hero is directly beneath the navbar and does not need the inter-section
+   rhythm above it — the 6rem stacked with .dev-hero-head's 3.5rem for 9.5rem of dead space. Only
+   the TOP is zeroed; the section keeps its bottom padding and rule. Targeted by id (not
+   :first-of-type) because a background element precedes it. */
+.dev-page #dev-hero {
+  padding-top: 0;
+}
+
 .dev-page a {
   color: inherit;
 }
@@ -515,7 +523,9 @@
 /* hero + router */
 .dev-page .dev-hero-head {
   max-width: 62rem;
-  padding-top: var(--px-56);
+  /* 3.25rem — the solutions pages' desktop hero top. With #dev-hero's own top zeroed above,
+     this is the ONLY top spacing, so it carries the full value (was 3.5rem = 0.25rem too much). */
+  padding-top: 3.25rem;
 }
 
 .dev-page .dev-sub {
@@ -1394,7 +1404,9 @@
   }
 
   .dev-page .dev-hero-head {
-    padding-top: var(--px-32);
+    /* 2.75rem — the solutions pages' mobile hero top. With the section's own top now
+       zeroed, this is the ONLY top spacing, so it carries the full value. */
+    padding-top: 2.75rem;
   }
 
   .dev-page .dev-router svg.dev-router-d {

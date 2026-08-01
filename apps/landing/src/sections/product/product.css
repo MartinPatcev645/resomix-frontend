@@ -88,8 +88,19 @@
   }
 }
 
+/* Hero top spacing — overrides only the top half of .product-section's
+   padding-block so the hero starts 3.25rem below <main>, matching the
+   Solutions pages. Bottom padding + inter-section rhythm are untouched. */
 .product-page .product-section-hero {
-  padding-top: 3rem;
+  padding-top: 3.25rem;
+}
+
+/* Mobile hero top spacing — 2.75rem at the canonical 640px breakpoint.
+   Placed after the 600px .product-section rule so it wins on padding-top. */
+@media (max-width: 640px) {
+  .product-page .product-section-hero {
+    padding-top: 2.75rem;
+  }
 }
 
 .product-page .product-sec-head {

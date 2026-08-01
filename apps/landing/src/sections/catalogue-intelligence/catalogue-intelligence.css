@@ -403,10 +403,18 @@
   gap: var(--px-8);
 }
 
+/* Hero top spacing: the hero <section> carries the shared .ci-section padding-block
+   (6rem top) and .ci-hero-head added another 3.5rem on top of it, stacking to 9.5rem
+   above the first line. Drop the head's padding-top and scope the hero's own top
+   padding (id only) to the canonical 3.25rem so the shared section rhythm, the
+   bottom padding and every other section stay untouched. */
+.ci-page #ci-hero {
+  padding-top: 3.25rem;
+}
+
 /* hero field */
 .ci-page .ci-hero-head {
   max-width: 60rem;
-  padding-top: var(--px-56);
 }
 
 .ci-page .ci-hero-head .ci-sub {
@@ -1278,8 +1286,10 @@
     letter-spacing: 0.1em;
   }
 
-  .ci-page .ci-hero-head {
-    padding-top: var(--px-32);
+  /* Mobile hero top spacing → 2.75rem total (was 4rem section + 2rem head = 6rem).
+     Scoped to the hero id so the 4rem mobile rhythm of the other sections stands. */
+  .ci-page #ci-hero {
+    padding-top: 2.75rem;
   }
 
   .ci-page .ci-field-d {
