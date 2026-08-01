@@ -95,8 +95,11 @@
 
 /* scale the REM unit */
 html {
-  font-size: clamp(12.8px, 1.25vw, 32px);
-  /* 1.25vw = 16px at 1280 px because 1280 × 1.25% = 16 px */
+  font-size: clamp(12.8px, 1.25vw, 16px);
+  /* 1.25vw = 16px at 1280px; the cap stops growth above that. Matches the web app.
+     This cap used to be 32px, which was the entire reason the marketing site rendered
+     larger: the floor and growth rate were already identical, so the two sites matched
+     exactly up to a 1280px viewport and diverged only beyond it. */
 }
 
 /* optional crisp lines */
@@ -114,8 +117,9 @@ svg { vector-effect: non-scaling-stroke; }
   /* scale the REM unit for mobile */
   html {
     /* 16px at 393px viewport, ~10px at 250px, ~26px at 1023px */
-    font-size: clamp(10px, 4.07vw, 41.6px);
-    /* 4.07vw ≈ 16px at a 393px viewport (393 × 0.0407 ≈ 16) */
+    font-size: clamp(10px, 4.07vw, 26px);
+    /* 4.07vw ≈ 16px at a 393px viewport. Cap matches the web app too — it bites from
+       ~639px upward, which is where tablets were also rendering larger than beta. */
   }
 }
 
