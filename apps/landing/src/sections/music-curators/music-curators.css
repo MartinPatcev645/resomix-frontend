@@ -1,0 +1,682 @@
+/* Music Curators use-case page — all selectors under .mcu-page / .mcu-* */
+
+.mcu-page {
+  --mcu-ink-support: #9c9c9c;
+  --mcu-ink-quiet: #6a6a6a;
+  --mcu-ink-bright: #c9c9c9;
+  --mcu-ink-statement: #e2e2e2;
+  --mcu-ink-quote: #d8d8d8;
+  --mcu-ink-val: #d4d4d4;
+  --mcu-border: rgba(255, 255, 255, 0.16);
+  --mcu-border-soft: rgba(255, 255, 255, 0.09);
+  --mcu-panel: rgba(255, 255, 255, 0.025);
+  --mcu-fig-bg: #101010;
+  --mcu-stroke: 1.2;
+  overflow-x: clip;
+}
+
+.light .mcu-page {
+  --mcu-ink-support: #5c5c5c;
+  --mcu-ink-quiet: #6a6a6a;
+  --mcu-ink-bright: #333;
+  --mcu-ink-statement: #222;
+  --mcu-ink-quote: #2a2a2a;
+  --mcu-ink-val: #333;
+  --mcu-border: rgba(16, 16, 16, 0.18);
+  --mcu-border-soft: rgba(16, 16, 16, 0.09);
+  --mcu-panel: rgba(16, 16, 16, 0.03);
+  --mcu-fig-bg: #f4f4f4;
+}
+
+.mcu-page .mcu-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.mcu-page .mcu-layer-plate {
+  z-index: -3;
+  background: var(--color-secondary) var(--mcu-plate-dark) center / cover no-repeat;
+  opacity: 0.8;
+}
+
+.light .mcu-page .mcu-layer-plate {
+  background-image: var(--mcu-plate-light);
+}
+
+.mcu-page .mcu-layer-grain {
+  z-index: -1;
+  background: var(--mcu-grain-dark) repeat;
+  background-size: 256px 256px;
+  opacity: 0.045;
+}
+
+.light .mcu-page .mcu-layer-grain {
+  background-image: var(--mcu-grain-light);
+}
+
+.mcu-page .mcu-frame {
+  max-width: min(80rem, 100%);
+  margin-inline: auto;
+  padding-inline: var(--px-24);
+  position: relative;
+  z-index: 10;
+}
+
+@media (min-width: 1024px) {
+  .mcu-page .mcu-frame {
+    padding-inline: var(--px-48);
+  }
+}
+
+.mcu-page .mcu-section {
+  padding-block: 2.5rem;
+  border-bottom: 1px dotted var(--mcu-border-soft);
+  position: relative;
+}
+
+@media (max-width: 1023px) {
+  .mcu-page .mcu-section {
+    padding-block: 2.25rem;
+  }
+}
+
+.mcu-page .mcu-section:last-of-type {
+  border-bottom: none;
+}
+
+.mcu-page a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.mcu-page a:focus-visible,
+.mcu-page button:focus-visible {
+  outline: 2px solid var(--color-neon-orange);
+  outline-offset: var(--px-3);
+}
+
+.mcu-page button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.mcu-page .mcu-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.mcu-page .mcu-eyebrow {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.14em;
+  color: var(--mcu-ink-bright);
+  text-transform: uppercase;
+  margin: 0 0 var(--px-14);
+  display: flex;
+  align-items: center;
+  gap: var(--px-10);
+}
+
+.mcu-page .mcu-eyebrow::before {
+  content: '';
+  width: var(--px-32);
+  border-top: 1px solid var(--color-neon-orange);
+}
+
+.mcu-page .mcu-h2b {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-22);
+  line-height: 1.16;
+  letter-spacing: 0.02em;
+  margin: 0 0 var(--px-14);
+  color: var(--color-primary);
+}
+
+@media (min-width: 1024px) {
+  .mcu-page .mcu-h2b {
+    font-size: var(--px-32);
+  }
+}
+
+.mcu-page .mcu-body {
+  color: var(--mcu-ink-bright);
+  font-size: var(--px-17);
+  line-height: 1.7;
+  margin: 0 0 var(--px-18);
+  max-width: 44rem;
+  font-weight: 300;
+}
+
+.mcu-page .mcu-body:last-of-type {
+  margin-bottom: 0;
+}
+
+.mcu-page .mcu-body-soft {
+  color: var(--mcu-ink-quote);
+}
+
+.mcu-page .mcu-pull {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  font-size: var(--px-17);
+  line-height: 1.55;
+  color: var(--mcu-ink-statement);
+  max-width: 44ch;
+  text-transform: none;
+  margin: 0;
+}
+
+@media (min-width: 1024px) {
+  .mcu-page .mcu-pull {
+    font-size: var(--px-21);
+  }
+}
+
+.mcu-page .mcu-tlink {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 1px dotted var(--mcu-ink-support);
+  padding-bottom: var(--px-2);
+  background: none;
+  cursor: pointer;
+}
+
+.mcu-page .mcu-tlink:hover {
+  border-color: var(--color-neon-orange);
+}
+
+.mcu-page .mcu-tlink::after {
+  content: ' →';
+  color: var(--color-neon-orange);
+}
+
+.mcu-page .mcu-cta-p {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--px-8);
+  background: var(--color-primary);
+  color: var(--color-secondary);
+  font-family: 'Fira Code', monospace;
+  font-weight: 500;
+  font-size: var(--px-12);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: var(--px-15) var(--px-26);
+  border-radius: 999px;
+  min-height: var(--px-44);
+}
+
+.mcu-page .mcu-cta-p:hover {
+  background: #e6e6e6;
+}
+
+.light .mcu-page .mcu-cta-p {
+  color: #fff;
+}
+
+.light .mcu-page .mcu-cta-p:hover {
+  background: #222;
+}
+
+.mcu-page .mcu-cta-s {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--px-8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--color-primary);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: var(--px-14) var(--px-22);
+  border-radius: 999px;
+  min-height: var(--px-44);
+}
+
+.light .mcu-page .mcu-cta-s {
+  border-color: rgba(16, 16, 16, 0.3);
+}
+
+.mcu-page .mcu-cta-s::before {
+  content: '';
+  width: var(--px-6);
+  border-top: 1px solid var(--color-neon-orange);
+}
+
+.mcu-page .mcu-cta-s:hover {
+  border-color: var(--mcu-ink-bright);
+}
+
+.mcu-page .mcu-ctas {
+  display: flex;
+  gap: var(--px-16);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.mcu-page .mcu-lbl-dim {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.08em;
+  color: var(--mcu-ink-support);
+  text-transform: uppercase;
+}
+
+.mcu-page .mcu-sl path,
+.mcu-page .mcu-sl polyline,
+.mcu-page .mcu-sl circle,
+.mcu-page .mcu-sl rect,
+.mcu-page .mcu-sl line,
+.mcu-page .mcu-sl ellipse {
+  stroke: currentColor;
+  fill: none;
+  stroke-width: var(--mcu-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mcu-page .mcu-sl .mcu-f {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* Hardening: no font-size here — sizes are inline on each <text>. */
+.mcu-page .mcu-sl text {
+  font-family: 'Fira Code', monospace;
+  letter-spacing: 0.06em;
+  fill: var(--mcu-ink-support);
+  stroke: none;
+  text-transform: uppercase;
+}
+
+/* Motion — only while .mcu-anim (section in view) and motion-on */
+@media (prefers-reduced-motion: no-preference) {
+  .mcu-page.mcu-motion-on .mcu-anim .mcu-pulse {
+    animation: mcu-pulse 2.6s ease-in-out infinite;
+  }
+
+  .mcu-page.mcu-motion-on .mcu-anim .mcu-dashflow {
+    stroke-dasharray: 5 7;
+    animation: mcu-dash 9s linear infinite;
+  }
+
+  .mcu-page.mcu-motion-on .mcu-anim .mcu-glowp {
+    animation: mcu-glow 3.2s ease-in-out infinite;
+  }
+}
+
+@keyframes mcu-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes mcu-dash {
+  to {
+    stroke-dashoffset: -120;
+  }
+}
+
+@keyframes mcu-glow {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.mcu-page.mcu-motion-reduced * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ---------- 1 · HERO ---------- */
+.mcu-page .mcu-hero {
+  padding: 3.25rem 0 0;
+  border-bottom: 1px dotted var(--mcu-border-soft);
+  overflow: hidden;
+}
+
+.mcu-page .mcu-beta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--px-8);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mcu-ink-bright);
+  border: 1px dotted var(--mcu-border);
+  padding: var(--px-6) var(--px-12);
+  margin-bottom: var(--px-20);
+}
+
+.mcu-page .mcu-beta i {
+  width: var(--px-7);
+  height: var(--px-7);
+  border-radius: 50%;
+  background: var(--color-neon-orange);
+  font-style: normal;
+}
+
+.mcu-page .mcu-benzin {
+  font-family: 'Benzin', 'Arial Black', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-36);
+  line-height: 1.08;
+  letter-spacing: 0.005em;
+  margin: 0 0 var(--px-20);
+  max-width: 14ch;
+  color: var(--color-primary);
+}
+
+@media (min-width: 768px) {
+  .mcu-page .mcu-benzin {
+    font-size: var(--px-52);
+  }
+}
+
+@media (min-width: 1024px) {
+  .mcu-page .mcu-benzin {
+    font-size: var(--px-68);
+  }
+}
+
+.mcu-page .mcu-benzin .mcu-l3 {
+  color: var(--color-neon-orange);
+  font-style: normal;
+}
+
+.mcu-page .mcu-intro {
+  color: var(--mcu-ink-bright);
+  font-size: var(--px-17);
+  line-height: 1.65;
+  max-width: 46rem;
+  margin: 0 0 var(--px-28);
+  font-weight: 300;
+}
+
+@media (min-width: 1024px) {
+  .mcu-page .mcu-intro {
+    font-size: var(--px-20);
+  }
+}
+
+.mcu-page .mcu-hero .mcu-ctas {
+  margin-bottom: var(--px-32);
+}
+
+.mcu-page .mcu-hero-art {
+  position: relative;
+  margin: 0;
+  color: var(--mcu-ink-support);
+  /* No overflow crop — a clipped glow box reads as a hard-edged red band. */
+}
+
+.mcu-page .mcu-hero-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(38rem 13rem at 55% 45%, rgba(238, 74, 38, 0.08), transparent 65%);
+  pointer-events: none;
+}
+
+.mcu-page .mcu-hero-art svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Parent-scoped: must beat `.mcu-hero-art svg { display:block }` (0,2,1). */
+.mcu-page .mcu-hero-art .mcu-hero-m {
+  display: none;
+}
+
+.mcu-page .mcu-hero-caps {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--px-16);
+  margin: 0 0 var(--px-20);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--mcu-ink-support);
+}
+
+.mcu-page .mcu-hero-caps span:last-child {
+  color: var(--mcu-ink-quote);
+}
+
+/* ---------- 2 · STATEMENT ---------- */
+.mcu-page .mcu-statement {
+  padding-block: 2.25rem;
+}
+
+.mcu-page .mcu-st {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  font-size: var(--px-19);
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  margin: var(--px-18) 0 0;
+  max-width: 44ch;
+  color: var(--mcu-ink-statement);
+  text-transform: none;
+}
+
+@media (min-width: 1024px) {
+  .mcu-page .mcu-st {
+    font-size: var(--px-26);
+  }
+}
+
+/* ---------- 3 · GAP ---------- */
+.mcu-page .mcu-gap-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--px-28);
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .mcu-page .mcu-gap-grid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: var(--px-48);
+  }
+}
+
+.mcu-page .mcu-fig {
+  border: 1px solid var(--mcu-border);
+  background: var(--mcu-fig-bg);
+  position: relative;
+  margin: 0;
+}
+
+.mcu-page .mcu-fig svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.mcu-page .mcu-fig figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--px-16);
+  flex-wrap: wrap;
+  border-top: 1px dotted var(--mcu-border-soft);
+  padding: var(--px-10) var(--px-20);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.07em;
+  color: var(--mcu-ink-support);
+  text-transform: uppercase;
+}
+
+/* ---------- 4 · PLAYLIST RAIL ---------- */
+.mcu-page .mcu-rail-intro {
+  color: var(--mcu-ink-quote);
+  margin-bottom: 0;
+}
+
+.mcu-page .mcu-rail {
+  border: 1px solid var(--mcu-border);
+  background: var(--mcu-panel);
+  margin-top: var(--px-28);
+}
+
+.mcu-page .mcu-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 15rem);
+  gap: var(--px-20);
+  align-items: center;
+  padding: var(--px-18) var(--px-24);
+  border-top: 1px dotted var(--mcu-border-soft);
+}
+
+.mcu-page .mcu-row:first-child {
+  border-top: 0;
+}
+
+.mcu-page .mcu-row-n {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.08em;
+  color: var(--color-neon-orange);
+  width: var(--px-32);
+}
+
+.mcu-page .mcu-row-k {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-15);
+  letter-spacing: 0.03em;
+  color: var(--color-primary);
+  display: block;
+  margin-bottom: var(--px-4);
+  line-height: 1.3;
+}
+
+.mcu-page .mcu-row-o {
+  color: var(--mcu-ink-val);
+  font-size: var(--px-14);
+  line-height: 1.55;
+  font-weight: 300;
+}
+
+.mcu-page .mcu-row-tr {
+  height: var(--px-36);
+  color: var(--mcu-ink-support);
+}
+
+.mcu-page .mcu-row-tr svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.mcu-page .mcu-rail-close {
+  margin-top: var(--px-28);
+}
+
+@media (max-width: 1023px) {
+  .mcu-page .mcu-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    row-gap: var(--px-12);
+  }
+
+  .mcu-page .mcu-row-tr {
+    grid-column: 2;
+    max-width: 15rem;
+  }
+}
+
+/* ---------- 5 · PHILOSOPHY ---------- */
+.mcu-page .mcu-emo-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--px-28);
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .mcu-page .mcu-emo-grid {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--px-48);
+  }
+}
+
+/* ---------- 6 · FINAL ---------- */
+.mcu-page .mcu-final {
+  border-bottom: 0;
+  padding-bottom: 3.5rem;
+}
+
+.mcu-page .mcu-final .mcu-h2b {
+  font-size: var(--px-24);
+  max-width: 22ch;
+}
+
+@media (min-width: 1024px) {
+  .mcu-page .mcu-final .mcu-h2b {
+    font-size: var(--px-36);
+  }
+}
+
+.mcu-page .mcu-final .mcu-ctas {
+  margin-top: var(--px-24);
+}
+
+.mcu-page .mcu-final .mcu-tlink {
+  margin-left: var(--px-8);
+}
+
+.mcu-page .mcu-final .mcu-lbl-dim {
+  margin-top: var(--px-16);
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 640px) {
+  .mcu-page .mcu-hero {
+    padding-top: 2.75rem;
+  }
+
+  .mcu-page .mcu-hero .mcu-ctas .mcu-cta-p,
+  .mcu-page .mcu-hero .mcu-ctas .mcu-cta-s,
+  .mcu-page .mcu-final .mcu-ctas .mcu-cta-p,
+  .mcu-page .mcu-final .mcu-ctas .mcu-cta-s {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .mcu-page .mcu-hero-art .mcu-hero-d {
+    display: none;
+  }
+
+  .mcu-page .mcu-hero-art .mcu-hero-m {
+    display: block;
+  }
+
+  .mcu-page .mcu-hero-caps {
+    font-size: var(--px-10);
+  }
+
+  .mcu-page .mcu-row {
+    padding: var(--px-16) var(--px-18);
+  }
+}

@@ -1,0 +1,695 @@
+/* Record Labels use-case page — all selectors under .rl-page / .rl-* */
+
+.rl-page {
+  --rl-ink-support: #9c9c9c;
+  --rl-ink-quiet: #6a6a6a;
+  --rl-ink-bright: #c9c9c9;
+  --rl-ink-statement: #e2e2e2;
+  --rl-ink-quote: #d8d8d8;
+  --rl-border: rgba(255, 255, 255, 0.16);
+  --rl-border-soft: rgba(255, 255, 255, 0.09);
+  --rl-panel: rgba(255, 255, 255, 0.025);
+  --rl-fig-bg: #101010;
+  --rl-stroke: 1.2;
+  overflow-x: clip;
+}
+
+.light .rl-page {
+  --rl-ink-support: #5c5c5c;
+  --rl-ink-quiet: #6a6a6a;
+  --rl-ink-bright: #333;
+  --rl-ink-statement: #222;
+  --rl-ink-quote: #2a2a2a;
+  --rl-border: rgba(16, 16, 16, 0.18);
+  --rl-border-soft: rgba(16, 16, 16, 0.09);
+  --rl-panel: rgba(16, 16, 16, 0.03);
+  --rl-fig-bg: #f4f4f4;
+}
+
+.rl-page .rl-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.rl-page .rl-layer-plate {
+  z-index: -3;
+  background: var(--color-secondary) var(--rl-plate-dark) center / cover no-repeat;
+  opacity: 0.8;
+}
+
+.light .rl-page .rl-layer-plate {
+  background-image: var(--rl-plate-light);
+}
+
+.rl-page .rl-layer-grain {
+  z-index: -1;
+  background: var(--rl-grain-dark) repeat;
+  background-size: 256px 256px;
+  opacity: 0.045;
+}
+
+.light .rl-page .rl-layer-grain {
+  background-image: var(--rl-grain-light);
+}
+
+.rl-page .rl-frame {
+  max-width: min(80rem, 100%);
+  margin-inline: auto;
+  padding-inline: var(--px-24);
+  position: relative;
+  z-index: 10;
+}
+
+@media (min-width: 1024px) {
+  .rl-page .rl-frame {
+    padding-inline: var(--px-48);
+  }
+}
+
+.rl-page .rl-section {
+  padding-block: 2.5rem;
+  border-bottom: 1px dotted var(--rl-border-soft);
+  position: relative;
+}
+
+@media (max-width: 1023px) {
+  .rl-page .rl-section {
+    padding-block: 2.25rem;
+  }
+}
+
+.rl-page .rl-section:last-of-type {
+  border-bottom: none;
+}
+
+.rl-page a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.rl-page a:focus-visible,
+.rl-page button:focus-visible {
+  outline: 2px solid var(--color-neon-orange);
+  outline-offset: var(--px-3);
+}
+
+.rl-page button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.rl-page .rl-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.rl-page .rl-eyebrow {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.14em;
+  color: var(--rl-ink-bright);
+  text-transform: uppercase;
+  margin: 0 0 var(--px-14);
+  display: flex;
+  align-items: center;
+  gap: var(--px-10);
+}
+
+.rl-page .rl-eyebrow::before {
+  content: '';
+  width: var(--px-32);
+  border-top: 1px solid var(--color-neon-orange);
+}
+
+.rl-page .rl-h2b {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-22);
+  line-height: 1.16;
+  letter-spacing: 0.02em;
+  margin: 0 0 var(--px-14);
+  color: var(--color-primary);
+}
+
+@media (min-width: 1024px) {
+  .rl-page .rl-h2b {
+    font-size: var(--px-32);
+  }
+}
+
+.rl-page .rl-body {
+  color: var(--rl-ink-bright);
+  font-size: var(--px-17);
+  line-height: 1.7;
+  margin: 0 0 var(--px-18);
+  max-width: 44rem;
+  font-weight: 300;
+}
+
+.rl-page .rl-body:last-of-type {
+  margin-bottom: 0;
+}
+
+.rl-page .rl-body-emph {
+  color: var(--rl-ink-quote);
+}
+
+.rl-page .rl-tlink {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 1px dotted var(--rl-ink-support);
+  padding-bottom: var(--px-2);
+  background: none;
+  cursor: pointer;
+}
+
+.rl-page .rl-tlink:hover {
+  border-color: var(--color-neon-orange);
+}
+
+.rl-page .rl-tlink::after {
+  content: ' →';
+  color: var(--color-neon-orange);
+}
+
+.rl-page .rl-cta-p {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--px-8);
+  background: var(--color-primary);
+  color: var(--color-secondary);
+  font-family: 'Fira Code', monospace;
+  font-weight: 500;
+  font-size: var(--px-12);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: var(--px-15) var(--px-26);
+  border-radius: 999px;
+  min-height: var(--px-44);
+}
+
+.rl-page .rl-cta-p:hover {
+  background: #e6e6e6;
+}
+
+.light .rl-page .rl-cta-p {
+  color: #fff;
+}
+
+.light .rl-page .rl-cta-p:hover {
+  background: #222;
+}
+
+.rl-page .rl-cta-s {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--px-8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--color-primary);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: var(--px-14) var(--px-22);
+  border-radius: 999px;
+  min-height: var(--px-44);
+}
+
+.light .rl-page .rl-cta-s {
+  border-color: rgba(16, 16, 16, 0.3);
+}
+
+.rl-page .rl-cta-s::before {
+  content: '';
+  width: var(--px-6);
+  border-top: 1px solid var(--color-neon-orange);
+}
+
+.rl-page .rl-cta-s:hover {
+  border-color: var(--rl-ink-bright);
+}
+
+.rl-page .rl-ctas {
+  display: flex;
+  gap: var(--px-16);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.rl-page .rl-sl path,
+.rl-page .rl-sl polyline,
+.rl-page .rl-sl circle,
+.rl-page .rl-sl rect,
+.rl-page .rl-sl line,
+.rl-page .rl-sl ellipse {
+  stroke: currentColor;
+  fill: none;
+  stroke-width: var(--rl-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rl-page .rl-sl .rl-f {
+  fill: currentColor;
+  stroke: none;
+}
+
+.rl-page .rl-sl text {
+  font-family: 'Fira Code', monospace;
+  letter-spacing: 0.06em;
+  fill: var(--rl-ink-support);
+  stroke: none;
+  text-transform: uppercase;
+}
+
+/* Motion — only while .rl-anim (section in view) and motion-on */
+@media (prefers-reduced-motion: no-preference) {
+  .rl-page.rl-motion-on .rl-anim .rl-pulse {
+    animation: rl-pulse 2.6s ease-in-out infinite;
+  }
+
+  .rl-page.rl-motion-on .rl-anim .rl-dashflow {
+    stroke-dasharray: 5 7;
+    animation: rl-dash 9s linear infinite;
+  }
+
+  .rl-page.rl-motion-on .rl-anim .rl-glowp {
+    animation: rl-glow 3.2s ease-in-out infinite;
+  }
+}
+
+@keyframes rl-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes rl-dash {
+  to {
+    stroke-dashoffset: -120;
+  }
+}
+
+@keyframes rl-glow {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.rl-page.rl-motion-reduced * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ---------- 1 · HERO ---------- */
+.rl-page .rl-hero {
+  padding: 3.25rem 0 0;
+  border-bottom: 1px dotted var(--rl-border-soft);
+  overflow: hidden;
+}
+
+.rl-page .rl-beta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--px-8);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rl-ink-bright);
+  border: 1px dotted var(--rl-border);
+  padding: var(--px-6) var(--px-12);
+  margin-bottom: var(--px-20);
+}
+
+.rl-page .rl-beta i {
+  width: var(--px-7);
+  height: var(--px-7);
+  border-radius: 50%;
+  background: var(--color-neon-orange);
+  font-style: normal;
+}
+
+.rl-page .rl-benzin {
+  font-family: 'Benzin', 'Arial Black', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-32);
+  line-height: 1.06;
+  letter-spacing: 0.005em;
+  margin: 0 0 var(--px-20);
+  max-width: 18ch;
+  color: var(--color-primary);
+}
+
+@media (min-width: 768px) {
+  .rl-page .rl-benzin {
+    font-size: var(--px-48);
+  }
+}
+
+@media (min-width: 1024px) {
+  .rl-page .rl-benzin {
+    font-size: var(--px-60);
+  }
+}
+
+.rl-page .rl-intro {
+  color: var(--rl-ink-bright);
+  font-size: var(--px-17);
+  line-height: 1.65;
+  max-width: 44rem;
+  margin: 0 0 var(--px-28);
+  font-weight: 300;
+}
+
+@media (min-width: 1024px) {
+  .rl-page .rl-intro {
+    font-size: var(--px-20);
+  }
+}
+
+.rl-page .rl-hero .rl-ctas {
+  margin-bottom: var(--px-32);
+}
+
+.rl-page .rl-hero-art {
+  position: relative;
+  margin: 0;
+  color: var(--rl-ink-support);
+  overflow: hidden;
+}
+
+.rl-page .rl-hero-glow {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 70%;
+  background: radial-gradient(40rem 14rem at 62% 55%, rgba(238, 74, 38, 0.1), transparent 65%);
+  pointer-events: none;
+}
+
+.rl-page .rl-hero-art svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Parent-scoped: must beat `.rl-hero-art svg { display:block }` (0,2,1). */
+.rl-page .rl-hero-art .rl-hero-m {
+  display: none;
+}
+
+.rl-page .rl-hero-caps {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--px-16);
+  margin: 0 0 var(--px-20);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--rl-ink-support);
+}
+
+.rl-page .rl-hero-caps span:last-child {
+  color: var(--rl-ink-quote);
+}
+
+/* ---------- 2 · STATEMENT ---------- */
+.rl-page .rl-statement {
+  padding-block: 2.25rem;
+}
+
+.rl-page .rl-st {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  font-size: var(--px-19);
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  margin: 0;
+  max-width: 44ch;
+  color: var(--rl-ink-statement);
+  text-transform: none;
+}
+
+@media (min-width: 1024px) {
+  .rl-page .rl-st {
+    font-size: var(--px-26);
+  }
+}
+
+/* ---------- 3 · METADATA ---------- */
+.rl-page .rl-meta-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--px-28);
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .rl-page .rl-meta-grid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: var(--px-48);
+  }
+}
+
+.rl-page .rl-fig {
+  border: 1px solid var(--rl-border);
+  background: var(--rl-fig-bg);
+  position: relative;
+  margin: 0;
+}
+
+.rl-page .rl-fig svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Parent-scoped: must beat `.rl-fig svg { display:block }` (0,2,1). */
+.rl-page .rl-fig .rl-fig-m {
+  display: none;
+}
+
+.rl-page .rl-fig figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--px-16);
+  flex-wrap: wrap;
+  border-top: 1px dotted var(--rl-border-soft);
+  padding: var(--px-10) var(--px-20);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.07em;
+  color: var(--rl-ink-support);
+  text-transform: uppercase;
+}
+
+/* ---------- 4 · QUOTE ---------- */
+.rl-page .rl-quote {
+  padding-block: 3rem;
+}
+
+.rl-page .rl-quote blockquote {
+  margin: 0;
+  max-width: 52rem;
+  position: relative;
+  padding-left: var(--px-32);
+}
+
+.rl-page .rl-quote blockquote::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--px-6);
+  bottom: var(--px-6);
+  border-left: 3px solid var(--color-neon-orange);
+}
+
+.rl-page .rl-quote p {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 300;
+  font-size: var(--px-19);
+  line-height: 1.55;
+  color: var(--rl-ink-quote);
+  margin: 0 0 var(--px-16);
+}
+
+@media (min-width: 1024px) {
+  .rl-page .rl-quote p {
+    font-size: var(--px-24);
+  }
+}
+
+.rl-page .rl-quote cite {
+  font-family: 'Fira Code', monospace;
+  font-style: normal;
+  font-size: var(--px-11);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--rl-ink-support);
+}
+
+.rl-page .rl-quote cite b {
+  color: var(--rl-ink-bright);
+  font-weight: 500;
+}
+
+/* ---------- 5 · WORKFLOWS ---------- */
+.rl-page .rl-wf-lead {
+  max-width: 44rem;
+  margin-bottom: var(--px-28);
+}
+
+.rl-page .rl-wfs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--px-16);
+}
+
+@media (min-width: 641px) {
+  .rl-page .rl-wfs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--px-16);
+  }
+}
+
+@media (min-width: 1024px) {
+  .rl-page .rl-wfs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--px-20);
+  }
+}
+
+.rl-page .rl-wf {
+  border: 1px solid var(--rl-border);
+  background: var(--rl-panel);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-width: 0;
+}
+
+.rl-page .rl-wf::before {
+  content: '';
+  position: absolute;
+  left: var(--px-20);
+  top: 0;
+  width: var(--px-28);
+  border-top: 1px solid var(--color-neon-orange);
+  z-index: 2;
+}
+
+.rl-page .rl-wf-art {
+  border-bottom: 1px solid var(--rl-border-soft);
+}
+
+.rl-page .rl-wf-art svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.rl-page .rl-wf-txt {
+  padding: var(--px-16) var(--px-20) var(--px-18);
+  color: var(--rl-ink-bright);
+  font-size: var(--px-14);
+  line-height: 1.55;
+  flex: 1;
+  margin: 0;
+  font-weight: 300;
+}
+
+.rl-page .rl-wf-close {
+  margin-top: var(--px-28);
+}
+
+/* ---------- 6 · CREATIVITY ---------- */
+.rl-page .rl-cr-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--px-28);
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .rl-page .rl-cr-grid {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--px-48);
+  }
+}
+
+/* ---------- 7 · FINAL ---------- */
+.rl-page .rl-final {
+  border-bottom: 0;
+  padding-bottom: 3.5rem;
+}
+
+.rl-page .rl-final .rl-h2b {
+  font-size: var(--px-24);
+  max-width: 24ch;
+}
+
+@media (min-width: 1024px) {
+  .rl-page .rl-final .rl-h2b {
+    font-size: var(--px-36);
+  }
+}
+
+.rl-page .rl-final .rl-ctas {
+  margin-top: var(--px-24);
+}
+
+.rl-page .rl-final .rl-tlink {
+  margin-left: var(--px-8);
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 640px) {
+  .rl-page .rl-hero {
+    padding-top: 2.75rem;
+  }
+
+  .rl-page .rl-hero .rl-ctas .rl-cta-p,
+  .rl-page .rl-hero .rl-ctas .rl-cta-s,
+  .rl-page .rl-final .rl-ctas .rl-cta-p,
+  .rl-page .rl-final .rl-ctas .rl-cta-s {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rl-page .rl-hero-art .rl-hero-d {
+    display: none;
+  }
+
+  .rl-page .rl-hero-art .rl-hero-m {
+    display: block;
+  }
+
+  .rl-page .rl-fig .rl-fig-d {
+    display: none;
+  }
+
+  .rl-page .rl-fig .rl-fig-m {
+    display: block;
+  }
+
+  .rl-page .rl-hero-caps {
+    font-size: var(--px-10);
+  }
+}

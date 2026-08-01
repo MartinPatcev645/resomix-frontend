@@ -2013,6 +2013,455 @@
             "ctaLegalAria": "View Legal Documents — opens the Resomix legal library"
         }
     },
+    "recordLabels": {
+        "hero": {
+            "chip": "Use case · Record labels",
+            "h1": "Maximise your catalogue with Resomix",
+            "intro": "Running a label is hard, and it always has been. Choosing the artists to release, curating every project with care, managing a growing catalogue, and consistently releasing music that's in line with the essence of your project all require time and dedication.",
+            "figureAria": "Ten years of a label's releases drawn as a timeline; one orange thread connects a recent signing back to an older release, re-lighting it"
+        },
+        "statement": {
+            "srTitle": "Why a similarity engine",
+            "body": "A carefully crafted similarity engine not only helps diversify a label's output, but also identifies new opportunities for the label and its roster. When chosen right, this is a tool that becomes an invaluable companion — one that can expand the visibility of any creative project."
+        },
+        "metadata": {
+            "eyebrow": "The problem",
+            "h2": "When metadata isn't enough",
+            "p1": "As a record label grows, it needs tools to help it search, organise, and understand its catalogue. It might be easier to do it all manually with a catalogue of 10, 20, or 50 releases. But what about 100, or 200?",
+            "p2": "With these numbers, it's easy to lose sight of a project's narrative, or miss opportunities that'd increase the label's visibility. A forgotten track published years ago that'd be a perfect fit for a movie soundtrack, or an older release could find a new audience through its sonic similarity to a recent signing.",
+            "p3": "Metadata helps, but it doesn't describe how music actually sounds, which makes connections difficult to find.",
+            "figureAria": "The same catalogue seen two ways: as a flat metadata table where every row looks alike, and as a sonic field where tracks group by how they sound and a forgotten release stands out"
+        },
+        "quote": {
+            "srTitle": "From a label founder",
+            "text": "\"A similarity engine that truly understands our catalogue could help us explore new directions, diversify our output organically, and introduce older releases to new audiences while highlighting the depth of our work over the past decade.\"",
+            "name": "Marco Alessi",
+            "role": "Founder of Naviar"
+        },
+        "workflows": {
+            "eyebrow": "Day-to-day management",
+            "h2": "Built for the label's working week",
+            "lead1": "Resomix analyses the audio itself, allowing labels to search and compare music based on sonic similarity instead of simply using metadata.",
+            "lead2": "In the day-to-day management of a label, this process makes it easier to:",
+            "items": {
+                "demo": "Understand how new demos fit within an existing catalogue.",
+                "dormant": "Rediscover forgotten releases and put them in front of a new audience.",
+                "brief": "Respond to sync requests efficiently.",
+                "cluster": "Build compilations or playlists around a cohesive sound, in no time."
+            },
+            "close": "Instead of relying on memory and manual listening, you can now explore new possibilities within your catalogue, built through years of dedication and hard work."
+        },
+        "creativity": {
+            "eyebrow": "The philosophy",
+            "h2": "Sonic analysis at the service of creativity",
+            "p1": "By making entire catalogues searchable purely by sound, a label team spends less time searching and more time discovering. In this case, the difference between these two similar terms is vital.",
+            "p2": "Our deterministic engine can do the heavy lifting, highlighting opportunities for your label that might have been ignored. Your role, whether you're the label founder or marketing assistant, will always be to choose the right path for the label based on its history and creative integrity.",
+            "p3": "Resomix's similarity engine is not designed to replace the human \"touch\", but to enhance it and amplify it so that it can reach its true potential.",
+            "figureAria": "The engine surfaces a small set of candidate tracks from the catalogue; a white ring marks the one the label team chooses — the decision stays human"
+        },
+        "cta": {
+            "h2": "Ready to try our cutting-edge similarity engine?",
+            "line": "Get in touch today.",
+            "pilot": "Start a Catalogue Pilot",
+            "contact": "Get in touch",
+            "exploreCi": "Explore Catalogue Intelligence"
+        },
+        "figures": {
+            "tenYears": "Ten years of releases",
+            "oneThread": "One sonic thread",
+            "newSigning": "New signing",
+            "relit2019": "Re-lit · 2019",
+            "sameCatalogue": "Same catalogue",
+            "twoWays": "Two ways of seeing it",
+            "metadataView": "Metadata view",
+            "sonicView": "Sonic view",
+            "forgottenFound": "Forgotten · found",
+            "rediscovered": "Rediscovered",
+            "briefIn": "Brief in",
+            "cohesiveSound": "One cohesive sound",
+            "yourCatalogue": "Your catalogue",
+            "surfaced": "Surfaced by the engine",
+            "yourChoice": "Your choice",
+            "engineSurfaces": "The engine surfaces",
+            "youChoose": "You choose"
+        }
+    },
+    "syncAgencies": {
+        "hero": {
+            "chip": "Use case · Sync agencies",
+            "h1": "Translating tags into emotions",
+            "intro": "A talented sync agent can see opportunities where others don't; someone who can connect the dots, understand creative visions, and give musicians the spotlight they deserve.",
+            "figureAria": "Flat metadata tags pass through the Resomix gate and become a felt reading of the music — intimate, nostalgic, unsettling, uplifting"
+        },
+        "idea": {
+            "srTitle": "The idea behind Resomix",
+            "complexities": "The complexities surrounding music sync are notorious, from rights management to growing a catalogue and responding to increasingly specific creative briefs. One of the biggest challenges, however, is translating tags into emotions.",
+            "whatIf": "What if there was a similarity engine specifically designed to interpret the emotional and sonic characteristics of a song through carefully crafted audio analysis?",
+            "dream": "This was our dream when we started working on Resomix. Now, our deterministic engine is more than a similarity tool: it's a catalogue-exploring platform that helps sync agencies uncover hidden opportunities, save time, and deliver more accurate results. All with the human touch every sync agency needs."
+        },
+        "problems": {
+            "eyebrow": "The problem",
+            "h2": "When tags can't describe emotion",
+            "lead": "The larger a catalogue becomes, the harder it is to find the perfect track for every project.",
+            "items": {
+                "untagged": "A song that isn't properly tagged, no matter how good it is, will disappear into the catalogue. For sync agencies, this means not only missed licensing opportunities, but also fewer chances for artists to have their music discovered.",
+                "listeners": "The same song can be interpreted in many ways. Two people may listen to the same piece and experience completely different emotions. Personal taste is invaluable, but it can also make music discovery inconsistent, especially when working under tight deadlines.",
+                "subtleties": "Metadata is essential, but it rarely captures the subtleties that make a song feel intimate, nostalgic, unsettling, or uplifting."
+            },
+            "balance": "When consistency, speed, accuracy, and a personal touch are all equally important, how do you find the right balance?"
+        },
+        "workflows": {
+            "eyebrow": "Working as one",
+            "h2": "Sonic and human intelligence, working as one",
+            "lead1": "Resomix has brought to life a sonic similarity engine (PYXIS-1) that converts audio into detailed structural, harmonic, rhythmic, timbral, and emotional intelligence. Instead of relying on tags and release dates, it focuses on the sonic DNA of every song.",
+            "lead2": "For a sync agency, this makes it easier to:",
+            "items": {
+                "brief": "Respond to creative briefs with confidence and variety.",
+                "secondChance": "Rediscover forgotten tracks that deserve a second chance.",
+                "foundBySound": "Find songs based on how they sound, not just how they're tagged.",
+                "connection": "Find unexpected connections across an entire catalogue."
+            },
+            "close": "Resomix doesn't replace a person's knowledge or taste, but rather enhances and expands it. It shows that music can be interpreted in countless ways and explores the true power of a tagging system, in a way that you can understand and refine over time."
+        },
+        "expect": {
+            "eyebrow": "What to expect",
+            "h2": "What to expect from Resomix",
+            "p1": "In short, sync agencies and publishers employing PYXIS-1 will see connections they never thought existed, thanks to a cutting-edge algorithm designed to analyse the soul of a song, and not just how it was tagged.",
+            "p2": "It's the ultimate lateral thinking approach, organically applied to music discovery.",
+            "p3": "You're fully in control of your tagging system, but Resomix can help you uncover hidden gems you forgot about, showing you the gaps in your agency's catalogue, and giving you unique solutions that'll satisfy clients and artists alike.",
+            "figureAria": "A catalogue field where the expected path runs straight and grey while a lateral orange thread reaches a distant hidden gem; a dashed circle marks a coverage gap and a white ring marks the human choice"
+        },
+        "cta": {
+            "h2": "Ready to try our cutting-edge similarity engine?",
+            "line": "Get in touch today.",
+            "pilot": "Start a Catalogue Pilot",
+            "contact": "Get in touch",
+            "exploreCi": "Explore Catalogue Intelligence"
+        },
+        "figures": {
+            "whatTagsSay": "What the tags say",
+            "howMusicFeels": "How the music feels",
+            "pyxis1": "PYXIS-1",
+            "tagAmbient": "Ambient",
+            "tagBpm": "120 BPM",
+            "tagInstrumental": "Instrumental",
+            "tagYear": "2019",
+            "tagElectronic": "Electronic",
+            "feelIntimate": "Intimate",
+            "feelNostalgic": "Nostalgic",
+            "feelUnsettling": "Unsettling",
+            "feelUplifting": "Uplifting",
+            "tagged": "Tagged",
+            "noTagUnseen": "No tag · unseen",
+            "listenerOne": "Listener one",
+            "listenerTwo": "Listener two",
+            "theSubtleties": "The subtleties",
+            "briefIn": "Brief in",
+            "varied": "Varied",
+            "secondChance": "Second chance",
+            "tagAmbientChip": "Tag · Ambient",
+            "foundBySound": "Found by sound",
+            "unexpectedConnection": "Unexpected connection",
+            "yourCatalogue": "Your catalogue",
+            "expectedPath": "The expected path",
+            "hiddenGem": "Hidden gem",
+            "gapNoted": "A gap · noted",
+            "yourCall": "Your call",
+            "engineThinksLaterally": "The engine thinks laterally",
+            "youStayInControl": "You stay in control"
+        }
+    },
+    "musicLibraries": {
+        "hero": {
+            "chip": "Use case · Music libraries & sample providers",
+            "h1": "Turn your catalogue into a sonic discovery engine",
+            "intro": "The bigger a music library becomes, the more difficult it becomes to navigate.",
+            "figureAria": "A wall of sample tiles; one reference sound is selected and orange threads reach its sonic relatives in other packs across the library"
+        },
+        "statement": {
+            "srTitle": "The library problem",
+            "body": "Having thousands of samples, loops, presets, and sounds gives producers an almost infinite number of creative possibilities. And here's the downside: the more content you add to your library, the harder it becomes for users to find exactly what they're looking for. The perfect sound might already be there, simply buried underneath hundreds of similar results.",
+            "engine": "A carefully crafted similarity engine not only helps users find sounds faster, but also gives them new ways to explore a catalogue they might otherwise never fully discover."
+        },
+        "tags": {
+            "eyebrow": "The problem",
+            "h2": "Aren't tags enough?",
+            "p1": "Most sample libraries rely on metadata to help users navigate their catalogues. Genre, instrument, BPM, key, mood and other tags are helpful, but they can only describe a sound up to a certain point.",
+            "p2": "Two drum patterns might both be tagged as \"electronic\", but sound completely different. Two vocal samples might both be described as \"emotional\", while having very little in common sonically.",
+            "p3": "The problem is even more apparent when a producer doesn't know exactly what they're looking for: maybe a synth texture like one they heard in another track, or a drum loop that has the same energy as their reference, but they don't know what to search for.",
+            "figureAria": "Two drum patterns share the same electronic tag but their waveforms look nothing alike; below, a sound a producer can hear in their head sits beside a search field they cannot fill"
+        },
+        "values": {
+            "eyebrow": "For music libraries & sample providers",
+            "h2": "A new way to explore your catalogue",
+            "lead1": "Resomix can give music libraries and sample providers a new way to help users explore their catalogues.",
+            "lead2": "By analysing the sonic characteristics of individual sounds and loops, PYXIS-1 can identify subtle relationships that traditional metadata might miss.",
+            "lead3": "Instead of searching exclusively through tags, users of a sample library could start with a sound they already like and explore other elements that share its sonic DNA.",
+            "couldMean": "For music libraries and sample providers, this could mean:",
+            "items": {
+                "findFaster": {
+                    "label": "Help users find the right sounds faster",
+                    "text": "Start with a reference and discover relevant results without relying exclusively on keywords."
+                },
+                "discoverability": {
+                    "label": "Increase catalogue discoverability",
+                    "text": "Bring neglected sounds back into the user's field of view."
+                },
+                "connections": {
+                    "label": "Create unexpected connections",
+                    "text": "Help users move between different packs, instruments, and categories based on sound rather than labels."
+                },
+                "experience": {
+                    "label": "Improve the user experience",
+                    "text": "Make large catalogues easier and more intuitive to navigate."
+                },
+                "value": {
+                    "label": "Increase the value of existing content",
+                    "text": "Give users more reasons to explore the catalogue they already have access to."
+                }
+            },
+            "pull": "Instead of asking users what they're looking for, you can give them the freedom to discover it themselves, with a powerful and reliable discovery engine designed to dive deep into a catalogue."
+        },
+        "lost": {
+            "eyebrow": "The pay-off",
+            "h2": "Don't let your best sounds get lost",
+            "p1": "A music library can spend years building an incredible catalogue, but the value of that catalogue depends exclusively on how easily people can access it.",
+            "p2": "Resomix can help turn those hidden connections into new discovery opportunities, allowing users to explore a catalogue through the sound itself.",
+            "p3": "For sample providers and music libraries, this means moving beyond traditional search and giving producers a more intuitive way to find inspiration.",
+            "figureAria": "A deep stack of sample crates; one sound buried near the bottom glows and a thread lifts it to the user at the surface"
+        },
+        "cta": {
+            "h2": "Your catalogue is already full of possibilities.",
+            "line": "Resomix can help your users discover them more efficiently.",
+            "pilot": "Start a Catalogue Pilot",
+            "exploreApi": "Explore the API",
+            "contact": "Get in touch"
+        },
+        "figures": {
+            "oneSoundYouLike": "One sound you like",
+            "itsRelatives": "Its relatives across the library",
+            "yourReference": "Your reference",
+            "sonicRelatives": "Sonic relatives",
+            "packDrums": "Drums",
+            "packSynths": "Synths",
+            "packVocals": "Vocals",
+            "packTextures": "Textures",
+            "electronic": "Electronic",
+            "patternOne": "Pattern one",
+            "patternTwo": "Pattern two",
+            "soundInYourHead": "The sound in your head",
+            "nothingToType": "Nothing to type",
+            "sameTagDifferent": "Same tag · different sounds",
+            "hearCantType": "You can hear it — you can't type it",
+            "theCrate": "The crate",
+            "buried": "Buried",
+            "found": "Found",
+            "yearsOfBuilding": "Years of building",
+            "surfacedBySound": "Surfaced by sound",
+            "buriedInThePile": "Buried in the pile"
+        }
+    },
+    "djs": {
+        "hero": {
+            "chip": "Use case · DJs",
+            "h1a": "Dig less.",
+            "h1b": "Discover more.",
+            "intro": "Learning to DJ might not sound that difficult. Becoming a great DJ, however, is an entirely different matter.",
+            "ctaNote": "Free to start · production beta",
+            "figureAria": "A crate of records drawn as dense rows of spines; one record is pulled out and a journey of ranked musical ideas unfolds from it — ideas, not a set order"
+        },
+        "statement": {
+            "srTitle": "The craft",
+            "p1": "The best DJs are not only creative in their selection, but also consistent in terms of style and performance quality. At the end of the day, the not-so-secret formula to DJing mastery is to craft your own sonic identity, and never stop evolving and refining your sets.",
+            "p2": "This is easier said than done, though. Once they start playing regularly, it becomes increasingly harder for DJs to present different sets every night, which leads them to use the same tracks over and over. This, in turn, makes their sets predictable, less engaging, and \"cold\". Plus, every hour spent digging through folders, playlists and tags is time that could be spent discovering new musical directions instead.",
+            "engine": "A refined similarity engine, specifically designed to analyse a music catalogue to deliver accurate and unexpected results, might be the best way to avoid repetitiveness and speed up the curation process."
+        },
+        "library": {
+            "eyebrow": "The problem",
+            "h2": "A DJ's biggest asset is also their biggest problem",
+            "p1": "I'm of course talking about the DJ's music library.",
+            "p2": "It's not uncommon for a professional DJ to have tens of thousands of songs saved on the hard drive. It's impossible for the human mind to remember them all, let alone see the connections between them!",
+            "p3": "The result is that a vast majority of a DJ's collection gets lost, buried underneath the latest entries to their library and the unmissable signature songs they always play on stage.",
+            "p4": "Within those thousands of forgotten songs are hidden gems: tracks you heard once and bought on a whim years ago, or unknown b-sides only a handful of people know exist.",
+            "pull": "What if, among that ocean of forgotten tracks, there's a perfect fit for the mood of your next DJ set?",
+            "p5": "When relying exclusively on tagging and cataloguing systems, results can be hard to analyse because tags, even when perfectly fine-tuned, are not enough to describe a song's emotional impact.",
+            "p6": "What you need is a sonic analysis layer designed to understand the complexity of modern music libraries; one that, instead of searching by genre, artist, label or manually assigned tags, makes the music itself the search query.",
+            "figureAria": "A DJ library drawn as depth: the latest entries bright at the top, the signature songs pinned, and a vast dim middle where three hidden gems faintly glow"
+        },
+        "journeys": {
+            "eyebrow": "The answer",
+            "h2": "Turning music folders into sonic journeys",
+            "lead1": "Enter Resomix, a sonic similarity engine that reads the sonic DNA of a reference track by analysing its rhythmic, harmonic, timbral, structural and emotional characteristics. Instead of following metadata blindly, Resomix's deterministic engine PYXIS-1 uses the music itself to open new sonic paths across your library.",
+            "lead2": "For a DJ, this means making the most not only of your unique taste and style, but also of the vast catalogue that took you years to build.",
+            "lead3": "Furthermore, what used to take hours of manual digging can now happen in seconds. Pick a single track that captures the mood you're looking for, and Resomix instantly returns a ranked collection of tracks that are sonically related to it. Instead of starting every search from scratch, you'll have a curated set of creative possibilities at your disposal, right away.",
+            "intro": "Some examples of the improvements Resomix can bring to your workflow:",
+            "items": {
+                "rediscover": {
+                    "label": "Rediscover forgotten tracks",
+                    "text": "Bring those hidden gems back into your sets. A forgotten B-side released years ago and a recent release might perfectly fit each other, if their sonic relationship is strong."
+                },
+                "connections": {
+                    "label": "Find unexpected connections",
+                    "text": "Go beyond your existing tagging system and discover relationships that genres and manually assigned tags cannot reveal."
+                },
+                "escape": {
+                    "label": "Escape repetition",
+                    "text": "Explore new musical directions and stop relying on the same dozen tracks."
+                },
+                "prepare": {
+                    "label": "Prepare sets faster",
+                    "text": "Spend less time searching through folders and more time focusing on the \"journey\" of your set."
+                }
+            },
+            "pull": "Resomix doesn't build a set from scratch, but it does remove the slow search process, giving you dozens of musical ideas in seconds while leaving the creative decisions to you."
+        },
+        "unique": {
+            "eyebrow": "The craft stays yours",
+            "h2": "Make every DJ set unique",
+            "p1": "There's something about a DJ's style that automation simply can't replicate. Your ability to read the room and mix tracks seamlessly is the core of your musical identity, and Resomix's similarity engine is here to make your discovery process faster, more creative, and intuitive.",
+            "p2": "Our deterministic engine is a creative companion, one that won't replace your unique taste, but rather help you discover more possibilities, faster, so you can spend less time searching and more time shaping the music journey you want to create.",
+            "figureAria": "The room drawn as a soft arc of listeners above; the DJ, a white ring, stands between the room and a fan of surfaced musical ideas — the engine suggests, the DJ reads the room"
+        },
+        "final": {
+            "line1": "Choose a track.",
+            "line2": "Explore its sonic DNA.",
+            "line3": "Discover what could come next."
+        },
+        "cta": {
+            "try": "Try Resomix",
+            "exploreSd": "Explore Sonic Discovery",
+            "exploreTi": "Explore Track Intelligence"
+        },
+        "figures": {
+            "yourCrate": "Your crate",
+            "musicIsQuery": "The music itself is the search query",
+            "wholeTrack": "The one you chose — the whole track",
+            "wholeTrackShort": "The whole track",
+            "rankedIdeas": "Ranked ideas — the set stays yours",
+            "theLibrary": "The library",
+            "latestEntries": "The latest entries",
+            "signatureSongs": "The signature songs",
+            "tensDeep": "Tens of thousands deep",
+            "hiddenGems": "The hidden gems",
+            "whatGetsPlayed": "What gets played",
+            "whatGetsForgotten": "What gets forgotten",
+            "bsideYearsAgo": "B-side · years ago",
+            "recentRelease": "Recent release",
+            "genreA": "Genre A",
+            "genreB": "Genre B",
+            "genreC": "Genre C",
+            "sameDozen": "The same dozen",
+            "newDirection": "A new direction",
+            "folders": "Folders",
+            "journeyOfSet": "The journey of your set",
+            "theRoom": "The room",
+            "you": "You",
+            "surfacedIdeas": "Surfaced ideas — the pick is yours",
+            "engineSuggests": "The engine suggests",
+            "youReadRoom": "You read the room"
+        }
+    },
+    "musicCurators": {
+        "hero": {
+            "chip": "Use case · Music curators",
+            "h1a": "Hear music",
+            "h1b": "differently.",
+            "intro": "The art of music curation is born from a unique mix of talent and experience; the ability to hear music differently, to predict trends, to see hidden connections, is the essence of what makes humans connect through music.",
+            "ctaNote": "Free to start · production beta",
+            "figureAria": "Tracks scattered across decades and genre strata; from the reference track a signal journey flows outward through numbered stops across eras and genres — a playlist chain linked by the curator, with one direction still unexplored"
+        },
+        "statement": {
+            "srTitle": "The curator's edge",
+            "p1": "To stay on top of the game as a music curator requires a clear process and the right tools that can help you uncover hidden gems among the thousands of songs released daily. Especially when you have a clear sonic identity in mind, having the ideal discovery engine at your disposal can help bring your creative vision to life.",
+            "engine": "With Resomix, a reference track becomes a starting point to explore multiple directions that would be difficult to find through traditional discovery methods — quickly, creatively, and based on the emotions that music conveys."
+        },
+        "gap": {
+            "eyebrow": "The gap in the market",
+            "h2": "Recommendations will only take you this far",
+            "p1": "We all rely on recommendations, whether they come from our pals or the algorithm of our favourite streaming platform. They're invaluable, and can help you discover new things every day.",
+            "p2": "The problem with human recommendations is that we're limited by the time it takes to actually listen to and appreciate music. On the other hand, the issue with algorithms is that they're not good at lateral thinking, making them less effective when you want to break barriers between genres and explore new sounds.",
+            "p3": "These two approaches to music discovery are critical, but neither can provide the depth of discovery that a curator sometimes needs. What's missing is a workflow that combines the best of both: the \"soul\" of human sonic discovery, and the powerful research engines that modern algorithms can provide.",
+            "figureAria": "Two beams of discovery: human recommendations reach deep but narrow, platform recommendations reach broad but shallow; between them lies missed territory with faint gems, and an orange beam reaches into it"
+        },
+        "rail": {
+            "eyebrow": "For music curators",
+            "h2": "Expand your curation with Resomix",
+            "lead1": "What curators need is a discovery engine that analyses the audio itself, without relying on metadata, giving them a fresh approach to the music they find and select for their projects.",
+            "lead2": "By analysing the structural, harmonic, rhythmic, timbral, and emotional qualities of a reference track, PYXIS-1 is designed to discover new connections between songs, hidden underneath the surface of the genres the songs naturally fall into.",
+            "intro": "What does all this actually mean for a music curator:",
+            "listAria": "What Resomix means for a music curator",
+            "items": {
+                "continuity": {
+                    "label": "Create sonic continuity",
+                    "text": "by finding songs that seamlessly blend together."
+                },
+                "connections": {
+                    "label": "Find unexpected connections",
+                    "text": "that'll make your playlists unique."
+                },
+                "taste": {
+                    "label": "Enhance your taste",
+                    "text": "by choosing a direction and letting Resomix find new paths."
+                },
+                "forgotten": {
+                    "label": "Find forgotten tracks",
+                    "text": "that could bring something new to your set."
+                },
+                "directions": {
+                    "label": "Explore new directions",
+                    "text": "without losing the mood and identity of your selection."
+                }
+            },
+            "pull": "Instead of starting every search from a genre, artist, or keyword, you can now use a single track as a reference point and explore where its sonic DNA can take you."
+        },
+        "philosophy": {
+            "eyebrow": "The philosophy",
+            "h2": "Sonic analysis at the service of creativity",
+            "p1": "As a curator, your biggest asset is your individuality. Now that thousands of songs are released daily, you need tools that help you dig deeper, and find sonic connections based on moods and atmospheres instead of genre tags or release dates.",
+            "p2": "Our discovery engine is designed to show you the hidden corners of your unique music taste, letting you appreciate the beauty of tracks that connect even when separated by genres and time; songs that fit together because they were born from similar emotions, just waiting for someone to link them together for the first time.",
+            "figureAria": "Two tracks from different decades, each with its emotion contour; the contours echo the same shape and an orange thread links them — born from similar emotions, linked for the first time by you"
+        },
+        "final": {
+            "h2": "Expand your sonic horizon",
+            "body": "The result is a truly human curatorial experience, augmented by a discovery engine designed to expand your sonic horizon."
+        },
+        "cta": {
+            "try": "Try Resomix",
+            "exploreSd": "Explore Sonic Discovery",
+            "exploreTi": "Explore Track Intelligence"
+        },
+        "figures": {
+            "separatedBy": "Separated by genres and time",
+            "linkedFirst": "Linked for the first time",
+            "yourReference": "Your reference",
+            "ambient": "Ambient",
+            "house": "House",
+            "jazz": "Jazz",
+            "techno": "Techno",
+            "y1978": "2006",
+            "y1992": "2011",
+            "y2006": "2016",
+            "y2018": "2021",
+            "y2026": "2026",
+            "whereDiscoveryStarts": "Where discovery starts",
+            "depthNote": "Depth = how far it can reach",
+            "humanRecs": "Human recommendations",
+            "humanRecsSub": "Deep · one listen at a time",
+            "platformRecs": "Platform recommendations",
+            "platformRecsSub": "Broad · genre-bound",
+            "depthCuratorNeeds": "The depth a curator needs",
+            "soulEngine": "Soul + engine",
+            "territoryMiss": "The territory both approaches miss",
+            "twoWays": "Two ways to discover",
+            "territoryTheyMiss": "And the territory they miss",
+            "y1983": "2007",
+            "y2025": "2025",
+            "sameEmotionalShape": "The same emotional shape",
+            "linkedByYou": "Linked by you",
+            "forTheFirstTime": "For the first time",
+            "bornFromEmotions": "Born from similar emotions"
+        }
+    },
     "nav": {
         "topGroups": {
             "product": "Product",

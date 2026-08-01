@@ -75,10 +75,10 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
         groupLabelKey: 'rightsCatalogueLicensing',
         flex: '1 1 52%',
         items: [
-          { key: 'record-labels', glyph: 'record-labels', live: false, plannedRoute: '/solutions/record-labels', status: 'coming-next' },
+          { key: 'record-labels', glyph: 'record-labels', live: true, route: '/solutions/record-labels' },
           { key: 'music-publishers', glyph: 'music-publishers', live: false, plannedRoute: '/solutions/music-publishers', status: 'coming-next' },
-          { key: 'sync-agencies', glyph: 'sync-agencies', live: false, plannedRoute: '/solutions/sync-agencies', status: 'coming-next' },
-          { key: 'music-libraries', glyph: 'music-libraries', live: false, plannedRoute: '/solutions/music-libraries-sample-providers', status: 'coming-next' },
+          { key: 'sync-agencies', glyph: 'sync-agencies', live: true, route: '/solutions/sync-agencies' },
+          { key: 'music-libraries', glyph: 'music-libraries', live: true, route: '/solutions/music-libraries-sample-providers' },
         ],
       },
       {
@@ -86,13 +86,12 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
         flex: '1 1 48%',
         featured: {
           key: 'djs',
-          live: false,
-          plannedRoute: '/solutions/djs',
-          status: 'coming-next',
+          live: true,
+          route: '/solutions/djs',
           featured: true,
         },
         items: [
-          { key: 'music-curators', glyph: 'music-curators', live: false, plannedRoute: '/solutions/music-curators', status: 'coming-next' },
+          { key: 'music-curators', glyph: 'music-curators', live: true, route: '/solutions/music-curators' },
           { key: 'producers', glyph: 'producers', live: false, plannedRoute: '/solutions/producers', status: 'coming-next' },
         ],
       },
