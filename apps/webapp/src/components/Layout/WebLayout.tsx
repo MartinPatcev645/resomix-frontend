@@ -8,6 +8,7 @@ import UploadLoader from "../upload/UploadLoader.tsx";
 import { WebSideLines } from "./WebSideLines.tsx";
 import { SiteHeader, MobileDrawer } from "../Navigation/index.ts";
 import { useResponsive, useUploadStore } from "@resomix/hooks";
+import { useStopPlaybackOnNavigate } from "@/hooks/useStopPlaybackOnNavigate.ts";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 
 /**
@@ -20,6 +21,11 @@ export function WebLayout() {
 
     const location = useLocation();
     const navigate = useNavigate();
+
+    // The shell outlives every route, so this is the one place that sees all navigation —
+    // including a jump straight from one playlist to another. Tab switches are untouched.
+    useStopPlaybackOnNavigate();
+
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const menuButtonRef = React.useRef<HTMLButtonElement>(null);
 
