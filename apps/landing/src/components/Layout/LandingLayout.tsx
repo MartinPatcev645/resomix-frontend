@@ -53,7 +53,7 @@ export function LandingLayout() {
         if (path.startsWith('/auth/')) {
             return path.split('/auth/')[1] || 'auth';
         }
-        if (['/contact', '/waitlist', '/error', '/partners', '/partners/pilot', '/trust', '/pricing', '/product', '/product/sonic-discovery', '/product/track-intelligence', '/product/catalog-intelligence', '/developers', '/solutions/record-labels', '/solutions/sync-agencies', '/solutions/music-libraries-sample-providers', '/solutions/djs', '/solutions/music-curators'].includes(path)) {
+        if (['/contact', '/waitlist', '/error', '/partners', '/partners/pilot', '/trust', '/pricing', '/product', '/product/sonic-discovery', '/product/track-intelligence', '/product/catalog-intelligence', '/developers', '/solutions/record-labels', '/solutions/sync-agencies', '/solutions/music-libraries-sample-providers', '/solutions/djs', '/solutions/music-curators', '/solutions/producers'].includes(path)) {
             return path.substring(1);
         }
         return '404';
@@ -97,7 +97,7 @@ export function LandingLayout() {
                 {/* Shared void-field backdrop for pages that don't render their own (the marketing
                     pages in the list below already ship their page-scoped void-field). Keeps every
                     page on the same home-style background. */}
-                {!['home', 'product', 'product/sonic-discovery', 'product/track-intelligence', 'product/catalog-intelligence', 'developers', 'partners', 'partners/pilot', 'trust', 'solutions/record-labels', 'solutions/sync-agencies', 'solutions/music-libraries-sample-providers', 'solutions/djs', 'solutions/music-curators'].includes(mode) && (
+                {!['home', 'product', 'product/sonic-discovery', 'product/track-intelligence', 'product/catalog-intelligence', 'developers', 'partners', 'partners/pilot', 'trust', 'solutions/record-labels', 'solutions/sync-agencies', 'solutions/music-libraries-sample-providers', 'solutions/djs', 'solutions/music-curators', 'solutions/producers'].includes(mode) && (
                     <AppBackground />
                 )}
                 <div className="mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]">

@@ -21,6 +21,7 @@ import SyncAgenciesPage from "./SyncAgenciesPage.tsx";
 import MusicLibrariesPage from "./MusicLibrariesPage.tsx";
 import DjsPage from "./DjsPage.tsx";
 import MusicCuratorsPage from "./MusicCuratorsPage.tsx";
+import ProducersPage from "./ProducersPage.tsx";
 import HomePage from "./HomePage.tsx";
 
 export {
@@ -45,4 +46,5 @@ export {
     MusicLibrariesPage,
     DjsPage,
     MusicCuratorsPage,
+    ProducersPage,
 }
