@@ -14,15 +14,31 @@ import { Dialog, type DialogAction } from "./Dialog";
  * duplicate it. `action` is for a real follow-up ("View playlist", "Try again"), not for dismissing.
  *
  * These fire on almost every mutation (renamed, cover updated, rated, exported, link copied…), so a
- * terminal status DISMISSES ITSELF after 2.5s rather than making the user close a modal that only
- * says "done". Two states never auto-close, on purpose:
+ * terminal status DISMISSES ITSELF rather than making the user close a modal that only says "done"
+ * — after 2.5s for a confirmation, 8s for an error (see AUTO_DISMISS_MS). Two states never
+ * auto-close, on purpose:
  *   • `loading` — not terminal; it closes when the work finishes.
  *   • anything with an `action` — the user has something to do here, so taking it away mid-reach
  *     would be worse than leaving it up.
  * Closing early via ✕ / backdrop / Escape works throughout; `autoDismiss={false}` opts out.
  */
-const AUTO_DISMISS_MS = 2500;
 export type StatusKind = "loading" | "success" | "error" | "info";
+
+/**
+ * How long a terminal status stays up before closing itself.
+ *
+ * Errors get far longer than confirmations. "Renamed" is read at a glance and the user already
+ * knows what they did; an error is unexpected, often carries detail worth reading, and is the thing
+ * someone wants time to screenshot before reporting it. 2.5s is enough to acknowledge a success and
+ * annoying for a failure.
+ *
+ * `loading` is absent deliberately — it is not terminal and closes when the work finishes.
+ */
+const AUTO_DISMISS_MS: Record<Exclude<StatusKind, "loading">, number> = {
+  success: 2500,
+  info: 2500,
+  error: 8000,
+};
 
 export interface StatusDialogProps {
   isOpen: boolean;
@@ -34,7 +50,7 @@ export interface StatusDialogProps {
   action?: DialogAction;
   /** Overrides the per-state mono kicker (e.g. "Playlist // Export"). */
   eyebrow?: string;
-  /** Opt out of the 2.5s self-dismiss for a message that must be read. Defaults to true. */
+  /** Opt out of the self-dismiss entirely, for a message that must stay put. Defaults to true. */
   autoDismiss?: boolean;
 }
 
@@ -126,9 +142,12 @@ export const StatusDialog: React.FC<StatusDialogProps> = ({
 
   useEffect(() => {
     if (!isOpen || loading || hasAction || !autoDismiss) return;
-    const timer = window.setTimeout(() => onCloseRef.current(), AUTO_DISMISS_MS);
+    const delay = AUTO_DISMISS_MS[status as Exclude<StatusKind, "loading">];
+    const timer = window.setTimeout(() => onCloseRef.current(), delay);
     return () => window.clearTimeout(timer);
-    // Keyed on the open/status cycle only: a fresh status restarts the countdown, a re-render does not.
+    // Keyed on the open/status cycle only: a fresh status restarts the countdown, a re-render does
+    // not. `status` is in here for the delay too — a dialog that flips success→error re-arms at the
+    // longer time rather than keeping the shorter one.
   }, [isOpen, loading, hasAction, autoDismiss, status]);
 
   // No dismiss button — the ✕ closes it. Only a genuine follow-up action gets a footer.

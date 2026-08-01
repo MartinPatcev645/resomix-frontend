@@ -332,7 +332,11 @@ class HlsPlaylistController implements AudioController {
     usePlayerStore.setState({ snippetMetadata: {} });
 
     msReset();
-    usePlayerStore.setState({ isLoaded: false });
+    // isPlaying / currentTrackId too, not just isLoaded. Both audio elements were paused above, so
+    // leaving the store saying "playing track X" is simply untrue — and it is what made a freshly
+    // opened playlist render a pause button over the previous track's progress until you pressed
+    // pause and play again. `stop()` has always cleared these; unload() has to as well.
+    usePlayerStore.setState({ isLoaded: false, isPlaying: false, currentTrackId: null });
   };
 
   getCurrentTime = () => {

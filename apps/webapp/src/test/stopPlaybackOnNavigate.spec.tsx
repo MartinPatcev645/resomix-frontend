@@ -1,13 +1,26 @@
 import { render, act } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { usePlayerStore } from '@resomix/stores';
 import { useStopPlaybackOnNavigate } from '../hooks/useStopPlaybackOnNavigate.ts';
 
 const stop = vi.fn();
 
-vi.mock('@resomix/hooks', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@resomix/hooks')>();
-  return { ...actual, useGlobalAudioController: () => ({ stop }) };
+/**
+ * NOTE: `useGlobalAudioController` is deliberately NOT mocked.
+ *
+ * An earlier version of this file mocked it, and that is precisely why these tests stayed green
+ * while the app rendered a blank page: the real hook throws "AudioProvider is missing in the tree"
+ * when no provider is above it, and the provider lives deep inside the playlist pages — far below
+ * the shell this hook runs in. Mocking the dependency mocked away the bug. The controller now
+ * comes from the store, and the first test below pins the no-provider case directly.
+ */
+beforeEach(() => {
+  stop.mockClear();
+  usePlayerStore.setState({ audioController: { stop } as never });
+});
+afterEach(() => {
+  usePlayerStore.setState({ audioController: null });
 });
 
 let navigate: ReturnType<typeof useNavigate>;
@@ -15,11 +28,11 @@ let navigate: ReturnType<typeof useNavigate>;
 function Harness() {
   useStopPlaybackOnNavigate();
   navigate = useNavigate();
-  return null;
+  return <div data-testid="alive">ok</div>;
 }
 
 function mountAt(url: string) {
-  render(
+  return render(
     <MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route path="*" element={<Harness />} />
@@ -30,14 +43,26 @@ function mountAt(url: string) {
 
 const go = (url: string) => act(() => { navigate(url); });
 
-beforeEach(() => stop.mockClear());
-
-/**
- * Playback state is global and outlives routes. Without this, playing a reference track then
- * opening a different playlist left the new hero showing a pause button over the old track's
- * progress — you had to press pause, then play, to start the track you were looking at.
- */
 describe('useStopPlaybackOnNavigate', () => {
+  /**
+   * The regression that blanked the app. This hook runs in WebLayout, which is ABOVE every
+   * AudioProvider in the tree, so it must not require one.
+   */
+  it('renders without an AudioProvider anywhere in the tree', () => {
+    usePlayerStore.setState({ audioController: null });
+
+    const { getByTestId } = mountAt('/sonic-discovery?id=playlist-a');
+
+    expect(getByTestId('alive')).toBeTruthy();
+  });
+
+  it('is a no-op when no controller has been created yet', () => {
+    usePlayerStore.setState({ audioController: null });
+    mountAt('/sonic-discovery?id=playlist-a');
+
+    expect(() => go('/library')).not.toThrow();
+  });
+
   it('does not stop playback on first arrival', () => {
     mountAt('/sonic-discovery?id=playlist-a');
     expect(stop).not.toHaveBeenCalled();
