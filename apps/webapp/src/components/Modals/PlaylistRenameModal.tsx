@@ -30,8 +30,17 @@ interface PlaylistRenameModalProps {
  * `alert()` AFTER the click. It is now enforced by the dialog — the submit button stays disabled and
  * the reason is shown inline — so the rule is identical but the user finds out before clicking.
  */
+/**
+ * Must match `PLAYLIST_NAME_MAX_LENGTH` in the backend's `app/schemas/playlist.py`.
+ *
+ * There is deliberately NO character rule here. The server accepts text in any language —
+ * accents, non-Latin scripts, punctuation, emoji — and validates the shape of the string instead
+ * (no control characters, no bidi overrides, whitespace collapsed). Re-implementing a character
+ * allowlist in the client is how the two drift apart, and the old one rejected names the product
+ * generates for itself.
+ */
 const MIN_NAME = 2;
-const MAX_NAME = 100;
+const MAX_NAME = 120;
 
 export const PlaylistRenameModal: React.FC<PlaylistRenameModalProps> = ({
     isOpen,
