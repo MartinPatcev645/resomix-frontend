@@ -326,10 +326,50 @@
   }
 }
 
+/* Mobile hero continuous motion (pulse / dashflow / glow) — gated like draw-once */
+@media (prefers-reduced-motion: no-preference) {
+  .product-page.product-motion-on .product-herosvg-m .pulse {
+    animation: product-pulse 2.6s ease-in-out infinite;
+  }
+
+  .product-page.product-motion-on .product-herosvg-m .dashflow {
+    stroke-dasharray: 5 7;
+    animation: product-dash 9s linear infinite;
+  }
+
+  .product-page.product-motion-on .product-herosvg-m .glowp {
+    animation: product-glow 3.2s ease-in-out infinite;
+  }
+}
+
+@keyframes product-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes product-dash {
+  to {
+    stroke-dashoffset: -120;
+  }
+}
+
+@keyframes product-glow {
+  50% {
+    opacity: 0.55;
+  }
+}
+
 .product-page.product-motion-reduced .product-draw,
 .product-page.product-motion-reduced .product-draw.product-armed {
   stroke-dasharray: none;
   stroke-dashoffset: 0;
+  animation: none;
+}
+
+.product-page.product-motion-reduced .product-herosvg-m .pulse,
+.product-page.product-motion-reduced .product-herosvg-m .dashflow,
+.product-page.product-motion-reduced .product-herosvg-m .glowp {
   animation: none;
 }
 
@@ -338,6 +378,12 @@
   .product-page .product-draw.product-armed {
     stroke-dasharray: none !important;
     stroke-dashoffset: 0 !important;
+    animation: none !important;
+  }
+
+  .product-page .product-herosvg-m .pulse,
+  .product-page .product-herosvg-m .dashflow,
+  .product-page .product-herosvg-m .glowp {
     animation: none !important;
   }
 }
@@ -748,8 +794,15 @@
 
 @media (max-width: 600px) {
   .product-page .product-hero-title {
-    font-size: var(--px-36);
-    line-height: var(--px-42);
+    font-size: var(--px-30);
+    line-height: var(--px-35);
+  }
+}
+
+@media (max-width: 380px) {
+  .product-page .product-hero-title {
+    font-size: var(--px-25);
+    line-height: var(--px-29);
   }
 }
 
@@ -931,6 +984,28 @@
   .product-page .product-hero-api-label {
     left: 76%;
     max-width: 22%;
+  }
+}
+
+/* Mobile/tablet vertical figure variant — swap at ≤1023 (desktop ≥1024 unchanged) */
+.product-page .product-hero-figure .product-herosvg-m {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .product-page .product-hero-figure .product-herosvg-d {
+    display: none;
+  }
+
+  .product-page .product-hero-figure .product-herosvg-m {
+    display: block;
+    max-width: 26rem;
+    margin-inline: auto;
+  }
+
+  .product-page .product-hero-figure .product-hero-labels-overlay,
+  .product-page .product-hero-figure .product-hero-api-label {
+    display: none;
   }
 }
 

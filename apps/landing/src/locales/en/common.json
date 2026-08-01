@@ -337,8 +337,8 @@
             "title": "Drop a reference. Get a shortlist that actually sounds right.",
             "desc": "PYXIS-1 reads the sonic character of any track — released, unreleased, even a sketch — and returns listenable matches ranked by similarity, with waveform previews and chain discovery.",
             "link": "[ Explore Sonic Discovery → ]",
-            "panelLabel": "SIMILARITY RESULT // REBUILT FROM PRODUCT PATTERNS",
-            "foot": "chain_discovery: available · depth: 1–5 [SAMPLE VALUES]"
+            "panelLabel": "SIMILARITY RESULT // SAMPLE DATA",
+            "foot": "chain_discovery: available · depth: 1–5 · sample values"
         },
         "ti": {
             "tag": "02 // TRACK INTELLIGENCE",
@@ -358,7 +358,7 @@
             "title": "Your catalogue already knows which tracks belong together.",
             "desc": "Relationships, clusters and overlooked recordings that metadata alone can't see — surfaced from the audio itself, delivered as a bounded private pilot.",
             "link": "[ Start a Catalogue Pilot → ]",
-            "panelLabel": "CATALOGUE RELATIONSHIPS // SCHEMATIC — NOT PRODUCT UI",
+            "panelLabel": "CATALOGUE RELATIONSHIPS // SCHEMATIC",
             "region1": "CLUSTER 01 // LATE-NIGHT DUB",
             "region2": "CLUSTER 02 // 124–126 BPM",
             "region3": "DORMANT // UNTAGGED ERA",
