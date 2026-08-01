@@ -95,19 +95,28 @@ class TestRejects:
 
 
 class TestThroughTheRequestSchema:
-    def test_schema_accepts_and_normalises(self):
-        req = PlaylistRenameRequest(
-            playlist_id="550e8400-e29b-41d4-a716-446655440000",
-            new_name="  Sigur Rós  -  Hoppípolla 🎧 ",
-        )
-        assert req.new_name == "Sigur Rós - Hoppípolla 🎧"
+    """
+    The schema deliberately does NOT validate the name.
 
-    def test_schema_rejects_over_length(self):
-        with pytest.raises(ValueError):
-            PlaylistRenameRequest(
-                playlist_id="550e8400-e29b-41d4-a716-446655440000",
-                new_name="a" * (PLAYLIST_NAME_MAX_LENGTH + 1),
-            )
+    Pydantic runs while parsing the body — before the endpoint knows whether this caller may touch
+    this playlist. Validating here would tell someone their characters are wrong for a playlist
+    they were never allowed to rename. The service authorises first, then normalises.
+    """
+
+    def test_schema_passes_the_raw_name_through(self):
+        raw = "  Sigur Rós  -  Hoppípolla 🎧 "
+        req = PlaylistRenameRequest(
+            playlist_id="550e8400-e29b-41d4-a716-446655440000", new_name=raw
+        )
+        assert req.new_name == raw, "the schema must not normalise — the service does, after auth"
+
+    def test_schema_does_not_reject_an_over_length_name(self):
+        """Length is enforced by normalize_playlist_name, after the ownership check."""
+        long_name = "a" * (PLAYLIST_NAME_MAX_LENGTH + 1)
+        req = PlaylistRenameRequest(
+            playlist_id="550e8400-e29b-41d4-a716-446655440000", new_name=long_name
+        )
+        assert req.new_name == long_name
 
     def test_stored_name_fits_the_column(self):
         """playlists.name is VARCHAR(150); the cap must leave room, not exceed it."""

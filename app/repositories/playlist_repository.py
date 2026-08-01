@@ -22,7 +22,36 @@ from sqlalchemy import select, and_
 from decimal import Decimal
 import uuid
 from datetime import datetime
+from enum import Enum
 from app.models.playlist import Playlist, PlaylistTrack
+
+
+class PlaylistWriteDenial(str, Enum):
+    """Why a mutation may not proceed. Kept distinct so the API can answer honestly."""
+
+    #: No such playlist for this partner (or it is soft-deleted).
+    NOT_FOUND = "not_found"
+    #: It exists and the caller can very likely see it — they just don't own it.
+    NOT_OWNER = "not_owner"
+
+
+#: One wording for every mutation, so rename / visibility / cover / delete agree.
+PLAYLIST_NOT_FOUND_MESSAGE = "This playlist no longer exists."
+PLAYLIST_NOT_OWNER_MESSAGE = (
+    "You don't have edit access to this playlist — it isn't owned by your account."
+)
+
+DENIAL_MESSAGES = {
+    PlaylistWriteDenial.NOT_FOUND: PLAYLIST_NOT_FOUND_MESSAGE,
+    PlaylistWriteDenial.NOT_OWNER: PLAYLIST_NOT_OWNER_MESSAGE,
+}
+
+#: HTTP status per denial. 403 for an ownership refusal — 404 would be a lie the user can disprove
+#: by looking at the screen.
+DENIAL_STATUS = {
+    PlaylistWriteDenial.NOT_FOUND: 404,
+    PlaylistWriteDenial.NOT_OWNER: 403,
+}
 from app.models.constants import PlaylistType
 from app.repositories.base_repository import BaseRepository
 
@@ -510,6 +539,34 @@ class PlaylistRepository(BaseRepository[Playlist]):
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def async_get_playlist_for_write(
+        self, db: AsyncSession, playlist_uuid: str, user_id: Optional[int],
+        partner_id: Optional[int] = None,
+    ) -> Tuple[Optional[Playlist], Optional[PlaylistWriteDenial]]:
+        """Resolve a playlist for a MUTATION, saying *why* when it may not be written.
+
+        Returns ``(playlist, None)`` when the caller may write, otherwise ``(None, denial)``.
+
+        This exists because every mutation used to fold "doesn't exist" and "isn't yours" into a
+        single boolean, so the API answered "Playlist not found" for a playlist the user could see
+        on screen and play — which reads as a bug in the product, not as a permissions decision.
+
+        Telling the two apart is safe here: the READ path already answers 403 for a private
+        playlist you don't own, so a caller can distinguish existence either way. This leaks
+        nothing new and lets each endpoint say something true.
+
+        This is the FIRST check every mutation makes — before validating a name, a file, or
+        anything else. Rejecting a payload for a playlist the caller cannot touch tells them about
+        the wrong problem.
+        """
+        playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid, partner_id=partner_id)
+        if playlist is None:
+            return None, PlaylistWriteDenial.NOT_FOUND
+        # user_id None means an internal/admin caller that has already authorised itself.
+        if user_id is not None and playlist.user_id != user_id:
+            return None, PlaylistWriteDenial.NOT_OWNER
+        return playlist, None
+
     async def async_get_playlist_by_uuid(
         self, db: AsyncSession, playlist_uuid: str, partner_id: Optional[int] = None,
         include_deleted: bool = False,
@@ -555,16 +612,16 @@ class PlaylistRepository(BaseRepository[Playlist]):
             Dict with success status and old_name if successful
         """
         try:
-            playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid, partner_id=partner_id)
-            if not playlist:
-                return {"success": False, "old_name": None}
-            if user_id is not None and playlist.user_id != user_id:
-                return {"success": False, "old_name": None}
+            playlist, denial = await self.async_get_playlist_for_write(
+                db, playlist_uuid, user_id, partner_id=partner_id
+            )
+            if denial is not None:
+                return {"success": False, "old_name": None, "denial": denial}
 
             old_name = playlist.name
             playlist.name = new_name
             await db.flush()
-            return {"success": True, "old_name": old_name}
+            return {"success": True, "old_name": old_name, "denial": None}
 
         except Exception as e:
             print(f"Error renaming playlist: {e}")
@@ -589,15 +646,15 @@ class PlaylistRepository(BaseRepository[Playlist]):
             True if successful, False if playlist not found / not owned
         """
         try:
-            playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid, partner_id=partner_id)
-            if not playlist:
-                return False
-            if user_id is not None and playlist.user_id != user_id:
-                return False
+            playlist, denial = await self.async_get_playlist_for_write(
+                db, playlist_uuid, user_id, partner_id=partner_id
+            )
+            if denial is not None:
+                return False, denial
 
             playlist.is_public = is_public
             await db.flush()
-            return True
+            return True, None
 
         except Exception as e:
             print(f"Error updating playlist visibility: {e}")
@@ -613,14 +670,14 @@ class PlaylistRepository(BaseRepository[Playlist]):
         treated as not found — returns False (idempotent, no ownership leak). The row is
         retained; user-facing reads exclude it.
         """
-        playlist = await self.async_get_playlist_by_uuid(db, playlist_uuid, partner_id=partner_id)
-        if playlist is None:
-            return False
-        if user_id is not None and playlist.user_id != user_id:
-            return False
+        playlist, denial = await self.async_get_playlist_for_write(
+            db, playlist_uuid, user_id, partner_id=partner_id
+        )
+        if denial is not None:
+            return False, denial
         playlist.deleted_at = datetime.utcnow()
         await db.flush()
-        return True
+        return True, None
 
     async def async_soft_delete_playlists_by_seed_track(
         self, db: AsyncSession, seed_track_id: int, partner_id: Optional[int] = None

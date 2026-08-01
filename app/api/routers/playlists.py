@@ -22,6 +22,7 @@ from typing import Optional
 
 from app.utils.response_utils import format_response
 from app.controllers.playlist_controller import PlaylistController
+from app.repositories.playlist_repository import DENIAL_MESSAGES, DENIAL_STATUS
 from app.api.dependencies.auth import get_current_user_optional, get_current_user
 from app.api.dependencies.partner import get_current_partner, get_public_partner
 from app.api.dependencies.database import get_database_session
@@ -210,6 +211,18 @@ async def upload_playlist_cover_endpoint(
 ) -> JSONResponse:
     """Basic gate here (size + magic-byte type + optional ClamAV, and the owner check in the
     service); the media server enforces the image dimensions and stores it by playlist uuid."""
+    # AUTHORISE FIRST — before reading a single byte. Rejecting someone's image for being the wrong
+    # type, when they were never allowed to set this playlist's cover, answers the wrong question
+    # (and needlessly buffers and scans a file we are going to discard).
+    _playlist, denial = await playlist_controller.playlist_service.playlist_repository.async_get_playlist_for_write(
+        db, playlist_uuid, current_user.id
+    )
+    if denial is not None:
+        return JSONResponse(
+            status_code=DENIAL_STATUS[denial],
+            content=format_response(success=False, error=DENIAL_MESSAGES[denial]),
+        )
+
     # Size guard — read at most one byte past the limit so an oversized file is rejected without
     # buffering the whole thing.
     data = await file.read(_MAX_COVER_BYTES + 1)

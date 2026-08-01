@@ -161,7 +161,14 @@ async def test_owner_can_make_playlist_public():
 
 @pytest.mark.asyncio
 async def test_non_owner_cannot_change_visibility():
-    """A logged-in non-owner gets 404 and the playlist is unchanged (no IDOR)."""
+    """A logged-in non-owner is refused with 403 and the playlist is unchanged (no IDOR).
+
+    403, not 404: the refusal names the real reason ("you don't have edit access") instead of
+    claiming the playlist does not exist — which the user can see on screen and disprove. This
+    reveals nothing new, because GET /playlists/similarity/{uuid} ALREADY answers 403 for a
+    private playlist you don't own and 404 for one that doesn't exist, so existence is probeable
+    either way. The property that actually matters — the write does not happen — is asserted below.
+    """
     owner = await create_user()
     attacker = await create_user()
     pl = await create_playlist(user_id=owner.id, is_public=False)
@@ -172,7 +179,8 @@ async def test_non_owner_cannot_change_visibility():
             json={"playlist_id": pl.uuid, "is_public": True},
             headers=auth_headers(attacker),
         )
-    assert res.status_code == 404
+    assert res.status_code == 403
+    assert "not found" not in res.json()["error"].lower()
     is_public, _ = await get_playlist_state(pl.uuid)
     assert is_public in (False, 0)  # untouched
 
@@ -212,7 +220,14 @@ async def test_owner_can_rename_playlist():
 
 @pytest.mark.asyncio
 async def test_non_owner_cannot_rename():
-    """A logged-in non-owner gets 404 and the name is unchanged (no IDOR)."""
+    """A logged-in non-owner is refused with 403 and the name is unchanged (no IDOR).
+
+    403, not 404: the refusal names the real reason ("you don't have edit access") instead of
+    claiming the playlist does not exist — which the user can see on screen and disprove. This
+    reveals nothing new, because GET /playlists/similarity/{uuid} ALREADY answers 403 for a
+    private playlist you don't own and 404 for one that doesn't exist, so existence is probeable
+    either way. The property that actually matters — the write does not happen — is asserted below.
+    """
     owner = await create_user()
     attacker = await create_user()
     pl = await create_playlist(user_id=owner.id, name="Original")
@@ -223,7 +238,8 @@ async def test_non_owner_cannot_rename():
             json={"playlist_id": pl.uuid, "new_name": "Hacked"},
             headers=auth_headers(attacker),
         )
-    assert res.status_code == 404
+    assert res.status_code == 403
+    assert "not found" not in res.json()["error"].lower()
     _, name = await get_playlist_state(pl.uuid)
     assert name == "Original"
 
@@ -262,14 +278,22 @@ async def test_owner_can_delete_playlist_and_it_disappears():
 
 @pytest.mark.asyncio
 async def test_non_owner_cannot_delete_playlist():
-    """A logged-in non-owner gets 404 and the playlist survives."""
+    """A logged-in non-owner is refused with 403 and the playlist survives (no IDOR).
+
+    403, not 404: the refusal names the real reason ("you don't have edit access") instead of
+    claiming the playlist does not exist — which the user can see on screen and disprove. This
+    reveals nothing new, because GET /playlists/similarity/{uuid} ALREADY answers 403 for a
+    private playlist you don't own and 404 for one that doesn't exist, so existence is probeable
+    either way. The property that actually matters — the write does not happen — is asserted below.
+    """
     owner = await create_user()
     attacker = await create_user()
     pl = await create_playlist(user_id=owner.id)
 
     async with _client() as ac:
         res = await ac.delete(_delete_url(pl.uuid), headers=auth_headers(attacker))
-        assert res.status_code == 404
+        assert res.status_code == 403
+        assert "not found" not in res.json()["error"].lower()
         assert pl.uuid in await _list_uuids(ac, owner)  # still there for the owner
 
 

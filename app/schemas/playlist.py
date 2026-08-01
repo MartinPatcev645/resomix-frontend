@@ -85,16 +85,20 @@ def normalize_playlist_name(value: str) -> str:
 class PlaylistRenameRequest(BaseModel):
     """Request schema for renaming a playlist."""
     playlist_id: str = Field(..., description="Playlist UUID")
+    # Intentionally UNVALIDATED here beyond being a string.
+    #
+    # Pydantic validates while parsing the request body — before the endpoint runs, and therefore
+    # before we know whether this caller may touch this playlist at all. Rejecting a name for a
+    # playlist someone doesn't own tells them about the wrong problem and hides the real one. The
+    # service authorises first, then calls `normalize_playlist_name`.
+    #
+    # An upper bound stays here purely as a cheap guard against an absurd payload; the real rule
+    # (and the human-readable message) lives in normalize_playlist_name.
     new_name: str = Field(
         ...,
         description="New playlist name — any language, punctuation or emoji",
-        min_length=1,
-        max_length=PLAYLIST_NAME_MAX_LENGTH,
+        max_length=10_000,
     )
-
-    @validator('new_name')
-    def validate_new_name(cls, v):
-        return normalize_playlist_name(v)
 
     class Config:
         json_schema_extra = {

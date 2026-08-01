@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List, Dict, Any
 import time
 from app.services.playlist_service import PlaylistService
+from app.repositories.playlist_repository import DENIAL_STATUS, PlaylistWriteDenial
 from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.services.logging_service import LoggingService
@@ -95,34 +96,10 @@ class PlaylistController:
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data
             )
 
-        if not new_name or not new_name.strip():
-            # Log validation failure
-            duration_ms = (time.time() - start_time) * 1000
-            response_data = format_response(
-                success=False, error="new_name cannot be empty"
-            )
-            self.logging_service.log(
-                async_db=db,
-                level="WARNING",
-                category="USER_ACTION",
-                action="rename_playlist_validation_failed",
-                message="Playlist rename failed: empty new_name provided",
-                correlation_id=correlation_id,
-                request=request,
-                status_code=422,
-                duration_ms=duration_ms,
-                metadata={
-                    "error": "new_name cannot be empty",
-                    "validation_step": "new_name_check",
-                    "playlist_id": playlist_id,
-                    "response": response_data,
-                    "operation": "playlist_rename",
-                },
-            )
-
-            return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=response_data
-            )
+        # NOTE: the name is deliberately NOT checked here. An empty-name guard used to live at this
+        # point — ahead of the ownership check — so someone editing a playlist they don't own was
+        # told their name was empty rather than that they cannot edit it. The service authorises
+        # first and then validates, and its message is the one the user sees.
 
         try:
             # Extract partner_id from request state (set by get_current_partner dependency)
@@ -174,8 +151,8 @@ class PlaylistController:
                     async_db=db,
                     level="WARNING",
                     category="USER_ACTION",
-                    action="rename_playlist_not_found",
-                    message=f"Playlist rename failed: playlist not found {playlist_id}",
+                    action="rename_playlist_denied",
+                    message=f"Playlist rename denied ({result.get('denial') or 'invalid_name'}): {playlist_id}",
                     correlation_id=correlation_id,
                     request=request,
                     status_code=404,
@@ -191,9 +168,15 @@ class PlaylistController:
                     },
                 )
 
-                return JSONResponse(
-                    status_code=status.HTTP_404_NOT_FOUND, content=result
+                # 403 when it exists but isn't theirs, 404 only when it truly isn't there. A
+                # validation failure (bad name, owner confirmed) is 422 — it is not a lookup result.
+                denial = result.get("denial")
+                http_status = (
+                    DENIAL_STATUS[PlaylistWriteDenial(denial)]
+                    if denial
+                    else status.HTTP_422_UNPROCESSABLE_ENTITY
                 )
+                return JSONResponse(status_code=http_status, content=result)
 
         except Exception as e:
             # Log error with full context - use integer ID if available
@@ -350,9 +333,12 @@ class PlaylistController:
                         "operation": "playlist_visibility_change",
                     },
                 )
-                return JSONResponse(
-                    status_code=status.HTTP_404_NOT_FOUND, content=result
+                # 403 when it exists but isn't theirs; 404 only when it truly isn't there.
+                denial = result.get("denial")
+                http_status = (
+                    DENIAL_STATUS[PlaylistWriteDenial(denial)] if denial else status.HTTP_404_NOT_FOUND
                 )
+                return JSONResponse(status_code=http_status, content=result)
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
@@ -431,10 +417,12 @@ class PlaylistController:
                 content=format_response(success=True, message=result.get("message")),
             )
 
-        if result.get("not_found"):
+        denial = result.get("denial")
+        if denial:
+            # Same distinction as rename: "not yours" is 403 and says so.
             return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=format_response(success=False, error="Playlist not found"),
+                status_code=DENIAL_STATUS[PlaylistWriteDenial(denial)],
+                content=format_response(success=False, error=result.get("error")),
             )
 
         return JSONResponse(

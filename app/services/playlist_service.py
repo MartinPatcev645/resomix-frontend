@@ -27,6 +27,12 @@ from app.services.admin_operation_log_service import AdminOperationLogService
 from app.services.metadata_service import MetadataService
 from app.utils.demo_mode_utils import apply_demo_mode_redaction, is_anonymous_frontend, ANON_VISIBLE_COUNT
 from app.utils.sanitization import csv_safe
+from app.repositories.playlist_repository import (
+    DENIAL_MESSAGES,
+    DENIAL_STATUS,
+    PlaylistWriteDenial,
+)
+from app.schemas.playlist import normalize_playlist_name
 from app.core.config import settings
 
 
@@ -55,6 +61,28 @@ class PlaylistService:
             Dictionary with success status, message, and old_name
         """
         try:
+            # ORDER MATTERS. Authorise before looking at the name at all: telling someone their
+            # characters are invalid, for a playlist they were never allowed to rename, answers a
+            # question they did not ask and hides the real reason.
+            _playlist, denial = await self.playlist_repository.async_get_playlist_for_write(
+                db, playlist_uuid, user_id, partner_id=partner_id
+            )
+            if denial is not None:
+                await db.rollback()
+                return {
+                    "success": False,
+                    "error": DENIAL_MESSAGES[denial],
+                    "denial": denial.value,
+                    "old_name": None,
+                }
+
+            # Only now is the payload worth validating. Raises ValueError with a human message.
+            try:
+                new_name = normalize_playlist_name(new_name)
+            except ValueError as invalid:
+                await db.rollback()
+                return {"success": False, "error": str(invalid), "denial": None, "old_name": None}
+
             result = await self.playlist_repository.async_rename_playlist(
                 db, playlist_uuid, new_name, partner_id=partner_id, user_id=user_id
             )
@@ -67,10 +95,13 @@ class PlaylistService:
                     "old_name": result["old_name"],
                 }
             else:
+                # Raced with a delete between the check above and the write.
                 await db.rollback()
+                denial = result.get("denial") or PlaylistWriteDenial.NOT_FOUND
                 return {
                     "success": False,
-                    "error": "Playlist not found",
+                    "error": DENIAL_MESSAGES[denial],
+                    "denial": denial.value,
                     "old_name": None,
                 }
 
@@ -101,7 +132,7 @@ class PlaylistService:
             Dictionary with success status and message
         """
         try:
-            success = await self.playlist_repository.async_make_playlist_public(
+            success, denial = await self.playlist_repository.async_make_playlist_public(
                 db, playlist_uuid, is_public, partner_id=partner_id, user_id=user_id
             )
 
@@ -114,7 +145,12 @@ class PlaylistService:
                 }
             else:
                 await db.rollback()
-                return {"success": False, "error": "Playlist not found"}
+                denial = denial or PlaylistWriteDenial.NOT_FOUND
+                return {
+                    "success": False,
+                    "error": DENIAL_MESSAGES[denial],
+                    "denial": denial.value,
+                }
 
         except Exception as e:
             await db.rollback()
@@ -147,12 +183,18 @@ class PlaylistService:
             except Exception as e:
                 print(f"delete_playlist: could not read cover flag for {playlist_uuid}: {e}")
 
-            deleted = await self.playlist_repository.async_soft_delete_user_playlist(
+            deleted, denial = await self.playlist_repository.async_soft_delete_user_playlist(
                 db, playlist_uuid, user_id, partner_id=partner_id
             )
             if not deleted:
                 await db.rollback()
-                return {"success": False, "error": "Playlist not found", "not_found": True}
+                denial = denial or PlaylistWriteDenial.NOT_FOUND
+                return {
+                    "success": False,
+                    "error": DENIAL_MESSAGES[denial],
+                    "denial": denial.value,
+                    "not_found": denial is PlaylistWriteDenial.NOT_FOUND,
+                }
             await db.commit()
 
             # Best-effort cleanup of the custom cover on the media server. Mirrors the resilience in
@@ -846,9 +888,16 @@ class PlaylistService:
         from app.utils.clamav import scan_bytes
         from app.services.hetzner_service import HetznerService
 
-        playlist = await self.playlist_repository.async_get_playlist_by_uuid(db, playlist_uuid)
-        if not playlist or playlist.user_id != user_id:
-            return {"success": False, "error": "Playlist not found or not owned by you", "status": 404}
+        playlist, denial = await self.playlist_repository.async_get_playlist_for_write(
+            db, playlist_uuid, user_id
+        )
+        if denial is not None:
+            return {
+                "success": False,
+                "error": DENIAL_MESSAGES[denial],
+                "denial": denial.value,
+                "status": DENIAL_STATUS[denial],
+            }
 
         clean, threat = scan_bytes(image_bytes)
         if not clean:
