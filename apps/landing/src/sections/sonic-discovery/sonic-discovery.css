@@ -1784,3 +1784,522 @@
     white-space: normal;
   }
 }
+
+/* ==============================================================
+   Scene System v5.1 — Graph 1 + Flow console (production)
+   ============================================================== */
+
+.sd-page .sd-scene-band {
+  position: relative;
+  isolation: isolate;
+  z-index: 20;
+}
+
+/*
+  Wide modifier — flagship scene figures already share the full content
+  column (wider than dimviz). Extend ~48–64 design-px beyond the standard
+  column per side at desktop so they no longer read as the page's smallest
+  artwork. Captions / fig-heads sit inside the band and track the new edges.
+  1024–1279: reduced bleed. <1024: no bleed (mobile caps unchanged).
+*/
+@media (min-width: 1024px) {
+  .sd-page .sd-scene1,
+  .sd-page .sd-flow {
+    --sd-scene-bleed: var(--px-24);
+    width: calc(100% + 2 * var(--sd-scene-bleed));
+    max-width: none;
+    margin-inline: calc(var(--sd-scene-bleed) * -1);
+  }
+}
+
+@media (min-width: 1280px) {
+  .sd-page .sd-scene1,
+  .sd-page .sd-flow {
+    --sd-scene-bleed: var(--px-48);
+  }
+}
+
+@media (min-width: 1440px) {
+  .sd-page .sd-scene1,
+  .sd-page .sd-flow {
+    --sd-scene-bleed: var(--px-64);
+  }
+}
+
+.sd-page .sd-scene-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: var(--px-160) var(--px-160);
+}
+
+.sd-page .sd-fig-head {
+  display: flex;
+  align-items: center;
+  gap: var(--px-16);
+  margin-bottom: var(--px-18);
+}
+
+.sd-page .sd-fig-rule {
+  width: var(--px-35);
+  height: 1px;
+  background: var(--color-neon-orange);
+  flex-shrink: 0;
+}
+
+.sd-page .sd-fig-t {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.2em;
+  color: rgba(246, 244, 239, 0.62);
+}
+
+.light .sd-page .sd-fig-t {
+  color: rgba(16, 16, 16, 0.62);
+}
+
+.sd-page .sd-fig-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--px-24);
+  flex-wrap: wrap;
+  margin-top: var(--px-16);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(246, 244, 239, 0.38);
+}
+
+.light .sd-page .sd-fig-caption {
+  color: rgba(16, 16, 16, 0.45);
+}
+
+.sd-page .sd-fig-caption b {
+  color: rgba(246, 244, 239, 0.62);
+  font-weight: 600;
+}
+
+.light .sd-page .sd-fig-caption b {
+  color: rgba(16, 16, 16, 0.7);
+}
+
+/* Scene 1 stagebox — dark canvas in both themes */
+.sd-page .sd-scene1 {
+  margin-top: var(--px-56);
+}
+
+.sd-page .sd-stagebox {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background:
+    radial-gradient(58% 65% at 78% 76%, rgba(210, 120, 62, 0.055), transparent 70%),
+    radial-gradient(40% 50% at 12% 30%, rgba(255, 255, 255, 0.016), transparent 70%),
+    #070708;
+  overflow: hidden;
+}
+
+.sd-page .sd-scene1 svg text,
+.sd-page .sd-flow svg text {
+  font-family: 'Fira Code', monospace;
+  text-transform: uppercase;
+}
+
+.sd-page .sd-s1-desktop {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sd-page .sd-s1-mobile {
+  display: none;
+  width: 100%;
+  height: auto;
+  max-width: var(--px-544);
+  margin-inline: auto;
+}
+
+@media (max-width: 1023px) {
+  .sd-page .sd-s1-desktop {
+    display: none;
+  }
+  .sd-page .sd-s1-mobile {
+    display: block;
+  }
+}
+
+/* Flow panel */
+.sd-page .sd-flow-panel {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background:
+    radial-gradient(45% 42% at 85% 92%, rgba(210, 120, 62, 0.055), transparent 72%),
+    #0b0b0c;
+  position: relative;
+}
+
+.sd-page .sd-flow-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--px-16);
+  padding: var(--px-15) var(--px-22);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 4;
+}
+
+.sd-page .sd-flow-hd-l {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.18em;
+  color: rgba(246, 244, 239, 0.62);
+  display: flex;
+  align-items: center;
+  gap: var(--px-11);
+}
+
+.sd-page .sd-flow-hd-l::before {
+  content: '';
+  width: var(--px-7);
+  height: var(--px-7);
+  background: var(--color-neon-orange);
+  flex-shrink: 0;
+}
+
+.sd-page .sd-flow-chip {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.14em;
+  color: rgba(246, 244, 239, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 0.4em 0.9em;
+}
+
+.sd-page .sd-flow-body {
+  display: grid;
+  /* Playlist stays fixed at 19rem; all added panel width goes to the SVG column. */
+  grid-template-columns: minmax(0, 1fr) var(--px-304);
+  gap: 0;
+  align-items: stretch;
+  position: relative;
+  z-index: 4;
+}
+
+.sd-page .sd-flow-svg {
+  /* Horizontal padding at minimum token so growth accrues to the figure. */
+  padding: var(--px-19) var(--px-6);
+  min-width: 0;
+}
+
+.sd-page .sd-f-desktop {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sd-page .sd-f-mobile {
+  display: none;
+  width: 100%;
+  height: auto;
+  max-width: var(--px-480);
+  margin-inline: auto;
+}
+
+@media (max-width: 1023px) {
+  .sd-page .sd-flow-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sd-page .sd-flow-svg {
+    padding: var(--px-16) var(--px-10);
+  }
+  .sd-page .sd-f-desktop {
+    display: none;
+  }
+  .sd-page .sd-f-mobile {
+    display: block;
+  }
+}
+
+.sd-page .sd-pl-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--px-22) var(--px-22) var(--px-22) 0;
+  position: relative;
+  width: var(--px-304);
+  flex: none;
+}
+
+@media (max-width: 1023px) {
+  .sd-page .sd-pl-col {
+    padding: 0 var(--px-16) var(--px-22);
+    width: 100%;
+    max-width: var(--px-512);
+    margin-inline: auto;
+  }
+}
+
+.sd-page .sd-stage-tag {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.16em;
+  color: rgba(246, 244, 239, 0.62);
+  display: inline-flex;
+  gap: 0.6em;
+  align-items: center;
+  margin-bottom: var(--px-13);
+}
+
+.sd-page .sd-stage-n {
+  color: var(--color-neon-orange);
+}
+
+.sd-page .sd-chamfer-14 {
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--px-14)) 0,
+    100% var(--px-14),
+    100% 100%,
+    var(--px-14) 100%,
+    0 calc(100% - var(--px-14))
+  );
+}
+
+.sd-page .sd-pl-card {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #17181a;
+  position: relative;
+}
+
+.sd-page .sd-pl-card::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--px-17) * -1);
+  top: var(--px-42);
+  width: var(--px-17);
+  height: 1px;
+  background: var(--color-neon-orange);
+}
+
+@media (max-width: 1023px) {
+  .sd-page .sd-pl-card::before {
+    left: 50%;
+    top: calc(var(--px-16) * -1);
+    width: 1px;
+    height: var(--px-16);
+  }
+}
+
+.sd-page .sd-pl-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--px-13);
+  padding: var(--px-13) var(--px-16);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+}
+
+.sd-page .sd-pl-hd-t {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.16em;
+  color: rgba(246, 244, 239, 0.92);
+}
+
+.sd-page .sd-pl-chip {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-9);
+  letter-spacing: 0.12em;
+  color: rgba(246, 244, 239, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 0.3em 0.7em;
+  white-space: nowrap;
+}
+
+.sd-page .sd-pl-row {
+  display: grid;
+  grid-template-columns: var(--px-26) minmax(0, 1fr) auto;
+  gap: var(--px-13);
+  align-items: center;
+  padding: var(--px-12) var(--px-16);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+  position: relative;
+}
+
+.sd-page .sd-pl-rk {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  color: rgba(246, 244, 239, 0.38);
+}
+
+.sd-page .sd-pl-ti {
+  display: block;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-size: var(--px-13);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(246, 244, 239, 0.92);
+}
+
+.sd-page .sd-pl-ar {
+  display: block;
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  color: rgba(246, 244, 239, 0.38);
+  margin-top: 0.2em;
+  letter-spacing: 0.06em;
+}
+
+.sd-page .sd-pl-sc {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-13);
+  color: rgba(246, 244, 239, 0.62);
+}
+
+.sd-page .sd-pl-row.top::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--color-neon-orange);
+}
+
+.sd-page .sd-pl-row.top .sd-pl-rk,
+.sd-page .sd-pl-row.top .sd-pl-sc {
+  color: var(--color-neon-orange);
+}
+
+.sd-page .sd-pl-ft {
+  padding: var(--px-12) var(--px-16);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10-5);
+  letter-spacing: 0.1em;
+  color: rgba(246, 244, 239, 0.38);
+  line-height: 1.8;
+}
+
+.sd-page .sd-pl-ft b {
+  color: rgba(246, 244, 239, 0.85);
+  font-weight: 600;
+}
+
+.sd-page .sd-flow-ft {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--px-16);
+  padding: var(--px-14) var(--px-22);
+  border-top: 1px solid rgba(255, 255, 255, 0.045);
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 4;
+}
+
+.sd-page .sd-flow-ft-t {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.16em;
+  color: rgba(246, 244, 239, 0.38);
+}
+
+/* Motion — mirrors preview exactly */
+.sd-page .sig {
+  stroke-dasharray: 5 9;
+}
+
+.sd-page.sd-motion-on .sd-scene-band.live .sig {
+  animation: sd-sigflow 7s linear infinite;
+}
+
+@keyframes sd-sigflow {
+  to {
+    stroke-dashoffset: -140;
+  }
+}
+
+.sd-page.sd-motion-on .sd-scene-band.live .breathe {
+  animation: sd-breathe 7s ease-in-out infinite alternate;
+}
+
+.sd-page .breathe:nth-of-type(2n) {
+  animation-delay: -2.4s;
+}
+
+.sd-page .breathe:nth-of-type(3n) {
+  animation-delay: -4.6s;
+}
+
+@keyframes sd-breathe {
+  from {
+    opacity: 0.28;
+  }
+  to {
+    opacity: 0.62;
+  }
+}
+
+.sd-page .resolve {
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s ease;
+}
+
+.sd-page .sd-scene-band.live .resolve {
+  opacity: 1;
+  transform: none;
+}
+
+.sd-page .sd-scene-band.live .resolve.d1 {
+  transition-delay: 0.1s;
+}
+.sd-page .sd-scene-band.live .resolve.d2 {
+  transition-delay: 0.25s;
+}
+.sd-page .sd-scene-band.live .resolve.d3 {
+  transition-delay: 0.4s;
+}
+.sd-page .sd-scene-band.live .resolve.d4 {
+  transition-delay: 0.55s;
+}
+.sd-page .sd-scene-band.live .resolve.d5 {
+  transition-delay: 0.7s;
+}
+
+.sd-page .plx {
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-page .sig,
+  .sd-page .breathe {
+    animation: none !important;
+  }
+  .sd-page .resolve {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .sd-page .plx {
+    transform: none !important;
+  }
+}
+
+.sd-page.sd-motion-reduced .sig,
+.sd-page.sd-motion-reduced .breathe {
+  animation: none !important;
+}
+
+.sd-page.sd-motion-reduced .resolve {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
