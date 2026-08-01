@@ -6,6 +6,7 @@ import PauseSvg from "@/assets/icons/pause_white.svg";
 import NextTrackSvg from "@/assets/icons/next_track.svg";
 import { VolumeControl } from "@/components/Playlist/VolumeControl.tsx";
 import { useWaveformControls, formatTime, useGlobalAudioController } from "@resomix/hooks";
+import { WaveformLoader } from "@resomix/ui";
 import { usePlayerStore } from "@resomix/stores";
 import { DEMO_MODE } from "@resomix/config";
 import { PreviewProgressBar } from "@/components/Playlist/PreviewProgressBar.tsx";
@@ -108,11 +109,48 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
     </time>
   );
 
+  /**
+   * Hands the waveform container to Peaks.js the moment it mounts.
+   *
+   * A callback ref rather than a mount effect: this element only exists on the waveform branch
+   * below, so it can appear later than the component (e.g. after a playback error clears, or once
+   * the track resolves). An effect keyed on mount would run while the node was still null and
+   * never attach.
+   */
+  const attachWaveform = useCallback(
+    (el: HTMLDivElement | null) => {
+      ctl.containerRef.current = el;
+      if (el) ctl.attachOverviewElement(el);
+    },
+    [ctl.attachOverviewElement, ctl.containerRef],
+  );
+
+  /**
+   * The reference track is the user's own upload: it streams over HLS and we fetch real peaks for
+   * it, so the hero shows the WAVEFORM. Only catalogue tracks fall back to the plain line — they
+   * play from an Apple Music preview URL, which has no peaks to draw (useWaveformControls skips
+   * the peaks fetch entirely for those).
+   *
+   * Same branch and the same loader as the result rows in SimilarityPlayer, so the hero and the
+   * rows read as one instrument.
+   */
   const seekSlot =
     playbackFailed && !isDeleted ? (
       <PlaybackUnavailable onRetry={retryPlayback} compact detail={playbackDetail} />
-    ) : (
+    ) : ctl.isPreview ? (
       <PreviewProgressBar compact currentTime={ctl.uiTime} duration={seekDuration} onSeek={ctl.seekTo} />
+    ) : (
+      <div className="relative flex h-[var(--px-28)] w-full min-w-0 items-center">
+        <div
+          ref={attachWaveform}
+          className={`h-full w-full ${ctl.wfLoading ? "invisible" : "visible"}`}
+        />
+        {ctl.wfLoading && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <WaveformLoader />
+          </div>
+        )}
+      </div>
     );
 
   // Desktop matches the toolbar icons (16px); mobile stays a touch smaller inside the same 35px box.
