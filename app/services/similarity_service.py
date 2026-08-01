@@ -217,14 +217,8 @@ class SimilarityService:
                         else None
                     )
                 )
-                # Only overwrite the stored duration when we actually measured a better one.
-                # `final_duration` is None whenever neither the similarity server nor the local
-                # calculation produced a value — the normal case for a track that was already
-                # processed (e.g. reached through the analysis flow). Assigning it unconditionally
-                # replaced the good DB-derived seconds with null, and the client clamps its seek
-                # maths against that duration, so every seek collapsed back to the track start.
+                uploaded_track_details["duration"] = final_duration
                 if final_duration is not None and final_duration > 0:
-                    uploaded_track_details["duration"] = final_duration
                     # partner_id is REQUIRED: the UPDATE is scoped `WHERE uuid=… AND partner_id=…`,
                     # and `partner_id = NULL` matches zero rows — so omitting it silently persisted
                     # nothing, leaving the seed track's duration_ms NULL. That made the reference

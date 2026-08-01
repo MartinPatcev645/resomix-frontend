@@ -138,7 +138,14 @@ class SimilarityRepository(BaseRepository[Track]):
                     t.uuid as id,
                     t.title,
                     t.p_line_year as year,
-                    t.duration_ms as duration,
+                    -- Seed duration in SECONDS: prefer the track row, but for a freshly
+                    -- uploaded track whose duration_ms is not persisted yet, fall back to the
+                    -- analysis-measured length (the upload's analysis records
+                    -- identity.duration_ms). Mirrors the playlist-GET seed query so the
+                    -- creation response and a later GET agree; without it the creation payload
+                    -- carried a 0 duration and the player had nothing to map its seek against.
+                    -- Derived-table join (one row per track) so it never multiplies rows.
+                    (COALESCE(t.duration_ms, MAX(tad.dur)) / 1000.0) as duration,
                     t.type as type,
                     -- Label/genre/album live off the track: label + album come via the release,
                     -- genre is 1:1 on the track. These are the in-house fallbacks used when the
@@ -157,6 +164,11 @@ class SimilarityRepository(BaseRepository[Track]):
                 LEFT JOIN genres g ON t.genre_id = g.id
                 LEFT JOIN track_contributors tc ON t.id = tc.track_id
                 LEFT JOIN contributors c ON tc.person_id = c.id
+                LEFT JOIN (
+                    SELECT track_id, MAX(duration_ms) AS dur
+                    FROM track_analysis_results
+                    GROUP BY track_id
+                ) tad ON tad.track_id = t.id
                 WHERE t.uuid = :track_uuid
                 AND t.partner_id = :partner_id
                 GROUP BY t.id, t.uuid, t.title, t.p_line_year, t.duration_ms, t.type, l.label_name, g.name
@@ -174,7 +186,7 @@ class SimilarityRepository(BaseRepository[Track]):
                     "title": row.title or "Unknown",
                     "year": row.year,
                     "duration": (
-                        float(row.duration) / 1000.0 if row.duration is not None else 0.0
+                        float(row.duration) if row.duration is not None else 0.0
                     ),
                     "label": row.label or "",
                     "genre": row.genre,
