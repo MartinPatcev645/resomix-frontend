@@ -86,10 +86,37 @@ export function LandingLayout() {
         <LogoRFooter className="w-[var(--px-27)] h-[var(--px-27)] text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors" />
     );
 
-    // Scroll to top on every navigation
+    // Scroll on navigation: top for plain routes, the anchor target when a hash is present.
+    // Pages are lazy-loaded — poll briefly (bounded) until the target exists, then scroll once.
+    // SideLines mounts desktop + mobile trees; prefer a visible id match so mobile isn't a no-op.
     React.useEffect(() => {
-        window.scrollTo(0, 0);
-    }, [location.pathname]);
+        const id = location.hash ? decodeURIComponent(location.hash.slice(1)) : '';
+        if (!id) {
+            window.scrollTo(0, 0);
+            return;
+        }
+        let raf = 0;
+        const deadline = performance.now() + 1500;
+        const attempt = () => {
+            const matches = document.querySelectorAll(`[id="${CSS.escape(id)}"]`);
+            const el =
+                Array.from(matches).find((node) => node.getClientRects().length > 0) ??
+                matches[0] ??
+                null;
+            if (el) {
+                const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+                return;
+            }
+            if (performance.now() < deadline) {
+                raf = window.requestAnimationFrame(attempt);
+            } else {
+                window.scrollTo(0, 0);
+            }
+        };
+        raf = window.requestAnimationFrame(attempt);
+        return () => window.cancelAnimationFrame(raf);
+    }, [location.pathname, location.hash]);
 
     return (
         <OptionalAuthRoute>

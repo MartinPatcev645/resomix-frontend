@@ -281,6 +281,12 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* Clearance for hash / scrollIntoView targets under the fixed sticky header.
+   --nav-sticky-h is on :root so it reaches page sections. */
+section[id] {
+  scroll-margin-top: calc(var(--nav-sticky-h) + var(--px-16));
+}
+
 .nav-sticky::after {
   content: "";
   position: absolute;
