@@ -49,9 +49,10 @@ export interface AuthScreenProps {
 }
 
 /**
- * Only tokens defined in BOTH apps' pixels.css are usable here — this renders in the landing site
- * and the webapp, and an undefined var makes the whole `max-width` declaration invalid, silently
- * dropping the constraint. --px-800 exists in both; --px-840 is webapp-only.
+ * This renders in both the landing site and the webapp, and an undefined var makes the whole
+ * `max-width` declaration invalid — silently dropping the constraint rather than erroring. The two
+ * apps' pixels.css files are now a byte-identical union, so any --px-* token is safe here; that
+ * was not true when this was written, which is why the wide variant is 800 rather than 840.
  */
 const WIDTH_CLASS = {
   md: "max-w-[var(--px-560)]",

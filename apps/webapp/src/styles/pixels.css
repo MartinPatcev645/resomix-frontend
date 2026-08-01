@@ -1,4 +1,18 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   --px-* scale — the SAME file in apps/webapp and apps/landing.
+
+   Every token is <n>/16 rem, so it tracks the fluid root font-size both apps set
+   (clamp(12.8px, 1.25vw, 16px)). Shared components in packages/ui render in BOTH
+   apps, so a token missing from one silently produces an invalid declaration
+   there — the browser drops the whole property and the rule just doesn't apply.
+   That is why this is a union, kept byte-identical in both apps: add a token to
+   one file and add it to the other.
+
+   Sorted ascending by pixel value.
+   ───────────────────────────────────────────────────────────────────────────── */
+
 :root {
+    --px-0-05: 0.003125rem;
     --px-0-1: 0.00625rem;
     --px-0-15: 0.009375rem;
     --px-0-25: 0.015625rem;
@@ -40,6 +54,7 @@
     --px-23: 1.4375rem;
     --px-24: 1.5rem;
     --px-25: 1.5625rem;
+    --px-25-19: 1.574375rem;
     --px-26: 1.625rem;
     --px-27: 1.6875rem;
     --px-28: 1.75rem;
@@ -64,6 +79,7 @@
     --px-48: 3rem;
     --px-49: 3.0625rem;
     --px-50: 3.125rem;
+    --px-51: 3.1875rem;
     --px-52: 3.25rem;
     --px-53: 3.3125rem;
     --px-53-5: 3.34375rem;
@@ -90,7 +106,9 @@
     --px-74: 4.625rem;
     --px-75: 4.6875rem;
     --px-76: 4.75rem;
+    --px-77: 4.8125rem;
     --px-78: 4.875rem;
+    --px-79: 4.9375rem;
     --px-80: 5rem;
     --px-81: 5.0625rem;
     --px-82: 5.125rem;
@@ -116,6 +134,8 @@
     --px-117-8: 7.3625rem;
     --px-120: 7.5rem;
     --px-121-5: 7.59375rem;
+    --px-122: 7.625rem;
+    --px-125: 7.8125rem;
     --px-126: 7.875rem;
     --px-129: 8.0625rem;
     --px-130: 8.125rem;
@@ -139,6 +159,7 @@
     --px-171: 10.6875rem;
     --px-180: 11.25rem;
     --px-184: 11.5rem;
+    --px-190: 11.875rem;
     --px-193: 12.0625rem;
     --px-198-5: 12.40625rem;
     --px-200: 12.5rem;
@@ -176,14 +197,21 @@
     --px-313: 19.5625rem;
     --px-314: 19.625rem;
     --px-315: 19.6875rem;
+    --px-316: 19.75rem;
+    --px-317: 19.8125rem;
     --px-318: 19.875rem;
+    --px-319: 19.9375rem;
     --px-320: 20rem;
+    --px-321: 20.0625rem;
+    --px-322: 20.125rem;
+    --px-323: 20.1875rem;
     --px-324: 20.25rem;
     --px-326: 20.375rem;
     --px-330: 20.625rem;
     --px-334: 20.875rem;
     --px-350: 21.875rem;
     --px-355: 22.1875rem;
+    --px-360: 22.5rem;
     --px-377: 23.5625rem;
     --px-380: 23.75rem;
     --px-381: 23.8125rem;
@@ -198,8 +226,6 @@
     --px-392: 24.5rem;
     --px-393: 24.5625rem;
     --px-394: 24.625rem;
-    --px-393: 24.5625rem;
-    --px-394: 24.625rem;
     --px-400: 25rem;
     --px-403: 25.1875rem;
     --px-444: 27.75rem;
@@ -211,20 +237,29 @@
     --px-490: 30.625rem;
     --px-495: 30.9375rem;
     --px-500: 31.25rem;
+    --px-510: 31.875rem;
     --px-512: 32rem;
     --px-520: 32.5rem;
     --px-527-5: 32.96875rem;
+    --px-530: 33.125rem;
     --px-537: 33.5625rem;
-    --px-550: 34.375rem;
     --px-550: 34.375rem;
     --px-560: 35rem;
     --px-585: 36.5625rem;
     --px-588: 36.75rem;
+    --px-596: 37.25rem;
     --px-605: 37.8125rem;
+    --px-613: 38.3125rem;
     --px-621: 38.8125rem;
     --px-622: 38.875rem;
+    --px-623: 38.9375rem;
+    --px-624: 39rem;
+    --px-625: 39.0625rem;
+    --px-626: 39.125rem;
+    --px-627: 39.1875rem;
     --px-627-5: 39.21875rem;
     --px-628: 39.25rem;
+    --px-629: 39.3125rem;
     --px-630: 39.375rem;
     --px-635: 39.6875rem;
     --px-636: 39.75rem;
@@ -242,7 +277,11 @@
     --px-718: 44.875rem;
     --px-730: 45.625rem;
     --px-740: 46.25rem;
+    --px-750: 46.875rem;
     --px-763: 47.6875rem;
+    --px-770: 48.125rem;
+    --px-775: 48.4375rem;
+    --px-795: 49.6875rem;
     --px-800: 50rem;
     --px-820: 51.25rem;
     --px-830: 51.875rem;
@@ -255,20 +294,42 @@
     --px-865: 54.0625rem;
     --px-870: 54.375rem;
     --px-875: 54.6875rem;
-    --px-850: 53.125rem;
     --px-880: 55rem;
     --px-900: 56.25rem;
     --px-901: 56.3125rem;
+    --px-945: 59.0625rem;
     --px-950: 59.375rem;
     --px-987: 61.6875rem;
+    --px-1000: 62.5rem;
+    --px-1023: 63.9375rem;
+    --px-1051: 65.6875rem;
+    --px-1059: 66.1875rem;
+    --px-1080: 67.5rem;
+    --px-1100: 68.75rem;
     --px-1142: 71.375rem;
+    --px-1150: 71.875rem;
+    --px-1151: 71.9375rem;
     --px-1152: 72rem;
-    --px-1153: 72rem;
+    --px-1153: 72.0625rem;
+    --px-1154: 72.125rem;
+    --px-1155: 72.1875rem;
+    --px-1156: 72.25rem;
+    --px-1157: 72.3125rem;
+    --px-1158: 72.375rem;
+    --px-1159: 72.4375rem;
+    --px-1160: 72.5rem;
+    --px-1161: 72.5625rem;
+    --px-1162: 72.625rem;
+    --px-1163: 72.6875rem;
+    --px-1200: 75rem;
     --px-1268: 79.25rem;
     --px-1278: 79.875rem;
     --px-1279: 79.9375rem;
     --px-1280: 80rem;
     --px-1555: 97.1875rem;
+    --px-1720: 107.5rem;
+    --px-2560: 160rem;
+    --px-2990: 186.875rem;
     --px-9137: 571.0625rem;
     --px-9138: 571.125rem;
-} 
+}
