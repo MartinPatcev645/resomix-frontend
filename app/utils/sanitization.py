@@ -155,3 +155,30 @@ def sanitize_album_title(title: str) -> str:
     """
     return sanitize_name(title, "album")
     
+
+# Characters that make a spreadsheet treat a cell as a formula rather than text.
+_CSV_FORMULA_TRIGGERS = ("=", "+", "-", "@", "\t", "\r")
+
+
+def csv_safe(value) -> str:
+    """Neutralise a value that will be written into a CSV cell.
+
+    Excel, LibreOffice and Google Sheets execute a cell beginning with ``=``, ``+``, ``-`` or ``@``
+    as a formula on open. A user-supplied name is therefore a code-execution vector against whoever
+    opens the export — the classic "CSV injection". Prefixing a single quote makes the spreadsheet
+    read it as literal text; the quote is not part of the stored value and is not shown once parsed.
+
+    This belongs on the WAY OUT, not on the way in. Restricting what a user may type would not fix
+    it (a name starting with ``-`` was accepted by the old playlist-name allowlist and was already
+    a live formula), and it would block legitimate names for a problem that only exists in one
+    output format.
+
+    Args:
+        value: Any cell value; non-strings are returned unchanged.
+
+    Returns:
+        The value, prefixed with ``'`` when a spreadsheet would otherwise evaluate it.
+    """
+    if not isinstance(value, str) or not value:
+        return value
+    return f"'{value}" if value.startswith(_CSV_FORMULA_TRIGGERS) else value

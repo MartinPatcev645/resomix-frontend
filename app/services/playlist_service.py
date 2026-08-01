@@ -26,6 +26,7 @@ from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.services.admin_operation_log_service import AdminOperationLogService
 from app.services.metadata_service import MetadataService
 from app.utils.demo_mode_utils import apply_demo_mode_redaction, is_anonymous_frontend, ANON_VISIBLE_COUNT
+from app.utils.sanitization import csv_safe
 from app.core.config import settings
 
 
@@ -723,7 +724,7 @@ class PlaylistService:
                             playlist.get("id", ""),
                             playlist.get("uuid", ""),
                             playlist.get("user_id", ""),
-                            playlist.get("name", ""),
+                            csv_safe(playlist.get("name", "")),
                             playlist.get("is_public", ""),
                             playlist.get("type", ""),
                             playlist.get("seed_track_id", ""),

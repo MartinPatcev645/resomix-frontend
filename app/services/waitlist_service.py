@@ -27,6 +27,7 @@ from datetime import datetime, timedelta
 
 from app.repositories.waitlist_repository import WaitlistRepository
 from app.core.config import settings
+from app.utils.sanitization import csv_safe
 from app.services.admin_operation_log_service import AdminOperationLogService
 from app.models.user import User
 
@@ -503,7 +504,7 @@ class WaitlistService:
                     writer.writerow(
                         [
                             w.id,
-                            w.email,
+                            csv_safe(w.email),
                             w.status,
                             w.created_at.isoformat() if w.created_at else "",
                             w.updated_at.isoformat() if w.updated_at else "",

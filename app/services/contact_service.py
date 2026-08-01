@@ -26,6 +26,7 @@ import os
 import uuid
 from datetime import datetime, timedelta
 from app.core.config import settings
+from app.utils.sanitization import csv_safe
 
 
 class ContactService:
@@ -340,12 +341,15 @@ class ContactService:
                                  'Company', 'Role', 'Partner Type', 'Preferred Path', 'Catalogue Context',
                                  'Catalog Size', 'Est. Monthly Calls', 'Status', 'Submitted At'])
                 for c in contact_list:
-                    writer.writerow([c.id, getattr(c, 'contact_type', '') or '', c.user_id or '', c.name or '',
-                                   c.email or '', c.phone or '', c.subject or '', c.message or '',
-                                   getattr(c, 'company_name', '') or '', getattr(c, 'role', '') or '',
-                                   getattr(c, 'partner_type', '') or '', getattr(c, 'preferred_path', '') or '',
-                                   getattr(c, 'catalog_context', '') or '', getattr(c, 'catalog_size', '') or '',
-                                   getattr(c, 'estimated_calls', '') or '', c.status,
+                    # csv_safe on every user-typed field — a spreadsheet executes a cell that
+                    # starts with = + - or @ when the export is opened.
+                    writer.writerow([c.id, getattr(c, 'contact_type', '') or '', c.user_id or '',
+                                   csv_safe(c.name or ''), csv_safe(c.email or ''), csv_safe(c.phone or ''),
+                                   csv_safe(c.subject or ''), csv_safe(c.message or ''),
+                                   csv_safe(getattr(c, 'company_name', '') or ''), csv_safe(getattr(c, 'role', '') or ''),
+                                   csv_safe(getattr(c, 'partner_type', '') or ''), csv_safe(getattr(c, 'preferred_path', '') or ''),
+                                   csv_safe(getattr(c, 'catalog_context', '') or ''), csv_safe(getattr(c, 'catalog_size', '') or ''),
+                                   csv_safe(getattr(c, 'estimated_calls', '') or ''), c.status,
                                    c.submitted_at.isoformat() if c.submitted_at else ''])
             
             base_url = settings.resomix_server_url

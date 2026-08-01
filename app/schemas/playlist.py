@@ -19,35 +19,88 @@ from typing import Optional, List, Dict
 from pydantic import BaseModel, Field, validator
 from app.schemas.similarity import SimilarityByIdResponse, PlaylistInfo
 import re
+import unicodedata
 from decimal import Decimal
 
 
 # Request Schemas
+#: Upper bound on a playlist name, in characters. The column is VARCHAR(150), so this leaves
+#: headroom for anything we might append ourselves later.
+PLAYLIST_NAME_MAX_LENGTH = 120
+
+#: Characters that must never survive into a name.
+#:
+#: C0/C1 controls (newlines, tabs, NUL…) break single-line rendering and log output. The bidi
+#: overrides let a name paint itself right-to-left and impersonate another one — the only genuinely
+#: deceptive class of invisible character here.
+#:
+#: Note what is deliberately NOT here: ZWJ (U+200D) is required to build emoji families like
+#: 👨‍👩‍👧, and ZWNJ (U+200C) is required for correct Persian and Arabic text. Blanket-blocking
+#: format characters would break real names.
+_CONTROL_CHARS = re.compile(r"[\x00-\x1F\x7F-\x9F]")
+_BIDI_OVERRIDES = re.compile(r"[\u202A-\u202E\u2066-\u2069]")
+_WHITESPACE_RUN = re.compile(r"\s+")
+
+
+def normalize_playlist_name(value: str) -> str:
+    """Clean and validate a playlist name, returning the value to store.
+
+    Accepts text in any language — letters with accents, non-Latin scripts, punctuation, emoji.
+    Validation is on the SHAPE of the string, not on an allowlist of characters.
+
+    The old rule was `^[a-zA-Z0-9\\s\\-_.'(),]+$`, which rejected most of the world's writing
+    systems along with `&`, `!` and the curly apostrophe that macOS and iOS auto-insert. That was
+    not merely restrictive, it was self-contradictory: playlists are auto-named "Artist - Title"
+    from catalogue metadata, so the product generated names it then refused to let anyone re-enter
+    ("Sigur Rós - Hoppípolla" could not be renamed to itself).
+
+    Raises:
+        ValueError: with a message written for a person, not a validator.
+    """
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("Enter a name for the playlist.")
+
+    # NFC first: "é" typed as e + combining accent becomes the single precomposed character, so
+    # equal-looking names compare equal and the length below counts what the user sees.
+    cleaned = unicodedata.normalize("NFC", value)
+    # Controls become a SPACE, not nothing: pasting "Artist\nTitle" should read "Artist Title"
+    # rather than "ArtistTitle". The collapse below tidies up any doubles that creates.
+    cleaned = _CONTROL_CHARS.sub(" ", cleaned)
+    # Bidi overrides are deleted outright — they carry no textual content, only direction.
+    cleaned = _BIDI_OVERRIDES.sub("", cleaned)
+    # Collapse runs of whitespace so a name can't be padded out with invisible width.
+    cleaned = _WHITESPACE_RUN.sub(" ", cleaned).strip()
+
+    if not cleaned:
+        raise ValueError("Enter a name for the playlist.")
+
+    if len(cleaned) > PLAYLIST_NAME_MAX_LENGTH:
+        raise ValueError(
+            f"Playlist name is too long — keep it to {PLAYLIST_NAME_MAX_LENGTH} characters or fewer."
+        )
+
+    return cleaned
+
+
 class PlaylistRenameRequest(BaseModel):
     """Request schema for renaming a playlist."""
     playlist_id: str = Field(..., description="Playlist UUID")
-    new_name: str = Field(..., description="New playlist name", min_length=1, max_length=100)
+    new_name: str = Field(
+        ...,
+        description="New playlist name — any language, punctuation or emoji",
+        min_length=1,
+        max_length=PLAYLIST_NAME_MAX_LENGTH,
+    )
 
     @validator('new_name')
     def validate_new_name(cls, v):
-        """Validate playlist name to allow only alphanumeric characters and basic special characters."""
-        if not v or not v.strip():
-            raise ValueError('Playlist name cannot be empty or whitespace only')
-        
-        # Allow alphanumeric characters, spaces, hyphens, underscores, and basic punctuation
-        # Pattern: letters, numbers, spaces, hyphens, underscores, periods, apostrophes, parentheses, commas
-        allowed_pattern = r"^[a-zA-Z0-9\s\-_.'(),]+$"
-        
-        if not re.match(allowed_pattern, v.strip()):
-            raise ValueError('Playlist name can only contain letters, numbers, spaces, hyphens, underscores, periods, apostrophes, parentheses, and commas')
-        
-        return v.strip()
+        return normalize_playlist_name(v)
 
     class Config:
         json_schema_extra = {
             "example": {
                 "playlist_id": "550e8400-e29b-41d4-a716-446655440000",
-                "new_name": "My Awesome Playlist"
+                "new_name": "Sigur Rós - Hoppípolla 🎧"
             }
         }
 

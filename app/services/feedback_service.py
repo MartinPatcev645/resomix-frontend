@@ -27,6 +27,7 @@ import os
 import uuid
 from datetime import datetime, timedelta
 from app.core.config import settings
+from app.utils.sanitization import csv_safe
 
 
 class FeedbackService:
@@ -653,10 +654,10 @@ class FeedbackService:
                     writer.writerow([
                         feedback.id,
                         feedback.user_id or '',
-                        feedback.category or '',
+                        csv_safe(feedback.category or ''),
                         feedback.satisfaction if feedback.satisfaction is not None else '',
                         feedback.recommendation if feedback.recommendation is not None else '',
-                        feedback.message or '',
+                        csv_safe(feedback.message or ''),
                         feedback.status,
                         feedback.submitted_at.isoformat() if feedback.submitted_at else ''
                     ])
