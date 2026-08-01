@@ -32,6 +32,7 @@ export const WorkspaceAnalysisPanel: React.FC = () => {
     fileName,
     analysisId,
     playlistUuid,
+    playlistPending,
     analyze,
     reset,
   } = useTrackAnalysis();
@@ -127,6 +128,7 @@ export const WorkspaceAnalysisPanel: React.FC = () => {
             data={data}
             analysisId={analysisId}
             playlistUuid={playlistUuid}
+            playlistPending={playlistPending}
             onReset={resetAll}
           />
         )}

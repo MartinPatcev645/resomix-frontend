@@ -20,10 +20,13 @@ import {
   structureStripCaption,
   type MergedStructureSegment,
 } from "@/utils/structureStrip.ts";
+import { SubmitPendingGlyph } from "./WorkspaceStage.tsx";
 import {
   ANALYSIS_SIBLING_PLAYLIST_NOTE,
   ANALYSIS_SIBLING_PLAYLIST_UNAVAILABLE,
   ANALYSIS_SIBLING_PLAYLIST_LEGACY,
+  ANALYSIS_SIBLING_PLAYLIST_PENDING,
+  ANALYSIS_SIBLING_PLAYLIST_PENDING_TITLE,
   ANALYSE_ANOTHER_CTA,
   ANALYSIS_SUMMARY_HEADING,
   FIND_SIMILAR_FROM_ANALYSIS_CTA,
@@ -84,6 +87,8 @@ interface AnalysisSummaryCardProps {
   data: AnalysisData;
   analysisId: string;
   playlistUuid: string | null;
+  /** The sibling similarity playlist is still being paired — CTA stays disabled but shows progress. */
+  playlistPending: boolean;
   onReset: () => void;
 }
 
@@ -91,6 +96,7 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
   data,
   analysisId,
   playlistUuid,
+  playlistPending,
   onReset,
 }) => {
   const navigate = useNavigate();
@@ -170,9 +176,13 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
   );
   const hasStructure = mergedStructure.length > 0;
 
+  // Three distinct states, so a disabled button is never ambiguous: ready, still pairing, or
+  // genuinely absent (a legacy upload that predates automatic pairing).
   const siblingNote = playlistUuid
     ? ANALYSIS_SIBLING_PLAYLIST_NOTE
-    : ANALYSIS_SIBLING_PLAYLIST_LEGACY;
+    : playlistPending
+      ? ANALYSIS_SIBLING_PLAYLIST_PENDING
+      : ANALYSIS_SIBLING_PLAYLIST_LEGACY;
 
   return (
     <div className="space-y-[var(--px-16)]">
@@ -304,11 +314,19 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
         <button
           type="button"
           disabled={!playlistUuid}
-          title={playlistUuid ? undefined : ANALYSIS_SIBLING_PLAYLIST_UNAVAILABLE}
+          aria-busy={playlistPending || undefined}
+          title={
+            playlistUuid
+              ? undefined
+              : playlistPending
+                ? ANALYSIS_SIBLING_PLAYLIST_PENDING_TITLE
+                : ANALYSIS_SIBLING_PLAYLIST_UNAVAILABLE
+          }
           onClick={() => playlistUuid && navigate(`/sonic-discovery?id=${playlistUuid}`)}
           className={WORKSPACE_BTN_PRIMARY}
         >
           {FIND_SIMILAR_FROM_ANALYSIS_CTA}
+          {playlistPending && !playlistUuid && <SubmitPendingGlyph />}
         </button>
         <button
           type="button"

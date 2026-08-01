@@ -50,6 +50,14 @@ const POLL_INTERVAL_MAX_MS = 5000;
 const POLL_INTERVAL_STEP_MS = 500;
 const POLL_TIMEOUT_MS = 10 * 60 * 1000; // give a full-track analysis up to 10 minutes
 
+// The sibling similarity playlist is created asynchronously and best-effort, so it can appear only
+// AFTER the analysis job reports "succeeded" — at which point the main poll has already stopped and
+// `playlist_uuid` would never arrive. These bound a short follow-up watch that lets the
+// "Find similar tracks" CTA light up on its own. Giving up is a normal outcome, not an error: older
+// uploads predate automatic pairing and will never get one.
+const SIBLING_POLL_INTERVAL_MS = 2000;
+const SIBLING_POLL_TIMEOUT_MS = 90 * 1000;
+
 export type AnalysisStatus = "idle" | "uploading" | "analyzing" | "done" | "error";
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -227,6 +235,37 @@ async function pollAnalysis(
   onResult(mapCanonicalToAnalysisData(raw), true);
 }
 
+/**
+ * Watch for the sibling similarity playlist after the analysis job itself has finished.
+ *
+ * `pollAnalysis` stops the moment the job reports "succeeded", but the playlist is paired
+ * asynchronously, so on a fast analysis it may not exist yet at that instant. Without this the CTA
+ * stayed disabled for a playlist that showed up seconds later. Resolves as soon as the id appears,
+ * or gives up quietly at the timeout (a legacy upload simply has no sibling).
+ */
+async function pollSiblingPlaylist(
+  id: string,
+  isLive: () => boolean,
+  fetchStatus: StatusFetcher,
+  onFound: (playlistUuid: string) => void,
+): Promise<void> {
+  const startedAt = Date.now();
+  while (isLive() && Date.now() - startedAt < SIBLING_POLL_TIMEOUT_MS) {
+    await delay(SIBLING_POLL_INTERVAL_MS);
+    if (!isLive()) return;
+    try {
+      const st = await fetchStatus(id);
+      if (!isLive()) return;
+      if (st.playlist_uuid) {
+        onFound(st.playlist_uuid);
+        return;
+      }
+    } catch {
+      /* transient status failure — keep watching until the timeout */
+    }
+  }
+}
+
 export function useTrackAnalysis() {
   const [status, setStatus] = useState<AnalysisStatus>("idle");
   const [data, setData] = useState<AnalysisData | null>(null);
@@ -238,9 +277,19 @@ export function useTrackAnalysis() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [trackUuid, setTrackUuid] = useState<string | null>(null);
   const [playlistUuid, setPlaylistUuid] = useState<string | null>(null);
+  // True only while we are still waiting for the sibling playlist to be paired — drives the CTA's
+  // "working on it" affordance, so a disabled button reads as pending rather than permanently dead.
+  const [playlistPending, setPlaylistPending] = useState(false);
 
   const runId = useRef(0);
   const audioUrlRef = useRef<string | null>(null);
+  // Mirrors `playlistUuid` for the async run bodies, whose closures capture a stale state value.
+  const playlistUuidRef = useRef<string | null>(null);
+
+  const rememberPlaylistUuid = useCallback((uuid: string | null) => {
+    playlistUuidRef.current = uuid;
+    setPlaylistUuid(uuid);
+  }, []);
 
   const setTrackUrl = useCallback((url: string | null) => {
     if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
@@ -259,8 +308,9 @@ export function useTrackAnalysis() {
     setFileName(null);
     setAnalysisId(null);
     setTrackUuid(null);
-    setPlaylistUuid(null);
-  }, [setTrackUrl]);
+    rememberPlaylistUuid(null);
+    setPlaylistPending(false);
+  }, [setTrackUrl, rememberPlaylistUuid]);
 
   const analyze = useCallback(async (file: File) => {
     const myRun = ++runId.current;
@@ -275,7 +325,8 @@ export function useTrackAnalysis() {
     setProgress(0);
     setPart1Ready(false);
     setTrackUuid(null);
-    setPlaylistUuid(null);
+    rememberPlaylistUuid(null);
+    setPlaylistPending(false);
 
     try {
       // 1) upload -> enqueue (real byte-level upload progress)
@@ -331,15 +382,33 @@ export function useTrackAnalysis() {
         VIA_ALWYZON ? alwyzonFinalResult : directResult,
         (meta) => live(() => {
           if (meta.trackUuid) setTrackUuid(meta.trackUuid);
-          if (meta.playlistUuid) setPlaylistUuid(meta.playlistUuid);
+          if (meta.playlistUuid) rememberPlaylistUuid(meta.playlistUuid);
         }),
       );
+
+      // The job is done, but the sibling similarity playlist is paired asynchronously and may not
+      // exist yet — the main poll stopped the instant the job succeeded. Keep watching (bounded) so
+      // the "Find similar tracks" CTA enables itself instead of staying dead for a playlist that
+      // lands a moment later.
+      if (!playlistUuidRef.current) {
+        live(() => setPlaylistPending(true));
+        try {
+          await pollSiblingPlaylist(
+            id,
+            () => runId.current === myRun,
+            VIA_ALWYZON ? alwyzonStatus : directStatus,
+            (uuid) => live(() => rememberPlaylistUuid(uuid)),
+          );
+        } finally {
+          live(() => setPlaylistPending(false));
+        }
+      }
     } catch (e) {
       if (shouldDeferToSessionExpiredModal()) return;
       live(() => setError(e instanceof Error ? e.message : "Analysis failed"));
       live(() => setStatus("error"));
     }
-  }, [setTrackUrl]);
+  }, [setTrackUrl, rememberPlaylistUuid]);
 
   // Open an existing analysis by id (refresh / shared ?id= link).
   const loadById = useCallback(async (id: string) => {
@@ -357,7 +426,8 @@ export function useTrackAnalysis() {
       setAnalysisId(id);
       setStatus("analyzing");
       setTrackUuid(null);
-      setPlaylistUuid(null);
+      rememberPlaylistUuid(null);
+      setPlaylistPending(false);
     });
 
     try {
@@ -381,15 +451,33 @@ export function useTrackAnalysis() {
         VIA_ALWYZON ? alwyzonFinalResult : directResult,
         (meta) => live(() => {
           if (meta.trackUuid) setTrackUuid(meta.trackUuid);
-          if (meta.playlistUuid) setPlaylistUuid(meta.playlistUuid);
+          if (meta.playlistUuid) rememberPlaylistUuid(meta.playlistUuid);
         }),
       );
+
+      // The job is done, but the sibling similarity playlist is paired asynchronously and may not
+      // exist yet — the main poll stopped the instant the job succeeded. Keep watching (bounded) so
+      // the "Find similar tracks" CTA enables itself instead of staying dead for a playlist that
+      // lands a moment later.
+      if (!playlistUuidRef.current) {
+        live(() => setPlaylistPending(true));
+        try {
+          await pollSiblingPlaylist(
+            id,
+            () => runId.current === myRun,
+            VIA_ALWYZON ? alwyzonStatus : directStatus,
+            (uuid) => live(() => rememberPlaylistUuid(uuid)),
+          );
+        } finally {
+          live(() => setPlaylistPending(false));
+        }
+      }
     } catch (e) {
       if (shouldDeferToSessionExpiredModal()) return;
       live(() => setError(e instanceof Error ? e.message : "Could not load analysis"));
       live(() => setStatus("error"));
     }
-  }, [setTrackUrl]);
+  }, [setTrackUrl, rememberPlaylistUuid]);
 
-  return { status, data, error, progress, fileName, audioUrl, part1Ready, analysisId, trackUuid, playlistUuid, analyze, loadById, reset };
+  return { status, data, error, progress, fileName, audioUrl, part1Ready, analysisId, trackUuid, playlistUuid, playlistPending, analyze, loadById, reset };
 }

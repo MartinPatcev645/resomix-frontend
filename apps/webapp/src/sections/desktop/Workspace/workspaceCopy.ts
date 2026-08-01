@@ -115,6 +115,10 @@ export const ANALYSIS_SIBLING_PLAYLIST_UNAVAILABLE =
   "Similarity playlist unavailable for this analysis";
 export const ANALYSIS_SIBLING_PLAYLIST_LEGACY =
   "No sibling similarity playlist is linked to this analysis — common for uploads before automatic playlist pairing.";
+export const ANALYSIS_SIBLING_PLAYLIST_PENDING =
+  "Pairing this upload's similarity playlist — “Find similar tracks” opens as soon as it's ready.";
+export const ANALYSIS_SIBLING_PLAYLIST_PENDING_TITLE =
+  "Preparing the similarity playlist…";
 
 export const READING_TAB_DJ = "For DJs";
 export const READING_TAB_PRODUCER = "For producers";
