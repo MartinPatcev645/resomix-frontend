@@ -72,6 +72,12 @@ class HlsPlaylistController implements AudioController {
   private durations: Map<string, number> = new Map();
   private totalDuration = 0;
 
+  // Identity of the store payload the timeline above was built from. The playlist can be re-fetched
+  // after we have already initialised (the pages hand off a just-created copy and then revalidate it
+  // in the background), and the authoritative copy can carry durations the creation copy lacked.
+  // Without this we kept the first snapshot forever and every seek clamped against a stale duration.
+  private playlistSignature = '';
+
   private currentTrackId: string | null = null;
   // Playback engine for the current track: 'hls' (the user's upload seed, streamed via hls.js on
   // `hlsAudio`) or 'preview' (a catalogue track, a plain <audio> src from the Apple Music preview_url
@@ -158,7 +164,7 @@ class HlsPlaylistController implements AudioController {
     this.clearOneShotHandlers();
     this.resetSeekState();
 
-    if (!this.tracks.length) this.initPlaylist();
+    this.syncPlaylist();
 
     // Catalogue tracks play from their Apple Music preview URL on the dedicated previewAudio element.
     const track = this.resolveTrack(trackId);
@@ -276,6 +282,12 @@ class HlsPlaylistController implements AudioController {
       return;
     }
 
+    // The seek maths below is the one place a stale duration silently corrupts the result, and a
+    // seek can happen without an intervening load() (mount auto-loads, then play() resumes the
+    // already-selected track). Re-sync first so we always map against the payload on screen; it is
+    // a no-op unless the store actually changed.
+    this.syncPlaylist();
+
     const startOffset = this.offsets.get(id) || 0;
     const d = this.durations.get(id) || 0;
     const meta = usePlayerStore.getState().snippetMetadata;
@@ -285,8 +297,11 @@ class HlsPlaylistController implements AudioController {
     // We want to map this to the audible snippet range
     const audibleStart = snippet ? snippet.start : 0;
 
-    // Position within the snippet (0 to snippetDuration)
-    const localAudibleOffset = Math.min(Math.max(0, seconds - audibleStart), d);
+    // Position within the snippet (0 to snippetDuration). A duration of 0 means "not known yet"
+    // rather than "zero-length track", so we must NOT clamp against it — doing so silently
+    // rewrote every seek to the track start, which reads to the user as a restart.
+    const relativeToAudible = Math.max(0, seconds - audibleStart);
+    const localAudibleOffset = d > 0 ? Math.min(relativeToAudible, d) : relativeToAudible;
     const audioTargetTime = startOffset + localAudibleOffset;
 
     this.hlsAudio.currentTime = audioTargetTime;
@@ -327,6 +342,7 @@ class HlsPlaylistController implements AudioController {
     this.offsets.clear();
     this.durations.clear();
     this.totalDuration = 0;
+    this.playlistSignature = '';
 
     // Clear stale snippet metadata so the next upload starts clean
     usePlayerStore.setState({ snippetMetadata: {} });
@@ -414,6 +430,36 @@ class HlsPlaylistController implements AudioController {
 
   // =============== Private: playlist/timeline ===============
 
+  /**
+   * Identity of the store's current playlist payload, for detecting a payload we have not built the
+   * timeline from yet. Covers the fields `buildTimeline()` actually consumes — the track list and
+   * each track's duration — so a revalidated copy that fills in a missing duration counts as a
+   * change, while a re-render with the same data does not.
+   */
+  private computePlaylistSignature(): string {
+    const playlistData = usePlaylistStore.getState().playlistData;
+    if (!playlistData) return '';
+    const tracks: Track[] = [];
+    if (playlistData.queried_track?.id) tracks.push(playlistData.queried_track);
+    if (playlistData.similar_tracks?.length) tracks.push(...playlistData.similar_tracks);
+    return `${playlistData.playlist?.id || ''}|${tracks.map(t => `${t.id}:${Number(t.duration) || 0}`).join(',')}`;
+  }
+
+  /**
+   * (Re)build the timeline whenever the store payload we snapshotted is no longer the one on screen.
+   *
+   * The playlist pages can render — and therefore trigger a `load()` — while the store still holds
+   * the copy handed over at creation time, then swap in the authoritative copy from the background
+   * revalidation a moment later. Re-initialising only when `tracks` was empty meant that first
+   * snapshot was kept for the lifetime of the playlist, so a duration missing from the creation copy
+   * stayed missing. Rebuilding touches only the track list and offset/duration maps — never the
+   * current track, the media element or playback state — so it is safe mid-playback.
+   */
+  private syncPlaylist() {
+    if (this.tracks.length && this.computePlaylistSignature() === this.playlistSignature) return;
+    this.initPlaylist();
+  }
+
   private initPlaylist() {
     const playlistData = usePlaylistStore.getState().playlistData;
     if (!playlistData) return;
@@ -427,6 +473,9 @@ class HlsPlaylistController implements AudioController {
 
     this.tracksIds = this.tracks.map(t => t.id);
     this.buildTimeline();
+    // Recorded BEFORE ensureHlsLoaded() below, which calls back into syncPlaylist() — with the
+    // signature already current that call is a no-op instead of recursing.
+    this.playlistSignature = this.computePlaylistSignature();
 
     // Fast-track snippet detection for uploads by loading the manifest immediately
     if (playlistData.queried_track?.type === 'upload' && this.playlistUrl) {
@@ -475,7 +524,7 @@ class HlsPlaylistController implements AudioController {
 
   private async ensureHlsLoaded() {
     if (this.isPlaylistLoaded) return;
-    if (!this.tracks.length) this.initPlaylist();
+    this.syncPlaylist();
     if (!this.tracksIds.length) return;
 
     try {
