@@ -2462,6 +2462,103 @@
             "bornFromEmotions": "Born from similar emotions"
         }
     },
+    "producers": {
+        "hero": {
+            "chip": "Use case · Electronic music producers",
+            "h1a": "Turn one reference track",
+            "h1b": "into new sonic directions.",
+            "support": "Resomix uses the PYXIS-1 analytical engine to examine 70+ musical characteristics across rhythm, harmony, timbre, structure and energy — then surfaces sonically related tracks that can unlock new production ideas.",
+            "ctaNote": "Free to start · production beta",
+            "figureAria": "The creative loop breaks open: a reference track feeds the PYXIS-1 sonic profile, five labelled dimensions — rhythm, harmony, timbre, structure, energy — fan out, and the highlighted thread reaches an unexpected sonic match: new directions to explore"
+        },
+        "statement": {
+            "srTitle": "The stuck loop",
+            "bridge": "You may already know the atmosphere, groove or energy you want. The difficult part is translating that feeling into the next production decision.",
+            "inspiration": "Inspiration is a powerful tool that often feels outside of our control. We have an idea for a track, where it should go, the atmosphere it should convey, but have no idea how to bring that vision to life. That's when we get stuck in an endless loop: unable to move forward, if not by ditching an entire project for a fresh start.",
+            "pull": "But what if you could start from a track that already captures that feeling, and use it as an inspiration to discover completely new creative directions?"
+        },
+        "block": {
+            "eyebrow": "The problem",
+            "h2": "When you hit a creative block",
+            "opener": "Creative block often appears as repetition: the same eight-bar loop, the same presets, the same sample choices and an arrangement that refuses to move forward.",
+            "engines": "Discovery engines can help you expand your horizons and try something new, but the problem is that most of them are designed to help you find music based on what you already know and what they rely on: genre, artist names, tags, and so on. If you're looking for a specific atmosphere or sonic texture, it can be difficult to describe exactly what you want and results might not be what you need.",
+            "pull": "Sometimes, the best way to find a new idea is to stop searching for exactly what you already have in mind, and start looking for more subtle connections in mood, atmosphere, and emotion.",
+            "figureAria": "A rich sonic atmosphere drawn as layered contours and grain sits above typical discovery fields — genre, artist, tags — which stay empty; the feeling cannot be typed into the form"
+        },
+        "paths": {
+            "eyebrow": "The answer",
+            "h2": "Use the track that has the feeling to find what comes next",
+            "intro": "Start with a track that captures the feeling you want to pursue. PYXIS-1 examines the musical relationships behind that reference and surfaces related tracks through groove, energy, harmony, timbre and structure.",
+            "engine": "PYXIS-1 builds a sonic profile from the reference track across structural, harmonic, rhythmic, timbral and energy characteristics, then surfaces related tracks that can expand your field of reference.",
+            "connections": "Use those connections as material for study and contrast, then decide how they inform your own arrangement, sound design and production choices.",
+            "listIntro": "In short, here's how Resomix can help producers at any stage of their career:",
+            "items": {
+                "stronger": {
+                    "label": "Find stronger references",
+                    "text": "Start with the track that carries the feeling, then explore sonically connected music beyond familiar artists, genres and tags."
+                },
+                "patterns": {
+                    "label": "Break familiar patterns",
+                    "text": "Compare how other tracks express related groove, energy, texture or structure through different production choices."
+                },
+                "connections": {
+                    "label": "Discover unexpected connections",
+                    "text": "Surface relevant tracks outside your usual scene, listening habits or reference library."
+                },
+                "reinterpret": {
+                    "label": "Reinterpret the signal",
+                    "text": "Transform what you discover through your own arrangement, sound design and production language."
+                }
+            }
+        },
+        "craft": {
+            "eyebrow": "The craft stays yours",
+            "h2": "PYXIS-1 surfaces the relationships. You shape the result.",
+            "body": "Resomix does not generate a track or prescribe a formula. PYXIS-1 surfaces relationships across rhythm, harmony, timbre, structure and energy. You decide what to study, reinterpret, contrast or leave behind in your own production.",
+            "figureAria": "A reference track feeds the PYXIS-1 sonic profile of 70+ characteristics; four labelled relationship branches lead to related sonic directions, and from the white-ringed result the producer's own white contour grows — analysis surfaces the connections, the producer makes the music"
+        },
+        "final": {
+            "h2": "Bring a reference. Find a new direction.",
+            "body": "Search for or upload a track that captures the groove, atmosphere or energy you are chasing. PYXIS-1 builds its sonic profile and surfaces related music for you to explore."
+        },
+        "cta": {
+            "start": "Start with a reference",
+            "exploreTi": "Explore Track Intelligence"
+        },
+        "figures": {
+            "creativeLoop": "Creative loop",
+            "referenceTrack": "Reference track",
+            "pyxisSonicProfile": "PYXIS-1 sonic profile",
+            "rhythm": "Rhythm",
+            "harmony": "Harmony",
+            "timbre": "Timbre",
+            "structure": "Structure",
+            "energy": "Energy",
+            "unexpectedMatch": "Unexpected sonic match",
+            "newDirections": "New directions to explore",
+            "seventyPlus": "70+ characteristics",
+            "grooveRhythm": "Groove & rhythm",
+            "harmonyTonality": "Harmony & tonality",
+            "timbreTexture": "Timbre & texture",
+            "structureEnergy": "Structure & energy",
+            "relatedDirections": "Related sonic directions",
+            "analysisSurfaces": "Analysis surfaces the connections",
+            "producerMakes": "The producer makes the music",
+            "atmosphereAfter": "The atmosphere you're after",
+            "typicalFields": "Typical discovery fields",
+            "genre": "Genre",
+            "artist": "Artist",
+            "tags": "Tags",
+            "hardToPut": "Hard to put into words",
+            "youCanFeel": "You can feel it",
+            "fieldsCantHold": "The fields can't hold it",
+            "newSonicTerritories": "New sonic territories",
+            "theHabit": "The habit",
+            "freshInput": "Fresh input",
+            "outsideUsualScene": "Outside the usual scene",
+            "yourCreativeLanguage": "Your creative language"
+        }
+    },
     "nav": {
         "topGroups": {
             "product": "Product",

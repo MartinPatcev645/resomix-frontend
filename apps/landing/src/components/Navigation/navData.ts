@@ -92,7 +92,7 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
         },
         items: [
           { key: 'music-curators', glyph: 'music-curators', live: true, route: '/solutions/music-curators' },
-          { key: 'producers', glyph: 'producers', live: false, plannedRoute: '/solutions/producers', status: 'coming-next' },
+          { key: 'producers', glyph: 'producers', live: true, route: '/solutions/producers' },
         ],
       },
     ],
