@@ -499,7 +499,6 @@ export function SdSearchFieldHero({
       <div className="sd-hero-field">
         <div className="sd-hero-stagewrap" ref={stagewrapRef}>
           <span className="sd-hudlbl uppercase">{t('sonicDiscovery.hero.fieldLabel')}</span>
-          <span className="sd-hud-truth sd-truth uppercase">SAMPLE DATA</span>
           <figure
             className="sd-herofig"
             role="img"
