@@ -197,19 +197,19 @@ const VIZ_CONFIG = [
   {
     id: 'audviz-dj',
     mode: 'dj' as const,
-    hud: 'SET FLOW · TRANSITION ALTERNATIVES — SAMPLE DATA',
+    hud: 'SET FLOW · TRANSITION ALTERNATIVES',
     Viz: DjAudViz,
   },
   {
     id: 'audviz-prod',
     mode: 'prod' as const,
-    hud: 'REFERENCE BOARD · RELATED THEMES — SAMPLE DATA',
+    hud: 'REFERENCE BOARD · RELATED THEMES',
     Viz: ProdAudViz,
   },
   {
     id: 'audviz-sup',
     mode: 'sup' as const,
-    hud: 'BRIEF → REFERENCE → GROUPED SHORTLIST — SAMPLE DATA',
+    hud: 'BRIEF → REFERENCE → GROUPED SHORTLIST',
     Viz: SupAudViz,
   },
 ] as const;

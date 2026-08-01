@@ -422,12 +422,6 @@
   left: var(--px-24);
 }
 
-.sd-page .sd-hero-stagewrap .sd-hud-truth {
-  position: absolute;
-  top: var(--px-14);
-  right: var(--px-24);
-}
-
 .sd-page .sd-herofig {
   margin: 0;
 }
@@ -438,7 +432,7 @@
   display: block;
 }
 
-.sd-page .sd-herosvg-m {
+.sd-page .sd-herofig .sd-herosvg-m {
   display: none;
 }
 
@@ -1666,20 +1660,16 @@
     padding-top: var(--px-32);
   }
 
-  .sd-page .sd-herosvg-d {
+  .sd-page .sd-herofig .sd-herosvg-d {
     display: none;
   }
 
-  .sd-page .sd-herosvg-m {
+  .sd-page .sd-herofig .sd-herosvg-m {
     display: block;
   }
 
   .sd-page .sd-hero-stagewrap {
     padding: var(--px-36) var(--px-16) var(--px-16);
-  }
-
-  .sd-page .sd-hero-stagewrap .sd-hud-truth {
-    display: none;
   }
 
   .sd-page .sd-stackbtn {
