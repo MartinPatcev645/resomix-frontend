@@ -84,6 +84,16 @@ class HlsPlaylistController implements AudioController {
   // on `previewAudio`). Drives which element `audio` (below) resolves to.
   private mode: 'hls' | 'preview' = 'hls';
   private isPlaylistLoaded = false;
+  // In-flight guard for ensureHlsLoaded(). `isPlaylistLoaded` only flips at the very END of that
+  // method, so without this two callers that arrive while the first is still awaiting the playback
+  // session BOTH build an Hls instance and attach it to the same <audio>. The later attach aborts
+  // the earlier instance's in-flight fragment request and orphans it, which kills playback outright:
+  // no further segments are ever requested. `load()` alone can produce two calls in one tick
+  // (initPlaylist → ensureHlsLoaded, then load's own), so this is not a rare race.
+  private hlsLoadPromise: Promise<void> | null = null;
+  // Bumped by unload(). An attach that was awaiting the playback session when the page tore down
+  // would otherwise finish afterwards and leave a live engine on a controller we just unloaded.
+  private hlsGeneration = 0;
   private pendingOnReady: (() => void) | null = null;
 
   // Monotonic load generation. Every load()/loadPreview() bumps it; any async continuation captures
@@ -330,6 +340,10 @@ class HlsPlaylistController implements AudioController {
       this.hls = null;
     }
 
+    // Invalidate any attach still in flight, so it cannot resurrect the engine after we tear down.
+    this.hlsGeneration += 1;
+    this.hlsLoadPromise = null;
+
     this.hlsAudio.removeAttribute('src');
     this.hlsAudio.load();
     this.previewAudio.removeAttribute('src');
@@ -522,11 +536,22 @@ class HlsPlaylistController implements AudioController {
 
   // =============== Private: HLS lifecycle ===============
 
-  private async ensureHlsLoaded() {
+  /** Serialised entry point — concurrent callers share one attach (see `hlsLoadPromise`). */
+  private ensureHlsLoaded(): Promise<void> {
+    if (this.isPlaylistLoaded) return Promise.resolve();
+    if (this.hlsLoadPromise) return this.hlsLoadPromise;
+    this.hlsLoadPromise = this.attachHlsOnce().finally(() => {
+      this.hlsLoadPromise = null;
+    });
+    return this.hlsLoadPromise;
+  }
+
+  private async attachHlsOnce(): Promise<void> {
     if (this.isPlaylistLoaded) return;
     this.syncPlaylist();
     if (!this.tracksIds.length) return;
 
+    const generation = this.hlsGeneration;
     try {
       await this.fetchPlaybackSession();
     } catch (e) {
@@ -535,8 +560,16 @@ class HlsPlaylistController implements AudioController {
       this.flagNetworkError("session-failed");
       return;
     }
+    // Torn down while we were awaiting the session — do not attach onto a unloaded controller.
+    if (generation !== this.hlsGeneration) return;
 
     if (Hls.isSupported()) {
+      // Belt and braces: never leave a previous engine attached to the element. An orphaned
+      // instance keeps its media listeners and fights the new one over the same buffer.
+      if (this.hls) {
+        try { this.hls.destroy(); } catch { /* noop */ }
+        this.hls = null;
+      }
       const urlObj = new URL(this.playlistUrl);
       const token = urlObj.searchParams.get("token");
 
