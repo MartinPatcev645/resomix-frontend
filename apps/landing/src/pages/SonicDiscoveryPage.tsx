@@ -7,7 +7,7 @@ import { SdShortlist } from '@/sections/sonic-discovery/SdShortlist.tsx';
 import { SdAudienceModes } from '@/sections/sonic-discovery/SdAudienceModes.tsx';
 import { SdProof } from '@/sections/sonic-discovery/SdProof.tsx';
 import { SdFinalCta } from '@/sections/sonic-discovery/SdFinalCta.tsx';
-import { type RefState, type Track } from '@/sections/sonic-discovery/sdEngine.ts';
+import { type Track } from '@/sections/sonic-discovery/sdEngine.ts';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.png';
@@ -20,9 +20,6 @@ export default function SonicDiscoveryPage() {
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, []);
 
-  const [heroSel, setHeroSel] = useState(0);
-  const [refState, setRefState] = useState<RefState>({ ref: 'int', custom: null });
-  const [openRow, setOpenRow] = useState<number | null>(null);
   const [shortlist, setShortlist] = useState<Track[]>([]);
   const [audMode, setAudMode] = useState<'dj' | 'prod' | 'sup'>('dj');
 
@@ -35,7 +32,7 @@ export default function SonicDiscoveryPage() {
     };
   }, []);
 
-  // Draw-once motion — IO on HTML containers, not SVG paths (preview armDrawOnce)
+  // Draw-once motion for remaining page figures (dimensions / audience)
   useEffect(() => {
     if (!motionOn || !('IntersectionObserver' in window)) return;
 
@@ -52,7 +49,7 @@ export default function SonicDiscoveryPage() {
         /* non-path */
       }
       const host =
-        p.closest('.sd-hero-stagewrap, .sd-dimviz, .sd-refwave-wrap, .sd-flowwrap') ||
+        p.closest('.sd-dimviz, .sd-flowwrap') ||
         p.closest('section');
       if (host && !containers.includes(host)) containers.push(host);
     });
@@ -89,32 +86,6 @@ export default function SonicDiscoveryPage() {
     });
   }, [motionOn]);
 
-  const scrollToConsoleTop = useCallback(() => {
-    document.getElementById('sd-stage-ref')?.scrollIntoView({
-      behavior: motionOn ? 'smooth' : 'auto',
-      block: 'start',
-    });
-  }, [motionOn]);
-
-  const scrollToShortlist = useCallback(() => {
-    document.getElementById('sd-playlist')?.scrollIntoView({
-      behavior: motionOn ? 'smooth' : 'auto',
-      block: 'nearest',
-    });
-  }, [motionOn]);
-
-  const handleAddToShortlist = useCallback(
-    (track: Track) => {
-      setShortlist((prev) => (prev.some((p) => p.t === track.t) ? prev : [...prev, track]));
-      scrollToShortlist();
-    },
-    [scrollToShortlist],
-  );
-
-  const handleChainDiscovery = useCallback(() => {
-    setOpenRow(null);
-  }, []);
-
   const handleReorder = useCallback((from: number, to: number) => {
     setShortlist((prev) => {
       const next = [...prev];
@@ -143,41 +114,29 @@ export default function SonicDiscoveryPage() {
       <SdVoidBackground />
 
       <div className="sd-frame">
-        <SdSearchFieldHero
-          heroSel={heroSel}
-          onSelectHero={setHeroSel}
-          motionOn={motionOn}
-          onScrollToConsole={scrollToConsole}
-        />
+        <SdSearchFieldHero motionOn={motionOn} onScrollToConsole={scrollToConsole} />
 
-        <SdSearchConsole
-          refState={refState}
-          onRefStateChange={setRefState}
-          openRow={openRow}
-          onOpenRowChange={setOpenRow}
-          onAddToShortlist={handleAddToShortlist}
-          onChainDiscovery={handleChainDiscovery}
-          onScrollToConsoleTop={scrollToConsoleTop}
-          motionOn={motionOn}
-        />
+        <SdSearchConsole motionOn={motionOn} />
 
-        <SdDimensionBands />
+        <div className="sd-col">
+          <SdDimensionBands />
 
-        <SdShortlist
-          shortlist={shortlist}
-          onReorder={handleReorder}
-          onRemove={handleRemove}
-        />
+          <SdShortlist
+            shortlist={shortlist}
+            onReorder={handleReorder}
+            onRemove={handleRemove}
+          />
 
-        <SdAudienceModes
-          mode={audMode}
-          onModeChange={setAudMode}
-          onScrollToConsole={scrollToConsole}
-        />
+          <SdAudienceModes
+            mode={audMode}
+            onModeChange={setAudMode}
+            onScrollToConsole={scrollToConsole}
+          />
 
-        <SdProof />
+          <SdProof />
 
-        <SdFinalCta />
+          <SdFinalCta />
+        </div>
       </div>
     </div>
   );
