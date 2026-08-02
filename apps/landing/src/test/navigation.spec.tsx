@@ -4,6 +4,7 @@ import { vi, describe, it, expect } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import '../i18n.ts';
 import { SiteHeader } from '../components/Navigation/SiteHeader.tsx';
+import { BASE_BETA_URL } from '@resomix/config';
 import {
   NAV_TOP_GROUPS,
   ALLOWED_EXTERNAL_URLS,
@@ -56,11 +57,17 @@ describe('SiteHeader render', () => {
     expect(screen.getAllByRole('link', { name: /account/i }).length).toBeGreaterThan(0);
   });
 
-  it('Try Resomix CTA links to beta.resomix.com', () => {
+  /**
+   * Asserts against the CONFIGURED beta URL rather than the production literal. Hardcoding
+   * 'https://beta.resomix.com' meant the test could only pass under a production env — vitest loads
+   * .env, where the value is the local dev server — so it failed on every normal run.
+   */
+  it('Try Resomix CTA links to the configured beta URL', () => {
     renderHeader('/');
+    expect(BASE_BETA_URL).toBeTruthy();
     expect(document.querySelector('.nav-rail2 a.nav-cta-primary')).toHaveAttribute(
       'href',
-      'https://beta.resomix.com',
+      BASE_BETA_URL,
     );
   });
 
@@ -120,23 +127,35 @@ describe('Mega menu disclosure a11y', () => {
 });
 
 describe('Navigation dead-link guard', () => {
-  it('never renders href for live:false items', () => {
+  /**
+   * Asserts the INVARIANT, not the current roster: a planned item must never render a link, and a
+   * live one must. The previous version hardcoded "every Solutions item is live:false", which was
+   * true when written and silently became a false failure the day those pages shipped.
+   */
+  it('renders links for live items and never for planned ones', () => {
     renderHeader('/');
 
     fireEvent.click(screen.getByRole('button', { name: /^solutions/i }));
     const panel = document.getElementById('panel-solutions');
     expect(panel).toBeTruthy();
 
-    const solutionsItems = NAV_TOP_GROUPS.find((g) => g.key === 'solutions');
-    const plannedItems = solutionsItems?.columns?.flatMap((c) => [
+    const solutions = NAV_TOP_GROUPS.find((g) => g.key === 'solutions');
+    const items = solutions?.columns?.flatMap((c) => [
       ...(c.featured ? [c.featured] : []),
       ...c.items,
     ]) ?? [];
-    plannedItems.forEach((item) => {
-      expect(item.live).toBe(false);
-    });
+    expect(items.length).toBeGreaterThan(0);
 
-    expect(within(panel!).queryAllByRole('link')).toHaveLength(0);
+    const hrefs = within(panel!).queryAllByRole('link').map((a) => a.getAttribute('href') ?? '');
+
+    for (const item of items) {
+      if (item.live) {
+        expect(hrefs).toContain(item.route);
+      } else {
+        // A planned page may be listed, but never as something clickable.
+        expect(hrefs).not.toContain(item.plannedRoute);
+      }
+    }
   });
 
   it('renders only live or allowed external hrefs in open product panel', () => {

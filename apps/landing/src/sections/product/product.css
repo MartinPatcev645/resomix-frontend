@@ -198,12 +198,16 @@
   letter-spacing: 0.04em;
   color: var(--color-primary);
   text-decoration: none;
-  border-bottom: 1px dotted transparent;
+  /* Underline via text-decoration, NOT border-bottom: a border hugs the BOX, and these sit in
+     flex/inline-flex contexts where the box stretches to the full row — so the hover rule ran
+     edge to edge instead of under the label. text-decoration hugs the glyphs. */
+  text-decoration: underline dotted transparent;
+  text-underline-offset: var(--px-4);
 }
 
 .product-page .product-bracket-link:hover {
   color: var(--color-neon-orange);
-  border-bottom-color: var(--color-neon-orange);
+  text-decoration-color: var(--color-neon-orange);
 }
 
 .product-page .product-bracket-link:focus-visible {
