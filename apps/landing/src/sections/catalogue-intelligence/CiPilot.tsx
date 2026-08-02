@@ -1,68 +1,41 @@
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 
-const STEPS = ['useCase', 'deliver', 'process', 'review', 'decide'] as const;
+const STAGES = ['s1', 's2', 's3', 's4', 's5'] as const;
+const MEASURES = ['m1', 'm2', 'm3', 'm4', 'm5'] as const;
 
-const MEASURES = [
-  { key: 'relevance', extra: false },
-  { key: 'older', extra: false },
-  { key: 'coverage', extra: false },
-  { key: 'performance', extra: false },
-  { key: 'acceptance', extra: true },
-] as const;
-
+/* S8 · Guided catalogue pilot — five stage plates and an unpopulated
+   scorecard (measures only, no fabricated numbers). Transplanted verbatim
+   from the approved preview. */
 export function CiPilot() {
   const { t } = useTranslation('common');
 
   return (
-    <section id="ci-pilot" className="ci-section" aria-label="Test it on your own catalogue first">
-      <header className="ci-dim-intro">
-        <p className="ci-eyebrow uppercase">{t('catalogueIntelligence.pilot.eyebrow')}</p>
-        <h2 className="ci-h2b uppercase">{t('catalogueIntelligence.pilot.title')}</h2>
-        <p className="ci-lead">{t('catalogueIntelligence.pilot.lead')}</p>
-      </header>
+    <section className="ci-sec ci-section" id="ci-s8">
+      <div className="ci-wrap">
+        <div className="ci-eyebrow">{t('catalogueIntelligence.pilot.eyebrow')}</div>
+        <h2 className="ci-h2">{t('catalogueIntelligence.pilot.h2')}</h2>
+        <p className="ci-body-p ci-copycol">{t('catalogueIntelligence.pilot.body')}</p>
 
-      <div className="ci-pilotflow">
-        {STEPS.map((key) => (
-          <div key={key} className="ci-pstep">
-            <span className="ci-vt uppercase">{t(`catalogueIntelligence.pilot.steps.${key}.title`)}</span>
-            <p>{t(`catalogueIntelligence.pilot.steps.${key}.copy`)}</p>
-          </div>
-        ))}
-      </div>
-
-      <div
-        className="ci-scorecard"
-        role="table"
-        aria-label={t('catalogueIntelligence.pilot.scorecardAlt')}
-      >
-        <div className="ci-scrow ci-scrow-schead" role="row">
-          <span>{t('catalogueIntelligence.pilot.scorecardHead.prove')}</span>
-          <span>{t('catalogueIntelligence.pilot.scorecardHead.check')}</span>
-          <span />
-          <span />
+        <div className="ci-stages">
+          {STAGES.map((key) => (
+            <div key={key} className="ci-stage">
+              <span className="ci-n">{t(`catalogueIntelligence.pilot.stages.${key}.n`)}</span>
+              <h3>{t(`catalogueIntelligence.pilot.stages.${key}.title`)}</h3>
+              <p>{t(`catalogueIntelligence.pilot.stages.${key}.copy`)}</p>
+            </div>
+          ))}
         </div>
-        {MEASURES.map(({ key, extra }) => (
-          <div
-            key={key}
-            className={`ci-scrow${extra ? ' ci-scrow-extra' : ''}`}
-            role="row"
-          >
-            <span className="ci-m uppercase">{t(`catalogueIntelligence.pilot.measures.${key}.label`)}</span>
-            <p>{t(`catalogueIntelligence.pilot.measures.${key}.check`)}</p>
-            <p />
-            <p className="ci-lbl-dim">{t(`catalogueIntelligence.pilot.measures.${key}.evidence`)}</p>
-          </div>
-        ))}
-      </div>
 
-      <p className="ci-interp mt-[var(--px-28)]">
-        <b>{t('catalogueIntelligence.pilot.trustBold')}</b>{' '}
-        {t('catalogueIntelligence.pilot.trustBody')}{' '}
-        <Link className="ci-bracket uppercase" to="/trust">
-          {t('catalogueIntelligence.pilot.trustLink')}
-        </Link>
-      </p>
+        <div className="ci-scorecard">
+          {MEASURES.map((key) => (
+            <div key={key} className="ci-sr">
+              <span className="ci-m">{t(`catalogueIntelligence.pilot.score.${key}`)}</span>
+              <span className="ci-w">{t(`catalogueIntelligence.pilot.score.w${key.slice(1)}`)}</span>
+            </div>
+          ))}
+        </div>
+        <p className="ci-scorecard-note">{t('catalogueIntelligence.pilot.scoreNote')}</p>
+      </div>
     </section>
   );
 }

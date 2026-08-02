@@ -1,19 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { CiVoidBackground } from '@/sections/catalogue-intelligence/CiVoidBackground.tsx';
-import { CiActivationHero } from '@/sections/catalogue-intelligence/CiActivationHero.tsx';
-import { CiWorkflowLine } from '@/sections/catalogue-intelligence/CiWorkflowLine.tsx';
-import { CiFindConsole } from '@/sections/catalogue-intelligence/CiFindConsole.tsx';
-import { CiAttentionMap } from '@/sections/catalogue-intelligence/CiAttentionMap.tsx';
-import { CiCampaignWorkspace } from '@/sections/catalogue-intelligence/CiCampaignWorkspace.tsx';
-import { CiTeamLenses } from '@/sections/catalogue-intelligence/CiTeamLenses.tsx';
+import { CiDefsProvider, CiSharedDefs } from '@/sections/catalogue-intelligence/CiSharedDefs.tsx';
+import { CiHero } from '@/sections/catalogue-intelligence/CiHero.tsx';
+import { CiProduct } from '@/sections/catalogue-intelligence/CiProduct.tsx';
+import { CiFlow } from '@/sections/catalogue-intelligence/CiFlow.tsx';
+import { CiTrackIntel } from '@/sections/catalogue-intelligence/CiTrackIntel.tsx';
+import { CiValue } from '@/sections/catalogue-intelligence/CiValue.tsx';
+import { CiPartner } from '@/sections/catalogue-intelligence/CiPartner.tsx';
+import { CiBoundary } from '@/sections/catalogue-intelligence/CiBoundary.tsx';
 import { CiPilot } from '@/sections/catalogue-intelligence/CiPilot.tsx';
-import { CiFinalCta } from '@/sections/catalogue-intelligence/CiFinalCta.tsx';
-import { type FieldState, type Match } from '@/sections/catalogue-intelligence/ciEngine.ts';
+import { CiClosing } from '@/sections/catalogue-intelligence/CiClosing.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.png';
 import voidGrainLight from '@/assets/void-field/void-grain-light.png';
 import '@/sections/catalogue-intelligence/catalogue-intelligence.css';
+
+const META_DESCRIPTION =
+  'Resomix processes authorised catalogue recordings with PYXIS-1, creates a sonic profile for each track and makes the catalogue searchable through reference-based similarity.';
 
 export default function CatalogueIntelligencePage() {
   const motionOn = useMemo(() => {
@@ -21,74 +25,90 @@ export default function CatalogueIntelligencePage() {
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, []);
 
-  const [fieldState, setFieldState] = useState<FieldState>({ ref: 'a', sel: 0 });
-  const [shortlist, setShortlist] = useState<Match[]>([]);
-
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = 'Catalogue Intelligence — Make Every Track Discoverable by Sound | Resomix';
+    document.title =
+      'Catalogue Intelligence — Make Your Catalogue Discoverable by Sound | Resomix';
+
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    const previousContent = meta?.getAttribute('content') ?? null;
+    const created = !meta;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'description');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', META_DESCRIPTION);
+
     return () => {
       document.title = previousTitle;
+      if (created) {
+        meta?.remove();
+      } else if (previousContent !== null) {
+        meta?.setAttribute('content', previousContent);
+      }
     };
   }, []);
 
-  // Draw-once motion — IO on HTML containers, not SVG paths
+  // Draw-once reveal: sections go .live on first intersection, then unobserve.
+  // Reduced motion (or no IO) resolves straight to the finished state.
   useEffect(() => {
-    if (!motionOn || !('IntersectionObserver' in window)) return;
+    const sections = Array.from(document.querySelectorAll('.ci-page .ci-section'));
+    if (!sections.length) return;
 
-    const containers: Element[] = [];
-    document.querySelectorAll('.ci-page .ci-draw').forEach((p) => {
-      try {
-        const path = p as SVGPathElement;
-        const len = path.getTotalLength ? Math.ceil(path.getTotalLength()) : 800;
-        path.style.strokeDasharray = String(len);
-        path.style.setProperty('--len', String(len));
-        path.style.strokeDashoffset = String(len);
-        path.classList.add('ci-armed');
-      } catch {
-        /* non-path */
-      }
-      const host =
-        p.closest('.ci-field, .ci-flowline-wrap, .ci-lens-viz') || p.closest('section');
-      if (host && !containers.includes(host)) containers.push(host);
-    });
-
-    const settle = (path: Element) => {
-      const el = path as SVGPathElement;
-      el.style.strokeDasharray = 'none';
-      el.style.strokeDashoffset = '0';
-    };
+    if (!motionOn || !('IntersectionObserver' in window)) {
+      sections.forEach((s) => s.classList.add('live'));
+      return;
+    }
 
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((en) => {
-          if (!en.isIntersecting && en.intersectionRatio <= 0) return;
+          if (!en.isIntersecting) return;
+          en.target.classList.add('live');
           io.unobserve(en.target);
-          en.target.querySelectorAll('.ci-draw').forEach((path) => {
-            path.classList.add('ci-play');
-            path.addEventListener('animationend', () => settle(path), { once: true });
-            setTimeout(() => settle(path), 1400);
-          });
         });
       },
-      { threshold: [0, 0.01] },
+      { threshold: 0.15 },
     );
-
-    containers.forEach((c) => io.observe(c));
+    sections.forEach((s) => io.observe(s));
     return () => io.disconnect();
-  }, [motionOn, fieldState]);
-
-  const scrollToHow = useCallback(() => {
-    document.getElementById('ci-how')?.scrollIntoView({
-      behavior: motionOn ? 'smooth' : 'auto',
-      block: 'start',
-    });
   }, [motionOn]);
 
-  const handleAddToShortlist = useCallback((match: Match) => {
-    setShortlist((prev) => (prev.some((p) => p.t === match.t) ? prev : [...prev, match]));
-  }, []);
+  // Hero two-plane parallax, rAF-throttled and gated on motion.
+  // SideLines mounts a desktop and a mobile copy of the page, so each hero is
+  // measured against its own rect — the hidden copy simply resolves to zero.
+  useEffect(() => {
+    if (!motionOn) return;
+    const heroes = Array.from(document.querySelectorAll<HTMLElement>('.ci-page .ci-hero'));
+    if (!heroes.length) return;
+
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        heroes.forEach((hero) => {
+          const r = hero.getBoundingClientRect();
+          if (!r.height) return;
+          const p = Math.max(
+            -1,
+            Math.min(1, (r.top + r.height / 2 - window.innerHeight / 2) / window.innerHeight),
+          );
+          hero.querySelectorAll<SVGElement>('.ci-plx').forEach((node) => {
+            const f = parseFloat(node.getAttribute('data-plx') || '0');
+            node.style.transform = `translateY(${(p * f * -22).toFixed(1)}px)`;
+          });
+        });
+        ticking = false;
+      });
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [motionOn]);
 
   const assetVars = {
     '--ci-plate-dark': `url(${voidFieldDark})`,
@@ -99,25 +119,24 @@ export default function CatalogueIntelligencePage() {
 
   return (
     <div
-      className={`ci-page relative text-[var(--color-primary)] font-helvetica ${motionOn ? 'ci-motion-on' : 'ci-motion-reduced'}`}
+      className={`ci-page relative font-helvetica font-light ${motionOn ? 'ci-motion-on' : 'ci-motion-reduced'}`}
       style={assetVars}
     >
       <CiVoidBackground />
-
-      <div className="ci-frame">
-        <CiActivationHero
-          fieldState={fieldState}
-          onFieldStateChange={setFieldState}
-          onScrollToHow={scrollToHow}
-        />
-        <CiWorkflowLine />
-        <CiFindConsole shortlist={shortlist} onAddToShortlist={handleAddToShortlist} />
-        <CiAttentionMap />
-        <CiCampaignWorkspace shortlist={shortlist} />
-        <CiTeamLenses />
-        <CiPilot />
-        <CiFinalCta />
-      </div>
+      <CiDefsProvider>
+        <CiSharedDefs />
+        <main>
+          <CiHero />
+          <CiProduct />
+          <CiFlow />
+          <CiTrackIntel />
+          <CiValue />
+          <CiPartner />
+          <CiBoundary />
+          <CiPilot />
+          <CiClosing />
+        </main>
+      </CiDefsProvider>
     </div>
   );
 }
