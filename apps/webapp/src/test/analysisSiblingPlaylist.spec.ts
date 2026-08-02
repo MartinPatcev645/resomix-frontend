@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 /**
@@ -30,14 +30,17 @@ vi.mock('@resomix/api-client', async (importOriginal) => {
 
 const ANALYSIS_ID = 'analysis-uuid';
 const PLAYLIST_UUID = 'sibling-playlist-uuid';
+/** Mirrors SIBLING_POLL_INTERVAL_MS in the hook. */
+const SIBLING_INTERVAL_MS = 2500;
 
-const succeeded = (playlistUuid?: string) => ({
+const succeeded = (sibling: string, playlistUuid?: string) => ({
   success: true,
   data: {
     state: 'succeeded',
     part1_ready: true,
     progress: { percent: 100 },
     track_uuid: 'track-uuid',
+    sibling_playlist_state: sibling,
     ...(playlistUuid ? { playlist_uuid: playlistUuid } : {}),
   },
 });
@@ -59,49 +62,85 @@ beforeEach(() => {
 
 describe('sibling similarity playlist after an analysis completes', () => {
   it('picks up a playlist that is paired only after the job succeeds', async () => {
-    // The job is already done on the first poll and has no sibling yet — this is the case that
-    // used to leave the CTA dead forever.
+    // Job already done, sibling still generating — the case that used to leave the CTA dead.
     getAnalysisStatus
-      .mockResolvedValueOnce(succeeded())
-      .mockResolvedValue(succeeded(PLAYLIST_UUID));
+      .mockResolvedValueOnce(succeeded('pending'))
+      .mockResolvedValue(succeeded('ready', PLAYLIST_UUID));
 
     const { result } = await loadAnalysis();
 
-    expect(result.current.status).toBe('done');
+    await waitFor(() => expect(result.current.status).toBe('done'));
     expect(result.current.playlistUuid).toBeNull();
 
-    await waitFor(() => expect(result.current.playlistUuid).toBe(PLAYLIST_UUID), { timeout: 8000 });
+    await waitFor(() => expect(result.current.playlistUuid).toBe(PLAYLIST_UUID), { timeout: 9000 });
     await waitFor(() => expect(result.current.playlistPending).toBe(false));
-  }, 15000);
+  }, 20000);
 
-  it('reports pending while it is still watching, so the CTA can show a loader', async () => {
-    getAnalysisStatus.mockResolvedValue(succeeded()); // never pairs during the test
+  it('reports pending while the server says the sibling is still generating', async () => {
+    getAnalysisStatus.mockResolvedValue(succeeded('pending'));
 
     const { result } = await loadAnalysis();
 
     await waitFor(() => expect(result.current.playlistPending).toBe(true));
     expect(result.current.playlistUuid).toBeNull();
-  }, 15000);
+  }, 20000);
 
   it('does not watch at all when the playlist arrived with the analysis', async () => {
-    getAnalysisStatus.mockResolvedValue(succeeded(PLAYLIST_UUID));
+    getAnalysisStatus.mockResolvedValue(succeeded('ready', PLAYLIST_UUID));
 
     const { result } = await loadAnalysis();
 
-    expect(result.current.playlistUuid).toBe(PLAYLIST_UUID);
-    // No follow-up poll — the id was already there, so the CTA is live immediately.
+    await waitFor(() => expect(result.current.playlistUuid).toBe(PLAYLIST_UUID));
     expect(result.current.playlistPending).toBe(false);
-  }, 15000);
+  }, 20000);
 
-  it('stops watching when the run is superseded by a reset', async () => {
-    getAnalysisStatus.mockResolvedValue(succeeded());
+  /**
+   * The whole point of the explicit state. "No playlist_uuid" alone cannot distinguish these from
+   * "still coming", which is what made the old blind poll spin for its full timeout and hold a
+   * loader on a button that was never going to enable.
+   */
+  it.each(['unavailable', 'failed'])(
+    'never starts a watch when the server reports %s',
+    async (state) => {
+      getAnalysisStatus.mockResolvedValue(succeeded(state));
+
+      const { result } = await loadAnalysis();
+
+      await waitFor(() => expect(result.current.status).toBe('done'));
+      expect(result.current.playlistPending).toBe(false);
+      expect(result.current.playlistUuid).toBeNull();
+
+      // And it stays that way — no background poll quietly running.
+      const callsAfterLoad = getAnalysisStatus.mock.calls.length;
+      await new Promise((r) => setTimeout(r, SIBLING_INTERVAL_MS + 800));
+      expect(getAnalysisStatus.mock.calls.length).toBe(callsAfterLoad);
+      expect(result.current.playlistPending).toBe(false);
+    },
+    20000,
+  );
+
+  it('stops watching as soon as the sibling turns terminal', async () => {
+    getAnalysisStatus
+      .mockResolvedValueOnce(succeeded('pending'))
+      .mockResolvedValue(succeeded('unavailable'));
 
     const { result } = await loadAnalysis();
     await waitFor(() => expect(result.current.playlistPending).toBe(true));
 
-    result.current.reset();
+    // Ends on the state, not on the 3-minute backstop.
+    await waitFor(() => expect(result.current.playlistPending).toBe(false), { timeout: 9000 });
+    expect(result.current.playlistUuid).toBeNull();
+  }, 20000);
+
+  it('stops watching when the run is superseded by a reset', async () => {
+    getAnalysisStatus.mockResolvedValue(succeeded('pending'));
+
+    const { result } = await loadAnalysis();
+    await waitFor(() => expect(result.current.playlistPending).toBe(true));
+
+    act(() => result.current.reset());
 
     await waitFor(() => expect(result.current.playlistPending).toBe(false));
     expect(result.current.playlistUuid).toBeNull();
-  }, 15000);
+  }, 20000);
 });
