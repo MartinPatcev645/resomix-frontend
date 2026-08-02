@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useFirstVisit, useResponsive, useAuthInit, useSilktide } from "@resomix/hooks";
+import { useFirstVisit, useAuthInit, useSilktide } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, SineWaves, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
@@ -9,8 +9,7 @@ import { AppBackground } from "@/components/Layout/AppBackground.tsx";
 import { BetaAuthRedirect } from "@/components/BetaAuthRedirect.tsx";
 // Lazy-load pages directly for proper code-splitting
 const HomePage = lazy(() => import("@/pages/HomePage.tsx"));
-const AboutPage = lazy(() => import("@/pages/desktop/AboutPage.tsx").then(m => ({ default: m.AboutPage })));
-const AboutMobile = lazy(() => import("@/pages/mobile/AboutMobile.tsx").then(m => ({ default: m.AboutMobile })));
+const AboutPage = lazy(() => import("@/pages/AboutPage.tsx"));
 const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
 const PartnersPage = lazy(() => import("@/pages/PartnersPage.tsx"));
 const PricingPage = lazy(() => import("@/pages/PricingPage.tsx"));
@@ -33,17 +32,6 @@ const SubscribePage = lazy(() => import("@/pages/SubscribePage.tsx"));
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
-
-function UsedAboutPage() {
-  const { isDesktop } = useResponsive();
-
-  return (
-    <>
-      {isDesktop ? <AboutPage /> : <AboutMobile />}
-    </>
-  );
-}
-
 
 function App() {
   useSilktide(consentConfig);
@@ -109,7 +97,7 @@ function App() {
           <Route element={<LandingLayout />}>
             {/* Optional Auth Routes */}
             <Route path="/" element={<HomePage />} />
-            <Route path="/about" element={<UsedAboutPage />} />
+            <Route path="/about" element={<AboutPage />} />
             <Route path="/partners" element={<PartnersPage />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/product" element={<ProductPage />} />

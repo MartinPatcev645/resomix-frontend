@@ -1,8 +1,3 @@
-import { AboutPage } from "./desktop/AboutPage.tsx";
-
-
-import { AboutMobile } from "./mobile/AboutMobile.tsx";
-
 import InfoPage from "./InfoPage.tsx";
 import AuthPage from "./AuthPage.tsx";
 import TestPage from "./TestPage.tsx";
@@ -24,11 +19,11 @@ import DjsPage from "./DjsPage.tsx";
 import MusicCuratorsPage from "./MusicCuratorsPage.tsx";
 import ProducersPage from "./ProducersPage.tsx";
 import HomePage from "./HomePage.tsx";
+import AboutPage from "./AboutPage.tsx";
 
 export {
     HomePage,
     AboutPage,
-    AboutMobile,
     InfoPage,
     AuthPage,
     TestPage,
