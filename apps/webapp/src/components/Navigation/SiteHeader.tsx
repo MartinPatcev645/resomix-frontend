@@ -102,6 +102,11 @@ function NavGroupList({
                       pathname={currentPath}
                       hash={hash}
                       onNavigate={onNavigate}
+                      // Selecting a destination must dismiss the panel — without this the
+                      // page changed underneath while the dropdown stayed open over it.
+                      // NavPanelContent already calls onClose; only the desktop header
+                      // never passed one (the mobile drawer did, which is why it closed).
+                      onClose={() => megaMenu.closeAll(false)}
                       noteId={noteId}
                     />
                   </div>
