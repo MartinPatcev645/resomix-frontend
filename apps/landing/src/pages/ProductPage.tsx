@@ -1,20 +1,19 @@
 import { useEffect, useMemo } from 'react';
-import { VoidFieldBackground } from '@/sections/product/VoidFieldBackground.tsx';
-import { WovenSignalHero } from '@/sections/product/WovenSignalHero.tsx';
-import { PlatformOverview } from '@/sections/product/PlatformOverview.tsx';
-import { SimilarityProof } from '@/sections/product/SimilarityProof.tsx';
-import { AnalysisFragment } from '@/sections/product/AnalysisFragment.tsx';
-import { CatalogueSchematic } from '@/sections/product/CatalogueSchematic.tsx';
-import { ApiFlowBlock } from '@/sections/product/ApiFlowBlock.tsx';
-import { AudienceRouter } from '@/sections/product/AudienceRouter.tsx';
-import { CtaSplit } from '@/sections/product/CtaSplit.tsx';
-import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
-import voidFieldLight from '@/assets/void-field/void-field-light.webp';
-import voidGrainDark from '@/assets/void-field/void-grain-dark.png';
-import voidGrainLight from '@/assets/void-field/void-grain-light.png';
-import voidStructureProduct from '@/assets/void-field/void-structure-product.svg';
-import voidStructureMobile from '@/assets/void-field/void-structure-mobile.svg';
+import { PoDefsProvider, PoSharedDefs } from '@/sections/product/PoSharedDefs.tsx';
+import { PoHero } from '@/sections/product/PoHero.tsx';
+import { PoProducts } from '@/sections/product/PoProducts.tsx';
+import { PoProfile } from '@/sections/product/PoProfile.tsx';
+import { PoDiscovery } from '@/sections/product/PoDiscovery.tsx';
+import { PoAnatomy } from '@/sections/product/PoAnatomy.tsx';
+import { PoCatalogue } from '@/sections/product/PoCatalogue.tsx';
+import { PoApi } from '@/sections/product/PoApi.tsx';
+import { PoPathways } from '@/sections/product/PoPathways.tsx';
+import { PoTrust } from '@/sections/product/PoTrust.tsx';
+import { PoClosing } from '@/sections/product/PoClosing.tsx';
 import '@/sections/product/product.css';
+
+const META_DESCRIPTION =
+  'Resomix uses PYXIS-1 to help you find sonically related tracks, understand one recording in greater detail, or make an authorised catalogue searchable by sound.';
 
 export default function ProductPage() {
   const motionOn = useMemo(() => {
@@ -22,64 +21,103 @@ export default function ProductPage() {
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, []);
 
-  // Interim SEO
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = 'Product — Resomix';
+    document.title = 'Product — Sonic Routing Desk | Resomix';
+
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    const previousContent = meta?.getAttribute('content') ?? null;
+    const created = !meta;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'description');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', META_DESCRIPTION);
+
     return () => {
       document.title = previousTitle;
+      if (created) {
+        meta?.remove();
+      } else if (previousContent !== null) {
+        meta?.setAttribute('content', previousContent);
+      }
     };
   }, []);
 
-  const assetVars = {
-    '--product-plate-dark': `url(${voidFieldDark})`,
-    '--product-plate-light': `url(${voidFieldLight})`,
-    '--product-grain-dark': `url(${voidGrainDark})`,
-    '--product-grain-light': `url(${voidGrainLight})`,
-    '--product-structure-product': `url(${voidStructureProduct})`,
-    '--product-structure-mobile': `url(${voidStructureMobile})`,
-  } as React.CSSProperties;
+  // Draw-once reveal: sections go .live on first intersection, then unobserve.
+  useEffect(() => {
+    const sections = Array.from(document.querySelectorAll('.po-page .po-section'));
+    if (!sections.length) return;
+
+    if (!motionOn || !('IntersectionObserver' in window)) {
+      sections.forEach((s) => s.classList.add('live'));
+      return;
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((en) => {
+          if (!en.isIntersecting) return;
+          en.target.classList.add('live');
+          io.unobserve(en.target);
+        });
+      },
+      { threshold: 0.15 },
+    );
+    sections.forEach((s) => io.observe(s));
+    return () => io.disconnect();
+  }, [motionOn]);
+
+  // Optional hero parallax for .po-plx (preview may have none — safe no-op).
+  useEffect(() => {
+    if (!motionOn) return;
+    const heroes = Array.from(document.querySelectorAll<HTMLElement>('.po-page .po-hero'));
+    if (!heroes.length) return;
+
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        heroes.forEach((hero) => {
+          const r = hero.getBoundingClientRect();
+          if (!r.height) return;
+          const p = Math.max(
+            -1,
+            Math.min(1, (r.top + r.height / 2 - window.innerHeight / 2) / window.innerHeight),
+          );
+          hero.querySelectorAll<SVGElement>('.po-plx').forEach((node) => {
+            const f = parseFloat(node.getAttribute('data-plx') || '0');
+            node.style.transform = `translateY(${(p * f * -22).toFixed(1)}px)`;
+          });
+        });
+        ticking = false;
+      });
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [motionOn]);
 
   return (
-    <div
-      className={`product-page relative text-[var(--color-primary)] font-helvetica ${motionOn ? 'product-motion-on' : 'product-motion-reduced'}`}
-      style={assetVars}
-    >
-      <VoidFieldBackground />
-
-      <div className="product-frame">
-        <section className="product-section product-section-hero">
-          <WovenSignalHero motionOn={motionOn} />
-        </section>
-
-        <section className="product-section">
-          <PlatformOverview />
-        </section>
-
-        <section className="product-section">
-          <SimilarityProof />
-        </section>
-
-        <section className="product-section">
-          <AnalysisFragment motionOn={motionOn} />
-        </section>
-
-        <section className="product-section">
-          <CatalogueSchematic />
-        </section>
-
-        <section className="product-section">
-          <ApiFlowBlock />
-        </section>
-
-        <section className="product-section">
-          <AudienceRouter />
-        </section>
-
-        <section className="product-section">
-          <CtaSplit />
-        </section>
-      </div>
+    <div className={`po-page relative font-helvetica font-light ${motionOn ? 'po-motion-on' : 'po-motion-reduced'}`}>
+      <PoDefsProvider>
+        <PoSharedDefs />
+        <main>
+          <PoHero />
+          <PoProducts />
+          <PoProfile />
+          <PoDiscovery />
+          <PoAnatomy />
+          <PoCatalogue />
+          <PoApi />
+          <PoPathways />
+          <PoTrust />
+          <PoClosing />
+        </main>
+      </PoDefsProvider>
     </div>
   );
 }
