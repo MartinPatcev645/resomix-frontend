@@ -13,7 +13,10 @@ import {
   NavPanelContent,
   CaretIcon,
   AccountIcon,
-  buildProfileMenuItems,
+  AnalysisIcon,
+  CataloguePilotIcon,
+  LibraryIcon,
+  LogoutIcon,
 } from './NavMenuContent.tsx';
 import { openCookiePreferences, isCookiePreferencesAvailable } from './cookiePreferences.ts';
 import { navT } from './navCopy.ts';
@@ -123,20 +126,6 @@ export function MobileDrawer({
       onClose();
     }
   }, [onClose, onNavigate]);
-
-  const profileMenuItems = buildProfileMenuItems({
-    onNavigate: (path) => {
-      onNavigate(path);
-      onClose();
-    },
-    onProfileClick: onProfileClick
-      ? () => {
-          onProfileClick();
-          onClose();
-        }
-      : undefined,
-    onLogout: handleLogout,
-  });
 
   const handleNavigate = (path: string) => {
     onNavigate(path);
@@ -271,103 +260,86 @@ export function MobileDrawer({
             </ul>
           </div>
 
-          {isAuthenticated ? (
-            <div className="nav-drawer-app-links">
-              <a
-                className="nav-drawer-acct"
-                href="/library"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleNavigate('/library');
-                }}
-              >
-                {navT('nav.appLinks.library')}
-              </a>
-              <a
-                className="nav-drawer-acct"
-                href="/analysis"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleNavigate('/analysis');
-                }}
-              >
-                {navT('nav.appLinks.analysis')}
-              </a>
-            </div>
-          ) : null}
-
-          {/* Feedback is the drawer's one accent-filled action. */}
-          <button
-            type="button"
-            className="nav-drawer-btn nav-drawer-btn--primary"
-            id="nav-drawer-feedback-button"
-            onClick={() => {
-              showFeedbackForm();
-              onClose();
-            }}
-            style={{ marginTop: '1rem' }}
-          >
-            {navT('nav.cta.feedback')}
-          </button>
-
-          <div className="nav-drawer-cta">
-            <a
-              className="nav-drawer-btn nav-drawer-btn--secondary"
-              href={CATALOGUE_PILOT_HREF}
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.href = CATALOGUE_PILOT_HREF;
-                onClose();
-              }}
-            >
-              {navT('nav.cta.cataloguePilot')}
-            </a>
-          </div>
-
-          {/* Signed in: the account items laid out flat. A dropdown here would be a menu inside an
-              already-open menu, and mobile has the room to just show them. Logout is accent-
-              outlined — clearly the accent action, without competing with the primary above. */}
-          {isAuthenticated ? (
-            <div className="nav-drawer-account">
-              {profileMenuItems.map((item) => {
-                const isLogout = item.id === 'nav-logout-menu-item';
-                const cls = `nav-drawer-btn ${isLogout ? 'nav-drawer-btn--accent' : 'nav-drawer-btn--secondary'}`;
-                if (item.href && !isLogout) {
-                  return (
+          {/* App destinations + the pilot share the utility grid's two-column layout, so the
+              drawer has ONE link style. These used to appear twice: as this list AND again as a
+              column of icon buttons below the feedback CTA, pointing at the same routes. */}
+          <div className="nav-util nav-util--app">
+            <ul>
+              {isAuthenticated ? (
+                <>
+                  <li>
                     <a
-                      key={item.id}
-                      id={item.id}
-                      className={cls}
-                      href={item.href}
+                      href="/library"
                       onClick={(e) => {
                         e.preventDefault();
-                        item.onClick();
-                        onClose();
+                        handleNavigate('/library');
                       }}
                     >
-                      <span className="nav-acct" aria-hidden="true">{item.icon}</span>
-                      {item.label}
+                      <span className="nav-util-icon" aria-hidden="true">
+                        <LibraryIcon />
+                      </span>
+                      {navT('nav.appLinks.library')}
                     </a>
-                  );
-                }
-                return (
-                  <button
-                    key={item.id}
-                    id={item.id}
-                    type="button"
-                    className={cls}
-                    onClick={() => {
-                      item.onClick();
-                      onClose();
-                    }}
-                  >
-                    <span className="nav-acct" aria-hidden="true">{item.icon}</span>
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
+                  </li>
+                  <li>
+                    <a
+                      href="/analysis"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleNavigate('/analysis');
+                      }}
+                    >
+                      <span className="nav-util-icon" aria-hidden="true">
+                        <AnalysisIcon />
+                      </span>
+                      {navT('nav.appLinks.analysis')}
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="/profile"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // Honour the host's profile handler (WebLayout routes it) when provided,
+                        // exactly as the old profile menu item did.
+                        if (onProfileClick) {
+                          onProfileClick();
+                          onClose();
+                        } else {
+                          handleNavigate('/profile');
+                        }
+                      }}
+                    >
+                      <span className="nav-util-icon" aria-hidden="true">
+                        <AccountIcon />
+                      </span>
+                      {navT('nav.appLinks.profile')}
+                    </a>
+                  </li>
+                </>
+              ) : null}
+              <li>
+                <a
+                  href={CATALOGUE_PILOT_HREF}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = CATALOGUE_PILOT_HREF;
+                    onClose();
+                  }}
+                >
+                  <span className="nav-util-icon" aria-hidden="true">
+                    <CataloguePilotIcon />
+                  </span>
+                  {navT('nav.cta.cataloguePilot')}
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Signed out only: the way in. Sits ABOVE the feedback CTA — below it, an account
+              action reads as part of the footer and gets mistaken for the primary button. Signed-in destinations live in the grid above, and
+              logout is on the header's account button (mobile shows only Logout there). */}
+          {!isAuthenticated && (
             <div className="nav-drawer-account">
               <a
                 className="nav-drawer-btn nav-drawer-btn--secondary"
@@ -384,6 +356,39 @@ export function MobileDrawer({
               </a>
             </div>
           )}
+
+          {/* Feedback is the drawer's one accent-filled action. */}
+          <button
+            type="button"
+            className="nav-drawer-btn nav-drawer-btn--primary"
+            id="nav-drawer-feedback-button"
+            onClick={() => {
+              showFeedbackForm();
+              onClose();
+            }}
+            style={{ marginTop: '1rem' }}
+          >
+            {navT('nav.cta.feedback')}
+          </button>
+
+          {/* Signed in: logout closes the drawer's list of actions. Kept out of the link grid
+              above — it is not a destination, and it should not sit a thumb-slip from Profile. */}
+          {isAuthenticated && (
+            <div className="nav-drawer-account">
+              <button
+                type="button"
+                id="nav-logout-menu-item"
+                className="nav-drawer-btn nav-drawer-btn--accent"
+                onClick={handleLogout}
+              >
+                <span className="nav-acct" aria-hidden="true">
+                  <LogoutIcon />
+                </span>
+                {navT('nav.logout')}
+              </button>
+            </div>
+          )}
+
         </div>
 
         {showScrollCue && (

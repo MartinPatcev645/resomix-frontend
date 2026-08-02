@@ -958,6 +958,22 @@ button.nav-cta-primary:hover {
   text-align: left;
 }
 
+/* Bare glyph for the app-destination links — deliberately NOT .nav-acct, which draws the
+   circular bezel used by the header/account buttons. */
+.nav-util-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  opacity: 0.8;
+}
+
+.nav-util a:hover .nav-util-icon {
+  opacity: 1;
+}
+
 .nav-util a:hover,
 .nav-util button:not(:disabled):hover {
   color: #ffffff;

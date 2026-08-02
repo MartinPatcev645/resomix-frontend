@@ -246,22 +246,34 @@ export function AccountIcon() {
   );
 }
 
-const LibraryIcon = () => (
+export const LibraryIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" className="w-full h-full" aria-hidden="true">
     <path d="M4 4h2v16H4V4zm5 0h2v16H9V4zm4.5 0h2l3.5 16h-2l-3.5-16z" fill="currentColor" />
   </svg>
 );
 
-const AnalysisIcon = () => (
+export const AnalysisIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" className="w-full h-full" aria-hidden="true">
     <path d="M3 3v18h18M7 17V13m4 4V9m4 8v-6m4 6V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
-const LogoutIcon = () => (
+export const LogoutIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" className="w-full h-full" aria-hidden="true">
     <path
       d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14 5-5-5-5m5 5H9"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+export const CataloguePilotIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" className="w-full h-full" aria-hidden="true">
+    <path
+      d="M12 3 3 7.5 12 12l9-4.5L12 3zM3 12l9 4.5 9-4.5M3 16.5 12 21l9-4.5"
       stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"

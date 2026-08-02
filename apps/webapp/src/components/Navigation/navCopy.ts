@@ -80,6 +80,7 @@ const NAV_COPY: Record<string, string> = {
   'nav.utility.cookie-settings': 'Cookie Settings',
   'nav.external': 'external',
   'nav.account': 'Account',
+  'nav.logout': 'Logout',
   'nav.openMenu': 'Open menu',
   'nav.closeMenu': 'Close menu',
   'nav.drawerLabel': 'Site navigation',
@@ -92,6 +93,7 @@ const NAV_COPY: Record<string, string> = {
   'nav.legalDocumentsAria': 'Legal Documents — opens in a new tab',
   'nav.appLinks.library': 'Library',
   'nav.appLinks.analysis': 'Analysis',
+  'nav.appLinks.profile': 'Profile',
 };
 
 export function navT(key: string): string {
