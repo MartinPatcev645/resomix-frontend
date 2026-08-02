@@ -83,7 +83,17 @@ class HlsPlaylistController implements AudioController {
   // `hlsAudio`) or 'preview' (a catalogue track, a plain <audio> src from the Apple Music preview_url
   // on `previewAudio`). Drives which element `audio` (below) resolves to.
   private mode: 'hls' | 'preview' = 'hls';
-  private isPlaylistLoaded = false;
+  // Which playlist the attached HLS stream belongs to — NOT a bare "something is loaded" flag.
+  // As a boolean this could only be cleared by unload(), i.e. by the AudioProvider unmounting, so
+  // moving between playlists without a route change (chain-discover, back/forward, any in-app
+  // playlist→playlist link) left the previous playlist's manifest attached and playing while the
+  // hero, timeline and track list all showed the new one.
+  private loadedPlaylistId: string | null = null;
+
+  /** True only when the attached stream is the CURRENT playlist's. */
+  private get isPlaylistLoaded(): boolean {
+    return this.loadedPlaylistId !== null && this.loadedPlaylistId === this.playlistId;
+  }
   // In-flight guard for ensureHlsLoaded(). `isPlaylistLoaded` only flips at the very END of that
   // method, so without this two callers that arrive while the first is still awaiting the playback
   // session BOTH build an Hls instance and attach it to the same <audio>. The later attach aborts
@@ -91,6 +101,9 @@ class HlsPlaylistController implements AudioController {
   // no further segments are ever requested. `load()` alone can produce two calls in one tick
   // (initPlaylist → ensureHlsLoaded, then load's own), so this is not a rare race.
   private hlsLoadPromise: Promise<void> | null = null;
+  /** Which playlist `hlsLoadPromise` is attaching. Sharing it across playlists would hand the new
+   *  playlist the OLD one's in-flight attach, so it never binds its own stream. */
+  private hlsLoadPromiseFor: string | null = null;
   // Bumped by unload(). An attach that was awaiting the playback session when the page tore down
   // would otherwise finish afterwards and leave a live engine on a controller we just unloaded.
   private hlsGeneration = 0;
@@ -108,6 +121,8 @@ class HlsPlaylistController implements AudioController {
   private wiredAudioEvents = false;
   private volumeUnsubscribe: (() => void) | null = null;
   private sessionPromise: Promise<any> | null = null;
+  /** Which playlist `sessionPromise` is for; sharing it across playlists returns the wrong URL. */
+  private sessionPromiseFor: string | null = null;
   private lastRestartTime = 0;
 
   // One-shot listeners we may need to tear down on a track/mode switch, so a handler queued for a
@@ -349,7 +364,7 @@ class HlsPlaylistController implements AudioController {
     this.previewAudio.removeAttribute('src');
     this.previewAudio.load();
 
-    this.isPlaylistLoaded = false;
+    this.loadedPlaylistId = null;
     this.currentTrackId = null;
     this.tracks = [];
     this.tracksIds = [];
@@ -357,6 +372,13 @@ class HlsPlaylistController implements AudioController {
     this.durations.clear();
     this.totalDuration = 0;
     this.playlistSignature = '';
+    this.playlistUrl = '';
+    this.playlistId = '';
+    this.playlistName = '';
+    this.sessionPromise = null;
+    this.sessionPromiseFor = null;
+    this.hlsLoadPromiseFor = null;
+    this.mode = 'hls';
 
     // Clear stale snippet metadata so the next upload starts clean
     usePlayerStore.setState({ snippetMetadata: {} });
@@ -483,7 +505,18 @@ class HlsPlaylistController implements AudioController {
     if (playlistData.similar_tracks?.length) this.tracks = [...this.tracks, ...playlistData.similar_tracks];
 
     this.playlistName = playlistData.playlist?.name || '';
-    this.playlistId = playlistData.playlist?.id || '';
+
+    const nextPlaylistId = playlistData.playlist?.id || '';
+    if (nextPlaylistId !== this.playlistId) {
+      // Everything URL-shaped we hold belongs to the playlist we are leaving. Dropping it here means
+      // nothing downstream can fall back to a stale manifest, whatever route the user took.
+      this.playlistUrl = '';
+      this.sessionPromise = null;
+      this.sessionPromiseFor = null;
+      this.hlsLoadPromise = null;
+      this.hlsLoadPromiseFor = null;
+    }
+    this.playlistId = nextPlaylistId;
 
     this.tracksIds = this.tracks.map(t => t.id);
     this.buildTimeline();
@@ -491,8 +524,11 @@ class HlsPlaylistController implements AudioController {
     // signature already current that call is a no-op instead of recursing.
     this.playlistSignature = this.computePlaylistSignature();
 
-    // Fast-track snippet detection for uploads by loading the manifest immediately
-    if (playlistData.queried_track?.type === 'upload' && this.playlistUrl) {
+    // Fast-track snippet detection for uploads by loading the manifest immediately. Previously
+    // gated on `this.playlistUrl` being truthy, which after any earlier playlist meant the OLD
+    // playlist's URL — the guard read as "we have a URL for this playlist" but meant "we had one
+    // once". ensureHlsLoaded() fetches its own session, so no URL is needed up front.
+    if (playlistData.queried_track?.type === 'upload') {
       this.ensureHlsLoaded();
     }
   }
@@ -539,14 +575,19 @@ class HlsPlaylistController implements AudioController {
   /** Serialised entry point — concurrent callers share one attach (see `hlsLoadPromise`). */
   private ensureHlsLoaded(): Promise<void> {
     if (this.isPlaylistLoaded) return Promise.resolve();
-    if (this.hlsLoadPromise) return this.hlsLoadPromise;
-    this.hlsLoadPromise = this.attachHlsOnce().finally(() => {
-      this.hlsLoadPromise = null;
+    if (this.hlsLoadPromise && this.hlsLoadPromiseFor === this.playlistId) return this.hlsLoadPromise;
+    const attachingFor = this.playlistId;
+    this.hlsLoadPromiseFor = attachingFor;
+    this.hlsLoadPromise = this.attachHlsOnce(attachingFor).finally(() => {
+      if (this.hlsLoadPromiseFor === attachingFor) {
+        this.hlsLoadPromise = null;
+        this.hlsLoadPromiseFor = null;
+      }
     });
     return this.hlsLoadPromise;
   }
 
-  private async attachHlsOnce(): Promise<void> {
+  private async attachHlsOnce(attachingFor: string): Promise<void> {
     if (this.isPlaylistLoaded) return;
     this.syncPlaylist();
     if (!this.tracksIds.length) return;
@@ -560,8 +601,9 @@ class HlsPlaylistController implements AudioController {
       this.flagNetworkError("session-failed");
       return;
     }
-    // Torn down while we were awaiting the session — do not attach onto a unloaded controller.
-    if (generation !== this.hlsGeneration) return;
+    // Torn down, or moved to another playlist, while we were awaiting the session. Attaching now
+    // would bind the previous playlist's manifest to a controller that has already moved on.
+    if (generation !== this.hlsGeneration || this.playlistId !== attachingFor) return;
 
     if (Hls.isSupported()) {
       // Belt and braces: never leave a previous engine attached to the element. An orphaned
@@ -612,7 +654,7 @@ class HlsPlaylistController implements AudioController {
     }
 
     this.wireAudioEvents();
-    this.isPlaylistLoaded = true;
+    this.loadedPlaylistId = attachingFor;
 
     if (!navigator.onLine) {
       this.scheduleColdRetry('offline');
@@ -766,18 +808,27 @@ class HlsPlaylistController implements AudioController {
   }
 
   private async fetchPlaybackSession() {
-    if (this.sessionPromise) return this.sessionPromise;
+    if (this.sessionPromise && this.sessionPromiseFor === this.playlistId) return this.sessionPromise;
 
-    this.sessionPromise = getPlaylistPlaybackSession(this.playlistId);
+    const requestedFor = this.playlistId;
+    this.sessionPromiseFor = requestedFor;
+    this.sessionPromise = getPlaylistPlaybackSession(requestedFor);
     try {
       const response = await this.sessionPromise;
-      this.playlistUrl = this.updatePlaylistUrlWithAuth(response.playback_url);
+      // The playlist can change while this is in flight; never let a late reply overwrite the
+      // newer playlist's URL.
+      if (this.playlistId === requestedFor) {
+        this.playlistUrl = this.updatePlaylistUrlWithAuth(response.playback_url);
+      }
       return response;
     } catch (e) {
-      this.playlistUrl = ''; // invalidate
+      if (this.playlistId === requestedFor) this.playlistUrl = ''; // invalidate
       throw e;
     } finally {
-      this.sessionPromise = null;
+      if (this.sessionPromiseFor === requestedFor) {
+        this.sessionPromise = null;
+        this.sessionPromiseFor = null;
+      }
     }
   }
 
