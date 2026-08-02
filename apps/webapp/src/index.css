@@ -156,64 +156,139 @@ body::-webkit-scrollbar {
   animation: pageFadeIn 0.3s ease-out forwards;
 }
 
-/* ─── Silktide Custom Overrides ───────────────────────── */
+/* ─── Cookie consent (Silktide) ──────────────────────────────────────────────
+   The vendor widget ships its own look; this re-skins it in the site's language:
+   solid hairline edges instead of dotted, 2px corners, Fira Code uppercase
+   controls, accent used sparingly. Kept byte-identical in both apps so the panel
+   reads the same on resomix.com and on beta.
+
+   `!important` throughout because the vendor stylesheet is injected at runtime,
+   after ours.
+
+   CONSENT PARITY: the widget puts `stcm-button-primary` on accept-all, reject-all
+   AND save alike, so a single rule keeps every choice the same visual weight.
+   That is deliberate — making "accept" louder than "reject" is a dark pattern and
+   is exactly what consent guidance prohibits. Only "save preferences", which is
+   not an accept-vs-reject choice, carries the accent.
+   ───────────────────────────────────────────────────────────────────────── */
 html #stcm-wrapper {
-  --backgroundColor: var(--color-primary-background) !important; /* #111111 */
-  --primaryColor: var(--color-primary) !important; /* #FFFFFF */
-  --textColor: #FFFFFF !important;
-  --buttonTextColor: #000000 !important;
-  --fontFamily: 'Inter', system-ui, sans-serif !important;
-  --backdropColor: rgba(0, 0, 0, 0.7) !important;
-  --borderRadius: 0.5rem !important;
+  --backgroundColor: #111111 !important;
+  --primaryColor: #ffffff !important;
+  --textColor: rgba(255, 255, 255, 0.92) !important;
+  --buttonTextColor: #ffffff !important;
+  --fontFamily: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+  --backdropColor: rgba(0, 0, 0, 0.72) !important;
+  --borderRadius: 2px !important;
 }
 
-/* Hide the floating revocation badge */
+/* The floating revocation badge stays hidden; the nav's "Cookie Settings" entry
+   opens the panel by clicking it programmatically, which works while hidden. */
 #stcm-icon {
   display: none !important;
 }
 
-/* ─── Silktide Dotted Border Styling ───────────────────────── */
-/* Banner dotted border */
-html #stcm-banner {
-  border: 1px dotted #e2e8f0 !important; /* slate-200 */
-  border-radius: 0.5rem !important;
-}
-
-/* Modal dotted border */
+html #stcm-banner,
 html #stcm-modal {
-  border: 1px dotted #e2e8f0 !important; /* slate-200 */
-  border-radius: 0.5rem !important;
+  background: #111111 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
 }
 
-/* Button styling - Default state */
-html #stcm-wrapper .stcm-button {
-  background-color: #111111 !important;
-  color: #ffffff !important;
-  border: 1px dotted #e2e8f0 !important; /* slate-200 */
-  border-radius: 0.5rem !important;
-  transition: all 0.2s ease !important;
-}
-
-html #stcm-wrapper .stcm-button-primary {
-  background-color: #111111 !important;
-  color: #ffffff !important;
-  border: 1px dotted #e2e8f0 !important;
-}
-
+/* Controls: the same treatment as the site's secondary button. */
+html #stcm-wrapper .stcm-button,
+html #stcm-wrapper .stcm-button-primary,
 html #stcm-wrapper .stcm-button-secondary {
-  background-color: #111111 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  border-radius: 2px !important;
   color: #ffffff !important;
-  border: 1px dotted #e2e8f0 !important;
+  font-family: 'Fira Code', monospace !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.09em !important;
+  text-transform: uppercase !important;
+  padding: 0.875rem 1.625rem !important;
+  min-height: 2.75rem !important;
+  cursor: pointer !important;
+  transition: color 160ms ease, border-color 160ms ease !important;
 }
 
-/* Button styling - Hover state */
 html #stcm-wrapper .stcm-button:hover,
 html #stcm-wrapper .stcm-button-primary:hover,
 html #stcm-wrapper .stcm-button-secondary:hover {
-  background-color: #ffffff !important;
-  color: #000000 !important;
-  border: 1px dotted #000000 !important; /* black dotted border on hover */
+  border-color: #ffffff !important;
+  color: #ffffff !important;
 }
+
+/* The site's hero-primary treatment: accent fill, near-black label, notched
+   top-right / bottom-left corners, hover lifting to a lighter tint.
+
+   ONLY on "save and close". The widget also puts `stcm-button-primary` on
+   accept-all and reject-all, but those two are the consent choice itself and
+   must stay identical to each other — filling one would make agreeing louder
+   than declining. Save is a neutral "apply what I picked", so it can carry the
+   emphasis without tilting the choice. */
+html #stcm-wrapper .stcm-modal-save {
+  background: #ee4a26 !important;
+  border-color: #ee4a26 !important;
+  color: #101010 !important;
+  font-weight: 600 !important;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  ) !important;
+}
+
+html #stcm-wrapper .stcm-modal-save:hover {
+  background: #f2603f !important;
+  border-color: #f2603f !important;
+  /* Hold the label dark — the shared hover tints text, which would be
+     orange-on-orange on a filled control. */
+  color: #101010 !important;
+}
+
+/* Toggles: neutral track, accent when the category is on. */
+html #stcm-modal .stcm-toggle-track {
+  background: rgba(255, 255, 255, 0.16) !important;
+}
+
+html #stcm-modal .stcm-toggle input:checked + .stcm-toggle-track {
+  background: #ee4a26 !important;
+}
+
+html #stcm-modal .stcm-toggle-thumb {
+  background: #ffffff !important;
+}
+
+html #stcm-modal .stcm-toggle-on,
+html #stcm-modal .stcm-toggle-off {
+  font-family: 'Fira Code', monospace !important;
+  font-size: 0.6875rem !important;
+  letter-spacing: 0.06em !important;
+  color: #111111 !important;
+}
+
+html #stcm-modal .stcm-modal-close {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+html #stcm-modal .stcm-modal-close:hover {
+  color: #ffffff !important;
+}
+
+html #stcm-modal footer a.stcm-credit-link {
+  color: rgba(255, 255, 255, 0.45) !important;
+  font-size: 0.6875rem !important;
+}
+
 
 @keyframes sd-pulse {
   50% {

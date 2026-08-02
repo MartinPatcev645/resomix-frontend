@@ -1657,3 +1657,34 @@
   border-color: rgba(255, 255, 255, 0.24);
   color: var(--color-text-secondary);
 }
+
+/* ─── HERO primary ───────────────────────────────────────────────────────────
+   The one filled control on the page: accent fill, near-black label, and the
+   notched top-right / bottom-left corners. Hover lifts the fill to a lighter
+   tint rather than changing the label, which would drop contrast on the fill.
+
+   Scoped to the hero because the same class is reused by the closing CTA, which
+   stays outlined — one filled call to action per page, and it is this one.
+   ──────────────────────────────────────────────────────────────────────────── */
+.dev-page #dev-hero .dev-pill-solid {
+  background: var(--color-neon-orange);
+  border-color: var(--color-neon-orange);
+  color: #101010;
+  font-weight: 600;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
+}
+
+.dev-page #dev-hero .dev-pill-solid:hover {
+  background: #f2603f;
+  border-color: #f2603f;
+  /* Hold the label dark — the canonical primary tints its text on hover, which on
+     a filled accent would be orange-on-orange. */
+  color: #101010;
+}
