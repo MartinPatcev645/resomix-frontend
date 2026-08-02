@@ -28,7 +28,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.entitlement_keys import FeatureKey
-from app.models.track_analysis_result import TrackAnalysisResult
+from app.models.track_analysis_result import (
+    SIBLING_FAILED,
+    SIBLING_PENDING,
+    SIBLING_READY,
+    SIBLING_UNAVAILABLE,
+    TrackAnalysisResult,
+)
 from app.models.user import User
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
@@ -81,8 +87,11 @@ class AnalysisResultController:
 
         The analysis screen plays the uploaded track over HLS by reusing that sibling playlist's
         seed-only manifest (same media-server segments) — carrying both ids on the status/result the
-        client already polls avoids a second lookup round-trip. Best-effort: never fails the response;
-        ``playlist_uuid`` is simply absent until the (async, best-effort) sibling playlist exists.
+        client already polls avoids a second lookup round-trip. Best-effort: never fails the response.
+
+        Also reports ``sibling_playlist_state`` so the client can distinguish "the playlist is still
+        being generated" from "there will never be one". A missing ``playlist_uuid`` alone cannot say
+        which, and the analysis screen needs to either keep waiting or stop.
         """
         if not isinstance(doc, dict) or row is None:
             return doc
@@ -95,11 +104,29 @@ class AnalysisResultController:
             )
             if playlist_uuid:
                 doc["playlist_uuid"] = playlist_uuid
+            doc["sibling_playlist_state"] = self._sibling_state(row, playlist_uuid)
         except Exception as exc:  # pragma: no cover — enrichment must never break the proxy
             logger.warning(
                 "ANALYSIS: could not attach playback refs for %s: %s", row.analysis_uuid, exc
             )
         return doc
+
+    @staticmethod
+    def _sibling_state(row: TrackAnalysisResult, playlist_uuid: Optional[str]) -> str:
+        """Resolve the sibling playlist's state for the client.
+
+        An existing playlist always wins — the recorded value can lag (the task writes it after the
+        playlist row) and a playlist we can actually open is the ground truth. Rows written before
+        the state column existed have nothing recorded, so they fall back to inferring from the
+        playlist's presence rather than being reported as forever-pending.
+        """
+        if playlist_uuid:
+            return SIBLING_READY
+        recorded = getattr(row, "sibling_playlist_state", None)
+        if recorded in (SIBLING_PENDING, SIBLING_READY, SIBLING_UNAVAILABLE, SIBLING_FAILED):
+            # 'ready' without a playlist means it was deleted since — nothing left to wait for.
+            return SIBLING_UNAVAILABLE if recorded == SIBLING_READY else recorded
+        return SIBLING_UNAVAILABLE
 
     async def get_summary(
         self,
@@ -292,7 +319,10 @@ class AnalysisResultController:
         if track_id is not None:
             await self.service.repo.async_upsert(
                 db, analysis_uuid=analysis_id, track_id=track_id,
-                user_id=user_id, partner_id=partner_id, fields={},
+                user_id=user_id, partner_id=partner_id,
+                # The sibling is enqueued a few lines below and reports its own outcome. Recording
+                # 'pending' up-front is what lets the client tell "still coming" from "never".
+                fields={"sibling_playlist_state": SIBLING_PENDING},
             )
             await db.commit()
 
@@ -391,6 +421,7 @@ class AnalysisResultController:
                 fh.write(audio_bytes)
             generate_similarity_sibling.delay(
                 audio_spool_path=spool_path,
+                analysis_id=analysis_id,
                 track_uuid=track_uuid,
                 original_filename=original_filename,
                 user_id=user_id,

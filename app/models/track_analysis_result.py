@@ -23,6 +23,14 @@ from sqlalchemy.sql import func
 from . import Base
 
 
+# Domain of `TrackAnalysisResult.sibling_playlist_state`. Shared by the controller that seeds it and
+# the Celery task that resolves it, so the two can never drift apart.
+SIBLING_PENDING = "pending"          # enqueued; still queued or running
+SIBLING_READY = "ready"              # a similarity playlist was created for this upload
+SIBLING_UNAVAILABLE = "unavailable"  # ran to completion but produced no playlist
+SIBLING_FAILED = "failed"            # the task raised
+
+
 class TrackAnalysisResult(Base):
     """Single-value analysis summary for an uploaded track (``track_analysis_results``)."""
 
@@ -80,6 +88,13 @@ class TrackAnalysisResult(Base):
     bit_rate: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), nullable=True)        # identity.bit_rate
     channels: Mapped[Optional[int]] = mapped_column(mysql.SMALLINT(unsigned=True), nullable=True)       # identity.channel_count
     codec: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)              # identity.codec
+
+    # Outcome of the best-effort similarity sibling (Celery `generate_similarity_sibling`).
+    # The client cannot infer this from `playlist_uuid` alone: a missing uuid means "still
+    # running", "failed" or "ran but produced nothing" — three states that need different UI.
+    # 'pending' on enqueue; the task writes the terminal value.
+    #   pending | ready | unavailable (ran, no playlist) | failed
+    sibling_playlist_state: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
 
     # Timestamps (UTC-naive, DB-defaulted — matches the rest of the schema)
     created_at: Mapped[DateTime] = mapped_column(

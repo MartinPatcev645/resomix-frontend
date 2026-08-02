@@ -23,7 +23,14 @@ import logging
 import os
 from typing import Optional
 
+from sqlalchemy import update
+
 from app.core.context import set_admin_context, set_current_partner_id
+from app.models.track_analysis_result import (
+    SIBLING_FAILED,
+    SIBLING_READY,
+    SIBLING_UNAVAILABLE,
+)
 from app.services.analysis_service import AnalysisService
 from database.connection import AsyncSessionLocal
 from .async_runner import run_async_task
@@ -231,6 +238,31 @@ def persist_analysis_summary(
 # The similarity sibling for the analysis-upload path: generate the similarity playlist for a
 # just-uploaded track in the background (best-effort; needs the similarity server configured).
 # --------------------------------------------------------------------------- #
+async def _record_sibling_state(analysis_id: Optional[str], state: str) -> None:
+    """Persist the sibling's outcome on the analysis row.
+
+    The client cannot infer this from the playlist's absence alone, so a missing write would leave
+    the analysis screen waiting forever. Best-effort and self-contained (its own session): failing to
+    record the outcome must never turn a generated playlist into a failed task.
+    """
+    if not analysis_id:
+        return
+    try:
+        from app.models.track_analysis_result import TrackAnalysisResult
+
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                update(TrackAnalysisResult)
+                .where(TrackAnalysisResult.analysis_uuid == analysis_id)
+                .values(sibling_playlist_state=state)
+            )
+            await db.commit()
+    except Exception as exc:  # pragma: no cover — bookkeeping must not fail the task
+        logger.warning(
+            "SIMILARITY SIBLING: could not record state '%s' for %s: %s", state, analysis_id, exc
+        )
+
+
 async def _async_generate_similarity_sibling(
     *,
     audio_spool_path: str,
@@ -238,8 +270,12 @@ async def _async_generate_similarity_sibling(
     original_filename: str,
     user_id: Optional[int],
     partner_id: Optional[int],
+    analysis_id: Optional[str] = None,
     top_k: int = 20,
 ) -> None:
+    # Assume the worst until a branch below proves otherwise, so an early return can never leave the
+    # row stuck on 'pending' (which the client reads as "keep waiting").
+    outcome = SIBLING_FAILED
     try:
         try:
             with open(audio_spool_path, "rb") as fh:
@@ -248,6 +284,7 @@ async def _async_generate_similarity_sibling(
             logger.error("SIMILARITY SIBLING: could not read spool %s: %s", audio_spool_path, exc)
             return
         if not audio_bytes:
+            outcome = SIBLING_UNAVAILABLE
             return
 
         from app.services.similarity_service import SimilarityService
@@ -278,8 +315,10 @@ async def _async_generate_similarity_sibling(
                 partner_id=partner_id,
             )
         if isinstance(result, dict) and result.get("success") is False:
+            outcome = SIBLING_FAILED
             logger.warning("SIMILARITY SIBLING: %s failed: %s", track_uuid, result.get("error"))
         elif isinstance(result, dict) and result.get("playlist"):
+            outcome = SIBLING_READY
             logger.info(
                 "SIMILARITY SIBLING: created similarity playlist %s for track %s",
                 (result.get("playlist") or {}).get("id"), track_uuid,
@@ -288,12 +327,14 @@ async def _async_generate_similarity_sibling(
             # The similarity query succeeded but no playlist row was written (no resolvable
             # similar catalog tracks, or the seed couldn't be resolved). Do NOT claim success —
             # the [upload-sim] line in the similarity_service logs has the exact counts/reason.
+            outcome = SIBLING_UNAVAILABLE
             logger.warning(
                 "SIMILARITY SIBLING: no playlist created for track %s — see the '[upload-sim]' "
                 "log line for the reason (usually: the partner has no searchable catalog/index).",
                 track_uuid,
             )
     finally:
+        await _record_sibling_state(analysis_id, outcome)
         try:
             if audio_spool_path and os.path.exists(audio_spool_path):
                 os.remove(audio_spool_path)
@@ -309,6 +350,7 @@ def generate_similarity_sibling(
     original_filename: str,
     user_id: Optional[int] = None,
     partner_id: Optional[int] = None,
+    analysis_id: Optional[str] = None,
 ) -> None:
     """Generate the similarity playlist for an analysis-uploaded track (best-effort sibling)."""
     try:
@@ -319,6 +361,7 @@ def generate_similarity_sibling(
                 original_filename=original_filename,
                 user_id=user_id,
                 partner_id=partner_id,
+                analysis_id=analysis_id,
             )
         )
     except Exception as exc:
