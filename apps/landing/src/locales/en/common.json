@@ -2115,6 +2115,162 @@
             "youChoose": "You choose"
         }
     },
+    "musicPublishers": {
+        "hero": {
+            "eyebrow": "Use case · Music publishers",
+            "h1Lead": "Turn your catalogue into a",
+            "h1Em": "living asset",
+            "body": "Music publishers face a daunting task: creating a cohesive catalog that’s both genuine and marketable, while also knowing how to make the most of every track as the collection expands.",
+            "status": "Guided partner evaluation",
+            "captionA": "Reference recording → PYXIS-1 → related works across the catalogue",
+            "captionB": "Partner-scoped · authorised audio",
+            "figureAriaD": "A reference recording passes through the open PYXIS-1 ring into the bounded publisher catalogue; related works illuminate across different catalogue periods, including an older, previously subdued work beside a recent one.",
+            "figureAriaM": "Mobile hero: reference recording, then PYXIS-1, then related publisher works illuminating inside the bounded catalogue."
+        },
+        "editorial": {
+            "p1": "That’s no trivial task, especially if you consider that your average catalog hosts tens of thousands of songs!",
+            "p2": "The good thing is that technology comes to the rescue with automating systems that help search, analyze, and optimize large catalogs in ways no human can; only these powerful engines can dive into a music collection so deeply and thoroughly, delivering results in line with what you’re looking for.",
+            "pull": "But there’s something only the finest discovery engines can do: translate emotions and moods into sonic connections.",
+            "afterQuote": "Resomix was designed to do precisely that."
+        },
+        "gap": {
+            "eyebrow": "The visibility gap",
+            "h2": "A Big Catalog Is Not Enough – When You Don’t Know It",
+            "p1": "Spending years building a catalog, only to barely touch its true potential, is the problem of every music publisher today.",
+            "p2": "The story usually goes like this: new releases are prioritized, while older songs slowly disappear from view. That’s partly intrinsic to the modern music industry, where new songs are more sought-after, whereas songs that are not old enough to be considered vintage live in this limbo where no one looks for them.",
+            "p3": "Metadata can help rediscover songs buried in a catalog, but it’s not designed to see sonic connection: it shows you songs that are tagged the same way, but that doesn’t mean they’re sonically related, or that they can fill the same purpose. What you need is an engine specifically designed to explore your entire catalogue through the sound itself.",
+            "figureAriaD": "A catalogue timeline with three zones — established workhorses, a large quiet underexposed middle, and recent visible releases. A metadata rail sits above; a sonic relationship layer sits below. One orange path bypasses the metadata grouping and connects a recent reference to a work inside the underexposed middle.",
+            "figureAriaM": "Mobile: the three catalogue zones stacked, with the metadata rail above, the sonic layer below, and one orange path connecting a recent reference to an underexposed work."
+        },
+        "activate": {
+            "eyebrow": "The engine",
+            "h2": "Activate Your Catalogue with Resomix",
+            "p1": "Resomix analyzes the structure of a song at a granular level, going deeper than any search engine and extrapolating the core of a song, its sonic soul.",
+            "p2": "This allows publishers to explore and compare compositions based on their sonic characteristics rather than simply relying on metadata. By analysing the structural, harmonic, rhythmic, timbral, and emotional qualities of a track, Resomix’s proprietary engine PYXIS-1 can uncover relationships between compositions that are not audible at first glance, but are undoubtedly there.",
+            "trust1": "Authorised audio inputs",
+            "trust2": "Partner-scoped index",
+            "trust3": "No shared pool",
+            "trust4": "Publisher retains control",
+            "figureAriaD": "Two lanes: authorised catalogue audio is profiled once by PYXIS-1 into the partner-scoped sonic index; separately, a reference recording is compared against that index and relevant represented works return. The catalogue is not reanalysed per query.",
+            "figureAriaM": "Mobile: catalogue audio is profiled once into the partner-scoped index; a reference recording is compared against it; relevant represented works return."
+        },
+        "outcomes": {
+            "leadIn": "For a music publisher, this can make it easier to:",
+            "c1": {
+                "title": "Rediscover forgotten works",
+                "text": "Bring older compositions back into light and identify new opportunities for them.",
+                "figureAria": "A quiet archive cell is illuminated by a new reference path."
+            },
+            "c2": {
+                "title": "Understand your catalogue",
+                "text": "Know the sonic identity of your collection beyond genres, tags and release dates.",
+                "figureAria": "A bounded cluster map reveals the catalogue’s sonic shape."
+            },
+            "c3": {
+                "title": "Connect artists and compositions in new ways",
+                "text": "Discover subtle relationships between works from different artists or periods.",
+                "figureAria": "Two distant periods bridged by one measured sonic relationship."
+            },
+            "c4": {
+                "title": "Enhance creative pitching",
+                "text": "Find compositions that could complement a sonic direction or opportunity.",
+                "figureAria": "A reference recording resolves into a small group of relevant represented works."
+            },
+            "c5": {
+                "title": "Identify catalogue gaps",
+                "text": "Understand which sonic territories are already well represented and where there may be room to expand.",
+                "figureAria": "An outlined empty region beside well-populated sonic clusters."
+            }
+        },
+        "crossEra": {
+            "lead": "A forgotten track and a recent release might have more in common than their release dates suggest, and combined, can create a unique and interesting collection. Resomix can help you uncover those connections and turn them into possibilities.",
+            "figureAriaD": "Two work records at opposite ends of a release-date timeline — an older underexposed work and a recent active reference — connected through a central PYXIS-1 relationship profile, with a small group of additional related works revealed around them.",
+            "figureAriaM": "Mobile: the older underexposed work and the recent active reference connected through the central PYXIS-1 relationship profile, with related works around them."
+        },
+        "closing": {
+            "eyebrow": "The publisher remains in control",
+            "p1": "The biggest value of a catalogue should be its depth, not its most recent additions or the usual “workhorses.”",
+            "p2": "By analyzing a catalogue through sound, Resomix can help publishers spend less time looking for music and more time understanding what they actually have at their disposal today. Resomix’s similarity engine is not designed to replace the knowledge and relationships that are at the heart of music publishing, but to help you amplify the value of the collection you’ve built.",
+            "closeLine": "Your catalogue is already full of possibilities. Let Resomix help you discover them.",
+            "status": "Start with a representative catalogue sample",
+            "triad": {
+                "knowledgeTitle": "Publisher knowledge",
+                "knowledgeSub": "Rights context · artist relationships · professional judgement — every decision stays here.",
+                "evidenceTitle": "PYXIS-1 sonic evidence",
+                "evidenceSub": "Measured relationships across rhythm, harmony, timbre, structure and energy.",
+                "decisionsTitle": "Informed catalogue decisions",
+                "decisionsSub": "What is reviewed, pitched or pursued — decided by your team."
+            }
+        },
+        "cta": {
+            "pilot": "Request a catalogue pilot",
+            "exploreCi": "Explore Catalogue Intelligence"
+        },
+        "figures": {
+            "referenceRecording": "Reference recording",
+            "currentOpportunity": "Current opportunity",
+            "pyxis": "PYXIS-1",
+            "sonicRelationship": "Sonic relationship",
+            "publisherCatalogue": "Publisher catalogue",
+            "partnerScopedIndex": "Partner-scoped sonic index",
+            "earlierCatalogue": "Earlier catalogue",
+            "recentDeliveries": "Recent deliveries",
+            "relatedWorksSurfaced": "Related works surfaced",
+            "relatedPublisherWorks": "Related publisher works",
+            "olderWork": "Older work",
+            "recentWork": "Recent work",
+            "representedWorkCallout": "Represented work / authorised recording · WRK-0447",
+            "metadataFields": "Genre · year · tags · artist",
+            "metadataLayer": "Metadata layer",
+            "established": "Established / known workhorses",
+            "underexposedMiddle": "The underexposed middle",
+            "recentVisible": "Recent / currently visible",
+            "sonicFields": "Rhythm · harmony · timbre · structure · energy",
+            "sonicFieldsM1": "Rhythm · harmony · timbre",
+            "sonicFieldsM2": "· structure · energy",
+            "sonicLayer": "Sonic relationship layer",
+            "metadataOrganises": "Metadata organises the catalogue. Sonic intelligence reveals another relationship inside it.",
+            "metadataOrganisesM1": "Metadata organises the catalogue. Sonic",
+            "metadataOrganisesM2": "intelligence reveals another relationship inside it.",
+            "preparationOnce": "Catalogue preparation — once",
+            "opportunityPerRef": "Opportunity — per reference",
+            "authorised": "Authorised",
+            "catalogueAudio": "Catalogue audio",
+            "rhythm": "Rhythm",
+            "harmony": "Harmony",
+            "timbre": "Timbre",
+            "structure": "Structure",
+            "energy": "Energy",
+            "pyxisSonicProfiling": "PYXIS-1 sonic profiling",
+            "sonicProfiling": "Sonic profiling",
+            "seventyPlus": "70+ musical characteristics",
+            "profiledOnce": "Profiled once · not reanalysed per query",
+            "reference": "Reference",
+            "recording": "Recording",
+            "pyxisComparison": "PYXIS-1 comparison",
+            "relevantRepresentedWorks": "Relevant represented works",
+            "wrk0447RecA": "WRK-0447 · REC-A",
+            "wrk1180RecA": "WRK-1180 · REC-A",
+            "wrk0921RecB": "WRK-0921 · REC-B",
+            "wrk2201RecA": "WRK-2201 · REC-A",
+            "wrk0447": "WRK-0447",
+            "wrk1180": "WRK-1180",
+            "wrk0921": "WRK-0921",
+            "periodA": "Period A",
+            "periodB": "Period B",
+            "openTerritory": "Open territory",
+            "releaseDateEarlier": "Release date — earlier",
+            "recent": "Recent",
+            "olderWorkUnderexposed": "Older work / underexposed",
+            "recentReleaseActive": "Recent release / active reference",
+            "entry2011Represented": "Catalogue entry 2011 · represented work",
+            "entry2026Represented": "Catalogue entry 2026 · represented work",
+            "entry2011": "Catalogue entry 2011",
+            "entry2026": "Catalogue entry 2026",
+            "pyxisRelationshipProfile": "PYXIS-1 relationship profile",
+            "additionalRelatedWorks": "Additional related works"
+        }
+    },
     "syncAgencies": {
         "hero": {
             "chip": "Use case · Sync agencies",

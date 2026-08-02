@@ -1,0 +1,645 @@
+/* Music Publishers use-case page — "Living Catalogue Atlas".
+   Transplanted from the approved preview; every selector is scoped to .mp-page
+   and every preview class carries an mp- prefix so nothing collides with the
+   shared chrome or the other solution pages. */
+
+.mp-page {
+  --mp-panel: #151516;
+  --mp-panel-2: #1a1a1b;
+  --mp-plate: #1d1d1f;
+  --mp-edge: rgba(255, 255, 255, 0.13);
+  --mp-edge-soft: rgba(255, 255, 255, 0.08);
+  --mp-edge-faint: rgba(255, 255, 255, 0.05);
+  --mp-white: #ffffff;
+  --mp-grey: #b9b9b9;
+  --mp-grey-dim: rgba(185, 185, 185, 0.62);
+  --mp-grey-mute: rgba(185, 185, 185, 0.4);
+  --mp-accent: #ee4a26;
+  --mp-mono: 'Fira Code', 'Fira Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --mp-helv: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --mp-benzin: 'Benzin', 'Arial Black', 'Helvetica Neue', Helvetica, sans-serif;
+  color: var(--mp-grey);
+  font-family: var(--mp-helv);
+  overflow-x: clip;
+}
+
+.light .mp-page {
+  --mp-panel: #f1f1f0;
+  --mp-panel-2: #ebebea;
+  --mp-plate: #efefee;
+  --mp-edge: rgba(16, 16, 16, 0.18);
+  --mp-edge-soft: rgba(16, 16, 16, 0.1);
+  --mp-edge-faint: rgba(16, 16, 16, 0.07);
+  --mp-white: #101010;
+  --mp-grey: #3c3c3c;
+  --mp-grey-dim: rgba(40, 40, 40, 0.78);
+  --mp-grey-mute: rgba(40, 40, 40, 0.6);
+}
+
+/* ---------- page backdrop (void field, shared assets) ------------------- */
+.mp-page .mp-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.mp-page .mp-layer-plate {
+  z-index: -3;
+  background: var(--color-secondary) var(--mp-plate-dark) center / cover no-repeat;
+  opacity: 0.8;
+}
+
+.light .mp-page .mp-layer-plate {
+  background-image: var(--mp-plate-light);
+}
+
+.mp-page .mp-layer-grain {
+  z-index: -1;
+  background: var(--mp-grain-dark) repeat;
+  background-size: 256px 256px;
+  opacity: 0.045;
+}
+
+.light .mp-page .mp-layer-grain {
+  background-image: var(--mp-grain-light);
+}
+
+/* ---------- layout ------------------------------------------------------ */
+.mp-page .mp-wrap {
+  max-width: 75rem;
+  margin: 0 auto;
+  padding: 0 2.5rem;
+  position: relative;
+  z-index: 10;
+}
+
+/* frame-edge figures — full SideLines inner width */
+.mp-page .mp-wrap.mp-bleed {
+  max-width: none;
+  padding: 0 1.7rem;
+}
+
+.mp-page .mp-copycol {
+  max-width: 34rem;
+}
+
+@media (max-width: 767px) {
+  .mp-page .mp-wrap,
+  .mp-page .mp-wrap.mp-bleed {
+    padding: 0 1.25rem;
+  }
+}
+
+.mp-page .mp-chamfer {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 12px) 0,
+    100% 12px,
+    100% 100%,
+    12px 100%,
+    0 calc(100% - 12px)
+  );
+}
+
+.mp-page button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.mp-page button:focus-visible,
+.mp-page a:focus-visible {
+  outline: 2px solid var(--mp-accent);
+  outline-offset: 3px;
+}
+
+/* ---------- shared type ------------------------------------------------- */
+.mp-page .mp-eyebrow {
+  font-family: var(--mp-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mp-grey-dim);
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.mp-page .mp-eyebrow::before {
+  content: '';
+  width: 2.2rem;
+  height: 1px;
+  background: var(--mp-accent);
+  flex: none;
+}
+
+.mp-page .mp-h2 {
+  font-family: var(--mp-helv);
+  font-weight: 700;
+  color: var(--mp-white);
+  font-size: 2rem;
+  line-height: 1.12;
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+  margin-top: 1rem;
+}
+
+.mp-page .mp-body-p {
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: var(--mp-grey);
+  margin-top: 1.1rem;
+}
+
+.mp-page .mp-fig-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.9rem;
+  font-family: var(--mp-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mp-grey-mute);
+}
+
+/* Stageboxes keep the dark canvas in both themes — the diagram palette is
+   authored against it (same decision as Sonic Discovery). */
+.mp-page .mp-stagebox {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(50% 60% at 82% 80%, rgba(238, 74, 38, 0.05), transparent 70%),
+    radial-gradient(40% 50% at 10% 20%, rgba(255, 255, 255, 0.015), transparent 70%),
+    #0c0c0d;
+  overflow: hidden;
+}
+
+.mp-page .mp-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+.mp-page svg {
+  display: block;
+  max-width: 100%;
+}
+
+.mp-page .mp-stagebox svg,
+.mp-page .mp-mv svg {
+  width: 100%;
+  height: auto;
+}
+
+.mp-page svg text {
+  font-family: var(--mp-mono);
+  text-transform: uppercase;
+}
+
+/* Defs-only carrier: must stay in the layout tree (never display:none) so the
+   cross-breakpoint url(#…) references keep resolving. */
+.mp-page .mp-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.mp-page .mp-d-only {
+  display: block;
+}
+
+.mp-page .mp-m-only {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .mp-page .mp-d-only {
+    display: none;
+  }
+
+  .mp-page .mp-m-only {
+    display: block;
+    max-width: 34rem;
+    margin: 0 auto;
+  }
+}
+
+/* ---------- S1 hero ----------------------------------------------------- */
+.mp-page .mp-hero {
+  padding: 3.4rem 0 1.2rem;
+}
+
+.mp-page .mp-h1 {
+  font-family: var(--mp-benzin);
+  font-weight: 700;
+  color: var(--mp-white);
+  font-size: 3.05rem;
+  line-height: 1.04;
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+  margin-top: 1.3rem;
+  max-width: 56rem;
+}
+
+.mp-page .mp-h1 .mp-em {
+  color: var(--mp-accent);
+}
+
+.mp-page .mp-hero .mp-body-p {
+  max-width: 34rem;
+}
+
+.mp-page .mp-cta-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1.7rem;
+  flex-wrap: wrap;
+}
+
+.mp-page .mp-btn {
+  font-family: var(--mp-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 0.95em 1.7em;
+  cursor: pointer;
+  border: 1px solid var(--mp-edge);
+  color: var(--mp-white);
+  background: transparent;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.mp-page .mp-btn:hover {
+  border-color: var(--mp-grey);
+}
+
+.mp-page .mp-btn.mp-primary {
+  background: var(--mp-accent);
+  border-color: var(--mp-accent);
+  color: #101010;
+  font-weight: 600;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
+}
+
+.mp-page .mp-btn.mp-primary:hover {
+  background: #f2603f;
+  border-color: #f2603f;
+}
+
+.mp-page .mp-cta-status {
+  font-family: var(--mp-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mp-grey-mute);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.mp-page .mp-cta-status::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  background: var(--mp-accent);
+  flex: none;
+}
+
+.mp-page .mp-hero-fig {
+  padding: 2.2rem 0 0;
+}
+
+@media (max-width: 767px) {
+  .mp-page .mp-cta-row .mp-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* ---------- S2 editorial ------------------------------------------------ */
+.mp-page .mp-editorial {
+  padding: 4.6rem 0 0;
+  position: relative;
+}
+
+.mp-page .mp-pullquote {
+  font-family: var(--mp-helv);
+  font-weight: 300;
+  color: var(--mp-white);
+  font-size: 1.9rem;
+  line-height: 1.3;
+  max-width: 46rem;
+  margin: 2.6rem 0 0;
+  padding-left: 1.6rem;
+  border-left: 2px solid var(--mp-accent);
+}
+
+.mp-page .mp-after-quote {
+  margin-top: 1.6rem;
+  color: var(--mp-white);
+  font-weight: 600;
+}
+
+.mp-page .mp-subject-line {
+  width: 1px;
+  height: 4.6rem;
+  background: linear-gradient(var(--mp-accent), rgba(238, 74, 38, 0));
+  margin: 2.4rem 0 0 1.6rem;
+}
+
+/* ---------- sections shared padding ------------------------------------- */
+.mp-page .mp-sec {
+  padding: 4.4rem 0 0;
+}
+
+.mp-page .mp-sec .mp-fig {
+  margin-top: 2rem;
+}
+
+/* ---------- S5 outcomes ------------------------------------------------- */
+.mp-page .mp-lead-in {
+  color: var(--mp-white);
+  font-weight: 600;
+  margin-top: 2.6rem;
+}
+
+.mp-page .mp-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--mp-edge-faint);
+  border: 1px solid var(--mp-edge-faint);
+  margin-top: 1.4rem;
+}
+
+@media (min-width: 1024px) {
+  .mp-page .mp-cards {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .mp-page .mp-cards .mp-card {
+    grid-column: span 2;
+  }
+
+  .mp-page .mp-cards .mp-card:nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+
+  .mp-page .mp-cards .mp-card:nth-child(5) {
+    grid-column: 4 / span 2;
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 640px) {
+  .mp-page .mp-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mp-page .mp-cards .mp-card:nth-child(5) {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 639px) {
+  .mp-page .mp-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.mp-page .mp-card {
+  background: var(--mp-panel);
+  padding: 1.4rem 1.4rem 1.6rem;
+  min-width: 0;
+}
+
+.mp-page .mp-card .mp-num {
+  font-family: var(--mp-mono);
+  font-size: 0.625rem;
+  color: var(--mp-accent);
+  letter-spacing: 0.16em;
+}
+
+.mp-page .mp-card h3 {
+  font-family: var(--mp-helv);
+  font-weight: 700;
+  color: var(--mp-white);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-top: 0.5rem;
+}
+
+.mp-page .mp-card p {
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: var(--mp-grey-dim);
+  margin-top: 0.55rem;
+}
+
+.mp-page .mp-card .mp-mv {
+  margin-top: 1.1rem;
+  border-top: 1px solid var(--mp-edge-faint);
+  padding-top: 1rem;
+}
+
+/* ---------- S6 cross-era lead ------------------------------------------- */
+.mp-page .mp-lead-white {
+  color: var(--mp-white);
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+/* ---------- S7 closing -------------------------------------------------- */
+.mp-page .mp-closing {
+  padding: 4.6rem 0 4rem;
+}
+
+.mp-page .mp-close-line {
+  font-family: var(--mp-helv);
+  font-weight: 300;
+  color: var(--mp-white);
+  font-size: 2.1rem;
+  line-height: 1.25;
+  max-width: 52rem;
+  margin-top: 2.6rem;
+}
+
+.mp-page .mp-triad {
+  display: grid;
+  grid-template-columns: 1.5fr auto 1fr auto 1.2fr;
+  gap: 1rem;
+  align-items: stretch;
+  margin-top: 2.6rem;
+}
+
+@media (max-width: 1023px) {
+  .mp-page .mp-triad {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mp-page .mp-triad .mp-op {
+    text-align: center;
+  }
+}
+
+.mp-page .mp-triad .mp-plate {
+  border: 1px solid var(--mp-edge);
+  background: var(--mp-plate);
+  padding: 1.3rem 1.4rem;
+  font-family: var(--mp-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  min-width: 0;
+}
+
+.mp-page .mp-triad .mp-plate .mp-t {
+  font-size: 0.8rem;
+  color: var(--mp-white);
+}
+
+.mp-page .mp-triad .mp-plate .mp-s {
+  font-size: 0.625rem;
+  color: var(--mp-grey-mute);
+  margin-top: 0.6rem;
+  letter-spacing: 0.1em;
+  line-height: 1.7;
+  text-transform: none;
+}
+
+.mp-page .mp-triad .mp-plate.mp-knowledge {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--mp-panel-2);
+}
+
+.light .mp-page .mp-triad .mp-plate.mp-knowledge {
+  border-color: rgba(16, 16, 16, 0.3);
+}
+
+.mp-page .mp-triad .mp-plate.mp-knowledge .mp-t {
+  font-size: 0.95rem;
+}
+
+.mp-page .mp-triad .mp-op {
+  font-family: var(--mp-mono);
+  color: var(--mp-grey-mute);
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mp-page .mp-close-ctas {
+  margin-top: 2.4rem;
+}
+
+/* ---------- motion ------------------------------------------------------ */
+.mp-page .sig {
+  stroke-dasharray: 5 9;
+}
+
+.mp-page.mp-motion-on .mp-section.live .sig {
+  animation: mp-sigflow 7s linear infinite;
+}
+
+@keyframes mp-sigflow {
+  to {
+    stroke-dashoffset: -140;
+  }
+}
+
+.mp-page.mp-motion-on .mp-section.live .breathe {
+  animation: mp-breathe 8s ease-in-out infinite alternate;
+}
+
+@keyframes mp-breathe {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 0.62;
+  }
+}
+
+.mp-page .resolve {
+  opacity: 0;
+  transform: translateY(5px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s ease;
+}
+
+.mp-page .mp-section.live .resolve {
+  opacity: 1;
+  transform: none;
+}
+
+.mp-page .mp-section.live .resolve.d1 {
+  transition-delay: 0.1s;
+}
+
+.mp-page .mp-section.live .resolve.d2 {
+  transition-delay: 0.25s;
+}
+
+.mp-page .mp-section.live .resolve.d3 {
+  transition-delay: 0.4s;
+}
+
+.mp-page .mp-section.live .resolve.d4 {
+  transition-delay: 0.55s;
+}
+
+.mp-page .mp-section.live .resolve.d5 {
+  transition-delay: 0.7s;
+}
+
+.mp-page .plx {
+  will-change: transform;
+}
+
+.mp-page.mp-motion-reduced .sig,
+.mp-page.mp-motion-reduced .breathe {
+  animation: none !important;
+}
+
+.mp-page.mp-motion-reduced .resolve {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-page .sig,
+  .mp-page .breathe {
+    animation: none !important;
+  }
+
+  .mp-page .resolve {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .mp-page .plx {
+    transform: none !important;
+  }
+}
