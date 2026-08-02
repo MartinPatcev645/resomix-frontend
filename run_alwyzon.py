@@ -112,26 +112,30 @@ def _sweep_stray_workers() -> None:
         f"{strays} — stopping them so they cannot consume tasks with stale code",
         flush=True,
     )
-    for pid in strays:
-        try:
-            os.killpg(os.getpgid(pid), signal.SIGTERM)  # whole group: prefork parent + its children
-        except (OSError, ProcessLookupError):
-            pass
-
-    # Give a warm shutdown a moment, then force anything still holding the queue. Leaving one alive
-    # is the failure we are fixing, so we do not exit this loop quietly.
-    deadline = time.monotonic() + 15
-    while time.monotonic() < deadline:
-        if not _stray_worker_pids():
+    # Escalate through Celery's own shutdown ladder. SIGTERM alone is NOT enough: it asks for a
+    # *warm* shutdown, which waits for in-flight tasks — and a stray wedged on a stuck task simply
+    # ignores it forever (we found one that had outlived SIGTERM by weeks). SIGQUIT is Celery's cold
+    # shutdown; SIGKILL is the last resort, and costs us the broker connection closing cleanly, so
+    # any tasks it still held stay reserved until the visibility timeout.
+    for sig, grace in ((signal.SIGTERM, 8), (signal.SIGQUIT, 5), (signal.SIGKILL, 3)):
+        alive = _stray_worker_pids()
+        if not alive:
             print("[run_alwyzon] stray workers stopped", flush=True)
             return
-        time.sleep(0.5)
+        for pid in alive:
+            try:
+                os.killpg(os.getpgid(pid), sig)  # whole group: prefork parent + its pool children
+            except (OSError, ProcessLookupError):
+                pass
+        deadline = time.monotonic() + grace
+        while time.monotonic() < deadline:
+            if not _stray_worker_pids():
+                print(f"[run_alwyzon] stray workers stopped ({sig.name})", flush=True)
+                return
+            time.sleep(0.5)
 
-    for pid in _stray_worker_pids():
-        try:
-            os.killpg(os.getpgid(pid), signal.SIGKILL)
-        except (OSError, ProcessLookupError):
-            pass
+    # Always state the outcome. Falling out of the ladder without a word is indistinguishable in the
+    # log from returning early, which makes a slow-but-successful sweep look like a failed one.
     remaining = _stray_worker_pids()
     if remaining:
         print(
@@ -139,6 +143,8 @@ def _sweep_stray_workers() -> None:
             "keep taking tasks with stale code; stop them by hand",
             flush=True,
         )
+    else:
+        print("[run_alwyzon] stray workers stopped (full escalation)", flush=True)
 
 
 def _start_worker() -> "subprocess.Popen | None":
