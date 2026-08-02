@@ -118,23 +118,25 @@ export default function SonicDiscoveryPage() {
 
         <SdSearchConsole motionOn={motionOn} />
 
-        <SdDimensionBands />
+        <div className="sd-col">
+          <SdDimensionBands />
 
-        <SdShortlist
-          shortlist={shortlist}
-          onReorder={handleReorder}
-          onRemove={handleRemove}
-        />
+          <SdShortlist
+            shortlist={shortlist}
+            onReorder={handleReorder}
+            onRemove={handleRemove}
+          />
 
-        <SdAudienceModes
-          mode={audMode}
-          onModeChange={setAudMode}
-          onScrollToConsole={scrollToConsole}
-        />
+          <SdAudienceModes
+            mode={audMode}
+            onModeChange={setAudMode}
+            onScrollToConsole={scrollToConsole}
+          />
 
-        <SdProof />
+          <SdProof />
 
-        <SdFinalCta />
+          <SdFinalCta />
+        </div>
       </div>
     </div>
   );

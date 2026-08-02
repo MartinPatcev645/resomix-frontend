@@ -33,12 +33,25 @@
 }
 
 /* ---------- frame & section rhythm ---------- */
+/*
+  SideLines already applies the page-frame inset
+  (desktop --px-63 / mobile --px-20). .sd-frame spans that
+  full inner width so scene figures can sit on the frame edge.
+  Editorial copy uses .sd-col (max-width + padding).
+*/
 .sd-page .sd-frame {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.sd-page .sd-col {
   max-width: min(80rem, 100%);
   margin-inline: auto;
   padding-inline: var(--px-48);
-  position: relative;
-  z-index: 10;
 }
 
 .sd-page .sd-section {
@@ -1574,7 +1587,7 @@
    RESPONSIVE — tablet (1023px)
    ============================================================== */
 @media (max-width: 1023px) {
-  .sd-page .sd-frame {
+  .sd-page .sd-col {
     padding-inline: var(--px-32);
   }
 
@@ -1630,7 +1643,7 @@
    RESPONSIVE — mobile (640px)
    ============================================================== */
 @media (max-width: 640px) {
-  .sd-page .sd-frame {
+  .sd-page .sd-col {
     padding-inline: var(--px-20);
   }
 
@@ -1793,37 +1806,12 @@
   position: relative;
   isolation: isolate;
   z-index: 20;
-}
-
-/*
-  Wide modifier — flagship scene figures already share the full content
-  column (wider than dimviz). Extend ~48–64 design-px beyond the standard
-  column per side at desktop so they no longer read as the page's smallest
-  artwork. Captions / fig-heads sit inside the band and track the new edges.
-  1024–1279: reduced bleed. <1024: no bleed (mobile caps unchanged).
-*/
-@media (min-width: 1024px) {
-  .sd-page .sd-scene1,
-  .sd-page .sd-flow {
-    --sd-scene-bleed: var(--px-24);
-    width: calc(100% + 2 * var(--sd-scene-bleed));
-    max-width: none;
-    margin-inline: calc(var(--sd-scene-bleed) * -1);
-  }
-}
-
-@media (min-width: 1280px) {
-  .sd-page .sd-scene1,
-  .sd-page .sd-flow {
-    --sd-scene-bleed: var(--px-48);
-  }
-}
-
-@media (min-width: 1440px) {
-  .sd-page .sd-scene1,
-  .sd-page .sd-flow {
-    --sd-scene-bleed: var(--px-64);
-  }
+  /* Full SideLines inner width — cinematic break from .sd-col.
+     Frame inset is SideLines mx (--px-63 desktop / --px-20 mobile). */
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: 0;
 }
 
 .sd-page .sd-scene-grain {

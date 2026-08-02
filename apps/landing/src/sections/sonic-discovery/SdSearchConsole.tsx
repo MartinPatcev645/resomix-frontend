@@ -10,11 +10,13 @@ export function SdSearchConsole({ motionOn }: SdSearchConsoleProps) {
 
   return (
     <section id="sd-demo" className="sd-section" aria-label="Sonic search console schematic">
-      <header className="sd-dim-intro">
-        <p className="sd-eyebrow uppercase">{t('sonicDiscovery.console.eyebrow')}</p>
-        <h2 className="sd-h2b uppercase">{t('sonicDiscovery.console.title')}</h2>
-        <p className="sd-lead">{t('sonicDiscovery.console.lead')}</p>
-      </header>
+      <div className="sd-col">
+        <header className="sd-dim-intro">
+          <p className="sd-eyebrow uppercase">{t('sonicDiscovery.console.eyebrow')}</p>
+          <h2 className="sd-h2b uppercase">{t('sonicDiscovery.console.title')}</h2>
+          <p className="sd-lead">{t('sonicDiscovery.console.lead')}</p>
+        </header>
+      </div>
 
       <SdFlowPanel motionOn={motionOn} />
     </section>
