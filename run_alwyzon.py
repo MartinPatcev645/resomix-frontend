@@ -19,7 +19,14 @@ Toggles (env vars):
     ALWYZON_RELOAD               force autoreload (default: on only when RESOMIX_ENV=development)
     ALWYZON_EMBED_WORKER=0       do NOT spawn the Celery worker here (run it separately instead —
                                  the right choice on multi-node / k8s / docker-compose deploys where
-                                 the worker is its own service; see the compose 'celery_worker' profile)
+                                 the worker is its own service; see the compose 'celery_worker' profile).
+                                 Also disables the stray-worker sweep below, so a deliberately
+                                 separate worker is left alone.
+
+When embedding the worker (the default), startup first stops any OTHER Celery worker running from
+this same checkout. Those are invisible to `systemctl restart` — they sit outside the unit's cgroup
+— yet they keep consuming the same Redis queue, so a share of every job silently runs whatever code
+they were started with. See `_sweep_stray_workers`.
     ALWYZON_WORKER_CONCURRENCY   worker process count (default 2)
 
 NOTE: reload mode (local dev) uses uvicorn's autoreloader, which can intercept Ctrl+C such that the
@@ -33,6 +40,7 @@ import os
 import signal
 import subprocess
 import sys
+import time
 
 import uvicorn
 
@@ -47,10 +55,97 @@ def _is_development() -> bool:
     return str(getattr(settings, "resomix_env", "development")).strip().lower() in ("development", "local", "dev")
 
 
+def _stray_worker_pids() -> "list[int]":
+    """PIDs of Celery workers already running from THIS checkout (excluding us and our children).
+
+    Matched on this interpreter's venv prefix, so it can only ever see processes belonging to this
+    installation — never another service on the box.
+    """
+    if not os.path.isdir("/proc"):  # Linux-only sweep; a no-op for local macOS dev.
+        return []
+    try:
+        found = subprocess.run(
+            ["pgrep", "-f", "celery"], capture_output=True, text=True, timeout=10
+        ).stdout.split()
+    except Exception:
+        return []
+
+    ours = os.getpgid(0)
+    pids = []
+    for raw in found:
+        try:
+            pid = int(raw)
+        except ValueError:
+            continue
+        if pid == os.getpid():
+            continue
+        try:
+            cmdline = open(f"/proc/{pid}/cmdline", "rb").read().replace(b"\0", b" ").decode()
+            # Never signal our own process group — that would take this launcher down with it.
+            if os.getpgid(pid) == ours:
+                continue
+        except (OSError, ProcessLookupError):
+            continue
+        if "celery" in cmdline and sys.prefix in cmdline:
+            pids.append(pid)
+    return pids
+
+
+def _sweep_stray_workers() -> None:
+    """Stop any Celery worker for this checkout that we are not supervising.
+
+    A worker started outside this launcher — by hand with `nohup`, from a tmux session, or by an
+    older unit — keeps consuming the SAME Redis queue indefinitely, and `systemctl restart alwyzon`
+    can never stop it because it is not in the unit's cgroup. Tasks then round-robin between the
+    current worker and the stale one, so a share of them silently run weeks-old code. That presents
+    as an application bug (a task that "does nothing", a job stuck half-done) with no error anywhere
+    in the service log, because the stale worker logs somewhere else entirely.
+
+    Sweeping at startup makes `systemctl restart alwyzon` mean what it looks like it means: exactly
+    one worker afterwards.
+    """
+    strays = _stray_worker_pids()
+    if not strays:
+        return
+    print(
+        f"[run_alwyzon] found {len(strays)} unsupervised Celery worker(s) from this checkout "
+        f"{strays} — stopping them so they cannot consume tasks with stale code",
+        flush=True,
+    )
+    for pid in strays:
+        try:
+            os.killpg(os.getpgid(pid), signal.SIGTERM)  # whole group: prefork parent + its children
+        except (OSError, ProcessLookupError):
+            pass
+
+    # Give a warm shutdown a moment, then force anything still holding the queue. Leaving one alive
+    # is the failure we are fixing, so we do not exit this loop quietly.
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        if not _stray_worker_pids():
+            print("[run_alwyzon] stray workers stopped", flush=True)
+            return
+        time.sleep(0.5)
+
+    for pid in _stray_worker_pids():
+        try:
+            os.killpg(os.getpgid(pid), signal.SIGKILL)
+        except (OSError, ProcessLookupError):
+            pass
+    remaining = _stray_worker_pids()
+    if remaining:
+        print(
+            f"[run_alwyzon] WARNING: could not stop stray Celery worker(s) {remaining} — they will "
+            "keep taking tasks with stale code; stop them by hand",
+            flush=True,
+        )
+
+
 def _start_worker() -> "subprocess.Popen | None":
     """Spawn the Celery worker in its own process group (so we can stop the whole tree later)."""
     if not _truthy("ALWYZON_EMBED_WORKER", "1"):
         return None
+    _sweep_stray_workers()
     concurrency = os.getenv("ALWYZON_WORKER_CONCURRENCY", "2")
     cmd = [
         sys.executable, "-m", "celery",

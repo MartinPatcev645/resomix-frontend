@@ -89,3 +89,31 @@ journalctl -u alwyzon -n 200 --no-pager
   `STRIPE_WEBHOOK_SECRET` must be that endpoint's signing secret.
 - `JWT_SECRET_KEY` is Alwyzon-only; rotating it logs everyone out but touches no other service.
 - Don't `kill -9` — it orphans the Celery worker. Use `systemctl stop` / plain `kill`.
+
+## Orphaned Celery workers (silent, and restarts do NOT fix them)
+
+A worker started outside this unit — by hand with `nohup`, from tmux, or by an older unit — keeps
+consuming the **same** Redis queue forever. `systemctl restart alwyzon` cannot stop it, because it
+is not in the unit's cgroup: `systemctl status alwyzon` will look perfectly healthy while a stale
+worker takes a share of every job and runs whatever code it was started with weeks ago.
+
+This is nasty to diagnose because it presents as an application bug — a task that "does nothing", a
+row stuck half-written — with **nothing in `journalctl -u alwyzon`**, since the stale worker logs to
+wherever it was launched (typically `/tmp/celery.log`).
+
+`run_alwyzon.py` now sweeps these at startup, so a restart leaves exactly one worker. To check by
+hand — every Celery PID should be a child of the current `run_alwyzon.py`:
+
+```bash
+ps -eo pid,lstart,cmd | grep -E "[c]elery" # look for start dates older than the current service
+systemctl status alwyzon --no-pager        # its cgroup lists the ONLY workers that should exist
+```
+
+A `DuplicateNodenameWarning: Received multiple replies from node name: celery@…` in the startup log
+is Celery telling you this has already happened.
+
+Stop strays with plain SIGTERM (never `-9` first — it leaves their pool children behind):
+
+```bash
+kill <stray-pid>   # then re-check with the ps above
+```
