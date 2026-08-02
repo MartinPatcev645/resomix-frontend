@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AUTH_CODE, ENVELOPE_LINES } from './devEngine.ts';
 import { DevCodeBlock } from './DevCodeBlock.tsx';
 import { SvgText } from './devSvgHelpers.tsx';
+import { DevCopyButton } from './DevCopyButton.tsx';
 
 function QuotaPulseSvg() {
   const y = 40;
@@ -79,15 +80,6 @@ export function DevIntegrationAccess({ onCopy }: DevIntegrationAccessProps) {
     body: string;
   }[];
 
-  const handleAuthCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(AUTH_CODE);
-      onCopy('Code copied to clipboard');
-    } catch {
-      onCopy('Copy failed');
-    }
-  };
-
   return (
     <section id="dev-integration" className="dev-section" aria-label="Choose the right integration">
       <header className="dev-dim-intro">
@@ -149,9 +141,7 @@ export function DevIntegrationAccess({ onCopy }: DevIntegrationAccessProps) {
             <span className="dev-lbl-dim">{t('developers.integration.authNote')}</span>
           </div>
           <div className="dev-code dev-jsonwrap">
-            <button type="button" className="dev-copybtn uppercase" onClick={handleAuthCopy}>
-              {t('developers.console.copy')}
-            </button>
+            <DevCopyButton getText={() => AUTH_CODE} onCopy={onCopy} />
             <code id="dev-auth-code">{AUTH_CODE}</code>
           </div>
           <div className="dev-codelbl dev-access-gap-lg">

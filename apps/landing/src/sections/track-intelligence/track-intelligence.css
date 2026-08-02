@@ -261,29 +261,56 @@
   min-height: var(--px-44);
 }
 
+/* Canonical landing PRIMARY button — matches the webapp's Logout control: white label on an
+   accent edge, label and icon tint to the accent on hover. Keep every page identical. */
 .ti-page .ti-pill-solid {
-  background: var(--color-primary);
-  color: var(--color-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--px-8);
+  background: transparent;
+  border-radius: var(--px-2);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: var(--px-14) var(--px-26);
+  min-height: var(--px-44);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+  border: 1px solid var(--color-neon-orange);
+  color: var(--color-primary);
+  font-weight: 500;
 }
 
 .ti-page .ti-pill-solid:hover {
-  background: var(--color-neon-orange);
-  color: #fff;
+  color: var(--color-neon-orange);
 }
 
+/* Canonical landing SECONDARY button — matches the webapp's Autoplay toggle: white label,
+   accent icon, faint edge that brightens on hover. Keep every page identical. */
 .ti-page .ti-pill-line {
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--px-8);
+  background: transparent;
+  border-radius: var(--px-2);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: var(--px-14) var(--px-26);
+  min-height: var(--px-44);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+  border: 1px solid rgba(255, 255, 255, 0.24);
   color: var(--color-primary);
-  background: none;
 }
 
-.light .ti-page .ti-pill-line {
-  border-color: rgba(16, 16, 16, 0.18);
-}
 
 .ti-page .ti-pill-line:hover {
-  border-color: var(--color-neon-orange);
-  color: var(--color-neon-orange);
+  border-color: var(--color-primary);
 }
 
 .ti-page .ti-ctarow {
@@ -298,7 +325,11 @@
   font-size: var(--px-13);
   letter-spacing: 0.04em;
   text-decoration: none;
-  border-bottom: 1px dotted transparent;
+  /* Underline via text-decoration, NOT border-bottom: a border hugs the BOX, and these sit in
+     flex/inline-flex contexts where the box stretches to the full row — so the hover rule ran
+     edge to edge instead of under the label. text-decoration hugs the glyphs. */
+  text-decoration: underline dotted transparent;
+  text-underline-offset: var(--px-4);
   background: none;
   border-top: none;
   border-left: none;
@@ -310,7 +341,7 @@
 
 .ti-page .ti-bracket:hover {
   color: var(--color-neon-orange);
-  border-bottom-color: var(--color-neon-orange);
+  text-decoration-color: var(--color-neon-orange);
 }
 
 .ti-page .ti-seg {
@@ -345,22 +376,29 @@
   box-shadow: inset 0 -2px 0 var(--color-neon-orange);
 }
 
+/* Canonical landing SMALL CONTROL — mirrors the webapp's hero toolbar button. Replaces the
+   dotted 'ghost' variants and the per-page icon buttons, which differed only by colour. */
 .ti-page .ti-ghostbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--px-6);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: var(--px-2);
+  color: var(--color-primary);
   font-family: 'Fira Code', monospace;
-  font-size: var(--px-12);
-  letter-spacing: 0.05em;
+  font-size: var(--px-10);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-primary-hover);
-  background: none;
-  border: 1px dotted rgba(255, 255, 255, 0.14);
-  padding: var(--px-11) var(--px-16);
+  padding: var(--px-9) var(--px-14);
+  min-height: var(--px-36);
   cursor: pointer;
-  min-height: var(--px-44);
+  transition: color 160ms ease, border-color 160ms ease;
 }
 
 .ti-page .ti-ghostbtn:hover {
-  color: var(--color-neon-orange);
-  border-color: var(--color-neon-orange);
+  border-color: var(--color-primary);
 }
 
 .ti-page .ti-hud {
@@ -1294,4 +1332,15 @@
   .ti-page .ti-truth {
     white-space: normal;
   }
+}
+
+/* Light theme: the canonical buttons are transparent with a token-driven label, so the only
+   thing that needs flipping is the secondary's edge. The old rules here tinted a FILLED
+   button (white label, dark hover fill) and would now paint over the new treatment. */
+.light .ti-page .ti-pill-line {
+  border-color: rgba(16, 16, 16, 0.24);
+}
+
+.light .ti-page .ti-pill-line:hover {
+  border-color: rgba(16, 16, 16, 0.6);
 }

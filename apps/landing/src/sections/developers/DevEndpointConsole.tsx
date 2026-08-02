@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WF, type WfKey, codeToPlainText } from './devEngine.ts';
 import { DevCodeBlock } from './DevCodeBlock.tsx';
+import { DevCopyButton } from './DevCopyButton.tsx';
 
 const WF_KEYS: WfKey[] = ['chain', 'simid', 'simup', 'ana', 'play'];
 
@@ -16,20 +17,6 @@ export function DevEndpointConsole({ onCopy }: DevEndpointConsoleProps) {
 
   const w = WF[wf];
   const resLines = expanded && w.resFull ? w.resFull : w.res;
-
-  const handleCopy = useCallback(
-    async (target: 'req' | 'res') => {
-      const lines = target === 'req' ? w.req : resLines;
-      const text = codeToPlainText(lines);
-      try {
-        await navigator.clipboard.writeText(text);
-        onCopy('Code copied to clipboard');
-      } catch {
-        onCopy('Copy failed');
-      }
-    },
-    [w, resLines, onCopy],
-  );
 
   const wfLabels = t('developers.console.workflows', { returnObjects: true }) as Record<WfKey, string>;
 
@@ -70,9 +57,7 @@ export function DevEndpointConsole({ onCopy }: DevEndpointConsoleProps) {
               <span className="dev-lbl-dim">{w.ep}</span>
             </div>
             <div className="dev-code dev-jsonwrap">
-              <button type="button" className="dev-copybtn uppercase" onClick={() => handleCopy('req')}>
-                {t('developers.console.copy')}
-              </button>
+              <DevCopyButton getText={() => codeToPlainText(w.req)} onCopy={onCopy} />
               <DevCodeBlock lines={w.req} id="dev-wf-req" />
             </div>
           </div>
@@ -82,9 +67,7 @@ export function DevEndpointConsole({ onCopy }: DevEndpointConsoleProps) {
               <span className="dev-lbl-dim">{t('developers.console.envelopeNote')}</span>
             </div>
             <div className="dev-code dev-jsonwrap">
-              <button type="button" className="dev-copybtn uppercase" onClick={() => handleCopy('res')}>
-                {t('developers.console.copy')}
-              </button>
+              <DevCopyButton getText={() => codeToPlainText(resLines)} onCopy={onCopy} />
               <DevCodeBlock lines={resLines} id="dev-wf-res" />
             </div>
             {w.resFull ? (

@@ -285,24 +285,18 @@
   border-color: var(--mp-grey);
 }
 
+/* Canonical primary treatment; the square edge is deliberate here and kept. */
 .mp-page .mp-btn.mp-primary {
-  background: var(--mp-accent);
-  border-color: var(--mp-accent);
-  color: #101010;
-  font-weight: 600;
-  clip-path: polygon(
-    0 0,
-    calc(100% - 10px) 0,
-    100% 10px,
-    100% 100%,
-    10px 100%,
-    0 calc(100% - 10px)
-  );
+  background: transparent;
+  border-color: var(--color-neon-orange);
+  color: var(--mp-white);
+  font-weight: 500;
 }
 
 .mp-page .mp-btn.mp-primary:hover {
-  background: #f2603f;
-  border-color: #f2603f;
+  color: var(--color-neon-orange);
+  border-color: var(--color-neon-orange);
+  background: transparent;
 }
 
 .mp-page .mp-cta-status {

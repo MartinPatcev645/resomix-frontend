@@ -183,20 +183,29 @@
   }
 }
 
+/* Canonical landing SECONDARY button — matches the webapp's Autoplay toggle: white label,
+   accent icon, faint edge that brightens on hover. Keep every page identical. */
 .mcu-page .mcu-tlink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--px-8);
+  background: transparent;
+  border-radius: var(--px-2);
   font-family: 'Fira Code', monospace;
-  font-size: var(--px-11);
+  font-size: var(--px-12);
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--color-primary);
-  border-bottom: 1px dotted var(--mcu-ink-support);
-  padding-bottom: var(--px-2);
-  background: none;
+  padding: var(--px-14) var(--px-26);
+  min-height: var(--px-44);
   cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: var(--color-primary);
 }
 
 .mcu-page .mcu-tlink:hover {
-  border-color: var(--color-neon-orange);
+  border-color: var(--color-primary);
 }
 
 .mcu-page .mcu-tlink::after {
@@ -204,54 +213,55 @@
   color: var(--color-neon-orange);
 }
 
+/* Canonical landing PRIMARY button — matches the webapp's Logout control: white label on an
+   accent edge, label and icon tint to the accent on hover. Keep every page identical. */
 .mcu-page .mcu-cta-p {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--px-8);
-  background: var(--color-primary);
-  color: var(--color-secondary);
+  background: transparent;
+  border-radius: var(--px-2);
   font-family: 'Fira Code', monospace;
-  font-weight: 500;
   font-size: var(--px-12);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  padding: var(--px-15) var(--px-26);
-  border-radius: 999px;
+  padding: var(--px-14) var(--px-26);
   min-height: var(--px-44);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+  border: 1px solid var(--color-neon-orange);
+  color: var(--color-primary);
+  font-weight: 500;
 }
 
 .mcu-page .mcu-cta-p:hover {
-  background: #e6e6e6;
+  color: var(--color-neon-orange);
 }
 
-.light .mcu-page .mcu-cta-p {
-  color: #fff;
-}
 
-.light .mcu-page .mcu-cta-p:hover {
-  background: #222;
-}
 
+/* Canonical landing SECONDARY button — matches the webapp's Autoplay toggle: white label,
+   accent icon, faint edge that brightens on hover. Keep every page identical. */
 .mcu-page .mcu-cta-s {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--px-8);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: var(--color-primary);
+  background: transparent;
+  border-radius: var(--px-2);
   font-family: 'Fira Code', monospace;
-  font-size: var(--px-11);
+  font-size: var(--px-12);
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  padding: var(--px-14) var(--px-22);
-  border-radius: 999px;
+  padding: var(--px-14) var(--px-26);
   min-height: var(--px-44);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: var(--color-primary);
 }
 
-.light .mcu-page .mcu-cta-s {
-  border-color: rgba(16, 16, 16, 0.3);
-}
 
 .mcu-page .mcu-cta-s::before {
   content: '';
@@ -260,7 +270,7 @@
 }
 
 .mcu-page .mcu-cta-s:hover {
-  border-color: var(--mcu-ink-bright);
+  border-color: var(--color-primary);
 }
 
 .mcu-page .mcu-ctas {
@@ -687,4 +697,17 @@
   .mcu-page .mcu-row {
     padding: var(--px-16) var(--px-18);
   }
+}
+
+/* Light theme: the canonical buttons are transparent with a token-driven label, so the only
+   thing that needs flipping is the secondary's edge. The old rules here tinted a FILLED
+   button (white label, dark hover fill) and would now paint over the new treatment. */
+.light .mcu-page .mcu-cta-s,
+.light .mcu-page .mcu-tlink {
+  border-color: rgba(16, 16, 16, 0.24);
+}
+
+.light .mcu-page .mcu-cta-s:hover,
+.light .mcu-page .mcu-tlink:hover {
+  border-color: rgba(16, 16, 16, 0.6);
 }

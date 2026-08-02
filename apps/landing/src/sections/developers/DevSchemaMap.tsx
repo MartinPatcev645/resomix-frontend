@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SG, sgDisplayName, API_DOCS_URL, type SgKey, codeToPlainText } from './devEngine.ts';
 import { DevCodeBlock } from './DevCodeBlock.tsx';
+import { DevCopyButton } from './DevCopyButton.tsx';
 
 const SG_KEYS: SgKey[] = ['rhythm', 'tonality', 'loudness', 'mood', 'structure', 'prov'];
 
@@ -23,16 +24,6 @@ export function DevSchemaMap({ onCopy }: DevSchemaMapProps) {
     setSelected(key);
     setMobileExpanded((prev) => (prev === key ? null : key));
   }, []);
-
-  const handleCopy = useCallback(async () => {
-    const text = codeToPlainText(SG[selected]);
-    try {
-      await navigator.clipboard.writeText(text);
-      onCopy('Code copied to clipboard');
-    } catch {
-      onCopy('Copy failed');
-    }
-  }, [selected, onCopy]);
 
   return (
     <section id="dev-schema" className="dev-section" aria-label="What analysis returns">
@@ -71,9 +62,7 @@ export function DevSchemaMap({ onCopy }: DevSchemaMapProps) {
             <span className="dev-lbl-dim uppercase">{t('developers.schema.fragmentNote')}</span>
           </div>
           <div className="dev-code dev-jsonwrap">
-            <button type="button" className="dev-copybtn uppercase" onClick={handleCopy}>
-              {t('developers.console.copy')}
-            </button>
+            <DevCopyButton getText={() => codeToPlainText(SG[selected])} onCopy={onCopy} />
             <DevCodeBlock lines={SG[selected]} id="dev-sg-json" />
           </div>
           <p className="dev-interp dev-schema-note">
