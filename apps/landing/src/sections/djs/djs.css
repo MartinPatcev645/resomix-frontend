@@ -381,17 +381,23 @@
   font-family: 'Benzin', 'Arial Black', sans-serif;
   font-weight: 700;
   text-transform: uppercase;
-  font-size: var(--px-36);
-  line-height: 1.08;
+  /* Mobile (<768px): shared landing hero size — keep in sync with .rl-benzin, don't re-tune per page. */
+  font-size: var(--px-32);
+  line-height: 1.06;
   letter-spacing: 0.005em;
   margin: 0 0 var(--px-20);
   max-width: 16ch;
+  /* Mobile only: stops a long unbroken word pushing past the side rules. */
+  overflow-wrap: anywhere;
   color: var(--color-primary);
 }
 
 @media (min-width: 768px) {
   .dj-page .dj-benzin {
     font-size: var(--px-52);
+    /* Restores the pre-mobile-alignment values — >=768px is unchanged. */
+    line-height: 1.08;
+    overflow-wrap: normal;
   }
 }
 

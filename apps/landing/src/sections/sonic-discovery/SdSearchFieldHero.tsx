@@ -40,7 +40,10 @@ export function SdSearchFieldHero({ motionOn, onScrollToConsole }: SdSearchField
       <div className="sd-col">
         <div className="sd-hero-head">
           <p className="sd-eyebrow uppercase">{renderEyebrow(t('sonicDiscovery.hero.eyebrow'))}</p>
-          <h1 className="font-benzin uppercase text-[length:var(--px-38)] lg:text-[length:var(--px-70)] leading-[1.04] m-0 mb-[var(--px-24)]">
+          {/* Mobile (<768px) uses the shared landing hero size var(--px-32)/1.06 +
+              max-w-[18ch] — same as the other landing heroes, do not re-bespoke it.
+              md: restores the previous var(--px-38)/1.04 so 768px+ is unchanged. */}
+          <h1 className="font-benzin uppercase text-[length:var(--px-32)] leading-[1.06] max-w-[18ch] md:max-w-none md:text-[length:var(--px-38)] md:leading-[1.04] lg:text-[length:var(--px-70)] m-0 mb-[var(--px-24)]">
             {renderTitle(t('sonicDiscovery.hero.title'))}
           </h1>
           <p className="sd-body sd-sub">{t('sonicDiscovery.hero.sub')}</p>

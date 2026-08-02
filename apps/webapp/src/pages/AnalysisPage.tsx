@@ -213,7 +213,10 @@ export default function AnalysisPage() {
         </div>
 
         <header className="mb-[var(--px-28)] text-center">
-          <h1 className="font-helvetica text-[length:var(--px-52)] leading-[var(--px-60)] font-medium uppercase">
+          {/* Base size is the shared webapp mobile hero size (--px-28/--px-32, same as
+              AuthScreen / LibraryPage / WorkspaceShell) — please don't set a bespoke value here.
+              md: restores the original desktop 52/60, which is unchanged. */}
+          <h1 className="font-helvetica text-[length:var(--px-28)] leading-[var(--px-32)] font-medium uppercase break-words md:text-[length:var(--px-52)] md:leading-[var(--px-60)]">
             Analysis
           </h1>
           <p className="mt-[var(--px-8)] font-helvetica text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80">

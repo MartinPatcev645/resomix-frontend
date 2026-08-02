@@ -143,7 +143,10 @@ export function PpProtocolHero({
           <span className="pp-o">{t('partnersPilot.hero.eyebrowHighlight')}</span>{' '}
           {t('partnersPilot.hero.eyebrowSuffix')}
         </p>
-        <h1 className="font-benzin uppercase text-[length:var(--px-56)] leading-[var(--px-60)] md:text-[length:var(--px-64)] md:leading-[var(--px-68)] lg:text-[length:var(--px-72)] lg:leading-[var(--px-76)] mb-[var(--px-24)]">
+        {/* Mobile (<768px) base is the shared landing mobile hero size: var(--px-32) / 1.06 / 18ch,
+            matching .rl-benzin on the solutions pages. Do not swap it back to a bespoke value.
+            md:/lg: keep the tablet + desktop sizes exactly as they were. */}
+        <h1 className="font-benzin uppercase text-[length:var(--px-32)] leading-[1.06] max-w-[18ch] md:max-w-none md:text-[length:var(--px-64)] md:leading-[var(--px-68)] lg:text-[length:var(--px-72)] lg:leading-[var(--px-76)] mb-[var(--px-24)]">
           {t('partnersPilot.hero.title')}
         </h1>
         <p className="pp-body pp-sub">{t('partnersPilot.hero.sub')}</p>

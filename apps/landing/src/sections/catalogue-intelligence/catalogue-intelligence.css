@@ -73,10 +73,25 @@
   font-family: 'Benzin', 'Arial Black', sans-serif;
   font-weight: 700;
   text-transform: uppercase;
-  font-size: var(--px-34);
-  line-height: 1.08;
+  /* Mobile (<768px) uses the shared landing hero size — keep in sync with
+     .rl-benzin (record-labels); do not swap back to a bespoke value. */
+  font-size: var(--px-32);
+  line-height: 1.06;
   letter-spacing: 0.005em;
   margin: 0 0 var(--px-24);
+  /* Mobile overflow guard; reset at >=768px so the desktop layout is untouched. */
+  max-width: 18ch;
+  overflow-wrap: anywhere;
+}
+
+/* Restores the pre-existing 768–1023px size that the base rule used to carry. */
+@media (min-width: 768px) {
+  .ci-page .ci-benzin-d {
+    font-size: var(--px-34);
+    line-height: 1.08;
+    max-width: none;
+    overflow-wrap: normal;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -1270,11 +1285,6 @@
 
   .ci-page .ci-section {
     padding-block: 4rem;
-  }
-
-  .ci-page .ci-benzin-d {
-    font-size: var(--px-28);
-    line-height: 1.08;
   }
 
   .ci-page .ci-h2b {

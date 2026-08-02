@@ -803,17 +803,15 @@
   }
 }
 
-@media (max-width: 600px) {
+/* Mobile (<768px): shared landing hero size — same as .rl-benzin on the
+   solutions pages. Keep in sync; do not swap back to a bespoke value.
+   max-width/overflow-wrap are mobile-only so the ≥768px layout is untouched. */
+@media (max-width: 767px) {
   .product-page .product-hero-title {
-    font-size: var(--px-30);
-    line-height: var(--px-35);
-  }
-}
-
-@media (max-width: 380px) {
-  .product-page .product-hero-title {
-    font-size: var(--px-25);
-    line-height: var(--px-29);
+    font-size: var(--px-32);
+    line-height: 1.06;
+    max-width: 18ch;
+    overflow-wrap: anywhere;
   }
 }
 

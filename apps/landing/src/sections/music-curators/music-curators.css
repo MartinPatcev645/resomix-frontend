@@ -377,12 +377,20 @@
   font-family: 'Benzin', 'Arial Black', sans-serif;
   font-weight: 700;
   text-transform: uppercase;
-  font-size: var(--px-36);
+  /* Mobile: shared landing hero size — keep in sync with .rl-benzin, don't re-tune per page. */
+  font-size: var(--px-32);
   line-height: 1.08;
   letter-spacing: 0.005em;
   margin: 0 0 var(--px-20);
   max-width: 14ch;
   color: var(--color-primary);
+}
+
+/* Mobile only: a single long word (e.g. "DIFFERENTLY.") can out-run a 320px frame. */
+@media (max-width: 767px) {
+  .mcu-page .mcu-benzin {
+    overflow-wrap: anywhere;
+  }
 }
 
 @media (min-width: 768px) {

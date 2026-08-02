@@ -368,17 +368,24 @@
   font-family: 'Benzin', 'Arial Black', sans-serif;
   font-weight: 700;
   text-transform: uppercase;
-  font-size: var(--px-30);
-  line-height: 1.07;
+  /* Shared landing mobile hero size (matches .rl-benzin) — don't re-bespoke this. */
+  font-size: var(--px-32);
+  line-height: 1.06;
   letter-spacing: 0.005em;
   margin: 0 0 var(--px-20);
-  max-width: 20ch;
+  /* Mobile-only measure + word-break guard so the hero can't run past the side rules. */
+  max-width: 18ch;
+  overflow-wrap: anywhere;
   color: var(--color-primary);
 }
 
 @media (min-width: 768px) {
   .ml-page .ml-benzin {
     font-size: var(--px-48);
+    /* Restores the pre-mobile-alignment values — ≥768px must be unchanged. */
+    line-height: 1.07;
+    max-width: 20ch;
+    overflow-wrap: normal;
   }
 }
 

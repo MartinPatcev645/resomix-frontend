@@ -20,7 +20,10 @@ const UploadHero: React.FC = () => {
         />
       </div>
       <div className="flex flex-col items-start w-full gap-[var(--px-20)]">
-        <h1 className="text-[length:var(--px-38)] font-benzin leading-[var(--px-50)] uppercase">Here's<br />where<br />the search<br /><span className="italic">begins</span></h1>
+        {/* Mobile-only component, so no desktop step is needed: this is the shared webapp mobile
+            hero size (--px-28, same as AuthScreen / LibraryPage / WorkspaceShell) — please don't
+            set a bespoke value here. Leading stays proportionate to the previous 38/50 ratio. */}
+        <h1 className="text-[length:var(--px-28)] font-benzin leading-[var(--px-37)] uppercase">Here's<br />where<br />the search<br /><span className="italic">begins</span></h1>
         <div className="text-[length:var(--px-20)] font-helvetica tracking-[var(--px-2)] font-extralight leading-[var(--px-24)] uppercase">Drop a reference track,<br />PYXIS-1 will do the rest</div>
         <img src={ArrowDownRightSvg} draggable={false} alt="" aria-hidden="true" loading="lazy" className="w-[var(--px-44)] h-[var(--px-44)]" />
       </div>

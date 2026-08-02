@@ -408,12 +408,24 @@
   font-family: 'Benzin', 'Arial Black', sans-serif;
   font-weight: 700;
   text-transform: uppercase;
-  font-size: var(--px-36);
-  line-height: 1.04;
+  /* Mobile (<768px) uses the shared landing hero size — keep in sync with .rl-benzin, do not make bespoke */
+  font-size: var(--px-32);
+  line-height: 1.06;
   letter-spacing: 0.005em;
   margin: 0 0 var(--px-20);
   max-width: 16ch;
+  /* mobile-only guard: long unbroken words must not overflow the side rules */
+  overflow-wrap: anywhere;
   color: var(--color-primary);
+}
+
+/* restores the pre-existing tablet/desktop size (base used to govern >=768px) */
+@media (min-width: 768px) {
+  .hm-page .hm-benzin {
+    font-size: var(--px-36);
+    line-height: 1.04;
+    overflow-wrap: normal;
+  }
 }
 
 @media (min-width: 1024px) {

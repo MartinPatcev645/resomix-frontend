@@ -78,14 +78,29 @@
   white-space: nowrap;
 }
 
+/* Below 768px this is the shared landing mobile hero size (var(--px-32) / 1.06,
+   same as the Solutions pages' .rl-benzin) — do not swap it back to a bespoke
+   value. The max-width/overflow-wrap keep it inside the side rules on narrow
+   screens and are reset at 768px so the tablet/desktop layout is untouched. */
 .ti-page .ti-benzin-d {
   font-family: 'Benzin', 'Arial Black', sans-serif;
   font-weight: 700;
   text-transform: uppercase;
-  font-size: var(--px-38);
-  line-height: 1.07;
+  font-size: var(--px-32);
+  line-height: 1.06;
   letter-spacing: 0.005em;
   margin: 0 0 var(--px-24);
+  max-width: 18ch;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 768px) {
+  .ti-page .ti-benzin-d {
+    font-size: var(--px-38);
+    line-height: 1.07;
+    max-width: none;
+    overflow-wrap: normal;
+  }
 }
 
 @media (min-width: 1024px) {
