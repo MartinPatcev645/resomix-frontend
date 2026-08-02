@@ -49,15 +49,6 @@ export function SdProof() {
         </div>
         <p className="sd-valfoot sd-lbl-dim">{t('sonicDiscovery.proof.valFoot')}</p>
       </div>
-
-      <div className="sd-reserved" role="note" aria-label="Reserved module for approved beta feedback">
-        <span className="sd-corner sd-c1" aria-hidden="true" />
-        <span className="sd-corner sd-c2" aria-hidden="true" />
-        <span className="sd-corner sd-c3" aria-hidden="true" />
-        <span className="sd-corner sd-c4" aria-hidden="true" />
-        <span className="sd-rt uppercase">{t('sonicDiscovery.proof.reserved')}</span>
-        <p className="uppercase">{t('sonicDiscovery.proof.reservedNote')}</p>
-      </div>
     </section>
   );
 }
