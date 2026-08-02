@@ -49,6 +49,13 @@
         <priority>0.7</priority>
     </url>
     
+    <url>
+        <loc>https://resomix.com/solutions/music-publishers</loc>
+        <lastmod>2026-08-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
     <!-- <url>
         <loc>https://resomix.com/pricing</loc>
         <lastmod>2024-01-15</lastmod>

@@ -76,7 +76,7 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
         flex: '1 1 52%',
         items: [
           { key: 'record-labels', glyph: 'record-labels', live: true, route: '/solutions/record-labels' },
-          { key: 'music-publishers', glyph: 'music-publishers', live: false, plannedRoute: '/solutions/music-publishers', status: 'coming-next' },
+          { key: 'music-publishers', glyph: 'music-publishers', live: true, route: '/solutions/music-publishers' },
           { key: 'sync-agencies', glyph: 'sync-agencies', live: true, route: '/solutions/sync-agencies' },
           { key: 'music-libraries', glyph: 'music-libraries', live: true, route: '/solutions/music-libraries-sample-providers' },
         ],

@@ -22,6 +22,7 @@ const DevelopersPage = lazy(() => import("@/pages/DevelopersPage.tsx"));
 const PartnersPilotPage = lazy(() => import("@/pages/PartnersPilotPage.tsx"));
 const TrustPage = lazy(() => import("@/pages/TrustPage.tsx"));
 const RecordLabelsPage = lazy(() => import("@/pages/RecordLabelsPage.tsx"));
+const MusicPublishersPage = lazy(() => import("@/pages/MusicPublishersPage.tsx"));
 const SyncAgenciesPage = lazy(() => import("@/pages/SyncAgenciesPage.tsx"));
 const MusicLibrariesPage = lazy(() => import("@/pages/MusicLibrariesPage.tsx"));
 const DjsPage = lazy(() => import("@/pages/DjsPage.tsx"));
@@ -120,6 +121,7 @@ function App() {
             <Route path="/partners/pilot" element={<PartnersPilotPage />} />
             <Route path="/trust" element={<TrustPage />} />
             <Route path="/solutions/record-labels" element={<RecordLabelsPage />} />
+            <Route path="/solutions/music-publishers" element={<MusicPublishersPage />} />
             <Route path="/solutions/sync-agencies" element={<SyncAgenciesPage />} />
             <Route path="/solutions/music-libraries-sample-providers" element={<MusicLibrariesPage />} />
             <Route path="/solutions/djs" element={<DjsPage />} />
