@@ -1,10 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { usePoDefs } from './poDefs.ts';
 
 /* S3 · Profile Instrument — the shared PYXIS-1 fork. */
 export function PoProfile() {
   const { t } = useTranslation('common');
-  const { url } = usePoDefs();
   const f = (key: string) => t(`product.figures.${key}`);
 
   return (
