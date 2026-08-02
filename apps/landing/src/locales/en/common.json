@@ -514,7 +514,7 @@
             "savedEmpty": "add matches first — then save them as a playlist"
         },
         "aud": {
-            "eyebrow": "04 // who it decides for",
+            "eyebrow": "03 // who it decides for",
             "title": "One engine. Different decisions.",
             "djHead": "For DJs",
             "djCopy": "From one reference to a set-ready shortlist. See how each match compares on groove and energy, and audition alternatives before the room decides for you.",
@@ -539,7 +539,7 @@
             "supCta": "Start from a brief"
         },
         "proof": {
-            "eyebrow": "05 // why trust it",
+            "eyebrow": "04 // why trust it",
             "title": "Built on measurement, not mystery",
             "lead": "Every claim below maps to how the product actually works — nothing is invented for this page.",
             "s1t": "70+ characteristics",

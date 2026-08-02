@@ -3,11 +3,9 @@ import { SdVoidBackground } from '@/sections/sonic-discovery/SdVoidBackground.ts
 import { SdSearchFieldHero } from '@/sections/sonic-discovery/SdSearchFieldHero.tsx';
 import { SdSearchConsole } from '@/sections/sonic-discovery/SdSearchConsole.tsx';
 import { SdDimensionBands } from '@/sections/sonic-discovery/SdDimensionBands.tsx';
-import { SdShortlist } from '@/sections/sonic-discovery/SdShortlist.tsx';
 import { SdAudienceModes } from '@/sections/sonic-discovery/SdAudienceModes.tsx';
 import { SdProof } from '@/sections/sonic-discovery/SdProof.tsx';
 import { SdFinalCta } from '@/sections/sonic-discovery/SdFinalCta.tsx';
-import { type Track } from '@/sections/sonic-discovery/sdEngine.ts';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.png';
@@ -20,7 +18,6 @@ export default function SonicDiscoveryPage() {
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, []);
 
-  const [shortlist, setShortlist] = useState<Track[]>([]);
   const [audMode, setAudMode] = useState<'dj' | 'prod' | 'sup'>('dj');
 
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
@@ -86,19 +83,6 @@ export default function SonicDiscoveryPage() {
     });
   }, [motionOn]);
 
-  const handleReorder = useCallback((from: number, to: number) => {
-    setShortlist((prev) => {
-      const next = [...prev];
-      const [item] = next.splice(from, 1);
-      next.splice(to, 0, item);
-      return next;
-    });
-  }, []);
-
-  const handleRemove = useCallback((track: Track) => {
-    setShortlist((prev) => prev.filter((p) => p.t !== track.t));
-  }, []);
-
   const assetVars = {
     '--sd-plate-dark': `url(${voidFieldDark})`,
     '--sd-plate-light': `url(${voidFieldLight})`,
@@ -120,12 +104,6 @@ export default function SonicDiscoveryPage() {
 
         <div className="sd-col">
           <SdDimensionBands />
-
-          <SdShortlist
-            shortlist={shortlist}
-            onReorder={handleReorder}
-            onRemove={handleRemove}
-          />
 
           <SdAudienceModes
             mode={audMode}
