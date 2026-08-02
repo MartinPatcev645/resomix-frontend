@@ -1839,3 +1839,22 @@
 .light .hm-page .hm-tlink {
   border-color: rgba(16, 16, 16, 0.24);
 }
+
+/* Disabled: these buttons are used as form submits on the partners pages, where the control
+   was previously indistinguishable from an enabled one. Hover is neutralised too, so a
+   disabled control never suggests it will respond. */
+.hm-page .hm-cta-p:disabled,
+.hm-page .hm-cta-s:disabled,
+.hm-page .hm-tlink:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--color-text-secondary);
+}
+
+.hm-page .hm-cta-p:disabled:hover,
+.hm-page .hm-cta-s:disabled:hover,
+.hm-page .hm-tlink:disabled:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--color-text-secondary);
+}

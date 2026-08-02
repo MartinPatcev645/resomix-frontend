@@ -729,3 +729,22 @@
 .light .sa-page .sa-tlink:hover {
   border-color: rgba(16, 16, 16, 0.6);
 }
+
+/* Disabled: these buttons are used as form submits on the partners pages, where the control
+   was previously indistinguishable from an enabled one. Hover is neutralised too, so a
+   disabled control never suggests it will respond. */
+.sa-page .sa-cta-p:disabled,
+.sa-page .sa-cta-s:disabled,
+.sa-page .sa-tlink:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--color-text-secondary);
+}
+
+.sa-page .sa-cta-p:disabled:hover,
+.sa-page .sa-cta-s:disabled:hover,
+.sa-page .sa-tlink:disabled:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--color-text-secondary);
+}

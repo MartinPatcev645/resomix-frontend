@@ -721,3 +721,22 @@
 .light .dj-page .dj-tlink:hover {
   border-color: rgba(16, 16, 16, 0.6);
 }
+
+/* Disabled: these buttons are used as form submits on the partners pages, where the control
+   was previously indistinguishable from an enabled one. Hover is neutralised too, so a
+   disabled control never suggests it will respond. */
+.dj-page .dj-cta-p:disabled,
+.dj-page .dj-cta-s:disabled,
+.dj-page .dj-tlink:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--color-text-secondary);
+}
+
+.dj-page .dj-cta-p:disabled:hover,
+.dj-page .dj-cta-s:disabled:hover,
+.dj-page .dj-tlink:disabled:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--color-text-secondary);
+}

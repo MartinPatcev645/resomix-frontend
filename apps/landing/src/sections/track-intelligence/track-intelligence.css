@@ -1344,3 +1344,20 @@
 .light .ti-page .ti-pill-line:hover {
   border-color: rgba(16, 16, 16, 0.6);
 }
+
+/* Disabled: these buttons are used as form submits on the partners pages, where the control
+   was previously indistinguishable from an enabled one. Hover is neutralised too, so a
+   disabled control never suggests it will respond. */
+.ti-page .ti-pill-solid:disabled,
+.ti-page .ti-pill-line:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--color-text-secondary);
+}
+
+.ti-page .ti-pill-solid:disabled:hover,
+.ti-page .ti-pill-line:disabled:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--color-text-secondary);
+}
