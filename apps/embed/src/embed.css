@@ -38,6 +38,15 @@
   --text: #f3f3f3;
   --muted: rgba(243, 243, 243, 0.55);
   --accent: #ee4a26;
+  /* Control chrome + waveform. Both themes define these, so nothing downstream hardcodes a
+     white-alpha value that disappears on a light background. */
+  --ctl-border: rgba(255, 255, 255, 0.24);
+  --ctl-border-hover: rgba(255, 255, 255, 0.55);
+  --wave-track: rgba(243, 243, 243, 0.28);
+  --wave-cursor: rgba(243, 243, 243, 0.55);
+  --scroll-thumb: rgba(255, 255, 255, 0.14);
+  /* Hover glow. A white glow is invisible on a light background, so this flips with the theme. */
+  --glow: rgba(255, 255, 255, 0.6);
   --mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   /* Titles, artists, album names — matches the webapp's playlist hero and track rows. */
   --sans: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -101,7 +110,7 @@ body {
   padding: 3px 10px;
   transition: color 0.15s, border-color 0.15s;
 }
-.embed-brand-open:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.28); }
+.embed-brand-open:hover { color: var(--text); border-color: var(--ctl-border-hover); }
 
 /* ── Header (cover + title) ─────────────────────────────────────────────────────────── */
 .embed-head {
@@ -260,7 +269,7 @@ body {
 .embed-apple:hover {
   opacity: 1;
   transform: scale(1.12);
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+  filter: drop-shadow(0 0 6px var(--glow));
 }
 
 .embed-apple:focus-visible {
@@ -326,7 +335,7 @@ body {
   height: 30px;
   padding: 0;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.24);
+  border: 1px solid var(--ctl-border);
   border-radius: 2px;
   color: var(--text);
   cursor: pointer;
@@ -392,7 +401,7 @@ body {
   background: linear-gradient(
     to right,
     var(--accent) 0 var(--fill, 100%),
-    rgba(243, 243, 243, 0.22) var(--fill, 100%) 100%
+    var(--wave-track) var(--fill, 100%) 100%
   );
 }
 
@@ -402,7 +411,7 @@ body {
   background: linear-gradient(
     to right,
     var(--accent) 0 var(--fill, 100%),
-    rgba(243, 243, 243, 0.22) var(--fill, 100%) 100%
+    var(--wave-track) var(--fill, 100%) 100%
   );
 }
 
@@ -499,7 +508,7 @@ body {
 
 /* Scrollbar polish (WebKit). */
 .embed-list::-webkit-scrollbar { width: 8px; }
-.embed-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 8px; }
+.embed-list::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 8px; }
 
 /* Explicit theme via ?theme= (set on <html data-theme>). Dark is the default (:root above);
    light overrides only when the embedder asks for it. */
@@ -509,4 +518,12 @@ body {
   --line: rgba(0, 0, 0, 0.1);
   --text: #141414;
   --muted: rgba(20, 20, 20, 0.55);
+  /* Light needs noticeably more contrast than a mirrored alpha: a 0.24 black on white reads
+     much fainter than 0.24 white on near-black. */
+  --ctl-border: rgba(20, 20, 20, 0.32);
+  --ctl-border-hover: rgba(20, 20, 20, 0.7);
+  --wave-track: rgba(20, 20, 20, 0.32);
+  --wave-cursor: rgba(20, 20, 20, 0.55);
+  --scroll-thumb: rgba(0, 0, 0, 0.18);
+  --glow: rgba(20, 20, 20, 0.35);
 }

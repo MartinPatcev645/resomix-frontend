@@ -22,11 +22,9 @@ interface Props {
   onPlayingChange: (playing: boolean) => void
 }
 
-/** Theme lifted from the webapp/landing: dim track, accent progress, thin bars. */
-const WAVE_OPTIONS = {
-  waveColor: 'rgba(243, 243, 243, 0.22)',
-  progressColor: '#ee4a26',
-  cursorColor: 'rgba(243, 243, 243, 0.55)',
+/** Shape of the waveform. Colours come from CSS so the light theme can override them — hardcoding
+ *  white-alpha here is what made the unplayed bars near-invisible on `?theme=light`. */
+const WAVE_SHAPE = {
   cursorWidth: 1,
   barWidth: 2,
   barGap: 1,
@@ -36,6 +34,10 @@ const WAVE_OPTIONS = {
   /** The preview is short; letting it fill the bar reads better than a true-scale render. */
   fillParent: true,
 } as const
+
+/** Read a CSS custom property off an element, falling back if the sheet has not applied yet. */
+const cssVar = (el: HTMLElement, name: string, fallback: string) =>
+  getComputedStyle(el).getPropertyValue(name).trim() || fallback
 
 const fmt = (s: number) => {
   if (!Number.isFinite(s) || s < 0) return '0:00'
@@ -59,7 +61,15 @@ export const EmbedWaveform = forwardRef<WaveformHandle, Props>(function EmbedWav
   // Build once. Re-creating per track would re-attach listeners and flash the canvas.
   useEffect(() => {
     if (!holder.current) return
-    const inst = WaveSurfer.create({ container: holder.current, ...WAVE_OPTIONS })
+    // Resolved once, at create time: the embedder fixes the theme via ?theme= before mount, so
+    // it cannot change underneath us.
+    const inst = WaveSurfer.create({
+      container: holder.current,
+      ...WAVE_SHAPE,
+      waveColor: cssVar(holder.current, '--wave-track', 'rgba(243, 243, 243, 0.28)'),
+      progressColor: cssVar(holder.current, '--accent', '#ee4a26'),
+      cursorColor: cssVar(holder.current, '--wave-cursor', 'rgba(243, 243, 243, 0.55)'),
+    })
     ws.current = inst
 
     const sync = (v: boolean) => {
