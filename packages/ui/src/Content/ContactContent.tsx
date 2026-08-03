@@ -283,12 +283,9 @@ export default function ContactContent({
               email="support@resomix.com"
               hours="Mon–Fri, 9AM–6PM EST"
             />
-            <ChannelPanel
-              kicker="Business Inquiries"
-              blurb="For press or general business enquiries."
-              email="support@resomix.com"
-              hours="Mon–Fri, 9AM–6PM EST"
-            />
+            {/* A "Business Inquiries" panel used to sit here. It pointed at the same
+                support@resomix.com as Customer Support above, and the partnership panel below now
+                routes the enquiries it was actually for. */}
             <PartnerPanel />
           </aside>
         </div>

@@ -51,13 +51,20 @@ describe('contact page partnership panel', () => {
     expect(partnerLink().tagName).toBe('A');
   });
 
-  it('sits after the two support channels', () => {
+  it('sits after the support channel', () => {
     renderContact();
     const order = [...document.querySelectorAll('*')];
-    const kickers = screen.getAllByText(/customer support|business inquiries|partnerships/i);
+    const kickers = screen.getAllByText(/customer support|partnerships/i);
     const positions = kickers.map((k) => order.indexOf(k));
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
-    expect(kickers).toHaveLength(3);
+    expect(kickers).toHaveLength(2);
+  });
+
+  it('has no Business Inquiries panel', () => {
+    // Removed once the partnership panel shipped: it routed to the same support@resomix.com as
+    // Customer Support, so it was a third box that told the reader nothing new.
+    renderContact();
+    expect(screen.queryByText(/business inquiries/i)).not.toBeInTheDocument();
   });
 
   it('explains what a partner would actually be asking for', () => {
