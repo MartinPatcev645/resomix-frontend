@@ -268,13 +268,21 @@ html #stcm-modal footer a.stcm-credit-link {
 
 
 /* Mobile hero headings: hyphenate rather than overflow.
-   Every landing page has exactly one <h1> — the hero — set in Benzin at display size, and single
-   long words ("CATALOGUE", "DISCOVERABLE") can be wider than a 390px phone on their own. `hyphens:
-   auto` breaks them across lines WITH a trailing hyphen, which is what a reader expects; the source
+   Every landing page has exactly one <h1> — the hero — set in Benzin at display size, and a single
+   long word ("CATALOGUE", "DISCOVERABLE") can be wider than a 390px phone on its own. `hyphens:
+   auto` breaks it across lines WITH a trailing hyphen, which is what a reader expects; the source
    strings are sentence case (uppercase comes from text-transform), so the hyphenation dictionary
-   sees real words. `overflow-wrap: break-word` is only the last resort for a token the dictionary
-   can't split; per-page rules that already set `overflow-wrap: anywhere` outrank it and are
-   unaffected. Both are dropped at 768px, where the heroes have room. */
+   sees real words.
+
+   `hyphens: auto` alone is NOT enough and must not be relied on: it silently does nothing when the
+   engine has no hyphenation dictionary for the locale, which is what happened here — the heading
+   simply ran past the side rules again. The words that actually need it therefore carry explicit
+   SOFT HYPHENS (U+00AD) in the locale strings; a soft hyphen is a real break opportunity, so it is
+   taken in preference to the emergency break below and it renders the "-".
+
+   `overflow-wrap: break-word` is the last resort only, for a token with neither. Order matters: a
+   line breaks at a soft hyphen if it has one, else at a dictionary point if the engine has one, else
+   mid-word without a hyphen — never overflowing. All dropped at 768px, where the heroes have room. */
 @media (max-width: 767px) {
   h1 {
     -webkit-hyphens: auto;
