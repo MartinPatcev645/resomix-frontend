@@ -1,6 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import type { Plugin } from 'vite'
 
 /**
  * Emits one real HTML file per route, with that route's head tags baked in.
@@ -56,7 +55,7 @@ export function prerenderHead(options: {
   routes: Record<string, RouteSeoLike>
   origin: string
   outDir: string
-}): Plugin {
+}): { name: string; apply: 'build'; closeBundle(): void } {
   const { routes, origin, outDir } = options
 
   return {

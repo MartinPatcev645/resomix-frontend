@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 import { writeFileSync } from 'node:fs'
 import { ROUTE_SEO, SITEMAP_DEFAULTS, SITE_ORIGIN } from './src/routes/seoConfig.ts'
-import { prerenderHead } from './build/prerenderHead.ts'
+import { prerenderHead } from '../../tooling/prerenderHead.ts'
 
 // https://vite.dev/config/
 export default defineConfig({

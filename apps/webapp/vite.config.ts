@@ -14,6 +14,7 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 import { writeFileSync } from 'node:fs'
 import { ROUTE_SEO, SITEMAP_DEFAULTS, SITE_ORIGIN } from './src/routes/seoConfig.ts'
+import { prerenderHead } from '../../tooling/prerenderHead.ts'
 
 const BACKEND_TARGET = 'https://bserver.resomix.com'
 const MEDIA_TARGET = 'https://media.resomix.com'
@@ -73,6 +74,13 @@ export default defineConfig({
     },
     react(), 
     tailwindcss(),
+    /* Bakes each route's head into its own HTML file. Link-preview scrapers do not run JS, so a
+       shared beta URL previewed as the app home whatever page it pointed at. */
+    prerenderHead({
+      routes: ROUTE_SEO,
+      origin: SITE_ORIGIN,
+      outDir: path.resolve(__dirname, 'dist'),
+    }),
     {
       name: 'remove-crossorigin-stylesheet',
       transformIndexHtml(html) {

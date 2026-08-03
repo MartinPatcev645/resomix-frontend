@@ -1,0 +1,5 @@
+{
+  "name": "@resomix/tooling",
+  "private": true,
+  "type": "module"
+}
