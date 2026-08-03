@@ -379,6 +379,54 @@ class AppleMusicTransferService:
         except Exception as e:
             logger.error("Failed to cache Apple Music IDs: %s", str(e))
     
+    async def _resolve_seed_reference(
+        self, db: AsyncSession, seed_track_id: Optional[int]
+    ) -> Tuple[str, str]:
+        """Resolve the seed track's ``(title, artist)`` for the exported playlist's name.
+
+        Order matters, and mirrors what the user already sees on the playlist page:
+
+        1. **Apple's own metadata** — authoritative for a catalogue seed, and keeps the exported
+           name consistent with what Apple shows.
+        2. **Contributors** (``track_contributors`` -> ``contributors.full_name``) — this is where an
+           UPLOAD carries its artist, and it is exactly what the playlist view reads. Missing this
+           step is why an upload seeded playlist exported as "Unknown Artist" while the playlist
+           itself displayed the artist correctly.
+        3. ``tracks.display_artist`` — often empty for uploads, so it cannot be the only fallback.
+        """
+        title: Optional[str] = None
+        artist: Optional[str] = None
+
+        if seed_track_id:
+            seed_apple = (await self.apple_music_repository.async_get_by_track_ids(
+                db, [seed_track_id])).get(seed_track_id)
+            if seed_apple:
+                title = seed_apple.get("name")
+                artist = seed_apple.get("artist")
+
+            if not (title and artist):
+                seed_track = await self.track_repository.async_get_by_id(db, seed_track_id)
+                if seed_track:
+                    title = title or seed_track.title
+                    artist = artist or getattr(seed_track, "display_artist", None)
+
+            if not artist:
+                try:
+                    contributors = await self.track_repository.async_get_track_artists(
+                        db, seed_track_id
+                    )
+                    names = [
+                        c.full_name.strip()
+                        for c in (contributors or [])
+                        if getattr(c, "full_name", None) and c.full_name.strip()
+                    ]
+                    if names:
+                        artist = ", ".join(names)
+                except Exception as exc:  # pragma: no cover - naming must never fail the export
+                    logger.warning("Could not read seed contributors for %s: %s", seed_track_id, exc)
+
+        return (title or "Unknown Track").strip(), (artist or "Unknown Artist").strip()
+
     async def _create_playlist(self, dev_token: str, user_token: str, name: str, 
                               description: Optional[str] = None) -> str:
         """
@@ -704,20 +752,7 @@ class AppleMusicTransferService:
             #    was generated from — so the export reads like the Resomix result and is understandable
             #    to someone who's never heard of the service. "Artist - Title" uses the Apple-enriched
             #    name/artist first, with the in-house metadata as fallback.
-            seed_title = seed_artist = None
-            if playlist.seed_track_id:
-                seed_apple = (await self.apple_music_repository.async_get_by_track_ids(
-                    db, [playlist.seed_track_id])).get(playlist.seed_track_id)
-                if seed_apple:
-                    seed_title = seed_apple.get("name")
-                    seed_artist = seed_apple.get("artist")
-                if not (seed_title and seed_artist):
-                    seed_track = await self.track_repository.async_get_by_id(db, playlist.seed_track_id)
-                    if seed_track:
-                        seed_title = seed_title or seed_track.title
-                        seed_artist = seed_artist or getattr(seed_track, "display_artist", None)
-            seed_title = (seed_title or "Unknown Track").strip()
-            seed_artist = (seed_artist or "Unknown Artist").strip()
+            seed_title, seed_artist = await self._resolve_seed_reference(db, playlist.seed_track_id)
             seed_ref = f"{seed_artist} - {seed_title}"
 
             # Most common INDIVIDUAL artist across the playlist (multi-artist values are pipe-joined,

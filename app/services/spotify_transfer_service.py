@@ -689,11 +689,16 @@ class SpotifyTransferService:
                                     db, seed_track_obj.id
                                 )
                             )
-                            seed_artists = (
-                                [a.name for a in artists]
-                                if artists
-                                else ["Unknown Artist"]
-                            )
+                            # Contributor exposes `full_name`; `a.name` raised AttributeError and
+                            # was swallowed by the except below, so this fallback silently produced
+                            # nothing. It only looked fine because the similarity payload above
+                            # usually wins.
+                            names = [
+                                a.full_name.strip()
+                                for a in artists
+                                if getattr(a, "full_name", None) and a.full_name.strip()
+                            ]
+                            seed_artists = names or ["Unknown Artist"]
                             seed_title = seed_track_obj.title or "Unknown Track"
                     except Exception as e:
                         logger.warning("Failed to load seed track details: %s", e)
