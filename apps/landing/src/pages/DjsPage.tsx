@@ -18,13 +18,6 @@ export default function DjsPage() {
   }, []);
 
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = 'DJs — Dig Less. Discover More. | Resomix';
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
 
   // Continuous animations only while the owning section is in viewport
   useEffect(() => {

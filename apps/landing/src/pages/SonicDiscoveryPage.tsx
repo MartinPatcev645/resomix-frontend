@@ -21,13 +21,6 @@ export default function SonicDiscoveryPage() {
   const [audMode, setAudMode] = useState<'dj' | 'prod' | 'sup'>('dj');
 
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = 'Sonic Discovery — Find Tracks by Sound, Not Tags | Resomix';
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
 
   // Draw-once motion for remaining page figures (dimensions / audience)
   useEffect(() => {

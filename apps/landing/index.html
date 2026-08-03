@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Resomix Sonic Discovery</title>
-    <link rel="icon" type="image/svg+xml" href="/logo.png" />
-    <meta name="title" content="Resomix Sonic Discovery" />
+    <title>Resomix — Hear the Invisible | Sonic Intelligence Platform</title>
+    <!-- type corrected: this is a PNG, and it was declared as image/svg+xml. -->
+    <link rel="icon" type="image/png" href="/logo.png" />
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag() {
@@ -55,11 +55,68 @@
     <meta property="og:locale" content="en_US" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#000000" />
+    <!--
+      DEFAULTS ONLY. src/components/RouteMeta.tsx rewrites the title, description, canonical and
+      the og:/twitter: tags below on every route change.
+
+      They still matter: Googlebot renders JavaScript, but the scrapers behind Slack, WhatsApp,
+      iMessage, LinkedIn and Facebook do NOT — they read this raw HTML. So these values are what a
+      shared link previews as, whichever page was shared. Keep them describing the site as a whole.
+    -->
+    <meta name="robots" content="index, follow" />
     <meta
       name="description"
-      content="Resomix is a Sonic Analysis platform that helps DJs discover tracks by feeling, not by genre."
+      content="Resomix finds music by how it sounds, not how it is tagged. Drop one track and discover what belongs next to it."
     />
     <link rel="canonical" href="https://resomix.com/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://resomix.com/" />
+    <meta property="og:title" content="Resomix — Hear the Invisible | Sonic Intelligence Platform" />
+    <meta
+      property="og:description"
+      content="Resomix finds music by how it sounds, not how it is tagged. Drop one track and discover what belongs next to it."
+    />
+    <!-- TODO: replace with a 1200x630 landscape asset; this is the 399x399 logo and will crop to a small square card. -->
+    <meta property="og:image" content="https://resomix.com/logo.png" />
+    <meta property="og:image:alt" content="Resomix — sonic intelligence platform" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Resomix — Hear the Invisible | Sonic Intelligence Platform" />
+    <meta
+      name="twitter:description"
+      content="Resomix finds music by how it sounds, not how it is tagged. Drop one track and discover what belongs next to it."
+    />
+    <meta name="twitter:image" content="https://resomix.com/logo.png" />
+
+    <!--
+      Structured data, kept in the static HTML on purpose: unlike the tags above it is read without
+      executing the app, so it works for every crawler.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://resomix.com/#organization",
+            "name": "Resomix",
+            "url": "https://resomix.com/",
+            "logo": "https://resomix.com/logo.png",
+            "description": "Sonic intelligence platform for discovering, analysing and indexing music by sound."
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://resomix.com/#website",
+            "url": "https://resomix.com/",
+            "name": "Resomix",
+            "publisher": { "@id": "https://resomix.com/#organization" }
+          }
+        ]
+      }
+    </script>
 
     <!-- Humans.txt -->
     <link type="text/plain" rel="author" href="/humans.txt" />

@@ -23,13 +23,6 @@ export default function HomePage() {
   }, []);
 
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = 'Resomix — Hear the Invisible | Sonic Intelligence Platform';
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
 
   // Continuous animations only while the owning section is in viewport
   useEffect(() => {

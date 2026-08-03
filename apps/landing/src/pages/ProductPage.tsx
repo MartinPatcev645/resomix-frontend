@@ -12,37 +12,11 @@ import { PoTrust } from '@/sections/product/PoTrust.tsx';
 import { PoClosing } from '@/sections/product/PoClosing.tsx';
 import '@/sections/product/product.css';
 
-const META_DESCRIPTION =
-  'Resomix uses PYXIS-1 to help you find sonically related tracks, understand one recording in greater detail, or make an authorised catalogue searchable by sound.';
 
 export default function ProductPage() {
   const motionOn = useMemo(() => {
     if (typeof window === 'undefined') return false;
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }, []);
-
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = 'Product — Sonic Routing Desk | Resomix';
-
-    let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-    const previousContent = meta?.getAttribute('content') ?? null;
-    const created = !meta;
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.setAttribute('name', 'description');
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute('content', META_DESCRIPTION);
-
-    return () => {
-      document.title = previousTitle;
-      if (created) {
-        meta?.remove();
-      } else if (previousContent !== null) {
-        meta?.setAttribute('content', previousContent);
-      }
-    };
   }, []);
 
   // Draw-once reveal: sections go .live on first intersection, then unobserve.

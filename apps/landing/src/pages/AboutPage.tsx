@@ -15,37 +15,11 @@ import { AbFounder } from '@/sections/about/AbFounder.tsx';
 import { AbClosing } from '@/sections/about/AbClosing.tsx';
 import '@/sections/about/about.css';
 
-const META_DESCRIPTION =
-  'Resomix helps people discover sonically related tracks, understand one recording in greater detail and make authorised catalogues searchable through sound.';
 
 export default function AboutPage() {
   const motionOn = useMemo(() => {
     if (typeof window === 'undefined') return false;
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }, []);
-
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = 'About — The Listening Observatory | Resomix';
-
-    let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-    const previousContent = meta?.getAttribute('content') ?? null;
-    const created = !meta;
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.setAttribute('name', 'description');
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute('content', META_DESCRIPTION);
-
-    return () => {
-      document.title = previousTitle;
-      if (created) {
-        meta?.remove();
-      } else if (previousContent !== null) {
-        meta?.setAttribute('content', previousContent);
-      }
-    };
   }, []);
 
   // Draw-once reveal: sections go .live on first intersection, then unobserve.

@@ -20,13 +20,6 @@ export default function RecordLabelsPage() {
   }, []);
 
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = 'Record Labels — Maximise Your Catalogue with Resomix | Resomix';
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
 
   // Continuous animations only while the owning section is in viewport
   useEffect(() => {

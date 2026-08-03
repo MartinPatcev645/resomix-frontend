@@ -19,14 +19,6 @@ export default function MusicLibrariesPage() {
   }, []);
 
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title =
-      'Music Libraries & Sample Providers — Turn Your Catalogue Into a Sonic Discovery Engine | Resomix';
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
 
   // Continuous animations only while the owning section is in viewport
   useEffect(() => {

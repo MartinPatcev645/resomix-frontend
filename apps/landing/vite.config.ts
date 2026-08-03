@@ -2,12 +2,52 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
+import { writeFileSync } from 'node:fs'
+import { ROUTE_SEO, SITEMAP_DEFAULTS, SITE_ORIGIN } from './src/routes/seoConfig.ts'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(), 
     tailwindcss(),
+    {
+      /* Sitemap is GENERATED, never hand-edited.
+         The old public/sitemap.xml had drifted badly — it advertised /terms and /privacy, which are
+         not routes, and listed one of the seventeen marketing pages. Deriving it from the same
+         config that drives the document head means a page cannot ship indexed-but-missing, or
+         listed-but-deleted. */
+      name: 'generate-sitemap',
+      apply: 'build',
+      closeBundle() {
+        const today = new Date().toISOString().slice(0, 10)
+        const urls = Object.entries(ROUTE_SEO)
+          .filter(([, seo]) => !seo.noindex)
+          .map(([routePath, seo]) => {
+            const loc = routePath === '/' ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${routePath}`
+            const changefreq = seo.changefreq ?? SITEMAP_DEFAULTS.changefreq
+            const priority = (seo.priority ?? SITEMAP_DEFAULTS.priority).toFixed(1)
+            return [
+              '  <url>',
+              `    <loc>${loc}</loc>`,
+              `    <lastmod>${today}</lastmod>`,
+              `    <changefreq>${changefreq}</changefreq>`,
+              `    <priority>${priority}</priority>`,
+              '  </url>',
+            ].join('\n')
+          })
+          .join('\n')
+
+        const xml =
+          '<?xml version="1.0" encoding="UTF-8"?>\n' +
+          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+          urls +
+          '\n</urlset>\n'
+
+        writeFileSync(path.resolve(__dirname, 'dist/sitemap.xml'), xml)
+        // eslint-disable-next-line no-console
+        console.log(`  sitemap.xml  ${Object.keys(ROUTE_SEO).length} routes -> ${urls.split('<url>').length - 1} indexed`)
+      },
+    },
     {
       name: 'remove-crossorigin-stylesheet',
       transformIndexHtml(html) {

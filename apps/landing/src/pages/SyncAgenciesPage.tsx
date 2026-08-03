@@ -19,13 +19,6 @@ export default function SyncAgenciesPage() {
   }, []);
 
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = 'Sync Agencies — Translating Tags into Emotions | Resomix';
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
 
   // Continuous animations only while the owning section is in viewport
   useEffect(() => {

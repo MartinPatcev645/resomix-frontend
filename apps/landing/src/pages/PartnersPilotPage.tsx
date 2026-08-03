@@ -23,14 +23,6 @@ export default function PartnersPilotPage() {
   }, []);
 
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title =
-      'Private Catalogue Pilot — Test Resomix on Your Own Catalogue | Resomix';
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
 
   const scrollToMethod = useCallback(() => {
     const el = document.getElementById('method');

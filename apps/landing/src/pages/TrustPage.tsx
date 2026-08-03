@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { TrVoidBackground } from '@/sections/trust/TrVoidBackground.tsx';
 import { TrHero } from '@/sections/trust/TrHero.tsx';
 import { TrGlanceLedger } from '@/sections/trust/TrGlanceLedger.tsx';
@@ -16,13 +15,6 @@ import '@/sections/trust/trust.css';
 
 export default function TrustPage() {
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = 'Trust, Rights & Security — How Resomix Handles Audio and Data';
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
 
   const assetVars = {
     '--tr-plate-dark': `url(${voidFieldDark})`,

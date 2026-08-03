@@ -18,14 +18,6 @@ export default function ProducersPage() {
   }, []);
 
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title =
-      'Electronic Music Producers — Turn One Reference Track Into New Sonic Directions | Resomix';
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
 
   // Continuous animations only while the owning section is in viewport
   useEffect(() => {

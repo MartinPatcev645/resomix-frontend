@@ -8,6 +8,7 @@ import { LandingLayout } from "@/components/index.ts";
 import { AppBackground } from "@/components/Layout/AppBackground.tsx";
 import { BetaAuthRedirect } from "@/components/BetaAuthRedirect.tsx";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary.tsx";
+import { RouteMeta } from "@/components/RouteMeta.tsx";
 import { RouteFallback } from "@/components/RouteFallback.tsx";
 import { PAGE_LOADERS } from "@/routes/pageLoaders.ts";
 import { lazyRoute } from "@/routes/lazyRoute.ts";
@@ -82,6 +83,10 @@ function App() {
         />}
 
       {showFeedback && <FeedbackForm />}
+
+      {/* Title, description, canonical and social tags for the current route. Mounted once so
+          no page has to remember to set them. */}
+      <RouteMeta />
 
       {/* resetKey: an error on one route must not poison the next one the user picks. */}
       <RouteErrorBoundary resetKey={location.pathname}>

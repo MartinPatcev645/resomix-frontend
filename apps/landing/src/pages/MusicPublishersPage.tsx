@@ -21,13 +21,6 @@ export default function MusicPublishersPage() {
   }, []);
 
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = 'Music Publishers — Turn Your Catalogue Into a Living Asset | Resomix';
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
 
   // Draw-once reveal: sections go .live on first intersection, then unobserve.
   // Reduced motion (or no IO) resolves straight to the finished state.

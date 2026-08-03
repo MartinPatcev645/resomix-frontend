@@ -23,13 +23,6 @@ export default function DevelopersPage() {
   const [copyMsg, setCopyMsg] = useState('');
 
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = 'Resomix for Developers — Audio Similarity & Sonic Analysis API';
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
 
   // Draw-once motion — IO on HTML containers, not SVG paths
   useEffect(() => {

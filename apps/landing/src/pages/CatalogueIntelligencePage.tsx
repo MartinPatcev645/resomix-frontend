@@ -16,39 +16,11 @@ import voidGrainDark from '@/assets/void-field/void-grain-dark.png';
 import voidGrainLight from '@/assets/void-field/void-grain-light.png';
 import '@/sections/catalogue-intelligence/catalogue-intelligence.css';
 
-const META_DESCRIPTION =
-  'Resomix processes authorised catalogue recordings with PYXIS-1, creates a sonic profile for each track and makes the catalogue searchable through reference-based similarity.';
 
 export default function CatalogueIntelligencePage() {
   const motionOn = useMemo(() => {
     if (typeof window === 'undefined') return false;
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }, []);
-
-  // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title =
-      'Catalogue Intelligence — Make Your Catalogue Discoverable by Sound | Resomix';
-
-    let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-    const previousContent = meta?.getAttribute('content') ?? null;
-    const created = !meta;
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.setAttribute('name', 'description');
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute('content', META_DESCRIPTION);
-
-    return () => {
-      document.title = previousTitle;
-      if (created) {
-        meta?.remove();
-      } else if (previousContent !== null) {
-        meta?.setAttribute('content', previousContent);
-      }
-    };
   }, []);
 
   // Draw-once reveal: sections go .live on first intersection, then unobserve.

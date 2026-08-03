@@ -24,13 +24,6 @@ export default function TrackIntelligencePage() {
   }, []);
 
   // Interim SEO — open decision, IMPLEMENTATION_RULES §36.1
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = 'Track Intelligence — See What a Track Is Made Of | Resomix';
-    return () => {
-      document.title = previousTitle;
-    };
-  }, []);
 
   // Draw-once motion — IO on HTML containers, not SVG paths
   useEffect(() => {
