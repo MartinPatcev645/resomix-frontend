@@ -6,7 +6,13 @@ interface DemoStageBannerProps {
 
 export const DemoStageBanner: React.FC<DemoStageBannerProps> = ({ onDismiss, contactUrl = "/contact" }) => {
   return (
-    <div className="w-full bg-[var(--color-secondary)] border-l-4 border-[var(--color-primary)] p-[var(--px-12)] mb-[var(--px-20)] flex items-start justify-between gap-[var(--px-10)] relative z-10">
+    // z-40, not z-10: both apps render this banner OUTSIDE the page shell, and that shell is
+    // `relative z-30` — which makes it a stacking context. Marketing pages hang their void-field
+    // backdrop (`position: fixed; inset: 0`) inside it, so although those layers set z-index:-3
+    // they still paint at 30 — i.e. over this banner — washing the text out to grey, or hiding it
+    // completely on the darker pages. Anything that must cover the banner (drawer 70, modals 120+)
+    // is still comfortably above.
+    <div className="w-full bg-[var(--color-secondary)] border-l-4 border-[var(--color-primary)] p-[var(--px-12)] mb-[var(--px-20)] flex items-start justify-between gap-[var(--px-10)] relative z-40">
       <div className="flex items-start gap-[var(--px-10)] flex-1">
         <span className="text-[var(--color-primary)] text-[length:var(--px-18)] flex-shrink-0 mt-[var(--px-2)]">
           ⚠

@@ -25,7 +25,10 @@ export const AuthStatusBanner: React.FC<AuthStatusBannerProps> = ({
     // A notice, not a control: it reports something and offers actions, but the block itself isn't
     // operable — so it wears the hairline mark, not the full-weight one. (It previously used an
     // accent rule down the left edge; that treatment now means playback/selection state.)
-    <div className={`z-10 mb-[var(--px-20)] flex w-full items-center justify-between gap-[var(--px-12)] border border-[var(--rx-color-border-subtle)] bg-[var(--rx-color-surface)] p-[var(--px-12)] ${PAGE_MARK_STATIC}`}>
+    // `relative z-40`: this sits in the same slot as DemoStageBanner and had the same problem —
+    // covered by the page shell's fixed backdrop. Worse, its z-10 was inert, because z-index does
+    // nothing on a statically positioned box.
+    <div className={`relative z-40 mb-[var(--px-20)] flex w-full items-center justify-between gap-[var(--px-12)] border border-[var(--rx-color-border-subtle)] bg-[var(--rx-color-surface)] p-[var(--px-12)] ${PAGE_MARK_STATIC}`}>
       <div className="flex flex-1 items-center gap-[var(--px-10)]">
         <svg
           viewBox="0 0 24 24"
