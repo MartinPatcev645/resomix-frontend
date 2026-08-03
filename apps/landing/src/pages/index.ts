@@ -3,7 +3,6 @@ import AuthPage from "./AuthPage.tsx";
 import TestPage from "./TestPage.tsx";
 import MenuPage from "./MenuPage.tsx";
 import PartnersPage from "./PartnersPage.tsx";
-import PricingPage from "./PricingPage.tsx";
 import ProductPage from "./ProductPage.tsx";
 import SonicDiscoveryPage from "./SonicDiscoveryPage.tsx";
 import TrackIntelligencePage from "./TrackIntelligencePage.tsx";
@@ -29,7 +28,6 @@ export {
     TestPage,
     MenuPage,
     PartnersPage,
-    PricingPage,
     ProductPage,
     SonicDiscoveryPage,
     TrackIntelligencePage,

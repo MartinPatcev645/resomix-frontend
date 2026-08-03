@@ -27,7 +27,6 @@ export const PAGE_LOADERS: Record<string, Loader> = {
   '/about': page(() => import('@/pages/AboutPage.tsx')),
   '/partners': page(() => import('@/pages/PartnersPage.tsx')),
   '/partners/pilot': page(() => import('@/pages/PartnersPilotPage.tsx')),
-  '/pricing': page(() => import('@/pages/PricingPage.tsx')),
   '/product': page(() => import('@/pages/ProductPage.tsx')),
   '/product/sonic-discovery': page(() => import('@/pages/SonicDiscoveryPage.tsx')),
   '/product/track-intelligence': page(() => import('@/pages/TrackIntelligencePage.tsx')),

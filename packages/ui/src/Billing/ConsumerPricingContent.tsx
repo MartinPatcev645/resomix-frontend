@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
 import type { BillingPlansResponse } from "@resomix/api-client";
+import { PricingButton } from "./PricingButton";
+import { Chip, Eyebrow, PlanPanel, SectionBody, SectionHeading } from "./PricingChrome";
 
 /**
  * Consumer plans — rendered as the FIRST section of the unified pricing page (`PricingContent`).
  * Fetches /billing/plans and renders Free / Pro (purchasable → Stripe Checkout) / Basic + Max
  * ("Coming soon"). Highlights the viewer's current plan; already-subscribed → Manage (Portal).
  * Section-only: no page chrome (heading/back-link live on the page). Works logged-out too.
+ *
+ * Presentation follows the marketing system (square hairline panels, mono labels, the landing
+ * button). The billing behaviour below is unchanged.
  */
 
 const PLAN_TAGLINES: Record<string, string> = {
@@ -102,20 +106,21 @@ export function ConsumerPricingContent() {
   const plans = data?.plans || [];
 
   return (
-    <section className="space-y-[var(--px-24)] lg:space-y-[var(--px-32)]">
-      <header className="text-center">
-        <h2 className="text-[length:var(--px-22)] lg:text-[length:var(--px-28)] font-medium uppercase tracking-wide">
-          For Creators
-        </h2>
-        <p className="mt-[var(--px-6)] text-[length:var(--px-12)] lg:text-[length:var(--px-10)] font-extralight opacity-70 max-w-xl mx-auto">
+    <section className="space-y-[var(--px-32)]">
+      <header>
+        <Eyebrow>For Creators</Eyebrow>
+        <SectionHeading>Simple monthly plans</SectionHeading>
+        <SectionBody className="mt-[var(--px-14)] max-w-[52ch]">
           Simple monthly plans for individual creators. Upgrade, downgrade or cancel anytime.
-        </p>
+        </SectionBody>
       </header>
 
       {loading ? (
-        <div className="text-center text-[length:var(--px-11)] font-light lg:opacity-80">Loading…</div>
+        <p className="font-fira text-[length:var(--px-11)] uppercase tracking-[0.18em] text-[var(--color-primary-hover)]">
+          Loading…
+        </p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[var(--px-20)] items-stretch">
+        <div className="grid grid-cols-1 items-stretch gap-[var(--px-20)] md:grid-cols-2 lg:grid-cols-4">
           {plans.map((p) => {
             const isCurrent = p.is_current;
             const price = p.is_free
@@ -124,32 +129,27 @@ export function ConsumerPricingContent() {
                 ? fmtMoney(p.unit_amount_cents, p.currency)
                 : null;
             return (
-              <div
-                key={p.code}
-                className={`bg-[var(--color-primary-background)]/30 backdrop-blur-md rounded-[var(--px-10)] p-[var(--px-24)] flex flex-col justify-between transition-all duration-300 ${
-                  isCurrent
-                    ? "border-2 border-[var(--color-primary)]"
-                    : "border border-slate-200 border-dotted hover:border-zinc-500"
-                }`}
-              >
+              <PlanPanel key={p.code} highlighted={!!isCurrent}>
                 <div className="space-y-[var(--px-16)]">
                   <div className="flex items-center justify-between gap-[var(--px-8)]">
-                    <h3 className="text-[length:var(--px-20)] font-medium uppercase tracking-wide">{p.name}</h3>
-                    {isCurrent && (
-                      <span className="text-[length:var(--px-9)] uppercase font-fira px-[var(--px-8)] py-[var(--px-2)] rounded-full bg-[var(--color-primary)] text-[var(--color-secondary)]">
-                        Your plan
-                      </span>
-                    )}
+                    <h3 className="m-0 font-helvetica text-[length:var(--px-18)] font-bold uppercase tracking-[var(--px-1)] text-[var(--color-text-secondary)]">
+                      {p.name}
+                    </h3>
+                    {isCurrent && <Chip>Your plan</Chip>}
                   </div>
 
-                  <div className="border-t border-b border-slate-200 border-dotted py-[var(--px-16)]">
+                  <div className="border-y border-white/13 py-[var(--px-16)]">
                     {p.coming_soon ? (
-                      <span className="text-[length:var(--px-20)] font-medium opacity-60">Coming soon</span>
+                      <span className="font-fira text-[length:var(--px-13)] uppercase tracking-[0.14em] text-[var(--color-primary-hover)] opacity-70">
+                        Coming soon
+                      </span>
                     ) : (
                       <div className="flex items-baseline gap-[var(--px-4)]">
-                        <span className="text-[length:var(--px-36)] leading-none font-medium tracking-tight">{price}</span>
+                        <span className="font-helvetica text-[length:var(--px-36)] font-bold leading-none tracking-tight text-[var(--color-text-secondary)]">
+                          {price}
+                        </span>
                         {!p.is_free && (
-                          <span className="text-[length:var(--px-11)] opacity-60 font-extralight">
+                          <span className="font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] text-[var(--color-primary-hover)] opacity-70">
                             / {p.interval === "year" ? "yr" : "mo"}
                           </span>
                         )}
@@ -157,50 +157,46 @@ export function ConsumerPricingContent() {
                     )}
                   </div>
 
-                  <p className="text-[length:var(--px-12)] font-extralight leading-[var(--px-16)] opacity-80">
+                  <p className="m-0 font-helvetica text-[length:var(--px-13)] font-light leading-[1.65] text-[var(--color-primary-hover)]">
                     {PLAN_TAGLINES[p.code] || ""}
                   </p>
                 </div>
 
                 <div className="mt-[var(--px-24)]">
                   {p.coming_soon ? (
-                    <button
-                      disabled
-                      className="w-full px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted rounded text-[length:var(--px-11)] font-light opacity-50 cursor-not-allowed"
-                    >
+                    <PricingButton fullWidth disabled>
                       Coming soon
-                    </button>
+                    </PricingButton>
                   ) : p.is_free ? (
-                    <button
-                      disabled
-                      className="w-full px-[var(--px-20)] py-[var(--px-10)] border border-slate-200 border-dotted rounded text-[length:var(--px-11)] font-light opacity-60"
-                    >
+                    <PricingButton fullWidth disabled>
                       {isCurrent ? "Your plan" : "Included"}
-                    </button>
+                    </PricingButton>
                   ) : isCurrent ? (
-                    <ButtonSleek
-                      text={busy === "__manage__" ? "Opening…" : "Manage"}
-                      onClick={manage}
-                      transparent
-                      customWidth="w-full"
-                      disabled={!!busy}
-                    />
+                    <PricingButton fullWidth onClick={manage} disabled={!!busy}>
+                      {busy === "__manage__" ? "Opening…" : "Manage"}
+                    </PricingButton>
                   ) : (
-                    <ButtonSleek
-                      text={busy === p.code ? "Redirecting…" : authed ? "Subscribe" : "Sign in to subscribe"}
+                    <PricingButton
+                      fullWidth
+                      variant="primary"
                       onClick={() => subscribe(p.code)}
-                      customWidth="w-full"
                       disabled={!!busy}
-                    />
+                    >
+                      {busy === p.code ? "Redirecting…" : authed ? "Subscribe" : "Sign in to subscribe"}
+                    </PricingButton>
                   )}
                 </div>
-              </div>
+              </PlanPanel>
             );
           })}
         </div>
       )}
 
-      {error && <div className="text-center text-[length:var(--px-10)] font-light text-red-500">{error}</div>}
+      {error && (
+        <p className="font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] text-[var(--color-neon-orange)]">
+          {error}
+        </p>
+      )}
     </section>
   );
 }

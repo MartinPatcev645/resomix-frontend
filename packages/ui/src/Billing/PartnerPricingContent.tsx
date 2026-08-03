@@ -1,20 +1,26 @@
 import { useState, type ReactNode } from "react";
-import { ButtonSleek } from "../Buttons/ButtonSleek";
+import { PricingButton } from "./PricingButton";
+import { Chip, Eyebrow, PlanPanel, SectionBody, SectionHeading } from "./PricingChrome";
 
 /**
  * B2B / partner plans — rendered as the SECOND section of the unified pricing page
  * (`PricingContent`). Single responsive component (Tailwind breakpoints, no JS media queries).
  * Ported from the old standalone landing `/pricing` page. CTAs point at the partners form.
+ *
+ * Presentation follows the marketing system: square hairline panels, a squared segmented control
+ * in place of the rounded pill toggle, mono labels, and the landing button. Pricing and copy are
+ * unchanged.
  */
 
 const CheckMark = () => (
   <svg
-    className="w-[var(--px-12)] h-[var(--px-12)] stroke-current opacity-80 shrink-0"
+    className="w-[var(--px-12)] h-[var(--px-12)] shrink-0 stroke-[var(--color-neon-orange)]"
     fill="none"
     viewBox="0 0 24 24"
     strokeWidth="2.5"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
   >
     <polyline points="20 6 9 17 4 12" />
   </svg>
@@ -22,12 +28,13 @@ const CheckMark = () => (
 
 const CrossMark = () => (
   <svg
-    className="w-[var(--px-12)] h-[var(--px-12)] stroke-current opacity-40 shrink-0"
+    className="w-[var(--px-12)] h-[var(--px-12)] shrink-0 stroke-current opacity-35"
     fill="none"
     viewBox="0 0 24 24"
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
   >
     <line x1="18" y1="6" x2="6" y2="18" />
     <line x1="6" y1="6" x2="18" y2="18" />
@@ -37,7 +44,7 @@ const CrossMark = () => (
 const SoundWaves = () => (
   <svg
     viewBox="0 0 44 24"
-    className="w-[var(--px-32)] h-[var(--px-20)] opacity-30 shrink-0"
+    className="w-[var(--px-32)] h-[var(--px-20)] shrink-0 opacity-30"
     fill="none"
     stroke="currentColor"
     strokeWidth="2"
@@ -84,47 +91,55 @@ function B2BCard({
   highlighted?: boolean;
 }) {
   return (
-    <div
-      className={`relative bg-[var(--color-primary-background)]/30 backdrop-blur-md rounded-[var(--px-10)] p-[var(--px-20)] lg:p-[var(--px-28)] flex flex-col justify-between transition-all duration-300 ${
-        highlighted
-          ? "border-2 border-[var(--color-primary)] hover:border-[var(--color-primary-hover)]"
-          : "border border-slate-200 border-dotted hover:border-zinc-500"
-      }`}
-    >
+    <PlanPanel highlighted={highlighted} className="lg:p-[var(--px-28)]">
       {highlighted && (
-        <div className="absolute -top-[var(--px-12)] left-1/2 -translate-x-1/2 bg-[var(--color-primary)] text-[var(--color-secondary)] text-[length:var(--px-10)] font-medium px-[var(--px-12)] py-[var(--px-4)] rounded-full uppercase tracking-wider whitespace-nowrap">
-          Most Popular
+        <div className="absolute -top-[var(--px-10)] left-1/2 -translate-x-1/2">
+          <Chip>Most popular</Chip>
         </div>
       )}
 
       <div className="space-y-[var(--px-16)] lg:space-y-[var(--px-24)]">
         <div>
-          <span className="text-[length:var(--px-9)] lg:text-[length:var(--px-10)] uppercase tracking-wider font-fira opacity-50 block mb-[var(--px-2)] lg:mb-[var(--px-4)]">
+          <span className="mb-[var(--px-4)] block font-fira text-[length:var(--px-10)] uppercase tracking-[0.18em] text-[var(--color-primary-hover)] opacity-70">
             {eyebrow}
           </span>
-          <h3 className="text-[length:var(--px-18)] lg:text-[length:var(--px-22)] font-medium uppercase tracking-wide">{name}</h3>
+          <h3 className="m-0 font-helvetica text-[length:var(--px-20)] font-bold uppercase tracking-[var(--px-1)] text-[var(--color-text-secondary)]">
+            {name}
+          </h3>
         </div>
 
-        <p className="text-[length:var(--px-12)] lg:text-[length:var(--px-13)] font-extralight leading-[var(--px-16)] lg:leading-[var(--px-18)] opacity-80">
+        <p className="m-0 font-helvetica text-[length:var(--px-13)] font-light leading-[1.65] text-[var(--color-primary-hover)]">
           {blurb}
         </p>
 
-        <div className="border-t border-b border-slate-200 border-dotted py-[var(--px-16)] lg:py-[var(--px-20)] space-y-[var(--px-2)] lg:space-y-[var(--px-4)]">
+        <div className="space-y-[var(--px-4)] border-y border-white/13 py-[var(--px-16)] lg:py-[var(--px-20)]">
           <div className="flex items-baseline gap-[var(--px-2)] lg:gap-[var(--px-4)]">
-            {unit && <span className="text-[length:var(--px-16)] lg:text-[length:var(--px-20)] font-light">{unit}</span>}
-            <span className="text-[length:var(--px-32)] lg:text-[length:var(--px-44)] leading-none font-medium tracking-tight">{price}</span>
-            {suffix && <span className="text-[length:var(--px-10)] lg:text-[length:var(--px-12)] opacity-60 font-extralight">{suffix}</span>}
+            {unit && (
+              <span className="font-helvetica text-[length:var(--px-16)] font-light text-[var(--color-text-secondary)] lg:text-[length:var(--px-20)]">
+                {unit}
+              </span>
+            )}
+            <span className="font-helvetica text-[length:var(--px-32)] font-bold leading-none tracking-tight text-[var(--color-text-secondary)] lg:text-[length:var(--px-44)]">
+              {price}
+            </span>
+            {suffix && (
+              <span className="font-fira text-[length:var(--px-10)] uppercase tracking-[0.14em] text-[var(--color-primary-hover)] opacity-70 lg:text-[length:var(--px-12)]">
+                {suffix}
+              </span>
+            )}
           </div>
-          <span className="text-[length:var(--px-9)] lg:text-[length:var(--px-10)] font-fira opacity-50 block">{billed}</span>
+          <span className="block font-fira text-[length:var(--px-10)] uppercase tracking-[0.14em] text-[var(--color-primary-hover)] opacity-60">
+            {billed}
+          </span>
         </div>
 
-        <ul className="space-y-[var(--px-10)] lg:space-y-[var(--px-14)]">
+        <ul className="m-0 list-none space-y-[var(--px-10)] p-0 lg:space-y-[var(--px-14)]">
           {features.map((f, i) => (
-            <li key={i} className="flex items-center gap-[var(--px-8)] lg:gap-[var(--px-10)]">
+            <li key={i} className="flex items-center gap-[var(--px-10)]">
               {f.included ? <CheckMark /> : <CrossMark />}
               <span
-                className={`font-extralight text-[length:var(--px-12)] lg:text-[length:var(--px-13)] ${
-                  f.included ? "" : "opacity-60 line-through"
+                className={`font-helvetica text-[length:var(--px-13)] font-light leading-[1.5] ${
+                  f.included ? "text-[var(--color-primary-hover)]" : "text-[var(--color-primary-hover)] opacity-45 line-through"
                 }`}
               >
                 {f.node}
@@ -134,16 +149,51 @@ function B2BCard({
         </ul>
       </div>
 
-      <div className="mt-[var(--px-20)] lg:mt-[var(--px-28)]">
-        <ButtonSleek text={cta} onClick={onCta} customWidth="w-full" transparent />
+      <div className="mt-[var(--px-24)] lg:mt-[var(--px-28)]">
+        <PricingButton fullWidth variant={highlighted ? "accentLine" : "secondary"} onClick={onCta}>
+          {cta}
+        </PricingButton>
       </div>
-    </div>
+    </PlanPanel>
   );
 }
 
 interface PartnerPricingContentProps {
   /** Where the plan CTAs send the user (the partners lead form). */
   partnersUrl?: string;
+}
+
+/** Squared segmented control — the marketing system has no pill shapes. */
+function BillingToggle({ isAnnual, onChange }: { isAnnual: boolean; onChange: (annual: boolean) => void }) {
+  const seg = "px-[var(--px-18)] py-[var(--px-8)] font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] transition-colors cursor-pointer";
+  const on = "bg-[var(--color-neon-orange)] text-[#101010]";
+  const off = "bg-transparent text-[var(--color-primary-hover)] hover:text-[var(--color-primary)]";
+  return (
+    <div
+      className="inline-flex rounded-[var(--px-2)] border border-white/13 p-[var(--px-3)]"
+      role="group"
+      aria-label="Billing interval"
+    >
+      <button type="button" onClick={() => onChange(false)} aria-pressed={!isAnnual} className={`${seg} ${!isAnnual ? on : off}`}>
+        Monthly
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange(true)}
+        aria-pressed={isAnnual}
+        className={`${seg} ${isAnnual ? on : off} flex items-center gap-[var(--px-6)]`}
+      >
+        <span>Annually</span>
+        <span
+          className={`rounded-[var(--px-2)] px-[var(--px-6)] py-[var(--px-2)] font-fira text-[length:var(--px-9)] ${
+            isAnnual ? "bg-[#101010] text-[var(--color-neon-orange)]" : "border border-white/20"
+          }`}
+        >
+          -17%
+        </span>
+      </button>
+    </div>
+  );
 }
 
 export function PartnerPricingContent({ partnersUrl = "/partners#developer-form" }: PartnerPricingContentProps) {
@@ -158,53 +208,23 @@ export function PartnerPricingContent({ partnersUrl = "/partners#developer-form"
   const growthBilled = isAnnual ? "Billed annually (€4990/yr)" : "Billed monthly";
 
   return (
-    <section className="space-y-[var(--px-24)] lg:space-y-[var(--px-40)]">
-      <header className="text-center">
-        <h2 className="text-[length:var(--px-22)] lg:text-[length:var(--px-28)] font-medium uppercase tracking-wide">
-          For Business &amp; Partners
-        </h2>
-        <p className="mt-[var(--px-6)] text-[length:var(--px-12)] lg:text-[length:var(--px-10)] font-extralight opacity-70 max-w-xl mx-auto">
-          Integrate Resomix similarity into your own platform. Scale by catalogue size and API volume.
-        </p>
+    <section className="space-y-[var(--px-32)] lg:space-y-[var(--px-40)]">
+      <header>
+        <Eyebrow>For Business &amp; Partners</Eyebrow>
+        <SectionHeading>Integrate Resomix</SectionHeading>
+        <SectionBody className="mt-[var(--px-14)] max-w-[52ch]">
+          Integrate Resomix similarity into your own platform. Scale by catalogue size and API
+          volume.
+        </SectionBody>
       </header>
 
-      {/* ANNUAL / MONTHLY TOGGLE */}
-      <div className="flex justify-center items-center">
-        <div className="border border-slate-200 border-dotted rounded-full p-[var(--px-4)] flex items-center bg-[var(--color-primary-background)]/20 backdrop-blur-sm">
-          <button
-            onClick={() => setIsAnnual(false)}
-            className={`px-[var(--px-14)] lg:px-[var(--px-18)] py-[var(--px-6)] lg:py-[var(--px-8)] rounded-full text-[length:var(--px-10)] lg:text-[length:var(--px-11)] font-medium uppercase tracking-wider transition-all cursor-pointer ${
-              !isAnnual
-                ? "bg-[var(--color-primary)] text-[var(--color-secondary)]"
-                : "bg-transparent text-[var(--color-primary)] opacity-60 hover:opacity-100"
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setIsAnnual(true)}
-            className={`px-[var(--px-14)] lg:px-[var(--px-18)] py-[var(--px-6)] lg:py-[var(--px-8)] rounded-full text-[length:var(--px-10)] lg:text-[length:var(--px-11)] font-medium uppercase tracking-wider transition-all cursor-pointer flex items-center gap-[var(--px-4)] lg:gap-[var(--px-6)] ${
-              isAnnual
-                ? "bg-[var(--color-primary)] text-[var(--color-secondary)]"
-                : "bg-transparent text-[var(--color-primary)] opacity-60 hover:opacity-100"
-            }`}
-          >
-            <span>Annually</span>
-            <span
-              className={`px-[var(--px-6)] py-[var(--px-2)] rounded text-[length:var(--px-8)] lg:text-[length:var(--px-9)] font-fira uppercase ${
-                isAnnual
-                  ? "bg-[var(--color-secondary)] text-[var(--color-primary)]"
-                  : "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
-              }`}
-            >
-              -17%
-            </span>
-          </button>
-        </div>
+      {/* Centred: it controls the whole grid below rather than belonging to any one column, so it
+          reads as a control for the section instead of another left-aligned copy block. */}
+      <div className="flex justify-center">
+        <BillingToggle isAnnual={isAnnual} onChange={setIsAnnual} />
       </div>
 
-      {/* PRICING GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--px-24)] lg:gap-[var(--px-20)] items-stretch pt-[var(--px-12)]">
+      <div className="grid grid-cols-1 items-stretch gap-[var(--px-24)] pt-[var(--px-12)] lg:grid-cols-3 lg:gap-[var(--px-20)]">
         <B2BCard
           eyebrow="Starter Tenant"
           name="Starter"
@@ -259,8 +279,7 @@ export function PartnerPricingContent({ partnersUrl = "/partners#developer-form"
         />
       </div>
 
-      {/* FOOTER NOTE */}
-      <div className="text-center text-[length:var(--px-10)] lg:text-[length:var(--px-11)] opacity-50 font-fira tracking-widest pt-[var(--px-16)] lg:pt-[var(--px-32)] uppercase flex items-center justify-center gap-[var(--px-8)] lg:gap-[var(--px-12)]">
+      <div className="flex items-center justify-center gap-[var(--px-12)] pt-[var(--px-16)] text-center font-fira text-[length:var(--px-10)] uppercase tracking-[0.18em] text-[var(--color-primary-hover)] opacity-60 lg:pt-[var(--px-32)]">
         <SoundWaves />
         <span>All plans are governed by the Resomix B2B Services Agreement</span>
         <SoundWaves />
@@ -268,5 +287,3 @@ export function PartnerPricingContent({ partnersUrl = "/partners#developer-form"
     </section>
   );
 }
-
-export default PartnerPricingContent;

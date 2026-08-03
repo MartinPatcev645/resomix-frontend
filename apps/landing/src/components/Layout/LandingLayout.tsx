@@ -67,7 +67,7 @@ export function LandingLayout() {
         if (path.startsWith('/auth/')) {
             return path.split('/auth/')[1] || 'auth';
         }
-        if (['/contact', '/waitlist', '/error', '/partners', '/partners/pilot', '/trust', '/pricing', '/product', '/product/sonic-discovery', '/product/track-intelligence', '/product/catalog-intelligence', '/developers', '/solutions/record-labels', '/solutions/music-publishers', '/solutions/sync-agencies', '/solutions/music-libraries-sample-providers', '/solutions/djs', '/solutions/music-curators', '/solutions/producers'].includes(path)) {
+        if (['/contact', '/waitlist', '/error', '/partners', '/partners/pilot', '/trust', '/subscribe', '/product', '/product/sonic-discovery', '/product/track-intelligence', '/product/catalog-intelligence', '/developers', '/solutions/record-labels', '/solutions/music-publishers', '/solutions/sync-agencies', '/solutions/music-libraries-sample-providers', '/solutions/djs', '/solutions/music-curators', '/solutions/producers'].includes(path)) {
             return path.substring(1);
         }
         return '404';

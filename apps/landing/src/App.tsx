@@ -20,7 +20,6 @@ const HomePage = lazyRoute(PAGE_LOADERS['/']);
 const AboutPage = lazyRoute(PAGE_LOADERS['/about']);
 const InfoPage = lazyRoute(PAGE_LOADERS['/contact']);
 const PartnersPage = lazyRoute(PAGE_LOADERS['/partners']);
-const PricingPage = lazyRoute(PAGE_LOADERS['/pricing']);
 const ProductPage = lazyRoute(PAGE_LOADERS['/product']);
 const SonicDiscoveryPage = lazyRoute(PAGE_LOADERS['/product/sonic-discovery']);
 const TrackIntelligencePage = lazyRoute(PAGE_LOADERS['/product/track-intelligence']);
@@ -112,7 +111,12 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/partners" element={<PartnersPage />} />
-            <Route path="/pricing" element={<PricingPage />} />
+            {/* /pricing and /subscribe rendered the identical component. Consolidated onto
+                /subscribe; this keeps existing links, bookmarks and search results working
+                rather than 404ing them — same treatment as the catalogue-intelligence spelling
+                redirect below. */}
+            
+            <Route path="/pricing" element={<Navigate to="/subscribe" replace />} />
             <Route path="/product" element={<ProductPage />} />
             <Route path="/product/sonic-discovery" element={<SonicDiscoveryPage />} />
             <Route path="/product/track-intelligence" element={<TrackIntelligencePage />} />
