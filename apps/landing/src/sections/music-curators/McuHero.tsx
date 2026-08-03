@@ -7,7 +7,7 @@ export function McuHero() {
   const navigate = useNavigate();
 
   return (
-    <section className="mcu-hero mcu-section" id="mcu-hero">
+    <section className="mcu-hero mcu-section rx-hero-pad" id="mcu-hero">
       <div className="mcu-frame">
         <p className="mcu-beta">
           <i aria-hidden="true" />

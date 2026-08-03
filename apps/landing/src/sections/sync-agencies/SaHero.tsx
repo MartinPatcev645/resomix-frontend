@@ -7,7 +7,7 @@ export function SaHero() {
   const navigate = useNavigate();
 
   return (
-    <section className="sa-hero sa-section" id="sa-hero">
+    <section className="sa-hero sa-section rx-hero-pad" id="sa-hero">
       <div className="sa-frame">
         <p className="sa-beta">
           <i aria-hidden="true" />

@@ -12,7 +12,7 @@ export function PoHero() {
   const f = (key: string) => t(`product.figures.${key}`);
 
   return (
-    <section className="po-hero po-section" id="po-s1">
+    <section className="po-hero po-section rx-hero-pad" id="po-s1">
       <div className="po-wrap">
         <div className="po-eyebrow">{t('product.hero.eyebrow')}</div>
         <h1 className="po-h1">

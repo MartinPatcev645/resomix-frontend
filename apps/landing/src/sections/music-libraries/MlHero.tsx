@@ -7,7 +7,7 @@ export function MlHero() {
   const navigate = useNavigate();
 
   return (
-    <section className="ml-hero ml-section" id="ml-hero">
+    <section className="ml-hero ml-section rx-hero-pad" id="ml-hero">
       <div className="ml-frame">
         <p className="ml-beta">
           <i aria-hidden="true" />

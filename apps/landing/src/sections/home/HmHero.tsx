@@ -8,7 +8,7 @@ export function HmHero() {
   const navigate = useNavigate();
 
   return (
-    <section className="hm-hero hm-section" id="hm-hero">
+    <section className="hm-hero hm-section rx-hero-pad" id="hm-hero">
       <div className="hm-frame">
         <p className="hm-beta">
           <i aria-hidden="true" />

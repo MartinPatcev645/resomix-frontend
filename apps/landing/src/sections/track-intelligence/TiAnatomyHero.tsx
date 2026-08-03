@@ -319,7 +319,7 @@ export function TiAnatomyHero({ motionOn, onScrollToStructure }: TiAnatomyHeroPr
   const lensInterp = useMemo(() => LENS[lens].i, [lens]);
 
   return (
-    <section id="ti-hero" className="ti-section" aria-label="Track Intelligence introduction">
+    <section id="ti-hero" className="ti-section rx-hero-pad" aria-label="Track Intelligence introduction">
       <div className="ti-hero-head">
         <p className="ti-eyebrow uppercase">{renderEyebrow(t('trackIntelligence.hero.eyebrow'))}</p>
         <h1 className="ti-benzin-d font-benzin uppercase">

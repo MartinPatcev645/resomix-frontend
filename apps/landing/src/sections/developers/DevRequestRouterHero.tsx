@@ -207,7 +207,7 @@ export function DevRequestRouterHero() {
   }, [navigate]);
 
   return (
-    <section id="dev-hero" className="dev-section" aria-label="Resomix API introduction">
+    <section id="dev-hero" className="dev-section rx-hero-pad" aria-label="Resomix API introduction">
       <div className="dev-hero-head">
         <p className="dev-eyebrow uppercase">
           {t('developers.hero.eyebrowPrefix')}{' '}

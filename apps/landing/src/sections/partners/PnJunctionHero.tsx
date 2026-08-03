@@ -194,7 +194,7 @@ export function PnJunctionHero({ activePath, onSelectPath }: PnJunctionHeroProps
   }, [navigate, routeCtaDest]);
 
   return (
-    <section id="hero" aria-label="Partner with Resomix" className="pn-section">
+    <section id="hero" aria-label="Partner with Resomix" className="pn-section rx-hero-pad">
       <div className="pn-hero-head">
         <p className="pn-eyebrow uppercase">
           {t('partners.hero.eyebrowPrefix')}{' '}
@@ -204,7 +204,7 @@ export function PnJunctionHero({ activePath, onSelectPath }: PnJunctionHeroProps
         {/* Mobile (<768px) base is the shared landing mobile hero size: var(--px-32) / 1.06 / 18ch,
             matching .rl-benzin on the solutions pages. Do not swap it back to a bespoke value.
             md:/lg: keep the tablet + desktop sizes exactly as they were. */}
-        <h1 className="font-benzin uppercase text-[length:var(--px-32)] leading-[1.06] max-w-[18ch] md:max-w-none md:text-[length:var(--px-64)] md:leading-[var(--px-68)] lg:text-[length:var(--px-72)] lg:leading-[var(--px-76)] mb-[var(--px-24)]">
+        <h1 className="font-benzin uppercase font-black text-[length:var(--px-32)] leading-[1.06] max-w-[18ch] md:max-w-none md:text-[length:var(--px-36)] lg:text-[length:var(--px-48)] mb-[var(--px-24)]">
           <HeroTitle text={t('partners.hero.title')} emClass="pn-em" />
         </h1>
         <p className="pn-body pn-sub">{t('partners.hero.sub')}</p>

@@ -7,13 +7,13 @@ export function TrHero() {
   const { t } = useTranslation('common');
 
   return (
-    <section id="hero" aria-label="Trust, Rights and Security" className="tr-section">
+    <section id="hero" aria-label="Trust, Rights and Security" className="tr-section rx-hero-pad">
       <div className="tr-read tr-hero-read">
         <p className="tr-eyebrow uppercase">{t('trust.hero.eyebrow')}</p>
         {/* Mobile (<768px) base is the shared landing mobile hero size: var(--px-32) / 1.06 / 18ch,
             matching .rl-benzin on the solutions pages. Do not swap it back to a bespoke value.
             md:/lg: keep the tablet + desktop sizes exactly as they were. */}
-        <h1 className="font-benzin uppercase text-[length:var(--px-32)] leading-[1.06] max-w-[18ch] md:max-w-none md:text-[length:var(--px-64)] md:leading-[var(--px-68)] lg:text-[length:var(--px-72)] lg:leading-[var(--px-76)] mb-[var(--px-24)]">
+        <h1 className="font-benzin uppercase font-black text-[length:var(--px-32)] leading-[1.06] max-w-[18ch] md:max-w-none md:text-[length:var(--px-36)] lg:text-[length:var(--px-48)] mb-[var(--px-24)]">
           <HeroTitle text={t('trust.hero.title')} emClass="tr-em" />
         </h1>
         <p className="tr-body">{t('trust.hero.body')}</p>

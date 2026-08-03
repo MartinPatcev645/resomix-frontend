@@ -402,10 +402,8 @@
 
 .hm-page .hm-benzin {
   font-family: 'Benzin', 'Arial Black', sans-serif;
-  font-weight: 700;
   text-transform: uppercase;
   /* Mobile (<768px) uses the shared landing hero size — keep in sync with .rl-benzin, do not make bespoke */
-  font-size: var(--px-32);
   line-height: 1.06;
   letter-spacing: 0.005em;
   margin: 0 0 var(--px-20);
@@ -418,7 +416,6 @@
 /* restores the pre-existing tablet/desktop size (base used to govern >=768px) */
 @media (min-width: 768px) {
   .hm-page .hm-benzin {
-    font-size: var(--px-36);
     line-height: 1.04;
     overflow-wrap: normal;
   }
@@ -426,7 +423,6 @@
 
 @media (min-width: 1024px) {
   .hm-page .hm-benzin {
-    font-size: var(--px-76);
   }
 }
 
@@ -1896,4 +1892,37 @@
    so mobile and desktop stay in step on their own. */
 .hm-page .hm-benzin .hm-em {
   color: var(--color-neon-orange);
+}
+
+/* ---------- canonical hero title ----------
+   One ramp for all 17 heroes, taken from /product/catalog-intelligence: 32 mobile, 36 tablet,
+   48 desktop, weight 900. Previously every page picked its own — desktop sizes ranged 46 to 76px
+   and four heroes declared no weight at all. Sizes/weights above this block were removed, so this
+   is the single source for the headline. */
+.hm-page .hm-benzin {
+  font-size: var(--px-32);
+  font-weight: 900;
+}
+
+@media (min-width: 768px) {
+  .hm-page .hm-benzin {
+    font-size: var(--px-36);
+  }
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-benzin {
+    font-size: var(--px-48);
+  }
+}
+
+/* Hero block spacing, aligned across every hero to the homepage's 44/52. */
+.hm-page .rx-hero-pad {
+  padding-block: var(--px-44);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .rx-hero-pad {
+    padding-block: var(--px-52);
+  }
 }

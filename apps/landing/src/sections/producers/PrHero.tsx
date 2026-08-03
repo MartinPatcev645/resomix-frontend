@@ -7,7 +7,7 @@ export function PrHero() {
   const navigate = useNavigate();
 
   return (
-    <section className="pr-hero pr-section" id="pr-hero">
+    <section className="pr-hero pr-section rx-hero-pad" id="pr-hero">
       <div className="pr-frame">
         <p className="pr-beta">
           <i aria-hidden="true" />

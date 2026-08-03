@@ -7,7 +7,7 @@ export function DjHero() {
   const navigate = useNavigate();
 
   return (
-    <section className="dj-hero dj-section" id="dj-hero">
+    <section className="dj-hero dj-section rx-hero-pad" id="dj-hero">
       <div className="dj-frame">
         <p className="dj-beta">
           <i aria-hidden="true" />

@@ -322,9 +322,7 @@
 
 .ci-page .ci-h1 {
   font-family: var(--ci-benzin);
-  font-weight: 900;
   color: var(--ci-white);
-  font-size: 2.95rem;
   line-height: 1.05;
   text-transform: uppercase;
   letter-spacing: 0.005em;
@@ -337,7 +335,6 @@
    even 2.2rem was wide enough for "DISCOVERABLE" to overflow. ≥768px is untouched. */
 @media (max-width: 767px) {
   .ci-page .ci-h1 {
-    font-size: var(--px-32);
     line-height: 1.06;
     max-width: 18ch;
   }
@@ -1005,4 +1002,47 @@
   /* Hold the label dark — the canonical primary tints its text on hover, which on
      a filled accent would be orange-on-orange. */
   color: #101010;
+}
+
+/* ---------- canonical hero title ----------
+   One ramp for all 17 heroes, taken from /product/catalog-intelligence: 32 mobile, 36 tablet,
+   48 desktop, weight 900. Previously every page picked its own — desktop sizes ranged 46 to 76px
+   and four heroes declared no weight at all. Sizes/weights above this block were removed, so this
+   is the single source for the headline. */
+.ci-page .ci-h1 {
+  font-size: var(--px-32);
+  font-weight: 900;
+}
+
+@media (min-width: 768px) {
+  .ci-page .ci-h1 {
+    font-size: var(--px-36);
+  }
+}
+
+@media (min-width: 1024px) {
+  .ci-page .ci-h1 {
+    font-size: var(--px-48);
+  }
+}
+
+/* Hero block spacing, aligned across every hero to the homepage's 44/52. */
+.ci-page .rx-hero-pad {
+  padding-block: var(--px-44);
+}
+
+@media (min-width: 1024px) {
+  .ci-page .rx-hero-pad {
+    padding-block: var(--px-52);
+  }
+}
+
+/* ---------- hero subtitle ----------
+   Matched to /product/track-intelligence's .ti-body (17px / 300 / 1.65). These four were the
+   outliers: this one had no size or weight of its own at all, or a bespoke value, and inherited its
+   weight from the page root. Scoped to the hero so other paragraphs sharing the class are unchanged. */
+.ci-page .rx-hero-pad .ci-body-p {
+  font-size: var(--px-17);
+  font-weight: 300;
+  line-height: 1.65;
 }

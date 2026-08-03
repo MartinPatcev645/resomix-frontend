@@ -1185,3 +1185,21 @@
 .pn-page h1 .pn-em {
   color: var(--color-neon-orange);
 }
+
+/* ---------- canonical hero title ----------
+   One ramp for all 17 heroes, taken from /product/catalog-intelligence: 32 mobile, 36 tablet,
+   48 desktop, weight 900. Previously every page picked its own — desktop sizes ranged 46 to 76px
+   and four heroes declared no weight at all. Sizes/weights above this block were removed, so this
+   is the single source for the headline. */
+/* pn: the h1 carries the ramp as inline utilities (see its hero component). */
+
+/* Hero block spacing, aligned across every hero to the homepage's 44/52. */
+.pn-page .rx-hero-pad {
+  padding-block: var(--px-44);
+}
+
+@media (min-width: 1024px) {
+  .pn-page .rx-hero-pad {
+    padding-block: var(--px-52);
+  }
+}

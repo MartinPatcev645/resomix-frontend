@@ -10,7 +10,7 @@ export function MpHero() {
   const { url } = useMpDefs();
 
   return (
-    <section className="mp-hero mp-section" id="mp-s1">
+    <section className="mp-hero mp-section rx-hero-pad" id="mp-s1">
       <div className="mp-wrap">
         <div className="mp-eyebrow">{t('musicPublishers.hero.eyebrow')}</div>
         <h1 className="mp-h1">

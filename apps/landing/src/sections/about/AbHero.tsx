@@ -12,7 +12,7 @@ export function AbHero() {
   const f = (key: string) => t(`about.figures.${key}`);
 
   return (
-    <section className="ab-hero ab-section" id="ab-s1">
+    <section className="ab-hero ab-section rx-hero-pad" id="ab-s1">
       <div className="ab-wrap">
         <div className="ab-eyebrow">{t('about.hero.eyebrow')}</div>
         <h1 className="ab-h1">

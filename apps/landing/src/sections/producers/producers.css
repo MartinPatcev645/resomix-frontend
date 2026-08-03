@@ -361,10 +361,8 @@
 
 .pr-page .pr-benzin {
   font-family: 'Benzin', 'Arial Black', sans-serif;
-  font-weight: 700;
   text-transform: uppercase;
   /* Shared landing mobile hero size (<768px) — same as .rl-benzin; keep in sync. */
-  font-size: var(--px-32);
   line-height: 1.06;
   letter-spacing: 0.005em;
   margin: 0 0 var(--px-20);
@@ -375,7 +373,6 @@
 
 @media (min-width: 768px) {
   .pr-page .pr-benzin {
-    font-size: var(--px-44);
     /* Restores the original >=768px metrics (base rule is mobile-only now). */
     line-height: 1.12;
     max-width: 24ch;
@@ -385,7 +382,6 @@
 
 @media (min-width: 1024px) {
   .pr-page .pr-benzin {
-    font-size: var(--px-52);
   }
 }
 
@@ -700,4 +696,37 @@
   /* Hold the label dark — the canonical primary tints its text on hover, which on
      a filled accent would be orange-on-orange. */
   color: #101010;
+}
+
+/* ---------- canonical hero title ----------
+   One ramp for all 17 heroes, taken from /product/catalog-intelligence: 32 mobile, 36 tablet,
+   48 desktop, weight 900. Previously every page picked its own — desktop sizes ranged 46 to 76px
+   and four heroes declared no weight at all. Sizes/weights above this block were removed, so this
+   is the single source for the headline. */
+.pr-page .pr-benzin {
+  font-size: var(--px-32);
+  font-weight: 900;
+}
+
+@media (min-width: 768px) {
+  .pr-page .pr-benzin {
+    font-size: var(--px-36);
+  }
+}
+
+@media (min-width: 1024px) {
+  .pr-page .pr-benzin {
+    font-size: var(--px-48);
+  }
+}
+
+/* Hero block spacing, aligned across every hero to the homepage's 44/52. */
+.pr-page .rx-hero-pad {
+  padding-block: var(--px-44);
+}
+
+@media (min-width: 1024px) {
+  .pr-page .rx-hero-pad {
+    padding-block: var(--px-52);
+  }
 }

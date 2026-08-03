@@ -25,7 +25,7 @@ export function RlHero() {
   const navigate = useNavigate();
 
   return (
-    <section className="rl-hero rl-section" id="rl-hero">
+    <section className="rl-hero rl-section rx-hero-pad" id="rl-hero">
       <div className="rl-frame">
         <p className="rl-beta">
           <i aria-hidden="true" />

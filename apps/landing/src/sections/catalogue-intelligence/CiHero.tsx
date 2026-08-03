@@ -25,7 +25,7 @@ export function CiHero({ onScrollToHow }: CiHeroProps) {
   };
 
   return (
-    <section className="ci-hero ci-section" id="ci-s1">
+    <section className="ci-hero ci-section rx-hero-pad" id="ci-s1">
       <div className="ci-wrap">
         <div className="ci-eyebrow">{t('catalogueIntelligence.hero.eyebrow')}</div>
         <h1 className="ci-h1">
