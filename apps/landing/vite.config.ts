@@ -4,12 +4,20 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 import { writeFileSync } from 'node:fs'
 import { ROUTE_SEO, SITEMAP_DEFAULTS, SITE_ORIGIN } from './src/routes/seoConfig.ts'
+import { prerenderHead } from './build/prerenderHead.ts'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(), 
     tailwindcss(),
+    /* Bakes each route's head into its own HTML file. Link-preview scrapers do not run JS, so
+       the runtime RouteMeta never reaches them — every shared URL previewed as the homepage. */
+    prerenderHead({
+      routes: ROUTE_SEO,
+      origin: SITE_ORIGIN,
+      outDir: path.resolve(__dirname, 'dist'),
+    }),
     {
       /* Sitemap is GENERATED, never hand-edited.
          The old public/sitemap.xml had drifted badly — it advertised /terms and /privacy, which are
