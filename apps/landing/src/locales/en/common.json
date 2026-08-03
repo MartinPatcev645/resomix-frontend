@@ -2,7 +2,7 @@
     "about": {
         "hero": {
             "eyebrow": "About Resomix // Built in Thessaloniki",
-            "h1Lead": "A sonic intelligence platform for those who",
+            "h1Lead": "A sonic intelli­gence platform for those who",
             "h1Em": "feel the music.",
             "lead": "Resomix helps people discover sonically related tracks, understand one recording in greater detail and make authorised catalogues searchable through sound.",
             "support": "One proprietary engine, PYXIS-1, powers three distinct products built around the recording itself.",
@@ -395,7 +395,7 @@
     "home": {
         "hero": {
             "beta": "Production beta · Powered by PYXIS-1",
-            "title": "Hear the Invisible",
+            "title": "Hear the Invis­ible",
             "platform": "Resomix listens to the sound itself — and turns it into discovery, understanding, and catalogue intelligence.",
             "tryCta": "Try Resomix",
             "exploreCta": "Explore the Product",
@@ -1433,7 +1433,7 @@
     "catalogueIntelligence": {
         "hero": {
             "eyebrow": "Product 03 // Catalogue Intelligence",
-            "h1Lead": "Make your catalogue discoverable",
+            "h1Lead": "Make your cata­logue dis­cover­able",
             "h1Em": "by sound.",
             "body": "Resomix processes authorised catalogue recordings with PYXIS-1, creates a sonic profile for each track and makes the catalogue searchable through reference-based similarity. Start with one recording. Receive ranked matches from the same partner-scoped index.",
             "ctaPrimary": "Request a catalogue pilot",
@@ -1644,7 +1644,7 @@
             "eyebrowPrefix": "Developers //",
             "eyebrowLive": "Live",
             "eyebrowSuffix": " · Partner-scoped REST API · Powered by PYXIS-1",
-            "title": "One API. Search, similarity and track analysis.",
+            "title": "One API. Search, simi­larity and track analysis.",
             "sub": "Search your own catalogue by sound, analyse new audio and retrieve structured Track Intelligence analysis data through a partner-scoped REST API.",
             "ctaPrimary": "Request API Access",
             "ctaSecondary": "View Full API Reference",
@@ -2000,7 +2000,7 @@
             "eyebrowPrefix": "Private Catalogue Pilot //",
             "eyebrowHighlight": "Managed evaluation",
             "eyebrowSuffix": "· Powered by PYXIS-1",
-            "title": "Test Resomix on your own catalogue.",
+            "title": "Test Resomix on your own cata­logue.",
             "sub": "A managed private pilot for labels, distributors and catalogue teams that want to evaluate sonic discovery using authorised material and success criteria agreed in advance.",
             "ctaPrimary": "Start a Catalogue Pilot",
             "ctaSecondary": "See the Pilot Method",
@@ -2473,7 +2473,7 @@
         "legalEmail": "legal@resomix.com",
         "hero": {
             "eyebrow": "Trust, Rights & Security // Production beta",
-            "title": "Your audio. Your rights. Clear boundaries.",
+            "title": "Your audio. Your rights. Clear bound­aries.",
             "body": "Resomix is a production-beta sonic discovery service. This page separates controls operating now, controls defined by partner agreement, and controls we do not yet claim.",
             "ctaLegal": "View Legal Documents",
             "ctaPartnerships": "Contact Partnerships",
@@ -2881,7 +2881,7 @@
     "recordLabels": {
         "hero": {
             "chip": "Use case · Record labels",
-            "h1": "Maximise your catalogue with Resomix",
+            "h1": "Maximise your cata­logue with Resomix",
             "intro": "Running a label is hard, and it always has been. Choosing the artists to release, curating every project with care, managing a growing catalogue, and consistently releasing music that's in line with the essence of your project all require time and dedication.",
             "figureAria": "Ten years of a label's releases drawn as a timeline; one orange thread connects a recent signing back to an older release, re-lighting it"
         },
@@ -2954,7 +2954,7 @@
     "musicPublishers": {
         "hero": {
             "eyebrow": "Use case · Music publishers",
-            "h1Lead": "Turn your catalogue into a",
+            "h1Lead": "Turn your cata­logue into a",
             "h1Em": "living asset",
             "body": "Music publishers face a daunting task: creating a cohesive catalog that’s both genuine and marketable, while also knowing how to make the most of every track as the collection expands.",
             "status": "Guided partner evaluation",
@@ -3110,7 +3110,7 @@
     "syncAgencies": {
         "hero": {
             "chip": "Use case · Sync agencies",
-            "h1": "Translating tags into emotions",
+            "h1": "Trans­lating tags into emotions",
             "intro": "A talented sync agent can see opportunities where others don't; someone who can connect the dots, understand creative visions, and give musicians the spotlight they deserve.",
             "figureAria": "Flat metadata tags pass through the Resomix gate and become a felt reading of the music — intimate, nostalgic, unsettling, uplifting"
         },
@@ -3195,7 +3195,7 @@
     "musicLibraries": {
         "hero": {
             "chip": "Use case · Music libraries & sample providers",
-            "h1": "Turn your catalogue into a sonic discovery engine",
+            "h1": "Turn your cata­logue into a sonic discov­ery engine",
             "intro": "The bigger a music library becomes, the more difficult it becomes to navigate.",
             "figureAria": "A wall of sample tiles; one reference sound is selected and orange threads reach its sonic relatives in other packs across the library"
         },
@@ -3386,7 +3386,7 @@
         "hero": {
             "chip": "Use case · Music curators",
             "h1a": "Hear music",
-            "h1b": "differently.",
+            "h1b": "differ­ently.",
             "intro": "The art of music curation is born from a unique mix of talent and experience; the ability to hear music differently, to predict trends, to see hidden connections, is the essence of what makes humans connect through music.",
             "ctaNote": "Free to start · production beta",
             "figureAria": "Tracks scattered across decades and genre strata; from the reference track a signal journey flows outward through numbered stops across eras and genres — a playlist chain linked by the curator, with one direction still unexplored"
@@ -3486,8 +3486,8 @@
     "producers": {
         "hero": {
             "chip": "Use case · Electronic music producers",
-            "h1a": "Turn one reference track",
-            "h1b": "into new sonic directions.",
+            "h1a": "Turn one refer­ence track",
+            "h1b": "into new sonic direc­tions.",
             "support": "Resomix uses the PYXIS-1 analytical engine to examine 70+ musical characteristics across rhythm, harmony, timbre, structure and energy — then surfaces sonically related tracks that can unlock new production ideas.",
             "ctaNote": "Free to start · production beta",
             "figureAria": "The creative loop breaks open: a reference track feeds the PYXIS-1 sonic profile, five labelled dimensions — rhythm, harmony, timbre, structure, energy — fan out, and the highlighted thread reaches an unexpected sonic match: new directions to explore"
