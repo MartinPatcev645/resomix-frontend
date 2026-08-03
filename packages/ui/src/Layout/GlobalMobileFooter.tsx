@@ -62,8 +62,25 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
         </div>
         <div className="flex flex-col items-center text-center justify-between">
           <div className="flex flex-col text-[length:var(--px-12)] font-light font-fira tracking-[var(--px-2)] items-center my-[var(--px-60)]">
-            <a href="https://support.resomix.com" target="_blank" aria-label="Resomix terms" className="hover:underline decoration-[var(--px-0-5)] footer-link" id="footer-terms-link">
-              legal.support()
+            <a
+              href="https://legal.resomix.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Resomix legal information"
+              className="hover:underline decoration-[var(--px-0-5)] footer-link"
+              id="footer-legal-link"
+            >
+              legal.info()
+            </a>
+            <a
+              href="https://support.resomix.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Resomix support"
+              className="hover:underline decoration-[var(--px-0-5)] footer-link"
+              id="footer-support-link"
+            >
+              support.to()
             </a>
             <br />
             <br />
