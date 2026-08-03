@@ -8,6 +8,7 @@ import { LandingLayout } from '../components/Layout/LandingLayout.tsx';
 import { TrRetention } from '../sections/trust/TrRetention.tsx';
 import { TrLifecycles } from '../sections/trust/TrLifecycles.tsx';
 import { LEGAL_LIBRARY_URL } from '../sections/trust/trData.ts';
+import { softHyphenName } from './matchers.ts';
 
 vi.mock('@resomix/api-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@resomix/api-client')>();
@@ -50,7 +51,7 @@ describe('TrustPage routing', () => {
     expect(
       screen.getAllByRole('heading', {
         level: 1,
-        name: /your audio\. your rights\. clear boundaries\./i,
+        name: softHyphenName(/your audio\. your rights\. clear boundaries\./i),
       }).length,
     ).toBeGreaterThan(0);
 

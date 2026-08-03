@@ -8,6 +8,7 @@ import PartnersPilotPage from '../pages/PartnersPilotPage.tsx';
 import { LandingLayout } from '../components/Layout/LandingLayout.tsx';
 import { PnContactForm } from '../sections/partners/PnContactForm.tsx';
 import { submitContactForm } from '@resomix/api-client';
+import { softHyphenName } from './matchers.ts';
 
 vi.mock('@resomix/api-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@resomix/api-client')>();
@@ -63,7 +64,7 @@ describe('PartnersPage', () => {
       </MemoryRouter>,
     );
     expect(
-      screen.getByRole('heading', { level: 1, name: /test resomix on your own catalogue/i }),
+      screen.getByRole('heading', { level: 1, name: softHyphenName(/test resomix on your own catalogue/i) }),
     ).toBeInTheDocument();
   });
 });

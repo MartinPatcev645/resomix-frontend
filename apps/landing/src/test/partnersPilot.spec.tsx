@@ -7,6 +7,7 @@ import PartnersPilotPage from '../pages/PartnersPilotPage.tsx';
 import { LandingLayout } from '../components/Layout/LandingLayout.tsx';
 import { PpApplyForm } from '../sections/partners-pilot/PpApplyForm.tsx';
 import { submitContactForm } from '@resomix/api-client';
+import { softHyphenName } from './matchers.ts';
 
 vi.mock('@resomix/api-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@resomix/api-client')>();
@@ -36,7 +37,7 @@ describe('PartnersPilotPage', () => {
       </MemoryRouter>,
     );
     expect(
-      screen.getByRole('heading', { level: 1, name: /test resomix on your own catalogue/i }),
+      screen.getByRole('heading', { level: 1, name: softHyphenName(/test resomix on your own catalogue/i) }),
     ).toBeInTheDocument();
   });
 });
@@ -60,7 +61,7 @@ describe('App routing', () => {
     expect(
       screen.getAllByRole('heading', {
         level: 1,
-        name: /test resomix on your own catalogue/i,
+        name: softHyphenName(/test resomix on your own catalogue/i),
       }).length,
     ).toBeGreaterThan(0);
     expect(screen.getAllByRole('contentinfo').length).toBeGreaterThan(0);
