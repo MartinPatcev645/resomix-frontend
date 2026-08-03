@@ -44,14 +44,50 @@
   <meta property="og:locale" content="en_US">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#000000">
-  <meta name="description" content="Resomix is a Sonic Analysis platform that helps DJs discover tracks by feeling, not by genre.">
-  <link rel="canonical" href="https://beta.resomix.com/">
-  <meta name="robots" content="noindex, nofollow">
+  <!--
+    DEFAULTS ONLY. src/components/RouteMeta.tsx rewrites title, description, canonical, robots and
+    the og:/twitter: tags per route.
 
-  <!-- Audio-specific meta tags -->
+    Previously this was a blanket "noindex, nofollow" while robots.txt invited crawling and shipped
+    a sitemap — three contradictory signals. Crawling is now allowed, and the pages that should stay
+    out of the index (the signed-in workspace, the auth screens) say so individually.
+
+    nofollow is gone entirely: it stranded link equity on every outbound link for no benefit.
+  -->
+  <meta name="robots" content="index, follow">
+  <meta name="description" content="Drop a reference track and get ranked matches that actually belong next to it. Sonic discovery, track analysis and playlists in one workspace.">
+  <link rel="canonical" href="https://beta.resomix.com/">
+
+  <!-- Open Graph. og:type is "website": "music.radio_station" described a stream this app is not,
+       and the og:audio pointed at a bare media host with no playable resource. -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://beta.resomix.com/">
+  <meta property="og:title" content="Resomix — Find Tracks by Sound">
+  <meta property="og:description" content="Drop a reference track and get ranked matches that actually belong next to it.">
+  <!-- TODO: replace with a 1200x630 landscape asset; this is the square logo and crops to a small card. -->
+  <meta property="og:image" content="https://beta.resomix.com/logo.png">
+  <meta property="og:image:alt" content="Resomix — find tracks by sound">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Resomix — Find Tracks by Sound">
+  <meta name="twitter:description" content="Drop a reference track and get ranked matches that actually belong next to it.">
+  <meta name="twitter:image" content="https://beta.resomix.com/logo.png">
+
+  <!-- Structured data: read without executing the app, so every crawler sees it. -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Resomix",
+      "url": "https://beta.resomix.com/",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Any",
+      "description": "Reference-based music discovery, track analysis and playlist building.",
+      "publisher": { "@type": "Organization", "name": "Resomix", "url": "https://resomix.com/" }
+    }
+  </script>
+
   <meta name="apple-itunes-app" content="app-argument=resomix-audio">
-  <meta property="og:type" content="music.radio_station">
-  <meta property="og:audio" content="https://media.resomix.com/">
 
   <!-- Critical app fonts (@font-face families actually used: Helvetica_Neue, Fira Code, Benzin).
        Montserrat / Auger Mono faces exist in fonts.css but are unused in webapp src — not preloaded.

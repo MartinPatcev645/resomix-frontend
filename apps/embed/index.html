@@ -21,7 +21,10 @@
     <meta property="og:site_name" content="Resomix" />
     <meta property="og:title" content="Resomix Embedded Playlist" />
     <meta property="og:description" content="Listen to previews and explore similar tracks, powered by Resomix." />
-    <meta property="og:image" content="/logo.png" />
+    <!-- Absolute: Open Graph scrapers do not resolve relative URLs against the page they fetched,
+         so a "/logo.png" here produced a preview with no image at all. -->
+    <meta property="og:image" content="https://embed.resomix.com/logo.png" />
+    <meta name="twitter:image" content="https://embed.resomix.com/logo.png" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Resomix Embedded Playlist" />
     <meta name="twitter:description" content="Listen to previews and explore similar tracks, powered by Resomix." />

@@ -1,27 +1,34 @@
 # -----------------------------------------------------
 # robots.txt for Resomix Beta (https://beta.resomix.com)
-# Purpose: Allow crawlers to index homepage only
+#
+# Crawling is ALLOWED across the app. Pages that should stay out of the index — the signed-in
+# workspace (/library, /profile, /sessions) and the auth screens — carry a `noindex` robots meta
+# tag instead of being blocked here.
+#
+# That distinction matters: a page blocked in robots.txt is never fetched, so its noindex tag is
+# never read, and the URL can still surface in results as a bare link. Allow the crawl and let the
+# tag do the work.
+#
+# This file previously disallowed /*/ and /*? — blocking every page except the root — while
+# index.html separately declared noindex,nofollow and a sitemap advertised four URLs. Three
+# contradictory signals; they now agree.
 # -----------------------------------------------------
 
 User-agent: *
-# Allow homepage
 Allow: /
 
-# Disallow all subpages and query variations
-Disallow: /*/
-Disallow: /*?
+# Build artefacts and source maps — never useful, occasionally revealing.
 Disallow: /*.map$
 Disallow: /node_modules/
-Disallow: /dist/
 Disallow: /.git/
 Disallow: /.turbo/
-Disallow: /src/
 
-# Allow essential static assets for rendering
+# Transient upload screen: no content, and every visit is a different in-flight job.
+Disallow: /loader
+
+# Static assets crawlers need to render the app.
 Allow: /fonts/
-Allow: /images/
 Allow: /*.css$
 Allow: /*.js$
 
-# Sitemap reference
 Sitemap: https://beta.resomix.com/sitemap.xml

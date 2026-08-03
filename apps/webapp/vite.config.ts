@@ -12,6 +12,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
+import { writeFileSync } from 'node:fs'
+import { ROUTE_SEO, SITEMAP_DEFAULTS, SITE_ORIGIN } from './src/routes/seoConfig.ts'
 
 const BACKEND_TARGET = 'https://bserver.resomix.com'
 const MEDIA_TARGET = 'https://media.resomix.com'
@@ -28,6 +30,47 @@ const devProxy = {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
+    {
+      /* Sitemap is GENERATED from seoConfig, never hand-edited.
+         The committed one listed /sonic-discovery, /library and /analysis while index.html declared
+         the whole app noindex,nofollow and robots.txt disallowed every subpage — it advertised URLs
+         that three other signals forbade. Deriving it from the same config that drives the head
+         means the sitemap can only ever contain pages we actually want indexed. */
+      name: 'generate-sitemap',
+      apply: 'build',
+      closeBundle() {
+        const today = new Date().toISOString().slice(0, 10)
+        const entries = Object.entries(ROUTE_SEO).filter(
+          // A canonical pointing at another origin means we want THAT page indexed, not this one.
+          ([, seo]) => !seo.noindex && !seo.canonical,
+        )
+        const urls = entries
+          .map(([routePath, seo]) => {
+            const loc = routePath === '/' ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${routePath}`
+            const changefreq = seo.changefreq ?? SITEMAP_DEFAULTS.changefreq
+            const priority = (seo.priority ?? SITEMAP_DEFAULTS.priority).toFixed(1)
+            return [
+              '  <url>',
+              `    <loc>${loc}</loc>`,
+              `    <lastmod>${today}</lastmod>`,
+              `    <changefreq>${changefreq}</changefreq>`,
+              `    <priority>${priority}</priority>`,
+              '  </url>',
+            ].join('\n')
+          })
+          .join('\n')
+
+        writeFileSync(
+          path.resolve(__dirname, 'dist/sitemap.xml'),
+          '<?xml version="1.0" encoding="UTF-8"?>\n' +
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+            urls +
+            '\n</urlset>\n',
+        )
+        // eslint-disable-next-line no-console
+        console.log(`  sitemap.xml  ${Object.keys(ROUTE_SEO).length} routes -> ${entries.length} indexed`)
+      },
+    },
     react(), 
     tailwindcss(),
     {

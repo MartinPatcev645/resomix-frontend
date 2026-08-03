@@ -5,6 +5,7 @@ import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
 import { ProtectedRoute, GuestRoute, WebLayout, SessionExpiredModal, RouteFallback } from "@/components/index.ts";
+import { RouteMeta } from "@/components/RouteMeta.tsx";
 import { AppBackground } from "@/components/Layout/AppBackground.tsx";
 import { MetricsOverlay } from "@/components/metrics/MetricsOverlay.js";
 
@@ -127,6 +128,9 @@ function App() {
       <SessionExpiredModal />
 
       <Suspense fallback={<RouteFallback />}>
+        {/* Title, description, canonical and social tags for the current route. */}
+        <RouteMeta />
+
         <Routes>
           {/* Group A: Routes wrapped in persistent WebLayout shell */}
           <Route element={<WebLayout />}>
