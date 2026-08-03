@@ -332,9 +332,14 @@
   max-width: 58rem;
 }
 
-@media (max-width: 479px) {
+/* Mobile (<768px): the shared landing hero size — same as .rl-benzin on the solutions pages. This
+   was a bespoke 2.2rem step that only kicked in below 480px, so 480–767px still ran at 2.95rem and
+   even 2.2rem was wide enough for "DISCOVERABLE" to overflow. ≥768px is untouched. */
+@media (max-width: 767px) {
   .ci-page .ci-h1 {
-    font-size: 2.2rem;
+    font-size: var(--px-32);
+    line-height: 1.06;
+    max-width: 18ch;
   }
 }
 

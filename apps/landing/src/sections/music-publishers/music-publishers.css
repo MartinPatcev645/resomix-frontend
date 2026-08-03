@@ -251,6 +251,17 @@
   max-width: 56rem;
 }
 
+/* Mobile (<768px): the shared landing hero size — same as .rl-benzin on the other solutions pages.
+   This page had NO mobile step at all, so 3.05rem ran at every width and "CATALOGUE" pushed clean
+   past the side rules. ≥768px is untouched. */
+@media (max-width: 767px) {
+  .mp-page .mp-h1 {
+    font-size: var(--px-32);
+    line-height: 1.06;
+    max-width: 18ch;
+  }
+}
+
 .mp-page .mp-h1 .mp-em {
   color: var(--mp-accent);
 }

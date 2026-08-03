@@ -267,6 +267,22 @@ html #stcm-modal footer a.stcm-credit-link {
 }
 
 
+/* Mobile hero headings: hyphenate rather than overflow.
+   Every landing page has exactly one <h1> — the hero — set in Benzin at display size, and single
+   long words ("CATALOGUE", "DISCOVERABLE") can be wider than a 390px phone on their own. `hyphens:
+   auto` breaks them across lines WITH a trailing hyphen, which is what a reader expects; the source
+   strings are sentence case (uppercase comes from text-transform), so the hyphenation dictionary
+   sees real words. `overflow-wrap: break-word` is only the last resort for a token the dictionary
+   can't split; per-page rules that already set `overflow-wrap: anywhere` outrank it and are
+   unaffected. Both are dropped at 768px, where the heroes have room. */
+@media (max-width: 767px) {
+  h1 {
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    overflow-wrap: break-word;
+  }
+}
+
 /* Shared @resomix/ui dialogs use this mount fade (verbatim from the webapp, which owns the
    original). Opacity only — no transform, so nothing shifts as a modal appears. */
 @keyframes workspace-panel-in {
