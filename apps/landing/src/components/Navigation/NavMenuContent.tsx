@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { NavGlyph } from './NavGlyphs.tsx';
 import type { NavItem, NavPanelNotice, NavTopGroup } from './navData.ts';
 import { isCurrentNavRoute } from './navData.ts';
+import { prefetchRoute } from '@/routes/pageLoaders.ts';
 
 export const CaretIcon = () => (
   <svg className="nav-caret" viewBox="0 0 10 10" aria-hidden="true">
@@ -78,6 +79,12 @@ export function NavLinkRow({
 
   const href = item.route ?? '#';
   const handleClick = (e: React.MouseEvent) => {
+    // Let the browser handle the intents an <a> is expected to honour: cmd/ctrl-click and
+    // middle-click open a new tab, shift opens a window. Calling preventDefault unconditionally
+    // swallowed all of them and navigated the current tab instead.
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+      return;
+    }
     e.preventDefault();
     if (item.external) {
       window.open(href, '_blank', 'noopener,noreferrer');
@@ -85,6 +92,13 @@ export function NavLinkRow({
       onNavigate(href);
     }
     onClose?.();
+  };
+
+  /* Start the chunk download on hover/focus. The pointer still has to travel to the link and the
+     click still has to happen, and that is usually enough time for the page to be in memory by the
+     time it does — which is the difference between an instant transition and a network-bound one. */
+  const warm = () => {
+    if (!item.external) prefetchRoute(href);
   };
 
   const ariaLabel = item.external && item.externalAriaKey
@@ -100,6 +114,9 @@ export function NavLinkRow({
         aria-label={ariaLabel}
         {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
         onClick={handleClick}
+        onMouseEnter={warm}
+        onFocus={warm}
+        onTouchStart={warm}
       >
         {title}
         {description}
@@ -116,6 +133,9 @@ export function NavLinkRow({
       aria-describedby={describedBy}
       {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
       onClick={handleClick}
+      onMouseEnter={warm}
+      onFocus={warm}
+      onTouchStart={warm}
     >
       {item.glyph ? <NavGlyph name={item.glyph} /> : null}
       {title}

@@ -1,0 +1,25 @@
+# Cloudflare Pages response headers. Files in public/ are copied to the deploy root, so this ships
+# as /_headers.
+#
+# The rule that matters: the HTML document must never be cached, because it is the only thing that
+# knows which hashed chunk filenames exist in the current deploy. A stale document sends the browser
+# after chunks that were replaced, which is what made navigation silently fail after a release.
+#
+# Note this cannot help a tab that was ALREADY open when the deploy shipped — that tab holds the old
+# filenames in memory and never re-reads the document. Recovery for that case is in
+# src/routes/lazyRoute.ts.
+
+# Content-hashed build output: the name changes whenever the bytes change, so it is safe to keep
+# forever and never revalidate.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Always revalidate the document itself.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate

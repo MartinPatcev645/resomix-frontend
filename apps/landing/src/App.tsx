@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useFirstVisit, useAuthInit, useSilktide } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
@@ -7,28 +7,35 @@ import { useFeedbackStore, useAuthStore } from "@resomix/stores";
 import { LandingLayout } from "@/components/index.ts";
 import { AppBackground } from "@/components/Layout/AppBackground.tsx";
 import { BetaAuthRedirect } from "@/components/BetaAuthRedirect.tsx";
-// Lazy-load pages directly for proper code-splitting
-const HomePage = lazy(() => import("@/pages/HomePage.tsx"));
-const AboutPage = lazy(() => import("@/pages/AboutPage.tsx"));
-const InfoPage = lazy(() => import("@/pages/InfoPage.tsx"));
-const PartnersPage = lazy(() => import("@/pages/PartnersPage.tsx"));
-const PricingPage = lazy(() => import("@/pages/PricingPage.tsx"));
-const ProductPage = lazy(() => import("@/pages/ProductPage.tsx"));
-const SonicDiscoveryPage = lazy(() => import("@/pages/SonicDiscoveryPage.tsx"));
-const TrackIntelligencePage = lazy(() => import("@/pages/TrackIntelligencePage.tsx"));
-const CatalogueIntelligencePage = lazy(() => import("@/pages/CatalogueIntelligencePage.tsx"));
-const DevelopersPage = lazy(() => import("@/pages/DevelopersPage.tsx"));
-const PartnersPilotPage = lazy(() => import("@/pages/PartnersPilotPage.tsx"));
-const TrustPage = lazy(() => import("@/pages/TrustPage.tsx"));
-const RecordLabelsPage = lazy(() => import("@/pages/RecordLabelsPage.tsx"));
-const MusicPublishersPage = lazy(() => import("@/pages/MusicPublishersPage.tsx"));
-const SyncAgenciesPage = lazy(() => import("@/pages/SyncAgenciesPage.tsx"));
-const MusicLibrariesPage = lazy(() => import("@/pages/MusicLibrariesPage.tsx"));
-const DjsPage = lazy(() => import("@/pages/DjsPage.tsx"));
-const MusicCuratorsPage = lazy(() => import("@/pages/MusicCuratorsPage.tsx"));
-const ProducersPage = lazy(() => import("@/pages/ProducersPage.tsx"));
-const SubscribePage = lazy(() => import("@/pages/SubscribePage.tsx"));
-// const TestPage = lazy(() => import("@/pages/TestPage.tsx"));
+import { RouteErrorBoundary } from "@/components/RouteErrorBoundary.tsx";
+import { RouteFallback } from "@/components/RouteFallback.tsx";
+import { PAGE_LOADERS } from "@/routes/pageLoaders.ts";
+import { lazyRoute } from "@/routes/lazyRoute.ts";
+
+/* Pages are code-split. `lazyRoute` wraps React.lazy so a chunk that fails to download — the
+   normal outcome for a tab that was open when a deploy shipped — retries and then recovers,
+   instead of silently rendering nothing. The loaders live in PAGE_LOADERS so nav links can also
+   prefetch them on hover; see routes/pageLoaders.ts. */
+const HomePage = lazyRoute(PAGE_LOADERS['/']);
+const AboutPage = lazyRoute(PAGE_LOADERS['/about']);
+const InfoPage = lazyRoute(PAGE_LOADERS['/contact']);
+const PartnersPage = lazyRoute(PAGE_LOADERS['/partners']);
+const PricingPage = lazyRoute(PAGE_LOADERS['/pricing']);
+const ProductPage = lazyRoute(PAGE_LOADERS['/product']);
+const SonicDiscoveryPage = lazyRoute(PAGE_LOADERS['/product/sonic-discovery']);
+const TrackIntelligencePage = lazyRoute(PAGE_LOADERS['/product/track-intelligence']);
+const CatalogueIntelligencePage = lazyRoute(PAGE_LOADERS['/product/catalog-intelligence']);
+const DevelopersPage = lazyRoute(PAGE_LOADERS['/developers']);
+const PartnersPilotPage = lazyRoute(PAGE_LOADERS['/partners/pilot']);
+const TrustPage = lazyRoute(PAGE_LOADERS['/trust']);
+const RecordLabelsPage = lazyRoute(PAGE_LOADERS['/solutions/record-labels']);
+const MusicPublishersPage = lazyRoute(PAGE_LOADERS['/solutions/music-publishers']);
+const SyncAgenciesPage = lazyRoute(PAGE_LOADERS['/solutions/sync-agencies']);
+const MusicLibrariesPage = lazyRoute(PAGE_LOADERS['/solutions/music-libraries-sample-providers']);
+const DjsPage = lazyRoute(PAGE_LOADERS['/solutions/djs']);
+const MusicCuratorsPage = lazyRoute(PAGE_LOADERS['/solutions/music-curators']);
+const ProducersPage = lazyRoute(PAGE_LOADERS['/solutions/producers']);
+const SubscribePage = lazyRoute(PAGE_LOADERS['/subscribe']);
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
@@ -77,7 +84,13 @@ function App() {
 
       {showFeedback && <FeedbackForm />}
 
-      <Suspense fallback={null}>
+      {/* resetKey: an error on one route must not poison the next one the user picks. */}
+      <RouteErrorBoundary resetKey={location.pathname}>
+        {/* Not `null`. In-app navigation is wrapped in startTransition (LandingLayout), so React
+            keeps the current page on screen while the next chunk downloads and this fallback never
+            appears for those. It is for the cases with nothing to keep: a cold load or a direct
+            deep link on a slow connection, which previously rendered a blank document. */}
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* Auth and account screens are served ONLY by the web app. These forward to the same
               path on beta, carrying the query string — see BetaAuthRedirect for why that matters
@@ -125,7 +138,8 @@ function App() {
             <Route path="*" element={<InfoPage mode="404" />} />
           </Route>
         </Routes>
-      </Suspense>
+        </Suspense>
+      </RouteErrorBoundary>
     </>
   );
 }

@@ -20,6 +20,19 @@ export function LandingLayout() {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const menuButtonRef = React.useRef<HTMLButtonElement>(null);
 
+    /**
+     * Route changes run as a transition.
+     *
+     * Pages are code-split, so a plain navigate() suspends immediately and React swaps the whole
+     * screen for the Suspense fallback until the chunk lands — on a slow connection that is a blank
+     * document for seconds. Inside a transition React keeps the CURRENT page rendered until the new
+     * one is ready, and `isNavPending` gives us something honest to show meanwhile.
+     *
+     * It also makes fast successive clicks safe: React discards the superseded transition instead of
+     * committing an interleaved half-navigation.
+     */
+    const [isNavPending, startNavTransition] = React.useTransition();
+
     // Internal navigation handler to avoid full page reloads
     const handleNavigate = React.useCallback((path: string) => {
         // Check if path belongs to the Landing domain
@@ -38,7 +51,8 @@ export function LandingLayout() {
                     relativePath = path.split('resomix.com')[1] || '/';
                 }
             }
-            navigate(relativePath || '/');
+            const target = relativePath || '/';
+            startNavTransition(() => navigate(target));
         } else {
             // External or Beta URL
             window.location.href = path;
@@ -120,6 +134,15 @@ export function LandingLayout() {
 
     return (
         <OptionalAuthRoute>
+            {/* Navigation progress. The previous page stays on screen during a transition, so
+                without this a click on a slow connection looks like it did nothing at all. Above
+                the page shell (z-30) for the same stacking reason the beta banner is. */}
+            <div
+                className={`fixed inset-x-0 top-0 z-[60] h-[2px] origin-left bg-[var(--color-primary)] transition-opacity duration-200 ${isNavPending ? 'nav-progress-active opacity-100' : 'opacity-0'}`}
+                role="progressbar"
+                aria-hidden={!isNavPending}
+                aria-label="Loading page"
+            />
             <div id="landing-page-root" className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen relative`}>
                 {/* Shared void-field backdrop for pages that don't render their own (the marketing
                     pages in the list below already ship their page-scoped void-field). Keeps every

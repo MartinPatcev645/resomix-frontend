@@ -1219,3 +1219,24 @@ body.nav-locked {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(2px); }
 }
+
+/* ---------- navigation progress bar ----------
+   Shown while a route transition is pending. Route chunks give no download progress events, so the
+   bar eases toward 90% and is removed the moment the page commits — an indeterminate hint, not a
+   fake measurement. */
+.nav-progress-active {
+  animation: nav-progress-grow 2.2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+@keyframes nav-progress-grow {
+  0%   { transform: scaleX(0); }
+  40%  { transform: scaleX(0.55); }
+  100% { transform: scaleX(0.9); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-progress-active {
+    animation: none;
+    transform: scaleX(1);
+  }
+}
