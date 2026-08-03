@@ -1,65 +1,369 @@
 {
     "about": {
-        "about_hero": {
-            "discovery_engine": "A sonic discovery engine",
-            "for_djs_who_feel": "for Those who feel the music"
+        "hero": {
+            "eyebrow": "About Resomix // Built in Thessaloniki",
+            "h1Lead": "A sonic intelligence platform for those who",
+            "h1Em": "feel the music.",
+            "lead": "Resomix helps people discover sonically related tracks, understand one recording in greater detail and make authorised catalogues searchable through sound.",
+            "support": "One proprietary engine, PYXIS-1, powers three distinct products built around the recording itself.",
+            "ctaPrimary": "Explore the platform",
+            "ctaSecondary": "Try Sonic Discovery",
+            "status": "Live production beta · Sonic Discovery · Track Intelligence · Catalogue Intelligence",
+            "captionA": "THE SIGNAL WE KEPT FOLLOWING",
+            "captionB": "A COMPANY PROPOSITION · NOT A USER WORKFLOW",
+            "figureAriaD": "One quiet recording signal emerges from the lower left, passes a field of metadata fragments, is met by the open PYXIS-1 ring, and leads to three sequential company capabilities: discover relationships, read the recording, search a catalogue.",
+            "figureAriaM": "Mobile: the quiet recording signal meets PYXIS-1 and leads to the three sequential capabilities."
         },
-        "about_one": {
-            "headline_mission": "Our Mission",
-            "mission_paragraph": "Putting together a set that tells a story is no trivial task.<br />Tracks that fit - tonally, emotionally, energetically - are buried<br />under platforms that rank by popularity rather than<br />sonic character",
-            "mission_paragraph_answer": "We're building the tool we always needed: one that listens<br />to a reference track the way a DJ does and finds what belongs beside it",
-            "headline_alternative_route": "Music Discovery That Goes Deeper<br />Than Tags And Trends",
-            "tech_paragraph": "PYXIS-1 reads the full sonic character of a track<br />tempo shifts, harmonic tension, dynamic range, spectral energy<br />and finds music that matches at the structural level",
-            "result_paragraph": "The result: recommendations based on<br />how music actually sounds, not how it's labeled.",
-            "code_text": "run(vibe_exploration_mode)<br />→ output: connection_through_emotion<br />→ status: inspired",
-            "cta_find_perfect": "Find the Perfect Sonic Match"
+        "mission": {
+            "eyebrow": "01 // Our mission",
+            "h2": "Build tools that listen to the recording itself.",
+            "body1": "The ability to tell a story through sound is a deeply human trait. Woven into the history of our species, music connects people and intensifies emotion in ways few other art forms can.",
+            "body2": "With Resomix, we are building a platform that works beyond tags, popularity signals and static metadata. It starts from the audio recording and uses measurable sonic characteristics to support discovery and understanding.",
+            "body3": "By analysing structure, harmony, rhythm, timbre, spectral character and energy, Resomix opens three distinct routes: find sonically related tracks, examine one recording in greater detail, or make an authorised catalogue searchable by sound.",
+            "interp": "Metadata tells us what a recording is called. Audio analysis gives us another way to understand how it moves, feels and relates to other recordings.",
+            "figureAria": "A metadata frame — title, artist, genre, release date, label — surrounds the audio-derived evidence: five characteristic bands and seventy-plus measurable characteristics."
         },
-        "about_two": {
-            "preamble_one": "We care about one thing: that you find the right track for the right<br />moment - the one that galvanizes your audience and sets you apart",
-            "preamble_two": "We're here to make that process faster, more intuitive,<br />and grounded in what matters most: the music",
-            "vision_title": "Our Vision",
-            "vision_intro": "A world where every track gets discovered on its own terms<br />Not by chart position, not by marketing budget, not by release date",
-            "vision_span": "Resomix maps the full sonic DNA of a track's structure and finds its perfect match, regardless of who released it or when.<br />That's what music discovery should be",
-            "diff_title": "What makes<br />resomix different",
-            "diff_intro": "Our discovery engine uses a computational algorithm that identifies musical patterns at the granular level",
-            "diff_span": "Operating entirely outside the streaming ecosystem's popularity bias",
-            "card_analysis_title": "Spectral Feature Analysis",
-            "card_analysis_desc": "Pure signal processing. No artificial curation, no black-box AI - just deterministic audio analysis across 70+ sonic dimensions",
-            "card_craft_title": "READS THE ROOM",
-            "card_craft_desc": "PYXIS-1 maps a track's subtlety, dynamics, flow, rhythm, texture, and energy. Like a DJ reading the room, it responds to what the music actually communicates",
-            "card_path_title": "RESULTS IN SECONDS<br />LIKE A DJ",
-            "card_path_desc": "Within seconds, a precisely matched selection of tracks that share your reference's sonic character - regardless of genre, release date, or popularity"
+        "evidence": {
+            "eyebrow": "02 // Why Resomix exists",
+            "h2": "Music discovery should go deeper than tags and trends.",
+            "body1": "Resomix began with a frustration familiar to DJs, curators and music professionals: spending hours moving through stores, platforms and catalogues to find the recording that fits a particular moment.",
+            "body2": "PYXIS-1, our proprietary audio-analysis and similarity engine, preprocesses recordings and extracts more than 70 measurable characteristics across rhythm, harmony, timbre, structure, spectral profile and energy.",
+            "body3": "It creates a sonic profile that can be read through Track Intelligence or compared with recordings already processed into an applicable index. Similarity results are ranked automatically according to the closest measured sonic relationships.",
+            "status": "Proprietary algorithm · Audio-derived evidence · Human decision",
+            "figureAriaD": "One recording enters; five characteristic bands and seventy-plus characteristics form one sonic profile; the profile supports two possible operations — read one recording through Track Intelligence, or compare with an index for ranked similarity.",
+            "figureAriaM": "Mobile: one recording, five bands, one sonic profile, two possible operations.",
+            "interp": "PYXIS-1 turns measurable audio characteristics into a sonic profile that can be examined or compared."
         },
-        "about_three": {
-            "intro": "Every catalog has a hidden layer - tracks that never made it to charts, albums that fell through algorithmic cracks, artists who create brilliant work outside the spotlight. Resomix was built to find them",
-            "intro_span": "",
-            "heading_beyond": "Beyond<br />Trends",
-            "heading_values_benefits": "What We Stand For",
-            "card_speed_title": "THE ART OF CRATE DIGGING",
-            "card_speed_desc": "You still make the call. We help you get there faster - surfacing tracks that standard search and streaming algorithms miss",
-            "card_open_title": "REAL INCLUSION",
-            "card_open_desc": "When discovery is based on sonic character alone, every artist competes on equal terms - regardless of label size, marketing budget, or chart history",
-            "card_quality_title": "OPEN BY NATURE",
-            "card_quality_desc": "Transparent data, clear licensing, and an open approach to partnerships. Built for labels, platforms, and developers to collaborate with",
-            "card_crate_title": "PRECISION OVER QUANTITY",
-            "card_crate_desc": "Fewer results, higher relevance. You control how many recommendations you see every time"
+        "evolution": {
+            "eyebrow": "03 // How Resomix grew",
+            "h2": "One human problem. Three distinct ways to work with sound.",
+            "intro": "The first question was simple: if one track feels right, what should come next? Building that discovery engine revealed two further needs — understanding the recording in greater detail and bringing the same sound-first search into authorised catalogues.",
+            "sd": {
+                "qLabel": "What should I hear next?",
+                "title": "Sonic Discovery",
+                "body": "Start with one known track or upload a reference. PYXIS-1 compares its sonic profile with a pre-analysed index and returns the closest matches as an automatically ranked Sonic Discovery playlist.",
+                "outcome": "One reference → automatic ranking → playlist",
+                "cta": "Explore Sonic Discovery",
+                "figureAria": "One orange reference passes the comparison ring and returns a compact ranked list, with the strongest orange on result one."
+            },
+            "ti": {
+                "qLabel": "What is happening inside this recording?",
+                "title": "Track Intelligence",
+                "body": "Examine one recording through a readable view of its structure, rhythm, harmony, energy, timbre, spectral character and the confidence behind key outputs.",
+                "outcome": "One recording → 70+ characteristics → readable analysis",
+                "cta": "Explore Track Intelligence",
+                "figureAria": "A time axis with structural regions and a readable energy journey, with one selected moment and its interpretation."
+            },
+            "ci": {
+                "qLabel": "How can this catalogue be searched by sound?",
+                "title": "Catalogue Intelligence",
+                "body": "Process authorised catalogue recordings into a private, partner-scoped sonic index. Use one reference to retrieve the closest recordings from that catalogue, with Track Intelligence available separately when deeper examination is needed.",
+                "outcome": "Authorised catalogue → private index → ranked partner results",
+                "cta": "Explore Catalogue Intelligence",
+                "figureAria": "A heavy partner boundary holds pre-processed recording cells; one approved reference query returns a ranked result list. No shared catalogue pool."
+            },
+            "api": {
+                "label": "For platforms & music technology",
+                "body": "Partners can bring similarity and track-analysis capabilities into their own products through a scoped API and guided integration while keeping their interface, brand and customer journey.",
+                "cta": "Explore the developer overview →",
+                "anno": "Guided pilot · No public sandbox"
+            }
         },
-        "about_four": {
-            "headline_who": "Who",
-            "headline_resomix": "Resomix",
-            "headline_is_for": "is for",
-            "audience_djs_title": "DJs",
-            "audience_djs_desc": "— who need the right tracks for the right moment in their set",
-            "audience_producers_title": "Producers",
-            "audience_producers_desc": "— seeking sonic references for sound design, texture, and creative direction ideas",
-            "audience_curators_title": "Curators",
-            "audience_curators_desc": "— who build playlists around sonic cohesion, not genre labels",
-            "audience_music_enthusiasts_title": "Music Enthusiasts",
-            "audience_music_enthusiasts_desc": "— who dig deeper than algorithms will take them",
-            "cta_try_it_now": "Upload a Track",
-            "run_by": "Resomix is run by DJs, engineers,<br />and music professionals",
-            "mission": "We want to build a better way<br />to discover and enjoy music across genres",
-            "contact_reach_us": "Reach us anytime:"
+        "vision": {
+            "eyebrow": "04 // Our vision",
+            "h2": "Make sound itself a route into discovery.",
+            "body1": "We want to make analysing and discovering music faster and more useful. We imagine a world where a recording’s visibility is not determined only by chart position, marketing budget, recency or the accuracy of its tags.",
+            "body2": "Resomix builds a sonic profile from measurable characteristics and uses it to reveal relationships that metadata alone may not show. The aim is not to replace listening, taste or professional judgement. It is to help them travel further.",
+            "statement": "The recording deserves another way to be found.",
+            "figureAriaD": "A low-exposure recording sits mostly outside the visible field with a restrained orange rim; its measured relationship to a known reference surfaces it as ranked candidate number three.",
+            "figureAriaM": "Mobile: the low-exposure recording, its relationship to a known reference, and its return as ranked candidate three.",
+            "interp": "Relevance should not disappear with release date. A recording can return to view when its measured sonic relationship to a reference is strong."
+        },
+        "principles": {
+            "eyebrow": "05 // What makes Resomix different",
+            "h2": "Measurable sound. Clear outputs. Human judgement.",
+            "intro": "Resomix combines proprietary processing and ranking with established audio-analysis tools to create a practical sonic profile for each recording.",
+            "p1": {
+                "title": "Audio-derived evidence",
+                "body": "PYXIS-1 works from the recording, extracting more than 70 measurable characteristics across verified sonic dimensions."
+            },
+            "p2": {
+                "title": "Read or compare",
+                "body": "A sonic profile can support a readable Track Intelligence view or be compared with an applicable pre-analysed index. These are distinct workflows."
+            },
+            "p3": {
+                "title": "Results in seconds",
+                "body": "Existing indexed references return faster. Uploaded references take longer because they must first be processed. Similarity results are ranked automatically."
+            },
+            "p4": {
+                "title": "Human decision",
+                "body": "Resomix surfaces evidence and candidates. DJs, producers, curators and catalogue teams make the final call."
+            },
+            "chainNote": {
+                "body": "Every returned result can become a new starting point after the playlist has been delivered, allowing a listener to follow a new sonic direction without changing how the original ranking was created.",
+                "figureAria": "A chain of three reference cells, each becoming the next starting point after a playlist is returned."
+            }
+        },
+        "shelf": {
+            "eyebrow": "06 // Beyond trends",
+            "h2": "Relevance should not expire with release date.",
+            "body1": "Every catalogue has a quieter layer — tracks that did not reach the charts, albums that fell through algorithmic cracks and artists whose work sits outside the spotlight.",
+            "body2": "Resomix can bring a recording back into view when it is sonically relevant to a reference. It does not predict commercial success or guarantee exposure. It creates another evidence-based route into discovery.",
+            "figureAriaD": "Rows of catalogue recordings arranged by release order; one older recording receives a sonic relationship from the active reference and moves into the ranked output row, its release date visible.",
+            "figureAriaM": "Mobile: the older catalogue recording is matched through sonic relevance and appears in the ranked output with its release date visible."
+        },
+        "values": {
+            "eyebrow": "07 // What we stand for",
+            "h2": "Technology should expand human listening — not pretend to replace it.",
+            "v1": {
+                "title": "The art of personal curation",
+                "body": "You still make the call. Resomix helps you get there faster by surfacing candidates and evidence that support deeper listening."
+            },
+            "v2": {
+                "title": "Another route for less-visible music",
+                "body": "Sound-first retrieval can give older and lower-exposure recordings another chance to surface when they are relevant to a reference."
+            },
+            "v3": {
+                "title": "Clear boundaries",
+                "body": "Temporary user references and partner catalogue assets follow separate handling paths. Each partner catalogue and sonic index remains inside its authorised scope."
+            },
+            "v4": {
+                "title": "Precision over volume",
+                "body": "Resomix returns ranked results and lets the user choose the available result depth. More results are not automatically better results."
+            }
+        },
+        "audiences": {
+            "eyebrow": "08 // Who Resomix is for",
+            "h2": "Built for people who make decisions through sound.",
+            "individual": {
+                "title": "Individual & creative",
+                "items": [
+                    {
+                        "title": "DJs",
+                        "body": "Reduce crate digging and find tracks that fit the energy, groove and character of a set.",
+                        "chip": "Sonic Discovery"
+                    },
+                    {
+                        "title": "Producers",
+                        "body": "Inspect arrangement, energy, timbre and sonic character in a recording, then explore related references while keeping the creative decision yours.",
+                        "chip": "Track Intelligence + Sonic Discovery"
+                    },
+                    {
+                        "title": "Music curators",
+                        "body": "Start from an audio reference and review a ranked set of sonically related candidates beyond charts and static metadata.",
+                        "chip": "Sonic Discovery"
+                    },
+                    {
+                        "title": "Music enthusiasts",
+                        "body": "Explore new sonic relationships from one known recording and follow the directions that feel meaningful.",
+                        "chip": "Sonic Discovery"
+                    }
+                ]
+            },
+            "catalogue": {
+                "title": "Catalogue & partner",
+                "items": [
+                    {
+                        "title": "Record labels and distributors",
+                        "body": "Make authorised catalogue recordings searchable by sound and retrieve ranked catalogue matches from one reference.",
+                        "chip": "Catalogue Intelligence"
+                    },
+                    {
+                        "title": "Music publishers",
+                        "body": "Explore represented recordings through sound and support human catalogue and licensing research without replacing rights judgement.",
+                        "chip": "Catalogue Intelligence"
+                    },
+                    {
+                        "title": "Sync agencies",
+                        "body": "Use an audio reference to surface candidates for human review. Resomix does not automate clearance, rights decisions or placement.",
+                        "chip": "Catalogue Intelligence"
+                    },
+                    {
+                        "title": "Music libraries and sample providers",
+                        "body": "Help authorised audio libraries be explored through structure, texture and sonic relationships.",
+                        "chip": "Catalogue Intelligence"
+                    },
+                    {
+                        "title": "Platforms and music technology",
+                        "body": "Integrate partner-scoped similarity and track-analysis capabilities through a guided API integration.",
+                        "chip": "API + Guided pilot"
+                    }
+                ]
+            }
+        },
+        "partners": {
+            "eyebrow": "09 // For rights holders & partners",
+            "h2": "Make an authorised catalogue searchable through sonic relationships.",
+            "body1": "Partners provide agreed audio and metadata for processing. Resomix creates a private, partner-scoped sonic index that can return ranked catalogue results or support separate track-level intelligence through a guided pilot and scoped integration.",
+            "body2": "Partners retain their rights, branding, storefront, transaction flow and customer relationship. Resomix does not generate derivative audio, does not use partner content to train or fine-tune its systems, and does not place one partner’s catalogue inside another partner’s index.",
+            "body3": "The public beta and every partner evaluation must use audio that Resomix is authorised to process.",
+            "ctaPrimary": "Request a guided catalogue pilot",
+            "ctaSecondary": "Explore Trust & Control",
+            "figureAriaD": "Authorised audio and agreed metadata are processed by PYXIS-1 into a private sonic index inside one partner scope, returning ranked partner output, with Track Intelligence as a separate option.",
+            "figureAriaM": "Mobile: the partner flow from authorised audio through PYXIS-1 into the private index, ranked output and the separate Track Intelligence option."
+        },
+        "team": {
+            "eyebrow": "10 // The team",
+            "h2": "Built by people who have spent years searching for the right track.",
+            "body1": "Resomix was born from a frustration familiar to many music professionals: spending hours exploring platforms and catalogues to find the music needed for a project or DJ set.",
+            "body2": "We are a small team of music-industry professionals and signal-processing engineers based in Thessaloniki, Greece, building the discovery and intelligence tools we wished existed.",
+            "location": "Resomix · Thessaloniki, Greece",
+            "email": "support@resomix.com",
+            "figureAria": "A studio workbench composition: Thessaloniki coordinates, a small hardware console grid, and a timeline from music practice through signal processing to product building."
+        },
+        "founder": {
+            "eyebrow": "11 // From the founder",
+            "quote1": "“I discovered electronic music through Italian progressive house radio in the late 1990s. Two decades of DJing and producing taught me one thing: finding the right track is the hardest part of the creative process.",
+            "quote2": "Resomix is the tool I needed and could not find: built on signal processing, not hype. After creating our discovery engine, I realised people across the music sector could benefit from the same foundation — not only DJs, but also producers, supervisors, publishers and catalogue owners. Resomix is designed to show connections and enhance human curation across the industry.”",
+            "attrib": "Georgios · Founder & CEO · Resomix",
+            "figureAriaD": "A restrained analogue radio-frequency line beginning at Italian progressive house radio in the late 1990s, carrying twenty-plus years of DJing and producing, and resolving into the present Resomix signal in Thessaloniki.",
+            "figureAriaM": "Mobile: the late-1990s radio-frequency line resolving into the present Resomix signal."
+        },
+        "closing": {
+            "eyebrow": "12 // Choose a way in",
+            "h2": "Start with one track. Or test Resomix on your catalogue.",
+            "public": {
+                "title": "Hear the discovery workflow for yourself.",
+                "body": "Search for a known track or upload a reference and receive a ranked Sonic Discovery playlist.",
+                "ctaPrimary": "Try Sonic Discovery",
+                "ctaSecondary": "Explore Track Intelligence"
+            },
+            "partner": {
+                "title": "Evaluate the platform on an authorised catalogue sample.",
+                "body": "Define the catalogue scope, references and evaluation criteria with Resomix before deciding whether to integrate further.",
+                "ctaPrimary": "Request a guided pilot",
+                "ctaSecondary": "Explore Catalogue Intelligence"
+            }
+        },
+        "figures": {
+            "genre": "GENRE",
+            "releaseYear": "RELEASE YEAR",
+            "popularity": "POPULARITY",
+            "usefulContextNotWholeStory": "USEFUL CONTEXT · NOT THE WHOLE STORY",
+            "oneRecording": "ONE RECORDING",
+            "pyxis": "PYXIS-1",
+            "discover01": "01 · DISCOVER",
+            "relationships": "RELATIONSHIPS",
+            "readThe02": "02 · READ THE",
+            "recording": "RECORDING",
+            "searchA03": "03 · SEARCH A",
+            "catalogue": "CATALOGUE",
+            "threeDistinctProductsOneSharedEngine": "THREE DISTINCT PRODUCTS · ONE SHARED ENGINE",
+            "coordinates": "40.6401° N · 22.9444° E",
+            "discoverRelationships01M": "01 · DISCOVER RELATIONSHIPS",
+            "readTheRecording02M": "02 · READ THE RECORDING",
+            "searchACatalogue03M": "03 · SEARCH A CATALOGUE",
+            "threeDistinctProductsM": "THREE DISTINCT PRODUCTS",
+            "oneSharedEngineM": "· ONE SHARED ENGINE",
+            "usefulContext": "USEFUL CONTEXT",
+            "title": "TITLE",
+            "artist": "ARTIST",
+            "releaseDate": "RELEASE DATE",
+            "label": "LABEL",
+            "audioDerivedEvidence": "AUDIO-DERIVED EVIDENCE",
+            "rhythm": "RHYTHM",
+            "harmony": "HARMONY",
+            "timbre": "TIMBRE",
+            "structure": "STRUCTURE",
+            "energy": "ENERGY",
+            "characteristics70Measurable": "70+ MEASURABLE CHARACTERISTICS",
+            "characteristics70": "70+ CHARACTERISTICS",
+            "sonicProfile": "SONIC PROFILE",
+            "readOneRecording": "READ ONE RECORDING",
+            "trackIntelligence": "TRACK INTELLIGENCE",
+            "compareWithAnIndex": "COMPARE WITH AN INDEX",
+            "rankedSimilarity": "RANKED SIMILARITY",
+            "twoOperationsNotAutoD": "TWO POSSIBLE OPERATIONS — NOT AUTOMATIC SIMULTANEOUS RESULTS",
+            "sonicM": "SONIC",
+            "profileM": "PROFILE",
+            "compareWithIndex": "COMPARE WITH INDEX",
+            "twoOperationsLine1M": "TWO POSSIBLE OPERATIONS —",
+            "twoOperationsLine2M": "NOT AUTOMATIC SIMULTANEOUS RESULTS",
+            "rank01": "01",
+            "rank02": "02",
+            "rank03": "03",
+            "rank04": "04",
+            "rank05": "05",
+            "nightTransit": "NIGHT TRANSIT",
+            "score931": "93.1%",
+            "glassHarbour": "GLASS HARBOUR",
+            "score924": "92.4%",
+            "lowAltitude": "LOW ALTITUDE",
+            "score918": "91.8%",
+            "stillCurrent": "STILL CURRENT",
+            "score912": "91.2%",
+            "paleMeridian": "PALE MERIDIAN",
+            "score909": "90.9%",
+            "rankedAutomatically": "RANKED AUTOMATICALLY",
+            "intro": "INTRO",
+            "build": "BUILD",
+            "drop": "DROP",
+            "breakdown": "BREAKDOWN",
+            "outro": "OUTRO",
+            "peak312": "PEAK 3:12",
+            "time000": "0:00",
+            "time330": "3:30",
+            "time700": "7:00",
+            "energyJourney": "MODERATE ENERGY INTO THE BUILD · PEAK INSIDE THE DROP · GRADUAL RELEASE",
+            "referenceQuery": "REFERENCE QUERY",
+            "cat0417": "CAT-0417",
+            "cat1121": "CAT-1121",
+            "cat0088": "CAT-0088",
+            "onePartnerScope": "ONE PARTNER SCOPE",
+            "noSharedCataloguePool": "NO SHARED CATALOGUE POOL",
+            "lowExposureRecording03": "03 · LOW-EXPOSURE RECORDING",
+            "knownReference01": "01 · KNOWN REFERENCE",
+            "sonicallyRelevant02": "02 · SONICALLY RELEVANT TO THE REFERENCE",
+            "rankedCandidates": "RANKED CANDIDATES",
+            "cat2201_2026": "CAT-2201 · 2026",
+            "cat1121_2024": "CAT-1121 · 2024",
+            "cat0417_2011": "CAT-0417 · 2011",
+            "score926": "92.6%",
+            "rec1c44_2023": "REC-1C44 · 2023",
+            "surfacedAsRanked04": "04 · SURFACED AS A RANKED CANDIDATE",
+            "discoveryRouteNotForecast": "DISCOVERY ROUTE · NOT A COMMERCIAL FORECAST",
+            "lowExposureM": "LOW-EXPOSURE",
+            "knownReferenceM": "KNOWN REFERENCE",
+            "sonicallyRelevantM": "SONICALLY RELEVANT TO THE REFERENCE",
+            "surfacedAsRankedM": "SURFACED AS A RANKED CANDIDATE",
+            "discoveryRouteM": "DISCOVERY ROUTE",
+            "notForecastM": "· NOT A COMMERCIAL FORECAST",
+            "catalogueByReleaseOrder": "CATALOGUE BY RELEASE ORDER",
+            "olderCatalogueRecording2011": "OLDER CATALOGUE RECORDING · 2011",
+            "year2009": "2009",
+            "year2026": "2026",
+            "activeReference2026": "ACTIVE REFERENCE · 2026",
+            "matchedThroughSonicRelevance": "MATCHED THROUGH SONIC RELEVANCE",
+            "rankedOutput": "RANKED OUTPUT",
+            "cat1388_2019": "CAT-1388 · 2019",
+            "recencyDidNotCreateMatch": "RECENCY DID NOT CREATE THE MATCH",
+            "authorisedAudio": "AUTHORISED AUDIO",
+            "agreedMetadata": "+ AGREED METADATA",
+            "pyxisProcessing": "PYXIS-1 PROCESSING",
+            "privateSonicIndex": "PRIVATE SONIC INDEX",
+            "onePartnerScopeNoSharedCatalogue": "ONE PARTNER SCOPE · NO SHARED CATALOGUE POOL",
+            "rankedPartner": "RANKED PARTNER",
+            "output": "OUTPUT",
+            "openTrackIntelligence": "OPEN TRACK INTELLIGENCE",
+            "separateOption": "SEPARATE OPTION",
+            "partnerKeepsControlGuidedPilot": "PARTNER KEEPS COMMERCIAL CONTROL · GUIDED PILOT",
+            "authorisedAudioMetadataM": "AUTHORISED AUDIO + METADATA",
+            "onePartnerScopeNoSharedPoolM": "ONE PARTNER SCOPE · NO SHARED POOL",
+            "rankedPartnerOutputM": "RANKED PARTNER OUTPUT",
+            "partnerKeepsControlM": "PARTNER KEEPS COMMERCIAL CONTROL",
+            "guidedPilotM": "· GUIDED PILOT",
+            "coordinatesThessaloniki": "40.6401° N · 22.9444° E · THESSALONIKI",
+            "hardwareConsoleGrid": "HARDWARE-CONSOLE GRID",
+            "music": "MUSIC",
+            "practice": "PRACTICE",
+            "signal": "SIGNAL",
+            "processing": "PROCESSING",
+            "product": "PRODUCT",
+            "building": "BUILDING",
+            "teamPhotographyZone": "TEAM PHOTOGRAPHY REPLACEMENT ZONE — SUPPLIED IMAGERY ONLY · NO FABRICATED PEOPLE",
+            "italianRadio1990s": "ITALIAN PROGRESSIVE HOUSE RADIO · LATE 1990s",
+            "twentyYearsDjingProducing": "20+ YEARS OF DJING & PRODUCING",
+            "thessalonikiResomix": "THESSALONIKI · RESOMIX"
         }
     },
     "waitlist": {
@@ -716,7 +1020,7 @@
             "savedEmpty": "add matches first — then save them as a playlist"
         },
         "aud": {
-            "eyebrow": "03 // who it decides for",
+            "eyebrow": "04 // who it decides for",
             "title": "One engine. Different decisions.",
             "djHead": "For DJs",
             "djCopy": "From one reference to a set-ready shortlist. See how each match compares on groove and energy, and audition alternatives before the room decides for you.",
@@ -741,7 +1045,7 @@
             "supCta": "Start from a brief"
         },
         "proof": {
-            "eyebrow": "04 // why trust it",
+            "eyebrow": "05 // why trust it",
             "title": "Built on measurement, not mystery",
             "lead": "Every claim below maps to how the product actually works — nothing is invented for this page.",
             "s1t": "70+ characteristics",
