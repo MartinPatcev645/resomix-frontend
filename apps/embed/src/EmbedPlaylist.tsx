@@ -6,6 +6,7 @@ import {
   type EmbedPlaylistData,
   type EmbedTrack,
 } from './api.ts'
+import { EmbedWaveform, type WaveformHandle } from './EmbedWaveform'
 
 type LoadState =
   | { status: 'loading' }
@@ -42,8 +43,8 @@ export default function EmbedPlaylist() {
   const uuid = useMemo(() => readPlaylistUuid(), [])
   const [state, setState] = useState<LoadState>({ status: 'loading' })
 
-  // One shared, standard <audio controls> in the bottom player bar.
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  // One shared WaveSurfer player in the bottom bar; it owns the audio element internally.
+  const waveRef = useRef<WaveformHandle | null>(null)
   const [current, setCurrent] = useState<EmbedTrack | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
 
@@ -74,22 +75,6 @@ export default function EmbedPlaylist() {
         : 'Resomix Embedded Playlist'
   }, [state])
 
-  // Sync play/pause state from the audio element (covers the native controls too).
-  useEffect(() => {
-    const a = audioRef.current
-    if (!a) return
-    const onPlay = () => setIsPlaying(true)
-    const onStop = () => setIsPlaying(false)
-    a.addEventListener('play', onPlay)
-    a.addEventListener('pause', onStop)
-    a.addEventListener('ended', onStop)
-    return () => {
-      a.removeEventListener('play', onPlay)
-      a.removeEventListener('pause', onStop)
-      a.removeEventListener('ended', onStop)
-    }
-  }, [current])
-
   // Warm the first couple of previews once loaded, so the first click is instant.
   useEffect(() => {
     if (state.status !== 'ready') return
@@ -110,16 +95,14 @@ export default function EmbedPlaylist() {
   }
 
   const selectTrack = (t: EmbedTrack) => {
-    const a = audioRef.current
-    if (!a || !t.preview_url) return
+    if (!t.preview_url) return
+    // Same track: hand the toggle to the player. Different track: swapping `current` changes the
+    // url prop, which the player loads and starts on its own.
     if (current?.id === t.id) {
-      if (a.paused) void a.play()
-      else a.pause()
+      waveRef.current?.toggle()
       return
     }
-    a.src = t.preview_url
     setCurrent(t)
-    void a.play().catch(() => setIsPlaying(false))
   }
 
   const fullUrl = uuid ? `${APP_URL}/sonic-discovery?id=${encodeURIComponent(uuid)}` : APP_URL
@@ -166,7 +149,11 @@ export default function EmbedPlaylist() {
             </div>
           </div>
         )}
-        <audio ref={audioRef} className="embed-player-audio" controls preload="auto" />
+        <EmbedWaveform
+          ref={waveRef}
+          url={current?.preview_url ?? null}
+          onPlayingChange={setIsPlaying}
+        />
       </div>
 
       <footer className="embed-foot">

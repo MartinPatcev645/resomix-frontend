@@ -1,3 +1,36 @@
+/* ── Brand fonts ─────────────────────────────────────────────────────────────────────
+   The widget previously declared no @font-face at all, so its "Fira Code" stack silently
+   fell back to whatever monospace the viewer happened to have — it was not using the
+   brand faces on most machines.
+
+   Only the three weights this widget actually renders are shipped, converted to woff2
+   (693K of OTF/TTF -> 250K). `font-display: swap` keeps text visible while they load,
+   which matters more here than usual: this runs inside someone else's page.
+   ─────────────────────────────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Helvetica_Neue';
+  src: url('/fonts/HelveticaNeueLight.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica_Neue';
+  src: url('/fonts/HelveticaNeueMedium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fira Code';
+  src: url('/fonts/FiraCode-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg: #0a0a0b;
   --panel: #141416;
@@ -5,7 +38,9 @@
   --text: #f3f3f3;
   --muted: rgba(243, 243, 243, 0.55);
   --accent: #ee4a26;
-  --mono: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* Titles, artists, album names — matches the webapp's playlist hero and track rows. */
+  --sans: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -99,8 +134,10 @@ body {
 }
 .embed-title {
   display: block;
+  font-family: var(--sans);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
+  text-transform: uppercase;
   color: var(--text);
   text-decoration: none;
   margin: 2px 0;
@@ -158,12 +195,20 @@ body {
 .embed-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .embed-info { min-width: 0; flex: 1 1 auto; }
 .embed-track-title {
+  font-family: var(--sans);
+  font-weight: 300;
+  text-transform: uppercase;
   font-size: 12px;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.embed-track-artist {
+  font-family: var(--sans);
+  font-weight: 300;
+}
+
 .embed-track-artist,
 .embed-track-meta {
   font-size: 10px;
@@ -224,6 +269,9 @@ body {
 .embed-player-art { width: 34px; height: 34px; border-radius: 5px; object-fit: cover; flex: none; }
 .embed-player-txt { min-width: 0; }
 .embed-player-title {
+  font-family: var(--sans);
+  font-weight: 500;
+  text-transform: uppercase;
   font-size: 11px;
   color: var(--text);
   white-space: nowrap;
@@ -231,13 +279,79 @@ body {
   text-overflow: ellipsis;
 }
 .embed-player-artist {
+  font-family: var(--sans);
+  font-weight: 300;
   font-size: 9px;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.embed-player-audio { flex: 1 1 auto; height: 32px; min-width: 0; }
+/* ── WaveSurfer player ───────────────────────────────────────────────────────────────
+   Replaces the native <audio controls>, whose chrome cannot be styled and clashed with
+   everything around it. Transport + waveform + time, in the site's own language.
+   ─────────────────────────────────────────────────────────────────────────────────── */
+.embed-wave {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.embed-wave-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 2px;
+  color: var(--text);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.embed-wave-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.embed-wave-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.embed-wave-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+/* min-width:0 lets the waveform shrink inside the flex row instead of forcing overflow. */
+.embed-wave-canvas {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.embed-wave-time {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Below ~360px the time readout costs more than it gives; the waveform needs the room. */
+@media (max-width: 360px) {
+  .embed-wave-time {
+    display: none;
+  }
+}
 
 /* "View more tracks" CTA — a fixed bar between the list and footer (always visible, not scrolled),
    shown when the playlist has more tracks than the anonymous embed reveals. Links to the full

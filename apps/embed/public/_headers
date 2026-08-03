@@ -11,3 +11,8 @@
 # Long-cache the hashed build assets.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Self-hosted brand fonts. Filenames are NOT content-hashed, so if a face is ever replaced it must
+# be renamed too — otherwise cached clients keep the old file for the full year.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable

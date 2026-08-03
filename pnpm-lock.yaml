@@ -121,6 +121,9 @@ importers:
       react-dom:
         specifier: ^19.1.0
         version: 19.1.0(react@19.1.0)
+      wavesurfer.js:
+        specifier: 7.10.1
+        version: 7.10.1
     devDependencies:
       '@types/react':
         specifier: ^19.2.2
