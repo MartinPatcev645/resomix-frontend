@@ -7,6 +7,7 @@ import {
   type EmbedTrack,
 } from './api.ts'
 import { EmbedWaveform, type WaveformHandle } from './EmbedWaveform'
+import appleMusicIcon from './assets/apple-music.svg'
 
 type LoadState =
   | { status: 'loading' }
@@ -221,7 +222,17 @@ function TrackRow({
       <div className="embed-right">
         <span className="embed-dur">{fmtDuration(t.duration)}</span>
         {t.deep_link_url && (
-          <a className="embed-apple" href={t.deep_link_url} target="_blank" rel="noopener noreferrer" title="Listen on Apple Music"></a>
+          <a
+            className="embed-apple"
+            href={t.deep_link_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Listen on Apple Music"
+            title="Listen on Apple Music"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img src={appleMusicIcon} alt="" draggable={false} />
+          </a>
         )}
       </div>
     </div>

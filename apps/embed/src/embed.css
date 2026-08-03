@@ -237,18 +237,36 @@ body {
 .embed-dur { font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Apple Music link (deep link) — a small red apple glyph. */
+/* Apple Music attribution. Uses Apple's official app icon, rendered UNALTERED — the previous
+   version CSS-masked the Apple *corporate* logo and recoloured it, which is both the wrong mark
+   and a modification their identity guidelines don't allow. Hover matches the webapp's badge:
+   a slight zoom plus a soft glow, applied to the whole mark rather than recolouring it. */
 .embed-apple {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  line-height: 0;
+  border-radius: 4px;
+  opacity: 0.85;
+  transition: opacity 150ms ease, transform 150ms ease, filter 150ms ease;
+}
+
+.embed-apple img {
   width: 15px;
   height: 15px;
-  flex: none;
-  border-radius: 4px;
-  background: #fa233b;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M16.365 1.43c0 1.14-.42 2.2-1.12 2.99-.76.85-2.02 1.51-3.06 1.43-.13-1.1.42-2.27 1.09-3 .76-.83 2.09-1.46 3.09-1.42zM20.6 17.02c-.55 1.27-.82 1.84-1.53 2.96-.99 1.57-2.39 3.52-4.12 3.53-1.54.01-1.94-1-4.03-.99-2.09.01-2.53.99-4.07.98-1.73-.01-3.05-1.77-4.04-3.34-2.77-4.4-3.06-9.56-1.35-12.3 1.21-1.95 3.13-3.1 4.93-3.1 1.84 0 2.99 1.01 4.51 1.01 1.47 0 2.37-1.01 4.5-1.01 1.6 0 3.3.87 4.51 2.38-3.96 2.17-3.31 7.82.21 9.42z'/%3E%3C/svg%3E") center / contain no-repeat;
-          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M16.365 1.43c0 1.14-.42 2.2-1.12 2.99-.76.85-2.02 1.51-3.06 1.43-.13-1.1.42-2.27 1.09-3 .76-.83 2.09-1.46 3.09-1.42zM20.6 17.02c-.55 1.27-.82 1.84-1.53 2.96-.99 1.57-2.39 3.52-4.12 3.53-1.54.01-1.94-1-4.03-.99-2.09.01-2.53.99-4.07.98-1.73-.01-3.05-1.77-4.04-3.34-2.77-4.4-3.06-9.56-1.35-12.3 1.21-1.95 3.13-3.1 4.93-3.1 1.84 0 2.99 1.01 4.51 1.01 1.47 0 2.37-1.01 4.5-1.01 1.6 0 3.3.87 4.51 2.38-3.96 2.17-3.31 7.82.21 9.42z'/%3E%3C/svg%3E") center / contain no-repeat;
-  opacity: 0.7;
-  transition: opacity 0.15s;
+  display: block;
 }
-.embed-apple:hover { opacity: 1; }
+
+.embed-apple:hover {
+  opacity: 1;
+  transform: scale(1.12);
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+}
+
+.embed-apple:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
 
 /* Reference (seed) row — visually set apart above the similar list. */
 .embed-ref-wrap { flex: none; border-bottom: 1px solid var(--line); background: rgba(238, 74, 38, 0.05); }
@@ -346,7 +364,84 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Below ~360px the time readout costs more than it gives; the waveform needs the room. */
+/* Volume: mute toggle + level. The slider's filled portion is driven by a --fill custom property
+   set inline, because a range input's track cannot be split by CSS alone. */
+.embed-wave-vol {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.embed-wave-mute svg path[stroke] {
+  fill: none;
+}
+
+.embed-wave-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 64px;
+  height: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.embed-wave-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--accent) 0 var(--fill, 100%),
+    rgba(243, 243, 243, 0.22) var(--fill, 100%) 100%
+  );
+}
+
+.embed-wave-slider::-moz-range-track {
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--accent) 0 var(--fill, 100%),
+    rgba(243, 243, 243, 0.22) var(--fill, 100%) 100%
+  );
+}
+
+.embed-wave-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  margin-top: -3.5px;
+  border-radius: 50%;
+  background: var(--text);
+  border: none;
+  transition: background 150ms ease;
+}
+
+.embed-wave-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text);
+  border: none;
+}
+
+.embed-wave-slider:hover::-webkit-slider-thumb { background: var(--accent); }
+.embed-wave-slider:hover::-moz-range-thumb { background: var(--accent); }
+
+.embed-wave-slider:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Narrow embeds: shed the least useful pieces first so the waveform keeps its room —
+   the time readout, then the volume slider (the mute button stays reachable). */
+@media (max-width: 420px) {
+  .embed-wave-slider {
+    display: none;
+  }
+}
+
 @media (max-width: 360px) {
   .embed-wave-time {
     display: none;

@@ -53,6 +53,8 @@ export const EmbedWaveform = forwardRef<WaveformHandle, Props>(function EmbedWav
   const [playing, setPlaying] = useState(false)
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [volume, setVolume] = useState(1)
+  const [muted, setMuted] = useState(false)
 
   // Build once. Re-creating per track would re-attach listeners and flash the canvas.
   useEffect(() => {
@@ -114,6 +116,21 @@ export const EmbedWaveform = forwardRef<WaveformHandle, Props>(function EmbedWav
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url])
 
+  useEffect(() => {
+    ws.current?.setVolume(muted ? 0 : volume)
+  }, [volume, muted, ready])
+
+  /** Muting must not destroy the level the user picked, so it is a separate flag. */
+  const toggleMute = () => setMuted((m) => !m)
+
+  const onVolume = (next: number) => {
+    setVolume(next)
+    // Dragging the slider up from zero is an unmute — otherwise it would move in silence.
+    if (next > 0 && muted) setMuted(false)
+  }
+
+  const effective = muted ? 0 : volume
+
   useImperativeHandle(ref, () => ({
     toggle: () => {
       const inst = ws.current
@@ -148,6 +165,45 @@ export const EmbedWaveform = forwardRef<WaveformHandle, Props>(function EmbedWav
       <span className="embed-wave-time">
         {fmt(time)} / {fmt(duration)}
       </span>
+
+      <div className="embed-wave-vol">
+        <button
+          type="button"
+          className="embed-wave-btn embed-wave-mute"
+          onClick={toggleMute}
+          aria-label={effective === 0 ? 'Unmute' : 'Mute'}
+          aria-pressed={muted}
+        >
+          {effective === 0 ? (
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9v6h4l5 4V5L8 9H4z" />
+              <path d="M16.5 8.5l5 5m0-5l-5 5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9v6h4l5 4V5L8 9H4z" />
+              <path
+                d={effective > 0.5 ? 'M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12' : 'M16 8.5a5 5 0 010 7'}
+                stroke="currentColor"
+                strokeWidth="1.8"
+                fill="none"
+                strokeLinecap="round"
+              />
+            </svg>
+          )}
+        </button>
+        <input
+          className="embed-wave-slider"
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={effective}
+          onChange={(e) => onVolume(Number(e.target.value))}
+          aria-label="Volume"
+          style={{ ['--fill' as string]: `${effective * 100}%` }}
+        />
+      </div>
     </div>
   )
 })
