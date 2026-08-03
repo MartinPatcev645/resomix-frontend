@@ -28,7 +28,7 @@ describe.each(variants)('%s footer links', (_name, Footer) => {
   const renderFooter = () =>
     render(
       <MemoryRouter>
-        <Footer baseUrl="https://resomix.com" onNavigate={vi.fn()} />
+        <Footer logo="/logo.png" baseUrl="https://resomix.com" onNavigate={vi.fn()} />
       </MemoryRouter>,
     );
 
@@ -79,7 +79,7 @@ describe('desktop footer labels', () => {
   it('describes the destination it actually opens', () => {
     render(
       <MemoryRouter>
-        <GlobalFooter baseUrl="https://resomix.com" onNavigate={vi.fn()} />
+        <GlobalFooter logo="/logo.png" baseUrl="https://resomix.com" onNavigate={vi.fn()} />
       </MemoryRouter>,
     );
     // The label is the bug's most visible symptom: it said '/support' under "legal".

@@ -2,6 +2,7 @@ import { useContactSubmit } from "@resomix/hooks";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { useState, useEffect, type ReactNode } from "react";
 import { useAuthStore } from "@resomix/stores";
+import { BASE_LANDING_URL } from "@resomix/config";
 
 import {
   PAGE_BTN_PRIMARY as BTN_PRIMARY,
@@ -71,6 +72,36 @@ function ChannelPanel({
         {email}
       </a>
       <p className={`${SUBLABEL} mt-[var(--px-12)]`}>{hours}</p>
+    </div>
+  );
+}
+
+/**
+ * Partnerships route out to the /partners form rather than this inbox.
+ *
+ * Deliberately an <a> with an ABSOLUTE landing URL, not the `baseUrl` prop: this page is shared,
+ * and the webapp passes its own beta origin — `${baseUrl}/partners` would resolve to
+ * beta.resomix.com/partners, which is not a route there. The falls back to the production origin so
+ * a missing VITE_BASE_LANDING_URL can never emit a bare "/partners#contact" from the beta app.
+ */
+function PartnerPanel() {
+  const partnersUrl = `${BASE_LANDING_URL || "https://resomix.com"}/partners#contact`;
+
+  return (
+    <div className={PANEL}>
+      <p className={KICKER}>Partnerships</p>
+      <p className="mt-[var(--px-10)] font-helvetica text-[length:var(--px-12)] font-light leading-[var(--px-18)] text-[var(--rx-color-text-secondary)] opacity-70">
+        Want to bring Resomix into your own product or catalogue? Tell us about your use case —
+        API access, catalogue integration, or a private pilot — and we&rsquo;ll scope it with you.
+      </p>
+      <a
+        href={partnersUrl}
+        aria-label="Open the Resomix partnership form"
+        className={`${BTN_SECONDARY} mt-[var(--px-14)] w-full`}
+      >
+        Partnership form
+      </a>
+      <p className={`${SUBLABEL} mt-[var(--px-12)]`}>Scoped together, no commitment</p>
     </div>
   );
 }
@@ -254,10 +285,11 @@ export default function ContactContent({
             />
             <ChannelPanel
               kicker="Business Inquiries"
-              blurb="For partnerships, press, or business inquiries."
+              blurb="For press or general business enquiries."
               email="support@resomix.com"
               hours="Mon–Fri, 9AM–6PM EST"
             />
+            <PartnerPanel />
           </aside>
         </div>
 
