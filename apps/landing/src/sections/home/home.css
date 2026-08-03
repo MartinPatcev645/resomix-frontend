@@ -1889,3 +1889,11 @@
      a filled accent would be orange-on-orange. */
   color: #101010;
 }
+
+/* ---------- hero headline accent ----------
+   The emphasised phrase is marked with [[...]] in the translation string and rendered as this span
+   by components/HeroTitle.tsx. One colour rule, no breakpoint variants: the hero has a single <h1>,
+   so mobile and desktop stay in step on their own. */
+.hm-page .hm-benzin .hm-em {
+  color: var(--color-neon-orange);
+}

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { BASE_BETA_URL } from '@resomix/config';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 export function HmHero() {
   const { t } = useTranslation('common');
@@ -13,7 +14,7 @@ export function HmHero() {
           <i aria-hidden="true" />
           {t('home.hero.beta')}
         </p>
-        <h1 className="hm-benzin uppercase">{t('home.hero.title')}</h1>
+        <h1 className="hm-benzin uppercase"><HeroTitle text={t('home.hero.title')} emClass="hm-em" /></h1>
         <p className="hm-plat">{t('home.hero.platform')}</p>
         <div className="hm-ctas">
           <a className="hm-cta-p" href={BASE_BETA_URL}>

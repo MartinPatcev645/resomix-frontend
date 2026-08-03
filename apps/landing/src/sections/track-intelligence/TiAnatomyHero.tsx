@@ -14,6 +14,7 @@ import {
 } from './tiEngine.ts';
 import { SvgText } from './tiSvgHelpers.tsx';
 import { drawCls } from './tiEngine.ts';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 function renderBoldHtml(html: string) {
   const parts = html.split(/(<b>.*?<\/b>)/g);
@@ -322,9 +323,7 @@ export function TiAnatomyHero({ motionOn, onScrollToStructure }: TiAnatomyHeroPr
       <div className="ti-hero-head">
         <p className="ti-eyebrow uppercase">{renderEyebrow(t('trackIntelligence.hero.eyebrow'))}</p>
         <h1 className="ti-benzin-d font-benzin uppercase">
-          {t('trackIntelligence.hero.titleLine1')}
-          <br />
-          {t('trackIntelligence.hero.titleLine2')}
+          <HeroTitle text={t('trackIntelligence.hero.title')} emClass="ti-em" />
         </h1>
         <p className="ti-body ti-sub">{t('trackIntelligence.hero.sub')}</p>
         <div className="ti-ctarow">

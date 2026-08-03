@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 /* Illustrative — fictional catalogue (years, bar heights). */
 const DESKTOP_BARS: [number, number][] = [
@@ -30,7 +31,7 @@ export function RlHero() {
           <i aria-hidden="true" />
           {t('recordLabels.hero.chip')}
         </p>
-        <h1 className="rl-benzin uppercase">{t('recordLabels.hero.h1')}</h1>
+        <h1 className="rl-benzin uppercase"><HeroTitle text={t('recordLabels.hero.h1')} emClass="rl-em" /></h1>
         <p className="rl-intro">{t('recordLabels.hero.intro')}</p>
         <div className="rl-ctas">
           <button

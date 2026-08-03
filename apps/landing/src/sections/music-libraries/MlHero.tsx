@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 export function MlHero() {
   const { t } = useTranslation('common');
@@ -12,7 +13,7 @@ export function MlHero() {
           <i aria-hidden="true" />
           {t('musicLibraries.hero.chip')}
         </p>
-        <h1 className="ml-benzin uppercase">{t('musicLibraries.hero.h1')}</h1>
+        <h1 className="ml-benzin uppercase"><HeroTitle text={t('musicLibraries.hero.h1')} emClass="ml-em" /></h1>
         <p className="ml-intro">{t('musicLibraries.hero.intro')}</p>
         <div className="ml-ctas">
           <button

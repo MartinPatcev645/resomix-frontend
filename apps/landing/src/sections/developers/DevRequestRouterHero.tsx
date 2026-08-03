@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES, type RouteKey, drawCls, API_DOCS_URL } from './devEngine.ts';
 import { SvgText } from './devSvgHelpers.tsx';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 const ROUTE_BTNS: RouteKey[] = ['search', 'sim', 'ana'];
 
@@ -213,7 +214,7 @@ export function DevRequestRouterHero() {
           <span className="dev-o">{t('developers.hero.eyebrowLive')}</span>
           {t('developers.hero.eyebrowSuffix')}
         </p>
-        <h1 className="font-benzin dev-benzin-d uppercase">{t('developers.hero.title')}</h1>
+        <h1 className="font-benzin dev-benzin-d uppercase"><HeroTitle text={t('developers.hero.title')} emClass="dev-em" /></h1>
         <p className="dev-body dev-sub">{t('developers.hero.sub')}</p>
         <div className="dev-ctarow">
           <button type="button" className="dev-pill dev-pill-solid uppercase" onClick={handlePilot}>

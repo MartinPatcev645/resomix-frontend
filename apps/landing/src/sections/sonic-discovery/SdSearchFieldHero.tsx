@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { BASE_BETA_URL } from '@resomix/config';
 import { SdScene1Figure } from '@/sections/sonic-discovery/scenes/SdScene1Figure.tsx';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 interface SdSearchFieldHeroProps {
   motionOn: boolean;
@@ -20,18 +21,6 @@ function renderEyebrow(text: string) {
   );
 }
 
-function renderTitle(title: string) {
-  const dotIdx = title.indexOf('. ');
-  if (dotIdx === -1) return title;
-  return (
-    <>
-      {title.slice(0, dotIdx + 1)}
-      <br />
-      {title.slice(dotIdx + 2)}
-    </>
-  );
-}
-
 export function SdSearchFieldHero({ motionOn, onScrollToConsole }: SdSearchFieldHeroProps) {
   const { t } = useTranslation('common');
 
@@ -44,7 +33,7 @@ export function SdSearchFieldHero({ motionOn, onScrollToConsole }: SdSearchField
               max-w-[18ch] — same as the other landing heroes, do not re-bespoke it.
               md: restores the previous var(--px-38)/1.04 so 768px+ is unchanged. */}
           <h1 className="font-benzin uppercase text-[length:var(--px-32)] leading-[1.06] max-w-[18ch] md:max-w-none md:text-[length:var(--px-38)] md:leading-[1.04] lg:text-[length:var(--px-70)] m-0 mb-[var(--px-24)]">
-            {renderTitle(t('sonicDiscovery.hero.title'))}
+            <HeroTitle text={t('sonicDiscovery.hero.title')} emClass="sd-em" />
           </h1>
           <p className="sd-body sd-sub">{t('sonicDiscovery.hero.sub')}</p>
           <div className="sd-ctarow">

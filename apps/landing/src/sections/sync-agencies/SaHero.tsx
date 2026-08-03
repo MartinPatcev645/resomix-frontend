@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 export function SaHero() {
   const { t } = useTranslation('common');
@@ -12,7 +13,7 @@ export function SaHero() {
           <i aria-hidden="true" />
           {t('syncAgencies.hero.chip')}
         </p>
-        <h1 className="sa-benzin uppercase">{t('syncAgencies.hero.h1')}</h1>
+        <h1 className="sa-benzin uppercase"><HeroTitle text={t('syncAgencies.hero.h1')} emClass="sa-em" /></h1>
         <p className="sa-intro">{t('syncAgencies.hero.intro')}</p>
         <div className="sa-ctas">
           <button
