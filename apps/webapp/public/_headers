@@ -49,7 +49,12 @@
   #
   # TO ENFORCE: watch the console on the live site for a week, add anything legitimate that trips,
   # then rename this header to `Content-Security-Policy`.
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://accounts.google.com https://eu.i.posthog.com https://*.posthog.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://bserver.resomix.com https://media.resomix.com https://eu.i.posthog.com https://*.posthog.com https://www.googletagmanager.com https://accounts.google.com; media-src 'self' blob: https://media.resomix.com; frame-src https://accounts.google.com https://www.googletagmanager.com https://accounts.spotify.com https://login.tidal.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https://accounts.google.com https://accounts.spotify.com https://login.tidal.com; object-src 'none'; upgrade-insecure-requests
+  #
+  # Same three corrections as landing, from the violations the live console reported:
+  # Cloudflare's edge-injected analytics beacon, blob Workers (PostHog's session recorder — and
+  # hls.js, which this app actually uses), and dropping `upgrade-insecure-requests`, which Chrome
+  # ignores in a report-only policy while logging an error about it on every document.
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://accounts.google.com https://eu.i.posthog.com https://*.posthog.com https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://bserver.resomix.com https://media.resomix.com https://eu.i.posthog.com https://*.posthog.com https://www.googletagmanager.com https://accounts.google.com https://cloudflareinsights.com https://static.cloudflareinsights.com; media-src 'self' blob: https://media.resomix.com; frame-src https://accounts.google.com https://www.googletagmanager.com https://accounts.spotify.com https://login.tidal.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https://accounts.google.com https://accounts.spotify.com https://login.tidal.com; object-src 'none'
 
 # Content-hashed build output: the name changes whenever the bytes change, so it is safe to keep
 # forever and never revalidate.

@@ -47,7 +47,18 @@
   #
   # TO ENFORCE: watch the console on the live site for a week, add anything legitimate that trips,
   # then rename this header to `Content-Security-Policy`.
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://accounts.google.com https://eu.i.posthog.com https://*.posthog.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://bserver.resomix.com https://media.resomix.com https://eu.i.posthog.com https://*.posthog.com https://www.googletagmanager.com https://accounts.google.com; media-src 'self' blob: https://media.resomix.com; frame-src https://accounts.google.com https://www.googletagmanager.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https://accounts.google.com; object-src 'none'; upgrade-insecure-requests
+  #
+  # Tuned against the violations the live console actually reported:
+  #
+  #   static.cloudflareinsights.com  Cloudflare Web Analytics. Injected by the EDGE, not by this
+  #                                  repo, so it appears in no source file — it can only be found
+  #                                  by watching the console, which is what Report-Only is for.
+  #   worker-src 'self' blob:        PostHog's session recorder builds a Worker from a blob URL.
+  #                                  Without this it fell back to script-src and tripped.
+  #   upgrade-insecure-requests      REMOVED. Chrome ignores it in a report-only policy and says so
+  #                                  once per document — five console errors that were pure noise.
+  #                                  It belongs on the enforced header, when we switch.
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://accounts.google.com https://eu.i.posthog.com https://*.posthog.com https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://bserver.resomix.com https://media.resomix.com https://eu.i.posthog.com https://*.posthog.com https://www.googletagmanager.com https://accounts.google.com https://cloudflareinsights.com https://static.cloudflareinsights.com; media-src 'self' blob: https://media.resomix.com; frame-src https://accounts.google.com https://www.googletagmanager.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https://accounts.google.com; object-src 'none'
 
 # Content-hashed build output: the name changes whenever the bytes change, so it is safe to keep
 # forever and never revalidate.

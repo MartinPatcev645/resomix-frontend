@@ -523,7 +523,10 @@
 
 /* Force font loading with higher specificity */
 .font-helvetica {
-    font-family: 'Helvetica_Neue', 'Helvetica Neue', 'HelveticaNeue', sans-serif !important;
+    /* 'Helvetica_Neue Fallback' is metric-matched to the real face (see
+       styles/font-fallbacks.css), so text drawn before the webfont arrives occupies the same
+       space and the swap re-flows nothing. */
+    font-family: 'Helvetica_Neue', 'Helvetica_Neue Fallback', 'Helvetica Neue', 'HelveticaNeue', sans-serif !important;
 }
 
 .font-helvetica.font-bold {
@@ -539,7 +542,8 @@
 }
 
 .font-fira {
-    font-family: 'Fira Code', 'FiraCode', monospace !important;
+    /* Fira Code Light was named by Lighthouse for 0.176 of mobile's 0.191 CLS. */
+    font-family: 'Fira Code', 'Fira Code Fallback', 'FiraCode', monospace !important;
 }
 
 .font-fira.font-bold {
@@ -547,7 +551,8 @@
 }
 
 .font-benzin {
-    font-family: 'Benzin', 'Benzin-Bold', 'Benzin Bold', 'BenzinBold', sans-serif !important;
+    /* The hero <h1>, i.e. the LCP element on desktop. */
+    font-family: 'Benzin', 'Benzin Fallback', 'Benzin-Bold', 'Benzin Bold', 'BenzinBold', sans-serif !important;
 }
 
 .font-benzin.font-bold {

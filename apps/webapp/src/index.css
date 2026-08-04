@@ -87,6 +87,7 @@
 @source "../../../packages/ui/src";
 @import "./styles/pixels.css";
 @import "./styles/fonts.css";
+@import "./styles/font-fallbacks.css";
 
 @layer utilities {
   .w-fluid-1280 {

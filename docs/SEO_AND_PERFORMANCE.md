@@ -435,6 +435,53 @@ full-screen boot loader. Removing the loader did not create that settling sequen
 render-blocking. Both are the price of painting correctly the first time. If LCP suffers, the answer
 is critical-CSS inlining (§5.3), not going back.
 
+## 1.20 CSP tightened against real violations
+
+The Report-Only CSP was the suspect for TBT 60 → 200 ms and Best Practices 96 → 92. The live console
+confirmed it and named all three causes:
+
+| Violation | Cause | Fix |
+|---|---|---|
+| `upgrade-insecure-requests` ignored — **logged 5×** | Chrome ignores the directive in a report-only policy and says so once per document | removed; it goes back with the enforced header |
+| `static.cloudflareinsights.com` blocked | Cloudflare injects its analytics beacon **at the edge**, so it appears in no source file | added to `script-src` + `connect-src` |
+| blob Worker blocked | PostHog's session recorder builds a Worker from a `blob:` URL; with no `worker-src` it fell back to `script-src` | `worker-src 'self' blob:` |
+
+Applied to landing and webapp (which also uses blob workers for hls.js). Embed's CSP is only
+`frame-ancestors` and needed nothing.
+
+**This is exactly why the policy shipped Report-Only.** The Cloudflare beacon is invisible to any
+amount of code reading — it only exists in the browser. An enforced policy would have blocked it.
+
+## 1.21 Metric-matched fallback fonts
+
+The remaining CLS. Each family gets a fallback `@font-face` built from a **local** system font whose
+metrics are stretched to match the web font, so the swap changes glyph shapes but not one line box.
+
+`tooling/buildFontFallbacks.py` computes them from the real binaries — ours and the system
+fallbacks — so re-running after a font change keeps them honest:
+
+| Family | Fallback | size-adjust | ascent | descent | line-gap |
+|---|---|---|---|---|---|
+| Helvetica_Neue | Arial | 97.63% | 73.14% | 19.56% | 8.5% |
+| Fira Code | Courier New | 99.98% | 99.02% | 32.21% | 0% |
+| Benzin | Arial | 148.85% | 51.73% | 15.45% | 25.33% |
+
+**Decision — measure glyph widths, do not read `OS/2.xAvgCharWidth`.** The first run produced
+nonsense (Helvetica Neue "29% wider than Arial", Benzin at 190%). That field is defined differently
+per OS/2 version — v1 weights lowercase by letter frequency, v3+ averages every glyph — so a ratio
+across versions is meaningless. Arial reports 904 while its real lowercase average is 1002.6.
+Sampling the same glyphs in both fonts is comparable by construction, and gave 97.63% / 99.98% /
+148.85% — a hair narrower than Arial, effectively identical to Courier New, and a genuinely wide
+display face.
+
+**Decision — its own file.** `buildFonts.py` regenerates `fonts.css` from the source faces on every
+run and would wipe anything added there. The overrides live in `styles/font-fallbacks.css`; only the
+utility-class stacks that *name* the families sit in `fonts.css`, inside the block that script
+preserves verbatim.
+
+Zero bytes added — `local()` only, asserted by a test, because a downloaded fallback could not paint
+before the real font either and would defeat the whole point.
+
 ---
 
 # Part 2 — The three PageSpeed runs

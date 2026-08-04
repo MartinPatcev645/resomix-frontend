@@ -68,7 +68,23 @@ describe.each(['landing', 'webapp'])('%s security headers', (app) => {
     const csp = h.match(/Content-Security-Policy-Report-Only: (.+)/)![1];
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("base-uri 'self'");
-    expect(csp).toContain('upgrade-insecure-requests');
+  });
+
+  it('omits upgrade-insecure-requests while the policy is report-only', () => {
+    // Chrome ignores this directive in a report-only policy and logs an error saying so — once per
+    // document, which was five console errors and a Best Practices failure. It goes back when the
+    // header is renamed to the enforced `Content-Security-Policy`.
+    const csp = h.match(/Content-Security-Policy-Report-Only: (.+)/)![1];
+    expect(csp).not.toContain('upgrade-insecure-requests');
+  });
+
+  it('allows what the live console proved is needed', () => {
+    const csp = h.match(/Content-Security-Policy-Report-Only: (.+)/)![1];
+    // Cloudflare injects its analytics beacon at the EDGE, so it appears in no source file here.
+    expect(csp, 'Cloudflare beacon').toContain('https://static.cloudflareinsights.com');
+    // PostHog's session recorder builds a Worker from a blob: URL; without this it falls back to
+    // script-src and trips.
+    expect(csp, 'blob worker').toMatch(/worker-src [^;]*blob:/);
   });
 
   it('keeps hashed assets immutable and HTML revalidated', () => {
