@@ -1,0 +1,72 @@
+# Cloudflare Pages response headers for the beta app (beta.resomix.com).
+#
+# Mirrors the marketing site's, with the extra origins this app talks to: Spotify, Tidal and Apple
+# for playlist export, and the media host for audio streaming.
+#
+# The caching rule that matters: the HTML document must never be cached, because it is the only
+# thing that knows which hashed chunk filenames exist in the current deploy. A stale document sends
+# the browser after chunks that were replaced, which is what made navigation silently fail after a
+# release.
+#
+# Note this cannot help a tab that was ALREADY open when the deploy shipped — that tab holds the old
+# filenames in memory and never re-reads the document. Recovery for that case is in
+# src/routes/lazyRoute.ts.
+
+/*
+  # --- Security headers (Lighthouse Best Practices, "Trust and Safety") --------------------------
+  # Every one of these was previously unset.
+
+  # Force HTTPS for two years, including subdomains. Cloudflare already redirects, but HSTS stops
+  # the first request from ever leaving over plaintext.
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+
+  # Stop the browser guessing a content type it was not given.
+  X-Content-Type-Options: nosniff
+
+  # Clickjacking. frame-ancestors is the modern equivalent and is set in the CSP below; XFO is kept
+  # for older browsers that ignore it. NOTE: this is deliberately NOT set on embed.resomix.com,
+  # which exists to be framed.
+  X-Frame-Options: SAMEORIGIN
+
+  # Send the origin (not the full path) to other sites; full URL stays within our own.
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # Drop capabilities the marketing site never uses, so a compromised third-party script cannot ask.
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=()
+
+  # Cross-origin isolation. COOP is safe here; COEP is deliberately omitted because it would break
+  # third-party embeds and images that do not send CORP.
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+
+  # --- Content Security Policy: REPORT-ONLY on purpose ------------------------------------------
+  # This is enforcement-ready but not enforced. A CSP that is even slightly wrong takes the site
+  # down, and this one has to cover Google Tag Manager, whatever GTM injects (PostHog today, more
+  # later), Google Identity Services, the API, and the media host. Report-Only lets violations be
+  # observed in the console and in report collectors first.
+  #
+  # 'unsafe-inline' on script-src is required by the inline Consent Mode snippet and by GTM itself.
+  # Removing it means moving to nonces, which Cloudflare Pages cannot inject on static files.
+  #
+  # TO ENFORCE: watch the console on the live site for a week, add anything legitimate that trips,
+  # then rename this header to `Content-Security-Policy`.
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://accounts.google.com https://eu.i.posthog.com https://*.posthog.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://bserver.resomix.com https://media.resomix.com https://eu.i.posthog.com https://*.posthog.com https://www.googletagmanager.com https://accounts.google.com; media-src 'self' blob: https://media.resomix.com; frame-src https://accounts.google.com https://www.googletagmanager.com https://accounts.spotify.com https://login.tidal.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https://accounts.google.com https://accounts.spotify.com https://login.tidal.com; object-src 'none'; upgrade-insecure-requests
+
+# Content-hashed build output: the name changes whenever the bytes change, so it is safe to keep
+# forever and never revalidate.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Self-hosted brand fonts. Filenames are NOT content-hashed, so if a face is ever replaced it must
+# be renamed too — otherwise cached clients keep the old file for the full year.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Always revalidate the document itself.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/404.html
+  Cache-Control: public, max-age=0, must-revalidate

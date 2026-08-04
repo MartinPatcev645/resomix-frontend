@@ -1,0 +1,276 @@
+{
+  "partnersPilot": {
+    "shared": {
+      "timelineTruth": "TIMELINE AGREED DURING SCOPING",
+      "subjectLabel": "FINAL WORDING SUBJECT TO PILOT AGREEMENT"
+    },
+    "hero": {
+      "eyebrowPrefix": "Private Catalogue Pilot //",
+      "eyebrowHighlight": "Managed evaluation",
+      "eyebrowSuffix": "· Powered by PYXIS-1",
+      "title": "Test PYXIS-1 on the music that [[matters to your team.]]",
+      "sub": "A managed private pilot for labels, distributors and catalogue teams that want to evaluate sonic discovery using authorised material and success criteria agreed in advance.",
+      "ctaPrimary": "Start a Catalogue Pilot",
+      "ctaSecondary": "See the Pilot Method",
+      "trustline": "MANAGED EVALUATION · PARTNER-SCOPED · NO PUBLIC SANDBOX",
+      "glanceLabel": "Pilot at a glance",
+      "glanceItems": [
+        "Managed evaluation",
+        "Representative catalogue sample",
+        "Agreed scorecard",
+        "Private partner index",
+        "Joint findings review",
+        "No public sandbox"
+      ],
+      "protocolLabel": "The pilot protocol · One sample, six stages",
+      "protocolAria": "The pilot protocol: one representative catalogue sample moves through six stages on a single line — scope, ingest, index, test, measure, decide. Each stage is a station on the protocol rail; the decision stage is highlighted as the destination.",
+      "protocolNote": "agree the questions and success criteria before reviewing the results",
+      "protocolNoteDim": "one bounded process · evidence at every stage",
+      "mobileStages": [
+        {
+          "title": "Scope",
+          "body": "Agree the question, the sample and the success criteria."
+        },
+        {
+          "title": "Ingest",
+          "body": "Deliver audio + CSV manifest through managed SFTP."
+        },
+        {
+          "title": "Index",
+          "body": "Validation, PYXIS-1 processing, private index build."
+        },
+        {
+          "title": "Test",
+          "body": "Ranked results from your agreed reference set."
+        },
+        {
+          "title": "Measure",
+          "body": "Expert review against the agreed scorecard."
+        },
+        {
+          "title": "Decide",
+          "body": "Joint findings review — stop, extend, or plan production."
+        }
+      ]
+    },
+    "qualification": {
+      "eyebrow": "01 // Fit",
+      "title": "Built for catalogue teams with a real question to test",
+      "matrix": [
+        {
+          "type": "Label / label group",
+          "question": "Can older tracks be surfaced from current references?"
+        },
+        {
+          "type": "Distributor",
+          "question": "Are our catalogue relationships discoverable beyond metadata?"
+        },
+        {
+          "type": "Catalogue owner",
+          "question": "Where does our current catalogue search break down?"
+        },
+        {
+          "type": "Store / platform",
+          "question": "Can similarity fit inside our current product and journey?"
+        },
+        {
+          "type": "Music library",
+          "question": "Does the analysis produce useful structured data for briefs?"
+        }
+      ],
+      "interpBold": "You must control or be authorised to supply the evaluation material.",
+      "interpBody": "Submitting an inquiry starts a qualification conversation — not every request will fit a pilot immediately.",
+      "fitBtnClosed": "Strong fit vs more scoping ▸",
+      "fitBtnOpen": "Strong fit vs more scoping ▾",
+      "strongFitLabel": "Strong fit",
+      "strongFit": [
+        "Authorised catalogue access",
+        "Electronic-music repertoire",
+        "Clear discovery or product question",
+        "Representative sample available",
+        "Expert reviewers available",
+        "Willing to agree measures up front"
+      ],
+      "needsScopingLabel": "May need more scoping",
+      "needsScoping": [
+        "Very small or highly uniform sample",
+        "No relevant comparison method",
+        "No authorised audio delivery",
+        "Unclear rights position",
+        "Depends on roadmap features"
+      ]
+    },
+    "pilotPack": {
+      "eyebrow": "02 // The sample",
+      "title": "Bring a representative sample — not your entire catalogue",
+      "lead": "Sample size and composition are scoped together, around your use case and the catalogue's diversity.",
+      "items": [
+        {
+          "title": "Authorised audio",
+          "body": "MP3, WAV, FLAC or AIFF — material you control or are authorised to supply."
+        },
+        {
+          "title": "CSV metadata",
+          "body": "Partner track ID, ISRC where available, title, artist, filename — optional BPM and duration."
+        },
+        {
+          "title": "Current + older repertoire",
+          "body": "A meaningful mix, with enough related recordings to test similarity properly."
+        },
+        {
+          "title": "Known reference tracks",
+          "body": "Tracks your team already understands — the anchors the evaluation is scored against."
+        },
+        {
+          "title": "Expert reviewers",
+          "body": "A small group of catalogue experts or selectors who will judge relevance."
+        },
+        {
+          "title": "A clear use case",
+          "body": "The question the pilot should answer — discovery, catalogue or product."
+        },
+        {
+          "title": "Optional event data",
+          "body": "Only where you want to evaluate product behaviour downstream."
+        }
+      ],
+      "footnote": "no universal track count — the sample is scoped around the use case, not a number"
+    },
+    "method": {
+      "eyebrow": "03 // The method",
+      "title": "One bounded process. Six clear stages.",
+      "lead": "Every stage states what Resomix does, what your team does, and what evidence it produces.",
+      "resomixDoes": "Resomix does",
+      "yourTeamDoes": "Your team does",
+      "evidence": "Evidence produced"
+    },
+    "scorecard": {
+      "eyebrow": "04 // The scorecard",
+      "title": "Agree the scorecard before you see the results",
+      "lead": "No pre-filled percentages, no fabricated outcomes — targets are agreed in scoping, results are measured in the pilot.",
+      "tableAria": "Pilot scorecard: each measure with how it is assessed; target and result fields are intentionally empty until agreed and measured",
+      "colMeasure": "measure",
+      "colAssessment": "how it is assessed",
+      "colTarget": "target",
+      "colResult": "result",
+      "latencyNote": "pre-indexed queries and uploaded-reference processing are reported separately — never combined into one \"search speed\" figure",
+      "deepBtnClosed": "View all measures ▸",
+      "deepBtnOpen": "View all measures ▾",
+      "optBtnClosed": "Optional product measures — where you supply event data ▸",
+      "optBtnOpen": "Optional product measures — where you supply event data ▾",
+      "optTableAria": "Optional product measures, used only where the partner supplies event data"
+    },
+    "deliverables": {
+      "eyebrow": "05 // The output",
+      "title": "A decision pack — not a sales demo",
+      "body": "The pilot ends with evidence your team can act on: what worked, what didn't, where the limits are, and what production would involve. Final deliverables are agreed during scoping.",
+      "outcomes": [
+        {
+          "title": "Stop",
+          "body": "The evidence does not justify expansion. A clean, documented end."
+        },
+        {
+          "title": "Extend",
+          "body": "A second bounded evaluation for another catalogue area or question."
+        },
+        {
+          "title": "Plan production",
+          "body": "Scope, ingestion cadence, API usage, service mode, terms — agreed together."
+        }
+      ],
+      "footnote": "the pilot does not automatically convert into a contract · no public prices on this page",
+      "reportLabel": "Pilot findings — sample structure",
+      "reportTruth": "TYPICAL OUTPUTS · FINAL SCOPE AGREED BEFORE INGEST",
+      "reportAria": "A sample pilot findings dossier: a report-styled panel listing the typical outputs — scope and criteria, ingestion validation summary, indexed sample, evaluation access, relevance scorecard, performance summary, catalogue observations, technical findings, limitations and open questions, production options, joint review session."
+    },
+    "handling": {
+      "eyebrow": "06 // Control",
+      "title": "Your sample stays inside the agreed pilot boundary",
+      "trustItems": [
+        {
+          "text": "Partner catalogues are logically isolated and restricted to authorised partner access."
+        },
+        {
+          "text": "You retain catalogue ownership and commercial control throughout."
+        },
+        {
+          "text": "Partner content is not used to train or fine-tune PYXIS-1 — it is not a model, and it does not generate derivative audio."
+        },
+        {
+          "text": "Public exposure is not part of the pilot."
+        },
+        {
+          "text": "Your sample is processed within a partner-scoped catalogue boundary and restricted to authorised access. Detailed access, retention and deletion terms are agreed before ingestion.",
+          "subjectLabel": true
+        }
+      ],
+      "trustLink": "[ View Trust, Rights & Security ]",
+      "partnerLink": "[ Review the Partner Process → ]"
+    },
+    "form": {
+      "eyebrow": "07 // Apply",
+      "title": "Start with the question you want the pilot to answer",
+      "lead": "Submitting the form starts a qualification conversation. It does not create an account, a public sandbox or an automatic pilot.",
+      "formLabel": "Pilot inquiry",
+      "emailLabel": "Work email",
+      "emailError": "Enter a valid work email address.",
+      "nameLabel": "Name",
+      "nameError": "Enter your name.",
+      "companyLabel": "Company",
+      "companyError": "Enter your company.",
+      "roleLabel": "Role",
+      "partnerTypeLabel": "Partner type",
+      "partnerTypeError": "Select your partner type.",
+      "catalogSizeLabel": "Catalogue-size band",
+      "sampleLabel": "Sample availability",
+      "questionLabel": "Primary pilot question",
+      "questionPlaceholder": "e.g. Can current references surface relevant tracks from our 2010–2016 catalogue?",
+      "questionError": "Tell us the question the pilot should answer.",
+      "techBtnClosed": "Technical integration details (optional) ▸",
+      "techBtnOpen": "Technical integration details (optional) ▾",
+      "workflowLabel": "Intended workflow",
+      "workflowPlaceholder": "e.g. internal curation tool, storefront discovery",
+      "integrationLabel": "Technical integration interest",
+      "messageLabel": "Message",
+      "rightsLabel": "I confirm our organisation controls, or is authorised to supply, the catalogue material proposed for evaluation.",
+      "rightsError": "Rights confirmation is required.",
+      "submit": "Request Pilot Review",
+      "submitting": "Submitting…",
+      "submitNote": "privacy & consent note — final legal wording pending · form data goes to the partner team only",
+      "selectPlaceholder": "select…",
+      "partnerTypes": [
+        "Label / label group",
+        "Distributor",
+        "Catalogue owner / manager",
+        "Store / platform",
+        "Music library",
+        "Other"
+      ],
+      "catalogSizes": [
+        "Under 1,000 tracks",
+        "1,000 – 10,000",
+        "10,000 – 100,000",
+        "Over 100,000"
+      ],
+      "sampleOptions": [
+        "Sample ready now",
+        "Sample needs preparation",
+        "Not sure yet"
+      ],
+      "integrationOptions": [
+        "REST API evaluation",
+        "Catalogue ingestion only",
+        "Both",
+        "Not sure yet"
+      ],
+      "successLabel": "Inquiry received",
+      "successLead": "Thank you. Here is what happens next:",
+      "nextSteps": [
+        "Resomix reviews fit against the qualification principles above",
+        "A scoping call is arranged with your team",
+        "Both teams agree inputs, method, scorecard and terms",
+        "Ingestion begins only after approval"
+      ]
+    }
+  }
+}

@@ -185,11 +185,10 @@ export const DEFAULT_SEO: RouteSeo = ROUTE_SEO['/'];
 /**
  * Social preview image. Absolute, because crawlers do not resolve relative OG URLs.
  *
- * NOTE: this is the 399x399 logo, which every platform will crop to a small square card. A proper
- * 1200x630 landscape asset dropped in at `public/og-cover.png` (and pointed to here) is the single
- * biggest remaining win for how shared links look.
+ * 1200x630 landscape card, generated in the brand fonts — the correct aspect ratio for every
+ * platform. Previously the 399x399 logo, which cropped to a small square thumbnail.
  */
-export const OG_IMAGE = `${SITE_ORIGIN}/logo.png`;
+export const OG_IMAGE = `${SITE_ORIGIN}/og-cover.png`;
 
 /** The routes that belong in the sitemap: everything real, minus the noindexed ones. */
 export function sitemapRoutes(): Array<{ path: string } & RouteSeo> {

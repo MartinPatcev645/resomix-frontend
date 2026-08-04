@@ -1,0 +1,204 @@
+{
+  "partners": {
+    "hero": {
+      "eyebrowPrefix": "Partners //",
+      "eyebrowHighlight": "Guided pilot available",
+      "eyebrowSuffix": "· REST API live",
+      "title": "Make your catalogue part of [[sound-first discovery.]]",
+      "sub": "Start with a private catalogue pilot, integrate the live API, or scope the right deployment for your catalogue, platform or music product.",
+      "ctaPilot": "Start a Catalogue Pilot",
+      "ctaApi": "Explore the API",
+      "ctaContact": "[ Contact Partnerships → ]",
+      "trustline": "GUIDED PILOT AVAILABLE · REST API LIVE · WIDGET + WHITE-LABEL PLANNED"
+    },
+    "junction": {
+      "label": "The partner junction · one signal, three paths",
+      "truth": "Every path ends at a real destination",
+      "inbound1": "Your catalogue,",
+      "inbound2": "platform or product",
+      "nodeLabel": "The junction",
+      "footerLeft": "One inbound conversation · three real destinations",
+      "footerRight": "No sandbox path exists",
+      "figureAlt": "Partner junction diagram: one inbound signal enters from the left and separates at a junction into three routes — the Private Catalogue Pilot (available), the partner API with catalogue ingestion (live), and integration planning (scoping available). Each route ends at a labelled destination. Selecting a route highlights it and opens its detail panel below.",
+      "mobileLabel": "The three partner paths"
+    },
+    "routes": {
+      "pilot": {
+        "title": "PRIVATE CATALOGUE PILOT",
+        "panelTitle": "PRIVATE CATALOGUE PILOT",
+        "status": "AVAILABLE",
+        "note": "Outcome: an evidence-based decision, measured on your own repertoire.",
+        "outcomeTitle": "Private catalogue pilot.",
+        "cta": "Explore the Private Pilot",
+        "question": "\"Does Resomix surface useful relationships in our own repertoire?\"",
+        "mobileDesc": "test on your own repertoire",
+        "items": [
+          "Representative authorised sample",
+          "Agreed evaluation scorecard",
+          "Private catalogue index",
+          "Joint findings review"
+        ]
+      },
+      "api": {
+        "title": "API + CATALOGUE INGESTION",
+        "panelTitle": "API + CATALOGUE INGESTION",
+        "status": "LIVE",
+        "note": "Outcome: Search, Similarity and Track Analysis inside your product.",
+        "outcomeTitle": "API + catalogue ingestion.",
+        "cta": "Explore the API",
+        "question": "\"How do we add Search, Similarity or Track Analysis to our product?\"",
+        "mobileDesc": "build it into your product",
+        "items": [
+          "Managed catalogue ingestion",
+          "Partner-scoped REST API",
+          "Search, Similarity and Analysis",
+          "Versioned structured responses"
+        ]
+      },
+      "integration": {
+        "title": "INTEGRATION PLANNING",
+        "panelTitle": "INTEGRATION PLANNING",
+        "status": "SCOPING AVAILABLE",
+        "note": "Outcome: the right deployment for your catalogue or product, scoped together.",
+        "outcomeTitle": "Integration planning.",
+        "cta": "Discuss Integration Options",
+        "question": "\"What deployment would fit our catalogue, storefront or product?\"",
+        "mobileDesc": "scope the right deployment",
+        "items": [
+          "Workflow and product scoping",
+          "API-first deployment today",
+          "Widget and white-label — planned",
+          "Commercial and technical review"
+        ]
+      }
+    },
+    "paths": {
+      "eyebrow": "01 // The paths",
+      "title": "Start with the outcome you need"
+    },
+    "capabilities": {
+      "eyebrow": "02 // The engine",
+      "title": "One engine across catalogue, discovery and product workflows",
+      "engineNote": "one engine · 70+ characteristics",
+      "figureAlt": "Connected capability system: one PYXIS-1 engine line on the left branches into three capability strands — Catalogue Intelligence, Sonic Similarity, and Track Analysis — each ending at its product-page destination.",
+      "links": {
+        "catalogue-intelligence": "[ Explore Catalogue Intelligence → ]",
+        "sonic-discovery": "[ Explore Sonic Discovery → ]",
+        "track-intelligence": "[ Explore Track Intelligence → ]"
+      }
+    },
+    "engagement": {
+      "eyebrow": "03 // The start",
+      "title": "From first question to the right working path",
+      "figureAlt": "One connected routing line with four stations — fit, route, scope, proceed. Selecting a station reveals what the partner provides, what Resomix determines, and the next evidence or action.",
+      "mobileLabel": "The four engagement stages",
+      "colYou": "You provide",
+      "colResomix": "Resomix determines",
+      "colNext": "Next evidence / action",
+      "footnote": "no fixed timelines · no automatic account or key creation"
+    },
+    "audiences": {
+      "eyebrow": "04 // Who it serves",
+      "title": "Built for the teams that control and use the repertoire",
+      "switcherLabel": "Choose your team",
+      "routeIndicator": "recommended route →",
+      "routeChipAria": "Highlight the {{route}} route",
+      "colQuestion": "Main question",
+      "colRoute": "Best starting route",
+      "colConversation": "Expected conversation",
+      "segments": {
+        "label": "Labels & Groups",
+        "dist": "Distributors",
+        "store": "Stores & Platforms",
+        "cat": "Catalogue Teams",
+        "tech": "Music Technology"
+      },
+      "profiles": {
+        "label": {
+          "label": "Labels & label groups",
+          "question": "Can our own repertoire — current and back catalogue — be surfaced from the references that matter now?",
+          "route": "<b>Private Catalogue Pilot</b> — test on a representative authorised sample first.",
+          "conversation": "Catalogue scope, reference tracks, reviewers and an agreed scorecard."
+        },
+        "dist": {
+          "label": "Distributors",
+          "question": "Can we make thousands of distributed releases discoverable beyond text metadata?",
+          "route": "<b>Pilot first, then API + managed ingestion</b> for catalogue-scale onboarding.",
+          "conversation": "Catalogue breadth, ingestion cadence and metadata quality."
+        },
+        "store": {
+          "label": "Stores & platforms",
+          "question": "Can sound-first discovery deepen the user journey without replacing our storefront?",
+          "route": "<b>API + Catalogue Ingestion</b> — your interface, your customer relationship.",
+          "conversation": "Integration surface, service mode and the evaluation route."
+        },
+        "cat": {
+          "label": "Catalogue teams",
+          "question": "Which assets are hard to find, inconsistently described, or worth a campaign?",
+          "route": "<b>Private Catalogue Pilot</b> with metadata-review observations in scope.",
+          "conversation": "Sample composition, review workflow and evidence needs."
+        },
+        "tech": {
+          "label": "Music technology products",
+          "question": "Can we add similarity and track analysis without building the signal-processing layer?",
+          "route": "<b>API first</b> — scoped key against an indexed evaluation catalogue.",
+          "conversation": "Endpoints, response structures and integration planning."
+        }
+      }
+    },
+    "control": {
+      "eyebrow": "05 // Control",
+      "title": "Your catalogue stays yours",
+      "statements": [
+        "You retain catalogue ownership and commercial control.",
+        "Partner catalogues are logically isolated and restricted to authorised partner access.",
+        "Similarity searches only within the catalogue authorised for that partner.",
+        "PYXIS-1 does not train or fine-tune itself on partner audio, and does not generate derivative audio.",
+        "No public sandbox or shared partner catalogue exists.",
+        "Detailed rights, retention and deletion terms are agreed for the relevant service."
+      ],
+      "linkPilot": "[ View the Private Pilot → ]",
+      "linkApi": "[ Read the API Overview → ]",
+      "linkLegal": "[ View Legal Information ]"
+    },
+    "form": {
+      "eyebrow": "06 // Contact",
+      "title": "Start with the partner question you need answered",
+      "lead": "Submitting this form starts a qualification conversation. It does not create an account, API key, public sandbox or automatic pilot.",
+      "formLabel": "Contact partnerships",
+      "emailLabel": "Work email",
+      "emailError": "Enter a valid work email address.",
+      "nameLabel": "Name",
+      "nameError": "Enter your name.",
+      "companyLabel": "Company",
+      "companyError": "Enter your company.",
+      "roleLabel": "Role",
+      "partnerTypeLabel": "Partner type",
+      "partnerTypeError": "Select your partner type.",
+      "preferredPathLabel": "Preferred path",
+      "preferredPathError": "Select a preferred path.",
+      "contextLabel": "Catalogue or product context",
+      "contextPlaceholder": "e.g. electronic label group, ~40k tracks, own storefront",
+      "messageLabel": "Message",
+      "selectPlaceholder": "select…",
+      "submit": "Contact Partnerships",
+      "submitting": "Submitting…",
+      "successLabel": "Request submitted",
+      "successLead": "Thanks — your request was submitted. Check your email for confirmation; we'll get back to you in 2–5 business days.",
+      "partnerTypes": [
+        "Label / label group",
+        "Distributor",
+        "Store / platform",
+        "Catalogue owner / manager",
+        "Music technology product",
+        "Other"
+      ],
+      "preferredPaths": [
+        "Private Catalogue Pilot",
+        "API + Catalogue Ingestion",
+        "Integration Planning",
+        "General Partnership"
+      ]
+    }
+  }
+}

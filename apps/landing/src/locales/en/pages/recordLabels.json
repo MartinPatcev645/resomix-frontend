@@ -1,0 +1,75 @@
+{
+  "recordLabels": {
+    "hero": {
+      "chip": "Use case · Record labels",
+      "h1": "Give authorised recordings [[another route into discovery.]]",
+      "intro": "Running a label is hard, and it always has been. Choosing the artists to release, curating every project with care, managing a growing catalogue, and consistently releasing music that's in line with the essence of your project all require time and dedication.",
+      "figureAria": "Ten years of a label's releases drawn as a timeline; one orange thread connects a recent signing back to an older release, re-lighting it"
+    },
+    "statement": {
+      "srTitle": "Why a similarity engine",
+      "body": "A carefully crafted similarity engine not only helps diversify a label's output, but also identifies new opportunities for the label and its roster. When chosen right, this is a tool that becomes an invaluable companion — one that can expand the visibility of any creative project."
+    },
+    "metadata": {
+      "eyebrow": "The problem",
+      "h2": "When metadata isn't enough",
+      "p1": "As a record label grows, it needs tools to help it search, organise, and understand its catalogue. It might be easier to do it all manually with a catalogue of 10, 20, or 50 releases. But what about 100, or 200?",
+      "p2": "With these numbers, it's easy to lose sight of a project's narrative, or miss opportunities that'd increase the label's visibility. A forgotten track published years ago that'd be a perfect fit for a movie soundtrack, or an older release could find a new audience through its sonic similarity to a recent signing.",
+      "p3": "Metadata helps, but it doesn't describe how music actually sounds, which makes connections difficult to find.",
+      "figureAria": "The same catalogue seen two ways: as a flat metadata table where every row looks alike, and as a sonic field where tracks group by how they sound and a forgotten release stands out"
+    },
+    "quote": {
+      "srTitle": "From a label founder",
+      "text": "\"A similarity engine that truly understands our catalogue could help us explore new directions, diversify our output organically, and introduce older releases to new audiences while highlighting the depth of our work over the past decade.\"",
+      "name": "Marco Alessi",
+      "role": "Founder of Naviar"
+    },
+    "workflows": {
+      "eyebrow": "Day-to-day management",
+      "h2": "Built for the label's working week",
+      "lead1": "Resomix analyses the audio itself, allowing labels to search and compare music based on sonic similarity instead of simply using metadata.",
+      "lead2": "In the day-to-day management of a label, this process makes it easier to:",
+      "items": {
+        "demo": "Understand how new demos fit within an existing catalogue.",
+        "dormant": "Rediscover forgotten releases and put them in front of a new audience.",
+        "brief": "Respond to sync requests efficiently.",
+        "cluster": "Build compilations or playlists around a cohesive sound, in no time."
+      },
+      "close": "Instead of relying on memory and manual listening, you can now explore new possibilities within your catalogue, built through years of dedication and hard work."
+    },
+    "creativity": {
+      "eyebrow": "The philosophy",
+      "h2": "Sonic analysis at the service of creativity",
+      "p1": "By making entire catalogues searchable purely by sound, a label team spends less time searching and more time discovering. In this case, the difference between these two similar terms is vital.",
+      "p2": "Our deterministic engine can do the heavy lifting, highlighting opportunities for your label that might have been ignored. Your role, whether you're the label founder or marketing assistant, will always be to choose the right path for the label based on its history and creative integrity.",
+      "p3": "Resomix's similarity engine is not designed to replace the human \"touch\", but to enhance it and amplify it so that it can reach its true potential.",
+      "figureAria": "The engine surfaces a small set of candidate tracks from the catalogue; a white ring marks the one the label team chooses — the decision stays human"
+    },
+    "cta": {
+      "h2": "Ready to try our cutting-edge similarity engine?",
+      "line": "Get in touch today.",
+      "pilot": "Start a Catalogue Pilot",
+      "contact": "Get in touch",
+      "exploreCi": "Explore Catalogue Intelligence"
+    },
+    "figures": {
+      "tenYears": "Ten years of releases",
+      "oneThread": "One sonic thread",
+      "newSigning": "New signing",
+      "relit2019": "Re-lit · 2019",
+      "sameCatalogue": "Same catalogue",
+      "twoWays": "Two ways of seeing it",
+      "metadataView": "Metadata view",
+      "sonicView": "Sonic view",
+      "forgottenFound": "Forgotten · found",
+      "rediscovered": "Rediscovered",
+      "briefIn": "Brief in",
+      "cohesiveSound": "One cohesive sound",
+      "yourCatalogue": "Your catalogue",
+      "surfaced": "Surfaced by the engine",
+      "yourChoice": "Your choice",
+      "engineSurfaces": "The engine surfaces",
+      "youChoose": "You choose"
+    }
+  }
+}

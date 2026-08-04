@@ -515,6 +515,135 @@ Guarded by `edgeRouting.spec.ts` (11 tests), which reads the route table from `A
 if a new route ships without a shell — the failure mode that would otherwise 404 real pages in
 production.
 
+## 2.10 Bundle: the vendor chunk (fixes root cause #3)
+
+Lighthouse reported `vendor-*.js` at 188.6 KiB transfer with **153.2 KiB unused (81 %)**. Attributing
+it with the newly-enabled source maps showed why:
+
+| Package | Share of vendor |
+|---|---|
+| **hls.js** | **67.1 %** (1,268 K pre-minify) |
+| @remix-run/router | 10.2 % |
+| howler | 5.6 % |
+| axios | 5.4 % |
+| i18next | 4.1 % |
+| jsmediatags | 2.7 % |
+
+The marketing site was shipping the **entire audio stack** — HLS streaming, Howler, ID3 tag parsing —
+on a page with no player. It arrived through the `@resomix/hooks` barrel: landing imports five hooks
+from it, and because **no workspace package declared `sideEffects`**, Rollup had to assume every
+re-exported module might have side effects and could not drop any of them.
+
+Fix: `"sideEffects": ["*.css"]` on all five packages. The `*.css` form is deliberate — `packages/ui`
+has two real stylesheet imports (`design-system/index.ts`, `ContourSphere.tsx`) that a blanket
+`false` would have silently dropped.
+
+**vendor: 588 K → 95 K raw.** Verified `hls.js`, `howler` and `jsmediatags` are absent from every
+landing chunk, and that the webapp still bundles the ones it uses. `howler` dropped from the webapp
+too — correct, because its only consumer is `PlayerPage`, whose route is commented out in `App.tsx`.
+
+## 2.11 Bundle: locale splitting
+
+`locales/en/common.json` was 204 KiB (**56.5 KiB gzipped**), statically imported by `i18n.ts`, so
+every visitor downloaded the copy for all twenty pages to read one.
+
+The 20 top-level namespaces map 1:1 onto pages, and a scan confirmed **no section referenced another
+section's namespace** — so the split was safe:
+
+- `locales/en/core.json` — `nav`, `general`, `waitlist` (7.1 K raw / **2.5 K gzipped**), loaded eagerly
+- `locales/en/pages/<ns>.json` × 17 — fetched by `pageLoaders.ts` **alongside the route chunk**
+
+Both promises are awaited together and `addResourceBundle` runs before the module resolves, so React
+can never mount a component whose strings are missing — that would render a raw `about.hero.title`
+for a frame.
+
+`i18next-browser-languagedetector` was removed with it: there is one locale and no language
+switching, so detection could only ever resolve to `en`. `lng: 'en'` is now explicit, which is also
+more predictable — detection read localStorage and could be influenced by another app on the origin.
+
+**Entry chunk: 236 K → 72 K raw.**
+
+## 2.12 Third-party staging
+
+| When | What |
+|---|---|
+| eager | Silktide consent banner — functional, and it gates the rest |
+| idle | Google One Tap (98 KiB) — user-facing, so it goes first |
+| idle + 1.5 s | Google Tag Manager (119 KiB) → PostHog (182 KiB, 7 scripts) |
+
+**PostHog is not a dependency of this repo.** No package, no init code — the GTM container loads it.
+So PostHog can never start before GTM, and deferring GTM defers both: ~301 KiB and ~375 ms of
+main-thread work off the critical path.
+
+Kept in `<head>`, inline and synchronous: the `gtag('consent','default',{…denied})` snippet, which
+Consent Mode v2 requires to run before the container, and the `<noscript>` iframe. On beta's
+`/auth/*` routes One Tap stays immediate — signing in is the point of those pages.
+
+**Caching note:** these are per-document, not per-page. SPA navigation does not re-fetch them; a
+reload re-uses the browser cache subject to each vendor's TTL (PostHog's is 4 h, set by their CDN and
+not something we control). The cost is a first-visit cost, which is what deferring addresses.
+
+## 2.13 Security headers
+
+Previously **none** were set. Now on both apps:
+
+`Strict-Transport-Security` (2 y, includeSubDomains, preload) · `X-Content-Type-Options: nosniff` ·
+`X-Frame-Options: SAMEORIGIN` · `Referrer-Policy: strict-origin-when-cross-origin` ·
+`Permissions-Policy` (camera, mic, geolocation, payment, USB, magnetometer all denied) ·
+`Cross-Origin-Opener-Policy: same-origin-allow-popups`
+
+COEP is deliberately omitted — it would break third-party embeds and images that do not send CORP.
+
+**The CSP ships as `Content-Security-Policy-Report-Only`.** It has to cover GTM plus whatever GTM
+injects, and an enforced CSP that is slightly wrong is an outage. Watch the console on production,
+add anything legitimate that trips, then rename the header to enforce.
+
+`apps/embed` is deliberately excluded from the frame rules — being iframed elsewhere is its purpose.
+
+## 2.14 Social card
+
+A real **1200×630** `og-cover.png`, generated in the brand fonts (Benzin headline, accent split,
+Helvetica sub, Fira footer) and wired into both apps' `seoConfig` and static defaults. Previously the
+399×399 logo, which every platform cropped to a small square.
+
+## 2.15 Smaller items
+
+- **void-grain tile → lossless WebP** — 45.6 K → 24.1 K (noise defeats lossy; lossless matched it).
+  16 importers updated.
+- **`public/scripts/` minified at build** (`tooling/minifyPublicScripts.ts`) — `resomix-consent.js`
+  50.8 K → 23.2 K raw, 11.9 → 6.6 K gzipped; its CSS 11.5 → 8.1 K. Source stays readable; Vite does
+  not process `public/`.
+- **4 preconnect hints** — none existed. Lighthouse estimated 370 ms (PostHog) + 320 ms (API).
+- **Production source maps** enabled on both apps — separate `.map` files, fetched only with DevTools
+  open. This is also what made the vendor attribution above possible.
+- **Footer touch targets** — the legal/support links had ~16 px tap areas stacked flush; now ≥24 px
+  with spacing.
+- **Anonymous 401 silenced.** `useAuthInit` attempts a refresh on first load even without a local
+  token, because the cookie is scoped to `.resomix.com` and may carry a beta session. With no cookie
+  the server correctly answers 401 — expected, not an error. It is no longer logged; anything other
+  than a 401 still is.
+- **Edge 301s** for `/pricing` → `/subscribe` and the catalogue spelling. Both were client-side
+  `<Navigate replace>` only, so crawlers saw two 200s and no redirect signal.
+- **IndexNow key file** at `public/<key>.txt`. Nothing pings automatically — see the README beside it.
+
+## 2.16 Copy applied from SEO_METADATA_ALL_PAGES.md
+
+Per George: that document is authoritative for titles, descriptions and H1s; the `.docx` is for
+advice and implementation flow only.
+
+- **Titles + descriptions** — 19 landing routes, plus `/subscribe` and `/contact` on beta (they
+  canonicalise to landing, so they must match). Max title 59, max description 159.
+- **All 17 H1s**, each with a `[[…]]` accent phrase.
+- **Hero systems unified** — seven heroes still used `h1Lead`/`h1Em` pairs that pinned the accent to
+  a fixed position; all 17 now use the inline marker, so moving emphasis is a copy edit. 16 dead
+  locale keys removed.
+
+One entry needed interpretation: `/product/sonic-discovery`'s H1 field is not copy — it reads
+*"SONIC DISCOVERY — approved live hero line"*, i.e. "keep what's live". But the doc moves that live
+line ("Drop one track. Find what belongs next.") to the homepage, which would have put an identical
+H1 on two pages. It now reads **"Find similar tracks by sound."**, taken from that page's own doc
+title and stated intent.
+
 # Part 3 — Open items
 
 Ordered roughly by payoff. **None of these have been done.**
@@ -524,7 +653,7 @@ Ordered roughly by payoff. **None of these have been done.**
 Re-run PageSpeed after deploying to confirm the expected movement in mobile FCP/LCP/SI and the
 elimination of the desktop CLS (0.087), since every layout-shift culprit was a web font.
 
-## 3.2 Third-party loading strategy
+## 3.2 Third-party loading strategy — DONE, see 2.12
 
 - Defer or gate **PostHog** (182 KiB, 7 scripts, ~307 ms main thread). Consider loading after
   interaction/idle, or dropping `posthog-recorder` (session replay, 55 KiB / the single longest
@@ -534,14 +663,14 @@ elimination of the desktop CLS (0.087), since every layout-shift culprit was a w
 - Add `<link rel="preconnect">` for `eu.i.posthog.com` and `bserver.resomix.com` (mobile) /
   `accounts.google.com` (desktop). Lighthouse estimates 370 + 320 ms.
 
-## 3.3 First-party JS
+## 3.3 First-party JS — DONE, see 2.10 / 2.11
 
 - **`vendor` chunk is 81 % unused** (153.2 KiB wasted). Investigate i18next (only an `en` locale
   exists) and axios (replaceable with `fetch`).
 - Enable `sourcemap: true` for production, or upload maps separately, to clear the Best Practices
   audit and make prod debugging possible.
 
-## 3.4 Quick wins
+## 3.4 Quick wins — DONE, see 2.15
 
 - Convert `void-grain.png` (45.6 KiB) to WebP/AVIF — 39.6 KiB.
 - Minify `public/scripts/resomix-consent.js` — 5.3 KiB.
@@ -551,13 +680,18 @@ elimination of the desktop CLS (0.087), since every layout-shift culprit was a w
 - Replace the `stroke-dashoffset` animation on `path.hm-dashflow` with a compositable property.
 - ~~Add a real `/llms.txt`, and a proper 404~~ — DONE, see 2.9.
 
-## 3.5 Still outstanding from the SEO work
+## 3.5 Still outstanding
 
-- **1200×630 OG image.** Both origins currently point at the square logo, so shared links preview as
-  a small square rather than a banner. Drop `public/og-cover.png` in and update `OG_IMAGE` in both
-  `seoConfig.ts` files.
-- **Security headers** — CSP, HSTS, COOP, XFO, Trusted Types are all unset (Best Practices,
-  informational).
+- ~~1200×630 OG image~~ — DONE, see 2.14.
+- ~~Security headers~~ — DONE, see 2.13. **CSP is Report-Only; enforcing it is a deliberate follow-up.**
+- **Submit sitemaps** to Google Search Console and Bing Webmaster Tools, and wire the IndexNow ping
+  into the deploy. Cannot be done from here — needs those accounts.
+- **Re-run PageSpeed** after deploying. Everything above is measured from the build; the score is not.
+- **Descriptive link anchors** — checked, nothing to do: there are no generic "Learn more"/"Click
+  here" anchors, and Lighthouse's "Links have descriptive text" audit already passes.
+- **`llms.txt` / `stroke-dashoffset`** — the animation is left alone deliberately: it cannot be
+  composited without changing the hero visual, it is already gated behind the in-view class, and TBT
+  is 0 ms.
 - **Naming mismatch on `/subscribe`** — the page titles itself "Pricing" while living at
   `/subscribe`. It *is* in the sitemap and indexed correctly; this is only a naming decision, not a
   defect.

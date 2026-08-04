@@ -1,0 +1,101 @@
+{
+  "djs": {
+    "hero": {
+      "chip": "Use case · DJs",
+      "intro": "Learning to DJ might not sound that difficult. Becoming a great DJ, however, is an entirely different matter.",
+      "ctaNote": "Free to start · production beta",
+      "figureAria": "A crate of records drawn as dense rows of spines; one record is pulled out and a journey of ranked musical ideas unfolds from it — ideas, not a set order",
+      "title": "Find the next track without hours of [[unfocused digging.]]"
+    },
+    "statement": {
+      "srTitle": "The craft",
+      "p1": "The best DJs are not only creative in their selection, but also consistent in terms of style and performance quality. At the end of the day, the not-so-secret formula to DJing mastery is to craft your own sonic identity, and never stop evolving and refining your sets.",
+      "p2": "This is easier said than done, though. Once they start playing regularly, it becomes increasingly harder for DJs to present different sets every night, which leads them to use the same tracks over and over. This, in turn, makes their sets predictable, less engaging, and \"cold\". Plus, every hour spent digging through folders, playlists and tags is time that could be spent discovering new musical directions instead.",
+      "engine": "A refined similarity engine, specifically designed to analyse a music catalogue to deliver accurate and unexpected results, might be the best way to avoid repetitiveness and speed up the curation process."
+    },
+    "library": {
+      "eyebrow": "The problem",
+      "h2": "A DJ's biggest asset is also their biggest problem",
+      "p1": "I'm of course talking about the DJ's music library.",
+      "p2": "It's not uncommon for a professional DJ to have tens of thousands of songs saved on the hard drive. It's impossible for the human mind to remember them all, let alone see the connections between them!",
+      "p3": "The result is that a vast majority of a DJ's collection gets lost, buried underneath the latest entries to their library and the unmissable signature songs they always play on stage.",
+      "p4": "Within those thousands of forgotten songs are hidden gems: tracks you heard once and bought on a whim years ago, or unknown b-sides only a handful of people know exist.",
+      "pull": "What if, among that ocean of forgotten tracks, there's a perfect fit for the mood of your next DJ set?",
+      "p5": "When relying exclusively on tagging and cataloguing systems, results can be hard to analyse because tags, even when perfectly fine-tuned, are not enough to describe a song's emotional impact.",
+      "p6": "What you need is a sonic analysis layer designed to understand the complexity of modern music libraries; one that, instead of searching by genre, artist, label or manually assigned tags, makes the music itself the search query.",
+      "figureAria": "A DJ library drawn as depth: the latest entries bright at the top, the signature songs pinned, and a vast dim middle where three hidden gems faintly glow"
+    },
+    "journeys": {
+      "eyebrow": "The answer",
+      "h2": "Turning music folders into sonic journeys",
+      "lead1": "Enter Resomix, a sonic similarity engine that reads the sonic DNA of a reference track by analysing its rhythmic, harmonic, timbral, structural and emotional characteristics. Instead of following metadata blindly, Resomix's deterministic engine PYXIS-1 uses the music itself to open new sonic paths across your library.",
+      "lead2": "For a DJ, this means making the most not only of your unique taste and style, but also of the vast catalogue that took you years to build.",
+      "lead3": "Furthermore, what used to take hours of manual digging can now happen in seconds. Pick a single track that captures the mood you're looking for, and Resomix instantly returns a ranked collection of tracks that are sonically related to it. Instead of starting every search from scratch, you'll have a curated set of creative possibilities at your disposal, right away.",
+      "intro": "Some examples of the improvements Resomix can bring to your workflow:",
+      "items": {
+        "rediscover": {
+          "label": "Rediscover forgotten tracks",
+          "text": "Bring those hidden gems back into your sets. A forgotten B-side released years ago and a recent release might perfectly fit each other, if their sonic relationship is strong."
+        },
+        "connections": {
+          "label": "Find unexpected connections",
+          "text": "Go beyond your existing tagging system and discover relationships that genres and manually assigned tags cannot reveal."
+        },
+        "escape": {
+          "label": "Escape repetition",
+          "text": "Explore new musical directions and stop relying on the same dozen tracks."
+        },
+        "prepare": {
+          "label": "Prepare sets faster",
+          "text": "Spend less time searching through folders and more time focusing on the \"journey\" of your set."
+        }
+      },
+      "pull": "Resomix doesn't build a set from scratch, but it does remove the slow search process, giving you dozens of musical ideas in seconds while leaving the creative decisions to you."
+    },
+    "unique": {
+      "eyebrow": "The craft stays yours",
+      "h2": "Make every DJ set unique",
+      "p1": "There's something about a DJ's style that automation simply can't replicate. Your ability to read the room and mix tracks seamlessly is the core of your musical identity, and Resomix's similarity engine is here to make your discovery process faster, more creative, and intuitive.",
+      "p2": "Our deterministic engine is a creative companion, one that won't replace your unique taste, but rather help you discover more possibilities, faster, so you can spend less time searching and more time shaping the music journey you want to create.",
+      "figureAria": "The room drawn as a soft arc of listeners above; the DJ, a white ring, stands between the room and a fan of surfaced musical ideas — the engine suggests, the DJ reads the room"
+    },
+    "final": {
+      "line1": "Choose a track.",
+      "line2": "Explore its sonic DNA.",
+      "line3": "Discover what could come next."
+    },
+    "cta": {
+      "try": "Try Resomix",
+      "exploreSd": "Explore Sonic Discovery",
+      "exploreTi": "Explore Track Intelligence"
+    },
+    "figures": {
+      "yourCrate": "Your crate",
+      "musicIsQuery": "The music itself is the search query",
+      "wholeTrack": "The one you chose — the whole track",
+      "wholeTrackShort": "The whole track",
+      "rankedIdeas": "Ranked ideas — the set stays yours",
+      "theLibrary": "The library",
+      "latestEntries": "The latest entries",
+      "signatureSongs": "The signature songs",
+      "tensDeep": "Tens of thousands deep",
+      "hiddenGems": "The hidden gems",
+      "whatGetsPlayed": "What gets played",
+      "whatGetsForgotten": "What gets forgotten",
+      "bsideYearsAgo": "B-side · years ago",
+      "recentRelease": "Recent release",
+      "genreA": "Genre A",
+      "genreB": "Genre B",
+      "genreC": "Genre C",
+      "sameDozen": "The same dozen",
+      "newDirection": "A new direction",
+      "folders": "Folders",
+      "journeyOfSet": "The journey of your set",
+      "theRoom": "The room",
+      "you": "You",
+      "surfacedIdeas": "Surfaced ideas — the pick is yours",
+      "engineSuggests": "The engine suggests",
+      "youReadRoom": "You read the room"
+    }
+  }
+}

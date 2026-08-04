@@ -1,0 +1,102 @@
+{
+  "musicCurators": {
+    "hero": {
+      "chip": "Use case · Music curators",
+      "intro": "The art of music curation is born from a unique mix of talent and experience; the ability to hear music differently, to predict trends, to see hidden connections, is the essence of what makes humans connect through music.",
+      "ctaNote": "Free to start · production beta",
+      "figureAria": "Tracks scattered across decades and genre strata; from the reference track a signal journey flows outward through numbered stops across eras and genres — a playlist chain linked by the curator, with one direction still unexplored",
+      "title": "Curate from the sound, [[not only the chart.]]"
+    },
+    "statement": {
+      "srTitle": "The curator's edge",
+      "p1": "To stay on top of the game as a music curator requires a clear process and the right tools that can help you uncover hidden gems among the thousands of songs released daily. Especially when you have a clear sonic identity in mind, having the ideal discovery engine at your disposal can help bring your creative vision to life.",
+      "engine": "With Resomix, a reference track becomes a starting point to explore multiple directions that would be difficult to find through traditional discovery methods — quickly, creatively, and based on the emotions that music conveys."
+    },
+    "gap": {
+      "eyebrow": "The gap in the market",
+      "h2": "Recommendations will only take you this far",
+      "p1": "We all rely on recommendations, whether they come from our pals or the algorithm of our favourite streaming platform. They're invaluable, and can help you discover new things every day.",
+      "p2": "The problem with human recommendations is that we're limited by the time it takes to actually listen to and appreciate music. On the other hand, the issue with algorithms is that they're not good at lateral thinking, making them less effective when you want to break barriers between genres and explore new sounds.",
+      "p3": "These two approaches to music discovery are critical, but neither can provide the depth of discovery that a curator sometimes needs. What's missing is a workflow that combines the best of both: the \"soul\" of human sonic discovery, and the powerful research engines that modern algorithms can provide.",
+      "figureAria": "Two beams of discovery: human recommendations reach deep but narrow, platform recommendations reach broad but shallow; between them lies missed territory with faint gems, and an orange beam reaches into it"
+    },
+    "rail": {
+      "eyebrow": "For music curators",
+      "h2": "Expand your curation with Resomix",
+      "lead1": "What curators need is a discovery engine that analyses the audio itself, without relying on metadata, giving them a fresh approach to the music they find and select for their projects.",
+      "lead2": "By analysing the structural, harmonic, rhythmic, timbral, and emotional qualities of a reference track, PYXIS-1 is designed to discover new connections between songs, hidden underneath the surface of the genres the songs naturally fall into.",
+      "intro": "What does all this actually mean for a music curator:",
+      "listAria": "What Resomix means for a music curator",
+      "items": {
+        "continuity": {
+          "label": "Create sonic continuity",
+          "text": "by finding songs that seamlessly blend together."
+        },
+        "connections": {
+          "label": "Find unexpected connections",
+          "text": "that'll make your playlists unique."
+        },
+        "taste": {
+          "label": "Enhance your taste",
+          "text": "by choosing a direction and letting Resomix find new paths."
+        },
+        "forgotten": {
+          "label": "Find forgotten tracks",
+          "text": "that could bring something new to your set."
+        },
+        "directions": {
+          "label": "Explore new directions",
+          "text": "without losing the mood and identity of your selection."
+        }
+      },
+      "pull": "Instead of starting every search from a genre, artist, or keyword, you can now use a single track as a reference point and explore where its sonic DNA can take you."
+    },
+    "philosophy": {
+      "eyebrow": "The philosophy",
+      "h2": "Sonic analysis at the service of creativity",
+      "p1": "As a curator, your biggest asset is your individuality. Now that thousands of songs are released daily, you need tools that help you dig deeper, and find sonic connections based on moods and atmospheres instead of genre tags or release dates.",
+      "p2": "Our discovery engine is designed to show you the hidden corners of your unique music taste, letting you appreciate the beauty of tracks that connect even when separated by genres and time; songs that fit together because they were born from similar emotions, just waiting for someone to link them together for the first time.",
+      "figureAria": "Two tracks from different decades, each with its emotion contour; the contours echo the same shape and an orange thread links them — born from similar emotions, linked for the first time by you"
+    },
+    "final": {
+      "h2": "Expand your sonic horizon",
+      "body": "The result is a truly human curatorial experience, augmented by a discovery engine designed to expand your sonic horizon."
+    },
+    "cta": {
+      "try": "Try Resomix",
+      "exploreSd": "Explore Sonic Discovery",
+      "exploreTi": "Explore Track Intelligence"
+    },
+    "figures": {
+      "separatedBy": "Separated by genres and time",
+      "linkedFirst": "Linked for the first time",
+      "yourReference": "Your reference",
+      "ambient": "Ambient",
+      "house": "House",
+      "jazz": "Jazz",
+      "techno": "Techno",
+      "y1978": "2006",
+      "y1992": "2011",
+      "y2006": "2016",
+      "y2018": "2021",
+      "y2026": "2026",
+      "whereDiscoveryStarts": "Where discovery starts",
+      "depthNote": "Depth = how far it can reach",
+      "humanRecs": "Human recommendations",
+      "humanRecsSub": "Deep · one listen at a time",
+      "platformRecs": "Platform recommendations",
+      "platformRecsSub": "Broad · genre-bound",
+      "depthCuratorNeeds": "The depth a curator needs",
+      "soulEngine": "Soul + engine",
+      "territoryMiss": "The territory both approaches miss",
+      "twoWays": "Two ways to discover",
+      "territoryTheyMiss": "And the territory they miss",
+      "y1983": "2007",
+      "y2025": "2025",
+      "sameEmotionalShape": "The same emotional shape",
+      "linkedByYou": "Linked by you",
+      "forTheFirstTime": "For the first time",
+      "bornFromEmotions": "Born from similar emotions"
+    }
+  }
+}

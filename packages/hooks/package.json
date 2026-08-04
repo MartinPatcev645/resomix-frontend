@@ -1,48 +1,51 @@
 {
-    "name": "@resomix/hooks",
-    "version": "0.0.0",
-    "description": "",
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "tsc -p tsconfig.json"
-    },
-    "peerDependencies": {
-        "react": "^19.1.0"
-    },
-    "dependencies": {
-        "@resomix/api-client": "workspace:*",
-        "@resomix/stores": "workspace:*",
-        "antd": "^5.27.4",
-        "hls.js": "^1.6.12",
-        "howler": "^2.2.4",
-        "jsmediatags": "^3.9.7",
-        "konva": "^9.3.22",
-        "peaks.js": "^3.4.2",
-        "waveform-data": "^4.5.2",
-        "wavesurfer.js": "7.10.1",
-        "zustand": "^5.0.7"
-    },
-    "devDependencies": {
-        "@types/howler": "^2.2.7",
-        "@types/react": "^19.1.0",
-        "react": "^19.1.0"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "packageManager": "pnpm@10.13.1",
-    "type": "module",
-    "main": "./dist/index.js",
-    "types": "dist/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.js",
-            "require": "./dist/index.js"
-        }
-    },
-    "private": true,
-    "files": [
-        "dist"
-    ]
+  "name": "@resomix/hooks",
+  "version": "0.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "react": "^19.1.0"
+  },
+  "dependencies": {
+    "@resomix/api-client": "workspace:*",
+    "@resomix/stores": "workspace:*",
+    "antd": "^5.27.4",
+    "hls.js": "^1.6.12",
+    "howler": "^2.2.4",
+    "jsmediatags": "^3.9.7",
+    "konva": "^9.3.22",
+    "peaks.js": "^3.4.2",
+    "waveform-data": "^4.5.2",
+    "wavesurfer.js": "7.10.1",
+    "zustand": "^5.0.7"
+  },
+  "devDependencies": {
+    "@types/howler": "^2.2.7",
+    "@types/react": "^19.1.0",
+    "react": "^19.1.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.13.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "*.css"
+  ]
 }

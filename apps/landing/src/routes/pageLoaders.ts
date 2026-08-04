@@ -13,33 +13,53 @@
  */
 
 import type { ComponentType } from 'react';
+import i18n from '@/i18n.ts';
 
 /* Pages differ in props (InfoPage takes a `mode`), so the loader map is intentionally loose here —
    each <Route> below still type-checks its own element. */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Loader = () => Promise<{ default: ComponentType<any> }>;
 
-const page = (load: () => Promise<any>): Loader => load;
+/**
+ * Pair a page chunk with its locale slice.
+ *
+ * The locale was one 204 KiB file loaded on every visit; it is now split per page. Both promises
+ * are awaited together and the strings are registered BEFORE the module resolves, so React can
+ * never mount a component whose keys are missing — that would render raw `about.hero.title` text
+ * for a frame. Pages that need only the shared chrome strings pass no slice.
+ */
+const page = (
+  load: () => Promise<any>,
+  loadLocale?: () => Promise<{ default: Record<string, unknown> }>,
+): Loader =>
+  loadLocale
+    ? async () => {
+        const [mod, slice] = await Promise.all([load(), loadLocale()]);
+        // deep merge, overwrite: safe to call twice if a route is revisited
+        i18n.addResourceBundle('en', 'common', slice.default, true, true);
+        return mod;
+      }
+    : load;
 
 /** Route path → chunk loader. */
 export const PAGE_LOADERS: Record<string, Loader> = {
-  '/': page(() => import('@/pages/HomePage.tsx')),
-  '/about': page(() => import('@/pages/AboutPage.tsx')),
-  '/partners': page(() => import('@/pages/PartnersPage.tsx')),
-  '/partners/pilot': page(() => import('@/pages/PartnersPilotPage.tsx')),
-  '/product': page(() => import('@/pages/ProductPage.tsx')),
-  '/product/sonic-discovery': page(() => import('@/pages/SonicDiscoveryPage.tsx')),
-  '/product/track-intelligence': page(() => import('@/pages/TrackIntelligencePage.tsx')),
-  '/product/catalog-intelligence': page(() => import('@/pages/CatalogueIntelligencePage.tsx')),
-  '/developers': page(() => import('@/pages/DevelopersPage.tsx')),
-  '/trust': page(() => import('@/pages/TrustPage.tsx')),
-  '/solutions/record-labels': page(() => import('@/pages/RecordLabelsPage.tsx')),
-  '/solutions/music-publishers': page(() => import('@/pages/MusicPublishersPage.tsx')),
-  '/solutions/sync-agencies': page(() => import('@/pages/SyncAgenciesPage.tsx')),
-  '/solutions/music-libraries-sample-providers': page(() => import('@/pages/MusicLibrariesPage.tsx')),
-  '/solutions/djs': page(() => import('@/pages/DjsPage.tsx')),
-  '/solutions/music-curators': page(() => import('@/pages/MusicCuratorsPage.tsx')),
-  '/solutions/producers': page(() => import('@/pages/ProducersPage.tsx')),
+  '/': page(() => import('@/pages/HomePage.tsx'), () => import('@/locales/en/pages/home.json')),
+  '/about': page(() => import('@/pages/AboutPage.tsx'), () => import('@/locales/en/pages/about.json')),
+  '/partners': page(() => import('@/pages/PartnersPage.tsx'), () => import('@/locales/en/pages/partners.json')),
+  '/partners/pilot': page(() => import('@/pages/PartnersPilotPage.tsx'), () => import('@/locales/en/pages/partnersPilot.json')),
+  '/product': page(() => import('@/pages/ProductPage.tsx'), () => import('@/locales/en/pages/product.json')),
+  '/product/sonic-discovery': page(() => import('@/pages/SonicDiscoveryPage.tsx'), () => import('@/locales/en/pages/sonicDiscovery.json')),
+  '/product/track-intelligence': page(() => import('@/pages/TrackIntelligencePage.tsx'), () => import('@/locales/en/pages/trackIntelligence.json')),
+  '/product/catalog-intelligence': page(() => import('@/pages/CatalogueIntelligencePage.tsx'), () => import('@/locales/en/pages/catalogueIntelligence.json')),
+  '/developers': page(() => import('@/pages/DevelopersPage.tsx'), () => import('@/locales/en/pages/developers.json')),
+  '/trust': page(() => import('@/pages/TrustPage.tsx'), () => import('@/locales/en/pages/trust.json')),
+  '/solutions/record-labels': page(() => import('@/pages/RecordLabelsPage.tsx'), () => import('@/locales/en/pages/recordLabels.json')),
+  '/solutions/music-publishers': page(() => import('@/pages/MusicPublishersPage.tsx'), () => import('@/locales/en/pages/musicPublishers.json')),
+  '/solutions/sync-agencies': page(() => import('@/pages/SyncAgenciesPage.tsx'), () => import('@/locales/en/pages/syncAgencies.json')),
+  '/solutions/music-libraries-sample-providers': page(() => import('@/pages/MusicLibrariesPage.tsx'), () => import('@/locales/en/pages/musicLibraries.json')),
+  '/solutions/djs': page(() => import('@/pages/DjsPage.tsx'), () => import('@/locales/en/pages/djs.json')),
+  '/solutions/music-curators': page(() => import('@/pages/MusicCuratorsPage.tsx'), () => import('@/locales/en/pages/musicCurators.json')),
+  '/solutions/producers': page(() => import('@/pages/ProducersPage.tsx'), () => import('@/locales/en/pages/producers.json')),
   '/subscribe': page(() => import('@/pages/SubscribePage.tsx')),
   '/contact': page(() => import('@/pages/InfoPage.tsx')),
   '/waitlist': page(() => import('@/pages/InfoPage.tsx')),

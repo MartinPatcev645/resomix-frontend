@@ -1,0 +1,17 @@
+IndexNow key file
+=================
+
+The file `055c65c66919b6a17adda358f79932a7.txt` in this directory IS the IndexNow verification key. Its filename must equal its
+contents; do not rename or edit it.
+
+It lets Bing (and other participating engines — Yandex, Seznam, Naver) be told immediately when a
+page changes, instead of waiting to be recrawled. Google does not participate.
+
+Submitting is a single GET, e.g. after a deploy:
+
+  curl "https://api.indexnow.org/indexnow?url=https://resomix.com/&key=055c65c66919b6a17adda358f79932a7"
+
+Or submit many URLs at once by POSTing the JSON body documented at https://www.indexnow.org/documentation
+
+NOTHING PINGS AUTOMATICALLY. This is only the verification file; wiring it into the deploy
+pipeline is a deliberate step, because it notifies external services.

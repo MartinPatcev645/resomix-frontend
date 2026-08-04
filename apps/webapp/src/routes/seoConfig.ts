@@ -102,9 +102,9 @@ export const SITEMAP_DEFAULTS = { changefreq: 'monthly' as const, priority: 0.7 
 
 /**
  * Social preview image. Absolute — crawlers do not resolve relative OG URLs.
- * Same caveat as the marketing site: this is the square logo, not a 1200x630 card.
+ * 1200x630 landscape card, matching the marketing site.
  */
-export const OG_IMAGE = `${SITE_ORIGIN}/logo.png`;
+export const OG_IMAGE = `${SITE_ORIGIN}/og-cover.png`;
 
 /**
  * Sitemap contents: indexable pages only.

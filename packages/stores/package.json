@@ -1,38 +1,41 @@
 {
-    "name": "@resomix/stores",
-    "version": "0.0.0",
-    "description": "",
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "tsc -p tsconfig.json"
-    },
-    "peerDependencies": {
-        "react": "^19.1.0"
-    },
-    "devDependencies": {
-        "@types/react": "^19.1.0",
-        "react": "^19.1.0"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "packageManager": "pnpm@10.13.1",
-    "type": "module",
-    "main": "./dist/src/index.js",
-    "types": "dist/src/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/src/index.d.ts",
-            "import": "./dist/src/index.js",
-            "require": "./dist/src/index.js"
-        }
-    },
-    "private": true,
-    "files": [
-        "dist"
-    ],
-    "dependencies": {
-        "zustand": "^5.0.7",
-        "@resomix/api-client": "workspace:*"
+  "name": "@resomix/stores",
+  "version": "0.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "react": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "react": "^19.1.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.13.1",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
+      "require": "./dist/src/index.js"
     }
+  },
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "zustand": "^5.0.7",
+    "@resomix/api-client": "workspace:*"
+  },
+  "sideEffects": [
+    "*.css"
+  ]
 }

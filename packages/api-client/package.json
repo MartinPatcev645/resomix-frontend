@@ -28,5 +28,8 @@
     "@resomix/config": "workspace:*",
     "@thumbmarkjs/thumbmarkjs": "^1.10.0",
     "axios": "^1.11.0"
-  }
+  },
+  "sideEffects": [
+    "*.css"
+  ]
 }

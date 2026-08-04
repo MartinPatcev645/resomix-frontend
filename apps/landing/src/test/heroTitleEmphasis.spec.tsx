@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { HeroTitle } from '@/components/HeroTitle.tsx';
 
@@ -16,9 +16,20 @@ import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 const strip = (s: string) => s.replace(/­/g, '');
 
-const locale = JSON.parse(
-  readFileSync(resolve(process.cwd(), 'src/locales/en/common.json'), 'utf8'),
+/**
+ * The locale is no longer one file: shared chrome lives in core.json and each page has its own
+ * slice, fetched with its route chunk. Reassemble the whole thing here so these assertions still
+ * see every headline.
+ */
+const locale: Record<string, unknown> = JSON.parse(
+  readFileSync(resolve(process.cwd(), 'src/locales/en/core.json'), 'utf8'),
 );
+for (const f of readdirSync(resolve(process.cwd(), 'src/locales/en/pages'))) {
+  Object.assign(
+    locale,
+    JSON.parse(readFileSync(resolve(process.cwd(), 'src/locales/en/pages', f), 'utf8')),
+  );
+}
 
 const at = (path: string) =>
   path.split('.').reduce<Record<string, unknown> | string>((o, k) => (o as never)[k], locale) as string;

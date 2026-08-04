@@ -1,0 +1,413 @@
+{
+  "trust": {
+    "legalLibraryUrl": "https://support.resomix.com/hc/categories/1/3/legal",
+    "privacyEmail": "privacy@resomix.com",
+    "legalEmail": "legal@resomix.com",
+    "hero": {
+      "eyebrow": "Trust, Rights & Security // Production beta",
+      "title": "The audio can be analysed without blurring [[who it belongs to.]]",
+      "body": "Resomix is a production-beta sonic discovery service. This page separates controls operating now, controls defined by partner agreement, and controls we do not yet claim.",
+      "ctaLegal": "View Legal Documents",
+      "ctaPartnerships": "Contact Partnerships",
+      "trustline": "Current controls · Agreement-bound terms · Beta limitations · Published policies",
+      "sourceNote": "Reflects the Resomix production-beta policies effective 20 July 2026. The published legal documents control.",
+      "legendTitle": "How to read this page — five status labels",
+      "legend": {
+        "current": "A control or behaviour operating now and approved for public description.",
+        "agreementBound": "A partner or Private Library control whose exact scope, duration, access or deletion terms are governed by the applicable account terms, partner agreement or Data Processing Addendum.",
+        "betaControl": "A control operating during the production beta but still being documented, expanded or verified — not presented as mature enterprise assurance.",
+        "roadmap": "A control or capability not implemented today.",
+        "notClaimed": "A deliberately explicit boundary where Resomix does not currently make a certification, guarantee or technical assurance."
+      }
+    },
+    "status": {
+      "current": "Current",
+      "agreementBound": "Agreement-bound",
+      "betaControl": "Beta control",
+      "roadmap": "Roadmap",
+      "notClaimed": "Not claimed",
+      "currentQualified": "Current — qualified",
+      "currentLegalDisclosure": "Current · legal disclosure",
+      "roadmapNotClaimed": "Roadmap / not claimed"
+    },
+    "glance": {
+      "eyebrow": "01 // At a glance",
+      "title": "What applies now — and what does not",
+      "groups": {
+        "current": "Current",
+        "agreementBound": "Agreement-bound",
+        "betaControl": "Beta control",
+        "roadmapNotClaimed": "Roadmap / not claimed"
+      },
+      "rows": {
+        "tempUpload": {
+          "control": "Temporary upload lifecycle",
+          "description": "Uploaded source audio is deleted no later than 24 hours after upload or analysis."
+        },
+        "partnerIsolation": {
+          "control": "Partner catalogue isolation",
+          "description": "Partner catalogues are logically isolated and restricted to authorised partner access."
+        },
+        "noTraining": {
+          "control": "No training on supplied audio",
+          "description": "User and partner audio is not used to train or fine-tune PYXIS-1."
+        },
+        "publicTls": {
+          "control": "Public endpoint transport",
+          "description": "TLS is used on public service endpoints."
+        },
+        "partnerTerms": {
+          "control": "Partner catalogue terms",
+          "description": "The applicable partner agreement and Data Processing Addendum govern access, retention and deletion."
+        },
+        "privateLibraryRetention": {
+          "control": "Private Library retention",
+          "description": "Retained as necessary for the user-authorised catalogue-analysis and discovery service."
+        },
+        "serviceStage": {
+          "control": "Service stage",
+          "description": "Resomix is live in production as a beta service during its initial three-month beta period."
+        },
+        "controlledMedia": {
+          "control": "Controlled media delivery",
+          "description": "Resomix uses encrypted HLS for controlled media delivery."
+        },
+        "backupControls": {
+          "control": "Backup controls",
+          "description": "Partially implemented and continuing to develop during the beta period."
+        },
+        "ddex": {
+          "control": "DDEX ingestion & reporting",
+          "description": "DDEX ERN ingestion and DDEX reporting workflows are not available today."
+        },
+        "securityCerts": {
+          "control": "Security certifications",
+          "description": "Resomix does not currently claim SOC 2, ISO 27001 or another enterprise security certification."
+        },
+        "uptimeSla": {
+          "control": "Uptime SLA / high availability",
+          "description": "Resomix does not currently publish an uptime SLA or claim a fully redundant high-availability architecture."
+        }
+      }
+    },
+    "lifecycles": {
+      "eyebrow": "02 // Audio lifecycles",
+      "title": "Not every audio upload has the same retention rule",
+      "tabs": {
+        "temp": "Temporary upload",
+        "library": "Private Library",
+        "partner": "Partner catalogue"
+      },
+      "columns": {
+        "temp": {
+          "title": "Temporary Reference Upload",
+          "status": "current"
+        },
+        "library": {
+          "title": "Private Resomix Library",
+          "status": "agreementBound"
+        },
+        "partner": {
+          "title": "Partner Catalogue",
+          "status": "agreementBound"
+        }
+      },
+      "rows": {
+        "purpose": {
+          "label": "Purpose",
+          "temp": "One-off analysis or similarity search from a reference you supply.",
+          "library": "The user-authorised catalogue-analysis and discovery service.",
+          "partner": "The purposes authorised by the applicable partner agreement."
+        },
+        "access": {
+          "label": "Access",
+          "temp": "Not accessible to other users.",
+          "library": "Your authorised account.",
+          "partner": "The partner's authorised account users, and Resomix personnel or service providers where access is necessary to provide, secure or support the authorised service."
+        },
+        "publicVisibility": {
+          "label": "Public visibility",
+          "temp": "Not made publicly available.",
+          "library": "Not made publicly available.",
+          "partner": "Partner content is not made publicly available."
+        },
+        "retention": {
+          "label": "Retention",
+          "tempBold": "Deleted no later than 24 hours",
+          "tempRest": " after upload or analysis. Temporary previews and processing artefacts are retained only as long as reasonably necessary to provide, troubleshoot and secure the requested processing.",
+          "library": "Retained for the duration necessary to provide the user-authorised service.",
+          "partner": "Retained and processed for the duration and purposes authorised by the applicable partner agreement."
+        },
+        "deletionTrigger": {
+          "label": "Deletion trigger",
+          "temp": "Automatic — the 24-hour rule.",
+          "library": "A user removal request, Private Library deletion, account termination or the applicable retention schedule.",
+          "partner": "The removal and termination schedule in the partner agreement and DPA."
+        },
+        "trainingUse": {
+          "label": "Training use",
+          "temp": "Not used to train or fine-tune PYXIS-1.",
+          "library": "Not used to train or fine-tune PYXIS-1.",
+          "partner": "Not used to train or fine-tune PYXIS-1."
+        }
+      },
+      "noteBold": "Private Library audio is not a Temporary Reference Upload.",
+      "noteRest": " The three lifecycles have different purposes, different retention rules and different deletion triggers — the ledger above states each one separately."
+    },
+    "rights": {
+      "eyebrow": "03 // Rights & access",
+      "title": "Processing requires authority. Access stays bounded.",
+      "qa": [
+        {
+          "question": "Who may submit audio?",
+          "answer": "You must have the right or authority to submit audio for analysis. Partner catalogue use is defined by the applicable partner arrangement."
+        },
+        {
+          "question": "Can another partner see our catalogue?",
+          "answer": "Partner catalogues are logically isolated and restricted to authorised partner access.",
+          "status": "current"
+        },
+        {
+          "question": "Who at Resomix can access partner content?",
+          "answer": "Access is restricted to the partner's authorised account users and Resomix personnel or service providers where access is necessary to provide, secure or support the authorised service. The partner agreement and Data Processing Addendum govern the specifics.",
+          "status": "agreementBound"
+        },
+        {
+          "question": "Is uploaded or partner audio used to train PYXIS-1?",
+          "answer": "No. PYXIS-1 does not train or fine-tune itself using user or partner audio, and it does not generate, synthesise or recreate audio.",
+          "status": "current"
+        },
+        {
+          "question": "What does the analysis create?",
+          "answer": "Sonic analysis does not create a playable replacement for the source recording. PYXIS-1 and Resomix software remain Resomix proprietary technology."
+        },
+        {
+          "question": "What rights does a partner grant?",
+          "answer": "Partner content is processed only for the purposes authorised by the applicable partner arrangement. The partner agreement defines the catalogue-processing licence and permitted use.",
+          "status": "agreementBound"
+        },
+        {
+          "question": "How do rights holders raise a concern?",
+          "answerBefore": "Through the published Copyright & DMCA Policy, Acceptable Use Policy and Terms of Service — or directly at ",
+          "answerAfter": "."
+        }
+      ],
+      "boundaryBold": "The partner agreement defines the operating boundary.",
+      "boundaryRest": " Authorised purpose, catalogue scope, authorised users, support access, retention, removal and termination schedules, the DPA, confidentiality, permitted output and playback use, supplied rights, and any pilot-specific handling are defined per engagement. The public page explains the operating model. The signed agreement controls the specific engagement."
+    },
+    "security": {
+      "eyebrow": "04 // Security",
+      "title": "Security controls operating today",
+      "rows": {
+        "publicTls": {
+          "control": "Public endpoint transport",
+          "description": "TLS on public service endpoints."
+        },
+        "accountSession": {
+          "control": "Account & session access",
+          "description": "Account, session and role-based access controls."
+        },
+        "twoFactor": {
+          "control": "Two-factor authentication",
+          "description": "Additional account-security control where available."
+        },
+        "abuseControls": {
+          "control": "Abuse controls",
+          "description": "Rate-limiting and abuse-prevention controls."
+        },
+        "apiAccess": {
+          "control": "API access",
+          "description": "API-key and token-based access where applicable, restricted by account and service roles."
+        },
+        "partnerIsolation": {
+          "control": "Partner catalogue isolation",
+          "description": "Logically isolated and restricted to authorised partner access."
+        },
+        "controlledMedia": {
+          "control": "Controlled media delivery",
+          "description": "Encrypted HLS for controlled media delivery. Media controls reduce unauthorised access risk; they do not make copying technically impossible."
+        },
+        "incidentProcedures": {
+          "control": "Incident procedures",
+          "description": "Incident-response and GDPR breach-notification procedures.",
+          "legalDisclosure": "legal disclosure"
+        },
+        "backupControls": {
+          "control": "Backup controls",
+          "description": "Partially implemented and continuing to develop during the beta period."
+        }
+      }
+    },
+    "providers": {
+      "eyebrow": "05 // Who helps operate the service",
+      "title": "Service providers and infrastructure partners",
+      "rows": {
+        "alwyzon": {
+          "name": "Alwyzon",
+          "purpose": "Application, account and API infrastructure",
+          "location": "Austria"
+        },
+        "hetzner": {
+          "name": "Hetzner",
+          "purpose": "Audio processing, media and related infrastructure",
+          "location": "Germany"
+        },
+        "cloudflare": {
+          "name": "Cloudflare",
+          "purpose": "DNS, content delivery, traffic security and edge services",
+          "location": "Global service provider"
+        },
+        "googleWorkspace": {
+          "name": "Google Workspace",
+          "purpose": "Business and transactional email administration",
+          "location": "Google service"
+        },
+        "stripe": {
+          "name": "Stripe Payments Europe",
+          "purpose": "Payment processing where paid checkout is active",
+          "location": "EEA payment provider"
+        },
+        "posthog": {
+          "name": "Self-hosted PostHog",
+          "purpose": "First-party product analytics where consent applies",
+          "location": "Resomix-controlled infrastructure"
+        },
+        "ghost": {
+          "name": "Ghost",
+          "purpose": "Self-hosted publishing software",
+          "location": "Resomix-controlled infrastructure"
+        }
+      },
+      "transferBold": "Where data is processed.",
+      "transferRest": " Core application and audio-processing infrastructure uses providers in Austria and Germany. Some global service providers may process data outside the EEA under the safeguards described in the Privacy Policy.",
+      "transferLegalDisclosure": "current legal disclosure",
+      "privacyLink": "[ Read the Privacy Policy ↗ ]",
+      "privacyLinkAria": "Read the Privacy Policy — opens the Resomix legal library"
+    },
+    "retention": {
+      "eyebrow": "06 // Retention & limits",
+      "title": "Deletion depends on the data lifecycle",
+      "rows": {
+        "tempUpload": {
+          "control": "Temporary Reference Upload",
+          "description": "Source audio deleted no later than 24 hours after upload or analysis. Not public, not shared with other users, not used to train PYXIS-1."
+        },
+        "previews": {
+          "control": "Previews & processing artefacts",
+          "description": "Retained only as long as reasonably necessary to provide, troubleshoot and secure the requested processing."
+        },
+        "privateLibrary": {
+          "control": "Private Library audio",
+          "description": "Retained as necessary for the user-authorised service; removal may follow a user request, Private Library deletion, account termination or the applicable retention schedule."
+        },
+        "partnerCatalogue": {
+          "control": "Partner catalogue content",
+          "description": "Retained and processed for the authorised purposes and duration defined by the partner agreement and DPA."
+        },
+        "savedAnalysis": {
+          "control": "Saved analysis & discovery records",
+          "description": "Retained until the user deletes them, closes the relevant Library or account, or the applicable retention period expires."
+        },
+        "accountData": {
+          "control": "Account data",
+          "description": "Retained during the active account and for 30 days following a deletion request, subject to legal obligations."
+        },
+        "usageData": {
+          "control": "Usage data",
+          "description": "Up to 24 months, then anonymised or deleted."
+        },
+        "communicationRecords": {
+          "control": "Communication records",
+          "description": "Up to 36 months."
+        },
+        "processingLogs": {
+          "control": "Processing & security logs",
+          "description": "Typically up to 90 days, unless needed longer for security investigations or legal obligations."
+        }
+      },
+      "legalNoteBold": "Legal and accounting obligations",
+      "legalNoteRest": " may require some records to be retained after account deletion. Deleting audio does not automatically delete every account, billing, consent, communication or security record.",
+      "limitsTitle": "What Resomix does not claim today",
+      "limits": {
+        "uptimeSla": {
+          "control": "Uptime SLA / high availability",
+          "description": "Resomix does not currently publish an uptime SLA or claim a fully redundant high-availability architecture."
+        },
+        "backupsDr": {
+          "control": "Backups & disaster recovery",
+          "description": "Backup controls are partially implemented and continue to develop during the beta period. Resomix does not currently claim a complete offsite 3-2-1 backup programme, full media-store recovery or a tested disaster-recovery guarantee."
+        },
+        "ddex": {
+          "control": "DDEX ingestion & reporting",
+          "description": "DDEX ERN ingestion and DDEX reporting workflows are not available today."
+        },
+        "securityCerts": {
+          "control": "Security certifications",
+          "description": "Resomix does not currently claim SOC 2, ISO 27001 or another enterprise security certification."
+        },
+        "regionalControls": {
+          "control": "Regional processing controls",
+          "description": "Resomix does not currently offer a public customer-selectable data-residency region or complete data-sovereignty guarantee."
+        },
+        "mediaProtection": {
+          "control": "Media protection absolutes",
+          "description": "Controlled media delivery reduces unauthorised access risk. Resomix does not claim that streamed media is impossible to copy or extract."
+        },
+        "statusPage": {
+          "control": "Public status page",
+          "description": "A public system-status destination is not currently available."
+        }
+      }
+    },
+    "legal": {
+      "eyebrow": "07 // The documents",
+      "title": "The controlling documents are published",
+      "documents": [
+        {
+          "label": "Privacy Policy",
+          "ariaLabel": "Privacy Policy — opens the Resomix legal library"
+        },
+        {
+          "label": "Terms of Service",
+          "ariaLabel": "Terms of Service — opens the Resomix legal library"
+        },
+        {
+          "label": "Cookie Policy",
+          "ariaLabel": "Cookie Policy — opens the Resomix legal library"
+        },
+        {
+          "label": "Acceptable Use Policy",
+          "ariaLabel": "Acceptable Use Policy — opens the Resomix legal library"
+        },
+        {
+          "label": "Copyright & DMCA Policy",
+          "ariaLabel": "Copyright and DMCA Policy — opens the Resomix legal library"
+        },
+        {
+          "label": "GDPR Summary",
+          "ariaLabel": "GDPR Summary — opens the Resomix legal library"
+        },
+        {
+          "label": "Refund Policy",
+          "ariaLabel": "Refund Policy — opens the Resomix legal library"
+        },
+        {
+          "label": "Platform Disclaimer",
+          "ariaLabel": "Platform Disclaimer — opens the Resomix legal library"
+        },
+        {
+          "label": "Open Source Licensing Transparency",
+          "ariaLabel": "Open Source Licensing Transparency — opens the Resomix legal library"
+        }
+      ],
+      "contacts": {
+        "privacy": "Privacy",
+        "legal": "Legal & rights-holder notices",
+        "partnerships": "Partnerships"
+      },
+      "ctaPartnerships": "Contact Partnerships",
+      "ctaLegal": "View Legal Documents",
+      "ctaLegalAria": "View Legal Documents — opens the Resomix legal library"
+    }
+  }
+}
