@@ -32,6 +32,9 @@ export default defineConfig({
       /* Each page owns a stylesheet that Vite would otherwise inject only when its JS loads —
          which, now that the markup ships in the HTML, means painting the page unstyled first. */
       routeModules: PAGE_MODULES,
+      /* Three blocking stylesheets = three round trips before first paint. On the throttled mobile
+         profile Lighthouse attributed 1,160-1,510 ms to them, with FCP stuck at 3.2 s. */
+      inlineCss: true,
       /* The catch-all route renders the 404 page, so ask for a path that matches nothing else. */
       notFound: { url: '/404', file: 'dist/404.html' },
     }),

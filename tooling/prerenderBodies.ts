@@ -30,6 +30,19 @@ interface PrerenderBodiesOptions {
   /** The catch-all page. Its URL matches no route, so it renders whatever `*` renders. */
   notFound?: { url: string; file: string }
   /**
+   * Inline every stylesheet into the document instead of linking it.
+   *
+   * Mobile sat at ~82 across three runs with FCP 3.2 s, and Lighthouse put 1,160–1,510 ms of that
+   * on render-blocking CSS: three round trips that must all complete before anything paints, on a
+   * connection with 150 ms of latency per trip.
+   *
+   * Inlining costs ~25 KiB gzipped in the document and removes all three. It is deliberately the
+   * blunt version rather than critical-CSS extraction: a hand-rolled "which rules does this page
+   * need" pass drops whatever it fails to match, and a missed rule is a visibly broken page.
+   * Nothing here can be missed.
+   */
+  inlineCss?: boolean
+  /**
    * Route → page module path, as the client manifest keys it. Used to link each route's own
    * stylesheet in its <head>.
    *
@@ -78,7 +91,7 @@ const ROOT_RE = /(<div id="root">)(<\/div>)/
 export function prerenderBodies(
   options: PrerenderBodiesOptions,
 ): { name: string; apply: 'build'; closeBundle(): Promise<void> } {
-  const { routes, clientDir, serverEntry, notFound, routeModules = {} } = options
+  const { routes, clientDir, serverEntry, notFound, routeModules = {}, inlineCss = false } = options
 
   return {
     name: 'prerender-bodies',
@@ -109,6 +122,7 @@ export function prerenderBodies(
 
       let written = 0
       let bytes = 0
+      let inlined = 0
       const skipped: string[] = []
       /** Routes whose page module owns no CSS at all — legitimate, but worth seeing. */
       const cssless: string[] = []
@@ -157,6 +171,21 @@ export function prerenderBodies(
 
         // Function replacer: rendered markup contains `$` sequences that a string replacement
         // would interpret ($&, $1 …) and silently corrupt.
+        /* Swap every <link rel=stylesheet> for its contents. Done AFTER the per-route link is
+           added above, so the page's own sheet is inlined too — it styles the hero, so deferring
+           it would just move the unstyled-paint problem rather than fix it. */
+        if (inlineCss) {
+          html = html.replace(
+            /<link rel="stylesheet" href="([^"]+)">/g,
+            (whole, href: string) => {
+              const asset = path.resolve(clientDir, href.replace(/^\//, ''))
+              if (!existsSync(asset)) return whole
+              inlined += Buffer.byteLength(readFileSync(asset))
+              return `<style>${readFileSync(asset, 'utf8')}</style>`
+            },
+          )
+        }
+
         writeFileSync(file, html.replace(ROOT_RE, (_m, open: string, close: string) => open + markup + close))
         written++
         bytes += Buffer.byteLength(markup)
@@ -164,7 +193,8 @@ export function prerenderBodies(
 
       // eslint-disable-next-line no-console
       console.log(
-        `  prerendered body   ${written}/${targets.length} routes, ${(bytes / 1024).toFixed(0)} KiB markup`,
+        `  prerendered body   ${written}/${targets.length} routes, ${(bytes / 1024).toFixed(0)} KiB markup` +
+          (inlined ? `, ${(inlined / 1024).toFixed(0)} KiB CSS inlined` : ''),
       )
       if (cssless.length) {
         // eslint-disable-next-line no-console
