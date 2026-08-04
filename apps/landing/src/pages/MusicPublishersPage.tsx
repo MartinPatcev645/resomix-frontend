@@ -48,8 +48,8 @@ export default function MusicPublishersPage() {
   }, [motionOn]);
 
   // Hero two-plane parallax, rAF-throttled and gated on motion.
-  // SideLines mounts a desktop and a mobile copy of the page, so each hero is
-  // measured against its own rect — the hidden copy simply resolves to zero.
+  // querySelectorAll, not querySelector: harmless now that SideLines renders the page once, and
+  // it keeps this correct if a layout ever mounts the hero more than once again.
   useEffect(() => {
     if (!motionOn) return;
     const heroes = Array.from(document.querySelectorAll<HTMLElement>('.mp-page .mp-hero'));

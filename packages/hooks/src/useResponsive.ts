@@ -16,32 +16,49 @@ interface ResponsiveOptions {
   ssrSafe?: boolean;
 }
 
+/**
+ * Must stay identical to Tailwind's `lg` breakpoint. The layout branches on BOTH this hook and on
+ * `lg:` utilities, so if the two disagree the page renders one breakpoint's markup inside the
+ * other's styling.
+ */
+const DESKTOP_QUERY = '(min-width: 1024px)';
+
+/**
+ * Asked via matchMedia, NOT `window.innerWidth` — they are not the same number.
+ *
+ * Under browser zoom, `innerWidth` reports the layout viewport scaled by the zoom factor, while
+ * media queries and every CSS length resolve against the real CSS viewport. Zoomed out on a narrow
+ * window we measured `innerWidth: 1258` while `documentElement.clientWidth` was 400 and
+ * `(min-width: 1024px)` was false. So this hook said "desktop" and rendered the desktop navbar and
+ * footer, while the stylesheets laid the page out for mobile — desktop content crushed into a
+ * mobile-scaled frame.
+ *
+ * matchMedia is the same signal Tailwind compiles `lg:` to, so the two cannot drift.
+ */
+const isDesktopNow = () => window.matchMedia(DESKTOP_QUERY).matches;
+
 export function useResponsive({ ssrSafe = false }: ResponsiveOptions = {}) {
   const [isDesktop, setIsDesktop] = useState(() => {
     // Prerender, and (when ssrSafe) the hydrating render: assume desktop, matching the build.
     if (ssrSafe || typeof window === 'undefined') return true;
-    return window.innerWidth >= 1024;
+    return isDesktopNow();
   });
 
   /* Measure before paint, not after: this is the render that corrects the hydration assumption
      above, so a plain effect would let one wrong frame reach the screen. */
   useIsomorphicLayoutEffect(() => {
-    setIsDesktop(window.innerWidth >= 1024);
+    setIsDesktop(isDesktopNow());
   }, []);
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 1024);
-    };
+    const mq = window.matchMedia(DESKTOP_QUERY);
+    const onChange = () => setIsDesktop(mq.matches);
 
-    // Add event listener
-    window.addEventListener('resize', handleResize);
-    
-    // Call handler right away so state gets updated with initial window size
-    handleResize();
+    // `change` covers zoom as well as resize; a `resize` listener alone misses zoom entirely.
+    mq.addEventListener('change', onChange);
+    onChange();
 
-    // Remove event listener on cleanup
-    return () => window.removeEventListener('resize', handleResize);
+    return () => mq.removeEventListener('change', onChange);
   }, []);
 
   return { isDesktop, isMobile: !isDesktop };

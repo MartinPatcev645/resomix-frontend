@@ -30,3 +30,21 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
 beforeAll(() => server.listen())
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
+
+/* jsdom implements no matchMedia. `useResponsive` asks it for the `lg` breakpoint (it must use the
+   same signal as Tailwind's `lg:`, because window.innerWidth diverges from the CSS viewport under
+   browser zoom), so without this every component that branches on viewport throws on mount.
+   `matches: false` = the mobile branch, matching this suite's default jsdom width. */
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }),
+})

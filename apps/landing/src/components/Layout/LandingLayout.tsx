@@ -105,7 +105,8 @@ export function LandingLayout() {
 
     // Scroll on navigation: top for plain routes, the anchor target when a hash is present.
     // Pages are lazy-loaded — poll briefly (bounded) until the target exists, then scroll once.
-    // SideLines mounts desktop + mobile trees; prefer a visible id match so mobile isn't a no-op.
+    // Kept tolerant of multiple matches: SideLines renders the page once now, but the nav still
+    // emits a few repeated ids, so prefer whichever match is actually visible.
     React.useEffect(() => {
         const id = location.hash ? decodeURIComponent(location.hash.slice(1)) : '';
         if (!id) {
