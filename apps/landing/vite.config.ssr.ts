@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 import { ROUTE_SEO } from './src/routes/seoConfig.ts'
+import { PAGE_MODULES } from './src/routes/pageModules.ts'
 import { prerenderBodies } from '../../tooling/prerenderBodies.ts'
 
 /**
@@ -28,6 +29,9 @@ export default defineConfig({
       routes: Object.keys(ROUTE_SEO).filter((route) => route !== '/404'),
       clientDir: path.resolve(__dirname, 'dist'),
       serverEntry: path.resolve(__dirname, 'dist-ssr/entry-server.js'),
+      /* Each page owns a stylesheet that Vite would otherwise inject only when its JS loads —
+         which, now that the markup ships in the HTML, means painting the page unstyled first. */
+      routeModules: PAGE_MODULES,
       /* The catch-all route renders the 404 page, so ask for a path that matches nothing else. */
       notFound: { url: '/404', file: 'dist/404.html' },
     }),

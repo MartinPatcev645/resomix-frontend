@@ -6,6 +6,40 @@
     <title>Resomix — Hear the Invisible | Sonic Intelligence Platform</title>
     <!-- type corrected: this is a PNG, and it was declared as image/svg+xml. -->
     <link rel="icon" type="image/png" href="/logo.png" />
+
+    <!-- No-flash guard for the beta notice.
+
+         Pages are prerendered, so the notice is IN this document and paints before any JavaScript
+         runs. That is deliberate — it means a first-time visitor gets no layout shift when it
+         appears. But a visitor who already dismissed it would sit and watch it until React
+         hydrated and removed it, which is a flash and a shift in the other direction.
+
+         The dismissal lives in localStorage, which the build cannot see. Reading it here — inline,
+         synchronous, before first paint — closes that gap: the notice is hidden immediately, and
+         React unmounts it for real a moment later. Same pattern as a dark-mode no-flash script.
+         Keep the key in sync with OptionalAuthRoute. -->
+    <script>
+      try {
+        if (localStorage.getItem("demo_stage_notice_dismissed") === "true")
+          document.documentElement.setAttribute("data-demo-dismissed", "");
+      } catch (e) {
+        /* storage blocked — showing the notice is the safe default */
+      }
+    </script>
+    <style>
+      [data-demo-dismissed] [data-demo-banner] { display: none; }
+    </style>
+
+    <!-- Consent-manager stylesheet, linked here rather than injected.
+
+         `useSilktide` appends this <link> from an effect, so it landed a second or so after the
+         page had already painted and restyled whatever it touches — a visible flicker, and one
+         that only became obvious once the content stopped waiting on JavaScript.
+
+         2 KB gzipped, so paying for it up front is cheaper than the repaint. The id matches the one
+         the hook checks for, so it sees this and skips the injection. -->
+    <link id="resomix-consent-style" rel="stylesheet" href="/scripts/resomix-consent.css" />
+
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag() {

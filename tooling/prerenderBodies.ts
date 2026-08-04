@@ -29,6 +29,41 @@ interface PrerenderBodiesOptions {
   serverEntry: string
   /** The catch-all page. Its URL matches no route, so it renders whatever `*` renders. */
   notFound?: { url: string; file: string }
+  /**
+   * Route → page module path, as the client manifest keys it. Used to link each route's own
+   * stylesheet in its <head>.
+   *
+   * Without this the prerender actively makes things WORSE than no prerender: the markup paints
+   * immediately from the HTML, but the page's CSS chunk is still injected by JavaScript, so the
+   * visitor sees an unstyled page that restyles itself when the JS lands.
+   */
+  routeModules?: Record<string, string>
+}
+
+interface ManifestChunk {
+  css?: string[]
+  imports?: string[]
+}
+
+/**
+ * Every stylesheet a route needs, following static imports so a shared section's CSS is included
+ * too. Order is preserved and duplicates dropped — CSS cascade is order-sensitive.
+ */
+function cssFor(manifest: Record<string, ManifestChunk>, entry: string): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+
+  const walk = (key: string) => {
+    if (seen.has(key)) return
+    seen.add(key)
+    const chunk = manifest[key]
+    if (!chunk) return
+    for (const dep of chunk.imports ?? []) walk(dep)
+    for (const href of chunk.css ?? []) if (!out.includes(href)) out.push(href)
+  }
+
+  walk(entry)
+  return out
 }
 
 /** `dist/index.html` for `/`, `dist/about/index.html` for `/about`. Mirrors prerenderHead. */
@@ -43,7 +78,7 @@ const ROOT_RE = /(<div id="root">)(<\/div>)/
 export function prerenderBodies(
   options: PrerenderBodiesOptions,
 ): { name: string; apply: 'build'; closeBundle(): Promise<void> } {
-  const { routes, clientDir, serverEntry, notFound } = options
+  const { routes, clientDir, serverEntry, notFound, routeModules = {} } = options
 
   return {
     name: 'prerender-bodies',
@@ -57,6 +92,16 @@ export function prerenderBodies(
         renderRoute: (url: string) => Promise<string>
       }
 
+      const manifestPath = path.resolve(clientDir, '.vite/manifest.json')
+      const manifest: Record<string, ManifestChunk> = existsSync(manifestPath)
+        ? JSON.parse(readFileSync(manifestPath, 'utf8'))
+        : {}
+      if (Object.keys(routeModules).length && !Object.keys(manifest).length) {
+        throw new Error(
+          `prerender-bodies: no manifest at ${manifestPath} — set build.manifest in the client config`,
+        )
+      }
+
       const targets = [
         ...routes.map((route) => ({ url: route, file: htmlPathFor(clientDir, route) })),
         ...(notFound ? [{ url: notFound.url, file: path.resolve(clientDir, '..', notFound.file) }] : []),
@@ -65,6 +110,9 @@ export function prerenderBodies(
       let written = 0
       let bytes = 0
       const skipped: string[] = []
+      /** Routes whose page module owns no CSS at all — legitimate, but worth seeing. */
+      const cssless: string[] = []
+      const linkedAny = new Set<string>()
 
       for (const { url, file } of targets) {
         if (!existsSync(file)) {
@@ -86,10 +134,25 @@ export function prerenderBodies(
           continue
         }
 
-        const html = readFileSync(file, 'utf8')
+        let html = readFileSync(file, 'utf8')
         if (!ROOT_RE.test(html)) {
           skipped.push(`${url} (no empty #root to fill)`)
           continue
+        }
+
+        /*
+         * Link this route's own stylesheet, after the global ones so the cascade matches what the
+         * runtime injection used to produce. Anything already in the head is skipped — the entry's
+         * CSS is linked by Vite itself.
+         */
+        const moduleKey = routeModules[url]
+        if (moduleKey) {
+          const links = cssFor(manifest, moduleKey)
+            .filter((href) => !html.includes(`/${href}"`))
+            .map((href) => `    <link rel="stylesheet" href="/${href}">`)
+          if (links.length) html = html.replace('</head>', `${links.join('\n')}\n  </head>`)
+          else if (!linkedAny.has(moduleKey)) cssless.push(url)
+          linkedAny.add(moduleKey)
         }
 
         // Function replacer: rendered markup contains `$` sequences that a string replacement
@@ -103,6 +166,10 @@ export function prerenderBodies(
       console.log(
         `  prerendered body   ${written}/${targets.length} routes, ${(bytes / 1024).toFixed(0)} KiB markup`,
       )
+      if (cssless.length) {
+        // eslint-disable-next-line no-console
+        console.log(`  (no page CSS chunk: ${cssless.join(', ')})`)
+      }
       if (skipped.length) {
         // Loud on purpose: a silently head-only route looks identical to a working one in `dist`.
         // eslint-disable-next-line no-console

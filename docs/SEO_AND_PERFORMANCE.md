@@ -349,6 +349,92 @@ CI's gate locally — `pnpm install --frozen-lockfile` now exits 0.
 **Lesson recorded:** a passing local build is not evidence that CI will pass. Editing a `package.json`
 dependency requires regenerating the lockfile and verifying with a frozen install.
 
+## 1.18 Body prerendering — the page itself is now in the HTML
+
+**The gap this closed.** §1.4 baked each route's `<head>` into its own file, which fixed link
+previews. The BODY of those files was still `<div id="root"></div>`. So `view-source` on any URL —
+including the homepage — showed a document with **no H1, no copy and no internal links**. The page
+only existed after JavaScript had run. Googlebot renders JS so search was unaffected, but LLM
+crawlers, AI answer engines and anyone reading the raw response saw an empty shell.
+
+**What ships now:** `apps/landing/src/entry-server.tsx` renders the real React tree at build time and
+`tooling/prerenderBodies.ts` writes the markup into each route's `#root`. The browser then
+**hydrates** that markup instead of rebuilding it.
+
+- **22/22 content routes**, ~4.4 MB of markup total
+- Redirects and beta hand-offs stay head-only on purpose — no content of their own, and `noindex`
+- Runs as a second Vite pass (`vite.config.ssr.ts`) after the client build; `dist-ssr/` is a build
+  artefact and is never deployed
+- A route that fails to render is left head-only rather than shipped broken, and the build logs it
+
+**The hydration contract — the fragile half.** React requires the browser's first render to
+reproduce the prerendered markup exactly; if it does not, React throws the markup away and
+re-renders, which is *worse* than shipping none. Anything the build cannot know therefore renders in
+a fixed state first and corrects itself in a **layout effect**, so the correction lands before paint
+and nothing visible flashes:
+
+| Unknown at build time | First render | Corrected by |
+|---|---|---|
+| Is the visitor signed in? | signed out | `useHydrated()` |
+| Is this a phone? | desktop | `useResponsive({ ssrSafe: true })` |
+
+**Decision — the landing auth gate had to go.** `App.tsx` returned a full-screen loader until
+`useAuthInit` finished, so the marketing copy could not paint until a refresh round-trip to
+`bserver.resomix.com` completed — a network call standing in front of an entirely static page. It
+also made the pages unprerenderable: a build-time render captured the loader, not the content. Auth
+still initialises, it just no longer blocks. Landing owns no protected routes (beta does), so the
+only auth-dependent pixels are the header account control and the verification banner, and both
+settle on their own. **The webapp keeps its gate** — it does guard routes.
+
+**Decision — the beta banner now ships in the HTML.** It used to start hidden and be switched on by
+an effect, so it appeared after paint and pushed everything below it down — a layout shift on every
+load. It now renders shown, and the rare dismissed visitor has it removed before paint.
+
+**Cost, measured:** the homepage document goes from ~5 KiB to **39 KiB gzipped** (197 KiB raw). That
+is the trade: ~34 KiB more HTML in exchange for the hero painting without waiting on ~100 KiB of
+JavaScript to download, parse and execute. It is aimed squarely at the 5.4 s mobile LCP.
+
+> Not yet measured on PageSpeed. The expectation is a large mobile LCP improvement; that needs a
+> deploy and a fresh run to confirm.
+
+## 1.19 Fixing what §1.18 broke
+
+Prerendering shipped a visible regression, reported from a hard refresh of production: the hero
+painted **unstyled**, then snapped into place; the beta notice appeared and vanished; and a third
+flicker followed a second later.
+
+**Cause 1 — the page's CSS was left behind.** Every page is code-split, so Vite gives each one its
+own stylesheet (`HomePage-*.css` is 29.8 KB, `SonicDiscoveryPage-*.css` 37.9 KB) and injects it when
+that route's JS loads. That was invisible while the markup arrived with the JS too. Moving the markup
+into the HTML broke the pairing: the browser painted content styled only by the two global sheets.
+
+> This is the trap in any prerender: **content without its stylesheet is worse than no prerender.**
+> It paints wrong, then repaints — an unstyled flash *and* a large layout shift.
+
+**Fix:** `build.manifest: true`, a route→module map (`routes/pageModules.ts`), and a manifest walk in
+`prerenderBodies.ts` that links each route's stylesheet after the global ones, preserving cascade
+order. `/subscribe`, `/contact`, `/waitlist` and `/error` own no CSS chunk — reported by the build so
+"no stylesheet" stays a decision, not a silent gap.
+
+**Cause 2 — the beta notice.** §1.18 made it render by default so it would be in the HTML (no shift
+for a first-time visitor). But dismissal lives in localStorage, which the build cannot see, so a
+visitor who had dismissed it watched it sit there until hydration removed it.
+
+**Fix:** an inline `<head>` script reads the flag and sets `data-demo-dismissed` on `<html>`; a style
+rule hides `[data-demo-banner]` before first paint. React then unmounts it for real. Same pattern as
+a dark-mode no-flash script — it keeps both properties instead of trading one for the other.
+
+**Cause 3 — the consent stylesheet was injected from an effect.** `useSilktide` appended
+`/scripts/resomix-consent.css` after mount, restyling the page ~1 s in. 2 KB gzipped, so it is now
+linked in the shell; the hook's existing id check makes it skip the injection.
+
+**The wider point:** causes 2 and 3 were **not new**. They were happening before, hidden behind the
+full-screen boot loader. Removing the loader did not create that settling sequence — it revealed it.
+
+**Cost:** the homepage document is 40.5 KiB gzipped (200 KiB raw), and the page stylesheet is now
+render-blocking. Both are the price of painting correctly the first time. If LCP suffers, the answer
+is critical-CSS inlining (§5.3), not going back.
+
 ---
 
 # Part 2 — The three PageSpeed runs

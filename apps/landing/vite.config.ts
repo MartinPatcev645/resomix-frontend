@@ -105,6 +105,12 @@ export default defineConfig({
        JavaScript". Maps are separate .map files, fetched only when DevTools is open, so
        they cost users nothing and make production stack traces readable. */
     sourcemap: true,
+    /* Emits dist/.vite/manifest.json, which maps each page module to the CSS chunk it owns.
+       The prerender pass needs it: pages are code-split, so each one has its own stylesheet that
+       Vite normally injects only when the route's JS loads. Now that the page's MARKUP ships in the
+       HTML, its CSS has to ship with it — otherwise the browser paints the content unstyled and
+       restyles it once JS arrives. See tooling/prerenderBodies.ts. */
+    manifest: true,
     rollupOptions: {
       output: {
         manualChunks(id) {

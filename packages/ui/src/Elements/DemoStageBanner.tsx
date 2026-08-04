@@ -12,7 +12,12 @@ export const DemoStageBanner: React.FC<DemoStageBannerProps> = ({ onDismiss, con
     // they still paint at 30 — i.e. over this banner — washing the text out to grey, or hiding it
     // completely on the darker pages. Anything that must cover the banner (drawer 70, modals 120+)
     // is still comfortably above.
-    <div className="w-full bg-[var(--color-secondary)] border-l-4 border-[var(--color-primary)] p-[var(--px-12)] mb-[var(--px-20)] flex items-start justify-between gap-[var(--px-10)] relative z-40">
+    /* data-demo-banner is the hook for the no-flash rule in landing's index.html: that app
+       prerenders its pages, so this banner ships inside the HTML and paints before React runs.
+       A visitor who already dismissed it would otherwise watch it sit there until hydration
+       removed it. The inline head script hides it from the same localStorage flag, before the
+       first paint; React then unmounts it for real. */
+    <div data-demo-banner className="w-full bg-[var(--color-secondary)] border-l-4 border-[var(--color-primary)] p-[var(--px-12)] mb-[var(--px-20)] flex items-start justify-between gap-[var(--px-10)] relative z-40">
       <div className="flex items-start gap-[var(--px-10)] flex-1">
         <span className="text-[var(--color-primary)] text-[length:var(--px-18)] flex-shrink-0 mt-[var(--px-2)]">
           ⚠
