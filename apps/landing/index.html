@@ -118,6 +118,17 @@
       }
     </script>
 
+    <!-- Preload only the faces that gate first paint, as the Latin subset:
+           Benzin 700  — the hero <h1>, which Lighthouse reported as the desktop LCP element
+           Helvetica 300 — body copy (the page root is `font-helvetica font-light`)
+           Fira Code 500 — nav/eyebrow type, and the largest single CLS culprit (0.059)
+         These were previously discovered only after index.css parsed, which is why a font sat at
+         the END of the critical path. Preloading breaks that chain. Deliberately three, not all:
+         preloading everything just front-loads the same bytes and helps nothing. -->
+    <link rel="preload" href="/fonts/benzin-bold.latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/HelveticaNeueLight.latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/FiraCode-Medium.latin.woff2" as="font" type="font/woff2" crossorigin>
+
     <!-- Humans.txt -->
     <link type="text/plain" rel="author" href="/humans.txt" />
   </head>

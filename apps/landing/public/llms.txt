@@ -1,0 +1,42 @@
+# Resomix
+
+> Resomix finds music by how it sounds, not how it is tagged. The PYXIS-1 engine builds a sonic
+> profile for each recording so a catalogue can be searched by reference rather than by metadata.
+
+Resomix is a sonic intelligence platform for the electronic music industry. Upload or pick a
+reference track and it returns ranked matches that genuinely belong next to it; analyse a single
+recording; or make an authorised catalogue searchable by sound.
+
+## Product
+
+- [Product overview](https://resomix.com/product): Search, similarity and track analysis in one place.
+- [Sonic Discovery](https://resomix.com/product/sonic-discovery): Reference-based discovery — one track in, ranked matches out.
+- [Track Intelligence](https://resomix.com/product/track-intelligence): Tempo, key, energy and sonic character read from the audio.
+- [Catalogue Intelligence](https://resomix.com/product/catalog-intelligence): Authorised catalogues profiled into a partner-scoped sonic index.
+
+## Solutions
+
+- [Record labels](https://resomix.com/solutions/record-labels)
+- [Music publishers](https://resomix.com/solutions/music-publishers)
+- [Sync agencies](https://resomix.com/solutions/sync-agencies)
+- [Music libraries and sample providers](https://resomix.com/solutions/music-libraries-sample-providers)
+- [DJs](https://resomix.com/solutions/djs)
+- [Music curators](https://resomix.com/solutions/music-curators)
+- [Producers](https://resomix.com/solutions/producers)
+
+## Developers and partners
+
+- [Developers](https://resomix.com/developers): One API for search, similarity and track analysis.
+- [Partners](https://resomix.com/partners): Three ways to work with Resomix.
+- [Guided catalogue pilot](https://resomix.com/partners/pilot): Evaluate on your own authorised audio.
+
+## About
+
+- [About Resomix](https://resomix.com/about)
+- [Trust, rights and security](https://resomix.com/trust): How audio and data are handled.
+- [Pricing](https://resomix.com/subscribe)
+- [Contact](https://resomix.com/contact)
+
+## Optional
+
+- [The app](https://beta.resomix.com/): The signed-in workspace.

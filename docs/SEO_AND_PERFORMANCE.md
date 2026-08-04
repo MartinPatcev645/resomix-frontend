@@ -444,23 +444,85 @@ exposed to the stale-chunk failure.
 
 ---
 
+## 2.8 Font delivery — rebuilt (fixes root cause #1)
+
+`tooling/buildFonts.py` regenerates every face as **two subset `.woff2` files with a
+`unicode-range`**, so a page downloads only the coverage it uses:
+
+| | latin | ext |
+|---|---|---|
+| Covers | Latin + punctuation, super/subscripts, currency, letterlike, number forms, arrows, maths, misc-technical, box-drawing, geometric shapes, misc symbols, dingbats | Greek + Cyrillic |
+| Fetched | always | only when such text is present |
+
+**Homepage critical faces: 994 KiB → 333 KiB (67% smaller).**
+**Deployed font directory: 12 MB → 1.7 MB per app.**
+
+| Face | Was (wire) | Now (latin) |
+|---|---|---|
+| HelveticaNeueRoman | 247.8 KiB | 72.8 KiB |
+| HelveticaNeueBold | 240.7 KiB | ~69 KiB |
+| HelveticaNeueLight | 118.6 KiB | ~48 KiB |
+| FiraCode ×4 | 335.3 KiB | ~127 KiB |
+| benzin-bold | 51.6 KiB | 22.6 KiB |
+
+Decisions and the reasoning behind them:
+
+- **woff2 alone was only 21%** on the wire (994 → 781 KiB) because Cloudflare already gzips `.otf`.
+  The real lever was glyph coverage: each Helvetica Neue face carried ~2,200 codepoints including
+  **Georgian and Cherokee**. Subsetting is what produced the win.
+- **Greek and Cyrillic kept**, split into `.ext` — the team is in Thessaloniki and the catalogue
+  carries international artist names. They cost nothing on an English page.
+- **Subset range verified against real content** before committing: every non-ASCII character in the
+  locale file and all TSX was checked. That caught `⌘`, `─` and `═`, which an ordinary Latin subset
+  would have dropped. (`💪` is dropped, but it was never in the font — no regression.)
+- **Montserrat deleted** — 18 faces, 4.6 MB, referenced by nothing.
+- **Auger Mono kept** despite appearing unused: `.font-auger` is used by
+  `packages/ui/src/Elements/SearchDropdown.tsx`. Nearly deleted it.
+- **Sources moved to `/fonts-src`** (not deployed). Only generated `.woff2` ships.
+- **Preloads: 3, not 11.** The webapp preloaded eleven `.otf`/`.ttf` files — all of which this change
+  made dangling, and preloading everything only front-loads the same bytes. Now Benzin 700 (the
+  hero `<h1>`, the desktop LCP element), Helvetica 300 (body) and Fira Code 500 (nav, the largest
+  single CLS culprit at 0.059), each as the latin subset. This also breaks the
+  `CSS → font` discovery chain that put a font at the end of the critical path.
+- `font-display: swap` retained on every face.
+
+Guarded by `fontDelivery.spec.ts` (28 tests): no dangling `url()`, no unreferenced files, woff2
+only, every face split, preloads resolve and are declared, Montserrat stays gone, Auger stays.
+
+## 2.9 Edge routing — real 404s (fixes the soft-404)
+
+Cloudflare Pages served `index.html` with a **200** for every unmatched path. `dist/404.html` is now
+emitted, which switches Pages to a genuine 404.
+
+That cuts both ways: **any path without a file is now a 404**, so every live route must have one.
+Handled by:
+
+- All 22 SEO routes → prerendered already.
+- `extraRoutes` in the prerender plugin → shells for `/pricing`,
+  `/product/catalogue-intelligence`, `/profile`, `/sessions`, `/change-password` (two redirects,
+  three beta hand-offs). `noindex`, but titled with the site default — calling them "Page not found"
+  would tell a scraper something untrue.
+- `/auth/*` is a wildcard (emailed verify/reset links) so it cannot be a static file →
+  `public/_redirects` rewrites it to the shell with a **200**. Scoped to `/auth/` only, so it cannot
+  shadow a prerendered page.
+
+**26 route shells + 404.html** on landing; **18 + 404.html** on the webapp.
+
+A real `public/llms.txt` was also added — Markdown, `# Resomix` H1, and links to every live route,
+which is what the Agentic Browsing audit asked for. It previously resolved to the SPA shell.
+
+Guarded by `edgeRouting.spec.ts` (11 tests), which reads the route table from `App.tsx` so it fails
+if a new route ships without a shell — the failure mode that would otherwise 404 real pages in
+production.
+
 # Part 3 — Open items
 
 Ordered roughly by payoff. **None of these have been done.**
 
-## 3.1 Fonts — the single biggest lever
+## 3.1 Fonts — DONE, see 2.8
 
-1. **Convert to `woff2`.** Typically 70–80 % smaller than `.otf`/`.ttf` for identical glyphs.
-   ~994 KiB → roughly 200–250 KiB.
-2. **Subset** to the Latin range actually used.
-3. **Preload** the 1–2 faces the LCP element needs (Benzin for the `<h1>`, one Helvetica weight),
-   breaking the `CSS → font` chain discovery delay.
-4. **Delete unused families.** Montserrat (19 faces) and Auger Mono (6) are declared in `fonts.css`;
-   confirm whether landing renders them. Unused `@font-face` blocks are not downloaded, but they
-   bloat the critical CSS and the 13 MB deploy.
-
-Expect this to move mobile FCP/LCP/SI substantially **and** eliminate the desktop CLS of 0.087,
-since every layout-shift culprit is a web font.
+Re-run PageSpeed after deploying to confirm the expected movement in mobile FCP/LCP/SI and the
+elimination of the desktop CLS (0.087), since every layout-shift culprit was a web font.
 
 ## 3.2 Third-party loading strategy
 
@@ -487,8 +549,7 @@ since every layout-shift culprit is a web font.
 - Silence the anonymous-visitor **401** from `authRefresh` and the `ERR_NAME_NOT_RESOLVED` config
   fetch, both of which log console errors.
 - Replace the `stroke-dashoffset` animation on `path.hm-dashflow` with a compositable property.
-- Add a real `/llms.txt` (Markdown, H1 + links), and consider a proper 404 so unknown file paths stop
-  returning `200` HTML.
+- ~~Add a real `/llms.txt`, and a proper 404~~ — DONE, see 2.9.
 
 ## 3.5 Still outstanding from the SEO work
 

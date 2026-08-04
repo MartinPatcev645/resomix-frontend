@@ -1,0 +1,11 @@
+# Cloudflare Pages routing.
+#
+# Every real route is emitted as its own dist/<route>/index.html at build time, and dist/404.html
+# makes Pages return a genuine 404 for anything else (it previously served index.html with a 200 —
+# a soft 404 that Lighthouse caught via the llms.txt audit).
+#
+# /auth/* is the one route that cannot be a static file: it is a wildcard that forwards emailed
+# verify/reset links to the beta app, so the path is not known ahead of time. This rewrite (200,
+# not a redirect) hands those to the SPA shell. It is scoped to /auth/ only, so it cannot shadow
+# any prerendered page.
+/auth/*  /index.html  200

@@ -17,6 +17,17 @@ export default defineConfig({
       routes: ROUTE_SEO,
       origin: SITE_ORIGIN,
       outDir: path.resolve(__dirname, 'dist'),
+      /* Live routes with no SEO entry: two redirects and three hand-offs to the beta app. They
+         need a shell because emitting 404.html turns off Cloudflare's SPA fallback — after that,
+         a path with no file is a real 404. /auth/* is a wildcard and cannot be enumerated, so it
+         is handled by public/_redirects instead. */
+      extraRoutes: [
+        '/pricing',
+        '/product/catalogue-intelligence',
+        '/profile',
+        '/sessions',
+        '/change-password',
+      ],
     }),
     {
       /* Sitemap is GENERATED, never hand-edited.
