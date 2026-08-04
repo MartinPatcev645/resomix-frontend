@@ -8,4 +8,18 @@
 # verify/reset links to the beta app, so the path is not known ahead of time. This rewrite (200,
 # not a redirect) hands those to the SPA shell. It is scoped to /auth/ only, so it cannot shadow
 # any prerendered page.
+# Permanent redirects, at the edge.
+#
+# Both were client-side <Navigate replace> only: the server answered 200 with the SPA shell and the
+# browser rewrote the URL after React booted. A crawler sees two URLs serving the same page and no
+# redirect signal, so link equity is not consolidated. SEO_METADATA_ALL_PAGES.md calls for an
+# "Edge-301" on the catalogue spelling specifically.
+#
+# The React routes stay in place as a fallback for anyone already inside the SPA.
+/pricing                          /subscribe                       301
+/product/catalogue-intelligence   /product/catalog-intelligence    301
+
+# /auth/* is a wildcard forwarding emailed verify/reset links to the beta app, so it cannot be a
+# static file. A 200 rewrite hands it to the SPA shell. Scoped to /auth/ so it cannot shadow a
+# prerendered page.
 /auth/*  /index.html  200

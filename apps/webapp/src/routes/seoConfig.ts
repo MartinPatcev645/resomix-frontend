@@ -62,16 +62,16 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
 
   /* ---------- shared with the marketing site: canonical points there ---------- */
   '/subscribe': {
-    title: 'Pricing — Plans for Creators and Partners | Resomix',
+    title: 'Subscribe to Resomix — Unlock Deeper Sonic Discovery',
     description:
-      'Monthly plans for individual creators, and partner tiers that scale by catalogue size and API volume.',
+      'Upgrade your Resomix plan for expanded discovery and analysis, and manage billing securely. Start in the free production beta and grow when you are ready.',
     canonical: `${LANDING_ORIGIN}/subscribe`,
     priority: 0.6,
   },
   '/contact': {
-    title: 'Contact Resomix — Support, Business and Partnerships',
+    title: 'Contact Resomix — Support, Partnerships and Press Enquiries',
     description:
-      'Reach the Resomix team for product support, business enquiries, or partnership and API access.',
+      'Reach the Resomix team in Thessaloniki for product support, partner and catalogue enquiries, or press. We reply from support@resomix.com within the beta.',
     canonical: `${LANDING_ORIGIN}/contact`,
     priority: 0.5,
   },

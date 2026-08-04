@@ -28,129 +28,129 @@ export interface RouteSeo {
 
 export const ROUTE_SEO: Record<string, RouteSeo> = {
   '/': {
-    title: 'Resomix — Hear the Invisible | Sonic Intelligence Platform',
+    title: 'Resomix — Find & Analyse Electronic Music by Sound',
     description:
-      'Resomix finds music by how it sounds, not how it is tagged. Drop one track and discover what belongs next to it.',
+      'Drop one track and hear what belongs next. The PYXIS-1 engine powers sonic similarity search, track analysis and catalogue intelligence for electronic music.',
     changefreq: 'weekly',
     priority: 1.0,
   },
   '/about': {
-    title: 'About — The Listening Observatory | Resomix',
+    title: 'About Resomix — The Team Behind PYXIS-1 Audio Analysis',
     description:
-      'Resomix helps people discover sonically related tracks, understand one recording in greater detail and make authorised catalogues searchable through sound.',
+      'Built in Thessaloniki by DJs and signal-processing engineers, Resomix powers Sonic Discovery, Track Intelligence and Catalogue Intelligence from the audio.',
     changefreq: 'monthly',
     priority: 0.6,
   },
 
   /* ---------- product ---------- */
   '/product': {
-    title: 'Product — Sonic Routing Desk | Resomix',
+    title: 'Music Similarity & Audio Analysis Platform | Resomix',
     description:
-      'Resomix uses PYXIS-1 to help you find sonically related tracks, understand one recording in greater detail, or make an authorised catalogue searchable by sound.',
+      'Resomix uses PYXIS-1 to find sonically related tracks, analyse one recording in detail and make authorised catalogues searchable — one engine, three workflows.',
     priority: 0.9,
   },
   '/product/sonic-discovery': {
-    title: 'Sonic Discovery — Find Tracks by Sound, Not Tags | Resomix',
+    title: 'Find Similar Tracks by Sound — Sonic Discovery | Resomix',
     description:
-      'Drop one track and get ranked matches that genuinely belong next to it — reference-based discovery instead of genre keywords.',
+      'Start with one track or upload a reference. PYXIS-1 compares sonic profiles against a pre-analysed index and returns a ranked playlist of close matches.',
     priority: 0.9,
   },
   '/product/track-intelligence': {
-    title: 'Track Intelligence — See What a Track Is Made Of | Resomix',
+    title: 'Track Analysis: Structure, Key, BPM & Energy | Resomix',
     description:
-      'Tempo, key, energy and sonic character extracted straight from the audio, so you can judge a recording without listening to all of it.',
+      'Track Intelligence turns PYXIS-1 audio analysis into a readable view of one recording: structure, tempo, key, energy, timbre, spectral character, confidence.',
     priority: 0.9,
   },
   '/product/catalog-intelligence': {
-    title: 'Catalogue Intelligence — Discoverable by Sound | Resomix',
+    title: 'Make Your Music Catalog Searchable by Sound | Resomix',
     description:
-      'Resomix processes authorised catalogue recordings with PYXIS-1, creates a sonic profile for each track and makes the catalogue searchable by reference.',
+      'Resomix processes authorised catalogue recordings into a private, partner-scoped sonic index. One reference query returns ranked matches from your catalogue.',
     priority: 0.9,
   },
 
   /* ---------- developers & partners ---------- */
   '/developers': {
-    title: 'Resomix API — Audio Similarity & Sonic Analysis',
+    title: 'Music Similarity & Audio Analysis API | Resomix Developers',
     description:
-      'One API for search, similarity and track analysis. Integrate Resomix sonic discovery into your own platform.',
+      'Integrate partner-scoped similarity and track-analysis services behind your own product. REST access through a guided pilot — no public sandbox to misuse.',
     priority: 0.8,
   },
   '/partners': {
-    title: 'Partners — Three Ways to Work with Resomix',
+    title: 'Partner With Resomix — Catalogue Discovery by Sound',
     description:
-      'A private catalogue pilot, the partner API, or a custom integration. Pick the route that fits your catalogue.',
+      'Labels, distributors, publishers and platforms make authorised catalogues searchable by sound. Keep your brand, storefront, licensing and customer control.',
     priority: 0.8,
   },
   '/partners/pilot': {
-    title: 'Catalogue Pilot — Test Resomix on Your Catalogue | Resomix',
+    title: 'Request a Guided Catalogue Pilot — Resomix for Partners',
     description:
-      'A guided evaluation on your own authorised audio, indexed in a partner-scoped namespace, with results you can measure.',
+      'Test PYXIS-1 on your own catalogue. Define the scope, references and evaluation criteria, then review ranked results before deciding whether to integrate.',
     priority: 0.8,
   },
   '/trust': {
-    title: 'Trust, Rights & Security — Audio and Data at Resomix',
+    title: 'Trust and Control at Resomix — How We Handle Audio',
     description:
-      'What happens to your audio and your data: rights, retention, security boundaries, and what we never do with your catalogue.',
+      'User uploads are deleted within 24 hours. Partner catalogues stay inside private, partner-scoped indexes. No training on your content. No generated audio.',
     changefreq: 'monthly',
     priority: 0.7,
   },
 
   /* ---------- solutions ---------- */
   '/solutions/record-labels': {
-    title: 'Record Labels — Maximise Your Catalogue with Resomix',
+    title: 'Catalogue Search by Sound for Record Labels | Resomix',
     description:
-      'Surface back catalogue by sound and put every recording back in play, instead of leaving it buried behind sparse metadata.',
+      'Make authorised label and distributor catalogues searchable by sound. Surface older, relevant recordings beside new releases through ranked sonic matches.',
     priority: 0.8,
   },
   '/solutions/music-publishers': {
-    title: 'Music Publishers — Catalogue as a Living Asset | Resomix',
+    title: 'Sonic Catalogue Search for Music Publishers | Resomix',
     description:
-      'Make every recording findable by how it sounds, so a publishing catalogue keeps earning instead of sitting idle.',
+      'Turn your catalogue into a living asset. Resomix analyses authorised recordings so publishers can rediscover works and explore representation by sound.',
     priority: 0.8,
   },
   '/solutions/sync-agencies': {
-    title: 'Sync Agencies — Translating Tags into Emotions | Resomix',
+    title: 'Reference-Based Music Search for Sync Agencies | Resomix',
     description:
-      'Brief-to-track search that matches on feel, so a sync search stops dead-ending on keywords nobody agreed on.',
+      'Use an audio reference to surface sonically relevant candidates for human review. Resomix supports the search — never automated clearance or rights calls.',
     priority: 0.8,
   },
   '/solutions/music-libraries-sample-providers': {
-    title: 'Music Libraries & Sample Providers | Resomix',
+    title: 'Sound-First Search for Music & Sample Libraries | Resomix',
     description:
-      'Turn a library into a discovery engine so customers find the right sound instead of scrolling through tag pages.',
+      'Help authorised libraries and sample catalogues be explored through structure, texture and sonic relationships — ranked results from one audio reference.',
     priority: 0.8,
   },
   '/solutions/djs': {
-    title: 'DJs — Dig Less. Discover More. | Resomix',
+    title: 'Find Your Next Track by Sound — Resomix for DJs & Sets',
     description:
-      'Find tracks that sit next to your reference by sound rather than by genre folders, and spend the time mixing instead of digging.',
+      'Start from one known record and audition ranked, sonically related candidates. Build sets by energy, groove and character — beyond genre tags and charts.',
     priority: 0.8,
   },
   '/solutions/music-curators': {
-    title: 'Music Curators — Hear Music Differently | Resomix',
+    title: 'Playlist Curation by Sound — Resomix for Music Curators',
     description:
-      'Build playlists that flow by sonic character instead of metadata, so a sequence holds together on listening.',
+      'Move beyond charts and static tags. Start from an audio reference and review ranked, sonically related candidates for playlists and editorial programming.',
     priority: 0.8,
   },
   '/solutions/producers': {
-    title: 'Producers — One Reference, New Sonic Directions | Resomix',
+    title: 'Reference & Track Analysis by Sound — Resomix for Producers',
     description:
-      'Find sounds adjacent to what you are already making, starting from a single reference track.',
+      'Inspect arrangement, energy and timbre in your own recording, then explore sonically related references — evidence for decisions that stay creatively yours.',
     priority: 0.8,
   },
 
   /* ---------- conversion & support ---------- */
   '/subscribe': {
-    title: 'Pricing — Plans for Creators and Partners | Resomix',
+    title: 'Subscribe to Resomix — Unlock Deeper Sonic Discovery',
     description:
-      'Monthly plans for individual creators, and partner tiers that scale by catalogue size and API volume.',
+      'Upgrade your Resomix plan for expanded discovery and analysis, and manage billing securely. Start in the free production beta and grow when you are ready.',
     changefreq: 'monthly',
     priority: 0.7,
   },
   '/contact': {
-    title: 'Contact Resomix — Support, Business and Partnerships',
+    title: 'Contact Resomix — Support, Partnerships and Press Enquiries',
     description:
-      'Reach the Resomix team for product support, business enquiries, or partnership and API access.',
+      'Reach the Resomix team in Thessaloniki for product support, partner and catalogue enquiries, or press. We reply from support@resomix.com within the beta.',
     changefreq: 'yearly',
     priority: 0.5,
   },
