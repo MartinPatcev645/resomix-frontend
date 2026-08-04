@@ -83,9 +83,19 @@ describe('beta notice no-flash guard', () => {
     expect(code).toMatch(/\[data-demo-dismissed\]\s*\[data-demo-banner\]\s*\{\s*display:\s*none/);
   });
 
-  it('links the consent stylesheet statically so it cannot restyle the page late', () => {
+  it('declares the consent stylesheet statically so it cannot restyle the page late', () => {
     // useSilktide otherwise appends it from an effect, a second or so after first paint.
     expect(code).toMatch(/<link id="resomix-consent-style" rel="stylesheet"/);
+  });
+
+  it.skipIf(!built)('inlines that stylesheet at build time, costing no round trip', () => {
+    // It is small and always needed, so a render-blocking request for it is pure latency. The id
+    // survives inlining because useSilktide checks for it before injecting its own copy.
+    const home = readFileSync(resolve(DIST, 'index.html'), 'utf8');
+    expect(home).toContain('<style id="resomix-consent-style">');
+    expect(home, 'the link should be gone, not duplicated').not.toContain(
+      '<link id="resomix-consent-style"',
+    );
   });
 
   it('uses the same storage key the app writes', () => {

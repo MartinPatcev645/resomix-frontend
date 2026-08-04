@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
 /**
@@ -137,10 +137,28 @@ function render(shell: string, seo: RouteSeoLike, url: string, origin = '', rout
   return html
 }
 
+/**
+ * Inline a stylesheet that was linked from the shell, removing a render-blocking request.
+ *
+ * Worth it only for small, always-needed CSS. The consent stylesheet qualifies: 3.9 KiB on the
+ * wire but a full round trip on the critical path, and it cannot simply be deferred — `useSilktide`
+ * used to inject it from an effect, which restyled the page a second after it had painted.
+ */
+function inlineStylesheet(html: string, outDir: string, id: string, href: string): string {
+  const file = path.resolve(outDir, href.replace(/^\//, ''))
+  if (!existsSync(file)) return html
+  const css = readFileSync(file, 'utf8')
+  const link = new RegExp(`<link id="${id}"[^>]*>`)
+  if (!link.test(html)) return html
+  return html.replace(link, `<style id="${id}">${css}</style>`)
+}
+
 export function prerenderHead(options: {
   routes: Record<string, RouteSeoLike>
   origin: string
   outDir: string
+  /** Small stylesheets to inline rather than link, killing a render-blocking round trip each. */
+  inlineCss?: Array<{ id: string; href: string }>
   /**
    * Real routes with no SEO entry — redirects and hand-offs to the other app. They still need a
    * shell, because emitting `404.html` (below) switches Cloudflare Pages off SPA-fallback: from
@@ -149,14 +167,16 @@ export function prerenderHead(options: {
    */
   extraRoutes?: string[]
 }): { name: string; apply: 'build'; closeBundle(): void } {
-  const { routes, origin, outDir, extraRoutes = [] } = options
+  const { routes, origin, outDir, extraRoutes = [], inlineCss = [] } = options
 
   return {
     name: 'prerender-head',
     apply: 'build',
     closeBundle() {
       const shellPath = path.resolve(outDir, 'index.html')
-      const shell = readFileSync(shellPath, 'utf8')
+      let shell = readFileSync(shellPath, 'utf8')
+      // Done once, on the shell, so every route inherits it.
+      for (const { id, href } of inlineCss) shell = inlineStylesheet(shell, outDir, id, href)
       let written = 0
 
       for (const [routePath, seo] of Object.entries(routes)) {

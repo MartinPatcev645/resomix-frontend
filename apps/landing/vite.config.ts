@@ -20,6 +20,9 @@ export default defineConfig({
       routes: ROUTE_SEO,
       origin: SITE_ORIGIN,
       outDir: path.resolve(__dirname, 'dist'),
+      /* 3.9 KiB, but a full render-blocking round trip on the critical path. It cannot simply be
+         deferred: injecting it late is what made the page restyle itself a second after paint. */
+      inlineCss: [{ id: 'resomix-consent-style', href: '/scripts/resomix-consent.css' }],
       /* Live routes with no SEO entry: two redirects and three hand-offs to the beta app. They
          need a shell because emitting 404.html turns off Cloudflare's SPA fallback — after that,
          a path with no file is a real 404. /auth/* is a wildcard and cannot be enumerated, so it
