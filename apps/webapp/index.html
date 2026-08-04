@@ -84,14 +84,17 @@
   <!-- Critical app fonts (@font-face families actually used: Helvetica_Neue, Fira Code, Benzin).
        Montserrat / Auger Mono faces exist in fonts.css but are unused in webapp src — not preloaded.
        FiraCode-VariableFont_wght.ttf is in public/fonts/ but has no @font-face — not preloaded. -->
-  <!-- Preconnect to the third-party origins the page contacts during load. Lighthouse reported
-     no preconnected origins at all, and estimated 370 ms (PostHog) + 320 ms (the API) of LCP
-     on mobile from establishing these connections late. Kept to four, as recommended — each
-     one costs a socket. -->
-  <link rel="preconnect" href="https://eu.i.posthog.com" crossorigin>
-  <link rel="preconnect" href="https://bserver.resomix.com" crossorigin>
-  <link rel="preconnect" href="https://www.googletagmanager.com">
-  <link rel="preconnect" href="https://accounts.google.com" crossorigin>
+  <!-- One preconnect, deliberately.
+     Lighthouse warned "More than 4 preconnect connections were found" and reported the API one
+     as "Unused preconnect. Check that the crossorigin attribute is used properly" — a bare
+     `crossorigin` means anonymous, but the API client sends `withCredentials: true`, so the
+     connection never matched and was never reused. `use-credentials` fixes that.
+
+     The other three (PostHog, GTM, Google accounts) were dropped: all three are now deferred to
+     an idle callback, so warming a socket during load buys nothing and only crowds out the one
+     connection that IS on the critical path. Lighthouse still estimates 310 ms (mobile) /
+     100 ms (desktop) from this one. -->
+  <link rel="preconnect" href="https://bserver.resomix.com" crossorigin="use-credentials">
 
   <!-- Preload only the faces that gate first paint, as the Latin subset:
        Benzin 700  — the hero <h1>, which Lighthouse reported as the desktop LCP element

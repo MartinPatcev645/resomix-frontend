@@ -65,6 +65,25 @@ describe.each(['landing', 'webapp'])('%s third-party staging', (name) => {
   });
 });
 
+describe('preconnect hygiene', () => {
+  it.each(['landing', 'webapp'])('%s preconnects to at most one origin', (name) => {
+    /*
+     * Lighthouse warned "More than 4 preconnect connections were found" on the first run with four.
+     * Every third party is now deferred to an idle callback, so warming their sockets during load
+     * buys nothing — only the API is on the critical path.
+     */
+    const links = [...html(name).matchAll(/<link rel="preconnect"[^>]*>/g)];
+    expect(links.length).toBeLessThanOrEqual(1);
+  });
+
+  it.each(['landing', 'webapp'])('%s matches the API credentials mode', (name) => {
+    // The API client sends withCredentials: true. A bare `crossorigin` is anonymous and does not
+    // match, which is why Lighthouse reported the connection as "Unused preconnect".
+    const tag = html(name).match(/<link rel="preconnect" href="https:\/\/bserver[^>]*>/)![0];
+    expect(tag).toContain('crossorigin="use-credentials"');
+  });
+});
+
 describe('One Tap gating', () => {
   it('landing defers it unconditionally', () => {
     // Landing has no auth screens of its own — /auth/* forwards to beta.
