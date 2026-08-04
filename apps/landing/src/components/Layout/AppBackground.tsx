@@ -1,8 +1,8 @@
 import { VoidField } from "@resomix/ui";
 import voidPlateDark from "@/assets/void-field/void-field-dark.webp";
 import voidPlateLight from "@/assets/void-field/void-field-light.webp";
-import voidGrainDark from "@/assets/void-field/void-grain-dark.png";
-import voidGrainLight from "@/assets/void-field/void-grain-light.png";
+import voidGrainDark from "@/assets/void-field/void-grain-dark.webp";
+import voidGrainLight from "@/assets/void-field/void-grain-light.webp";
 
 /**
  * AppBackground — THE background for this app, in one place.

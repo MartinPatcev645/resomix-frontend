@@ -51,7 +51,7 @@ describe('TrustPage routing', () => {
     expect(
       screen.getAllByRole('heading', {
         level: 1,
-        name: softHyphenName(/your audio\. your rights\. clear boundaries\./i),
+        name: softHyphenName(/the audio can be analysed without blurring who it belongs to/i),
       }).length,
     ).toBeGreaterThan(0);
 

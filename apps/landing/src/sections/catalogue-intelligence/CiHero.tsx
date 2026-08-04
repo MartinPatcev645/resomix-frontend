@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useCiDefs } from './ciDefs.ts';
 import { CI_REF_ID, CI_RESULT_ROWS } from './ciData.ts';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 type CiHeroProps = {
   /** Optional override for the "see how it works" scroll target — falls back
@@ -29,8 +30,7 @@ export function CiHero({ onScrollToHow }: CiHeroProps) {
       <div className="ci-wrap">
         <div className="ci-eyebrow">{t('catalogueIntelligence.hero.eyebrow')}</div>
         <h1 className="ci-h1">
-          {t('catalogueIntelligence.hero.h1Lead')}{' '}
-          <span className="ci-em">{t('catalogueIntelligence.hero.h1Em')}</span>
+          <HeroTitle text={t('catalogueIntelligence.hero.title')} emClass="ci-em" />
         </h1>
         <p className="ci-body-p ci-copycol">{t('catalogueIntelligence.hero.body')}</p>
         <div className="ci-cta-row">

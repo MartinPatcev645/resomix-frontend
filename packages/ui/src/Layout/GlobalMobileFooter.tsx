@@ -67,7 +67,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Resomix legal information"
-              className="hover:underline decoration-[var(--px-0-5)] footer-link"
+              className="inline-flex min-h-[var(--px-24)] items-center px-[var(--px-8)] py-[var(--px-6)] hover:underline decoration-[var(--px-0-5)] footer-link"
               id="footer-legal-link"
             >
               legal.info()
@@ -77,7 +77,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Resomix support"
-              className="hover:underline decoration-[var(--px-0-5)] footer-link"
+              className="inline-flex min-h-[var(--px-24)] items-center px-[var(--px-8)] py-[var(--px-6)] hover:underline decoration-[var(--px-0-5)] footer-link"
               id="footer-support-link"
             >
               support.to()
@@ -87,7 +87,7 @@ const GlobalMobileFooter: React.FC<GlobalMobileFooterProps> = ({ logo, baseUrl =
             <a
               href={`${baseUrl}/contact`}
               aria-label="Resomix contact"
-              className="hover:underline decoration-[var(--px-0-5)] footer-link"
+              className="inline-flex min-h-[var(--px-24)] items-center px-[var(--px-8)] py-[var(--px-6)] hover:underline decoration-[var(--px-0-5)] footer-link"
               id="footer-contact-link"
               onClick={(e) => {
                 if (onNavigate) {

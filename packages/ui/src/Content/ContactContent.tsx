@@ -151,7 +151,8 @@ export default function ContactContent({
             Contact // Support
           </p>
           <h1 className="m-0 font-helvetica text-[length:var(--px-28)] font-medium uppercase leading-[var(--px-32)] md:text-[length:var(--px-36)] md:leading-[var(--px-40)]">
-            Contact Us
+            Talk to the people{" "}
+            <span className="text-[var(--color-neon-orange)]">behind the sound.</span>
           </h1>
           <p className="mt-[var(--px-12)] font-helvetica text-[length:var(--px-15)] font-light leading-[var(--px-22)] text-[var(--rx-color-text-secondary)] opacity-70">
             A question about the service, technical support, or feedback — our team is here to help.

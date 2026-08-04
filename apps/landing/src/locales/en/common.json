@@ -2,8 +2,6 @@
   "about": {
     "hero": {
       "eyebrow": "About Resomix // Built in Thessaloniki",
-      "h1Lead": "A sonic intelli­gence platform for those who",
-      "h1Em": "feel the music",
       "lead": "Resomix helps people discover sonically related tracks, understand one recording in greater detail and make authorised catalogues searchable through sound.",
       "support": "One proprietary engine, PYXIS-1, powers three distinct products built around the recording itself.",
       "ctaPrimary": "Explore the platform",
@@ -12,7 +10,8 @@
       "captionA": "THE SIGNAL WE KEPT FOLLOWING",
       "captionB": "A COMPANY PROPOSITION · NOT A USER WORKFLOW",
       "figureAriaD": "One quiet recording signal emerges from the lower left, passes a field of metadata fragments, is met by the open PYXIS-1 ring, and leads to three sequential company capabilities: discover relationships, read the recording, search a catalogue.",
-      "figureAriaM": "Mobile: the quiet recording signal meets PYXIS-1 and leads to the three sequential capabilities."
+      "figureAriaM": "Mobile: the quiet recording signal meets PYXIS-1 and leads to the three sequential capabilities.",
+      "title": "A sonic intelligence platform for those who [[feel the music.]]"
     },
     "mission": {
       "eyebrow": "01 // Our mission",
@@ -395,7 +394,7 @@
   "home": {
     "hero": {
       "beta": "Production beta · Powered by PYXIS-1",
-      "title": "Hear the [[Invis­ible]]",
+      "title": "Drop one track.\nFind [[what belongs next.]]",
       "platform": "Resomix listens to the sound itself — and turns it into discovery, understanding, and catalogue intelligence.",
       "tryCta": "Try Resomix",
       "exploreCta": "Explore the Product",
@@ -592,8 +591,6 @@
   "product": {
     "hero": {
       "eyebrow": "Product overview // PYXIS-1 sonic intelligence",
-      "h1Lead": "Start with sound. Know where to go",
-      "h1Em": "next.",
       "body": "Resomix uses PYXIS-1 to help you find sonically related tracks, understand one recording in greater detail, or make an authorised catalogue searchable by sound.",
       "ctaPrimary": "Try Sonic Discovery",
       "ctaSecondary": "Explore the platform",
@@ -602,7 +599,8 @@
       "captionA": "THREE DISTINCT WORKFLOWS · ONE SHARED ENGINE",
       "captionB": "PYXIS-1 · 70+ CHARACTERISTICS",
       "figureAriaD": "Three separate workflow lanes share one PYXIS-1 core: Sonic Discovery from a reference to a ranked playlist; Track Intelligence from one recording to a readable analysis; Catalogue Intelligence from an authorised catalogue to partner-scoped results. Distinct workflows, one engine.",
-      "figureAriaM": "Mobile: the three workflows stacked — Sonic Discovery, Track Intelligence, Catalogue Intelligence — each from input through PYXIS-1 to its own output."
+      "figureAriaM": "Mobile: the three workflows stacked — Sonic Discovery, Track Intelligence, Catalogue Intelligence — each from input through PYXIS-1 to its own output.",
+      "title": "Start with sound. Know where to go [[next.]]"
     },
     "products": {
       "eyebrow": "02 // Three product workflows",
@@ -908,7 +906,7 @@
   "sonicDiscovery": {
     "hero": {
       "eyebrow": "Sonic Discovery // live in beta · powered by PYXIS-1",
-      "title": "Drop one track.\nFind what [[belongs next.]]",
+      "title": "Find similar tracks [[by sound.]]",
       "sub": "Search by how the music actually sounds. PYXIS-1 reads the groove, energy, timbre and structure of your reference — drawn from 70+ measurable audio characteristics — and returns a ranked shortlist you can hear, question and build on.",
       "ctaPrimary": "Try Sonic Discovery",
       "ctaSecondary": "See how matching works",
@@ -1090,8 +1088,6 @@
   "trackIntelligence": {
     "hero": {
       "eyebrow": "TRACK INTELLIGENCE // BETA · SAMPLE DATA · POWERED BY PYXIS-1",
-      "titleLine1": "See what a track",
-      "titleLine2": "is actually made of.",
       "sub": "PYXIS-1 measures rhythm, energy, harmony, timbre, spectral behaviour and structure — 70+ measurable audio characteristics — and organises them into one readable track profile. Evidence first, interpretation alongside.",
       "ctaPrimary": "Analyse a Track",
       "ctaSecondary": "Explore the Anatomy",
@@ -1106,7 +1102,7 @@
         "timbre": "Timbre",
         "identity": "Identity"
       },
-      "title": "See what a track\nis [[actually made of.]]"
+      "title": "See how the track moves, changes and [[holds together.]]"
     },
     "profile": {
       "eyebrow": "01 // THE PROFILE",
@@ -1434,8 +1430,6 @@
   "catalogueIntelligence": {
     "hero": {
       "eyebrow": "Product 03 // Catalogue Intelligence",
-      "h1Lead": "Make your cata­logue dis­cover­able",
-      "h1Em": "by sound.",
       "body": "Resomix processes authorised catalogue recordings with PYXIS-1, creates a sonic profile for each track and makes the catalogue searchable through reference-based similarity. Start with one recording. Receive ranked matches from the same partner-scoped index.",
       "ctaPrimary": "Request a catalogue pilot",
       "ctaSecondary": "See how it works",
@@ -1443,7 +1437,8 @@
       "captionA": "ONE REFERENCE → PYXIS-1 → PARTNER CATALOGUE → RANKED MATCHES",
       "captionB": "AUTOMATIC RANKING · NO MANUAL SHORTLISTING",
       "figureAriaD": "One reference recording passes through the open PYXIS-1 ring into the bounded partner-scoped sonic index; the closest recording cells come forward and resolve into ranked catalogue results 01 to 05.",
-      "figureAriaM": "Mobile hero: reference recording, PYXIS-1 with the partner index, then ranked results."
+      "figureAriaM": "Mobile hero: reference recording, PYXIS-1 with the partner index, then ranked results.",
+      "title": "Make your catalogue [[discoverable by sound.]]"
     },
     "product": {
       "eyebrow": "02 // The product",
@@ -1645,7 +1640,7 @@
       "eyebrowPrefix": "Developers //",
       "eyebrowLive": "Live",
       "eyebrowSuffix": " · Partner-scoped REST API · Powered by PYXIS-1",
-      "title": "[[One API.]] Search, simi­larity and track analysis.",
+      "title": "Put similarity and track intelligence [[inside your product.]]",
       "sub": "Search your own catalogue by sound, analyse new audio and retrieve structured Track Intelligence analysis data through a partner-scoped REST API.",
       "ctaPrimary": "Request API Access",
       "ctaSecondary": "View Full API Reference",
@@ -2001,7 +1996,7 @@
       "eyebrowPrefix": "Private Catalogue Pilot //",
       "eyebrowHighlight": "Managed evaluation",
       "eyebrowSuffix": "· Powered by PYXIS-1",
-      "title": "Test Resomix on [[your own cata­logue.]]",
+      "title": "Test PYXIS-1 on the music that [[matters to your team.]]",
       "sub": "A managed private pilot for labels, distributors and catalogue teams that want to evaluate sonic discovery using authorised material and success criteria agreed in advance.",
       "ctaPrimary": "Start a Catalogue Pilot",
       "ctaSecondary": "See the Pilot Method",
@@ -2271,7 +2266,7 @@
       "eyebrowPrefix": "Partners //",
       "eyebrowHighlight": "Guided pilot available",
       "eyebrowSuffix": "· REST API live",
-      "title": "[[Three ways]] to work with Resomix.",
+      "title": "Make your catalogue part of [[sound-first discovery.]]",
       "sub": "Start with a private catalogue pilot, integrate the live API, or scope the right deployment for your catalogue, platform or music product.",
       "ctaPilot": "Start a Catalogue Pilot",
       "ctaApi": "Explore the API",
@@ -2474,7 +2469,7 @@
     "legalEmail": "legal@resomix.com",
     "hero": {
       "eyebrow": "Trust, Rights & Security // Production beta",
-      "title": "Your audio. Your rights. [[Clear bound­aries.]]",
+      "title": "The audio can be analysed without blurring [[who it belongs to.]]",
       "body": "Resomix is a production-beta sonic discovery service. This page separates controls operating now, controls defined by partner agreement, and controls we do not yet claim.",
       "ctaLegal": "View Legal Documents",
       "ctaPartnerships": "Contact Partnerships",
@@ -2882,7 +2877,7 @@
   "recordLabels": {
     "hero": {
       "chip": "Use case · Record labels",
-      "h1": "[[Maximise]] your cata­logue with Resomix",
+      "h1": "Give authorised recordings [[another route into discovery.]]",
       "intro": "Running a label is hard, and it always has been. Choosing the artists to release, curating every project with care, managing a growing catalogue, and consistently releasing music that's in line with the essence of your project all require time and dedication.",
       "figureAria": "Ten years of a label's releases drawn as a timeline; one orange thread connects a recent signing back to an older release, re-lighting it"
     },
@@ -2955,14 +2950,13 @@
   "musicPublishers": {
     "hero": {
       "eyebrow": "Use case · Music publishers",
-      "h1Lead": "Turn your cata­logue into a",
-      "h1Em": "living asset",
       "body": "Music publishers face a daunting task: creating a cohesive catalog that’s both genuine and marketable, while also knowing how to make the most of every track as the collection expands.",
       "status": "Guided partner evaluation",
       "captionA": "Reference recording → PYXIS-1 → related works across the catalogue",
       "captionB": "Partner-scoped · authorised audio",
       "figureAriaD": "A reference recording passes through the open PYXIS-1 ring into the bounded publisher catalogue; related works illuminate across different catalogue periods, including an older, previously subdued work beside a recent one.",
-      "figureAriaM": "Mobile hero: reference recording, then PYXIS-1, then related publisher works illuminating inside the bounded catalogue."
+      "figureAriaM": "Mobile hero: reference recording, then PYXIS-1, then related publisher works illuminating inside the bounded catalogue.",
+      "title": "Turn your catalogue into a [[living asset]]"
     },
     "editorial": {
       "p1": "That’s no trivial task, especially if you consider that your average catalog hosts tens of thousands of songs!",
@@ -3111,7 +3105,7 @@
   "syncAgencies": {
     "hero": {
       "chip": "Use case · Sync agencies",
-      "h1": "Trans­lating tags into [[emotions]]",
+      "h1": "Surface candidates by sound.\nKeep every clearance decision [[human.]]",
       "intro": "A talented sync agent can see opportunities where others don't; someone who can connect the dots, understand creative visions, and give musicians the spotlight they deserve.",
       "figureAria": "Flat metadata tags pass through the Resomix gate and become a felt reading of the music — intimate, nostalgic, unsettling, uplifting"
     },
@@ -3196,7 +3190,7 @@
   "musicLibraries": {
     "hero": {
       "chip": "Use case · Music libraries & sample providers",
-      "h1": "Turn your cata­logue into a [[sonic discov­ery engine]]",
+      "h1": "Let the library be explored [[through its sound.]]",
       "intro": "The bigger a music library becomes, the more difficult it becomes to navigate.",
       "figureAria": "A wall of sample tiles; one reference sound is selected and orange threads reach its sonic relatives in other packs across the library"
     },
@@ -3286,11 +3280,10 @@
   "djs": {
     "hero": {
       "chip": "Use case · DJs",
-      "h1a": "Dig less.",
-      "h1b": "Discover more.",
       "intro": "Learning to DJ might not sound that difficult. Becoming a great DJ, however, is an entirely different matter.",
       "ctaNote": "Free to start · production beta",
-      "figureAria": "A crate of records drawn as dense rows of spines; one record is pulled out and a journey of ranked musical ideas unfolds from it — ideas, not a set order"
+      "figureAria": "A crate of records drawn as dense rows of spines; one record is pulled out and a journey of ranked musical ideas unfolds from it — ideas, not a set order",
+      "title": "Find the next track without hours of [[unfocused digging.]]"
     },
     "statement": {
       "srTitle": "The craft",
@@ -3386,11 +3379,10 @@
   "musicCurators": {
     "hero": {
       "chip": "Use case · Music curators",
-      "h1a": "Hear music",
-      "h1b": "differ­ently.",
       "intro": "The art of music curation is born from a unique mix of talent and experience; the ability to hear music differently, to predict trends, to see hidden connections, is the essence of what makes humans connect through music.",
       "ctaNote": "Free to start · production beta",
-      "figureAria": "Tracks scattered across decades and genre strata; from the reference track a signal journey flows outward through numbered stops across eras and genres — a playlist chain linked by the curator, with one direction still unexplored"
+      "figureAria": "Tracks scattered across decades and genre strata; from the reference track a signal journey flows outward through numbered stops across eras and genres — a playlist chain linked by the curator, with one direction still unexplored",
+      "title": "Curate from the sound, [[not only the chart.]]"
     },
     "statement": {
       "srTitle": "The curator's edge",
@@ -3487,11 +3479,10 @@
   "producers": {
     "hero": {
       "chip": "Use case · Electronic music producers",
-      "h1a": "Turn one refer­ence track",
-      "h1b": "into new sonic direc­tions.",
       "support": "Resomix uses the PYXIS-1 analytical engine to examine 70+ musical characteristics across rhythm, harmony, timbre, structure and energy — then surfaces sonically related tracks that can unlock new production ideas.",
       "ctaNote": "Free to start · production beta",
-      "figureAria": "The creative loop breaks open: a reference track feeds the PYXIS-1 sonic profile, five labelled dimensions — rhythm, harmony, timbre, structure, energy — fan out, and the highlighted thread reaches an unexpected sonic match: new directions to explore"
+      "figureAria": "The creative loop breaks open: a reference track feeds the PYXIS-1 sonic profile, five labelled dimensions — rhythm, harmony, timbre, structure, energy — fan out, and the highlighted thread reaches an unexpected sonic match: new directions to explore",
+      "title": "Understand your recording and study [[the music around it.]]"
     },
     "statement": {
       "srTitle": "The stuck loop",

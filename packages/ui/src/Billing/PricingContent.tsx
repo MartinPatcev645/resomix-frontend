@@ -40,8 +40,8 @@ export function PricingContent({ baseUrl = "/", partnersUrl = "/partners#develop
           <Eyebrow>Plans // Pricing</Eyebrow>
 
           <h1 className="m-0 max-w-[18ch] font-benzin font-black uppercase leading-[1.06] text-[length:var(--px-32)] md:max-w-none md:text-[length:var(--px-36)] lg:text-[length:var(--px-48)]">
-            Pricing built around{" "}
-            <span className="text-[var(--color-neon-orange)]">what you actually use.</span>
+            Unlock the depth{" "}
+            <span className="text-[var(--color-neon-orange)]">your discovery deserves.</span>
           </h1>
 
           <p className="mt-[var(--px-24)] max-w-[52ch] font-helvetica text-[length:var(--px-17)] font-light leading-[1.65] text-[var(--color-primary-hover)]">

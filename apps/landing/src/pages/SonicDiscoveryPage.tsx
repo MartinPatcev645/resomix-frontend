@@ -8,8 +8,8 @@ import { SdProof } from '@/sections/sonic-discovery/SdProof.tsx';
 import { SdFinalCta } from '@/sections/sonic-discovery/SdFinalCta.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
-import voidGrainDark from '@/assets/void-field/void-grain-dark.png';
-import voidGrainLight from '@/assets/void-field/void-grain-light.png';
+import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
+import voidGrainLight from '@/assets/void-field/void-grain-light.webp';
 import '@/sections/sonic-discovery/sonic-discovery.css';
 
 export default function SonicDiscoveryPage() {

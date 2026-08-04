@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useSilktide, useTelemetry } from "@resomix/hooks";
+import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useSilktide, useTelemetry , useAfterIdle, useGoogleTagManager } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
@@ -56,7 +56,13 @@ function PlaylistRedirect() {
 
 
 function App() {
+  /* Silktide (consent) is functional and stays eager. Analytics is staged so it cannot compete
+     with first paint: One Tap on idle, then GTM — which is what loads PostHog — 1.5s later. */
   useSilktide(consentConfig);
+
+  const oneTapReady = useAfterIdle(0);
+  const analyticsReady = useAfterIdle(1500);
+  useGoogleTagManager(import.meta.env.VITE_GTM_ID ?? 'GTM-PD9XQZRV', analyticsReady);
   useTelemetry();
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
@@ -103,10 +109,14 @@ function App() {
 
   return (
     <>
-      <GoogleOneTap
-        clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
-        disabled={isAuthenticated || onAuthRoute}
-      />
+      {/* Deferred to idle everywhere EXCEPT the auth screens, where signing in is the whole point
+          of the page and a delayed prompt would be worse than a slightly later paint. */}
+      {(onAuthRoute || oneTapReady) && (
+        <GoogleOneTap
+          clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+          disabled={isAuthenticated || onAuthRoute}
+        />
+      )}
 
       {showMetrics && <MetricsOverlay />}
 

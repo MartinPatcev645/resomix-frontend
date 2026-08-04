@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useFirstVisit, useAuthInit, useSilktide } from "@resomix/hooks";
+import { useFirstVisit, useAuthInit, useSilktide, useAfterIdle, useGoogleTagManager } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, SineWaves, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
@@ -41,7 +41,24 @@ import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
 
 function App() {
+  /*
+   * Silktide (the consent banner) loads EAGERLY and deliberately: it is functional, not analytics,
+   * and Consent Mode needs it present before anything it gates.
+   *
+   * Everything below is staged so it cannot compete with first paint. Lighthouse measured 399 KiB
+   * of third-party JS on this page — more than the app itself — and none of it renders content.
+   *
+   *   stage 1 (idle)          Google One Tap — user-facing, so it goes first
+   *   stage 2 (idle + 1.5 s)  Google Tag Manager, which in turn loads PostHog
+   *
+   * Note the ordering constraint: PostHog is loaded BY the GTM container, not by this codebase, so
+   * it can never start earlier than GTM. Putting GTM last therefore puts PostHog last too.
+   */
   useSilktide(consentConfig);
+
+  const oneTapReady = useAfterIdle(0);
+  const analyticsReady = useAfterIdle(1500);
+  useGoogleTagManager(import.meta.env.VITE_GTM_ID ?? 'GTM-PD9XQZRV', analyticsReady);
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
   // Initialize authentication
@@ -69,10 +86,14 @@ function App() {
 
   return (
     <>
-      <GoogleOneTap
-        clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
-        disabled={isAuthenticated || onAuthRoute}
-      />
+      {/* Mounted only once idle: the GIS client is 98 KiB and prompts a signed-out visitor, so it
+          has no reason to load before the page they came for has painted. */}
+      {oneTapReady && (
+        <GoogleOneTap
+          clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+          disabled={isAuthenticated || onAuthRoute}
+        />
+      )}
 
       {showWelcome &&
         <WelcomeMessage

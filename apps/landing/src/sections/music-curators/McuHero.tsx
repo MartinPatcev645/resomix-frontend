@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { BASE_BETA_URL } from '@resomix/config';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 export function McuHero() {
   const { t } = useTranslation('common');
@@ -14,8 +15,7 @@ export function McuHero() {
           {t('musicCurators.hero.chip')}
         </p>
         <h1 className="mcu-benzin uppercase">
-          {t('musicCurators.hero.h1a')}{' '}
-          <span className="mcu-l3">{t('musicCurators.hero.h1b')}</span>
+          <HeroTitle text={t('musicCurators.hero.title')} emClass="mcu-l3" />
         </h1>
         <p className="mcu-intro">{t('musicCurators.hero.intro')}</p>
         <div className="mcu-ctas">

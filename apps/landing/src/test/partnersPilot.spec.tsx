@@ -37,7 +37,7 @@ describe('PartnersPilotPage', () => {
       </MemoryRouter>,
     );
     expect(
-      screen.getByRole('heading', { level: 1, name: softHyphenName(/test resomix on your own catalogue/i) }),
+      screen.getByRole('heading', { level: 1, name: softHyphenName(/test pyxis-1 on the music that matters to your team/i) }),
     ).toBeInTheDocument();
   });
 });
@@ -61,7 +61,7 @@ describe('App routing', () => {
     expect(
       screen.getAllByRole('heading', {
         level: 1,
-        name: softHyphenName(/test resomix on your own catalogue/i),
+        name: softHyphenName(/test pyxis-1 on the music that matters to your team/i),
       }).length,
     ).toBeGreaterThan(0);
     expect(screen.getAllByRole('contentinfo').length).toBeGreaterThan(0);

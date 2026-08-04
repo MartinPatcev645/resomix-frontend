@@ -197,7 +197,23 @@ authClient.interceptors.response.use(
           throw new Error('Token refresh failed');
         }
       } catch (refreshError) {
-        console.error('[authClient] Token refresh failed', refreshError);
+        /*
+         * A 401 here is the EXPECTED outcome for an anonymous visitor.
+         *
+         * useAuthInit attempts a refresh on first load even with no local token, because the
+         * refresh cookie is scoped to `.resomix.com` and may carry a session started on the beta
+         * subdomain. With no cookie the server correctly answers 401 — nothing has gone wrong, and
+         * the caller already handles it. Logging it as an error put a red entry in the console of
+         * every logged-out visit, which is what Lighthouse's "Browser errors were logged to the
+         * console" audit reported. Anything OTHER than a 401 is still a real problem worth shouting
+         * about.
+         */
+        const refreshStatusCode = axios.isAxiosError(refreshError)
+          ? refreshError.response?.status
+          : undefined;
+        if (refreshStatusCode !== 401) {
+          console.error('[authClient] Token refresh failed', refreshError);
+        }
         
         // Check if user logged out during refresh
         const currentState = authStore.getState();

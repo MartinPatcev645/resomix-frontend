@@ -8,13 +8,14 @@
 // same-origin via this proxy (changeOrigin → media.resomix.com) — a 403 is a rejected/expired
 // token, not a localhost Host mismatch. Apple preview_url playback bypasses the proxy entirely.
 // If 403 persists on beta.resomix.com for the same track after re-login, report as backend media-auth.
-import { defineConfig } from 'vite'
+import { defineConfig, transformWithEsbuild } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 import { writeFileSync } from 'node:fs'
 import { ROUTE_SEO, SITEMAP_DEFAULTS, SITE_ORIGIN } from './src/routes/seoConfig.ts'
 import { prerenderHead } from '../../tooling/prerenderHead.ts'
+import { minifyPublicScripts } from '../../tooling/minifyPublicScripts.ts'
 
 const BACKEND_TARGET = 'https://bserver.resomix.com'
 const MEDIA_TARGET = 'https://media.resomix.com'
@@ -74,6 +75,8 @@ export default defineConfig({
     },
     react(), 
     tailwindcss(),
+    /* public/ is copied verbatim, so hand-written scripts there ship unminified. */
+    minifyPublicScripts({ outDir: path.resolve(__dirname, 'dist'), transform: transformWithEsbuild }),
     /* Bakes each route's head into its own HTML file. Link-preview scrapers do not run JS, so a
        shared beta URL previewed as the app home whatever page it pointed at. */
     prerenderHead({
@@ -114,7 +117,10 @@ export default defineConfig({
     }
   },
   build: {
-    sourcemap: false,  // set true if need to debug something
+    /* Lighthouse Best Practices flags "Missing source maps for large first-party
+       JavaScript". Maps are separate .map files, fetched only when DevTools is open, so
+       they cost users nothing and make production stack traces readable. */
+    sourcemap: true,
     rollupOptions: {
       output: {
         manualChunks(id) {

@@ -56,47 +56,55 @@ describe('HeroTitle marker parsing', () => {
 });
 
 describe('every hero headline marks an accent phrase', () => {
-  // The 11 headlines converted to marker-based emphasis. The other six carry it via their own
-  // lead/em key pairs and are asserted separately below.
-  const MARKED: Array<[string, string]> = [
-    ['home.hero.title', 'Invisible'],
-    ['developers.hero.title', 'One API.'],
-    ['musicLibraries.hero.h1', 'sonic discovery engine'],
-    ['recordLabels.hero.h1', 'Maximise'],
-    ['syncAgencies.hero.h1', 'emotions'],
-    ['partners.hero.title', 'Three ways'],
-    ['partnersPilot.hero.title', 'your own catalogue.'],
-    ['trust.hero.title', 'Clear boundaries.'],
-    ['sonicDiscovery.hero.title', 'belongs next.'],
-    ['trackIntelligence.hero.title', 'actually made of.'],
+  /**
+   * All 17 heroes, keyed by the locale entry that holds the headline.
+   *
+   * Deliberately asserts the CONTRACT (exactly one `[[…]]` per headline) rather than the specific
+   * words. Copy comes from docs/SEO_METADATA_ALL_PAGES.md and changes on its own schedule;
+   * duplicating the wording here would mean every copy edit breaks a test for no safety gain. What
+   * must not silently break is the marker itself — drop it and the accent just vanishes.
+   */
+  const HERO_KEYS = [
+    'home.hero.title',
+    'about.hero.title',
+    'product.hero.title',
+    'sonicDiscovery.hero.title',
+    'trackIntelligence.hero.title',
+    'catalogueIntelligence.hero.title',
+    'developers.hero.title',
+    'partners.hero.title',
+    'partnersPilot.hero.title',
+    'trust.hero.title',
+    'recordLabels.hero.h1',
+    'musicPublishers.hero.title',
+    'syncAgencies.hero.h1',
+    'musicLibraries.hero.h1',
+    'djs.hero.title',
+    'musicCurators.hero.title',
+    'producers.hero.title',
   ];
 
-  it.each(MARKED)('%s emphasises %s', (key, phrase) => {
-    const raw = at(key);
-    const m = strip(raw).match(/\[\[(.+?)\]\]/);
-    expect(m, `${key} lost its [[...]] marker`).not.toBeNull();
-    expect(m![1]).toBe(phrase);
+  it.each(HERO_KEYS)('%s marks exactly one accent phrase', (key) => {
+    const markers = [...strip(at(key)).matchAll(/\[\[(.+?)\]\]/g)];
+    expect(markers, `${key} lost its [[…]] marker`).toHaveLength(1);
+    expect(markers[0][1].trim().length).toBeGreaterThan(0);
   });
 
-  it('keeps exactly one accent phrase per headline', () => {
-    for (const [key] of MARKED) {
-      expect([...strip(at(key)).matchAll(/\[\[(.+?)\]\]/g)]).toHaveLength(1);
-    }
+  it('covers every hero on the site', () => {
+    expect(HERO_KEYS).toHaveLength(17);
   });
 
-  it('the six lead/em heroes still split their headline', () => {
-    const pairs = [
-      ['about.hero.h1Lead', 'about.hero.h1Em'],
-      ['catalogueIntelligence.hero.h1Lead', 'catalogueIntelligence.hero.h1Em'],
-      ['musicPublishers.hero.h1Lead', 'musicPublishers.hero.h1Em'],
-      ['product.hero.h1Lead', 'product.hero.h1Em'],
-      ['musicCurators.hero.h1a', 'musicCurators.hero.h1b'],
-      ['djs.hero.h1a', 'djs.hero.h1b'],
-      ['producers.hero.h1a', 'producers.hero.h1b'],
+  it('has retired the old lead/em key pairs', () => {
+    // Seven heroes used to split the headline across two keys, which pinned the accent to a fixed
+    // position. All 17 now use the inline marker, so moving it is a copy edit.
+    const dead = [
+      'about.hero.h1Lead', 'product.hero.h1Lead', 'catalogueIntelligence.hero.h1Lead',
+      'musicPublishers.hero.h1Lead', 'djs.hero.h1a', 'musicCurators.hero.h1a',
+      'producers.hero.h1a', 'trackIntelligence.hero.titleLine1',
     ];
-    for (const [lead, em] of pairs) {
-      expect(strip(at(lead)).length).toBeGreaterThan(0);
-      expect(strip(at(em)).length).toBeGreaterThan(0);
+    for (const key of dead) {
+      const val = key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], locale);
+      expect(val, `${key} is still in the locale`).toBeUndefined();
     }
   });
 });

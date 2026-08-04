@@ -23,16 +23,9 @@
     gtag('js', new Date());
     gtag('config', 'GTM-PD9XQZRV'); 
   </script>
-  <!-- Google Tag Manager -->
-  <script>(function (w, d, s, l, i) {
-      w[l] = w[l] || []; w[l].push({
-        'gtm.start':
-          new Date().getTime(), event: 'gtm.js'
-      }); var f = d.getElementsByTagName(s)[0],
-        j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
-          'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
-    })(window, document, 'script', 'dataLayer', 'GTM-PD9XQZRV');</script>
-  <!-- End Google Tag Manager -->
+  <!-- Google Tag Manager is NOT loaded here any more; it is injected on an idle callback after
+       load (see useGoogleTagManager + App.tsx). The consent defaults above stay inline and
+       synchronous, because Consent Mode v2 requires them to run before the container. -->
 
   <!-- iOS Audio Recognition & Trust -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -92,6 +85,15 @@
   <!-- Critical app fonts (@font-face families actually used: Helvetica_Neue, Fira Code, Benzin).
        Montserrat / Auger Mono faces exist in fonts.css but are unused in webapp src — not preloaded.
        FiraCode-VariableFont_wght.ttf is in public/fonts/ but has no @font-face — not preloaded. -->
+  <!-- Preconnect to the third-party origins the page contacts during load. Lighthouse reported
+     no preconnected origins at all, and estimated 370 ms (PostHog) + 320 ms (the API) of LCP
+     on mobile from establishing these connections late. Kept to four, as recommended — each
+     one costs a socket. -->
+  <link rel="preconnect" href="https://eu.i.posthog.com" crossorigin>
+  <link rel="preconnect" href="https://bserver.resomix.com" crossorigin>
+  <link rel="preconnect" href="https://www.googletagmanager.com">
+  <link rel="preconnect" href="https://accounts.google.com" crossorigin>
+
   <!-- Preload only the faces that gate first paint, as the Latin subset:
        Benzin 700  — the hero <h1>, which Lighthouse reported as the desktop LCP element
        Helvetica 300 — body copy (the page root is `font-helvetica font-light`)

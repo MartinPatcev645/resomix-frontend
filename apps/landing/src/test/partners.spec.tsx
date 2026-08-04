@@ -38,7 +38,7 @@ describe('PartnersPage', () => {
       </MemoryRouter>,
     );
     expect(
-      screen.getByRole('heading', { level: 1, name: /three ways to work with resomix/i }),
+      screen.getByRole('heading', { level: 1, name: /make your catalogue part of sound-first discovery/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /partner junction diagram/i })).toBeInTheDocument();
   });
@@ -64,7 +64,7 @@ describe('PartnersPage', () => {
       </MemoryRouter>,
     );
     expect(
-      screen.getByRole('heading', { level: 1, name: softHyphenName(/test resomix on your own catalogue/i) }),
+      screen.getByRole('heading', { level: 1, name: softHyphenName(/test pyxis-1 on the music that matters to your team/i) }),
     ).toBeInTheDocument();
   });
 });
@@ -87,7 +87,7 @@ describe('App routing — /partners', () => {
     expect(
       screen.getAllByRole('heading', {
         level: 1,
-        name: /three ways to work with resomix/i,
+        name: /make your catalogue part of sound-first discovery/i,
       }).length,
     ).toBeGreaterThan(0);
   });

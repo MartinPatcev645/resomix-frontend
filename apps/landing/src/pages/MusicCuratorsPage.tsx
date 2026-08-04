@@ -7,8 +7,8 @@ import { McuPhilosophy } from '@/sections/music-curators/McuPhilosophy.tsx';
 import { McuFinalCta } from '@/sections/music-curators/McuFinalCta.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
-import voidGrainDark from '@/assets/void-field/void-grain-dark.png';
-import voidGrainLight from '@/assets/void-field/void-grain-light.png';
+import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
+import voidGrainLight from '@/assets/void-field/void-grain-light.webp';
 import '@/sections/music-curators/music-curators.css';
 
 export default function MusicCuratorsPage() {

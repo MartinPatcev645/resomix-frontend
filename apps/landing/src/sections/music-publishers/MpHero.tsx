@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMpDefs } from './mpDefs.ts';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 /* S1 · Hero — The Living Asset. Geometry transplanted verbatim from the
    approved preview; shared defs live in MpSharedDefs. */
@@ -14,8 +15,7 @@ export function MpHero() {
       <div className="mp-wrap">
         <div className="mp-eyebrow">{t('musicPublishers.hero.eyebrow')}</div>
         <h1 className="mp-h1">
-          {t('musicPublishers.hero.h1Lead')}{' '}
-          <span className="mp-em">{t('musicPublishers.hero.h1Em')}</span>
+          <HeroTitle text={t('musicPublishers.hero.title')} emClass="mp-em" />
         </h1>
         <p className="mp-body-p">{t('musicPublishers.hero.body')}</p>
         <div className="mp-cta-row">

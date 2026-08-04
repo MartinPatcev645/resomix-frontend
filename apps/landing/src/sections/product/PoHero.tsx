@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { BASE_BETA_URL } from '@resomix/config';
 import { usePoDefs } from './poDefs.ts';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 /* S1 · Hero — Sonic Routing Desk v1.1. Geometry transplanted verbatim from the
    approved preview (`#s1`); shared defs live in PoSharedDefs. */
@@ -16,8 +17,7 @@ export function PoHero() {
       <div className="po-wrap">
         <div className="po-eyebrow">{t('product.hero.eyebrow')}</div>
         <h1 className="po-h1">
-          {t('product.hero.h1Lead')}{' '}
-          <span className="po-em">{t('product.hero.h1Em')}</span>
+          <HeroTitle text={t('product.hero.title')} emClass="po-em" />
         </h1>
         <p className="po-body-p po-copycol">{t('product.hero.body')}</p>
         <div className="po-cta-row">

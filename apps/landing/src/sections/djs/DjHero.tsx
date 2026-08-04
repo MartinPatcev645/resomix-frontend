@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { BASE_BETA_URL } from '@resomix/config';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 export function DjHero() {
   const { t } = useTranslation('common');
@@ -14,9 +15,7 @@ export function DjHero() {
           {t('djs.hero.chip')}
         </p>
         <h1 className="dj-benzin uppercase">
-          <span>{t('djs.hero.h1a')}</span>
-          <br />
-          <span className="dj-l3">{t('djs.hero.h1b')}</span>
+          <HeroTitle text={t('djs.hero.title')} emClass="dj-l3" />
         </h1>
         <p className="dj-intro">{t('djs.hero.intro')}</p>
         <div className="dj-ctas">

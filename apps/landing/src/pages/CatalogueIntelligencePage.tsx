@@ -12,8 +12,8 @@ import { CiPilot } from '@/sections/catalogue-intelligence/CiPilot.tsx';
 import { CiClosing } from '@/sections/catalogue-intelligence/CiClosing.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
-import voidGrainDark from '@/assets/void-field/void-grain-dark.png';
-import voidGrainLight from '@/assets/void-field/void-grain-light.png';
+import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
+import voidGrainLight from '@/assets/void-field/void-grain-light.webp';
 import '@/sections/catalogue-intelligence/catalogue-intelligence.css';
 
 

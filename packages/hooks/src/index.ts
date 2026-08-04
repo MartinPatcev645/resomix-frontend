@@ -63,3 +63,7 @@ export * from './Library/trackMeta';
 
 // SEO / document head
 export * from './Seo/useDocumentMeta';
+
+// Performance — staged loading of non-critical third parties
+export * from './Perf/useAfterIdle';
+export * from './Perf/useGoogleTagManager';

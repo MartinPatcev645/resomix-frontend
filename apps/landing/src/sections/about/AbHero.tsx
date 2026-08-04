@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { BASE_BETA_URL } from '@resomix/config';
 import { useAbDefs } from './abDefs.ts';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 /* S1 · Hero — geometry transplanted verbatim from the approved preview
    (`#ab-s1`); shared defs live in AbSharedDefs. */
@@ -16,8 +17,7 @@ export function AbHero() {
       <div className="ab-wrap">
         <div className="ab-eyebrow">{t('about.hero.eyebrow')}</div>
         <h1 className="ab-h1">
-          {t('about.hero.h1Lead')}{' '}
-          <span className="ab-em">{t('about.hero.h1Em')}</span>
+          <HeroTitle text={t('about.hero.title')} emClass="ab-em" />
         </h1>
         <p className="ab-lead">{t('about.hero.lead')}</p>
         <p className="ab-support">{t('about.hero.support')}</p>

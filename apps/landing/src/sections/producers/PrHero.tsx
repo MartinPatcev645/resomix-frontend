@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { BASE_BETA_URL } from '@resomix/config';
+import { HeroTitle } from '@/components/HeroTitle.tsx';
 
 export function PrHero() {
   const { t } = useTranslation('common');
@@ -14,9 +15,7 @@ export function PrHero() {
           {t('producers.hero.chip')}
         </p>
         <h1 className="pr-benzin uppercase">
-          <span>{t('producers.hero.h1a')}</span>
-          <br />
-          <span className="pr-l2">{t('producers.hero.h1b')}</span>
+          <HeroTitle text={t('producers.hero.title')} emClass="pr-l2" />
         </h1>
         <p className="pr-intro">{t('producers.hero.support')}</p>
         <div className="pr-ctas">
