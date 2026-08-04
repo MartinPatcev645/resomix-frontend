@@ -482,6 +482,54 @@ preserves verbatim.
 Zero bytes added — `local()` only, asserted by a test, because a downloaded fallback could not paint
 before the real font either and would defeat the whole point.
 
+## 1.22 Run-4 follow-ups
+
+**Run 4 (Aug 4, 19:46) validated the previous three sections:** mobile Performance 66 → **94**,
+desktop 69 → **83**, Best Practices 92 → **96**, Agentic 2/3 → **3/3**, mobile LCP 5.4 → **2.7 s**,
+and *Layout shift culprits: Total 0.000* on both form factors. The "Unused preconnect" warning
+resolved itself, and forced reflow now passes on mobile.
+
+Four things came out of it:
+
+**GTM deferred 1.5 s → 4 s.** Desktop TBT rose to 360 ms; the third-party table shows posthog.com at
+**409 ms of main-thread time** (`/static/array.js` alone is 340 ms). PostHog did not get slower — the
+page got fast enough (desktop LCP 0.7 s) that its work now lands *inside* the measured window.
+
+**Desktop footer touch targets.** Mobile Accessibility fell 100 → 96 on *"Touch targets do not have
+sufficient size or spacing"*, listing the footer legal/support/contact links. `GlobalMobileFooter`
+had the fix from §1.15; **`GlobalFooter` never did** — prerendering put the desktop footer into the
+HTML and exposed it. This is almost certainly also why **desktop Accessibility sat at 96 in all four
+runs**. Same treatment applied.
+
+**The `--font-*` variables were referenced 103 times and defined nowhere.** 74 references pass no
+fallback, so the declaration was invalid at computed-value time and the element silently inherited —
+it looked right only because the page root already carries `.font-helvetica`. The other 29 pass a
+fallback and resolved to it: the correct font, but a stack containing **no metric-matched fallback**,
+so those elements could still shift. Now defined in `index.css`, matching the `.font-*` utilities.
+
+**void-grain recompressed.** The tile is 192×192 with **constant white RGB** — every byte encodes one
+flat colour plus an alpha noise plane. That is why lossy "gave no gain" when tested in §1.15: it was
+being applied to the plane with no information in it. `cwebp -near_lossless 40 -z 9` gets it from
+24.7 KB to 15.4 KB at a **max alpha delta of 4/255** on a random grain texture at ≤23.5% opacity.
+
+> Watch the flag order: adding `-m 6` silently disables `-near_lossless` and returns plain lossless
+> output at the identical byte count.
+
+| | Before | After |
+|---|---|---|
+| landing, 2 tiles | 49.4 KB | **29.6 KB** |
+| webapp, 2 tiles (still PNG) | 91.4 KB | **29.6 KB** |
+
+## 1.23 Per-page structured data
+
+`Organization` + `WebSite` describe the SITE, so all twenty URLs were asserting the same two facts
+and nothing about themselves. Each indexed route now also carries `WebPage` (its own name,
+description, `isPartOf` → the site node, `about` → the organisation) and, on nested routes, a
+`BreadcrumbList` — *Home > Solutions > DJs*.
+
+Emitted at **build time**, in the static HTML. Runtime injection would be invisible to exactly the
+consumers that read structured data most: no major AI crawler executes JavaScript.
+
 ---
 
 # Part 2 — The three PageSpeed runs

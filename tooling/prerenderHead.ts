@@ -51,8 +51,70 @@ function setMeta(html: string, attrName: 'name' | 'property', key: string, value
   return html.replace('</head>', `  <meta ${attrName}="${key}" content="${attr(value)}" />\n</head>`)
 }
 
+/**
+ * Readable breadcrumb labels. Slugs title-case cleanly except where they carry an acronym, an
+ * ampersand, or the US spelling we kept in the URL for continuity.
+ */
+const CRUMB_NAMES: Record<string, string> = {
+  product: 'Product',
+  solutions: 'Solutions',
+  partners: 'Partners',
+  pilot: 'Guided Pilot',
+  djs: 'DJs',
+  'catalog-intelligence': 'Catalogue Intelligence',
+  'music-libraries-sample-providers': 'Music Libraries & Sample Providers',
+}
+
+const titleCase = (slug: string) =>
+  slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+
+/**
+ * Per-page JSON-LD: `WebPage` plus a `BreadcrumbList`.
+ *
+ * `Organization` and `WebSite` already ship in the shell, but they describe the SITE — every URL
+ * was declaring the same two things and nothing about itself. This adds what the page IS, tied back
+ * to the site node via `isPartOf`.
+ *
+ * It goes in the static HTML deliberately. No major AI crawler executes JavaScript (Vercel's
+ * analysis of 500M+ GPTBot fetches found zero evidence of it), so anything rendered at runtime is
+ * invisible to them — and structured data is the strongest signal they do read.
+ */
+function structuredData(seo: RouteSeoLike, url: string, origin: string, routePath: string): string {
+  const graph: unknown[] = [
+    {
+      '@type': 'WebPage',
+      '@id': `${url}#webpage`,
+      url,
+      name: seo.title,
+      description: seo.description,
+      isPartOf: { '@id': `${origin}/#website` },
+      about: { '@id': `${origin}/#organization` },
+      inLanguage: 'en',
+    },
+  ]
+
+  // Home has no trail worth stating; a single-item breadcrumb is noise.
+  const segments = routePath.split('/').filter(Boolean)
+  if (segments.length) {
+    const items = [{ '@type': 'ListItem', position: 1, name: 'Home', item: `${origin}/` }]
+    let path = ''
+    segments.forEach((segment, i) => {
+      path += `/${segment}`
+      items.push({
+        '@type': 'ListItem',
+        position: i + 2,
+        name: CRUMB_NAMES[segment] ?? titleCase(segment),
+        item: `${origin}${path}`,
+      })
+    })
+    graph.push({ '@type': 'BreadcrumbList', '@id': `${url}#breadcrumb`, itemListElement: items })
+  }
+
+  return JSON.stringify({ '@context': 'https://schema.org', '@graph': graph })
+}
+
 /** Rewrite the shell's head for one route. The body is untouched. */
-function render(shell: string, seo: RouteSeoLike, url: string): string {
+function render(shell: string, seo: RouteSeoLike, url: string, origin = '', routePath = ''): string {
   let html = shell.replace(/<title>[\s\S]*?<\/title>/i, `<title>${text(seo.title)}</title>`)
   html = setMeta(html, 'name', 'description', seo.description)
   html = setMeta(html, 'name', 'robots', seo.noindex ? 'noindex, follow' : 'index, follow')
@@ -61,7 +123,18 @@ function render(shell: string, seo: RouteSeoLike, url: string): string {
   html = setMeta(html, 'property', 'og:url', url)
   html = setMeta(html, 'name', 'twitter:title', seo.title)
   html = setMeta(html, 'name', 'twitter:description', seo.description)
-  return html.replace(/(<link\s+rel="canonical"\s+href=")[^"]*(")/i, `$1${attr(url)}$2`)
+  html = html.replace(/(<link\s+rel="canonical"\s+href=")[^"]*(")/i, `$1${attr(url)}$2`)
+
+  // Per-page JSON-LD, alongside (not replacing) the site-level Organization/WebSite in the shell.
+  if (origin && !seo.noindex) {
+    const json = structuredData(seo, url, origin, routePath)
+    html = html.replace(
+      '</head>',
+      `  <script type="application/ld+json">${json}</script>\n</head>`,
+    )
+  }
+
+  return html
 }
 
 export function prerenderHead(options: {
@@ -91,7 +164,7 @@ export function prerenderHead(options: {
         if (routePath === '/404') continue
 
         const url = seo.canonical ?? (routePath === '/' ? `${origin}/` : `${origin}${routePath}`)
-        const html = render(shell, seo, url)
+        const html = render(shell, seo, url, origin, routePath)
 
         if (routePath === '/') {
           writeFileSync(shellPath, html)

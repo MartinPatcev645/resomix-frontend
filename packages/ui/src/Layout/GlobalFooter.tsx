@@ -105,7 +105,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Resomix legal information"
-              className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link"
+              className="inline-flex min-h-[var(--px-24)] items-center justify-end px-[var(--px-8)] py-[var(--px-6)] hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link"
               id="footer-legal-link"
             >
               legal.info(): open('/legal')
@@ -115,7 +115,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Resomix support"
-              className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link"
+              className="inline-flex min-h-[var(--px-24)] items-center justify-end px-[var(--px-8)] py-[var(--px-6)] hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link"
               id="footer-support-link"
             >
               support.to(): open('/support')
@@ -124,7 +124,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
             <a
               href={`${baseUrl}/contact`}
               aria-label="Resomix contact"
-              className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link"
+              className="inline-flex min-h-[var(--px-24)] items-center justify-end px-[var(--px-8)] py-[var(--px-6)] hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link"
               id="footer-contact-link"
               onClick={(e) => {
                 if (onNavigate) {
@@ -136,7 +136,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
               contact_us(): fetch('/contact')
             </a>
             <button
-              className="hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link cursor-pointer text-right"
+              className="inline-flex min-h-[var(--px-24)] items-center justify-end px-[var(--px-8)] py-[var(--px-6)] hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link cursor-pointer text-right"
               onClick={(e) => {
                 e.preventDefault();
                 const silktideIcon = document.querySelector('#stcm-icon') as HTMLElement;

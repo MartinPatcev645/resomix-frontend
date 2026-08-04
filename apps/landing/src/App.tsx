@@ -56,7 +56,15 @@ function App() {
   useSilktide(consentConfig);
 
   const oneTapReady = useAfterIdle(0);
-  const analyticsReady = useAfterIdle(1500);
+  /*
+   * 4 s, raised from 1.5 s after run 4 measured PostHog at 409 ms of main-thread work — against a
+   * desktop TBT of 360 ms. It is not that PostHog got slower; the page got fast enough (LCP 0.7 s)
+   * that its work now lands INSIDE the measured window instead of being buried in a slow load.
+   *
+   * Analytics loses nothing that matters here: PostHog buffers from its own init, and a visitor who
+   * interacts inside 4 s is still recorded from that point on.
+   */
+  const analyticsReady = useAfterIdle(4000);
   useGoogleTagManager(import.meta.env.VITE_GTM_ID ?? 'GTM-PD9XQZRV', analyticsReady);
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();

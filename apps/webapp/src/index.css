@@ -89,6 +89,25 @@
 @import "./styles/fonts.css";
 @import "./styles/font-fallbacks.css";
 
+/* ─── Brand font stacks ──────────────────────────────────────────────────────
+   These variables were REFERENCED in 103 places and DEFINED nowhere.
+
+   74 of those references pass no fallback (`font-family: var(--font-fira)`), so the declaration
+   was invalid at computed-value time and the element quietly inherited instead. It looked correct
+   only because the page root already carries `.font-helvetica`. The other 29 pass a fallback
+   (`var(--font-fira, 'Fira Code', monospace)`) and resolved to that arm — the right font, but a
+   stack with no metric-matched fallback in it, so those elements could still shift on font swap.
+
+   Defining them here fixes both, and keeps the stacks identical to the .font-* utility classes in
+   fonts.css. Each includes its metric-matched fallback (see styles/font-fallbacks.css). */
+:root {
+  --font-helvetica: 'Helvetica_Neue', 'Helvetica_Neue Fallback', 'Helvetica Neue', 'HelveticaNeue', sans-serif;
+  --font-fira: 'Fira Code', 'Fira Code Fallback', 'FiraCode', monospace;
+  --font-benzin: 'Benzin', 'Benzin Fallback', 'Benzin-Bold', 'Benzin Bold', 'BenzinBold', sans-serif;
+  --font-auger: 'Auger Mono TEST', 'Auger Mono', 'AugerMono', monospace;
+}
+
+
 @layer utilities {
   .w-fluid-1280 {
     width: clamp(1280px, 100vw, 2560px);
