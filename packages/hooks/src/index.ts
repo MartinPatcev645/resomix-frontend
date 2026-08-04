@@ -1,5 +1,6 @@
 export * from "./useTest";
 export * from "./useResponsive";
+export * from "./useHydrated";
 export * from "./useSearch";
 export * from "./useOnScreen";
 export * from "./usePopularTracks";

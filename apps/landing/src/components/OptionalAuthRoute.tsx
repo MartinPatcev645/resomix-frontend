@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useAuthStore } from "@resomix/stores";
+import { useHydrated, useIsomorphicLayoutEffect } from "@resomix/hooks";
 import { AuthStatusBanner, DemoStageBanner, StatusMessage } from "@resomix/ui";
 import { resendVerification } from "@resomix/api-client";
 
@@ -15,9 +16,22 @@ interface OptionalAuthRouteProps {
  */
 export const OptionalAuthRoute = ({ children }: OptionalAuthRouteProps) => {
   const { isAuthenticated, user } = useAuthStore();
+  /* This wrapper's own `data-authenticated` attribute is the only thing here that reads auth during
+     render — every banner below starts hidden and is switched on by an effect. The build emits
+     `false`, so the first client render must too, or hydration mismatches on the attribute and React
+     re-renders the whole page client-side. See useHydrated. */
+  const hydrated = useHydrated();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
-  const [showDemoBanner, setShowDemoBanner] = useState(false);
+  /*
+   * Starts SHOWN, and is hidden again only if this visitor dismissed it.
+   *
+   * It used to start hidden and be switched on by an effect, which meant the banner appeared after
+   * the page had already painted and pushed everything below it down — a layout shift on every
+   * single load. Now the prerendered HTML contains the banner, the first client render agrees with
+   * it, and the rare dismissed visitor has it removed in the layout effect below, before paint.
+   */
+  const [showDemoBanner, setShowDemoBanner] = useState(true);
   const [showStatusMessage, setShowStatusMessage] = useState(false);
   const [statusType, setStatusType] = useState<"success" | "error">("success");
   const [statusMessage, setStatusMessage] = useState("");
@@ -28,9 +42,12 @@ export const OptionalAuthRoute = ({ children }: OptionalAuthRouteProps) => {
     setBannerDismissed(dismissed === "true");
   }, []);
 
-  useEffect(() => {
-    const demoDismissed = localStorage.getItem("demo_stage_notice_dismissed");
-    setShowDemoBanner(demoDismissed !== "true");
+  useIsomorphicLayoutEffect(() => {
+    try {
+      if (localStorage.getItem("demo_stage_notice_dismissed") === "true") setShowDemoBanner(false);
+    } catch {
+      /* storage blocked — keeping the banner shown is the safe default */
+    }
   }, []);
 
   useEffect(() => {
@@ -93,7 +110,7 @@ export const OptionalAuthRoute = ({ children }: OptionalAuthRouteProps) => {
   };
 
   return (
-    <div data-authenticated={isAuthenticated}>
+    <div data-authenticated={hydrated && isAuthenticated}>
       {showDemoBanner && (
         <DemoStageBanner onDismiss={handleDemoDismiss} />
       )}

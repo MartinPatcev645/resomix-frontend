@@ -40,6 +40,7 @@ export function setCookie(name: string, value: string, options: CookieOptions = 
   
   cookieString += `; samesite=${sameSite}`;
 
+  if (typeof document === 'undefined') return;
   document.cookie = cookieString;
 }
 
@@ -47,9 +48,14 @@ export function setCookie(name: string, value: string, options: CookieOptions = 
  * Get a cookie value by name
  */
 export function getCookie(name: string): string | null {
+  // Pages are prerendered to HTML at build time (see tooling/prerenderPages.ts), where there is no
+  // document. This runs on the persist-rehydrate path at module load, so an unguarded read here
+  // throws before any component renders. No cookies in that environment means "no cookie".
+  if (typeof document === 'undefined') return null;
+
   const nameEQ = encodeURIComponent(name) + '=';
   const cookies = document.cookie.split(';');
-  
+
   for (let cookie of cookies) {
     cookie = cookie.trim();
     if (cookie.startsWith(nameEQ)) {
@@ -140,7 +146,10 @@ export const hybridStorage = {
       const localValue = localStorage.getItem(name);
       candidate = resolveEnvelope(localValue);
     } catch (e) {
-      console.warn('localStorage not available:', e);
+      // Absent during the build-time prerender, where there is no storage by definition — that is
+      // expected, not a fault. In a browser it means private mode or blocked storage, which IS
+      // worth reporting.
+      if (typeof window !== 'undefined') console.warn('localStorage not available:', e);
     }
     
     if (!candidate) {

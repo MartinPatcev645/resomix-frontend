@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ProfileDropdown } from '@resomix/ui';
 import { useAuthStore } from '@resomix/stores';
+import { useHydrated } from '@resomix/hooks';
 import { BASE_LANDING_URL } from '@resomix/config';
 import { LogoHeader } from '../LogoHeader.tsx';
 import { MenuIcon } from '../MenuIcon.tsx';
@@ -126,7 +127,19 @@ export function SiteHeader({
 }: SiteHeaderProps) {
   const { t } = useTranslation('common');
   const location = useLocation();
-  const { isAuthenticated } = useAuthStore();
+  /*
+   * Auth is read through `useHydrated` because this page's HTML is prerendered at build time.
+   *
+   * The build cannot know who is visiting, so it always emits the signed-out control. The store
+   * rehydrates from localStorage synchronously, so without this gate a signed-in visitor's very
+   * first render would emit the account dropdown instead — different markup than the HTML being
+   * hydrated, which makes React discard the entire prerendered tree.
+   *
+   * `useHydrated` flips in a layout effect, so the real control is committed before the browser
+   * paints; a signed-in visitor does not see the signed-out state.
+   */
+  const hydrated = useHydrated();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated) && hydrated;
   const isScrolled = useHeaderScroll();
   const megaMenu = useMegaMenu(NAV_TOP_GROUPS.length);
   const currentSection = getNavSectionForPath(location.pathname);

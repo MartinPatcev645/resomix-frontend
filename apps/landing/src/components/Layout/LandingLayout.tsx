@@ -14,7 +14,10 @@ import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
  * for the landing application.
  */
 export function LandingLayout() {
-    const { isDesktop } = useResponsive();
+    /* ssrSafe: this app's pages are prerendered to HTML at build time, where there is no window.
+       The build assumes desktop and the first client render has to agree with it, or React discards
+       the prerendered markup. The real viewport is measured in a layout effect, before paint. */
+    const { isDesktop } = useResponsive({ ssrSafe: true });
     const location = useLocation();
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);

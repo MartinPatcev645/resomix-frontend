@@ -17,6 +17,8 @@ jspm_packages/
 
 # Distribution directories
 dist/
+# Build-time render pass for the prerendered pages — never deployed, never committed.
+dist-ssr/
 
 # Typescript v1 declaration files
 typings/

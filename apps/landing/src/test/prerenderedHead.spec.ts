@@ -76,9 +76,21 @@ describe.skipIf(!built)('prerendered per-route head', () => {
     expect(src).not.toMatch(/(src|href)="\.\.?\/[^"]*assets/);
   });
 
-  it('changes nothing below <head>', () => {
-    const body = (s: string) => s.slice(s.indexOf('<body'));
-    expect(body(html('/solutions/producers'))).toBe(body(html('/')));
+  /*
+   * The body used to be byte-identical across routes, and this asserted exactly that.
+   *
+   * It is not any more: the build renders each route's markup into its own `#root` so the page's H1
+   * and copy are in the response (tooling/prerenderBodies.ts). What must still be identical is
+   * everything AROUND that container — the <body> attributes and the GTM noscript frame — because
+   * those come from the one shared shell and a difference there would mean the shell was rewritten
+   * per route by accident.
+   */
+  it('keeps everything outside #root identical across routes', () => {
+    const chrome = (s: string) => {
+      const body = s.slice(s.indexOf('<body'));
+      return body.replace(/(<div id="root">)[\s\S]*(<\/div>)/, '$1$2');
+    };
+    expect(chrome(html('/solutions/producers'))).toBe(chrome(html('/')));
   });
 
   it('escapes markup-significant characters in attributes', () => {

@@ -2,10 +2,9 @@ import { Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useFirstVisit, useAuthInit, useSilktide, useAfterIdle, useGoogleTagManager } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
-import { WelcomeMessage, FeedbackForm, SineWaves, GoogleOneTap } from "@resomix/ui";
+import { WelcomeMessage, FeedbackForm, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
 import { LandingLayout } from "@/components/index.ts";
-import { AppBackground } from "@/components/Layout/AppBackground.tsx";
 import { BetaAuthRedirect } from "@/components/BetaAuthRedirect.tsx";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary.tsx";
 import { RouteMeta } from "@/components/RouteMeta.tsx";
@@ -61,28 +60,26 @@ function App() {
   useGoogleTagManager(import.meta.env.VITE_GTM_ID ?? 'GTM-PD9XQZRV', analyticsReady);
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
-  // Initialize authentication
-  const { isInitialized, isLoading } = useAuthInit();
+  /*
+   * Auth initialisation runs, but it no longer GATES the page.
+   *
+   * This used to return a full-screen loader until `isInitialized`, which meant the marketing copy
+   * could not paint until a refresh round-trip to bserver.resomix.com had completed — a network
+   * call standing between the visitor and an entirely static page. It also made the pages
+   * unprerenderable: a build-time render would capture the loader instead of the content, which is
+   * precisely what left `<div id="root">` empty in view-source.
+   *
+   * Nothing here needs the wait. Landing owns no protected routes (beta does — see the redirects
+   * below), so the only auth-dependent pixels are the header's account control and the verification
+   * banner, and both settle on their own. The webapp keeps its gate, because it does guard routes.
+   */
+  useAuthInit();
 
   // Google One Tap: prompt logged-out visitors, but not on the /auth page (button lives there).
   const location = useLocation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const onAuthRoute = location.pathname.startsWith("/auth");
 
-
-  // Show simple loading during auth initialization to avoid flashes
-  if (isLoading || !isInitialized) {
-    return (
-      <div className="relative flex min-h-screen items-center justify-center bg-[var(--color-secondary)]">
-        {/* The boot screen carries the app backdrop too, so the first paint already looks like the
-            product instead of a flat panel. */}
-        <AppBackground />
-        <div className="relative z-30 w-full max-w-[300px] p-5">
-          <SineWaves />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>

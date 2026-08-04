@@ -1,363 +1,89 @@
-# SEO & Performance — Baseline Audit and Work Completed
+# SEO & Performance — Full Record
 
-Reference document for the SEO / performance workstream. Part 1 is the raw PageSpeed Insights
-baseline, recorded verbatim so it can be compared against later runs. Part 2 is what has already
-shipped. Part 3 is what remains.
+Single source of truth for the SEO / performance workstream on `resomix.com` and
+`beta.resomix.com`.
 
----
+- **Part 1** — everything done, in the order it was done, with the reasoning and the decisions taken
+  along the way (including the ones that turned out wrong).
+- **Part 2** — all three PageSpeed Insights runs, recorded verbatim so they can be compared.
+- **Part 3** — where the site stands today: what is fixed, what regressed, and why.
+- **Part 4** — what remains.
+- **Part 5** — the plan to reach a genuinely professional score.
 
-# Part 1 — PageSpeed Insights baseline
-
-**URL:** `https://resomix.com/`
-**Captured:** Aug 3, 2026, 10:02:20 PM GMT+5
-**Lighthouse:** 13.4.1 · HeadlessChromium 150.0.7871.186 · single page session · initial page load
-**Mobile config:** Emulated Moto G Power, **Slow 4G throttling**
-**Desktop config:** Emulated Desktop, custom throttling
-**Field data (CrUX):** *No Data* — the site has no real-user measurements yet, so every number below
-is lab-simulated.
-
-## 1.1 Scores
-
-| Category | Mobile | Desktop |
-|---|---|---|
-| **Performance** | **56** | **78** |
-| Accessibility | 96 | 96 |
-| Best Practices | 96 | 96 |
-| SEO | **100** | **100** |
-| Agentic Browsing | 2/3 | 2/3 |
-
-## 1.2 Core metrics
-
-| Metric | Mobile | Desktop |
-|---|---|---|
-| First Contentful Paint | **10.7 s** 🔴 | 0.6 s 🟢 |
-| Largest Contentful Paint | **12.3 s** 🔴 | 2.2 s 🟠 |
-| Total Blocking Time | 0 ms 🟢 | 110 ms 🟢 |
-| Cumulative Layout Shift | 0 🟢 | 0.087 🟢 |
-| Speed Index | **10.7 s** 🔴 | 2.9 s 🔴 |
-
-**Total page weight: 1,872 KiB** (audit "Avoids enormous network payloads" — passing).
-
-### Reading the shape of this
-
-TBT is 0 ms on mobile and JS execution is 0.8 s with 1.5 s total main-thread work — all green.
-**This is not a "too much JavaScript executing" problem.** It is a load-blocking problem: nothing
-paints for ten seconds because the render path is waiting on network. The mobile→desktop gap (56 vs
-78) on identical code confirms it is bandwidth-bound, not compute-bound.
-
-## 1.3 Root cause #1 — Web fonts (~994 KiB, 8 files, all `.otf`/`.ttf`)
-
-The network dependency tree names a font as the terminal node of the critical path on **both** form
-factors.
-
-| Font | Size | Mobile | Desktop |
-|---|---|---|---|
-| HelveticaNeueRoman.otf | 247.8 KiB | 1,109 ms | 3,710 ms |
-| HelveticaNeueBold.otf | 240.7 KiB | 1,681 ms | 4,380 ms |
-| HelveticaNeueLight.otf | 118.6 KiB | 1,660 ms | 4,348 ms |
-| FiraCode-SemiBold.ttf | 84.1 KiB | 1,707 ms | 4,383 ms |
-| **FiraCode-Medium.ttf** | 83.9 KiB | **1,766 ms** ← critical path | **4,403 ms** ← critical path |
-| FiraCode-Regular.ttf | 83.8 KiB | 1,131 ms | 3,711 ms |
-| FiraCode-Light.ttf | 83.5 KiB | 1,724 ms | 4,383 ms |
-| benzin-bold.ttf | 51.6 KiB | 1,708 ms | 4,382 ms |
-| **Total** | **~994 KiB** | | |
-
-**Maximum critical path latency: 1,766 ms (mobile) / 4,403 ms (desktop).**
-
-The chain is `HTML → index.css → 8 fonts`. The fonts cannot even be *discovered* until the CSS
-parses. For scale, the JS entry chunk is 77 KiB and the CSS is 22.5 KiB — fonts are ~13× the
-JavaScript.
-
-Three separate reported symptoms trace back to this single cause:
-
-- **Desktop LCP element** is `<h1 class="hm-benzin uppercase">HEAR THE INVISIBLE` with
-  **element render delay 4,430 ms** and TTFB 0 ms. The hero is waiting on Benzin.
-- **Mobile LCP element** is the beta banner paragraph
-  (`<p class="text-[length:var(--px-11)] lg:text-[length:var(--px-9)] font-light font-fi…">`) with
-  element render delay 2,500 ms — the hero has not rendered yet at that point.
-- **Desktop CLS 0.087 is entirely font-swap reflow.** Culprit table:
-
-  | Shift | Element | Attributed to |
-  |---|---|---|
-  | 0.059 | `div.mx-auto.text-[var(--color-text-secondary)].relative.z-30` (page shell / nav) | `/fonts/FiraCode-Medium.ttf` (Web font) |
-  | 0.026 | `div.hm-hero-art` | benzin-bold.ttf, HelveticaNeueBold.otf, FiraCode-Light.ttf, HelveticaNeueLight.otf, FiraCode-SemiBold.ttf (Web font) |
-  | 0.002 | remainder | |
-
-### Build-side confirmation
-
-Measured directly from `apps/landing/dist`:
-
-- `dist/` total: **16 MB**
-- `dist/fonts/`: **13 MB across 47 files — zero `.woff2`**
-- **46 `@font-face` declarations** in `apps/landing/src/styles/fonts.css`:
-  Montserrat (19), Helvetica_Neue (17), Fira Code (6), Auger Mono (6), Benzin (2),
-  "Auger Mono TEST" (1)
-- `font-display: swap` on all 46 — this is correct and the "Font display" audit **passes**
-- **No `<link rel="preload">` for any font** in `apps/landing/index.html`
-
-> Note: `du` sizes above are uncompressed on-disk; Lighthouse figures are transfer sizes. Fonts are
-> already compressed formats, so the two are close for fonts but diverge for JS/CSS.
-
-## 1.4 Root cause #2 — Third-party JavaScript exceeds first-party
-
-| Party | Transfer | Main-thread (mobile) | Main-thread (desktop) | Unused |
-|---|---|---|---|---|
-| posthog.com | 182 KiB | 307 ms | 335 ms | 88.7 KiB |
-| Google Tag Manager | 119 KiB | 68 ms | — | 63.0 KiB |
-| Other Google APIs/SDKs (GSI) | 98 KiB | 19 ms | — | 71.7 KiB |
-| **Total** | **~399 KiB** | **~394 ms** | | **223 KiB** |
-
-First-party JS is 249 KiB. **Third-party is larger than the app itself.**
-
-PostHog breakdown (mobile transfer / main-thread):
-
-| Script | Size | Main thread | Cache TTL |
-|---|---|---|---|
-| `/static/array.js` | 76 KiB | 161 ms | 4 h |
-| `/static/posthog-recorder.js?v=1.410.4` | 55 KiB | 129 ms | 4 h |
-| `/static/surveys.js?v=1.410.4` | 33 KiB | 7 ms | 4 h |
-| `/static/dead-clicks-autocapture.js?v=1.410.4` | 7 KiB | 2 ms | 4 h |
-| `/static/exception-autocapture.js?v=1.410.4` | 5 KiB | 3 ms | 4 h |
-| `/static/web-vitals.js?v=1.410.4` | 3 KiB | 4 ms | 4 h |
-| `…phc_7Dd3e…/config.js` | 1 KiB | 1 ms | 5 m |
-
-Google Tag Manager: `/gtm.js?id=GTM-PD9XQZRV` — 119 KiB / 68 ms.
-Google GSI (One Tap): `/gsi/client` 97 KiB / 19 ms, `/gsi/style` 1 KiB.
-
-PostHog is additionally responsible for **100 % of** three separate audits:
-
-- **Use efficient cache lifetimes — est. savings 123 KiB.** 181 KiB of PostHog assets on a 4-hour TTL.
-- **Legacy JavaScript — est. savings 44 KiB** (43.6 KiB all PostHog):
-  | Script | Wasted | Polyfill |
-  |---|---|---|
-  | `web-vitals.js` | 15.4 KiB | `Array.prototype.at` (`array-at-polyfill.mjs:1:52`) |
-  | `posthog-recorder.js` | 11.0 KiB | `Array.from` (`rrweb-record.js:1:0`) |
-  | `surveys.js` | 8.8 KiB | `Math.trunc` (`uuidv7.mjs:12:21`) |
-  | `array.js` | 8.4 KiB | `Math.trunc` (`uuidv7.mjs:12:21`) |
-- **Duplicated JavaScript — est. savings 8 KiB** (`fflate`, `autocapture-utils.mjs`, `uuidv7.mjs`,
-  `error-properties-builder.mjs`, `user-agent-utils.mjs`, `gzip.mjs`, `preact.module.js`).
-
-**No origins are preconnected.** Lighthouse's own candidates:
-
-| Origin | Est. LCP saving (mobile) | Est. LCP saving (desktop) |
-|---|---|---|
-| `https://eu.i.posthog.com` | 370 ms | 150 ms |
-| `https://bserver.resomix.com` | 320 ms | — |
-| `https://accounts.google.com` | — | 80 ms |
-
-## 1.5 Root cause #3 — Unused first-party JavaScript
-
-**Reduce unused JavaScript — est. savings 399 KiB total.**
-
-| File | Transfer | Unused | % |
-|---|---|---|---|
-| `/assets/vendor-f9M9xD2Z.js` | 188.6 KiB | **153.2 KiB** | **81 %** |
-| `/assets/react-C3bUCrXl.js` | 60.4 KiB | 22.1 KiB | 37 % |
-| *(1st-party subtotal)* | 249.0 KiB | 175.3 KiB | |
-| posthog.com | 161.1 KiB | 88.7 KiB | |
-| GSI `/gsi/client` | 95.8 KiB | 71.7 KiB | |
-| GTM `/gtm.js` | 118.1 KiB | 63.0 KiB | |
-
-Vendor chunk contents (verified): **i18next, axios, zustand**.
-`three` / `@react-three/fiber` are **not** in the landing bundle — the `manualChunks` rules naming
-them in `vite.config.ts` are defensive only.
-
-Largest built chunks (on-disk, uncompressed):
-
-| JS | Size | | CSS | Size |
-|---|---|---|---|---|
-| `vendor-*.js` | 596 K | | `index-*.css` | 92 K |
-| `index-*.js` | 236 K | | `SonicDiscoveryPage-*.css` | 40 K |
-| `react-*.js` | 188 K | | `HomePage-*.css` | 32 K |
-| `ProductPage-*.js` | 76 K | | `DevelopersPage-*.css` | 28 K |
-| `resomix-ui-*.js` | 68 K | | `PartnersPilotPage-*.css` | 24 K |
-| `CatalogueIntelligencePage-*.js` | 68 K | | | |
-| `AboutPage-*.js` | 64 K | | | |
-| `SonicDiscoveryPage-*.js` | 60 K | | | |
-
-## 1.6 Render-blocking requests
-
-| | Mobile | Desktop |
-|---|---|---|
-| **Est. savings** | **4,990 ms** | *(not scored)* |
-| resomix.com total | 22.5 KiB / 810 ms | 22.6 KiB / 160 ms |
-| `/assets/index-D0FCgxEq.css` | 17.5 KiB / 650 ms | 17.5 KiB / 160 ms |
-| `/assets/resomix-ui-CDeEUvgT.css` | 5.0 KiB / 160 ms | 5.0 KiB |
-
-## 1.7 Smaller findings
-
-- **Improve image delivery — est. savings 40 KiB.**
-  `/assets/void-grai….png` — 45.6 KiB resource, **39.6 KiB saveable**.
-  Element: `div.hm-layer.hm-layer-grain` (the void-field grain texture).
-  Recommendation given: modern format (WebP/AVIF) or stronger compression.
-- **Minify JavaScript — est. savings 5 KiB.**
-  `/scripts/resomix-consent.js` — 11.9 KiB shipped **unminified**, 5.3 KiB saveable.
-  (It lives in `public/scripts/`, so Vite never processes it.)
-- **Forced reflow — 83 ms.**
-  Top function call: `/assets/vendor-f9M9xD2Z.js:2:1408`
-  Source: `/assets/index-B7xj91uA.js:2:32159`
-- **Avoid non-composited animations — 1 element.**
-  `section#hm-hero > div.hm-hero-art > svg.hm-sl > path.hm-dashflow`
-  `<path class="hm-dashflow" d="M40 250 V430" vector-effect="non-scaling-stroke" style="color: rgba(238, 74, 38, 0.75); stroke-width: 1.5;">`
-  Unsupported CSS property: **`stroke-dashoffset`** (animation name `hm-dash`).
-- **Avoid long main-thread tasks — 4 long tasks.**
-  | Source | Duration | Start |
-  |---|---|---|
-  | `posthog-recorder.js` | 139 ms | 5,586 ms |
-  | `vendor-f9M9xD2Z.js` | 76 ms | 6,059 ms |
-  | `vendor-f9M9xD2Z.js` | 52 ms | 5,372 ms |
-  | `gtm.js` | 52 ms | 2,886 ms |
-- **Optimize DOM size** (informational, not failing).
-  Total elements **1,603**; DOM depth **19** (`svg.hm-sl > defs > lineargradient#hm-tgrad > stop`);
-  most children **19** (`div.hm-frame > div.hm-cat-grid > figure.hm-cat-map > svg.hm-sl`).
-
-## 1.8 Performance — passed audits (13)
-
-Layout shift culprits · Document request latency · **Font display** · INP breakdown (n/a) ·
-LCP request discovery (n/a) · Optimize viewport for mobile · **Minify CSS** · **Reduce unused CSS** ·
-Avoids enormous network payloads (1,872 KiB) · User Timing marks (n/a) ·
-**JavaScript execution time — 0.8 s** · **Minimizes main-thread work — 1.5 s** ·
-**Image elements have explicit `width` and `height`**
-
-## 1.9 Accessibility — 96
-
-22 passed · 10 manual checks · 40 not applicable. No failing automated audits.
-
-Passed includes: `aria-*` match roles · `aria-hidden` not on `<body>` · roles have required `aria-*` ·
-role values valid · `aria-*` valid values · `aria-*` not misspelled · buttons have accessible name ·
-`user-scalable="no"` not used · ARIA used as specified · `aria-hidden` has no focusable descendants ·
-only permitted ARIA attributes · **background/foreground contrast sufficient** · `<title>` element ·
-`<html lang>` present and valid · links distinguishable without colour · links have discernible name ·
-lists contain only `<li>` · `<li>` inside `<ul>/<ol>/<menu>` · headings sequentially descending ·
-document has a main landmark · no deprecated ARIA roles.
-
-## 1.10 Best Practices — 96
-
-**Failing:**
-
-1. **Touch targets do not have sufficient size or spacing.**
-   Failing elements are the footer legal/support links:
-   - `legal.info()` → `id="footer-legal-link"` → `https://legal.resomix.com`
-   - `support.to()` → `id="footer-support-link"` → `https://support.resomix.com`
-2. **Browser errors were logged to the console.**
-   - `posthog.com` — API errors: `{object 0}`
-   - `resomix.com` — `…authRefresh 1.0` → **401 Unauthorized** from `beta.resomix.com`
-     (the landing page calls the auth refresh endpoint for anonymous visitors)
-   - `The fetch of the config file resulted in a network error: ERR_NAME_NOT_RESOLVED`
-   - `The provider's fetch config file fetch resulted in an error response code`
-3. **Missing source maps for large first-party JavaScript.**
-   `vendor-*.js` has no source map — `sourcemap: false` in `apps/landing/vite.config.ts`.
-   (PostHog's static files are also listed.)
-
-**Informational (unscored) — Trust and Safety:** CSP effective against XSS · strong HSTS policy ·
-origin isolation with COOP · clickjacking mitigation via XFO or CSP · DOM-based XSS mitigation via
-Trusted Types. **None of these are currently configured.**
-
-**Passed (11):** Uses HTTPS · avoids deprecated APIs · avoids third-party cookies · allows paste into
-inputs · no geolocation prompt on load · no notification prompt on load · images with correct aspect
-ratio · images at appropriate resolution · HTML doctype · charset defined · no Issues-panel issues.
-
-## 1.11 SEO — 100
-
-All 9 audits pass: page isn't blocked from indexing · has a `<title>` · has a meta description ·
-successful HTTP status · links have descriptive text · links are crawlable · `robots.txt` is valid ·
-valid `hreflang` · valid `rel=canonical`.
-
-Manual check offered: "Structured data is valid" (unscored — run the Rich Results test).
-
-## 1.12 Agentic Browsing — 2/3
-
-**Failing: `llms.txt` does not follow recommendations.**
-- *File is missing a required H1 header (e.g. `# Title`)*
-- *File does not appear to contain any links*
-
-**Cause:** `/llms.txt` **does not exist**. Cloudflare Pages' SPA fallback returns `index.html` with a
-**200**, so Lighthouse received HTML and tried to parse it as Markdown. This soft-404 behaviour
-affects **every** non-existent file path, not just this one.
-
-**Passed (2):** Accessibility tree is well-formed · Cumulative Layout Shift.
-**Not applicable (3):** WebMCP form coverage · WebMCP tools registered · WebMCP schemas valid.
+> **Reading note.** Numbers labelled *measured* come from the build output or the live site and are
+> reproducible. Numbers from Lighthouse are lab-simulated and vary between runs. The site has **no
+> field data (CrUX)** yet — "Discover what your real users are experiencing: No Data" — so every
+> Lighthouse figure here is simulated, not observed.
 
 ---
 
-# Part 2 — Work completed
+# Part 1 — What was done, in order
 
-Everything below is already shipped and covered by tests.
-
-## 2.1 SEO infrastructure
-
-### Single source of truth per app
+## 1.1 Centralised route metadata
 
 `apps/landing/src/routes/seoConfig.ts` (22 routes) and `apps/webapp/src/routes/seoConfig.ts`
-(19 routes) hold title / description / changefreq / priority / `noindex` / canonical override.
-**Both the document head and the sitemap derive from this file**, so they cannot drift apart.
+(19 routes). One file per app holding title, description, changefreq, priority, `noindex`, and an
+optional cross-origin canonical.
 
-### What it replaced
+**Why:** the head and the sitemap were maintained independently and had drifted badly.
 
-- **Sitemap was hand-maintained and badly stale.** `public/sitemap.xml` advertised `/terms` and
-  `/privacy` — never routes — while listing **one** of the seventeen marketing pages.
-- **Titles were set ad hoc** by a `document.title` effect in **16 separate page components**; the
-  other four had none and inherited whatever the previous page left behind.
-- **`index.html` hardcoded `<link rel="canonical" href="https://resomix.com/">`**, which every route
-  inherited — all twenty URLs declared themselves to be the homepage.
+**What it replaced:**
 
-### Components
+- `public/sitemap.xml` was hand-written. It advertised `/terms` and `/privacy` — never routes — and
+  listed **one** of the seventeen marketing pages.
+- Titles were set by an ad-hoc `document.title` effect in **16 separate page components**; the other
+  four had none and inherited whatever the previous page left behind.
+- `index.html` hardcoded `<link rel="canonical" href="https://resomix.com/">`, which every route
+  inherited. All twenty URLs were declaring themselves to be the homepage.
 
-| File | Role |
-|---|---|
-| `packages/hooks/src/Seo/useDocumentMeta.ts` | Shared head writer (title, description, canonical, robots, OG, Twitter). One implementation, both apps. |
-| `apps/landing/src/components/RouteMeta.tsx` | Landing: reads route → applies metadata. Mounted once next to `<Routes>`. |
-| `apps/webapp/src/components/RouteMeta.tsx` | Webapp equivalent, honours cross-origin canonical overrides. |
-| `tooling/prerenderHead.ts` | Build plugin — emits one HTML file per route with the head baked in. Shared by both apps. |
+## 1.2 Runtime head management
 
-### Metadata quality rules (enforced by tests)
+`packages/hooks/src/Seo/useDocumentMeta.ts` — one shared implementation that writes title,
+description, canonical, robots, Open Graph and Twitter tags. Each app has a thin `RouteMeta`
+component that reads its own config and mounts once next to `<Routes>`.
 
-- Every route has an entry; every entry maps to a real route
-- Titles unique and ≤ 60 chars (max is 58) — 8 were tightened
-- Descriptions unique, 50–160 chars — 1 was shortened, 1 lengthened
-- Unknown paths get `noindex, follow` and the 404 title
-- Trailing slashes collapse (`/trust/` → `/trust`)
+**Decision — shared hook, per-app data.** Both apps had the same defect; only the route→metadata
+mapping differs.
 
-## 2.2 Generated sitemaps
+**Quality rules, enforced by tests:** unique titles ≤ 60 chars (SERP truncation), unique descriptions
+50–160 chars, unknown paths get `noindex, follow` and the 404 title, trailing slashes collapse
+(`/trust/` → `/trust`).
 
-Both apps generate `dist/sitemap.xml` at build time via a Vite plugin reading `seoConfig`.
-`public/sitemap.xml` is deleted in both, and a test fails if it reappears.
+## 1.3 Generated sitemaps
 
-- **Landing: 20 indexed URLs** of 22 routes (`/error` and `/404` excluded as `noindex`).
-- **Webapp: 3 indexed URLs** of 19 — `/`, `/sonic-discovery`, `/analysis`.
+A Vite plugin emits `dist/sitemap.xml` from `seoConfig` at build time. `public/sitemap.xml` deleted
+in both apps; a test fails if it reappears.
 
-Verified: zero dead URLs; every excluded route is a redirect, a beta hand-off, or `noindex`.
+- Landing: **20 indexed URLs** of 22 routes (`/error`, `/404` excluded as `noindex`)
+- Webapp: **3** — `/`, `/sonic-discovery`, `/analysis`
 
-## 2.3 Static head prerendering
+Verified zero dead URLs; every exclusion is a redirect, a beta hand-off, or `noindex`.
+
+## 1.4 Static head prerendering
 
 **Problem:** link previews on WhatsApp, Slack, iMessage, LinkedIn and Upwork showed the homepage for
 every URL. This is an SPA — every URL served the same `index.html`, and `RouteMeta` only rewrites the
-head after React boots. Those scrapers **do not execute JavaScript**; they read the bytes the server
-returned. Runtime head management cannot reach them by construction. (Googlebot renders JS, so search
-was unaffected.)
+head after React boots. Those scrapers **do not execute JavaScript**. Runtime head management cannot
+reach them, by construction. (Googlebot renders JS, so search was never affected.)
 
-**Fix:** the build emits `dist/<route>/index.html` per route with the head already correct.
-Cloudflare Pages serves a directory's `index.html` for that path.
+**Fix:** `tooling/prerenderHead.ts` emits `dist/<route>/index.html` per route with the head already
+correct. Cloudflare Pages serves a directory's `index.html` for that path.
 
-- Landing: **21 HTML files** · Webapp: **18 HTML files**
-- Head-only prerendering — the body is still client-rendered, which is all a preview needs
-- Verified: body below `<head>` is byte-identical to the shell; asset URLs stay absolute (a relative
-  path would make nested pages request `/solutions/producers/assets/…` and fail to boot)
-- `&` is escaped in attributes (e.g. "Trust, Rights &amp; Security")
+- Landing **26 files + 404.html**, webapp **18 + 404.html**
+- Head-only — the body is still client-rendered, which is all a preview needs
+- Verified: body below `<head>` byte-identical to the shell; asset URLs stay absolute (a relative
+  path would make nested pages request `/solutions/producers/assets/…` and fail to boot); `&` escaped
 
-**After each deploy**, already-shared links sit in scraper caches. Force a re-scrape:
-[Facebook debugger](https://developers.facebook.com/tools/debug/) (also drives WhatsApp) and
-[LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/). Slack and iMessage refresh on
-their own.
+**Decision — head-only, not full SSG.** George's strategy doc asks for the rendered H1 and body in
+the initial HTML too. That is a much larger change; head-only solved the reported symptom at a
+fraction of the risk. Full body prerendering remains open (§4.3).
 
-## 2.4 Crawl posture
+## 1.5 Crawl posture
 
-### Landing
-`robots.txt` allows all; `_headers` sets `immutable` on `/assets/*` and `/fonts/*`, and
-`must-revalidate` on HTML. `index.html` carries OG/Twitter defaults plus JSON-LD
-`Organization` + `WebSite`. Favicon `type` corrected (declared `image/svg+xml`, was a PNG).
+**Landing:** `_headers` with immutable hashed assets and always-revalidated HTML. Favicon `type`
+corrected (declared `image/svg+xml`, was a PNG).
 
-### Webapp — was self-contradictory, now consistent
+**Webapp — it contradicted itself three ways:**
 
 | | Before | After |
 |---|---|---|
@@ -367,158 +93,136 @@ their own.
 
 `nofollow` removed entirely — it stranded link equity for no benefit.
 
-**Crawlable but `noindex`:** `/library`, `/profile`, `/sessions`, `/change-password`, all six
-`/auth/*` screens, `/error`, `/loader`, `/playlist`. Deliberately not robots-blocked: a blocked page
-is never fetched, so its `noindex` is never read.
+**Decision — crawlable but `noindex`, not robots-blocked.** `/library`, `/profile`, `/sessions`,
+`/change-password` and the six `/auth/*` screens carry `noindex`. A page blocked in `robots.txt` is
+never fetched, so its `noindex` is never read, and the URL can still surface as a bare link.
 
-**Cross-origin canonicals:** `/subscribe` and `/contact` render the *same shared components* as the
-marketing site. Both canonicalise to `resomix.com` and are excluded from beta's sitemap. They stay
-`index, follow` on purpose — `noindex` + `canonical` is a contradictory pair.
+**Decision — cross-origin canonicals.** `/subscribe` and `/contact` render the *same shared
+components* on both origins. Both canonicalise to `resomix.com` and are excluded from beta's
+sitemap. They stay `index, follow` on purpose: `noindex` + `canonical` is a contradictory pair.
 
-The canonical also drops the query string, collapsing the effectively-infinite
+The canonical also drops the query string, collapsing the effectively infinite
 `/sonic-discovery?id=…` playlist URLs onto one page.
 
-### Embed
-Stays `noindex, follow` (correct for a widget). `og:image` was relative `/logo.png` — scrapers do not
-resolve relative URLs, so shared embeds previewed with no image. Now absolute, plus `twitter:image`.
+**Embed:** stays `noindex, follow` (correct for a widget). Its `og:image` was relative `/logo.png` —
+scrapers do not resolve relative URLs, so shared embeds previewed with no image. Now absolute.
 
-JSON-LD `WebApplication` added to the webapp.
+## 1.6 Structured data
 
-## 2.5 Navigation stability (shipped alongside)
+JSON-LD in the static HTML so it is read without executing the app: `Organization` + `WebSite`
+(landing), `WebApplication` (webapp).
 
-Not SEO, but the same release. Symptom: navigation silently failed **after a deploy but never
-locally** — clicking a nav item did nothing.
+## 1.7 Font delivery rebuilt — the single biggest performance change
 
-**Cause:** every page is a hash-named chunk. A tab open across a deploy requests the old filename →
-404 → the `import()` rejects → **no ErrorBoundary existed anywhere in the landing app** → nothing
-rendered. `React.lazy` memoises the rejection, so that route stayed dead for the session.
+**The problem, measured:** `dist/fonts` was **12 MB across 47 files with zero woff2**. Each Helvetica
+Neue face carried ~2,200 codepoints — Latin, Greek, Cyrillic, **Georgian and Cherokee**. The eight
+faces the homepage used came to **994 KiB on the wire**. Lighthouse put a font at the END of the
+critical path on both form factors and attributed **100 % of the desktop CLS** to font swap.
 
-| File | Role |
-|---|---|
-| `apps/landing/src/routes/lazyRoute.ts` | Retries once, then treats a second failure as a stale document and reloads. One reload per session, re-armed after any success — a broken build cannot become a reload loop. |
-| `apps/landing/src/components/RouteErrorBoundary.tsx` | Actionable error screen instead of a blank one; clears on navigation. |
-| `apps/landing/src/components/RouteFallback.tsx` | Replaces `<Suspense fallback={null}>`, which rendered a blank document during chunk download. |
-| `apps/landing/src/routes/pageLoaders.ts` | Central route→chunk map + `prefetchRoute` on hover/focus/touch. |
+**Decision — subsetting, not just format conversion.** Converting to woff2 alone was measured at only
+**21 %** on the wire (994 → 781 KiB), because Cloudflare already gzips `.otf`. The real lever was
+glyph coverage.
 
-Also: navigation runs inside `startTransition` (keeps the current page on screen while the next chunk
-loads; discards superseded transitions on fast clicks), a 2px top progress bar, and a fix for the
-mega menu calling `preventDefault()` unconditionally — ⌘-click and middle-click were being swallowed.
+**Decision — `unicode-range` split, not a single subset.** Every face ships as two files:
 
-**Note:** navigating beta → landing is a full document load (`window.location.href`), so it was never
-exposed to the stale-chunk failure.
-
-## 2.6 Design-system work (same release)
-
-- **Beta banner stacking.** The notice rendered grey or invisible on marketing pages. Cause was not
-  colour: the page shell is `relative z-30` (a stacking context) and pages hang a
-  `position: fixed; inset: 0` void-field backdrop inside it, so it painted over a `z-10` banner.
-  Both banners are now `relative z-40`. `AuthStatusBanner`'s `z-10` was also inert — it sat on a
-  statically positioned box.
-- **Canonical hero scale.** All 17 heroes now use 32 / 36 / 48 px at weight 900 (taken from
-  `/product/catalog-intelligence`), and `44/52` block padding via an `rx-hero-pad` hook. Previously
-  desktop sizes ranged 46–76 px and four heroes declared **no weight at all** (they inherited
-  `font-light`; it only looked right because Benzin ships a single 700 face).
-- **Hero accent emphasis.** `[[double brackets]]` in the translation string, rendered by
-  `HeroTitle`. Was 6 of 17 heroes; now all 17. Moving the accent is a copy edit, not a code change.
-- **`/pricing` removed**, consolidated onto `/subscribe` (they rendered the identical component).
-  `/pricing` remains as a `<Navigate replace>` so existing links don't 404.
-- **`/subscribe` restyled** to the marketing system (square hairline panels, mono eyebrows, Benzin
-  headline, notched accent button) — replacing 10px radii, `backdrop-blur`, `rounded-full` pills and
-  dotted slate borders. Billing logic untouched. Note this page is shared, so beta's `/subscribe`
-  changed too.
-- **Backend:** `PUBLIC_PLAN_CODES` whitelist in `billing_service.py` so stray DB plan rows (e.g. a
-  hand-made `temp` plan) can no longer appear on the public pricing page.
-
-## 2.7 Test coverage added
-
-| Suite | Covers |
-|---|---|
-| `routeSeo.spec.tsx` (landing, webapp) | route↔config parity, title/description limits, canonical rules, RouteMeta output |
-| `prerenderedHead.spec.ts` (landing, webapp) | asserts against real build output — per-route head, absolute assets, escaping |
-| `routeChunkRecovery.spec.tsx` | retry, one-shot reload, re-arm, no reload loop |
-| `bannerStacking.spec.tsx` | banner z-index beats the page shell, stays below drawer/modals |
-| `heroTitleScale.spec.ts`, `heroTitleEmphasis.spec.tsx` | canonical ramp, no off-scale sizes, accent markers |
-| `pricingRedirect.spec.tsx`, `pricingDesignSystem.spec.tsx` | redirect survives, design-system tells removed |
-
-**Landing 224 passing · Webapp 161 passing · all four apps build clean.**
-
----
-
-## 2.8 Font delivery — rebuilt (fixes root cause #1)
-
-`tooling/buildFonts.py` regenerates every face as **two subset `.woff2` files with a
-`unicode-range`**, so a page downloads only the coverage it uses:
-
-| | latin | ext |
+| | `.latin.woff2` | `.ext.woff2` |
 |---|---|---|
 | Covers | Latin + punctuation, super/subscripts, currency, letterlike, number forms, arrows, maths, misc-technical, box-drawing, geometric shapes, misc symbols, dingbats | Greek + Cyrillic |
 | Fetched | always | only when such text is present |
 
-**Homepage critical faces: 994 KiB → 333 KiB (67% smaller).**
-**Deployed font directory: 12 MB → 1.7 MB per app.**
+Greek and Cyrillic kept because the team is in Thessaloniki and the catalogue carries international
+artist names. They cost nothing on an English page.
 
-| Face | Was (wire) | Now (latin) |
-|---|---|---|
-| HelveticaNeueRoman | 247.8 KiB | 72.8 KiB |
-| HelveticaNeueBold | 240.7 KiB | ~69 KiB |
-| HelveticaNeueLight | 118.6 KiB | ~48 KiB |
-| FiraCode ×4 | 335.3 KiB | ~127 KiB |
-| benzin-bold | 51.6 KiB | 22.6 KiB |
+**Decision — range verified against real content before committing.** Every non-ASCII character in
+the locale file and all TSX was extracted and checked. That caught `⌘`, `─` and `═`, which an
+ordinary Latin subset would have dropped. (`💪` is dropped, but it was never in the font — no
+regression.) Later re-checked with comments stripped: `⌘` and `═` appear only in code comments; `─`
+is genuinely rendered in the global footer's terminal divider. Cost of keeping both blocks: **0.3 KB**.
 
-Decisions and the reasoning behind them:
+**Montserrat deleted** — 18 faces, 4.6 MB, referenced by nothing.
+**Auger Mono kept** despite appearing unused — `.font-auger` is used by
+`packages/ui/src/Elements/SearchDropdown.tsx`. It was nearly deleted.
 
-- **woff2 alone was only 21%** on the wire (994 → 781 KiB) because Cloudflare already gzips `.otf`.
-  The real lever was glyph coverage: each Helvetica Neue face carried ~2,200 codepoints including
-  **Georgian and Cherokee**. Subsetting is what produced the win.
-- **Greek and Cyrillic kept**, split into `.ext` — the team is in Thessaloniki and the catalogue
-  carries international artist names. They cost nothing on an English page.
-- **Subset range verified against real content** before committing: every non-ASCII character in the
-  locale file and all TSX was checked. That caught `⌘`, `─` and `═`, which an ordinary Latin subset
-  would have dropped. (`💪` is dropped, but it was never in the font — no regression.)
-- **Montserrat deleted** — 18 faces, 4.6 MB, referenced by nothing.
-- **Auger Mono kept** despite appearing unused: `.font-auger` is used by
-  `packages/ui/src/Elements/SearchDropdown.tsx`. Nearly deleted it.
-- **Sources moved to `/fonts-src`** (not deployed). Only generated `.woff2` ships.
-- **Preloads: 3, not 11.** The webapp preloaded eleven `.otf`/`.ttf` files — all of which this change
-  made dangling, and preloading everything only front-loads the same bytes. Now Benzin 700 (the
-  hero `<h1>`, the desktop LCP element), Helvetica 300 (body) and Fira Code 500 (nav, the largest
-  single CLS culprit at 0.059), each as the latin subset. This also breaks the
-  `CSS → font` discovery chain that put a font at the end of the critical path.
-- `font-display: swap` retained on every face.
+**Sources moved to `/fonts-src`** (not deployed). Only generated `.woff2` ships.
+`tooling/buildFonts.py` regenerates everything.
 
-Guarded by `fontDelivery.spec.ts` (28 tests): no dangling `url()`, no unreferenced files, woff2
-only, every face split, preloads resolve and are declared, Montserrat stays gone, Auger stays.
+**Preloads: 3, not 11.** The webapp preloaded eleven `.otf`/`.ttf` files, all of which this change
+made dangling — and preloading everything only front-loads the same bytes. Now Benzin 700 (hero
+`<h1>`), Helvetica 300 (body), Fira Code 500 (nav).
 
-## 2.9 Edge routing — real 404s (fixes the soft-404)
+**Measured:** homepage font payload **994 → 333 KiB (67 %)**. Deployed font directory **12 MB → 1.7 MB
+per app**.
 
-Cloudflare Pages served `index.html` with a **200** for every unmatched path. `dist/404.html` is now
-emitted, which switches Pages to a genuine 404.
+> ⚠️ This preload set later proved incomplete. The face causing the remaining CLS is
+> **`FiraCode-Light`**, which is not among the three — see §3.2.
 
-That cuts both ways: **any path without a file is now a 404**, so every live route must have one.
-Handled by:
+## 1.8 Real 404 at the edge
 
-- All 22 SEO routes → prerendered already.
-- `extraRoutes` in the prerender plugin → shells for `/pricing`,
-  `/product/catalogue-intelligence`, `/profile`, `/sessions`, `/change-password` (two redirects,
-  three beta hand-offs). `noindex`, but titled with the site default — calling them "Page not found"
-  would tell a scraper something untrue.
+Cloudflare Pages served `index.html` with a **200** for every unmatched path — a soft 404. Lighthouse
+caught it via the `llms.txt` audit: it fetched `/llms.txt`, got the SPA shell with a 200, and tried
+to parse HTML as Markdown. Every non-existent path behaved the same way, which also lets junk URLs
+into the index.
+
+**Fix:** emit `dist/404.html`, which switches Pages to a genuine 404.
+
+**The trap that creates:** from then on, **any path without a file is a 404** — including real routes.
+Handled by enumerating the gaps *from the router*, not from memory:
+
+- 22 SEO routes → already prerendered
+- `extraRoutes` → shells for `/pricing`, `/product/catalogue-intelligence`, `/profile`, `/sessions`,
+  `/change-password` (two redirects, three beta hand-offs), `noindex` but titled with the site
+  default — calling them "Page not found" would tell a scraper something untrue
 - `/auth/*` is a wildcard (emailed verify/reset links) so it cannot be a static file →
-  `public/_redirects` rewrites it to the shell with a **200**. Scoped to `/auth/` only, so it cannot
-  shadow a prerendered page.
+  `public/_redirects` rewrites it to the shell with a **200**, scoped to `/auth/` so it cannot shadow
+  a prerendered page
 
-**26 route shells + 404.html** on landing; **18 + 404.html** on the webapp.
+A real `public/llms.txt` was added — Markdown, `# Resomix` H1, links to every live route.
 
-A real `public/llms.txt` was also added — Markdown, `# Resomix` H1, and links to every live route,
-which is what the Agentic Browsing audit asked for. It previously resolved to the SPA shell.
+## 1.9 Copy from `SEO_METADATA_ALL_PAGES.md`
 
-Guarded by `edgeRouting.spec.ts` (11 tests), which reads the route table from `App.tsx` so it fails
-if a new route ships without a shell — the failure mode that would otherwise 404 real pages in
-production.
+Per George: that document is authoritative for titles, descriptions and H1s; the `.docx` is for
+advice and implementation flow only.
 
-## 2.10 Bundle: the vendor chunk (fixes root cause #3)
+- **Titles + descriptions** — 19 landing routes, plus `/subscribe` and `/contact` on beta (they
+  canonicalise to landing, so they must match). Max title 59, max description 159.
+- **All 17 H1s**, each with a `[[…]]` accent phrase so the keyword takes the brand colour.
+- **Hero systems unified** — seven heroes still used `h1Lead`/`h1Em` key pairs that pinned the accent
+  to a fixed position; all 17 now use the inline marker, so moving emphasis is a copy edit. 16 dead
+  locale keys removed.
 
-Lighthouse reported `vendor-*.js` at 188.6 KiB transfer with **153.2 KiB unused (81 %)**. Attributing
-it with the newly-enabled source maps showed why:
+**One entry needed interpretation.** `/product/sonic-discovery`'s H1 field is not copy — it reads
+*"SONIC DISCOVERY — approved live hero line"*, i.e. "keep what's live". But the doc moves that live
+line ("Drop one track. Find what belongs next.") to the homepage, which would have put an identical
+H1 on two pages — the cannibalisation the strategy doc warns about. It now reads
+**"Find similar tracks by sound."**, taken from that page's own doc title and stated intent.
+
+**Edge 301s** added for `/pricing` → `/subscribe` and the catalogue spelling. Both were client-side
+`<Navigate replace>` only, so the server answered 200 twice and crawlers saw no redirect signal.
+
+## 1.10 Third-party staging
+
+| When | What |
+|---|---|
+| eager | Silktide consent banner — functional, and it gates the rest |
+| idle | Google One Tap (98 KiB) — user-facing, so it goes first |
+| idle + 1.5 s | Google Tag Manager (119 KiB) → PostHog (182 KiB, 7 scripts) |
+
+**Key finding: PostHog is not a dependency of this repo.** No package, no init code — the GTM
+container loads it. So PostHog can never start before GTM, and deferring GTM defers both:
+~301 KiB and ~375 ms of main-thread work off the critical path.
+
+**Kept inline and synchronous:** the `gtag('consent','default',{…denied})` snippet, which Consent
+Mode v2 requires to run *before* the container, and the `<noscript>` iframe. On beta's `/auth/*`
+routes One Tap stays immediate — signing in is the point of those pages.
+
+**Caching:** these are per-document, not per-page. SPA navigation does not re-fetch them; a reload
+re-uses the browser cache subject to each vendor's TTL (PostHog's is 4 h, set by their CDN and not
+controllable from here). The cost is a first-visit cost, which is what deferring addresses.
+
+## 1.11 Bundle: the vendor chunk
+
+Lighthouse reported `vendor-*.js` at 188.6 KiB with **153.2 KiB unused (81 %)**. Attributing it with
+the newly-enabled source maps:
 
 | Package | Share of vendor |
 |---|---|
@@ -529,169 +233,419 @@ it with the newly-enabled source maps showed why:
 | i18next | 4.1 % |
 | jsmediatags | 2.7 % |
 
-The marketing site was shipping the **entire audio stack** — HLS streaming, Howler, ID3 tag parsing —
-on a page with no player. It arrived through the `@resomix/hooks` barrel: landing imports five hooks
-from it, and because **no workspace package declared `sideEffects`**, Rollup had to assume every
-re-exported module might have side effects and could not drop any of them.
+The marketing site was shipping the **entire audio stack** — HLS streaming, Howler, ID3 parsing — on
+pages with no player. It arrived through the `@resomix/hooks` barrel: landing imports five hooks, and
+because **no workspace package declared `sideEffects`**, Rollup had to assume every re-exported module
+might have side effects and could not drop any.
 
-Fix: `"sideEffects": ["*.css"]` on all five packages. The `*.css` form is deliberate — `packages/ui`
-has two real stylesheet imports (`design-system/index.ts`, `ContourSphere.tsx`) that a blanket
-`false` would have silently dropped.
+**Fix:** `"sideEffects": ["*.css"]` on all five packages.
 
-**vendor: 588 K → 95 K raw.** Verified `hls.js`, `howler` and `jsmediatags` are absent from every
-landing chunk, and that the webapp still bundles the ones it uses. `howler` dropped from the webapp
-too — correct, because its only consumer is `PlayerPage`, whose route is commented out in `App.tsx`.
+**Decision — `["*.css"]`, not `false`.** `packages/ui` has two real stylesheet imports
+(`design-system/index.ts`, `ContourSphere.tsx`) that a blanket `false` would have silently dropped.
 
-## 2.11 Bundle: locale splitting
+**Measured: vendor 588 K → 95 K raw.** Verified `hls.js`, `howler` and `jsmediatags` absent from every
+landing chunk, and that the webapp still bundles what it uses. `howler` dropped from the webapp too —
+correct, because its only consumer is `PlayerPage`, whose route is commented out in `App.tsx`.
 
-`locales/en/common.json` was 204 KiB (**56.5 KiB gzipped**), statically imported by `i18n.ts`, so
-every visitor downloaded the copy for all twenty pages to read one.
+## 1.12 Bundle: locale splitting
+
+`locales/en/common.json` was 204 KiB (**56.5 KiB gzipped**), statically imported, so every visitor
+downloaded the copy for all twenty pages to read one.
 
 The 20 top-level namespaces map 1:1 onto pages, and a scan confirmed **no section referenced another
 section's namespace** — so the split was safe:
 
-- `locales/en/core.json` — `nav`, `general`, `waitlist` (7.1 K raw / **2.5 K gzipped**), loaded eagerly
+- `locales/en/core.json` — `nav`, `general`, `waitlist` (**2.5 K gzipped**), eager
 - `locales/en/pages/<ns>.json` × 17 — fetched by `pageLoaders.ts` **alongside the route chunk**
 
-Both promises are awaited together and `addResourceBundle` runs before the module resolves, so React
-can never mount a component whose strings are missing — that would render a raw `about.hero.title`
-for a frame.
+**Decision — load the slice with the chunk, not after it.** Both promises are awaited together and
+`addResourceBundle` runs before the module resolves, so React can never mount a component whose
+strings are missing — that would render a raw `about.hero.title` for a frame.
 
-`i18next-browser-languagedetector` was removed with it: there is one locale and no language
-switching, so detection could only ever resolve to `en`. `lng: 'en'` is now explicit, which is also
-more predictable — detection read localStorage and could be influenced by another app on the origin.
+`i18next-browser-languagedetector` removed: one locale, no switching, so detection could only ever
+resolve to `en`. `lng: 'en'` is now explicit, which is also more predictable — detection read
+localStorage and could be influenced by another app on the origin.
 
-**Entry chunk: 236 K → 72 K raw.**
+**Measured: entry chunk 236 K → 72 K raw.**
 
-## 2.12 Third-party staging
+## 1.13 Security headers
 
-| When | What |
-|---|---|
-| eager | Silktide consent banner — functional, and it gates the rest |
-| idle | Google One Tap (98 KiB) — user-facing, so it goes first |
-| idle + 1.5 s | Google Tag Manager (119 KiB) → PostHog (182 KiB, 7 scripts) |
+Previously **none** were set. Now on both apps: `Strict-Transport-Security` (2 y, includeSubDomains,
+preload) · `X-Content-Type-Options: nosniff` · `X-Frame-Options: SAMEORIGIN` ·
+`Referrer-Policy: strict-origin-when-cross-origin` · `Permissions-Policy` (camera, mic, geolocation,
+payment, USB, magnetometer denied) · `Cross-Origin-Opener-Policy: same-origin-allow-popups`.
 
-**PostHog is not a dependency of this repo.** No package, no init code — the GTM container loads it.
-So PostHog can never start before GTM, and deferring GTM defers both: ~301 KiB and ~375 ms of
-main-thread work off the critical path.
+**Decision — COEP omitted.** It would break third-party embeds and images that do not send CORP.
 
-Kept in `<head>`, inline and synchronous: the `gtag('consent','default',{…denied})` snippet, which
-Consent Mode v2 requires to run before the container, and the `<noscript>` iframe. On beta's
-`/auth/*` routes One Tap stays immediate — signing in is the point of those pages.
+**Decision — CSP ships `Report-Only`.** It has to cover GTM plus whatever GTM injects, and an enforced
+CSP that is slightly wrong is an outage. Report-Only surfaces violations without blocking.
 
-**Caching note:** these are per-document, not per-page. SPA navigation does not re-fetch them; a
-reload re-uses the browser cache subject to each vendor's TTL (PostHog's is 4 h, set by their CDN and
-not something we control). The cost is a first-visit cost, which is what deferring addresses.
+**Decision — embed excluded from frame rules.** Being iframed elsewhere is its entire purpose.
 
-## 2.13 Security headers
+> ⚠️ The Report-Only CSP is the prime suspect for the Best Practices and TBT regressions — see §3.3.
 
-Previously **none** were set. Now on both apps:
+## 1.14 Social card
 
-`Strict-Transport-Security` (2 y, includeSubDomains, preload) · `X-Content-Type-Options: nosniff` ·
-`X-Frame-Options: SAMEORIGIN` · `Referrer-Policy: strict-origin-when-cross-origin` ·
-`Permissions-Policy` (camera, mic, geolocation, payment, USB, magnetometer all denied) ·
-`Cross-Origin-Opener-Policy: same-origin-allow-popups`
+A real **1200×630** `og-cover.png`, generated in the brand fonts (Benzin headline with accent split,
+Helvetica sub, Fira footer, hairline frame) and wired into both apps. Previously the 399×399 logo,
+which every platform cropped to a small square.
 
-COEP is deliberately omitted — it would break third-party embeds and images that do not send CORP.
+## 1.15 Smaller items
 
-**The CSP ships as `Content-Security-Policy-Report-Only`.** It has to cover GTM plus whatever GTM
-injects, and an enforced CSP that is slightly wrong is an outage. Watch the console on production,
-add anything legitimate that trips, then rename the header to enforce.
-
-`apps/embed` is deliberately excluded from the frame rules — being iframed elsewhere is its purpose.
-
-## 2.14 Social card
-
-A real **1200×630** `og-cover.png`, generated in the brand fonts (Benzin headline, accent split,
-Helvetica sub, Fira footer) and wired into both apps' `seoConfig` and static defaults. Previously the
-399×399 logo, which every platform cropped to a small square.
-
-## 2.15 Smaller items
-
-- **void-grain tile → lossless WebP** — 45.6 K → 24.1 K (noise defeats lossy; lossless matched it).
-  16 importers updated.
+- **void-grain tile → lossless WebP** — 45.6 K → 24.1 K. Lossy was measured and gave no further gain
+  (noise defeats it); 16 importers updated.
 - **`public/scripts/` minified at build** (`tooling/minifyPublicScripts.ts`) — `resomix-consent.js`
   50.8 K → 23.2 K raw, 11.9 → 6.6 K gzipped; its CSS 11.5 → 8.1 K. Source stays readable; Vite does
   not process `public/`.
-- **4 preconnect hints** — none existed. Lighthouse estimated 370 ms (PostHog) + 320 ms (API).
-- **Production source maps** enabled on both apps — separate `.map` files, fetched only with DevTools
-  open. This is also what made the vendor attribution above possible.
-- **Footer touch targets** — the legal/support links had ~16 px tap areas stacked flush; now ≥24 px
-  with spacing.
+- **Production source maps** enabled — separate `.map` files, fetched only with DevTools open. This
+  is what made the vendor attribution in §1.11 possible.
+- **Footer touch targets** — the legal/support links had ~16 px tap areas stacked flush; now ≥ 24 px
+  with spacing. (A Best Practices failure introduced by earlier footer work.)
 - **Anonymous 401 silenced.** `useAuthInit` attempts a refresh on first load even without a local
   token, because the cookie is scoped to `.resomix.com` and may carry a beta session. With no cookie
-  the server correctly answers 401 — expected, not an error. It is no longer logged; anything other
-  than a 401 still is.
-- **Edge 301s** for `/pricing` → `/subscribe` and the catalogue spelling. Both were client-side
-  `<Navigate replace>` only, so crawlers saw two 200s and no redirect signal.
-- **IndexNow key file** at `public/<key>.txt`. Nothing pings automatically — see the README beside it.
+  the server correctly answers 401 — expected, not an error. No longer logged; anything else still is.
+- **IndexNow key file** at `public/<key>.txt` with a README. Nothing pings automatically — that is
+  outward-facing and deliberately left manual.
+- **Link anchors — checked, no change needed.** Zero generic "Learn more"/"Click here" anchors exist;
+  Lighthouse's "Links have descriptive text" already passes. The repeated labels ("Start a Catalogue
+  Pilot") are descriptive and intentionally reused across pages.
 
-## 2.16 Copy applied from SEO_METADATA_ALL_PAGES.md
+## 1.16 Preconnect, twice
 
-Per George: that document is authoritative for titles, descriptions and H1s; the `.docx` is for
-advice and implementation flow only.
+**First attempt:** four preconnects (PostHog, API, GTM, Google accounts). Lighthouse then warned
+*"More than 4 preconnect connections were found"* and *"bserver.resomix.com — Unused preconnect.
+Check that the `crossorigin` attribute is used properly."*
 
-- **Titles + descriptions** — 19 landing routes, plus `/subscribe` and `/contact` on beta (they
-  canonicalise to landing, so they must match). Max title 59, max description 159.
-- **All 17 H1s**, each with a `[[…]]` accent phrase.
-- **Hero systems unified** — seven heroes still used `h1Lead`/`h1Em` pairs that pinned the accent to
-  a fixed position; all 17 now use the inline marker, so moving emphasis is a copy edit. 16 dead
-  locale keys removed.
+**The bug:** a bare `crossorigin` means *anonymous*, but the API client sends `withCredentials: true`,
+so the connection never matched and was never reused.
 
-One entry needed interpretation: `/product/sonic-discovery`'s H1 field is not copy — it reads
-*"SONIC DISCOVERY — approved live hero line"*, i.e. "keep what's live". But the doc moves that live
-line ("Drop one track. Find what belongs next.") to the homepage, which would have put an identical
-H1 on two pages. It now reads **"Find similar tracks by sound."**, taken from that page's own doc
-title and stated intent.
+**Second attempt:** one preconnect — `bserver.resomix.com` with `crossorigin="use-credentials"`. The
+other three were dropped: all are now deferred to idle, so warming their sockets during load buys
+nothing and crowded out the one connection actually on the critical path.
 
-# Part 3 — Open items
+> ⚠️ Still reported as "Unused preconnect" in run 3. Unresolved — see §4.1.
 
-Ordered roughly by payoff. **None of these have been done.**
+## 1.17 The deploy that never shipped
 
-## 3.1 Fonts — DONE, see 2.8
+Runs 1 and 2 both showed `vendor-f9M9xD2Z.js` — the **same content hash**. Content-hashed filenames
+do not collide, so that chunk had never changed.
 
-Re-run PageSpeed after deploying to confirm the expected movement in mobile FCP/LCP/SI and the
-elimination of the desktop CLS (0.087), since every layout-shift culprit was a web font.
+**Cause:** `i18next-browser-languagedetector` was removed from `apps/landing/package.json` but
+`pnpm-lock.yaml` was never regenerated. Local builds kept passing because `node_modules` already had
+everything resolved. CI installs with `--frozen-lockfile` and refuses:
 
-## 3.2 Third-party loading strategy — DONE, see 2.12
+```
+ERR_PNPM_OUTDATED_LOCKFILE  Cannot install with "frozen-lockfile" because
+pnpm-lock.yaml is not up to date with <ROOT>/apps/landing/package.json
+* 1 dependencies were removed: i18next-browser-languagedetector@^8.2.0
+```
 
-- Defer or gate **PostHog** (182 KiB, 7 scripts, ~307 ms main thread). Consider loading after
-  interaction/idle, or dropping `posthog-recorder` (session replay, 55 KiB / the single longest
-  task) on marketing pages.
-- Defer **GTM** (119 KiB) similarly.
-- Load **Google GSI / One Tap** (98 KiB) lazily — it is only needed for signed-out sign-in intent.
-- Add `<link rel="preconnect">` for `eu.i.posthog.com` and `bserver.resomix.com` (mobile) /
-  `accounts.google.com` (desktop). Lighthouse estimates 370 + 320 ms.
+**Every push after that commit failed at the install step, before the build ever ran.** The site kept
+serving the last successful deploy.
 
-## 3.3 First-party JS — DONE, see 2.10 / 2.11
+**Fix:** regenerated the lockfile (10 lines changed, all removals of that one package) and reproduced
+CI's gate locally — `pnpm install --frozen-lockfile` now exits 0.
 
-- **`vendor` chunk is 81 % unused** (153.2 KiB wasted). Investigate i18next (only an `en` locale
-  exists) and axios (replaceable with `fetch`).
-- Enable `sourcemap: true` for production, or upload maps separately, to clear the Best Practices
-  audit and make prod debugging possible.
+**Lesson recorded:** a passing local build is not evidence that CI will pass. Editing a `package.json`
+dependency requires regenerating the lockfile and verifying with a frozen install.
 
-## 3.4 Quick wins — DONE, see 2.15
+---
 
-- Convert `void-grain.png` (45.6 KiB) to WebP/AVIF — 39.6 KiB.
-- Minify `public/scripts/resomix-consent.js` — 5.3 KiB.
-- Fix footer touch targets (`#footer-legal-link`, `#footer-support-link`) — larger hit area/spacing.
-- Silence the anonymous-visitor **401** from `authRefresh` and the `ERR_NAME_NOT_RESOLVED` config
-  fetch, both of which log console errors.
-- Replace the `stroke-dashoffset` animation on `path.hm-dashflow` with a compositable property.
-- ~~Add a real `/llms.txt`, and a proper 404~~ — DONE, see 2.9.
+# Part 2 — The three PageSpeed runs
 
-## 3.5 Still outstanding
+All: `https://resomix.com/`, Lighthouse 13.4.1, HeadlessChromium 150.0.7871.186, single page session,
+initial page load. Mobile = emulated Moto G Power on **Slow 4G**; desktop = emulated desktop, custom
+throttling. **Field data: No Data** in all three runs.
 
-- ~~1200×630 OG image~~ — DONE, see 2.14.
-- ~~Security headers~~ — DONE, see 2.13. **CSP is Report-Only; enforcing it is a deliberate follow-up.**
-- **Submit sitemaps** to Google Search Console and Bing Webmaster Tools, and wire the IndexNow ping
-  into the deploy. Cannot be done from here — needs those accounts.
-- **Re-run PageSpeed** after deploying. Everything above is measured from the build; the score is not.
-- **Descriptive link anchors** — checked, nothing to do: there are no generic "Learn more"/"Click
-  here" anchors, and Lighthouse's "Links have descriptive text" audit already passes.
-- **`llms.txt` / `stroke-dashoffset`** — the animation is left alone deliberately: it cannot be
-  composited without changing the hero visual, it is already gated behind the in-view class, and TBT
-  is 0 ms.
-- **Naming mismatch on `/subscribe`** — the page titles itself "Pricing" while living at
-  `/subscribe`. It *is* in the sitemap and indexed correctly; this is only a naming decision, not a
-  defect.
+## 2.1 Scores across all three runs
+
+| | **Run 1** baseline<br>Aug 3, 22:02 | **Run 2** partial deploy<br>Aug 4, 13:26 | **Run 3** full deploy<br>Aug 4, 14:10 |
+|---|---|---|---|
+| **Performance — mobile** | 56 | 64 | **66** |
+| **Performance — desktop** | 78 | **96** | **69** |
+| Accessibility — mobile | 96 | 100 | 100 |
+| Accessibility — desktop | 96 | 96 | 96 |
+| Best Practices | 96 | 96 | **92** |
+| SEO | 100 | 100 | 100 |
+| Agentic Browsing | 2/3 | 3/3 | **2/3** |
+
+## 2.2 Metrics across all three runs
+
+**Mobile**
+
+| Metric | Run 1 | Run 2 | Run 3 | vs baseline |
+|---|---|---|---|---|
+| First Contentful Paint | 10.7 s | 4.6 s | **1.8 s** | **−83 %** ✅ |
+| Largest Contentful Paint | 12.3 s | 6.3 s | **5.4 s** | **−56 %** ✅ |
+| Speed Index | 10.7 s | 5.6 s | **2.5 s** | **−77 %** ✅ |
+| Total Blocking Time | 0 ms | 60 ms | **200 ms** | worse 🔻 |
+| Cumulative Layout Shift | 0 | 0 | **0.191** | worse 🔻 |
+
+**Desktop**
+
+| Metric | Run 1 | Run 2 | Run 3 | vs baseline |
+|---|---|---|---|---|
+| First Contentful Paint | 0.6 s | 0.6 s | **0.4 s** | −33 % ✅ |
+| Largest Contentful Paint | 2.2 s | 1.2 s | **1.1 s** | **−50 %** ✅ |
+| Speed Index | 2.9 s | 0.9 s | **0.8 s** | **−72 %** ✅ |
+| Total Blocking Time | 110 ms | 60 ms | **200 ms** | worse 🔻 |
+| Cumulative Layout Shift | 0.087 | 0.062 | **0.675** | much worse 🔻🔻 |
+
+**Critical path latency:** mobile 1,766 → 1,144 → **1,072 ms**; desktop 4,403 → 1,152 → **1,278 ms**.
+
+## 2.3 Run 1 — the baseline (Aug 3)
+
+Total page weight **1,872 KiB**.
+
+**Root cause #1 — fonts (994 KiB, 8 files, all `.otf`/`.ttf`).** A font was the terminal node of the
+critical path on both form factors:
+
+| Font | Size | Mobile | Desktop |
+|---|---|---|---|
+| HelveticaNeueRoman.otf | 247.8 KiB | 1,109 ms | 3,710 ms |
+| HelveticaNeueBold.otf | 240.7 KiB | 1,681 ms | 4,380 ms |
+| HelveticaNeueLight.otf | 118.6 KiB | 1,660 ms | 4,348 ms |
+| FiraCode-SemiBold.ttf | 84.1 KiB | 1,707 ms | 4,383 ms |
+| **FiraCode-Medium.ttf** | 83.9 KiB | **1,766 ms** ← | **4,403 ms** ← |
+| FiraCode-Regular.ttf | 83.8 KiB | 1,131 ms | 3,711 ms |
+| FiraCode-Light.ttf | 83.5 KiB | 1,724 ms | 4,383 ms |
+| benzin-bold.ttf | 51.6 KiB | 1,708 ms | 4,382 ms |
+
+Chain: `HTML → index.css → 8 fonts`. Fonts were ~13× the JavaScript.
+
+- Desktop LCP element `<h1 class="hm-benzin uppercase">` — element render delay **4,430 ms**, TTFB 0
+- Mobile LCP element was the **beta banner paragraph** — the hero had not rendered at 12.3 s
+- Desktop CLS 0.087 was **entirely font-swap reflow** (0.059 nav via FiraCode-Medium, 0.026 hero art)
+
+**Root cause #2 — third-party JS exceeded first-party.**
+
+| Party | Transfer | Main thread | Unused |
+|---|---|---|---|
+| posthog.com | 182 KiB | 307 ms | 88.7 KiB |
+| Google Tag Manager | 119 KiB | 68 ms | 63.0 KiB |
+| Google GSI (One Tap) | 98 KiB | 19 ms | 71.7 KiB |
+| **Total** | **~399 KiB** | **~394 ms** | **223 KiB** |
+
+First-party was 249 KiB. PostHog alone loaded **seven** scripts and was responsible for 100 % of
+three separate audits: cache lifetimes (123 KiB on a 4 h TTL), legacy JavaScript (43.6 KiB of
+polyfills for `Array.prototype.at`, `Array.from`, `Math.trunc`) and duplicated JavaScript (8 KiB).
+
+**No origins preconnected.** Candidates: `eu.i.posthog.com` (370 ms), `bserver.resomix.com` (320 ms).
+
+**Root cause #3 — unused first-party JS, 399 KiB total.** `vendor` 188.6 KiB with **153.2 KiB unused
+(81 %)**; `react` chunk 60.4 KiB with 22.1 KiB unused.
+
+**Other:** render-blocking est. savings **4,990 ms** · void-grain PNG 45.6 KiB (39.6 saveable) ·
+`resomix-consent.js` 11.9 KiB **unminified** · forced reflow 83 ms · non-composited
+`stroke-dashoffset` animation · DOM 1,603 elements.
+
+**Best Practices 96** — failing: touch targets (the footer legal/support links), console errors
+(PostHog API errors, a **401** from `authRefresh`, `ERR_NAME_NOT_RESOLVED`), missing source maps.
+**Trust & Safety: CSP, HSTS, COOP, XFO and Trusted Types all unset.**
+
+**Agentic Browsing 2/3** — `llms.txt` failed: *"missing a required H1"*, *"does not appear to contain
+any links"*. Cause: the file did not exist and the SPA fallback returned `index.html` with a 200.
+
+## 2.4 Run 2 — partial deploy (Aug 4, 13:26)
+
+**This run did not contain the tree-shaking fix** — `vendor-f9M9xD2Z.js`, byte-identical to run 1
+(see §1.17). Everything up to and including third-party staging was live.
+
+**What improved:** mobile FCP 10.7 → 4.6 s, LCP 12.3 → 6.3 s, SI 10.7 → 5.6 s. Desktop LCP 2.2 → 1.2 s,
+SI 2.9 → 0.9 s, TBT 110 → 60 ms, CLS 0.087 → 0.062. **Desktop Performance 78 → 96.**
+
+- **5 fonts, ~237 KiB** on the chain instead of 8 at 994 KiB; the three preloaded faces left the
+  chain entirely, exactly as intended
+- Render-blocking est. savings 4,990 → **1,410 ms**
+- Mobile LCP element became the hero `<h1>` (was the beta banner)
+- `llms.txt` fixed → **Agentic Browsing 3/3**
+- Footer tap targets fixed → **mobile Accessibility 100**
+- Lighthouse warned about **>4 preconnects** and flagged the API one as **unused** (§1.16)
+
+## 2.5 Run 3 — full deploy, after a Cloudflare purge (Aug 4, 14:10)
+
+`vendor-C_iyh9Pb.js` live — the tree-shaking shipped. Entry chunk **25.72 KiB transfer** (was 77.36).
+
+**What improved further:** mobile FCP 4.6 → **1.8 s**, SI 5.6 → **2.5 s**, LCP 6.3 → **5.4 s**.
+Desktop FCP 0.6 → **0.4 s**, LCP 1.2 → **1.1 s**, SI 0.9 → **0.8 s**.
+
+**What regressed:**
+
+| | Run 2 | Run 3 |
+|---|---|---|
+| CLS mobile | 0 | **0.191** |
+| CLS desktop | 0.062 | **0.675** |
+| TBT both | 60 ms | **200 ms** |
+| Best Practices | 96 | **92** |
+| Agentic Browsing | 3/3 | **2/3** |
+
+**Mobile layout-shift culprits:**
+
+| Shift | Element | Attributed to |
+|---|---|---|
+| **0.176** | `div.mx-auto.text-[var(--color-text-secondary)].relative.z-30` (page shell — "PRODUCTION BETA · POWERED BY PYXIS-1 DROP ONE TRACK…") | **`/fonts/FiraCode-Light.latin.woff2` (Web font)** |
+| 0.015 | `<div class="relative z-30 w-full max-w-[300px] p-5">` (the boot loader) | — |
+
+**Desktop:** total 0.675 — two shifts of **0.305 each with no element attributed** (what Lighthouse
+reports for document-level reflow), plus 0.059 on the nav and 0.002.
+
+**Still open in run 3:** preconnect still "Unused" despite `use-credentials` · void-grain 18.1 KiB
+more available · forced reflow 89 ms mobile / 77 ms desktop · PostHog's own 181 KiB / 4 h TTL /
+44 KiB legacy polyfills (their CDN, not ours) · DOM 1,605 elements.
+
+---
+
+# Part 3 — Where the site stands
+
+## 3.1 What is genuinely fixed
+
+- **SEO 100/100** on both form factors, all three runs
+- **Mobile Accessibility 100**
+- **Mobile FCP −83 %, Speed Index −77 %, LCP −56 %** against baseline
+- **Desktop Speed Index −72 %, LCP −50 %**
+- Critical path more than halved on mobile, cut to under a third on desktop
+- Fonts 994 → 333 KiB; deployed font dir 12 MB → 1.7 MB per app
+- vendor 588 → 95 K; entry 236 → 72 K
+- ~301 KiB of third-party JS off the critical path
+- Real 404s, per-route link previews, generated sitemaps, security headers, a proper social card
+
+## 3.2 The CLS regression — caused by our own speedup
+
+**Mechanism.** Mobile FCP went from 10.7 s to 1.8 s. The page now paints *before* the fonts arrive,
+so text renders in the fallback and re-flows when the web font swaps. Previously the page painted so
+late that fonts had already landed — the shift existed but was hidden inside the slowness.
+
+Lighthouse names the file: **0.176 of mobile's 0.191 is attributed to `FiraCode-Light.latin.woff2`.**
+
+Desktop is worse (0.675) because it paints at 0.4 s, even further ahead of the fonts, and the reflow
+is large enough that Lighthouse cannot attribute it to a single element.
+
+**Why the preloads did not prevent it.** Three faces are preloaded — Benzin 700, Helvetica 300,
+Fira Code 500. The culprit is **Fira Code 300 (Light)**, which still loads through the CSS chain.
+
+**This also explains Agentic Browsing 3/3 → 2/3** — that category includes a CLS audit. `llms.txt`
+still passes.
+
+## 3.3 TBT and Best Practices — one likely cause
+
+TBT 60 → 200 ms and Best Practices 96 → 92 regressed together, on both form factors, in the run that
+first shipped the **Report-Only CSP**.
+
+Chrome evaluates every resource against a Report-Only policy and logs `[Report Only] Refused to…` for
+each violation. Those are console **errors**, which feed the "Browser errors were logged to the
+console" audit — and the evaluation itself costs main-thread time.
+
+**Not yet confirmed** — it needs the live console read, or the Best Practices detail page. But it is
+the only change in that deploy that plausibly adds main-thread work, and shipping Report-Only was
+precisely so that a too-tight policy could be found without breaking anything.
+
+## 3.4 The Cloudflare purge is not distorting these numbers
+
+A cold edge cache would slow FCP/LCP — instead both improved. The CLS is attributed to a named font
+file, not to variance. What the purge did do is guarantee run 3 measured the new build, confirmed by
+the new vendor hash.
+
+---
+
+# Part 4 — What remains
+
+## 4.1 Regressions to close
+
+| Priority | Item |
+|---|---|
+| **P0** | CLS — metric-matched fallback fonts (§5.1) |
+| **P0** | Confirm and tighten the Report-Only CSP; recover TBT and Best Practices (§5.2) |
+| P1 | Preconnect still reported "Unused" despite `use-credentials` |
+
+## 4.2 Performance, still open
+
+- **void-grain tile** — 24.1 KiB, Lighthouse says 18.1 KiB more available. Lossless was the wrong
+  call for it; test AVIF and lossy at reduced dimensions.
+- **Forced reflow** — 89 ms mobile / 77 ms desktop, `vendor-C_iyh9Pb.js:2:1406` via
+  `index-Dgvg91xq.js:2:38950`. Now traceable because source maps ship.
+- **Desktop Accessibility 96** — mobile reached 100; something desktop-specific remains, not yet
+  identified.
+- **PostHog's own overhead** — 181 KiB, 44 KiB legacy polyfills, 4 h cache TTL, ~218 ms main thread.
+  Set by their CDN; unchangeable from here. The only lever is dropping `posthog-recorder` (session
+  replay, 55 KiB) from the GTM container.
+- **`stroke-dashoffset` animation** — deliberately not changed. It cannot be composited without
+  altering the hero visual, it is already gated behind the in-view class, and it costs nothing
+  measurable.
+
+## 4.3 From George's `.docx` — three real items
+
+- **§4 GEO content structure — not started.** A 40–70 word plain definition near the top of every
+  product and solution page, plus visible question-led sections, aimed at AI answer engines. This is
+  a **content** task and needs Marco's copy.
+- **§5 Structured data — partial.** `Organization` + `WebSite` + `WebApplication` ship. Still missing
+  per-page `WebPage`, `BreadcrumbList`, `isPartOf`, `about`, `mainEntity`, and `Service` on the
+  partner/pilot pages. **This can be done without copy approval.**
+- **§6 Body prerendering — DONE.** See §1.18.
+
+Its §7 checklist is otherwise complete — verified: 7/7 images have alt text, `prefers-reduced-motion`
+is honoured in 38 files, anchors are descriptive, canonicals self-reference, the sitemap is
+canonical-only, robots.txt does not block CSS/JS.
+
+## 4.4 From `SEO_METADATA_ALL_PAGES.md` — one item
+
+Its own flag on `/contact`, applied verbatim and still live:
+
+> *"FLAG: 'reply within the beta' phrasing is a placeholder — replace with an approved
+> support-response statement or trim."*
+
+The description currently ends **"We reply from support@resomix.com within the beta."**
+
+## 4.5 Needs account access
+
+- Submit both sitemaps to **Google Search Console** (Domain property + DNS TXT in Cloudflare covers
+  all subdomains) and **Bing Webmaster Tools** (import from GSC)
+- Wire the **IndexNow** ping into the deploy — key file already ships
+- **Re-run PageSpeed** after each change set
+
+---
+
+# Part 5 — The plan to get this genuinely professional
+
+Target: **90+ on both form factors**, with all Core Web Vitals green.
+
+## 5.1 Kill the CLS properly — metric-matched fallback fonts
+
+Define a fallback `@font-face` per family using `size-adjust`, `ascent-override`, `descent-override`
+and `line-gap-override`, computed from the real font metrics with fontTools. The fallback then
+occupies **exactly the same space** as the web font, so the swap causes zero reflow.
+
+| Option | Verdict |
+|---|---|
+| **Metric-matched fallbacks** | ✅ Zero extra bytes, zero visual change, eliminates the shift. What Next.js does automatically. |
+| Preload the remaining 5 faces | ❌ Front-loads ~237 KiB and pushes FCP back up — undoes what we just won |
+| `font-display: optional` | ❌ No shift, but the font may never apply on a slow connection — a visual change |
+| `font-display: block` | ❌ Trades CLS for invisible text (FOIT) |
+
+**Expected:** CLS → near 0 on both. CLS is 25 % of the Lighthouse performance weighting, so this
+alone should take desktop back above 90 and lift mobile several points.
+
+## 5.2 Tighten the CSP
+
+Read the live console, collect every `[Report Only]` violation, add the legitimate origins, re-measure
+TBT and Best Practices. If the policy proves noisy in ways that cannot be cleanly resolved, the
+fallback is to drop `Report-Only` until it can be tuned against real traffic — the header buys
+nothing while it is only reporting.
+
+## 5.3 Then the remaining smaller wins
+
+In order of expected value: void-grain re-compression (−18 KiB) → forced-reflow trace → desktop
+accessibility → per-page structured data.
+
+## 5.4 What "great on PageSpeed" realistically looks like
+
+Mobile is measured on a **Moto G Power over Slow 4G** — a deliberately punishing profile. With CLS
+fixed and the CSP settled, the honest expectation is:
+
+- **Desktop: 95–100.** It was already at 96 in run 2 with a *worse* bundle.
+- **Mobile: 80s.** LCP is the binding constraint at 5.4 s. Getting it under 2.5 s on that profile
+  needs the hero to render without waiting on JavaScript at all — i.e. **body prerendering (§4.3)**,
+  which is also what George's doc asks for. That is the single change that would move mobile into
+  the 90s, and it is a real project rather than a tuning pass.
+
+**Recommended order:** §5.1 → §5.2 → re-measure → then decide whether body prerendering is worth
+scheduling, based on what LCP actually reports at that point.
