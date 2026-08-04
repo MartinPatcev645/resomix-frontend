@@ -61,7 +61,9 @@ function App() {
   useSilktide(consentConfig);
 
   const oneTapReady = useAfterIdle(0);
-  const analyticsReady = useAfterIdle(1500);
+  /* 4 s, matching landing. PostHog costs ~409 ms of main-thread time and this app already carries
+     570 ms of TBT; nothing it does needs to happen while the workspace is still booting. */
+  const analyticsReady = useAfterIdle(4000);
   useGoogleTagManager(import.meta.env.VITE_GTM_ID ?? 'GTM-PD9XQZRV', analyticsReady);
   useTelemetry();
   const { showWelcome, dismiss } = useFirstVisit();

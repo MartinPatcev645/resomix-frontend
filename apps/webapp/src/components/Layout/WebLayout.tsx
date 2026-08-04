@@ -111,7 +111,11 @@ export function WebLayout() {
 
                         <main
                             key={location.pathname}
-                            className="page-transition flex-1 min-h-[50vh] lg:pt-[var(--header-height)]"
+                            /* min-h-screen, not 50vh: at 50vh the footer sat just inside the fold on first paint, then got
+                               pushed down as the workspace data arrived — 0.150 of this app's 0.211 CLS, the single
+                               largest shift on the page. A full viewport keeps it below the fold, so growth costs nothing.
+                               `flex-1` still makes it fill any extra space. */
+                            className="page-transition flex-1 min-h-screen lg:pt-[var(--header-height)]"
                         >
                             <Outlet />
                         </main>

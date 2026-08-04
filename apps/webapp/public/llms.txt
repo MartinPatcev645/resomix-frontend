@@ -1,0 +1,26 @@
+# Resomix Beta
+
+> The Resomix web app: upload or pick a reference track and get ranked, sonically related matches,
+> or read a detailed analysis of a single recording. Powered by the PYXIS-1 engine.
+
+This is the product itself, not the marketing site. Most of it sits behind a sign-in, so only the
+pages below are public. For what Resomix is, who it is for and how the engine works, start at
+[resomix.com](https://resomix.com/) — that site carries the full description and is the canonical
+source for shared pages such as pricing and contact.
+
+## Public pages
+
+- [Home](https://beta.resomix.com/): Start from a track and explore what belongs next to it.
+- [Sonic Discovery](https://beta.resomix.com/sonic-discovery): Reference-based search — one track in, a ranked shortlist out.
+- [Analysis](https://beta.resomix.com/analysis): Structure, tempo, key, energy and sonic character read from the audio.
+
+## Behind sign-in
+
+Library, playlists, profile, sessions and account settings require an account and are marked
+`noindex`. They are listed here only so a crawler knows they exist and why they are not fetchable.
+
+## About the company
+
+- [About Resomix](https://resomix.com/about)
+- [Trust and data handling](https://resomix.com/trust): Uploads deleted within 24 hours, partner catalogues kept in private indexes, no training on your content.
+- [Contact](https://resomix.com/contact)

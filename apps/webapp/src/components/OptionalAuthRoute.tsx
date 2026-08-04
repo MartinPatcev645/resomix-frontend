@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useAuthStore } from "@resomix/stores";
+import { useIsomorphicLayoutEffect } from "@resomix/hooks";
 import { AuthStatusBanner, DemoStageBanner, StatusMessage } from "@resomix/ui";
 import { resendVerification } from "@resomix/api-client";
 
@@ -17,7 +18,11 @@ export const OptionalAuthRoute = ({ children }: OptionalAuthRouteProps) => {
   const { isAuthenticated, user } = useAuthStore();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
-  const [showDemoBanner, setShowDemoBanner] = useState(false);
+  /* Starts SHOWN. It used to start hidden and be switched on by an effect, so it appeared after
+     the page had painted and pushed everything below it down — PageSpeed measured 0.059 of the
+     0.211 CLS on #webapp-page-root. The rare dismissed visitor has it hidden before first paint by
+     the inline script in index.html, then unmounted here. */
+  const [showDemoBanner, setShowDemoBanner] = useState(true);
   const [showStatusMessage, setShowStatusMessage] = useState(false);
   const [statusType, setStatusType] = useState<"success" | "error">("success");
   const [statusMessage, setStatusMessage] = useState("");
@@ -28,9 +33,12 @@ export const OptionalAuthRoute = ({ children }: OptionalAuthRouteProps) => {
     setBannerDismissed(dismissed === "true");
   }, []);
 
-  useEffect(() => {
-    const demoDismissed = localStorage.getItem("demo_stage_notice_dismissed");
-    setShowDemoBanner(demoDismissed !== "true");
+  useIsomorphicLayoutEffect(() => {
+    try {
+      if (localStorage.getItem("demo_stage_notice_dismissed") === "true") setShowDemoBanner(false);
+    } catch {
+      /* storage blocked — keeping the banner shown is the safe default */
+    }
   }, []);
 
   useEffect(() => {
