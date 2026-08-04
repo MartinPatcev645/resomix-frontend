@@ -42,25 +42,46 @@ describe.skipIf(!built)('per-route stylesheets in the built HTML', () => {
   const NO_PAGE_CSS = ['/subscribe', '/contact', '/waitlist', '/error'];
   const routes = Object.keys(PAGE_MODULES).filter((r) => !NO_PAGE_CSS.includes(r));
 
-  it('links a page-specific stylesheet on every content route', () => {
-    const missing = routes.filter((r) => stylesheets(html(r)).length < 3);
-    expect(missing, 'these routes ship markup with no page CSS — they will paint unstyled').toEqual(
-      [],
-    );
+  /* The CSS is INLINED, not linked. Three blocking stylesheets meant three round trips before
+     anything could paint; on the throttled mobile profile Lighthouse attributed 1,160–1,510 ms to
+     them and FCP sat at 3.2 s. So the assertions below check the stylesheet's *content* reached the
+     document, and that no blocking request survived. */
+  const styleBlocks = (route: string) =>
+    [...html(route).matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]);
+
+  /** The built asset that belongs to this route's page module, straight from the manifest. */
+  const pageCssFor = (route: string): string | null => {
+    const manifest = JSON.parse(readFileSync(resolve(DIST, '.vite/manifest.json'), 'utf8'));
+    const href = manifest[PAGE_MODULES[route]]?.css?.[0];
+    return href ? readFileSync(resolve(DIST, href), 'utf8') : null;
+  };
+
+  it('leaves no render-blocking stylesheet on any route', () => {
+    const blocking = Object.keys(PAGE_MODULES).filter((r) => stylesheets(html(r)).length > 0);
+    expect(blocking, 'these routes still block first paint on a CSS request').toEqual([]);
   });
 
-  it('links the stylesheet that belongs to that page, not another one', () => {
-    // HomePage-*.css on /, DjsPage-*.css on /solutions/djs, and so on.
+  it('inlines the stylesheet that belongs to that page, not another one', () => {
     const wrong = routes.filter((route) => {
-      const component = PAGE_MODULES[route].replace('src/pages/', '').replace('.tsx', '');
-      return !stylesheets(html(route)).some((href) => href.includes(`/${component}-`));
+      const css = pageCssFor(route);
+      if (!css) return false;
+      // Match on a real slice of the file, so a stale or wrong asset cannot pass.
+      const fingerprint = css.slice(0, 120);
+      return !styleBlocks(route).some((block) => block.includes(fingerprint));
     });
-    expect(wrong, 'these routes link the wrong page stylesheet').toEqual([]);
+    expect(wrong, "these routes are missing their own page's CSS").toEqual([]);
   });
 
-  it('keeps the page stylesheet after the global ones so the cascade is unchanged', () => {
-    const sheets = stylesheets(html('/'));
-    expect(sheets[sheets.length - 1]).toContain('HomePage-');
+  it('keeps the page CSS after the global CSS so the cascade is unchanged', () => {
+    const doc = html('/');
+    const globalCss = readFileSync(
+      resolve(DIST, JSON.parse(readFileSync(resolve(DIST, '.vite/manifest.json'), 'utf8'))[
+        'index.html'
+      ].css[0]),
+      'utf8',
+    );
+    const pageCss = pageCssFor('/')!;
+    expect(doc.indexOf(globalCss.slice(0, 120))).toBeLessThan(doc.indexOf(pageCss.slice(0, 120)));
   });
 
   it('still emits the manifest the injection reads', () => {
