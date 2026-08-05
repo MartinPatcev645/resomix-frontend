@@ -213,6 +213,23 @@ async def _async_persist_analysis_summary(
         partner_id=partner_id,
     )
 
+    # Count the upload only now that a result exists — record-on-success, matching the
+    # similarity-upload path. Every early return above (service unconfigured, timed out, upstream
+    # failure) leaves the caller uncharged, which is why no refund path is needed anywhere.
+    #
+    # Best-effort: a counter that fails to increment must never turn a delivered analysis into a
+    # failed task. The evaluator already swallows its own errors; the guard is belt and braces.
+    if user_id:
+        try:
+            from app.services.operation_limit_evaluator import OperationLimitEvaluator
+
+            async with AsyncSessionLocal() as db:
+                await OperationLimitEvaluator().record_success(
+                    db, user_id=user_id, operation_code="upload_create"
+                )
+        except Exception as exc:
+            logger.warning("ANALYSIS PERSIST: could not count upload for %s: %s", analysis_id, exc)
+
 
 @celery_app.task(bind=True, max_retries=2, default_retry_delay=60)
 def persist_analysis_summary(

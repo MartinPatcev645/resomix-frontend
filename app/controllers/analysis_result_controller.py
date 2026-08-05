@@ -243,7 +243,8 @@ class AnalysisResultController:
             )
         user_id = current_user.id
 
-        # 2) Monthly upload allowance (peek; recorded on success below).
+        # 2) Monthly upload allowance — PEEK only. The credit is recorded when the result is
+        #    persisted, in analysis_tasks._async_persist_analysis_summary (record-on-success).
         limit_check = await self.operation_limit_evaluator.check(
             db, user_id=user_id, operation_code="upload_create"
         )
@@ -326,10 +327,16 @@ class AnalysisResultController:
             )
             await db.commit()
 
-        # 9) Count the upload (once), then enqueue the background persist + similarity sibling.
-        await self.operation_limit_evaluator.record_success(
-            db, user_id=user_id, operation_code="upload_create"
-        )
+        # 9) Enqueue the background persist + similarity sibling.
+        #
+        # The upload is NOT counted here. At this point the analysis has only been ACCEPTED by the
+        # analysis service — it has not produced anything. Charging now means a hard pipeline
+        # failure leaves the user having paid for nothing.
+        #
+        # The credit is recorded where the result is actually persisted
+        # (`analysis_tasks._async_persist_analysis_summary`), which is the same record-on-success
+        # rule the similarity-upload path already follows. The peek in step 2 still stops anyone
+        # exceeding their cap; this only moves WHEN the counter ticks, by a few seconds.
         self._enqueue_background(
             analysis_id=analysis_id, track_id=track_id, track_uuid=track_uuid,
             audio_bytes=audio_bytes, original_filename=file.filename or "upload.mp3",
