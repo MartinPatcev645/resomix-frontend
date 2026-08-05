@@ -18,7 +18,7 @@ Email: usman.naeem2212@gmail.com
 from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from decimal import Decimal
 import uuid
 from datetime import datetime
@@ -62,6 +62,32 @@ class PlaylistRepository(BaseRepository[Playlist]):
     def __init__(self):
         """Initialize PlaylistRepository with Playlist model."""
         super().__init__(Playlist)
+
+    async def _resolve_library_visibility(
+        self, db: AsyncSession, *, user_id: Optional[int], cap: Optional[int]
+    ) -> bool:
+        """Whether a playlist created right now should be listed in the owner's Library.
+
+        Visible when the owner is below their cap. ``cap is None`` means the caller did not resolve
+        one (a guest, a partner, or a path that predates this) — default to visible, because
+        hiding someone's playlist by accident is far worse than showing one too many.
+        ``cap < 0`` is unlimited.
+        """
+        if user_id is None or cap is None or cap < 0:
+            return True
+        if cap == 0:
+            return False
+
+        current = await db.execute(
+            select(func.count())
+            .select_from(Playlist)
+            .where(
+                Playlist.user_id == user_id,
+                Playlist.is_library_visible.is_(True),
+                Playlist.deleted_at.is_(None),
+            )
+        )
+        return (current.scalar() or 0) < cap
 
     async def find_same_day_similarity(
         self,
@@ -129,6 +155,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
         user_id: Optional[int] = None,
         partner_id: Optional[int] = None,
         is_public: bool = False,
+        library_visible_max: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Create a similarity playlist with tracks.
@@ -178,6 +205,17 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 # Convert to seconds for play_time
                 play_time = play_time_ms // 1000
 
+            # Library visibility is decided ONCE, here, and then left alone.
+            #
+            # Beyond the plan's cap a playlist is created HIDDEN — it still exists and is fully
+            # usable by link; it is simply not listed in the Library. Deleting a visible one frees
+            # a slot, but hidden playlists are never promoted, so the next NEW playlist takes it.
+            # That is why this is a stored flag and not a "first N by created_at" query: after the
+            # fact the ordering cannot tell you which ones the user actually saw.
+            is_library_visible = await self._resolve_library_visibility(
+                db, user_id=user_id, cap=library_visible_max
+            )
+
             # Create the playlist record (UUID is auto-generated in __init__)
             playlist = Playlist(
                 user_id=user_id, partner_id=partner_id,  # Associate with user if logged in
@@ -187,6 +225,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 seed_track_id=seed_track_id,
                 num_tracks=num_tracks,
                 play_time=play_time,
+                is_library_visible=is_library_visible,
             )
 
             db.add(playlist)
@@ -1904,6 +1943,10 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 conditions.append(Playlist.partner_id == partner_id)
             # Never surface soft-deleted playlists to the user.
             conditions.append(Playlist.deleted_at.is_(None))
+            # Beyond the plan's library cap a playlist is created hidden. It is NOT deleted and not
+            # restricted — the owner can still open, play, rename, export, share and fork it by
+            # link. It is only absent from this listing, which is the whole surface the cap governs.
+            conditions.append(Playlist.is_library_visible.is_(True))
             needs_engagement_join = False
 
             # Handle all_favorites filter - if true, include playlists user favorited but doesn't own

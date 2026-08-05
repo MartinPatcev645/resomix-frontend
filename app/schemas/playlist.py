@@ -154,6 +154,58 @@ class PlaylistForkRequest(BaseModel):
         }
 
 
+class PlaylistExportRequest(BaseModel):
+    """Request schema for exporting a playlist to a file.
+
+    ``target`` is intentionally a plain string rather than an Enum: the set of allowed targets is
+    per-plan data (``export_targets``), so a value that is valid for Pro and not for Free is a
+    **402**, not a 422. Rejecting it during body parsing would turn every upsell into a validation
+    error before the gate ever ran.
+    """
+    target: str = Field("txt", description="Export format — currently 'txt'")
+    # A client may ask for FEWER tracks than its plan allows; it can never ask for more (the server
+    # takes the minimum). That asymmetry is what makes this safe to accept from the browser at all.
+    # Used by the demo build, which caps exports below the plan limit — a frontend-only flag the
+    # server has no way to know about.
+    max_tracks: Optional[int] = Field(
+        None, ge=1, description="Request fewer tracks than the plan allows. Never raises the cap."
+    )
+
+    class Config:
+        json_schema_extra = {"example": {"target": "txt"}}
+
+
+class PlaylistExportData(BaseModel):
+    """The exported file plus what the caller needs to explain it to the user."""
+    filename: str = Field(..., description="Suggested download filename")
+    content: str = Field(..., description="File contents")
+    format: str = Field(..., description="Export format")
+    track_count: int = Field(..., description="Tracks included in the file")
+    total_tracks: int = Field(..., description="Tracks in the playlist")
+    truncated: bool = Field(..., description="True when the plan's export limit trimmed the list")
+
+
+class PlaylistExportResponse(BaseModel):
+    """Response schema for a playlist export."""
+    success: bool = Field(True, description="Always true for successful responses")
+    data: PlaylistExportData = Field(..., description="The exported file")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "data": {
+                    "filename": "sonic_journey_2026-08-05.txt",
+                    "content": "SONIC JOURNEY\n\nINPUT TRACK: ...",
+                    "format": "txt",
+                    "track_count": 20,
+                    "total_tracks": 50,
+                    "truncated": True,
+                },
+            }
+        }
+
+
 # Response Schemas
 class PlaylistOperationResponse(BaseModel):
     """Response schema for playlist operations (rename, visibility change)."""

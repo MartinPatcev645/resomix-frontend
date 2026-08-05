@@ -29,7 +29,9 @@ from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.models.user import User
 from app.utils.response_utils import format_response
+from app.utils.quota_response import EXPORT_LIMIT_REACHED, quota_denied_response
 from app.services.entitlement_gate import EntitlementGate
+from app.core.entitlement_keys import FeatureKey
 
 # Set up logger for controller
 logger = logging.getLogger(__name__)
@@ -85,6 +87,22 @@ class SpotifyTransferController:
                     error="Exporting to Spotify is not available on your plan.",
                     reason=export_gate.reason,
                 ),
+            )
+
+        # Daily export allowance (pricing v2.1 C2) — one counter for every export target, so a free
+        # account's single daily export cannot be spent once per destination.
+        #
+        # PEEK now, RECORD after the transfer succeeds. Consuming up front would charge for the many
+        # ways a Spotify transfer fails (expired OAuth token, rate limit, a playlist with no
+        # matchable tracks), and refunding on each exit leaves a crash window that keeps the charge.
+        quota_gate = await self.entitlement_gate.peek_allowed(
+            db, FeatureKey.EXPORTS_PER_DAY, user=current_user
+        )
+        if not quota_gate.allowed:
+            return quota_denied_response(
+                quota_gate,
+                code=EXPORT_LIMIT_REACHED,
+                message="You've used today's export. Pro exports as often as you like.",
             )
 
         # Resolve playlist int ID early for logging
@@ -219,6 +237,11 @@ class SpotifyTransferController:
                 )
             except Exception:
                 pass
+
+            # The transfer landed — charge the daily export now (see the peek above).
+            await self.entitlement_gate.record_use(
+                db, FeatureKey.EXPORTS_PER_DAY, user=current_user
+            )
 
             return JSONResponse(
                 status_code=status.HTTP_200_OK,

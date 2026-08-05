@@ -27,7 +27,9 @@ from app.services.apple_music_transfer_service import AppleMusicTransferService
 from app.services.logging_service import LoggingService
 from app.services.playlist_service import PlaylistService
 from app.services.entitlement_gate import EntitlementGate
+from app.core.entitlement_keys import FeatureKey
 from app.models.user import User
+from app.utils.quota_response import EXPORT_LIMIT_REACHED, quota_denied_response
 from app.utils.response_utils import format_response
 
 # Set up logger for controller
@@ -37,11 +39,15 @@ logger = logging.getLogger(__name__)
 # GOOD-TO-KNOWS — Apple Music export gating (read before touching this / wiring Apple export)
 # ─────────────────────────────────────────────────────────────────────────────────────────────
 # * Apple export is a PLAN feature. It is gated on the `export_targets` entitlement (a CSV like
-#   "spotify,apple,tidal"). A plan may transfer to Apple Music only if "apple" is in its
-#   export_targets. Seeds (admin-editable): guest/free = none; basic/pro = "spotify,apple";
-#   max = all. So free users are denied with 403 `upgrade_required`; basic+ are allowed.
+#   "txt,apple,spotify"). A plan may transfer to Apple Music only if "apple" is in its
+#   export_targets. Under pricing v2.1 free gains Apple export ("txt,apple"); pro is
+#   "txt,apple,spotify,embed". Admin-editable, so treat those as today's values, not constants.
+# * "apple" and "apple_music" are the SAME target — `check_export` canonicalises both sides. The
+#   pricing spec writes apple_music; production and the frontend use apple. Neither had to move.
 # * The gate is `EntitlementGate.check_export(db, "apple", user=current_user)` — identical to the
 #   Spotify controller. It runs BEFORE any Apple API call.
+# * SECOND gate (pricing v2.1 C2): `exports_per_day`. Peeked before the transfer and recorded after
+#   it succeeds, so a failed transfer never spends a free user's one export for the day.
 # * AUTH UPLIFT (done): this endpoint now REQUIRES `get_current_user` (was api-key-only). A logged-in
 #   user is needed to resolve which plan to gate on. The frontend must send the JWT.
 # * Tokens: the Apple *developer* token is backend-generated (get_or_create_dev_token); the
@@ -128,6 +134,24 @@ class AppleMusicTransferController:
                 ),
             )
 
+        # Daily export allowance (pricing v2.1 C2). Every export counts, whichever target it uses —
+        # a free account gets one per day whether that is a TXT download or an Apple transfer.
+        #
+        # PEEK now, RECORD on success — not `try_consume`. A transfer is long and fails routinely
+        # (expired Music User Token, Apple API outage) and there are three separate exits below.
+        # Consuming up front would mean charging someone's single daily export for a transfer that
+        # never happened, and a refund on every failure path leaves a window where a crash keeps the
+        # charge. Record-on-success has no such window — the same reasoning as the upload credit.
+        quota_gate = await self.entitlement_gate.peek_allowed(
+            db, FeatureKey.EXPORTS_PER_DAY, user=current_user
+        )
+        if not quota_gate.allowed:
+            return quota_denied_response(
+                quota_gate,
+                code=EXPORT_LIMIT_REACHED,
+                message="You've used today's export. Pro exports as often as you like.",
+            )
+
         # Resolve playlist int ID early for logging
         playlist_obj = (
             await self.playlist_service.playlist_repository.async_get_playlist_by_uuid(
@@ -174,6 +198,13 @@ class AppleMusicTransferController:
                 custom_playlist_name=custom_playlist_name,
                 user_id=current_user.id if current_user else None,
             )
+
+            # The transfer landed — charge the export now (see the peek above). Best-effort by
+            # design: a counter write must never turn a completed transfer into an error response.
+            if current_user:
+                await self.entitlement_gate.record_use(
+                    db, FeatureKey.EXPORTS_PER_DAY, user=current_user
+                )
 
             # Format success response
             success_message = (

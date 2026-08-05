@@ -27,6 +27,12 @@ class FeatureKey:
     DEFAULT_PLAYLIST_VISIBILITY = "default_playlist_visibility"
     SIGNUP_BONUS_PLAYLISTS = "signup_bonus_playlists"
 
+    # --- pricing v2.1 -------------------------------------------------------------------------
+    # Counted features use -1 for "unlimited" (EntitlementGate.UNLIMITED); 0 denies.
+    LIBRARY_PLAYLISTS_MAX = "library_playlists_max"    # how many are LISTED in the Library
+    EXPORTS_PER_DAY = "exports_per_day"                # window: daily
+    CAN_VIEW_FULL_ANALYSIS = "can_view_full_analysis"  # the full Track Intelligence page
+
 
 # Plan codes (tiers).
 class PlanCode:

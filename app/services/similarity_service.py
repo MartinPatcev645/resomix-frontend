@@ -56,6 +56,31 @@ class SimilarityService:
             self.similarity_server_url
         )
 
+
+    async def _library_cap(self, db, user_id):
+        """The owner's ``library_playlists_max``, or None if it cannot be resolved.
+
+        None means "do not decide" — the repository defaults to visible, because hiding someone's
+        playlist by mistake is far worse than listing one too many. Guests have no Library at all,
+        so they are not consulted.
+        """
+        if not user_id:
+            return None
+        try:
+            from app.core.entitlement_keys import FeatureKey
+            from app.models.user import User
+            from sqlalchemy import select as _select
+            from app.services.entitlement_service import EntitlementService
+
+            user = (await db.execute(_select(User).where(User.id == user_id))).scalar_one_or_none()
+            if user is None:
+                return None
+            return await EntitlementService().get_int(
+                db, FeatureKey.LIBRARY_PLAYLISTS_MAX, user=user
+            )
+        except Exception:
+            return None
+
     async def calculate_similarity_for_upload(
         self,
         db: AsyncSession,
@@ -304,6 +329,7 @@ class SimilarityService:
                             user_id=user_id,
                             partner_id=partner_id,
                             is_public=anon_frontend,
+                            library_visible_max=await self._library_cap(db, user_id),
                         )
                     else:
                         logger.warning(
@@ -560,6 +586,7 @@ class SimilarityService:
                                 user_id=user_id,
                                 partner_id=partner_id,
                                 is_public=anon_frontend,
+                                library_visible_max=await self._library_cap(db, user_id),
                             )
 
                 response_data = {

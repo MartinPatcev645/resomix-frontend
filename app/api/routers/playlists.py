@@ -22,6 +22,7 @@ from typing import Optional
 
 from app.utils.response_utils import format_response
 from app.controllers.playlist_controller import PlaylistController
+from app.controllers.playlist_export_controller import PlaylistExportController
 from app.repositories.playlist_repository import DENIAL_MESSAGES, DENIAL_STATUS
 from app.api.dependencies.auth import get_current_user_optional, get_current_user
 from app.api.dependencies.partner import get_current_partner, get_public_partner
@@ -36,7 +37,9 @@ from app.schemas.playlist import (
     PlaylistSimilarityResponse,
     PlaylistForkResponse,
     UserPlaylistsResponse,
-    UserPlaylistsFilters
+    UserPlaylistsFilters,
+    PlaylistExportRequest,
+    PlaylistExportResponse
 )
 
 router = APIRouter(
@@ -53,6 +56,7 @@ router = APIRouter(
 
 # Initialize controller
 playlist_controller = PlaylistController()
+playlist_export_controller = PlaylistExportController()
 
 
 @router.put(
@@ -543,4 +547,62 @@ async def get_playlist_playback_session_endpoint(
     """
     return await playlist_controller.get_playlist_playback_session(
         request, db, playlist_id, partner_id=partner.id, current_user=current_user
+    )
+
+
+@router.post(
+    "/{playlist_id}/export",
+    response_model=PlaylistExportResponse,
+    summary="Export a Playlist to a File",
+    description=(
+        "Build the playlist's export file server-side. Counts against the plan's `exports_per_day` "
+        "and is trimmed to what the caller can actually see."
+    ),
+    responses={
+        200: {
+            "model": PlaylistExportResponse,
+            "description": "Export generated"
+        },
+        402: {
+            "model": PlaylistErrorResponse,
+            "description": (
+                "`login_required` (guest) · `plan_required` (format not on this plan) · "
+                "`export_limit_reached` (daily allowance spent)"
+            )
+        },
+        404: {
+            "model": PlaylistErrorResponse,
+            "description": "Playlist not found or not accessible to this caller"
+        },
+        422: {
+            "model": PlaylistErrorResponse,
+            "description": "Unknown export format"
+        },
+        500: {
+            "model": PlaylistErrorResponse,
+            "description": "Internal server error"
+        }
+    }
+)
+async def export_playlist_endpoint(
+    request: Request,
+    playlist_id: str,
+    request_data: PlaylistExportRequest,
+    db: AsyncSession = Depends(get_database_session),
+    partner: Partner = Depends(get_public_partner),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+) -> JSONResponse:
+    """
+    Export a playlist.
+
+    The file is built on the server so the plan's limits apply to the bytes the user receives —
+    the previous browser-side export could not be counted and its track cap was editable.
+
+    - **playlist_id**: UUID of the playlist to export
+    - **target**: export format (currently `txt`)
+
+    Guests are refused with `login_required`: export is a signed-in capability.
+    """
+    return await playlist_export_controller.export_playlist(
+        db, request, playlist_id, request_data.target, current_user, request_data.max_tracks
     )

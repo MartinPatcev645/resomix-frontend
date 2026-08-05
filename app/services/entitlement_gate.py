@@ -29,6 +29,7 @@ from app.core.entitlement_keys import FeatureKey
 from app.models.user import User
 from app.services.billing_period_service import BillingPeriodService
 from app.services.entitlement_service import EntitlementService
+from app.services.playlist_export_service import canonical_target
 from app.services.usage_counter_service import UsageCounterService
 from app.services.usage_history_service import UsageHistoryService
 from app.services import entitlement_metrics
@@ -165,12 +166,18 @@ class EntitlementGate:
     async def check_export(
         self, db: AsyncSession, target: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
     ) -> GateResult:
-        """Allow if the caller can export AND ``target`` is in their allowed export targets."""
+        """Allow if the caller can export AND ``target`` is in their allowed export targets.
+
+        Both sides are canonicalised before comparison. The same target is spelled differently in
+        different places — production stores ``apple`` and the frontend compares against that
+        literal, while the pricing spec writes ``apple_music`` — and a token that is recognised on
+        one side but not the other reads as "not on your plan" to a paying user.
+        """
         if not await self._entitlements.get_bool(db, FeatureKey.CAN_EXPORT, user=user, visitor_id=visitor_id):
             return _deny(user)
         targets_csv = await self._entitlements.get_str(db, FeatureKey.EXPORT_TARGETS, user=user, visitor_id=visitor_id)
-        allowed_targets = {t.strip().lower() for t in targets_csv.split(",") if t.strip()}
-        if target.strip().lower() not in allowed_targets:
+        allowed_targets = {canonical_target(t) for t in targets_csv.split(",") if t.strip()}
+        if canonical_target(target) not in allowed_targets:
             return _deny(user)
         return GateResult(True)
 
