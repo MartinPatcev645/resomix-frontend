@@ -37,7 +37,8 @@ class UsageCounterService:
         """Atomically reserve one unit if this period's usage is below ``limit``.
 
         Returns (allowed, count_after), or **None** if Redis is unavailable (caller decides —
-        enforcement fails open). ``limit <= 0`` denies without touching Redis.
+        enforcement fails open). ``limit == 0`` denies without touching Redis; ``limit < 0``
+        is unlimited and is short-circuited by the gate before reaching here.
         """
         if limit <= 0:
             return (False, 0)

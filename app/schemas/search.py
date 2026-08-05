@@ -120,7 +120,11 @@ class AdvancedSearchRequest(BaseModel):
     artist_filter: Optional[str] = Field(None, description="Filter by artist name", max_length=100)
     duration_min: Optional[float] = Field(None, description="Minimum duration in seconds", ge=0)
     duration_max: Optional[float] = Field(None, description="Maximum duration in seconds", ge=0)
-    limit: Optional[int] = Field(20, description="Maximum number of results", ge=1, le=100)
+    limit: Optional[int] = Field(20, description="Maximum number of results", ge=1, le=30)
+  # 30, not 100: catalogue search is the scraping surface — a wide limit lets one query
+    # walk the catalogue. Same ceiling for guest, free and pro; this is abuse protection, not
+    # a plan limit, so it is deliberately NOT in plan_entitlements.
+
 
     class Config:
         json_schema_extra = {
@@ -148,7 +152,8 @@ class SearchOptions(BaseModel):
     """Schema for search options and configuration."""
     sort_by: Optional[str] = Field("relevance", description="Sort field (relevance, duration, artist, filename)")
     sort_order: Optional[str] = Field("desc", description="Sort order (asc, desc)")
-    limit: Optional[int] = Field(20, description="Maximum results", ge=1, le=100)
+    # Ceiling matched to AdvancedSearchRequest above — same anti-scraping reason.
+    limit: Optional[int] = Field(20, description="Maximum results", ge=1, le=30)
     offset: Optional[int] = Field(0, description="Results offset", ge=0)
 
 

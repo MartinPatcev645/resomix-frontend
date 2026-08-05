@@ -194,6 +194,18 @@ class EntitlementService:
             raise KeyError(f"Unknown entitlement feature key: {feature_key}")
         return _cast_raw(feat.value_type, feat.default_value)
 
+    async def get_window(self, db: AsyncSession, feature_key: str) -> str:
+        """The feature's reset window from the registry: ``none|daily|monthly|rolling_24h|total``.
+
+        A property of the FEATURE, not of the plan — every plan counts a given metric over the same
+        kind of period, only the limit differs. This is what lets a counted feature be re-windowed
+        (searches went monthly → daily) as a data change, with no call site knowing about it.
+
+        Unknown key → "monthly", which is what every counted feature used before daily existed.
+        """
+        feat = (await db.execute(select(Feature).where(Feature.key == feature_key))).scalar_one_or_none()
+        return feat.window if feat is not None else "monthly"
+
     async def get_int(self, db, feature_key, *, user=None, visitor_id=None) -> int:
         return int(await self.get_entitlement(db, feature_key, user=user, visitor_id=visitor_id) or 0)
 

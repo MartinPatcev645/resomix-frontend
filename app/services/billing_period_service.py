@@ -18,7 +18,7 @@ Init Date: July 5, 2026
 """
 
 import calendar
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Tuple
 
 from sqlalchemy import select
@@ -58,6 +58,22 @@ def monthly_period_from_anchor(anchor: datetime, now: datetime) -> Tuple[datetim
 def calendar_month_period(now: datetime) -> Tuple[datetime, datetime]:
     start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     return start, _add_months(start, 1)
+
+
+def daily_period(now: datetime) -> Tuple[datetime, datetime]:
+    """Current ``[start, end)`` UTC day.
+
+    UTC deliberately, not a local zone. A zone with DST makes one day 23 hours and another 25, so a
+    "daily" quota would silently shorten twice a year — a support ticket nobody can reproduce. The
+    API returns the reset moment as an absolute timestamp, so the frontend still shows it in the
+    visitor's own local time; the user never sees "UTC".
+
+    Unlike the monthly window this is NOT anchored per subject: everyone's day turns over together.
+    A daily allowance anchored to signup time would mean two users hitting the same limit at
+    different hours, which is impossible to explain in a support conversation.
+    """
+    start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    return start, start + timedelta(days=1)
 
 
 class BillingPeriodService:
@@ -106,4 +122,18 @@ class BillingPeriodService:
 
     def resolve_for_guest(self) -> Tuple[str, int]:
         _start, _end, key, ttl = self.resolve_window_for_guest()
+        return key, ttl
+
+    # ---- daily -------------------------------------------------------------------------------
+    # Same window for every subject, so no db and no user is needed: the UTC day turns over for
+    # everyone at once. Used by features whose registry `window` is "daily" — searches and exports.
+
+    def resolve_window_daily(self) -> Tuple[datetime, datetime, str, int]:
+        now = _now()
+        start, end = daily_period(now)
+        key, ttl = self._key_and_ttl(start, end, now)
+        return start, end, key, ttl
+
+    def resolve_daily(self) -> Tuple[str, int]:
+        _start, _end, key, ttl = self.resolve_window_daily()
         return key, ttl

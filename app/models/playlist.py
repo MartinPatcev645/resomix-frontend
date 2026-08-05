@@ -8,7 +8,7 @@ It handles playlist creation and management with support for track ordering and 
 
 import uuid
 from typing import List, Optional
-from sqlalchemy import String, Boolean, Enum, ForeignKey, DateTime, DECIMAL
+from sqlalchemy import String, Boolean, Enum, ForeignKey, DateTime, DECIMAL, text
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
@@ -62,6 +62,11 @@ class Playlist(Base):
     # For guest-created playlists (user_id IS NULL): the guest's visitor_id, used for daily-limit
     # enforcement and for reparenting to a user on login (then set NULL, user_id set).
     guest_visitor_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True, default=None)
+
+    # Listed in the Library page, or reachable only by link. Decided ONCE at creation against the
+    # plan's `library_playlists_max` and then left alone: deleting a visible playlist frees a slot
+    # but never promotes a hidden one, so the state is not derivable from created_at ordering.
+    is_library_visible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("1"))
 
     # Relationships
     seed_track: Mapped[Optional["Track"]] = relationship("Track", foreign_keys=[seed_track_id])

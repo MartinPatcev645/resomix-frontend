@@ -29,6 +29,10 @@ from app.services.entitlement_gate import EntitlementGate
 
 logger = logging.getLogger(__name__)
 
+# Plans the public pricing page may advertise. GUEST is excluded because it is not something a
+# visitor can buy or be assigned by choice — it is the logged-out state.
+PUBLIC_PLAN_CODES = (PlanCode.FREE, PlanCode.BASIC, PlanCode.PRO, PlanCode.MAX)
+
 # Counted features surfaced in the "Plan & Billing" usage meters.
 _USAGE_FEATURES = (FeatureKey.UPLOADS_PER_MONTH, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH)
 
@@ -187,11 +191,19 @@ class BillingService:
         self, db: AsyncSession, country_code: Optional[str], current_plan_code: Optional[str]
     ) -> Dict[str, Any]:
         """Assignable consumer plans for the pricing page, with the resolved-currency price and
-        purchasable/coming-soon flags. Inactive non-free plans (basic/max) → coming_soon."""
+        purchasable/coming-soon flags. Inactive non-free plans (basic/max) → coming_soon.
+
+        Restricted to the catalogue codes on purpose. `is_assignable` alone is a property of the
+        row, so any plan created by hand or through the admin screens — a throwaway called "temp",
+        say — was advertised on the public pricing page as a real product. The public page should
+        only ever show plans the product actually sells, and that set is PlanCode.
+        """
         currency = self.resolve_currency(country_code)
         plans = (
             await db.execute(
-                select(Plan).where(Plan.is_assignable.is_(True)).order_by(Plan.sort_order)
+                select(Plan)
+                .where(Plan.is_assignable.is_(True), Plan.code.in_(PUBLIC_PLAN_CODES))
+                .order_by(Plan.sort_order)
             )
         ).scalars().all()
 

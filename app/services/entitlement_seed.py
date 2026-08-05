@@ -41,6 +41,11 @@ FEATURE_CATALOG = [
     ("can_similarity_upload",      "Can run similarity by upload",        "bool", "none",  "false",   "Upload a track to find similars."),
     ("default_playlist_visibility","Default playlist visibility",         "enum", "none",  "public",  "public | private"),
     ("signup_bonus_playlists",     "Signup bonus playlists",              "int",  "none",  "0",       "Extra one-time playlist allowance granted on signup."),
+    # --- pricing v2.1 -------------------------------------------------------------------------
+    # -1 = unlimited (see EntitlementGate.UNLIMITED). 0 = denied. Never reuse 0 for "no ceiling".
+    ("library_playlists_max",      "Playlists visible in Library",        "int",  "none",  "0",       "How many playlists are LISTED in the Library. Does not cap creation — beyond this they are created hidden and stay reachable by link. -1 = unlimited."),
+    ("exports_per_day",            "Exports per day",                     "int",  "daily", "0",       "Playlist exports per UTC day (txt / apple_music / embed all count). -1 = unlimited."),
+    ("can_view_full_analysis",     "Can open full Track Intelligence",    "bool", "none",  "false",   "The analysis SUMMARY card is available to anyone who can upload; this gates the full Track Intelligence page."),
 ]
 
 # code, name, price_cents, billing_interval, is_active, is_default, is_assignable, sort_order
@@ -60,6 +65,7 @@ PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
         "can_rename": False, "can_favorite": False, "can_rate_tracks": False,
         "uploads_per_month": 0, "analysis_feature_count": 0, "can_similarity_upload": False,
         "default_playlist_visibility": "public", "signup_bonus_playlists": 0,
+        "library_playlists_max": 0, "exports_per_day": 0, "can_view_full_analysis": False,
     },
     "free": {
         "search_playlists_per_month": 15, "max_tracks_per_playlist": 20, "dropdown_max_tracks": 50,
@@ -67,6 +73,7 @@ PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
         "can_rename": True, "can_favorite": True, "can_rate_tracks": True,
         "uploads_per_month": 5, "analysis_feature_count": 5, "can_similarity_upload": True,
         "default_playlist_visibility": "private", "signup_bonus_playlists": 2,
+        "library_playlists_max": 5, "exports_per_day": 1, "can_view_full_analysis": False,
     },
     "basic": {
         "search_playlists_per_month": 100, "max_tracks_per_playlist": 50, "dropdown_max_tracks": 100,
@@ -74,6 +81,7 @@ PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
         "can_rename": True, "can_favorite": True, "can_rate_tracks": True,
         "uploads_per_month": 30, "analysis_feature_count": 10, "can_similarity_upload": True,
         "default_playlist_visibility": "private", "signup_bonus_playlists": 2,
+        "library_playlists_max": 25, "exports_per_day": 5, "can_view_full_analysis": True,
     },
     "pro": {
         "search_playlists_per_month": 300, "max_tracks_per_playlist": 100, "dropdown_max_tracks": 100,
@@ -81,6 +89,7 @@ PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
         "can_rename": True, "can_favorite": True, "can_rate_tracks": True,
         "uploads_per_month": 100, "analysis_feature_count": 20, "can_similarity_upload": True,
         "default_playlist_visibility": "private", "signup_bonus_playlists": 2,
+        "library_playlists_max": -1, "exports_per_day": -1, "can_view_full_analysis": True,
     },
     "max": {
         "search_playlists_per_month": 1000, "max_tracks_per_playlist": 100, "dropdown_max_tracks": 100,
@@ -89,6 +98,7 @@ PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
         "can_rename": True, "can_favorite": True, "can_rate_tracks": True,
         "uploads_per_month": 300, "analysis_feature_count": 20, "can_similarity_upload": True,
         "default_playlist_visibility": "private", "signup_bonus_playlists": 2,
+        "library_playlists_max": -1, "exports_per_day": -1, "can_view_full_analysis": True,
     },
 }
 

@@ -32,6 +32,14 @@ from app.services.usage_counter_service import UsageCounterService
 from app.services.usage_history_service import UsageHistoryService
 from app.services import entitlement_metrics
 
+# Sentinel for a counted feature with no ceiling (Pro searches, exports, library).
+#
+# `0` already means "denied" and is relied on across the seeded data, so it could not be reused.
+# `-1` short-circuits BEFORE Redis: an unlimited feature is never counted, which also removes a
+# pointless INCR from Pro's hot path. No existing row is negative, so nothing changes for the
+# values in production today.
+UNLIMITED = -1
+
 REASON_LOGIN = "login_required"      # guest → sign up for more
 REASON_UPGRADE = "upgrade_required"  # user  → upgrade plan
 
@@ -68,14 +76,26 @@ class EntitlementGate:
             return ("guest", visitor_id)
         return None
 
-    async def _period(self, db, user: Optional[User], visitor_id: Optional[str]) -> Tuple[str, int]:
-        """Current monthly window (period_key, ttl_seconds) for the subject."""
+    async def _period(
+        self, db, user: Optional[User], visitor_id: Optional[str], feature_key: Optional[str] = None
+    ) -> Tuple[str, int]:
+        """Current window (period_key, ttl_seconds) for the subject, chosen by the FEATURE.
+
+        `feature_key` is optional so existing callers keep their previous behaviour: without it the
+        monthly window is used, which is what every counted feature used before daily existed.
+        """
+        if feature_key is not None and await self._entitlements.get_window(db, feature_key) == "daily":
+            return self._periods.resolve_daily()
         if user is not None:
             return await self._periods.resolve_for_user(db, user)
         return self._periods.resolve_for_guest()
 
-    async def _window(self, db, user: Optional[User], visitor_id: Optional[str]):
+    async def _window(
+        self, db, user: Optional[User], visitor_id: Optional[str], feature_key: Optional[str] = None
+    ):
         """Full current window (start, end, period_key, ttl) for the subject."""
+        if feature_key is not None and await self._entitlements.get_window(db, feature_key) == "daily":
+            return self._periods.resolve_window_daily()
         if user is not None:
             return await self._periods.resolve_window_for_user(db, user)
         return self._periods.resolve_window_for_guest()
@@ -108,7 +128,9 @@ class EntitlementGate:
     ) -> GateResult:
         """Atomically reserve one unit of a daily-counted feature vs the caller's limit."""
         limit = await self._entitlements.get_int(db, feature_key, user=user, visitor_id=visitor_id)
-        if limit <= 0:
+        if limit < 0:
+            return GateResult(True, limit=limit)      # unlimited — never counted
+        if limit == 0:
             return _deny(user, limit=limit, count=0)
 
         subject = self._subject(user, visitor_id)
@@ -116,7 +138,7 @@ class EntitlementGate:
             # No identity to count against → fail open (don't block).
             return GateResult(True, limit=limit)
 
-        period_key, ttl = await self._period(db, user, visitor_id)
+        period_key, ttl = await self._period(db, user, visitor_id, feature_key)
         result = await self._usage.try_consume(subject[0], subject[1], feature_key, limit, period_key, ttl)
         if result is None:
             # Redis unavailable → fail open (soft limit must not block on infra failure).
@@ -134,7 +156,7 @@ class EntitlementGate:
         """Return a previously reserved unit (operation failed after reserving)."""
         subject = self._subject(user, visitor_id)
         if subject is not None:
-            period_key, _ttl = await self._period(db, user, visitor_id)
+            period_key, _ttl = await self._period(db, user, visitor_id, feature_key)
             await self._usage.refund(subject[0], subject[1], feature_key, period_key)
 
     async def peek_allowed(
@@ -146,12 +168,14 @@ class EntitlementGate:
         refund complexity on the many early-return failure paths. Fails open if Redis is down.
         """
         limit = await self._entitlements.get_int(db, feature_key, user=user, visitor_id=visitor_id)
-        if limit <= 0:
+        if limit < 0:
+            return GateResult(True, limit=limit)      # unlimited — never counted
+        if limit == 0:
             return _deny(user, limit=limit, count=0)
         subject = self._subject(user, visitor_id)
         if subject is None:
             return GateResult(True, limit=limit)
-        period_key, _ttl = await self._period(db, user, visitor_id)
+        period_key, _ttl = await self._period(db, user, visitor_id, feature_key)
         count = await self._usage.peek(subject[0], subject[1], feature_key, period_key)
         if count is None:
             entitlement_metrics.incr("gate.fail_open")
@@ -167,7 +191,7 @@ class EntitlementGate:
         subject = self._subject(user, visitor_id)
         if subject is None:
             return
-        start, end, period_key, ttl = await self._window(db, user, visitor_id)
+        start, end, period_key, ttl = await self._window(db, user, visitor_id, feature_key)
         await self._usage.increment(subject[0], subject[1], feature_key, period_key, ttl)
         # Durable write-through so this period's usage survives the Redis TTL (best-effort; a
         # failure here must never break the upload / playlist creation that just succeeded).
@@ -190,6 +214,6 @@ class EntitlementGate:
         amount = await self._entitlements.get_int(db, FeatureKey.SIGNUP_BONUS_PLAYLISTS, user=user)
         if amount <= 0:
             return 0
-        period_key, ttl = await self._period(db, user, None)
+        period_key, ttl = await self._period(db, user, None, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH)
         await self._usage.grant_bonus("user", str(user.id), FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, amount, period_key, ttl)
         return amount
