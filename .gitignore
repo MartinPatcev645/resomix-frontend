@@ -1,3 +1,7 @@
+# Local IDE tool/skill directories (not project code — keep out of git)
+.claude/skills/
+.cursor/tools/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

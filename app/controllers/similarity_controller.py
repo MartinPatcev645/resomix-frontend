@@ -39,6 +39,7 @@ from app.services.entitlement_gate import EntitlementGate
 from app.services.guest_identity_service import GuestIdentityService
 from app.core.entitlement_keys import FeatureKey
 import time
+from datetime import datetime, timedelta
 import redis.asyncio as aioredis
 from app.db.redis import _redis_pool
 
@@ -1123,6 +1124,38 @@ class SimilarityController:
                 if temp_file_path and os.path.exists(temp_file_path):
                     os.remove(temp_file_path)
 
+    # Rolling 24 hours, not "since midnight UTC".
+    #
+    # Chosen over the meter's calendar-day window on purpose: a user who searches a track at 23:50
+    # and again at 00:10 is repeating themselves, and telling them "that's a new day, here is an
+    # identical playlist and a second charge" is not defensible. The two windows disagreeing is
+    # harmless in this direction — the worst case is that we are slightly more generous.
+    REPEAT_SEARCH_WINDOW = timedelta(hours=24)
+
+    async def _find_repeat_playlist(
+        self, db: AsyncSession, track_uuid: str, current_user: User
+    ):
+        """The caller's similarity playlist for this seed from the last 24h, or None.
+
+        Never raises: this is an optimisation, and failing to find a reusable playlist must fall
+        through to a normal computation rather than fail the request.
+        """
+        try:
+            seed_track_id = await self.similarity_service.track_repository.async_get_id_by_uuid(
+                db, track_uuid
+            )
+            if not seed_track_id:
+                return None
+            return await self.playlist_service.playlist_repository.find_same_day_similarity(
+                db,
+                seed_track_id=seed_track_id,
+                since=datetime.utcnow() - self.REPEAT_SEARCH_WINDOW,
+                user_id=current_user.id,
+            )
+        except Exception as exc:
+            logger.warning("Repeat-search lookup failed for track %s: %s", track_uuid, exc)
+            return None
+
     async def get_similarity_by_id(
         self,
         db: AsyncSession,
@@ -1187,6 +1220,37 @@ class SimilarityController:
                 db, FeatureKey.DROPDOWN_MAX_TRACKS, user=current_user, visitor_id=gate_visitor_id
             )
             top_sk = self._clamp_top_sk(top_sk, cap)
+
+            # --- Repeat search within 24h: return what we already built ------------------------
+            #
+            # The engine is deterministic for a given seed, so re-running it would produce the same
+            # playlist. Doing that costs a similarity computation, charges a second search credit,
+            # and — now that the Library is capped — burns another of the user's visible slots on a
+            # duplicate. So detect it BEFORE the engine is called and hand back the existing one.
+            #
+            # LOGGED-IN ONLY, deliberately. A guest is identified by a device hash they can clear,
+            # so "the same owner" is not a claim we can stand behind for them; let a guest create a
+            # duplicate rather than risk handing them someone else's playlist.
+            if current_user is not None:
+                existing = await self._find_repeat_playlist(db, track_id, current_user)
+                if existing is not None:
+                    repeat = await self.playlist_service.get_playlist_similarity_data(
+                        db, existing.uuid, user_id=current_user.id, partner_id=partner_id
+                    )
+                    if repeat.get("success"):
+                        # No metering: this consumed nothing the first time it was free, and the
+                        # user is receiving value they already paid for.
+                        return JSONResponse(
+                            status_code=status.HTTP_200_OK,
+                            content=format_response(success=True, data=repeat["data"]),
+                        )
+                    # Mapper failed (deleted mid-flight, permissions) — fall through and recompute
+                    # rather than fail the request.
+                    logger.warning(
+                        "Repeat-search reuse failed for playlist %s; recomputing. reason=%s",
+                        existing.uuid, repeat.get("error"),
+                    )
+
             # Guests: enforce the monthly playlist limit (peek now, record on success below).
             if current_user is None:
                 pg = await self.entitlement_gate.peek_allowed(
