@@ -4,6 +4,14 @@ import type { NavGlyphKey } from './NavGlyphs.tsx';
 /** BASE_BETA_URL is env-driven and empty when VITE_BASE_BETA_URL is unset — never ship an empty CTA target. */
 export const BETA_URL = BASE_BETA_URL || 'https://beta.resomix.com';
 
+/**
+ * The analysis tool. The beta root lands on Sonic Discovery, so any CTA that promises analysis
+ * ("Analyse a Track") has to name this route explicitly. Built off the guarded BETA_URL — with a
+ * bare BASE_BETA_URL an unset env would turn this into a same-origin `/analysis` on the marketing
+ * site — and the trailing slash is trimmed in case the env value carries one.
+ */
+export const BETA_ANALYSIS_URL = `${BETA_URL.replace(/\/$/, '')}/analysis`;
+
 export type NavStatus = 'coming-next' | 'scoping-available';
 
 export interface NavItem {

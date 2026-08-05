@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { BASE_BETA_URL } from '@resomix/config';
+import { BETA_ANALYSIS_URL } from '@/components/Navigation/navData.ts';
 
 export function TiFinalCta() {
   const { t } = useTranslation('common');
@@ -13,7 +13,7 @@ export function TiFinalCta() {
           <p className="ti-eyebrow uppercase">{t('trackIntelligence.cta.leftEyebrow')}</p>
           <h2 className="ti-h2b uppercase">{t('trackIntelligence.cta.leftTitle')}</h2>
           <div className="ti-ctarow">
-            <a className="ti-pill ti-pill-solid uppercase" href={BASE_BETA_URL}>
+            <a className="ti-pill ti-pill-solid uppercase" href={BETA_ANALYSIS_URL}>
               {t('trackIntelligence.cta.leftBtn')}
             </a>
           </div>

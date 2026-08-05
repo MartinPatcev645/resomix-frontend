@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BASE_BETA_URL } from '@resomix/config';
+import { BETA_ANALYSIS_URL } from '@/components/Navigation/navData.ts';
 import {
   TRACK,
   LENS,
@@ -327,7 +327,7 @@ export function TiAnatomyHero({ motionOn, onScrollToStructure }: TiAnatomyHeroPr
         </h1>
         <p className="ti-body ti-sub">{t('trackIntelligence.hero.sub')}</p>
         <div className="ti-ctarow">
-          <a className="ti-pill ti-pill-solid uppercase" href={BASE_BETA_URL}>
+          <a className="ti-pill ti-pill-solid uppercase" href={BETA_ANALYSIS_URL}>
             {t('trackIntelligence.hero.ctaPrimary')}
           </a>
           <button type="button" className="ti-pill ti-pill-line uppercase" onClick={onScrollToStructure}>
