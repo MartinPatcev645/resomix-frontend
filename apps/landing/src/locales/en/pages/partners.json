@@ -19,7 +19,7 @@
       "nodeLabel": "The junction",
       "footerLeft": "One inbound conversation · three real destinations",
       "footerRight": "No sandbox path exists",
-      "figureAlt": "Partner junction diagram: one inbound signal enters from the left and separates at a junction into three routes — the Private Catalogue Pilot (available), the partner API with catalogue ingestion (live), and integration planning (scoping available). Each route ends at a labelled destination. Selecting a route highlights it and opens its detail panel below.",
+      "figureAlt": "Partner junction diagram: one inbound signal enters from the left and separates at a junction into three routes: the Private Catalogue Pilot (available), the partner API with catalogue ingestion (live), and integration planning (scoping available). Each route ends at a labelled destination. Selecting a route highlights it and opens its detail panel below.",
       "mobileLabel": "The three partner paths"
     },
     "routes": {
@@ -67,7 +67,7 @@
         "items": [
           "Workflow and product scoping",
           "API-first deployment today",
-          "Widget and white-label — planned",
+          "Widget and white-label: planned",
           "Commercial and technical review"
         ]
       }
@@ -80,7 +80,7 @@
       "eyebrow": "02 // The engine",
       "title": "One engine across catalogue, discovery and product workflows",
       "engineNote": "one engine · 70+ characteristics",
-      "figureAlt": "Connected capability system: one PYXIS-1 engine line on the left branches into three capability strands — Catalogue Intelligence, Sonic Similarity, and Track Analysis — each ending at its product-page destination.",
+      "figureAlt": "Connected capability system: one PYXIS-1 engine line on the left branches into three capability strands, Catalogue Intelligence, Sonic Similarity and Track Analysis, each ending at its product-page destination.",
       "links": {
         "catalogue-intelligence": "[ Explore Catalogue Intelligence → ]",
         "sonic-discovery": "[ Explore Sonic Discovery → ]",
@@ -90,7 +90,7 @@
     "engagement": {
       "eyebrow": "03 // The start",
       "title": "From first question to the right working path",
-      "figureAlt": "One connected routing line with four stations — fit, route, scope, proceed. Selecting a station reveals what the partner provides, what Resomix determines, and the next evidence or action.",
+      "figureAlt": "One connected routing line with four stations: fit, route, scope and proceed. Selecting a station reveals what the partner provides, what Resomix determines, and the next evidence or action.",
       "mobileLabel": "The four engagement stages",
       "colYou": "You provide",
       "colResomix": "Resomix determines",
@@ -116,8 +116,8 @@
       "profiles": {
         "label": {
           "label": "Labels & label groups",
-          "question": "Can our own repertoire — current and back catalogue — be surfaced from the references that matter now?",
-          "route": "<b>Private Catalogue Pilot</b> — test on a representative authorised sample first.",
+          "question": "Can our own repertoire, current and back catalogue, be surfaced from the references that matter now?",
+          "route": "<b>Private Catalogue Pilot</b>: test on a representative authorised sample first.",
           "conversation": "Catalogue scope, reference tracks, reviewers and an agreed scorecard."
         },
         "dist": {
@@ -129,7 +129,7 @@
         "store": {
           "label": "Stores & platforms",
           "question": "Can sound-first discovery deepen the user journey without replacing our storefront?",
-          "route": "<b>API + Catalogue Ingestion</b> — your interface, your customer relationship.",
+          "route": "<b>API + Catalogue Ingestion</b>: your interface, your customer relationship.",
           "conversation": "Integration surface, service mode and the evaluation route."
         },
         "cat": {
@@ -141,7 +141,7 @@
         "tech": {
           "label": "Music technology products",
           "question": "Can we add similarity and track analysis without building the signal-processing layer?",
-          "route": "<b>API first</b> — scoped key against an indexed evaluation catalogue.",
+          "route": "<b>API first</b>: scoped key against an indexed evaluation catalogue.",
           "conversation": "Endpoints, response structures and integration planning."
         }
       }
@@ -184,7 +184,7 @@
       "submit": "Contact Partnerships",
       "submitting": "Submitting…",
       "successLabel": "Request submitted",
-      "successLead": "Thanks — your request was submitted. Check your email for confirmation; we'll get back to you in 2–5 business days.",
+      "successLead": "Thanks, your request was submitted. Check your email for confirmation; we'll get back to you in 2–5 business days.",
       "partnerTypes": [
         "Label / label group",
         "Distributor",

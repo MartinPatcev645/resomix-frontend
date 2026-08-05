@@ -16,7 +16,7 @@ interface DiscoveryEmptyGuideProps {
 }
 
 const OUTCOME_ARIA =
-  "One reference track enters and Resomix returns a ranked shortlist you can audition — explanatory illustration, not real results";
+  "One reference track enters and Resomix returns a ranked shortlist you can audition. Explanatory illustration, not real results";
 
 /** Two-zone empty state: outcome visual (left) + verified example references (right). */
 export const DiscoveryEmptyGuide: React.FC<DiscoveryEmptyGuideProps> = ({
@@ -158,7 +158,7 @@ export const DiscoveryEmptyGuide: React.FC<DiscoveryEmptyGuideProps> = ({
             {chips.map((track) => {
               const artist = displayArtistOrOmit(track.artist);
               const title = sanitizeWorkspaceTitle(track.title);
-              const label = artist ? `${artist} — ${title}` : title;
+              const label = artist ? `${artist} · ${title}` : title;
               return (
                 <li key={String(track.id)}>
                   <button

@@ -73,7 +73,7 @@ const EmbedModal: React.FC<EmbedModalProps> = ({
     setBusy(false);
     if (ok) {
       setMadePublic(true);
-      onStatusChange?.('success', 'Playlist is now public — you can embed it.', 'Ready to Embed');
+      onStatusChange?.('success', 'Playlist is now public. You can embed it.', 'Ready to Embed');
     } else {
       onStatusChange?.('error', 'Could not make this playlist public.', 'Error');
     }
@@ -95,7 +95,7 @@ const EmbedModal: React.FC<EmbedModalProps> = ({
           <>
             <p className="font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)] opacity-85">
               Embedding only works on <strong>public</strong> playlists. Make this playlist public to
-              generate an embed code — you can make it private again anytime.
+              generate an embed code; you can make it private again anytime.
             </p>
             {/* No Close button — the dialog shell's ✕ is the universal exit. */}
             <button
@@ -112,7 +112,7 @@ const EmbedModal: React.FC<EmbedModalProps> = ({
           <>
             <p className="font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)] opacity-85">
               Copy this code and paste it into an HTML block. The player shows the tracks with 30-second
-              previews, and stays contained — visitors can’t navigate away.
+              previews, and stays contained, so visitors can’t navigate away.
             </p>
 
             {/* Theme toggle — writes ?theme= into the snippet. */}

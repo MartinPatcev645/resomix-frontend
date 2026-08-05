@@ -13,7 +13,7 @@ function IsoDesktop() {
     <svg
       viewBox="0 0 1160 360"
       role="img"
-      aria-label="Isolation diagram: two dashed partner boundaries sit side by side, each containing its own private similarity index. An uploaded reference enters Partner A's boundary and ranked results return only from Partner A's index. No line crosses between partners, and the space between them is empty — there is no shared pool. Fictional diagram."
+      aria-label="Isolation diagram: two dashed partner boundaries sit side by side, each containing its own private similarity index. An uploaded reference enters Partner A's boundary and ranked results return only from Partner A's index. No line crosses between partners, and the space between them is empty, as there is no shared pool. Fictional diagram."
       className="dev-isosvg"
     >
       {partners.map(([label, x, key]) => {

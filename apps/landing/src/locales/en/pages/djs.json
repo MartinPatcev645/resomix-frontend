@@ -4,7 +4,7 @@
       "chip": "Use case · DJs",
       "intro": "Learning to DJ might not sound that difficult. Becoming a great DJ, however, is an entirely different matter.",
       "ctaNote": "Free to start · production beta",
-      "figureAria": "A crate of records drawn as dense rows of spines; one record is pulled out and a journey of ranked musical ideas unfolds from it — ideas, not a set order",
+      "figureAria": "A crate of records drawn as dense rows of spines; one record is pulled out and a journey of ranked musical ideas unfolds from it, offering ideas rather than a set order",
       "title": "Find the next track without hours of [[unfocused digging.]]"
     },
     "statement": {
@@ -57,7 +57,7 @@
       "h2": "Make every DJ set unique",
       "p1": "There's something about a DJ's style that automation simply can't replicate. Your ability to read the room and mix tracks seamlessly is the core of your musical identity, and Resomix's similarity engine is here to make your discovery process faster, more creative, and intuitive.",
       "p2": "Our deterministic engine is a creative companion, one that won't replace your unique taste, but rather help you discover more possibilities, faster, so you can spend less time searching and more time shaping the music journey you want to create.",
-      "figureAria": "The room drawn as a soft arc of listeners above; the DJ, a white ring, stands between the room and a fan of surfaced musical ideas — the engine suggests, the DJ reads the room"
+      "figureAria": "The room drawn as a soft arc of listeners above; the DJ, a white ring, stands between the room and a fan of surfaced musical ideas; the engine suggests and the DJ reads the room"
     },
     "final": {
       "line1": "Choose a track.",
@@ -72,9 +72,9 @@
     "figures": {
       "yourCrate": "Your crate",
       "musicIsQuery": "The music itself is the search query",
-      "wholeTrack": "The one you chose — the whole track",
+      "wholeTrack": "The one you chose, the whole track",
       "wholeTrackShort": "The whole track",
-      "rankedIdeas": "Ranked ideas — the set stays yours",
+      "rankedIdeas": "Ranked ideas: the set stays yours",
       "theLibrary": "The library",
       "latestEntries": "The latest entries",
       "signatureSongs": "The signature songs",
@@ -93,7 +93,7 @@
       "journeyOfSet": "The journey of your set",
       "theRoom": "The room",
       "you": "You",
-      "surfacedIdeas": "Surfaced ideas — the pick is yours",
+      "surfacedIdeas": "Surfaced ideas: the pick is yours",
       "engineSuggests": "The engine suggests",
       "youReadRoom": "You read the room"
     }

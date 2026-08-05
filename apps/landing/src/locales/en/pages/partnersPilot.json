@@ -23,7 +23,7 @@
         "No public sandbox"
       ],
       "protocolLabel": "The pilot protocol · One sample, six stages",
-      "protocolAria": "The pilot protocol: one representative catalogue sample moves through six stages on a single line — scope, ingest, index, test, measure, decide. Each stage is a station on the protocol rail; the decision stage is highlighted as the destination.",
+      "protocolAria": "The pilot protocol: one representative catalogue sample moves through six stages on a single line: scope, ingest, index, test, measure and decide. Each stage is a station on the protocol rail; the decision stage is highlighted as the destination.",
       "protocolNote": "agree the questions and success criteria before reviewing the results",
       "protocolNoteDim": "one bounded process · evidence at every stage",
       "mobileStages": [
@@ -49,7 +49,7 @@
         },
         {
           "title": "Decide",
-          "body": "Joint findings review — stop, extend, or plan production."
+          "body": "Joint findings review: stop, extend or plan production."
         }
       ]
     },
@@ -79,7 +79,7 @@
         }
       ],
       "interpBold": "You must control or be authorised to supply the evaluation material.",
-      "interpBody": "Submitting an inquiry starts a qualification conversation — not every request will fit a pilot immediately.",
+      "interpBody": "Submitting an inquiry starts a qualification conversation, and not every request will fit a pilot immediately.",
       "fitBtnClosed": "Strong fit vs more scoping ▸",
       "fitBtnOpen": "Strong fit vs more scoping ▾",
       "strongFitLabel": "Strong fit",
@@ -102,16 +102,16 @@
     },
     "pilotPack": {
       "eyebrow": "02 // The sample",
-      "title": "Bring a representative sample — not your entire catalogue",
+      "title": "Bring a representative sample, not your entire catalogue",
       "lead": "Sample size and composition are scoped together, around your use case and the catalogue's diversity.",
       "items": [
         {
           "title": "Authorised audio",
-          "body": "MP3, WAV, FLAC or AIFF — material you control or are authorised to supply."
+          "body": "MP3, WAV, FLAC or AIFF: material you control or are authorised to supply."
         },
         {
           "title": "CSV metadata",
-          "body": "Partner track ID, ISRC where available, title, artist, filename — optional BPM and duration."
+          "body": "Partner track ID, ISRC where available, title, artist and filename, with optional BPM and duration."
         },
         {
           "title": "Current + older repertoire",
@@ -119,7 +119,7 @@
         },
         {
           "title": "Known reference tracks",
-          "body": "Tracks your team already understands — the anchors the evaluation is scored against."
+          "body": "Tracks your team already understands, the anchors the evaluation is scored against."
         },
         {
           "title": "Expert reviewers",
@@ -127,14 +127,14 @@
         },
         {
           "title": "A clear use case",
-          "body": "The question the pilot should answer — discovery, catalogue or product."
+          "body": "The question the pilot should answer: discovery, catalogue or product."
         },
         {
           "title": "Optional event data",
           "body": "Only where you want to evaluate product behaviour downstream."
         }
       ],
-      "footnote": "no universal track count — the sample is scoped around the use case, not a number"
+      "footnote": "no universal track count; the sample is scoped around the use case, not a number"
     },
     "method": {
       "eyebrow": "03 // The method",
@@ -147,22 +147,22 @@
     "scorecard": {
       "eyebrow": "04 // The scorecard",
       "title": "Agree the scorecard before you see the results",
-      "lead": "No pre-filled percentages, no fabricated outcomes — targets are agreed in scoping, results are measured in the pilot.",
+      "lead": "No pre-filled percentages, no fabricated outcomes. Targets are agreed in scoping, results are measured in the pilot.",
       "tableAria": "Pilot scorecard: each measure with how it is assessed; target and result fields are intentionally empty until agreed and measured",
       "colMeasure": "measure",
       "colAssessment": "how it is assessed",
       "colTarget": "target",
       "colResult": "result",
-      "latencyNote": "pre-indexed queries and uploaded-reference processing are reported separately — never combined into one \"search speed\" figure",
+      "latencyNote": "pre-indexed queries and uploaded-reference processing are reported separately and never combined into one \"search speed\" figure",
       "deepBtnClosed": "View all measures ▸",
       "deepBtnOpen": "View all measures ▾",
-      "optBtnClosed": "Optional product measures — where you supply event data ▸",
-      "optBtnOpen": "Optional product measures — where you supply event data ▾",
+      "optBtnClosed": "Optional product measures, where you supply event data ▸",
+      "optBtnOpen": "Optional product measures, where you supply event data ▾",
       "optTableAria": "Optional product measures, used only where the partner supplies event data"
     },
     "deliverables": {
       "eyebrow": "05 // The output",
-      "title": "A decision pack — not a sales demo",
+      "title": "A decision pack, not a sales demo",
       "body": "The pilot ends with evidence your team can act on: what worked, what didn't, where the limits are, and what production would involve. Final deliverables are agreed during scoping.",
       "outcomes": [
         {
@@ -175,13 +175,13 @@
         },
         {
           "title": "Plan production",
-          "body": "Scope, ingestion cadence, API usage, service mode, terms — agreed together."
+          "body": "Scope, ingestion cadence, API usage, service mode and terms, agreed together."
         }
       ],
       "footnote": "the pilot does not automatically convert into a contract · no public prices on this page",
-      "reportLabel": "Pilot findings — sample structure",
+      "reportLabel": "Pilot findings: sample structure",
       "reportTruth": "TYPICAL OUTPUTS · FINAL SCOPE AGREED BEFORE INGEST",
-      "reportAria": "A sample pilot findings dossier: a report-styled panel listing the typical outputs — scope and criteria, ingestion validation summary, indexed sample, evaluation access, relevance scorecard, performance summary, catalogue observations, technical findings, limitations and open questions, production options, joint review session."
+      "reportAria": "A sample pilot findings dossier: a report-styled panel listing the typical outputs: scope and criteria, ingestion validation summary, indexed sample, evaluation access, relevance scorecard, performance summary, catalogue observations, technical findings, limitations and open questions, production options, joint review session."
     },
     "handling": {
       "eyebrow": "06 // Control",
@@ -194,7 +194,7 @@
           "text": "You retain catalogue ownership and commercial control throughout."
         },
         {
-          "text": "Partner content is not used to train or fine-tune PYXIS-1 — it is not a model, and it does not generate derivative audio."
+          "text": "Partner content is not used to train or fine-tune PYXIS-1. It is not a model, and it does not generate derivative audio."
         },
         {
           "text": "Public exposure is not part of the pilot."
@@ -236,7 +236,7 @@
       "rightsError": "Rights confirmation is required.",
       "submit": "Request Pilot Review",
       "submitting": "Submitting…",
-      "submitNote": "privacy & consent note — final legal wording pending · form data goes to the partner team only",
+      "submitNote": "privacy & consent note · final legal wording pending · form data goes to the partner team only",
       "selectPlaceholder": "select…",
       "partnerTypes": [
         "Label / label group",

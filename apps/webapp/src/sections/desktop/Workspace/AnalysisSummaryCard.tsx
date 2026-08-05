@@ -62,9 +62,9 @@ function energyCaption(segments: StructureSegment[], durationMs: number, peakMs:
   if (!durationMs) return "Energy journey";
   const drop = segments.find((s) => s.label === "drop" || s.label === "chorus");
   if (drop) {
-    return `Energy journey — peak around ${fmtClock(drop.startMs)}${drop.endMs < durationMs ? `, releases after ${fmtClock(drop.endMs)}` : ""}`;
+    return `Energy journey: peak around ${fmtClock(drop.startMs)}${drop.endMs < durationMs ? `, releases after ${fmtClock(drop.endMs)}` : ""}`;
   }
-  return `Energy journey — peak around ${fmtClock(peakMs)}`;
+  return `Energy journey: peak around ${fmtClock(peakMs)}`;
 }
 
 function energyDesc(

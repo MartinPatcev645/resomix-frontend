@@ -2,9 +2,9 @@
   "producers": {
     "hero": {
       "chip": "Use case · Electronic music producers",
-      "support": "Resomix uses the PYXIS-1 analytical engine to examine 70+ musical characteristics across rhythm, harmony, timbre, structure and energy — then surfaces sonically related tracks that can unlock new production ideas.",
+      "support": "Resomix uses the PYXIS-1 analytical engine to examine 70+ musical characteristics across rhythm, harmony, timbre, structure and energy, then surfaces sonically related tracks that can unlock new production ideas.",
       "ctaNote": "Free to start · production beta",
-      "figureAria": "The creative loop breaks open: a reference track feeds the PYXIS-1 sonic profile, five labelled dimensions — rhythm, harmony, timbre, structure, energy — fan out, and the highlighted thread reaches an unexpected sonic match: new directions to explore",
+      "figureAria": "The creative loop breaks open: a reference track feeds the PYXIS-1 sonic profile, five labelled dimensions, rhythm, harmony, timbre, structure and energy, fan out, and the highlighted thread reaches an unexpected sonic match: new directions to explore",
       "title": "Understand your recording and study [[the music around it.]]"
     },
     "statement": {
@@ -19,7 +19,7 @@
       "opener": "Creative block often appears as repetition: the same eight-bar loop, the same presets, the same sample choices and an arrangement that refuses to move forward.",
       "engines": "Discovery engines can help you expand your horizons and try something new, but the problem is that most of them are designed to help you find music based on what you already know and what they rely on: genre, artist names, tags, and so on. If you're looking for a specific atmosphere or sonic texture, it can be difficult to describe exactly what you want and results might not be what you need.",
       "pull": "Sometimes, the best way to find a new idea is to stop searching for exactly what you already have in mind, and start looking for more subtle connections in mood, atmosphere, and emotion.",
-      "figureAria": "A rich sonic atmosphere drawn as layered contours and grain sits above typical discovery fields — genre, artist, tags — which stay empty; the feeling cannot be typed into the form"
+      "figureAria": "A rich sonic atmosphere drawn as layered contours and grain sits above typical discovery fields such as genre, artist and tags, which stay empty; the feeling cannot be typed into the form"
     },
     "paths": {
       "eyebrow": "The answer",
@@ -51,7 +51,7 @@
       "eyebrow": "The craft stays yours",
       "h2": "PYXIS-1 surfaces the relationships. You shape the result.",
       "body": "Resomix does not generate a track or prescribe a formula. PYXIS-1 surfaces relationships across rhythm, harmony, timbre, structure and energy. You decide what to study, reinterpret, contrast or leave behind in your own production.",
-      "figureAria": "A reference track feeds the PYXIS-1 sonic profile of 70+ characteristics; four labelled relationship branches lead to related sonic directions, and from the white-ringed result the producer's own white contour grows — analysis surfaces the connections, the producer makes the music"
+      "figureAria": "A reference track feeds the PYXIS-1 sonic profile of 70+ characteristics; four labelled relationship branches lead to related sonic directions, and from the white-ringed result the producer's own white contour grows; analysis surfaces the connections and the producer makes the music"
     },
     "final": {
       "h2": "Bring a reference. Find a new direction.",

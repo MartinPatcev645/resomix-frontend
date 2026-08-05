@@ -85,8 +85,8 @@ const AppleExportPanel: React.FC<Props> = ({
       {!statusLoading && (
         <p className="font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)] opacity-85">
           {connected
-            ? 'Your account is linked. Add this playlist to your Apple Music library — a new playlist will be created there.'
-            : 'Link your Apple Music account to send this playlist straight to your library. You only need to connect once — we’ll remember it. An active Apple Music subscription is required.'}
+            ? 'Your account is linked. Add this playlist to your Apple Music library, and a new playlist will be created there.'
+            : 'Link your Apple Music account to send this playlist straight to your library. You only need to connect once, and we’ll remember it. An active Apple Music subscription is required.'}
         </p>
       )}
 

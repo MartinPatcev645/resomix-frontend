@@ -61,7 +61,7 @@ export const SECTIONS: Section[] = [
     t1: 52,
     e: 0.25,
     lufs: -12.1,
-    role: 'Establishes the groove — sub-weighted, sparse, percussive. Sets the tempo it will keep for the whole track.',
+    role: 'Establishes the groove: sub-weighted, sparse and percussive. Sets the tempo it will keep for the whole track.',
   },
   {
     n: 'BUILD',
@@ -77,7 +77,7 @@ export const SECTIONS: Section[] = [
     t1: 184,
     e: 0.82,
     lufs: -7.1,
-    role: 'First full-weight section — the groove at working energy, dense but still dark.',
+    role: 'First full-weight section, with the groove at working energy, dense but still dark.',
   },
   {
     n: 'BREAK',
@@ -85,7 +85,7 @@ export const SECTIONS: Section[] = [
     t1: 252,
     e: 0.38,
     lufs: -11.2,
-    role: 'The longest breakdown. Energy releases, tonal movement widens — the track breathes before its peak.',
+    role: 'The longest breakdown. Energy releases, tonal movement widens, and the track breathes before its peak.',
   },
   {
     n: 'DROP 02',
@@ -93,7 +93,7 @@ export const SECTIONS: Section[] = [
     t1: 326,
     e: 0.95,
     lufs: -6.8,
-    role: 'The main drop begins after the longest breakdown and carries the track\u2019s highest sustained energy — brightness lifts with it.',
+    role: 'The main drop begins after the longest breakdown and carries the track\u2019s highest sustained energy, and brightness lifts with it.',
   },
   {
     n: 'OUTRO',
@@ -101,7 +101,7 @@ export const SECTIONS: Section[] = [
     t1: 378,
     e: 0.3,
     lufs: -12.6,
-    role: 'Steps down instead of cutting — a long tail that mixes out cleanly.',
+    role: 'Steps down instead of cutting, with a long tail that mixes out cleanly.',
   },
 ];
 
@@ -226,10 +226,10 @@ export const LANE_ORDER: LensKey[] = ['structure', 'energy', 'harmony', 'timbre'
 
 export const LENS: Record<LensKey, { i: string }> = {
   structure: {
-    i: 'Six sections in long phrases — intro, build, first drop, the longest break, the main drop, and a mixable outro. The <b>break → drop 02</b> transition is the track\u2019s structural centre.',
+    i: 'Six sections in long phrases: intro, build, first drop, the longest break, the main drop and a mixable outro. The <b>break → drop 02</b> transition is the track\u2019s structural centre.',
   },
   energy: {
-    i: 'Intensity climbs gradually, releases through the break, then reaches its <b>highest sustained energy in drop 02</b> — the outro steps down rather than cutting.',
+    i: 'Intensity climbs gradually, releases through the break, then reaches its <b>highest sustained energy in drop 02</b>, and the outro steps down rather than cutting.',
   },
   harmony: {
     i: 'Centred on <b>G minor (6A)</b> with high confidence. Tonal movement widens during the break and re-anchors for the final drop.',
@@ -238,7 +238,7 @@ export const LENS: Record<LensKey, { i: string }> = {
     i: 'Dark, dense and sub-weighted through the first half; <b>brightness lifts at drop 02</b>, opening the top end without losing weight.',
   },
   identity: {
-    i: 'Reads primarily as <b>deep house (0.62)</b> with tech-house and minimal influences — dark, hypnotic, synth-led, no vocal presence.',
+    i: 'Reads primarily as <b>deep house (0.62)</b> with tech-house and minimal influences: dark, hypnotic, synth-led, with no vocal presence.',
   },
 };
 
@@ -258,34 +258,34 @@ export type ModeDef = {
 export const MODES: Record<ModeKey, ModeDef> = {
   dj: {
     head: 'For DJs',
-    copy: 'Read the track before it enters your preparation — arrangement, tempo, key, movement and weight, at a glance.',
+    copy: 'Read the track before it enters your preparation: arrangement, tempo, key, movement and weight, at a glance.',
     attrs: [
-      'Structure — where every section starts and ends',
-      'BPM — stable 124, confirmed across the beat grid',
-      'Key — G minor · 6A, high confidence',
-      'Energy journey — where it holds, lifts and releases',
-      'Loudness and dynamics — how heavy it actually plays',
+      'Structure: where every section starts and ends',
+      'BPM: stable 124, confirmed across the beat grid',
+      'Key: G minor · 6A, high confidence',
+      'Energy journey: where it holds, lifts and releases',
+      'Loudness and dynamics: how heavy it actually plays',
     ],
     outcome: 'Understand the track before adding it to a set-preparation workflow.',
     cta: 'Analyse a track',
     lanes: ['structure', 'energy'],
-    vizlbl: 'DJ READING · STRUCTURE + ENERGY — SAMPLE DATA',
+    vizlbl: 'DJ READING · STRUCTURE + ENERGY · SAMPLE DATA',
     chips: ['<b>124</b> BPM · stable', '<b>G MIN</b> · 6A', '<b>−7.4</b> LUFS', 'main drop <b>4:12</b>', 'outro mixes out'],
   },
   prod: {
     head: 'For Producers',
-    copy: 'Study how a reference builds texture, movement and intensity — as measured evidence, not guesswork.',
+    copy: 'Study how a reference builds texture, movement and intensity, as measured evidence rather than guesswork.',
     attrs: [
-      'Arrangement — pacing and section balance',
-      'Timbre — texture and weight over time',
-      'Spectral profile — where the density lives',
-      'Energy movement — how intensity is shaped',
-      'Harmony — tonal centre and movement',
+      'Arrangement: pacing and section balance',
+      'Timbre: texture and weight over time',
+      'Spectral profile: where the density lives',
+      'Energy movement: how intensity is shaped',
+      'Harmony: tonal centre and movement',
     ],
     outcome: 'Study how a reference track builds texture, movement and intensity.',
     cta: 'Analyse a reference',
     lanes: ['timbre', 'energy', 'harmony'],
-    vizlbl: 'PRODUCER READING · TIMBRE + ENERGY + HARMONY — SAMPLE DATA',
+    vizlbl: 'PRODUCER READING · TIMBRE + ENERGY + HARMONY · SAMPLE DATA',
     chips: [
       'texture: <b>dark · dense</b>',
       'brightness lifts at <b>drop 02</b>',
@@ -296,7 +296,7 @@ export const MODES: Record<ModeKey, ModeDef> = {
   },
   label: {
     head: 'For Labels & Distributors',
-    copy: 'One analytical language across the catalogue — consistent, repeatable track-level descriptors.',
+    copy: 'One analytical language across the catalogue: consistent, repeatable track-level descriptors.',
     attrs: [
       'Genre and style signals with confidence',
       'Mood and vibe descriptors',
@@ -307,28 +307,28 @@ export const MODES: Record<ModeKey, ModeDef> = {
     outcome: 'Turn catalogue audio into consistent, searchable track intelligence.',
     cta: 'Start a catalogue pilot',
     lanes: ['identity', 'structure'],
-    vizlbl: 'CATALOGUE READING · IDENTITY + STRUCTURE — SAMPLE DATA',
+    vizlbl: 'CATALOGUE READING · IDENTITY + STRUCTURE · SAMPLE DATA',
     chips: ['<b>deep house</b> 0.62', 'tech house 0.21', 'mood: <b>dark · hypnotic</b>', '6 sections', 'repeatable output'],
   },
   sup: {
     head: 'For Supervisors & Curators',
-    copy: 'Assess fit fast — mood, pacing, tonal character and texture, before the full listen.',
+    copy: 'Assess fit fast: mood, pacing, tonal character and texture, before the full listen.',
     attrs: [
       'Mood and theme indicators',
-      'Pacing — how the track unfolds',
-      'Tonal character — dark or bright, dense or open',
-      'Intensity — where it peaks and breathes',
+      'Pacing: how the track unfolds',
+      'Tonal character: dark or bright, dense or open',
+      'Intensity: where it peaks and breathes',
       'Structural development at a glance',
     ],
     outcome: 'Assess whether a track fits the emotional and sonic direction of a brief.',
     cta: 'Analyse a track',
     lanes: ['identity', 'timbre', 'energy'],
-    vizlbl: 'BRIEF READING · IDENTITY + TIMBRE + ENERGY — SAMPLE DATA',
+    vizlbl: 'BRIEF READING · IDENTITY + TIMBRE + ENERGY · SAMPLE DATA',
     chips: ['mood: <b>dark · late-night</b>', 'pacing: <b>gradual</b>', 'texture: dense → open', 'peak at <b>4:48</b>', 'no vocals'],
   },
   api: {
     head: 'For Product & API Teams',
-    copy: 'The same profile as structured, versioned, explainable data — retrieved instead of rebuilt.',
+    copy: 'The same profile as structured, versioned, explainable data, retrieved instead of rebuilt.',
     attrs: [
       'Structured descriptors per track',
       'Deterministic, repeatable output',
@@ -339,7 +339,7 @@ export const MODES: Record<ModeKey, ModeDef> = {
     outcome: 'Add track intelligence to another platform without building the signal-processing layer internally.',
     cta: 'View the API',
     lanes: ['structure', 'energy', 'harmony', 'timbre', 'identity'],
-    vizlbl: 'API READING · FULL PROFILE — SAMPLE DATA',
+    vizlbl: 'API READING · FULL PROFILE · SAMPLE DATA',
     chips: [
       'structured descriptors',
       'deterministic',

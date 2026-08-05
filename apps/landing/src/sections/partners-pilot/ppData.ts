@@ -19,7 +19,7 @@ export const STAGES: PilotStage[] = [
   {
     t: 'SCOPE',
     s: 'agree question · sample · criteria',
-    lbl: 'STAGE 01 · SCOPE — FIT AND AGREEMENT FIRST',
+    lbl: 'STAGE 01 · SCOPE · FIT AND AGREEMENT FIRST',
     rx: [
       'Assesses fit against the qualification principles',
       'Proposes sample composition and evaluation method',
@@ -36,7 +36,7 @@ export const STAGES: PilotStage[] = [
   {
     t: 'INGEST',
     s: 'managed sftp · audio + csv',
-    lbl: 'STAGE 02 · INGEST — THE LIVE MANAGED DELIVERY PATH',
+    lbl: 'STAGE 02 · INGEST · THE LIVE MANAGED DELIVERY PATH',
     rx: [
       'Provisions your partner delivery area (managed SFTP)',
       'Receives authorised audio and the CSV manifest',
@@ -53,7 +53,7 @@ export const STAGES: PilotStage[] = [
   {
     t: 'INDEX',
     s: 'validate · process · private index',
-    lbl: 'STAGE 03 · INDEX — VALIDATION AND PROFILING',
+    lbl: 'STAGE 03 · INDEX · VALIDATION AND PROFILING',
     rx: [
       'We validate, process and index the accepted catalogue sample, then notify the partner when it is ready',
       'Validation covers files, manifest and safety checks',
@@ -67,13 +67,13 @@ export const STAGES: PilotStage[] = [
       'e.g. missing audio file',
       'duplicate isrc',
       'unsafe archive',
-      'managed operational review — not instant, not self-serve',
+      'managed operational review, not instant or self-serve',
     ],
   },
   {
     t: 'TEST',
     s: 'ranked results per reference',
-    lbl: 'STAGE 04 · TEST — YOUR REFERENCES, YOUR CATALOGUE',
+    lbl: 'STAGE 04 · TEST · YOUR REFERENCES, YOUR CATALOGUE',
     rx: [
       'Runs ranked retrieval for each agreed reference',
       'Provides scoped evaluation access',
@@ -88,19 +88,19 @@ export const STAGES: PilotStage[] = [
     ],
     extra: [
       'uploaded references are measured separately from pre-indexed queries',
-      'analysis outputs are structured data — scoped to the pilot use case',
+      'analysis outputs are structured data, scoped to the pilot use case',
     ],
   },
   {
     t: 'MEASURE',
     s: 'expert review · scorecard',
-    lbl: 'STAGE 05 · MEASURE — THE AGREED SCORECARD, APPLIED',
+    lbl: 'STAGE 05 · MEASURE · THE AGREED SCORECARD, APPLIED',
     rx: [
       'Compiles scorecard measurements',
       'Records query and ingestion performance',
     ],
     pt: [
-      'Expert review — blind or partially blind where practical',
+      'Expert review, blind or partially blind where practical',
       'Compare against your current method where agreed',
     ],
     ev: [
@@ -108,12 +108,12 @@ export const STAGES: PilotStage[] = [
       'Performance summary',
       'Observations and limitations',
     ],
-    extra: ['baseline comparison only where agreed — not every pilot is an a/b test'],
+    extra: ['baseline comparison only where agreed, as not every pilot is an a/b test'],
   },
   {
     t: 'DECIDE',
     s: 'stop · extend · plan production',
-    lbl: 'STAGE 06 · DECIDE — AN EVIDENCE-BASED OUTCOME',
+    lbl: 'STAGE 06 · DECIDE · AN EVIDENCE-BASED OUTCOME',
     rx: ['Presents the findings dossier', 'Recommends production options'],
     pt: [
       'Joint findings review',
@@ -164,13 +164,13 @@ export const SCORECARD_DEEP: ScorecardRow[] = [
   {
     measure: 'Pre-indexed catalogue query latency',
     assessment:
-      'Median and P95 response times, measured after the sample catalogue has been indexed — never guaranteed.',
+      'Median and P95 response times, measured after the sample catalogue has been indexed. These are never guaranteed.',
     deep: true,
   },
   {
     measure: 'Uploaded-reference processing',
     assessment:
-      'Measured separately — the reference must first be processed before searching the partner catalogue.',
+      'Measured separately, because the reference must first be processed before searching the partner catalogue.',
     deep: true,
   },
   {

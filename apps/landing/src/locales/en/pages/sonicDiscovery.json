@@ -3,7 +3,7 @@
     "hero": {
       "eyebrow": "Sonic Discovery // live in beta · powered by PYXIS-1",
       "title": "Find similar tracks [[by sound.]]",
-      "sub": "Search by how the music actually sounds. PYXIS-1 reads the groove, energy, timbre and structure of your reference — drawn from 70+ measurable audio characteristics — and returns a ranked shortlist you can hear, question and build on.",
+      "sub": "Search by how the music actually sounds. PYXIS-1 reads the groove, energy, timbre and structure of your reference, drawn from 70+ measurable audio characteristics, and returns a ranked shortlist you can hear, question and build on.",
       "ctaPrimary": "Try Sonic Discovery",
       "ctaSecondary": "See how matching works",
       "fieldLabel": "One track becomes a search field",
@@ -11,33 +11,33 @@
       "refCaptionNote": "One reference · ranked by similarity"
     },
     "scene": {
-      "figureAlt": "One reference track sends its signal through the open PYXIS-1 comparison field, which compares it with the pre-analysed sonic index; the five closest matches resolve into a ranked formation — the Sonic Discovery playlist.",
+      "figureAlt": "One reference track sends its signal through the open PYXIS-1 comparison field, which compares it with the pre-analysed sonic index; the five closest matches resolve into a ranked formation: the Sonic Discovery playlist.",
       "figureAltMobile": "Mobile version: the reference track above, its signal passing through the open PYXIS-1 comparison field, resolving into the ranked formation of the Sonic Discovery playlist.",
       "ra": "RA 0H 42M 44S",
       "dec": "DEC +41° 16′ 9″",
       "referenceTrack": "Reference track",
-      "nightCircuit": "Night Circuit — Vela Nine",
+      "nightCircuit": "Night Circuit · Vela Nine",
       "refMeta": "124 BPM · 8A",
       "oneSignal": "One signal · active route",
       "pyxis1": "PYXIS-1",
       "comparesIndex": "Compares the reference with the pre-analysed sonic index",
       "comparesWith": "Compares the reference with",
       "thePreAnalysed": "the pre-analysed sonic index",
-      "closestMatches": "Closest matches — ranked automatically",
+      "closestMatches": "Closest matches, ranked automatically",
       "playlistTitle": "Sonic Discovery playlist"
     },
     "console": {
       "eyebrow": "01 // how it works",
       "title": "From one reference to a shortlist",
-      "lead": "The discovery flow — give it a reference, let PYXIS-1 read it, audition what comes back.",
+      "lead": "The discovery flow: give it a reference, let PYXIS-1 read it, audition what comes back.",
       "head": "PYXIS-1 sonic space // where hidden gems surface",
-      "truth": "Schematic · sample data — not live results",
+      "truth": "Schematic · sample data · not live results",
       "foot": "Similarity computed from extracted audio features · scored by PYXIS-1"
     },
     "flow": {
       "figureAlt": "The discovery flow in five stages: search or upload converge into one reference; PYXIS-1 reads its sonic profile of five characteristics; the profile is compared with the compact pre-analysed sonic index; five matches emerge and rank automatically with no manual selection; the Sonic Discovery playlist is returned in approximately fifteen to twenty seconds.",
       "figureAltMobile": "Mobile version of the five-stage discovery flow, drawn as one vertical route from reference input to the ranked playlist.",
-      "stage01": "Reference — the only thing you choose",
+      "stage01": "Reference: the only thing you choose",
       "searchTrack": "Search for a track",
       "existingProfile": "Existing sonic profile used",
       "uploadRef": "Upload a reference",
@@ -60,7 +60,7 @@
       "closestRanked": "Closest matches ranked automatically",
       "noManual": "No manual selection",
       "spaceSchematic": "PYXIS-1 sonic space · schematic",
-      "stage05": "Sonic Discovery playlist — the automatic output",
+      "stage05": "Sonic Discovery playlist: the automatic output",
       "sampleData": "Sample data",
       "r1t": "Pale Orbit",
       "r1a": "Kessler Line",
@@ -78,27 +78,27 @@
       "r5a": "Nadir Club",
       "r5s": "85%",
       "returnedLead": "Returned in approx. 15–20 sec",
-      "returnedRest": " · audition, save, export — or chain a result as your next reference, after it arrives."
+      "returnedRest": " · audition, save, export, or chain a result as your next reference, after it arrives."
     },
     "dims": {
       "eyebrow": "02 // the four dimensions",
       "title": "What PYXIS-1 listens for",
-      "lead": "Four of the feature families PYXIS-1 measures — alongside harmony and tonal relationships, drawn from 70+ measurable audio characteristics. Deep per-track anatomy lives in Track Intelligence; here, they decide what belongs next.",
+      "lead": "Four of the feature families PYXIS-1 measures, alongside harmony and tonal relationships, drawn from 70+ measurable audio characteristics. Deep per-track anatomy lives in Track Intelligence; here, they decide what belongs next.",
       "d1": "Groove",
       "d1q": "How does the track move?",
-      "d1body": "Percussion density, swing and accent placement — the rhythmic signature that decides whether two tracks feel mixable back-to-back, before you ever hear them together.",
+      "d1body": "Percussion density, swing and accent placement: the rhythmic signature that decides whether two tracks feel mixable back-to-back, before you ever hear them together.",
       "d1steer": "which results feel compatible in motion",
       "d2": "Energy",
       "d2q": "Where does it rise, hold or release?",
-      "d2body": "The journey of intensity across the track — builds, peaks, breakdowns and resets. Discovery can hold that journey steady, raise it, or give the room space to breathe.",
+      "d2body": "The journey of intensity across the track: builds, peaks, breakdowns and resets. Discovery can hold that journey steady, raise it, or give the room space to breathe.",
       "d2steer": "how the energy of what comes next compares",
       "d3": "Timbre",
       "d3q": "What gives it its sonic character?",
-      "d3body": "The colour and weight of the sound — brightness, density and texture, layered from sub to air. Timbre is why two tracks at the same tempo can feel worlds apart.",
+      "d3body": "The colour and weight of the sound: brightness, density and texture, layered from sub to air. Timbre is why two tracks at the same tempo can feel worlds apart.",
       "d3steer": "darker, brighter or related-texture results",
       "d4": "Structure",
       "d4q": "How does it unfold over time?",
-      "d4body": "Intro, build, drop, break, outro — the phrase-level architecture. Structure-aware matching means results that behave well in transitions, not just on paper.",
+      "d4body": "Intro, build, drop, break and outro: the phrase-level architecture. Structure-aware matching means results that behave well in transitions, not just on paper.",
       "d4steer": "results whose key moments arrive where you need them"
     },
     "shortlist": {
@@ -107,11 +107,11 @@
       "lead": "Add results to a working shortlist, save it as a playlist, and continue listening and reviewing from there.",
       "head": "Working shortlist",
       "truth": "sample session",
-      "empty": "no tracks yet — add matches from the results above [+]",
+      "empty": "no tracks yet, add matches from the results above [+]",
       "save": "Save as playlist",
-      "note": "reorder · remove · save — sample interactions",
+      "note": "reorder · remove · save · sample interactions",
       "savedNote": "saved as playlist (simulated)",
-      "savedEmpty": "add matches first — then save them as a playlist"
+      "savedEmpty": "add matches first, then save them as a playlist"
     },
     "aud": {
       "eyebrow": "04 // who it decides for",
@@ -124,7 +124,7 @@
       "djA4": "Hidden tracks beyond the charts",
       "djCta": "Build a set shortlist",
       "prodHead": "For Producers",
-      "prodCopy": "Explore recordings that approach a comparable musical idea — related textures, grooves and energy arcs. A reference board for direction, not a copying tool.",
+      "prodCopy": "Explore recordings that approach a comparable musical idea: related textures, grooves and energy arcs. A reference board for direction, not a copying tool.",
       "prodA1": "Related sonic themes across catalogues",
       "prodA2": "Texture and groove comparison",
       "prodA3": "Energy-arc reference points",
@@ -141,7 +141,7 @@
     "proof": {
       "eyebrow": "05 // why trust it",
       "title": "Built on measurement, not mystery",
-      "lead": "Every claim below maps to how the product actually works — nothing is invented for this page.",
+      "lead": "Every claim below maps to how the product actually works. Nothing is invented for this page.",
       "s1t": "70+ characteristics",
       "s1": "Every ranking starts from measurable properties of the sound itself.",
       "s2t": "Structure-aware",
@@ -165,9 +165,9 @@
       "v4": "Breadth of the searchable field and speed of the answer are tracked.",
       "v5t": "Repeat usage",
       "v5": "The test that matters: do professionals return with the next reference?",
-      "valFoot": "sonic similarity is contextual — validation asks \"was this useful?\", not \"was this identical?\"",
+      "valFoot": "sonic similarity is contextual, so validation asks \"was this useful?\", not \"was this identical?\"",
       "reserved": "Approved beta feedback will appear here",
-      "reservedNote": "reserved module — no testimonial is invented for this page"
+      "reservedNote": "reserved module · no testimonial is invented for this page"
     },
     "cta": {
       "leftEyebrow": "For music professionals",

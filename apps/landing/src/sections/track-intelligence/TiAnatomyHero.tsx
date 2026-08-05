@@ -355,7 +355,7 @@ export function TiAnatomyHero({ motionOn, onScrollToStructure }: TiAnatomyHeroPr
           </div>
           <div className="ti-trackid">
             <span className="ti-chip">
-              <b>{TRACK.t}</b> — {TRACK.a}
+              <b>{TRACK.t}</b> · {TRACK.a}
             </span>
             <span className="ti-chip">
               <b>{TRACK.bpm}</b> BPM

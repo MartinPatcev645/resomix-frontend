@@ -39,21 +39,21 @@ export interface RouteSeo {
 
 export const ROUTE_SEO: Record<string, RouteSeo> = {
   '/': {
-    title: 'Resomix — Find Tracks by Sound',
+    title: 'Resomix: Find Tracks by Sound',
     description:
       'Drop a reference track and get ranked matches that actually belong next to it. Sonic discovery, track analysis and playlists in one workspace.',
     changefreq: 'weekly',
     priority: 1.0,
   },
   '/sonic-discovery': {
-    title: 'Sonic Discovery — Search by Reference | Resomix',
+    title: 'Sonic Discovery: Search by Reference | Resomix',
     description:
       'Search the catalogue by sound rather than tags: upload or pick a reference and explore what sits next to it.',
     changefreq: 'weekly',
     priority: 0.9,
   },
   '/analysis': {
-    title: 'Track Analysis — See What a Track Is Made Of | Resomix',
+    title: 'Track Analysis: See What a Track Is Made Of | Resomix',
     description:
       'Upload a track to read its tempo, key, energy and sonic character, then jump straight to similar recordings.',
     changefreq: 'weekly',
@@ -62,14 +62,14 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
 
   /* ---------- shared with the marketing site: canonical points there ---------- */
   '/subscribe': {
-    title: 'Subscribe to Resomix — Unlock Deeper Sonic Discovery',
+    title: 'Subscribe to Resomix: Unlock Deeper Sonic Discovery',
     description:
       'Upgrade your Resomix plan for expanded discovery and analysis, and manage billing securely. Start in the free production beta and grow when you are ready.',
     canonical: `${LANDING_ORIGIN}/subscribe`,
     priority: 0.6,
   },
   '/contact': {
-    title: 'Contact Resomix — Support, Partnerships and Press Enquiries',
+    title: 'Contact Resomix: Support, Partnerships and Press Enquiries',
     description:
       'Reach the Resomix team in Thessaloniki for product support, partner and catalogue enquiries, or press. We reply from support@resomix.com within the beta.',
     canonical: `${LANDING_ORIGIN}/contact`,

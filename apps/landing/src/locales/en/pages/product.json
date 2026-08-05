@@ -10,7 +10,7 @@
       "captionA": "THREE DISTINCT WORKFLOWS · ONE SHARED ENGINE",
       "captionB": "PYXIS-1 · 70+ CHARACTERISTICS",
       "figureAriaD": "Three separate workflow lanes share one PYXIS-1 core: Sonic Discovery from a reference to a ranked playlist; Track Intelligence from one recording to a readable analysis; Catalogue Intelligence from an authorised catalogue to partner-scoped results. Distinct workflows, one engine.",
-      "figureAriaM": "Mobile: the three workflows stacked — Sonic Discovery, Track Intelligence, Catalogue Intelligence — each from input through PYXIS-1 to its own output.",
+      "figureAriaM": "Mobile: the three workflows stacked, Sonic Discovery, Track Intelligence and Catalogue Intelligence, each from input through PYXIS-1 to its own output.",
       "title": "Start with sound. Know where to go [[next.]]"
     },
     "products": {
@@ -47,7 +47,7 @@
       "body1": "PYXIS-1 preprocesses audio and extracts more than 70 measurable characteristics across rhythm, harmony, timbre, structure, spectral profile and energy. It combines those signals into a unique sonic profile for each recording.",
       "body2": "That profile can support two different operations: Track Intelligence explains one recording in greater detail; similarity comparison measures its relationship to recordings that have already been processed and indexed.",
       "status": "Proprietary algorithm · Audio-derived evidence · Not a generative system",
-      "figureAriaD": "One recording enters PYXIS-1; five representative signal bands — rhythm, harmony, timbre, structure, energy — combine into one sonic profile, which can be read through Track Intelligence or compared with an index for similarity ranking.",
+      "figureAriaD": "One recording enters PYXIS-1; five representative signal bands, rhythm, harmony, timbre, structure and energy, combine into one sonic profile, which can be read through Track Intelligence or compared with an index for similarity ranking.",
       "figureAriaM": "Mobile: one recording, five signal bands, one sonic profile, two possible operations."
     },
     "discovery": {
@@ -90,7 +90,7 @@
       "eyebrow": "06 // Activate an authorised catalogue",
       "h2": "Make the catalogue searchable through sonic relationships.",
       "body1": "Resomix processes authorised catalogue audio in advance and creates a stored sonic profile for each recording. Those profiles form a private, partner-scoped index that can return ranked matches from one approved reference.",
-      "body2": "This gives older, new and low-exposure recordings another route into discovery when the sonic relationship is strong—without replacing the partner's storefront, licensing workflow, brand or customer relationship.",
+      "body2": "This gives older, new and low-exposure recordings another route into discovery when the sonic relationship is strong, without replacing the partner's storefront, licensing workflow, brand or customer relationship.",
       "cta": "Explore Catalogue Intelligence",
       "figureAriaD": "Authorised audio and agreed metadata are pre-processed by PYXIS-1 into stored sonic profiles inside one heavy partner boundary, forming the partner-scoped sonic index. One reference query enters the index and five recording cells resolve into ranked partner results. Track Intelligence is a separate option for one authorised recording.",
       "figureAriaM": "Mobile: authorised audio pre-processed into the partner boundary; a reference query returns ranked partner results, with Track Intelligence as a separate option."
@@ -109,7 +109,7 @@
     "pathways": {
       "eyebrow": "08 // Built around the decision",
       "h2": "Different people. Different questions. The same respect for sound.",
-      "body": "Resomix changes the route according to what the person needs to decide—not according to a generic user type.",
+      "body": "Resomix changes the route according to what the person needs to decide, not according to a generic user type.",
       "p1Dec": "Find the next track without hours of unfocused digging.",
       "p1Body": "Start from one known recording and audition a ranked set of sonically related candidates.",
       "p1Route": "Sonic Discovery",
@@ -216,8 +216,8 @@
       "readTheRecording": "READ THE RECORDING",
       "compareWithIndex": "COMPARE WITH AN INDEX",
       "similarityRanking": "SIMILARITY RANKING",
-      "twoOpsCaption": "TWO POSSIBLE OPERATIONS — NOT TWO AUTOMATIC OUTPUTS OF EVERY SESSION",
-      "twoOpsCaptionM1": "TWO POSSIBLE OPERATIONS — NOT TWO AUTOMATIC",
+      "twoOpsCaption": "TWO POSSIBLE OPERATIONS, NOT TWO AUTOMATIC OUTPUTS OF EVERY SESSION",
+      "twoOpsCaptionM1": "TWO POSSIBLE OPERATIONS, NOT TWO AUTOMATIC",
       "twoOpsCaptionM2": "OUTPUTS OF EVERY SESSION",
       "searchATrack": "SEARCH A TRACK",
       "existingProfileUsed": "EXISTING PROFILE USED",

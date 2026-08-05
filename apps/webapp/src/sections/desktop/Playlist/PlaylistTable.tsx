@@ -525,8 +525,8 @@ const PlaylistTable: React.FC = () => {
 
             <div className="mt-[var(--px-12)] flex flex-wrap gap-x-[var(--px-16)] gap-y-[var(--px-6)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-50">
                 <span>▶ Authorised preview / playback</span>
-                <span>⇄ Chain Discover — use as new reference</span>
-                <span>Score bars show the match outright — scores sit in a tight band by design</span>
+                <span>⇄ Chain Discover · use as new reference</span>
+                <span>Score bars show the match outright; scores sit in a tight band by design</span>
             </div>
 
             <p className="mt-[var(--px-12)] font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] text-[var(--color-primary)] opacity-60">

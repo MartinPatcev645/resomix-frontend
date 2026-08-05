@@ -507,7 +507,7 @@ const PlaylistHero: React.FC = () => {
       <div ref={stickySentinelRef} aria-hidden="true" className="h-px w-full" data-testid="playlist-ref-sentinel" />
 
       <p className="mt-[var(--px-12)] mb-[var(--px-16)] flex items-center gap-[var(--px-10)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50 before:block before:w-[var(--px-20)] before:border-t before:border-[var(--color-accent,#EE4A26)] before:content-['']">
-        Sonic match found — scored by PYXIS-1
+        Sonic match found, scored by PYXIS-1
       </p>
 
       <StickyReferenceBar
@@ -544,7 +544,7 @@ const PlaylistHero: React.FC = () => {
         eyebrow="Playlist // Visibility"
         title={playlistData?.playlist?.is_public ? "Make playlist private" : "Make playlist public"}
         message={playlistData?.playlist?.is_public
-          ? "This playlist will no longer be reachable by its share link — only you can open it."
+          ? "This playlist will no longer be reachable by its share link; only you can open it."
           : "Anyone with the link will be able to open this playlist."}
         confirmLabel={playlistData?.playlist?.is_public ? "Make Private" : "Make Public"}
         busy={visibilityBusy}

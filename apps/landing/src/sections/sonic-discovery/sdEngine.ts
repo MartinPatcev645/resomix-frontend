@@ -265,7 +265,7 @@ export function explOf(tr: Track): string {
       : tr.de <= -0.08
         ? 'easing the energy for a reset'
         : 'holding the current energy';
-  return p1.charAt(0).toUpperCase() + p1.slice(1) + ', with ' + p2 + ' — ' + ep + '.';
+  return p1.charAt(0).toUpperCase() + p1.slice(1) + ', with ' + p2 + ', ' + ep + '.';
 }
 
 export function keynote(tr: Track, ref?: Ref): string {

@@ -48,7 +48,7 @@ export const ENGAGEMENT_STAGES: EngagementStage[] = [
   },
   {
     t: 'ROUTE',
-    you: 'Constraints — timing, rights position, available teams.',
+    you: 'Constraints: timing, rights position and available teams.',
     rx: 'The right path and its prerequisites.',
     next: 'A scoping agenda for that path.',
   },
@@ -56,7 +56,7 @@ export const ENGAGEMENT_STAGES: EngagementStage[] = [
     t: 'SCOPE',
     you: 'Material, reviewers and success criteria for the chosen path.',
     rx: 'Method, responsibilities and the evaluation or implementation design.',
-    next: 'An agreed scope — nothing starts before approval.',
+    next: 'An agreed scope; nothing starts before approval.',
   },
   {
     t: 'PROCEED',

@@ -63,7 +63,7 @@ function GrooveViz() {
           opacity={p.acc ? 0.95 : 0.65}
         />
       ))}
-      <SvgText x={16} y={172}>BAR 17 — 33 · 124 BPM</SvgText>
+      <SvgText x={16} y={172}>BAR 17–33 · 124 BPM</SvgText>
       <rect x={16} y={182} width={724} height={16} fill="none" stroke="rgba(255,255,255,.14)" />
       {densityRects.map((d, i) => (
         <rect key={i} x={d.x} y={d.y} width={d.w} height={d.h} fill="rgba(255,255,255,.22)" />
@@ -86,7 +86,7 @@ function EnergyViz() {
   const py = 24 + 160 * (1 - 0.62);
 
   return (
-    <svg viewBox="0 0 760 220" role="img" aria-label="Energy journey: a contour line rising through a build to a peak, easing through a breakdown, and resolving. From the current position, three dashed directions are marked — maintain, raise and ease. Sample data.">
+    <svg viewBox="0 0 760 220" role="img" aria-label="Energy journey: a contour line rising through a build to a peak, easing through a breakdown, and resolving. From the current position, three dashed directions are marked: maintain, raise and ease. Sample data.">
       {[1, 2, 3].map((i) => (
         <line key={i} x1={16} y1={20 + i * 45} x2={740} y2={20 + i * 45} stroke="rgba(255,255,255,.06)" />
       ))}
@@ -170,8 +170,8 @@ function StructureViz() {
   const candParts = blocksOf('PALE ORBIT');
 
   return (
-    <svg viewBox="0 0 760 220" role="img" aria-label="Structure alignment: the reference track's phrase blocks — intro, build, drop, break, outro — on one row, a candidate's blocks on a second row, with alignment ticks between them and the drop highlighted in orange. Sample data.">
-      <SvgText x={16} y={30} className="sd-slbl">REFERENCE — NIGHT CIRCUIT</SvgText>
+    <svg viewBox="0 0 760 220" role="img" aria-label="Structure alignment: the reference track's phrase blocks (intro, build, drop, break, outro) on one row, a candidate's blocks on a second row, with alignment ticks between them and the drop highlighted in orange. Sample data.">
+      <SvgText x={16} y={30} className="sd-slbl">REFERENCE · NIGHT CIRCUIT</SvgText>
       {refBlocks.map((b) => (
         <g key={`ref-${b.label}-${b.x}`}>
           <rect
@@ -189,7 +189,7 @@ function StructureViz() {
           )}
         </g>
       ))}
-      <SvgText x={16} y={124} className="sd-slbl">CANDIDATE — PALE ORBIT</SvgText>
+      <SvgText x={16} y={124} className="sd-slbl">CANDIDATE · PALE ORBIT</SvgText>
       {candBlocks.map((b) => (
         <g key={`cand-${b.label}-${b.x}`}>
           <rect
@@ -224,7 +224,7 @@ function StructureViz() {
           />
         );
       })}
-      <SvgText x={16} y={206}>ALIGNMENT TICKS — WHERE KEY MOMENTS LINE UP</SvgText>
+      <SvgText x={16} y={206}>ALIGNMENT TICKS · WHERE KEY MOMENTS LINE UP</SvgText>
     </svg>
   );
 }

@@ -167,7 +167,7 @@ describe('PnContactForm', () => {
     await waitFor(() => {
       expect(
         screen.getByText(
-          /thanks — your request was submitted\. check your email for confirmation; we'll get back to you in 2–5 business days\./i,
+          /thanks, your request was submitted\. check your email for confirmation; we'll get back to you in 2–5 business days\./i,
         ),
       ).toBeVisible();
     });

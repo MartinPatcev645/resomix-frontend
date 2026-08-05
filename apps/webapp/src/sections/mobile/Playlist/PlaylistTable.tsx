@@ -349,7 +349,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         <button
                                             type="button"
                                             aria-label="Mark as similar"
-                                            title="Yes — similar to the input track"
+                                            title="Yes, similar to the input track"
                                             onClick={() => void handleTrackRating(track.id, 1)}
                                             className={ROW_ACTION_BTN}
                                             id={`playlist-table-thumb-up-${track.id}`}
@@ -361,7 +361,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         <button
                                             type="button"
                                             aria-label="Mark as not similar"
-                                            title="No — not similar to the input track"
+                                            title="No, not similar to the input track"
                                             onClick={() => void handleTrackRating(track.id, 0)}
                                             className={ROW_ACTION_BTN}
                                             id={`playlist-table-thumb-down-${track.id}`}
@@ -388,7 +388,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         }}
                                         id={`playlist-table-sonic-discovery-${track.id}`}
                                         aria-label="Chain Discover"
-                                        title="Chain Discover — use as new reference"
+                                        title="Chain Discover · use as new reference"
                                         data-track-id={track.id}
                                     >
                                         <img src={SonicDiscoverySvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-16)] w-[var(--px-16)]" />

@@ -67,7 +67,7 @@ function DjAudViz() {
         fill="none"
       />
       <SvgText x={540} y={206}>ALT: RESET</SvgText>
-      <SvgText x={30} y={262}>SET ENERGY PATH — SAMPLE SESSION</SvgText>
+      <SvgText x={30} y={262}>SET ENERGY PATH · SAMPLE SESSION</SvgText>
     </svg>
   );
 }
@@ -126,7 +126,7 @@ function ProdAudViz() {
         );
       })}
       <path d="M216 145 H 266 M456 145 H 506" stroke="rgba(255,255,255,.3)" strokeDasharray="2 4" />
-      <SvgText x={26} y={292}>RELATED THEMES — DIRECTION, NOT DUPLICATION</SvgText>
+      <SvgText x={26} y={292}>RELATED THEMES · DIRECTION, NOT DUPLICATION</SvgText>
     </svg>
   );
 }

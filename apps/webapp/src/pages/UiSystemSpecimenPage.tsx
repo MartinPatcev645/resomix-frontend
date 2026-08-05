@@ -44,7 +44,7 @@ const contrastChecks = [
   { label: "Muted / microcopy on input field", ratio: "10.20:1", value: "rgba(255,255,255,0.72) on #0A0A0A" },
   { label: "Accent control on canvas", ratio: "5.48:1", value: "#EE4A26 on #050505" },
   { label: "Focus ring against surfaces", ratio: "8.48:1", value: "#FF8F74 against #111111" },
-  { label: "Unavailable status badge on surface", ratio: "7.20:1", value: "#FF7660 on #111111 — badge exempt from row dim" },
+  { label: "Unavailable status badge on surface", ratio: "7.20:1", value: "#FF7660 on #111111 · badge exempt from row dim" },
 ];
 
 const desktopRows = [
@@ -244,7 +244,7 @@ export default function UiSystemSpecimenPage() {
               <RxBadge tone="accent">Route is internal</RxBadge>
               <RxBadge>SAMPLE DATA</RxBadge>
               <RxBadge>REBUILT FROM PRODUCT PATTERNS</RxBadge>
-              <RxBadge>SCHEMATIC — NOT PRODUCT UI</RxBadge>
+              <RxBadge>SCHEMATIC · NOT PRODUCT UI</RxBadge>
               <RxBadge tone="accent">PRIVATE PILOT</RxBadge>
             </div>
           </section>
@@ -465,7 +465,7 @@ export default function UiSystemSpecimenPage() {
               </div>
               <div className="rx-panel rx-note-card rx-stack">
                 <RxScoreRail label="Matched shortlist score" score={80.7} />
-                <p className="rx-meta">Idle rails stay neutral silver — not orange by default.</p>
+                <p className="rx-meta">Idle rails stay neutral silver, not orange by default.</p>
               </div>
               <div className="rx-panel rx-note-card rx-stack">
                 <RxScoreRail label="Currently playing match" score={78.2} emphasis="playing" />

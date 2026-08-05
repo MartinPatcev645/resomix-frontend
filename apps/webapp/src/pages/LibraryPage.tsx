@@ -609,7 +609,7 @@ export default function LibraryPage() {
                       </Tooltip>
 
                       {/* Visibility (public/private) toggle. */}
-                      <Tooltip message={playlist.is_public ? "Public — click to make private" : "Private — click to make public"}>
+                      <Tooltip message={playlist.is_public ? "Public, click to make private" : "Private, click to make public"}>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -904,7 +904,7 @@ export default function LibraryPage() {
         eyebrow="Playlist // Visibility"
         title={visibilityFor?.isPublic ? "Make playlist private" : "Make playlist public"}
         message={visibilityFor?.isPublic
-          ? "This playlist will no longer be reachable by its share link — only you can open it."
+          ? "This playlist will no longer be reachable by its share link; only you can open it."
           : "Anyone with the link will be able to open this playlist."}
         confirmLabel={visibilityFor?.isPublic ? "Make Private" : "Make Public"}
         busy={visibilityBusy}

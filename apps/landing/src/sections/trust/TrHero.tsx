@@ -23,7 +23,7 @@ export function TrHero() {
             href={LEGAL_LIBRARY_URL}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`${t('trust.hero.ctaLegal')} — opens the Resomix legal library`}
+            aria-label={`${t('trust.hero.ctaLegal')}, opens the Resomix legal library`}
           >
             {t('trust.hero.ctaLegal')}
           </a>

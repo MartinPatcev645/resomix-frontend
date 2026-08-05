@@ -445,12 +445,12 @@ export default function AnalysisPage() {
                 sub={data.tonality.key == null ? "analyzing…" : `Camelot ${data.tonality.camelot}`}
                 hint="Estimated musical key & scale (Essentia EDMA profile, tuned for electronic music), plus its Camelot code for harmonic mixing."
               />
-              <StatCard label="Loudness" value={data.technical.integratedLufs.toFixed(1)} sub="LUFS integrated" hint="Integrated loudness in LUFS (EBU R128) — the overall perceived level across the whole track." />
+              <StatCard label="Loudness" value={data.technical.integratedLufs.toFixed(1)} sub="LUFS integrated" hint="Integrated loudness in LUFS (EBU R128), the overall perceived level across the whole track." />
               <StatCard label="Duration" value={fmtDuration(data.identity.durationMs)} sub={data.rhythm.bpm == null ? "— BPM" : `${fmtBpm(data.rhythm.bpm)} BPM`} hint="Total track length (mm:ss)." />
               {data.semantics.genreTop.length > 0 ? (
-                <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)]">{shortGenre(data.semantics.genreTop[0].label)}</span>} sub={`${(data.semantics.genreTop[0].score * 100).toFixed(0)}% match`} hint="Most likely genre from the Discogs-400 model (MAEST-30s) — see the full ranking below." />
+                <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)]">{shortGenre(data.semantics.genreTop[0].label)}</span>} sub={`${(data.semantics.genreTop[0].score * 100).toFixed(0)}% match`} hint="Most likely genre from the Discogs-400 model (MAEST-30s). See the full ranking below." />
               ) : (
-                <StatCard label="Top genre" value={<Spinner size={20} />} sub="analyzing…" hint="Genre needs the model pass (part 2) — filling in shortly." />
+                <StatCard label="Top genre" value={<Spinner size={20} />} sub="analyzing…" hint="Genre needs the model pass (part 2), filling in shortly." />
               )}
             </div>
 
@@ -618,7 +618,7 @@ export default function AnalysisPage() {
                   )}
                   {data.tonality.ambiguous && altLabel && (
                     <div className="text-center font-helvetica text-[length:var(--px-10)] leading-[var(--px-14)] opacity-80">
-                      ⚠ Key may be ambiguous — or possibly {altLabel.name} {altLabel.scale} ({data.tonality.altCamelot}).
+                      ⚠ Key may be ambiguous, or possibly {altLabel.name} {altLabel.scale} ({data.tonality.altCamelot}).
                     </div>
                   )}
                 </div>
@@ -680,7 +680,7 @@ export default function AnalysisPage() {
             {part2Done ? (
               <>
                 {/* semantic evolution */}
-                <Panel title="Evolution over time" subtitle="genre · mood · instruments across the track — brighter = stronger · click / play to seek">
+                <Panel title="Evolution over time" subtitle="genre · mood · instruments across the track · brighter = stronger · click / play to seek">
                   <div className="flex flex-col gap-[var(--px-18)]">
                     <div>
                       <div className="mb-[var(--px-6)] font-helvetica text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-50">Genre</div>
@@ -704,7 +704,7 @@ export default function AnalysisPage() {
                 </Panel>
 
                 {/* composition (stems) */}
-                <Panel title="Composition (stems)" subtitle="Demucs source separation — stacked stem energy over time · click / play to seek">
+                <Panel title="Composition (stems)" subtitle="Demucs source separation · stacked stem energy over time · click / play to seek">
                   <div className="grid grid-cols-1 items-center gap-[var(--px-16)] lg:grid-cols-[1fr_auto]">
                     <StemArea stems={data.composition.stems} hidden={stemsHidden} onToggle={toggleStem} durationMs={durationMs} currentMs={currentMs} onSeek={seek} vocalRegions={data.composition.vocalRegions} />
                     <Donut stems={data.composition.stems} hidden={stemsHidden} />
@@ -725,10 +725,10 @@ export default function AnalysisPage() {
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-x-[var(--px-10)] gap-y-[var(--px-14)] sm:grid-cols-6">
-                      <Gauge value={data.semantics.danceability} label="Danceable" hint="How suitable for dancing (steady beat, groove) — Discogs classifier." />
+                      <Gauge value={data.semantics.danceability} label="Danceable" hint="How suitable for dancing (steady beat, groove), from the Discogs classifier." />
                       <Gauge value={data.semantics.approachability} label="Approachable" hint="How accessible / easy-listening vs. challenging the track sounds." />
                       <Gauge value={data.semantics.voiceScore} label="Vocal" sub={data.semantics.voiceInstrumental} hint="Likelihood the track contains vocals vs. being instrumental." />
-                      <Gauge value={data.semantics.timbreBright} label="Bright" sub="vs dark" hint="Timbre brightness — bright/airy vs. dark/warm spectral balance." />
+                      <Gauge value={data.semantics.timbreBright} label="Bright" sub="vs dark" hint="Timbre brightness: bright/airy vs. dark/warm spectral balance." />
                       <Gauge value={data.semantics.moodElectronic} label="Electronic" hint="Electronic vs. acoustic production character." />
                       <Gauge value={data.semantics.moodAcoustic} label="Acoustic" hint="Acoustic-instrument character of the track." />
                     </div>
@@ -754,8 +754,8 @@ export default function AnalysisPage() {
               <Panel title="Sound, mood & style" subtitle="genre · instruments · stems · emotion" center>
                 <div className="flex justify-center py-[var(--px-14)]">
                   <div className="flex flex-col gap-[var(--px-16)]">
-                    <LoadingStep title="Sound & structure" subtitle="tempo · key · loudness · spectrum · sections — ready above" done />
-                    <LoadingStep title="Sound, mood & style" subtitle="genre · instruments · stems · emotion — running the models" />
+                    <LoadingStep title="Sound & structure" subtitle="tempo · key · loudness · spectrum · sections · ready above" done />
+                    <LoadingStep title="Sound, mood & style" subtitle="genre · instruments · stems · emotion · running the models" />
                   </div>
                 </div>
               </Panel>

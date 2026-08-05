@@ -11,11 +11,11 @@
       "ctaPartnerships": "Contact Partnerships",
       "trustline": "Current controls · Agreement-bound terms · Beta limitations · Published policies",
       "sourceNote": "Reflects the Resomix production-beta policies effective 20 July 2026. The published legal documents control.",
-      "legendTitle": "How to read this page — five status labels",
+      "legendTitle": "How to read this page: five status labels",
       "legend": {
         "current": "A control or behaviour operating now and approved for public description.",
         "agreementBound": "A partner or Private Library control whose exact scope, duration, access or deletion terms are governed by the applicable account terms, partner agreement or Data Processing Addendum.",
-        "betaControl": "A control operating during the production beta but still being documented, expanded or verified — not presented as mature enterprise assurance.",
+        "betaControl": "A control operating during the production beta but still being documented, expanded or verified, and not presented as mature enterprise assurance.",
         "roadmap": "A control or capability not implemented today.",
         "notClaimed": "A deliberately explicit boundary where Resomix does not currently make a certification, guarantee or technical assurance."
       }
@@ -26,13 +26,13 @@
       "betaControl": "Beta control",
       "roadmap": "Roadmap",
       "notClaimed": "Not claimed",
-      "currentQualified": "Current — qualified",
+      "currentQualified": "Current (qualified)",
       "currentLegalDisclosure": "Current · legal disclosure",
       "roadmapNotClaimed": "Roadmap / not claimed"
     },
     "glance": {
       "eyebrow": "01 // At a glance",
-      "title": "What applies now — and what does not",
+      "title": "What applies now, and what does not",
       "groups": {
         "current": "Current",
         "agreementBound": "Agreement-bound",
@@ -140,7 +140,7 @@
         },
         "deletionTrigger": {
           "label": "Deletion trigger",
-          "temp": "Automatic — the 24-hour rule.",
+          "temp": "Automatic, under the 24-hour rule.",
           "library": "A user removal request, Private Library deletion, account termination or the applicable retention schedule.",
           "partner": "The removal and termination schedule in the partner agreement and DPA."
         },
@@ -152,7 +152,7 @@
         }
       },
       "noteBold": "Private Library audio is not a Temporary Reference Upload.",
-      "noteRest": " The three lifecycles have different purposes, different retention rules and different deletion triggers — the ledger above states each one separately."
+      "noteRest": " The three lifecycles have different purposes, different retention rules and different deletion triggers, and the ledger above states each one separately."
     },
     "rights": {
       "eyebrow": "03 // Rights & access",
@@ -188,7 +188,7 @@
         },
         {
           "question": "How do rights holders raise a concern?",
-          "answerBefore": "Through the published Copyright & DMCA Policy, Acceptable Use Policy and Terms of Service — or directly at ",
+          "answerBefore": "Through the published Copyright & DMCA Policy, Acceptable Use Policy and Terms of Service, or directly at ",
           "answerAfter": "."
         }
       ],
@@ -282,7 +282,7 @@
       "transferRest": " Core application and audio-processing infrastructure uses providers in Austria and Germany. Some global service providers may process data outside the EEA under the safeguards described in the Privacy Policy.",
       "transferLegalDisclosure": "current legal disclosure",
       "privacyLink": "[ Read the Privacy Policy ↗ ]",
-      "privacyLinkAria": "Read the Privacy Policy — opens the Resomix legal library"
+      "privacyLinkAria": "Read the Privacy Policy, opens the Resomix legal library"
     },
     "retention": {
       "eyebrow": "06 // Retention & limits",
@@ -365,39 +365,39 @@
       "documents": [
         {
           "label": "Privacy Policy",
-          "ariaLabel": "Privacy Policy — opens the Resomix legal library"
+          "ariaLabel": "Privacy Policy, opens the Resomix legal library"
         },
         {
           "label": "Terms of Service",
-          "ariaLabel": "Terms of Service — opens the Resomix legal library"
+          "ariaLabel": "Terms of Service, opens the Resomix legal library"
         },
         {
           "label": "Cookie Policy",
-          "ariaLabel": "Cookie Policy — opens the Resomix legal library"
+          "ariaLabel": "Cookie Policy, opens the Resomix legal library"
         },
         {
           "label": "Acceptable Use Policy",
-          "ariaLabel": "Acceptable Use Policy — opens the Resomix legal library"
+          "ariaLabel": "Acceptable Use Policy, opens the Resomix legal library"
         },
         {
           "label": "Copyright & DMCA Policy",
-          "ariaLabel": "Copyright and DMCA Policy — opens the Resomix legal library"
+          "ariaLabel": "Copyright and DMCA Policy, opens the Resomix legal library"
         },
         {
           "label": "GDPR Summary",
-          "ariaLabel": "GDPR Summary — opens the Resomix legal library"
+          "ariaLabel": "GDPR Summary, opens the Resomix legal library"
         },
         {
           "label": "Refund Policy",
-          "ariaLabel": "Refund Policy — opens the Resomix legal library"
+          "ariaLabel": "Refund Policy, opens the Resomix legal library"
         },
         {
           "label": "Platform Disclaimer",
-          "ariaLabel": "Platform Disclaimer — opens the Resomix legal library"
+          "ariaLabel": "Platform Disclaimer, opens the Resomix legal library"
         },
         {
           "label": "Open Source Licensing Transparency",
-          "ariaLabel": "Open Source Licensing Transparency — opens the Resomix legal library"
+          "ariaLabel": "Open Source Licensing Transparency, opens the Resomix legal library"
         }
       ],
       "contacts": {
@@ -407,7 +407,7 @@
       },
       "ctaPartnerships": "Contact Partnerships",
       "ctaLegal": "View Legal Documents",
-      "ctaLegalAria": "View Legal Documents — opens the Resomix legal library"
+      "ctaLegalAria": "View Legal Documents, opens the Resomix legal library"
     }
   }
 }

@@ -46,7 +46,7 @@ export function PpDeliverables() {
             {DOSSIER_ITEMS.map((item) => (
               <li key={item.title}>
                 <span>
-                  <b>{item.title}</b> — {item.body}
+                  <b>{item.title}</b>: {item.body}
                 </span>
               </li>
             ))}

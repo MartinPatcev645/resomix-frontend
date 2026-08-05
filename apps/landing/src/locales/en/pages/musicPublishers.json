@@ -22,7 +22,7 @@
       "p1": "Spending years building a catalog, only to barely touch its true potential, is the problem of every music publisher today.",
       "p2": "The story usually goes like this: new releases are prioritized, while older songs slowly disappear from view. That’s partly intrinsic to the modern music industry, where new songs are more sought-after, whereas songs that are not old enough to be considered vintage live in this limbo where no one looks for them.",
       "p3": "Metadata can help rediscover songs buried in a catalog, but it’s not designed to see sonic connection: it shows you songs that are tagged the same way, but that doesn’t mean they’re sonically related, or that they can fill the same purpose. What you need is an engine specifically designed to explore your entire catalogue through the sound itself.",
-      "figureAriaD": "A catalogue timeline with three zones — established workhorses, a large quiet underexposed middle, and recent visible releases. A metadata rail sits above; a sonic relationship layer sits below. One orange path bypasses the metadata grouping and connects a recent reference to a work inside the underexposed middle.",
+      "figureAriaD": "A catalogue timeline with three zones: established workhorses, a large quiet underexposed middle, and recent visible releases. A metadata rail sits above; a sonic relationship layer sits below. One orange path bypasses the metadata grouping and connects a recent reference to a work inside the underexposed middle.",
       "figureAriaM": "Mobile: the three catalogue zones stacked, with the metadata rail above, the sonic layer below, and one orange path connecting a recent reference to an underexposed work."
     },
     "activate": {
@@ -67,7 +67,7 @@
     },
     "crossEra": {
       "lead": "A forgotten track and a recent release might have more in common than their release dates suggest, and combined, can create a unique and interesting collection. Resomix can help you uncover those connections and turn them into possibilities.",
-      "figureAriaD": "Two work records at opposite ends of a release-date timeline — an older underexposed work and a recent active reference — connected through a central PYXIS-1 relationship profile, with a small group of additional related works revealed around them.",
+      "figureAriaD": "Two work records at opposite ends of a release-date timeline, an older underexposed work and a recent active reference, connected through a central PYXIS-1 relationship profile, with a small group of additional related works revealed around them.",
       "figureAriaM": "Mobile: the older underexposed work and the recent active reference connected through the central PYXIS-1 relationship profile, with related works around them."
     },
     "closing": {
@@ -78,11 +78,11 @@
       "status": "Start with a representative catalogue sample",
       "triad": {
         "knowledgeTitle": "Publisher knowledge",
-        "knowledgeSub": "Rights context · artist relationships · professional judgement — every decision stays here.",
+        "knowledgeSub": "Rights context · artist relationships · professional judgement. Every decision stays here.",
         "evidenceTitle": "PYXIS-1 sonic evidence",
         "evidenceSub": "Measured relationships across rhythm, harmony, timbre, structure and energy.",
         "decisionsTitle": "Informed catalogue decisions",
-        "decisionsSub": "What is reviewed, pitched or pursued — decided by your team."
+        "decisionsSub": "What is reviewed, pitched or pursued, decided by your team."
       }
     },
     "cta": {
@@ -115,8 +115,8 @@
       "metadataOrganises": "Metadata organises the catalogue. Sonic intelligence reveals another relationship inside it.",
       "metadataOrganisesM1": "Metadata organises the catalogue. Sonic",
       "metadataOrganisesM2": "intelligence reveals another relationship inside it.",
-      "preparationOnce": "Catalogue preparation — once",
-      "opportunityPerRef": "Opportunity — per reference",
+      "preparationOnce": "Catalogue preparation: once",
+      "opportunityPerRef": "Opportunity: per reference",
       "authorised": "Authorised",
       "catalogueAudio": "Catalogue audio",
       "rhythm": "Rhythm",
@@ -142,7 +142,7 @@
       "periodA": "Period A",
       "periodB": "Period B",
       "openTerritory": "Open territory",
-      "releaseDateEarlier": "Release date — earlier",
+      "releaseDateEarlier": "Release date: earlier",
       "recent": "Recent",
       "olderWorkUnderexposed": "Older work / underexposed",
       "recentReleaseActive": "Recent release / active reference",

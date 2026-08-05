@@ -108,7 +108,7 @@
     },
     "notes": {
       "pyxisNote": "Powered by PYXIS-1 · 70+ measurable audio characteristics",
-      "plannedPagesNote": "Planned pages — links activate when each page ships. Never dead links in production."
+      "plannedPagesNote": "Planned pages. Links activate when each page ships. Never dead links in production."
     },
     "notices": {
       "noPublicSandboxTitle": "No public sandbox",
@@ -143,11 +143,11 @@
     "drawerLabel": "Site navigation",
     "drawerTitle": "Navigation",
     "currentSection": " (current section)",
-    "fullApiReferenceAria": "Full API Reference — external documentation site, opens in a new tab",
-    "journalAria": "Journal — opens in a new tab",
-    "helpCentreAria": "Help Centre — opens in a new tab",
-    "faqAria": "FAQ — opens in a new tab",
-    "legalDocumentsAria": "Legal Documents — opens in a new tab"
+    "fullApiReferenceAria": "Full API Reference, an external documentation site that opens in a new tab",
+    "journalAria": "Journal, opens in a new tab",
+    "helpCentreAria": "Help Centre, opens in a new tab",
+    "faqAria": "FAQ, opens in a new tab",
+    "legalDocumentsAria": "Legal Documents, opens in a new tab"
   },
   "general": {
     "back_to_home": "Back to Home",

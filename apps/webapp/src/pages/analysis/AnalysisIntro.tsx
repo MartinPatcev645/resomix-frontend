@@ -11,10 +11,10 @@ interface AnalysisIntroProps {
 
 // Short, plain-language facts about what the analysis reveals and why a DJ / producer cares.
 const FACTS: { title: string; body: string }[] = [
-  { title: "Tempo & Key", body: "Exact BPM and musical key (Camelot) — beatmatch and mix in key with confidence." },
-  { title: "Energy & Mood", body: "Energy curve and mood mapping — read the vibe before you drop it into a set." },
-  { title: "Genre & Instruments", body: "Genre breakdown, detected instruments and stems — find tracks that actually fit together." },
-  { title: "Structure", body: "Intro, build, drop and breakdown laid out on a timeline — cue smarter, transition cleaner." },
+  { title: "Tempo & Key", body: "Exact BPM and musical key (Camelot), so you can beatmatch and mix in key with confidence." },
+  { title: "Energy & Mood", body: "Energy curve and mood mapping, so you can read the vibe before you drop it into a set." },
+  { title: "Genre & Instruments", body: "Genre breakdown, detected instruments and stems, so you can find tracks that actually fit together." },
+  { title: "Structure", body: "Intro, build, drop and breakdown laid out on a timeline, so you can cue smarter and transition cleaner." },
 ];
 
 /** Small accent-barred sub-heading — stands out from body text without being a full heading. */
@@ -53,7 +53,7 @@ export const AnalysisIntro: React.FC<AnalysisIntroProps> = ({ items, onOpen }) =
                     e.preventDefault();
                     onOpen(a.analysisUuid);
                   }}
-                  title={`${a.artist ? a.artist + " — " : ""}${a.title}`}
+                  title={`${a.artist ? a.artist + " · " : ""}${a.title}`}
                   className={
                     "group flex w-full items-center gap-[var(--px-8)] border border-dotted border-white/25 px-[var(--px-14)] py-[var(--px-9)] " +
                     "font-fira uppercase tracking-wide text-white/80 no-underline transition-colors duration-150 cursor-pointer " +
@@ -79,7 +79,7 @@ export const AnalysisIntro: React.FC<AnalysisIntroProps> = ({ items, onOpen }) =
       <div className="mt-[var(--px-40)]">
         <SubHeading>What analysis reveals</SubHeading>
         <p className="mb-[var(--px-16)] font-fira text-[length:var(--px-10)] leading-[var(--px-15)] opacity-55">
-          Resomix listens to a track the way a DJ or producer would — so you can key-match,
+          Resomix listens to a track the way a DJ or producer would, so you can key-match,
           energy-sort and build sets that flow.
         </p>
         <div className="grid grid-cols-1 gap-[var(--px-10)] sm:grid-cols-2">

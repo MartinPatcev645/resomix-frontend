@@ -20,7 +20,7 @@
       "body2": "With Resomix, we are building a platform that works beyond tags, popularity signals and static metadata. It starts from the audio recording and uses measurable sonic characteristics to support discovery and understanding.",
       "body3": "By analysing structure, harmony, rhythm, timbre, spectral character and energy, Resomix opens three distinct routes: find sonically related tracks, examine one recording in greater detail, or make an authorised catalogue searchable by sound.",
       "interp": "Metadata tells us what a recording is called. Audio analysis gives us another way to understand how it moves, feels and relates to other recordings.",
-      "figureAria": "A metadata frame — title, artist, genre, release date, label — surrounds the audio-derived evidence: five characteristic bands and seventy-plus measurable characteristics."
+      "figureAria": "A metadata frame containing title, artist, genre, release date and label surrounds the audio-derived evidence: five characteristic bands and seventy-plus measurable characteristics."
     },
     "evidence": {
       "eyebrow": "02 // Why Resomix exists",
@@ -29,14 +29,14 @@
       "body2": "PYXIS-1, our proprietary audio-analysis and similarity engine, preprocesses recordings and extracts more than 70 measurable characteristics across rhythm, harmony, timbre, structure, spectral profile and energy.",
       "body3": "It creates a sonic profile that can be read through Track Intelligence or compared with recordings already processed into an applicable index. Similarity results are ranked automatically according to the closest measured sonic relationships.",
       "status": "Proprietary algorithm · Audio-derived evidence · Human decision",
-      "figureAriaD": "One recording enters; five characteristic bands and seventy-plus characteristics form one sonic profile; the profile supports two possible operations — read one recording through Track Intelligence, or compare with an index for ranked similarity.",
+      "figureAriaD": "One recording enters; five characteristic bands and seventy-plus characteristics form one sonic profile; the profile supports two possible operations: read one recording through Track Intelligence, or compare with an index for ranked similarity.",
       "figureAriaM": "Mobile: one recording, five bands, one sonic profile, two possible operations.",
       "interp": "PYXIS-1 turns measurable audio characteristics into a sonic profile that can be examined or compared."
     },
     "evolution": {
       "eyebrow": "03 // How Resomix grew",
       "h2": "One human problem. Three distinct ways to work with sound.",
-      "intro": "The first question was simple: if one track feels right, what should come next? Building that discovery engine revealed two further needs — understanding the recording in greater detail and bringing the same sound-first search into authorised catalogues.",
+      "intro": "The first question was simple: if one track feels right, what should come next? Building that discovery engine revealed two further needs: understanding the recording in greater detail and bringing the same sound-first search into authorised catalogues.",
       "sd": {
         "qLabel": "What should I hear next?",
         "title": "Sonic Discovery",
@@ -106,14 +106,14 @@
     "shelf": {
       "eyebrow": "06 // Beyond trends",
       "h2": "Relevance should not expire with release date.",
-      "body1": "Every catalogue has a quieter layer — tracks that did not reach the charts, albums that fell through algorithmic cracks and artists whose work sits outside the spotlight.",
+      "body1": "Every catalogue has a quieter layer of tracks that did not reach the charts, albums that fell through algorithmic cracks and artists whose work sits outside the spotlight.",
       "body2": "Resomix can bring a recording back into view when it is sonically relevant to a reference. It does not predict commercial success or guarantee exposure. It creates another evidence-based route into discovery.",
       "figureAriaD": "Rows of catalogue recordings arranged by release order; one older recording receives a sonic relationship from the active reference and moves into the ranked output row, its release date visible.",
       "figureAriaM": "Mobile: the older catalogue recording is matched through sonic relevance and appears in the ranked output with its release date visible."
     },
     "values": {
       "eyebrow": "07 // What we stand for",
-      "h2": "Technology should expand human listening — not pretend to replace it.",
+      "h2": "Technology should expand human listening, not pretend to replace it.",
       "v1": {
         "title": "The art of personal curation",
         "body": "You still make the call. Resomix helps you get there faster by surfacing candidates and evidence that support deeper listening."
@@ -213,7 +213,7 @@
     "founder": {
       "eyebrow": "11 // From the founder",
       "quote1": "“I discovered electronic music through Italian progressive house radio in the late 1990s. Two decades of DJing and producing taught me one thing: finding the right track is the hardest part of the creative process.",
-      "quote2": "Resomix is the tool I needed and could not find: built on signal processing, not hype. After creating our discovery engine, I realised people across the music sector could benefit from the same foundation — not only DJs, but also producers, supervisors, publishers and catalogue owners. Resomix is designed to show connections and enhance human curation across the industry.”",
+      "quote2": "Resomix is the tool I needed and could not find: built on signal processing, not hype. After creating our discovery engine, I realised people across the music sector could benefit from the same foundation, not only DJs but also producers, supervisors, publishers and catalogue owners. Resomix is designed to show connections and enhance human curation across the industry.”",
       "attrib": "Georgios · Founder & CEO · Resomix",
       "figureAriaD": "A restrained analogue radio-frequency line beginning at Italian progressive house radio in the late 1990s, carrying twenty-plus years of DJing and producing, and resolving into the present Resomix signal in Thessaloniki.",
       "figureAriaM": "Mobile: the late-1990s radio-frequency line resolving into the present Resomix signal."
@@ -272,11 +272,11 @@
       "trackIntelligence": "TRACK INTELLIGENCE",
       "compareWithAnIndex": "COMPARE WITH AN INDEX",
       "rankedSimilarity": "RANKED SIMILARITY",
-      "twoOperationsNotAutoD": "TWO POSSIBLE OPERATIONS — NOT AUTOMATIC SIMULTANEOUS RESULTS",
+      "twoOperationsNotAutoD": "TWO POSSIBLE OPERATIONS, NOT AUTOMATIC SIMULTANEOUS RESULTS",
       "sonicM": "SONIC",
       "profileM": "PROFILE",
       "compareWithIndex": "COMPARE WITH INDEX",
-      "twoOperationsLine1M": "TWO POSSIBLE OPERATIONS —",
+      "twoOperationsLine1M": "TWO POSSIBLE OPERATIONS,",
       "twoOperationsLine2M": "NOT AUTOMATIC SIMULTANEOUS RESULTS",
       "rank01": "01",
       "rank02": "02",
@@ -359,7 +359,7 @@
       "processing": "PROCESSING",
       "product": "PRODUCT",
       "building": "BUILDING",
-      "teamPhotographyZone": "TEAM PHOTOGRAPHY REPLACEMENT ZONE — SUPPLIED IMAGERY ONLY · NO FABRICATED PEOPLE",
+      "teamPhotographyZone": "TEAM PHOTOGRAPHY REPLACEMENT ZONE: SUPPLIED IMAGERY ONLY · NO FABRICATED PEOPLE",
       "italianRadio1990s": "ITALIAN PROGRESSIVE HOUSE RADIO · LATE 1990s",
       "twentyYearsDjingProducing": "20+ YEARS OF DJING & PRODUCING",
       "thessalonikiResomix": "THESSALONIKI · RESOMIX"

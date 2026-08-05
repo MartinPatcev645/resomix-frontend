@@ -283,7 +283,7 @@ export const LinkedAccounts: React.FC = () => {
         message={<>
           Google is currently your only way to sign in. Set a password on your account first
           (Personal → Password → <strong className="font-medium text-[var(--rx-color-text-primary)]">Set</strong>)
-          so you don’t get locked out — then you can disconnect Google.
+          so you don’t get locked out. Then you can disconnect Google.
         </>}
         confirmLabel="Got it"
       />

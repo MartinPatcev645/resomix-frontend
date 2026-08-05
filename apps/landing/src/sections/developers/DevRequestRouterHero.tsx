@@ -110,7 +110,7 @@ function DesktopRouter({ route }: { route: RouteKey }) {
       })}
       <path d="M640 352 V 378" stroke="rgba(255,255,255,.25)" strokeDasharray="3 4" fill="none" />
       <SvgText x={652} y={382} className="dev-smicro">
-        PLAYBACK ROUTE — PERMISSION-GATED · PROVISIONED PARTNERS ONLY
+        PLAYBACK ROUTE · PERMISSION-GATED · PROVISIONED PARTNERS ONLY
       </SvgText>
       <SvgText x={958} y={120} className="dev-smicro">
         RESPONSE
@@ -241,7 +241,7 @@ export function DevRequestRouterHero() {
               {item.highlight ? (
                 <>
                   {' '}
-                  — <b>{item.highlight}</b>
+                  · <b>{item.highlight}</b>
                 </>
               ) : null}
             </li>

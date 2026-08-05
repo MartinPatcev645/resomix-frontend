@@ -11,8 +11,8 @@
       "trustline": "Partner-scoped · Versioned JSON · Private catalogue index",
       "routerLabel": "Request router · One request enters, sonic intelligence returns",
       "routerTruth": "Fictional data",
-      "routerAlt": "Request router diagram: a developer request with a bearer key enters from the left and passes through a single scoped gate into the partner's private catalogue boundary. Inside, three live routes — search, similarity and analysis — process the request against the partner's own index, and structured JSON returns on the right. A playback route is drawn permission-gated, and there is no connection to any shared public catalogue. Fictional data.",
-      "routerFoot": "no shared public catalogue exists on this diagram — or in the product",
+      "routerAlt": "Request router diagram: a developer request with a bearer key enters from the left and passes through a single scoped gate into the partner's private catalogue boundary. Inside, three live routes for search, similarity and analysis process the request against the partner's own index, and structured JSON returns on the right. A playback route is drawn permission-gated, and there is no connection to any shared public catalogue. Fictional data.",
+      "routerFoot": "no shared public catalogue exists on this diagram or in the product",
       "routes": {
         "search": "Search",
         "sim": "Similarity",
@@ -99,17 +99,17 @@
           "status": "LIVE"
         }
       ],
-      "footnote": "result depths: 10 · 20 · 50 · 100 — full parameters and schemas live at api-docs.resomix.com",
+      "footnote": "result depths: 10 · 20 · 50 · 100. Full parameters and schemas live at api-docs.resomix.com",
       "partialFieldsNote": "Structured analysis endpoints are live. Returned fields are versioned and may be partial or optional."
     },
     "isolation": {
       "eyebrow": "02 // The search space",
-      "title": "Your key searches your catalogue — and nothing else.",
+      "title": "Your key searches your catalogue and nothing else.",
       "diagramLabel": "Partner isolation · Two partners, two sealed indexes",
       "mobileContrast": "No shared catalogue. No cross-partner results.",
       "disclosureClosed": "Why catalogue isolation matters ▸",
       "disclosureOpen": "Why catalogue isolation matters ▾",
-      "disclosureBody": "Every partner runs against its own sealed index — its own catalogue, credentials and results. A key can never query another partner's catalogue or Resomix's consumer product, and an uploaded reference is only ever a query against your own index.",
+      "disclosureBody": "Every partner runs against its own sealed index, with its own catalogue, credentials and results. A key can never query another partner's catalogue or Resomix's consumer product, and an uploaded reference is only ever a query against your own index.",
       "points": [
         {
           "bold": "No shared public pool.",
@@ -117,7 +117,7 @@
         },
         {
           "bold": "No cross-partner retrieval.",
-          "body": "A key can never query another partner's catalogue — or Resomix's consumer product."
+          "body": "A key can never query another partner's catalogue or access Resomix's consumer product."
         },
         {
           "bold": "Uploads stay queries.",
@@ -128,7 +128,7 @@
     "console": {
       "eyebrow": "03 // Workflows",
       "title": "See the request. Read the response.",
-      "lead": "Five supported workflows — real endpoints, real envelope, fictional data.",
+      "lead": "Five supported workflows with real endpoints, a real envelope and fictional data.",
       "truth": "Sample request · Fictional data · Placeholder key",
       "requestLabel": "request",
       "responseLabel": "response",
@@ -137,7 +137,7 @@
       "expand": "expand full response ▸",
       "collapse": "collapse response ▾",
       "asyncLabel": "job states:",
-      "footnote": "compare rank order within a response — raw score bands are not universal quality measures across unrelated queries · examples are generic http, not official sdks",
+      "footnote": "compare rank order within a response, because raw score bands are not universal quality measures across unrelated queries · examples are generic http, not official sdks",
       "workflows": {
         "chain": "Search → similarity",
         "simid": "Similarity by ID",
@@ -160,7 +160,7 @@
           "suffix": " last"
         },
         "Resomix validates and processes",
-        "Private index ready — webhook notifies you"
+        "Private index ready, webhook notifies you"
       ],
       "checksClosed": "View ingestion checks ▸",
       "checksOpen": "View ingestion checks ▾",
@@ -168,18 +168,18 @@
       "checks": [
         {
           "title": "missing audio file",
-          "body": "manifest row 214 references a file not present in the batch — batch held, feedback returned"
+          "body": "manifest row 214 references a file not present in the batch, so the batch is held and feedback returned"
         },
         {
           "title": "duplicate isrc",
-          "body": "two rows share one ISRC — de-duplication rules applied, review noted"
+          "body": "two rows share one ISRC, so de-duplication rules are applied and the review noted"
         },
         {
           "title": "unsafe archive",
-          "body": "zip failed safety checks — rejected before processing, partner notified"
+          "body": "zip failed safety checks, so it is rejected before processing and the partner notified"
         }
       ],
-      "formats": "accepted audio: .mp3 · .wav · .flac · .aiff — manifest fields: id · isrc · title · artist · bpm · duration · filename",
+      "formats": "accepted audio: .mp3 · .wav · .flac · .aiff; manifest fields: id · isrc · title · artist · bpm · duration · filename",
       "requirementsLink": "[ View Ingestion Requirements → ]",
       "footnote": "a partial upload never starts processing · .done is sent last · one active batch per partner · new batches top up the catalogue and rebuild the private index"
     },
@@ -189,7 +189,7 @@
       "fragmentLabel": "result fragment ·",
       "fragmentNote": "versioned structured json",
       "defensiveBold": "Read results defensively.",
-      "defensiveBody": "Fields may be optional — a partial result returns the fields that completed successfully, with the job status alongside.",
+      "defensiveBody": "Fields may be optional, and a partial result returns the fields that completed successfully, with the job status alongside.",
       "exploreLink": "[ Explore the Analysis Schema → ]",
       "groups": {
         "rhythm": {
@@ -215,7 +215,7 @@
         "structure": {
           "num": "05",
           "title": "Structure",
-          "desc": "intro · build · breakdown · drop · outro — time ranges + confidence"
+          "desc": "intro · build · breakdown · drop · outro, with time ranges + confidence"
         },
         "prov": {
           "num": "06",
@@ -247,7 +247,7 @@
           "title": "REST API",
           "status": "LIVE",
           "statusClass": "live",
-          "body": "Similarity, search and analysis inside your existing backend or application — your interface, your customer journey. Requires an indexed partner catalogue."
+          "body": "Similarity, search and analysis inside your existing backend or application, using your interface and your customer journey. Requires an indexed partner catalogue."
         },
         {
           "title": "Batch ingestion",
@@ -260,7 +260,7 @@
           "title": "Guided pilot",
           "status": "AVAILABLE",
           "statusClass": "avail",
-          "body": "Evaluate on a representative sample of your own catalogue with a scoped key — the current evaluation route."
+          "body": "Evaluate on a representative sample of your own catalogue with a scoped key. This is the current evaluation route."
         }
       ],
       "plannedRows": [
@@ -272,12 +272,12 @@
         {
           "title": "Embeddable widget",
           "status": "PLANNED",
-          "body": "A ready-made \"find similar\" interface for minimal front-end work — planned."
+          "body": "A ready-made \"find similar\" interface for minimal front-end work. Planned."
         },
         {
           "title": "White-label",
           "status": "PLANNED",
-          "body": "The experience under your own brand, on enterprise terms — planned."
+          "body": "The experience under your own brand, on enterprise terms. Planned."
         }
       ],
       "modes": [
@@ -290,7 +290,7 @@
         {
           "title": "Similarity + playback",
           "body": "Adds short-lived playback tokens for authorised media requests. Available only to provisioned partners with the required service mode and rights.",
-          "status": "PLAYBACK — PERMISSION-GATED",
+          "status": "PLAYBACK: PERMISSION-GATED",
           "statusClass": "gate"
         }
       ]
@@ -301,22 +301,22 @@
       "lead": "There is no public sandbox today. The current evaluation path is a guided pilot using a representative sample of your own catalogue.",
       "chips": [
         {
-          "label": "GUIDED API PILOT — AVAILABLE",
+          "label": "GUIDED API PILOT: AVAILABLE",
           "class": "avail"
         },
         {
-          "label": "SELF-SERVE TRIAL — PLANNED",
+          "label": "SELF-SERVE TRIAL: PLANNED",
           "class": "plan"
         },
         {
-          "label": "PUBLIC SANDBOX — NOT AVAILABLE",
+          "label": "PUBLIC SANDBOX: NOT AVAILABLE",
           "class": "plan"
         }
       ],
       "sandboxClosed": "Why is there no public sandbox? ▸",
       "sandboxOpen": "Why is there no public sandbox? ▾",
       "sandboxBold": "Similarity is only meaningful inside a real catalogue.",
-      "sandboxBody": "A shared demo pool would misrepresent both the isolation model and the results you would see in production. The guided pilot puts a scoped key against your own repertoire instead — the same API, honest results. A self-serve trial catalogue is planned.",
+      "sandboxBody": "A shared demo pool would misrepresent both the isolation model and the results you would see in production. The guided pilot puts a scoped key against your own repertoire instead, with the same API and honest results. A self-serve trial catalogue is planned.",
       "steps": [
         {
           "title": "Agree the use case",
@@ -348,7 +348,7 @@
       "rightEyebrow": "For implementation detail",
       "rightTitle": "The full reference lives in the docs.",
       "rightBtn": "View Full API Reference",
-      "rightNote": "self-serve trial · widget · white-label — planned · destinations wired in production"
+      "rightNote": "self-serve trial · widget · white-label · planned · destinations wired in production"
     }
   }
 }

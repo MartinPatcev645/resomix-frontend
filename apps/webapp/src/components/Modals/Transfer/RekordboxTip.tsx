@@ -132,7 +132,7 @@ const RekordboxTip: React.FC = () => {
           <p className="font-helvetica text-[length:var(--px-12)] font-light leading-[var(--px-18)] text-[var(--rx-color-text-secondary)] opacity-85">
             Once your Resomix sonic discovery is exported, open the playlist in rekordbox and you’ll
             find the same tracks waiting under your Apple Music playlists. No re-import, no manual
-            matching — rekordbox reads the playlist straight from Apple Music.
+            matching, because rekordbox reads the playlist straight from Apple Music.
           </p>
 
           <p className="mt-[var(--px-8)] font-helvetica text-[length:var(--px-11)] font-light leading-[var(--px-16)] text-[var(--rx-color-text-muted)] opacity-60">

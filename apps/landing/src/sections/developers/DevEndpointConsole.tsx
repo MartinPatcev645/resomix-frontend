@@ -87,7 +87,7 @@ export function DevEndpointConsole({ onCopy }: DevEndpointConsoleProps) {
               <div
                 className="dev-async uppercase"
                 role="img"
-                aria-label="Asynchronous job states: queued, then processing, then completed — or failed"
+                aria-label="Asynchronous job states: queued, then processing, then completed or failed"
               >
                 <span className="dev-lbl-dim">{t('developers.console.asyncLabel')}</span>
                 <span className="dev-stt">QUEUED</span>

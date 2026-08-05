@@ -32,7 +32,7 @@ export function DevSchemaMap({ onCopy }: DevSchemaMapProps) {
         <h2 className="dev-h2b uppercase">{t('developers.schema.title')}</h2>
       </header>
       <div className="dev-schema">
-        <div className="dev-schema-groups" role="group" aria-label="Analysis output groups — select one to preview its fields">
+        <div className="dev-schema-groups" role="group" aria-label="Analysis output groups, select one to preview its fields">
           {SG_KEYS.map((key) => {
             const g = groups[key];
             const pressed = selected === key;

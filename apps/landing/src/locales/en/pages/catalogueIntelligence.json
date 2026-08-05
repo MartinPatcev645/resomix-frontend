@@ -21,7 +21,7 @@
       "outBTitle": "Track-level intelligence",
       "outBBody": "Retrieve the analysis of a processed recording across rhythm, harmony, timbre, structure, spectral character and energy when a closer examination is required.",
       "refLabel": "REFERENCE",
-      "note": "Similarity retrieves related recordings. Track Intelligence explains one recording. They are connected capabilities—not the same screen.",
+      "note": "Similarity retrieves related recordings. Track Intelligence explains one recording. They are connected capabilities, not the same screen.",
       "tiPreviewAria": "Compact Track Intelligence preview: structure, energy, tempo, harmonic and timbre fields with fictional demonstration values.",
       "viewFullTi": "VIEW FULL TRACK INTELLIGENCE →",
       "fictionalNote": "FICTIONAL DEMONSTRATION VALUES"
@@ -32,7 +32,7 @@
       "body1": "A catalogue track can use its stored sonic profile immediately. An authorised uploaded reference is processed first. PYXIS-1 then compares that reference with the prepared partner index and returns the closest catalogue matches in ranked order.",
       "body2": "The system does not ask the user to build the result list manually, and it does not reanalyse every candidate during each search.",
       "rankedLabel": "Automatically ranked results",
-      "figureAriaD": "Two input routes — an indexed catalogue track using its existing profile, or an authorised reference upload profiled before comparison — converge into one reference profile, are compared with the partner index, and return automatically ranked results.",
+      "figureAriaD": "Two input routes, an indexed catalogue track using its existing profile or an authorised reference upload profiled before comparison, converge into one reference profile, are compared with the partner index, and return automatically ranked results.",
       "figureAriaM": "Mobile flow: the two input routes converge into one reference profile, compared with the partner index, returning automatically ranked results."
     },
     "trackIntel": {
@@ -48,7 +48,7 @@
     "value": {
       "eyebrow": "05 // Catalogue value",
       "h2": "Let sonic relevance give deeper catalogue another route into discovery.",
-      "body1": "Metadata, release schedules and editorial priorities remain essential. PYXIS-1 adds a different retrieval signal: the relationship inside the audio itself. When an older, niche, new or unreleased recording is close to the reference, it can be returned because of that relationship—not because it already has behavioural history or recent attention.",
+      "body1": "Metadata, release schedules and editorial priorities remain essential. PYXIS-1 adds a different retrieval signal: the relationship inside the audio itself. When an older, niche, new or unreleased recording is close to the reference, it can be returned because of that relationship, not because it already has behavioural history or recent attention.",
       "body2": "Resomix does not predict demand, guarantee exposure or decide what should be promoted. It makes more of the authorised catalogue eligible to be found when it is relevant to the sound being searched.",
       "mod1Title": "Back-catalogue re-entry",
       "mod1Body": "Relevant older recordings can appear beside newer releases when PYXIS-1 ranks the sonic relationship strongly.",
@@ -118,7 +118,7 @@
         "m5": "Track-intelligence review",
         "w5": "Whether the analytical outputs are useful and credible for the intended partner workflow."
       },
-      "scoreNote": "Evaluation measures — agreed per pilot. No pre-populated percentages, timings or pass marks."
+      "scoreNote": "Evaluation measures, agreed per pilot. No pre-populated percentages, timings or pass marks."
     },
     "closing": {
       "eyebrow": "Start with a representative sample",
@@ -182,7 +182,7 @@
       "olderRecording": "OLDER RECORDING",
       "activeReference": "ACTIVE REFERENCE",
       "sonicRelationship": "SONIC RELATIONSHIP",
-      "rankedResultsFor": "RANKED RESULTS — FOR CAT-01842",
+      "rankedResultsFor": "RANKED RESULTS FOR CAT-01842",
       "recencyDoesNot": "RECENCY DOES NOT DETERMINE THE SIMILARITY RANKING.",
       "partnerProduct": "PARTNER PRODUCT",
       "orInternalTool": "OR INTERNAL TOOL",

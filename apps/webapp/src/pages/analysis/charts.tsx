@@ -398,7 +398,7 @@ export function BarList({
         const pct = Math.max(2, Math.min(100, it.score * 100));
         const shown = labelTransform ? labelTransform(it.label) : it.label;
         return (
-          <li key={it.label} className="group -mx-[var(--px-4)] rounded-[var(--px-6)] px-[var(--px-4)] py-[var(--px-2)] transition-colors hover:bg-white/5" title={`${shown} — ${format(it.score)}`}>
+          <li key={it.label} className="group -mx-[var(--px-4)] rounded-[var(--px-6)] px-[var(--px-4)] py-[var(--px-2)] transition-colors hover:bg-white/5" title={`${shown} · ${format(it.score)}`}>
             <div className="mb-[var(--px-3)] flex items-baseline justify-between font-helvetica text-[length:var(--px-11)]">
               <span className="truncate pr-[var(--px-8)]">{shown}</span>
               <span className="shrink-0 opacity-50 tabular-nums group-hover:opacity-90">{format(it.score)}</span>
@@ -546,7 +546,7 @@ export function TagChips({ items, singleLine = false }: { items: ScoredLabel[]; 
         return (
           <span
             key={it.label}
-            title={`${it.label} — ${(it.score * 100).toFixed(0)}%`}
+            title={`${it.label} · ${(it.score * 100).toFixed(0)}%`}
             className="shrink-0 cursor-default whitespace-nowrap rounded-full border px-[var(--px-10)] py-[var(--px-4)] font-helvetica text-[length:var(--px-11)] lowercase transition-all hover:!opacity-100 hover:brightness-125"
             style={{
               borderColor: ACCENT,

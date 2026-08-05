@@ -34,15 +34,15 @@ export const ROUTES: Record<
   { note: string; frag: string }
 > = {
   search: {
-    note: 'ROUTE: SEARCH — metadata query returns partner track IDs',
+    note: 'ROUTE: SEARCH · metadata query returns partner track IDs',
     frag: '"data": { "tracks": [ … ] }',
   },
   sim: {
-    note: 'ROUTE: SIMILARITY — ranked matches from your private index',
+    note: 'ROUTE: SIMILARITY · ranked matches from your private index',
     frag: '"data": { "similar_tracks": [ … ] }',
   },
   ana: {
-    note: 'ROUTE: ANALYSIS — async job returns versioned JSON',
+    note: 'ROUTE: ANALYSIS · async job returns versioned JSON',
     frag: '"data": { "analysis_id": "ana_4c2d91" }',
   },
 };
@@ -115,7 +115,7 @@ export const WF: Record<WfKey, Workflow> = {
     ],
     res: SIM_RES_SHORT,
     resFull: SIM_RES_FULL,
-    expl: 'Search is metadata-based — it finds the partner track ID, which similarity then uses. Two calls, one workflow.',
+    expl: 'Search is metadata-based: it finds the partner track ID, which similarity then uses. Two calls, one workflow.',
     async: false,
   },
   simid: {
@@ -133,7 +133,7 @@ export const WF: Record<WfKey, Workflow> = {
     ],
     res: SIM_RES_SHORT,
     resFull: SIM_RES_FULL,
-    expl: 'One existing catalogue ID in — ranked neighbours out, at result depths of 10, 20, 50 or 100. Ranking is based on the audio profile.',
+    expl: 'One existing catalogue ID in, ranked neighbours out, at result depths of 10, 20, 50 or 100. Ranking is based on the audio profile.',
     async: false,
   },
   simup: {
@@ -148,7 +148,7 @@ export const WF: Record<WfKey, Workflow> = {
     ],
     res: SIM_RES_SHORT,
     resFull: SIM_RES_FULL,
-    expl: 'The uploaded file is the query reference — PYXIS-1 analyses it, and the matches still come only from your own indexed catalogue. The upload does not become a catalogue item.',
+    expl: 'The uploaded file is the query reference: PYXIS-1 analyses it, and the matches still come only from your own indexed catalogue. The upload does not become a catalogue item.',
     async: false,
   },
   ana: {
@@ -179,16 +179,16 @@ export const WF: Record<WfKey, Workflow> = {
       [T('    '), K('"analysis_id"'), T(': '), O('"ana_4c2d91"'), T(',')],
       [T('    '), K('"status"'), T(': '), O('"completed"'), T(',')],
       [T('    '), K('"schema_version"'), T(': '), S('"1.4"'), T(',')],
-      [T('    '), K('"result"'), T(': { '), C('…versioned structured JSON — see section 05'), T(' }')],
+      [T('    '), K('"result"'), T(': { '), C('…versioned structured JSON, see section 05'), T(' }')],
       [T('  }')],
       [T('}')],
     ],
-    expl: 'Upload returns an analysis ID immediately. Poll the status, then retrieve the versioned structured result — partial results return the fields that completed.',
+    expl: 'Upload returns an analysis ID immediately. Poll the status, then retrieve the versioned structured result; partial results return the fields that completed.',
     async: true,
   },
   play: {
     title: 'WORKFLOW · PLAYBACK-ENABLED INTEGRATION',
-    ep: 'permission-gated service mode — endpoint detail in the docs',
+    ep: 'permission-gated service mode · endpoint detail in the docs',
     req: [
       [C('# available to partners provisioned with the')],
       [C('# similarity + playback service mode only:')],
@@ -206,11 +206,11 @@ export const WF: Record<WfKey, Workflow> = {
       [T('  }')],
       [T('}')],
       [T('')],
-      [C('# illustrative shape — playback rights are')],
+      [C('# illustrative shape · playback rights are')],
       [C('# provisioned per partner, never automatic')],
     ],
     resFull: null,
-    expl: 'Playback is a separate, permission-gated service mode. Similarity-only partners receive IDs, scores and metadata — no audio access.',
+    expl: 'Playback is a separate, permission-gated service mode. Similarity-only partners receive IDs, scores and metadata, with no audio access.',
     async: false,
   },
 };

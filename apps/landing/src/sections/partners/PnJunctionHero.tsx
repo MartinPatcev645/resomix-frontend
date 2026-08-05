@@ -97,7 +97,7 @@ function JunctionSvg({ activePath, onSelectPath }: JunctionSvgProps) {
             key={id}
             role="button"
             tabIndex={0}
-            aria-label={`Route ${i + 1}: ${title} — ${st}. Opens its detail panel.`}
+            aria-label={`Route ${i + 1}: ${title}, ${st}. Opens its detail panel.`}
             style={{ cursor: 'pointer' }}
             onClick={() => onSelectPath(id)}
             onKeyDown={onKeyDown(id)}

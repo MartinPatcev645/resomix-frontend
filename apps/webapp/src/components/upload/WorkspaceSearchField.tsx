@@ -160,7 +160,7 @@ export const WorkspaceSearchField: React.FC<WorkspaceSearchFieldProps> = ({
                   {item.title}
                   {item.artist ? (
                     <>
-                      {" — "}
+                      {" · "}
                       <span className="opacity-80">{item.artist}</span>
                     </>
                   ) : null}

@@ -73,7 +73,7 @@ function ProtocolRailSvg({
             key={stage.t}
             role="link"
             tabIndex={0}
-            aria-label={`Stage ${i + 1}: ${stage.t} — ${stage.s}. Opens the method section.`}
+            aria-label={`Stage ${i + 1}: ${stage.t}, ${stage.s}. Opens the method section.`}
             className="pp-proto-node"
             onClick={() => handleStation(i)}
             onKeyDown={onKeyDown(i)}

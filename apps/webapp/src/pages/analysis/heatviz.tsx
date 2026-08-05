@@ -625,7 +625,7 @@ export function ChromaSummary({ matrix, camelot }: { matrix: Matrix; camelot: st
             Global note energy · <span style={{ color: ACCENT }}>■</span> tonic ({ctx.tonicName}) · in-key tones highlighted, the rest dimmed.
             {!tonicInTop4 && (
               <span className="opacity-90">
-                {" "}⚠ Loudest note is {labels[brightest]}, not the tonic — key may be ambiguous (check the relative / dominant).
+                {" "}⚠ Loudest note is {labels[brightest]}, not the tonic, so the key may be ambiguous (check the relative / dominant).
               </span>
             )}
           </>
