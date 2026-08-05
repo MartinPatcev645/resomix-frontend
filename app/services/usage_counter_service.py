@@ -54,6 +54,23 @@ class UsageCounterService:
             self._key(subject_type, subject_id, feature_key, period_key)
         )
 
+    async def exists(
+        self, subject_type: str, subject_id: str, feature_key: str, period_key: str
+    ) -> Optional[bool]:
+        """Whether this period's counter is present. None if Redis is down."""
+        return await redis_counter.exists(
+            self._key(subject_type, subject_id, feature_key, period_key)
+        )
+
+    async def seed_if_absent(
+        self, subject_type: str, subject_id: str, feature_key: str,
+        value: int, period_key: str, ttl_seconds: int,
+    ) -> Optional[bool]:
+        """Rehydrate this period's counter from the durable store, only if Redis lost it."""
+        return await redis_counter.seed_if_absent(
+            self._key(subject_type, subject_id, feature_key, period_key), value, ttl_seconds
+        )
+
     async def refund(
         self, subject_type: str, subject_id: str, feature_key: str, period_key: str
     ) -> Optional[int]:

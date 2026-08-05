@@ -111,6 +111,46 @@ class EntitlementGate:
             return await self._periods.resolve_window_for_user(db, user)
         return self._periods.resolve_window_for_guest()
 
+    async def _rehydrate_if_evicted(
+        self, db, subject, feature_key: str, period_start, period_key: str, ttl: int
+    ) -> None:
+        """Restore this period's counter from the durable store when Redis has lost it.
+
+        Redis is authoritative for enforcement, but its keys can vanish — eviction under memory
+        pressure, a flush, a restart without persistence. An absent key reads as 0, which silently
+        hands the subject a brand-new allowance: a free user who has used all 3 searches gets 3
+        more, and nothing anywhere reports it.
+
+        Only reached when the key is genuinely absent, so this costs one EXISTS on the hot path and
+        a single DB read per window per subject. Seeded with SET NX, so two concurrent requests
+        that both see it missing cannot both write.
+
+        Never raises and never blocks: if the durable store cannot be read either, we leave the
+        counter as it is and enforcement continues from 0 — failing open, which is the same
+        direction the rest of this class fails in. A cache problem must not read as "limit
+        reached".
+        """
+        try:
+            present = await self._usage.exists(subject[0], subject[1], feature_key, period_key)
+            if present is not False:
+                # True = key is there; None = Redis is down and there is nothing to rehydrate into.
+                return
+
+            used = await self._history.get_used_count(
+                db, subject[0], subject[1], feature_key, period_start
+            )
+            if not used:
+                # 0 → nothing to restore. None → could not read; do not invent a count.
+                return
+
+            seeded = await self._usage.seed_if_absent(
+                subject[0], subject[1], feature_key, used, period_key, ttl
+            )
+            if seeded:
+                entitlement_metrics.incr("gate.counter_rehydrated")
+        except Exception:
+            entitlement_metrics.incr("gate.rehydrate_failed")
+
     async def check_boolean(
         self, db: AsyncSession, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
     ) -> GateResult:
@@ -149,7 +189,8 @@ class EntitlementGate:
             # No identity to count against → fail open (don't block).
             return GateResult(True, limit=limit)
 
-        _start, end, period_key, ttl = await self._window(db, user, visitor_id, feature_key)
+        start, end, period_key, ttl = await self._window(db, user, visitor_id, feature_key)
+        await self._rehydrate_if_evicted(db, subject, feature_key, start, period_key, ttl)
         result = await self._usage.try_consume(subject[0], subject[1], feature_key, limit, period_key, ttl)
         if result is None:
             # Redis unavailable → fail open (soft limit must not block on infra failure).
@@ -189,7 +230,8 @@ class EntitlementGate:
         subject = self._subject(user, visitor_id)
         if subject is None:
             return GateResult(True, limit=limit)
-        _start, end, period_key, _ttl = await self._window(db, user, visitor_id, feature_key)
+        start, end, period_key, ttl = await self._window(db, user, visitor_id, feature_key)
+        await self._rehydrate_if_evicted(db, subject, feature_key, start, period_key, ttl)
         count = await self._usage.peek(subject[0], subject[1], feature_key, period_key)
         if count is None:
             entitlement_metrics.incr("gate.fail_open")

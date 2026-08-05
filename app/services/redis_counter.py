@@ -111,6 +111,43 @@ async def get_int(key: str) -> Optional[int]:
         await client.close()
 
 
+async def seed_if_absent(key: str, value: int, ttl_seconds: int) -> Optional[bool]:
+    """Set ``key`` to ``value`` only if it does not exist. True if seeded, False if it was there.
+
+    SET NX is what makes this safe to call on the hot path: two concurrent requests that both find
+    the key missing cannot both write, so a rehydrate can never clobber a count that another
+    request just established. Returns None if Redis is unavailable.
+    """
+    client = await get_redis_or_none()
+    if client is None:
+        return None
+    try:
+        return bool(await client.set(key, int(value), nx=True, ex=int(ttl_seconds)))
+    except Exception as exc:
+        logger.warning("redis seed_if_absent failed for %s: %s", key, exc)
+        return None
+    finally:
+        await client.close()
+
+
+async def exists(key: str) -> Optional[bool]:
+    """Whether the counter key is present. None if Redis is unavailable.
+
+    Distinguishes "nobody has used this yet" from "the key was evicted", which ``get_int`` cannot:
+    it reports 0 for both, and treating an eviction as 0 silently hands out a fresh allowance.
+    """
+    client = await get_redis_or_none()
+    if client is None:
+        return None
+    try:
+        return bool(await client.exists(key))
+    except Exception as exc:
+        logger.warning("redis exists failed for %s: %s", key, exc)
+        return None
+    finally:
+        await client.close()
+
+
 async def decr(key: str) -> Optional[int]:
     """Refund: decrement without going below zero. Returns new count or None if Redis down."""
     client = await get_redis_or_none()

@@ -20,6 +20,34 @@ logger = logging.getLogger(__name__)
 
 
 class UsageHistoryService:
+    async def get_used_count(
+        self, db, subject_type: str, subject_id: str, feature_key: str, period_start
+    ) -> Optional[int]:
+        """This period's durable usage, or None if it cannot be read.
+
+        The authority for ENFORCEMENT is Redis; this row is the audit trail. It is only consulted
+        when Redis has lost the key, to answer "had this subject already used some of this period?"
+        — otherwise an eviction silently grants a fresh allowance.
+
+        None (not 0) on failure, so the caller can tell "no usage" from "could not tell" and fail
+        open rather than inventing a count.
+        """
+        from sqlalchemy import select
+        from app.models.billing import UsagePeriodHistory
+
+        try:
+            row = (await db.execute(
+                select(UsagePeriodHistory.used_count).where(
+                    UsagePeriodHistory.subject_type == subject_type,
+                    UsagePeriodHistory.subject_id == str(subject_id),
+                    UsagePeriodHistory.feature_key == feature_key,
+                    UsagePeriodHistory.period_start == period_start,
+                )
+            )).scalar_one_or_none()
+            return int(row) if row is not None else 0
+        except Exception:
+            return None
+
     async def record(
         self,
         subject_type: str,
