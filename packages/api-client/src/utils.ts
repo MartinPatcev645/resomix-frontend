@@ -60,6 +60,16 @@ export const handleApiError = (error: AxiosError | Error): {
   status?: number;
   /** Soft-gate reason from the entitlement layer: "login_required" | "upgrade_required". */
   reason?: string | null;
+  /**
+   * Machine-readable denial code from the pricing gate — "quota_exceeded" | "library_full" |
+   * "export_limit_reached" | "plan_required" | "login_required".
+   *
+   * Distinct from `error`, which is the sentence we show the user. Switch modals on this, never on
+   * the prose: the prose is written for humans and is expected to change.
+   */
+  code?: string | null;
+  /** Denial detail on a 402: { metric, used, limit, resets_at, upgrade }. */
+  quota?: { metric?: string; used?: number; limit?: number; resets_at?: string; upgrade?: string } | null;
 } => {
   console.error("API Error:", error);
 
@@ -91,6 +101,10 @@ export const handleApiError = (error: AxiosError | Error): {
         details: apiError.data?.details || apiError.details || null,
         status,
         reason: apiError.reason ?? null,
+        code: apiError.code ?? null,
+        // Only a quota denial carries this shape; `metric` is what distinguishes it from any other
+        // endpoint that happens to return a `data` block alongside an error.
+        quota: status === 402 && apiError.data?.metric ? apiError.data : null,
       };
     }
 

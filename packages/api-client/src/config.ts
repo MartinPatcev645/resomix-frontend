@@ -48,6 +48,7 @@ export interface ApiConfig {
     PLAYLIST_SIMILARITY_HLS: string;
     PLAYLIST_FORK: string;
     PLAYLIST_PLAY_SESSION: string;
+    PLAYLIST_EXPORT: string;
     PLAYLISTS_GET_ALL: string;
     PLAYLIST_DELETE: string;
     PLAYLIST_COVER: string;
@@ -269,6 +270,9 @@ export const API_CONFIG: ApiConfig = {
     PLAYLIST_SIMILARITY_HLS: "/api/v1/playlists/similarity-hls/",
     PLAYLIST_FORK: "/api/v1/playlists/fork/",
     PLAYLIST_PLAY_SESSION: "/api/v1/playlists/{id}/play-session",
+    // Server-built export. The file is assembled backend-side so the plan's daily allowance and
+    // track cap apply to the bytes; the browser only downloads what comes back.
+    PLAYLIST_EXPORT: "/api/v1/playlists/{id}/export",
     PLAYLISTS_GET_ALL: "/api/v1/playlists/get-all-playlists/",
     PLAYLIST_DELETE: "/api/v1/playlists",
     // Owner-only custom cover upload — full path is `${PLAYLIST_COVER}/${uuid}/cover`.

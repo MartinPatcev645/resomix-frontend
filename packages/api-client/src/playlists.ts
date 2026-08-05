@@ -151,6 +151,51 @@ export const getPlaybackSession = async (playlistId: string) => {
   }
 };
 
+export interface PlaylistExportResult {
+  filename: string;
+  content: string;
+  format: string;
+  /** Tracks actually in the file. */
+  track_count: number;
+  /** Tracks in the playlist. */
+  total_tracks: number;
+  /** True when the plan's export limit trimmed the list — the copy should say so. */
+  truncated: boolean;
+}
+
+/**
+ * Ask the server to build the export file.
+ *
+ * The file used to be assembled in the browser, which meant the daily allowance could not be
+ * counted and the track cap was whatever the client chose to apply. The server now formats it, so
+ * a denial arrives here as a 402 with `code` = "login_required" | "plan_required" |
+ * "export_limit_reached" and `quota` carrying the reset time.
+ */
+// Named `...File` rather than `exportPlaylist` — `admin/playlist.ts` already owns that name for the
+// admin CSV dump, and both are re-exported from the package root.
+export const exportPlaylistFile = async (
+  playlistId: string,
+  target = "txt",
+  /** Ask for FEWER tracks than the plan allows. The server takes the minimum, so this can never
+   *  widen an export — only narrow it (used by the demo build). */
+  maxTracks?: number,
+) => {
+  try {
+    const url = API_CONFIG.ENDPOINTS.PLAYLIST_EXPORT.replace("{id}", encodeURIComponent(playlistId));
+    const data = await axiosWrapper<ApiResponse<PlaylistExportResult>>(
+      authClient.post(url, maxTracks ? { target, max_tracks: maxTracks } : { target }),
+    );
+
+    if (data.success === true && data.data) return { success: true as const, data: data.data };
+    return {
+      success: false as const,
+      error: data.error || "Failed to export playlist.",
+    };
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
 // Engagement Methods
 export const addFavorite = async (playlistId: string) => {
   try {

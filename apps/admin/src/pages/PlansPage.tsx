@@ -44,7 +44,10 @@ const ENUM_OPTIONS: Record<string, string[]> = {
   default_playlist_visibility: ['public', 'private'],
 }
 const CSV_OPTIONS: Record<string, string[]> = {
-  export_targets: ['spotify', 'apple', 'tidal', 'serato', 'rekordbox'],
+  // 'txt' is the server-built file download; 'embed' is the Pro embed widget. 'apple_music' is an
+  // accepted alias of 'apple' server-side — only one spelling is offered here so the stored CSV
+  // stays consistent.
+  export_targets: ['txt', 'apple', 'embed', 'spotify', 'tidal', 'serato', 'rekordbox'],
 }
 
 // ── One editable entitlement value (controlled by the parent's pending-edits state) ──────────
