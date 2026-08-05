@@ -77,6 +77,7 @@ const NAV_COPY: Record<string, string> = {
   'nav.utility.faq': 'FAQ',
   'nav.utility.legal-documents': 'Legal Documents',
   'nav.utility.trust': 'Trust',
+  'nav.utility.contact': 'Contact',
   'nav.utility.cookie-settings': 'Cookie Settings',
   'nav.external': 'external',
   'nav.account': 'Account',

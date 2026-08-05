@@ -175,6 +175,8 @@ export const NAV_UTILITY_LINKS: NavUtilityLink[] = [
   { key: 'faq', route: 'https://support.resomix.com', external: true, externalAriaKey: 'faqAria' },
   { key: 'legal-documents', route: 'https://support.resomix.com/hc/categories/1/3/legal', external: true, externalAriaKey: 'legalDocumentsAria' },
   { key: 'trust', route: '/trust' },
+  // Grouped with the other company links rather than appended, so Cookie Settings stays last.
+  { key: 'contact', route: '/contact' },
   { key: 'cookie-settings', route: '', isCookieSettings: true },
 ];
 
