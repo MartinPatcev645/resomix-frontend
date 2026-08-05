@@ -26,7 +26,8 @@ from app.models.plan import Feature, Plan, PlanEntitlement
 
 # key, name, value_type, window, default_value, description
 FEATURE_CATALOG = [
-    ("search_playlists_per_month",  "Search playlists per month",           "int",  "monthly", "0",     "Max SEARCH playlists (catalog similarity, not upload) per monthly period (resets on the subject's billing anchor)."),
+    # Key kept on purpose (referenced by the gate, the seed and FEATURE_KEYS) — only the WINDOW moved.
+    ("search_playlists_per_month",  "Search playlists per day",             "int",  "daily", "0",       "Max SEARCH playlists (catalogue similarity, not upload) per UTC day. -1 = unlimited."),
     ("max_tracks_per_playlist",     "Usable tracks per playlist (unlock)",  "int",  "none",  "10",      "How many of the generated tracks are unlocked/usable."),
     ("dropdown_max_tracks",         "Max selectable track count",           "int",  "none",  "20",      "Highest track-count dropdown option; rest are greyed."),
     ("can_export",                  "Can export playlist",                  "bool", "none",  "false",   "Whether export is allowed at all."),
@@ -60,7 +61,7 @@ PLAN_CATALOG = [
 # plan_code -> {feature_key: value}
 PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
     "guest": {
-        "search_playlists_per_month": 5, "max_tracks_per_playlist": 10, "dropdown_max_tracks": 20,
+        "search_playlists_per_month": 3, "max_tracks_per_playlist": 10, "dropdown_max_tracks": 20,
         "can_export": False, "export_scope": "none", "export_track_limit": 0, "export_targets": "",
         "can_rename": False, "can_favorite": False, "can_rate_tracks": False,
         "uploads_per_month": 0, "analysis_feature_count": 0, "can_similarity_upload": False,
@@ -68,7 +69,7 @@ PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
         "library_playlists_max": 0, "exports_per_day": 0, "can_view_full_analysis": False,
     },
     "free": {
-        "search_playlists_per_month": 15, "max_tracks_per_playlist": 20, "dropdown_max_tracks": 50,
+        "search_playlists_per_month": 3, "max_tracks_per_playlist": 20, "dropdown_max_tracks": 50,
         "can_export": True, "export_scope": "first_n", "export_track_limit": 10, "export_targets": "",
         "can_rename": True, "can_favorite": True, "can_rate_tracks": True,
         "uploads_per_month": 5, "analysis_feature_count": 5, "can_similarity_upload": True,
@@ -76,7 +77,7 @@ PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
         "library_playlists_max": 5, "exports_per_day": 1, "can_view_full_analysis": False,
     },
     "basic": {
-        "search_playlists_per_month": 100, "max_tracks_per_playlist": 50, "dropdown_max_tracks": 100,
+        "search_playlists_per_month": 30, "max_tracks_per_playlist": 50, "dropdown_max_tracks": 100,
         "can_export": True, "export_scope": "full", "export_track_limit": 0, "export_targets": "spotify,apple",
         "can_rename": True, "can_favorite": True, "can_rate_tracks": True,
         "uploads_per_month": 30, "analysis_feature_count": 10, "can_similarity_upload": True,
@@ -84,15 +85,15 @@ PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
         "library_playlists_max": 25, "exports_per_day": 5, "can_view_full_analysis": True,
     },
     "pro": {
-        "search_playlists_per_month": 300, "max_tracks_per_playlist": 100, "dropdown_max_tracks": 100,
+        "search_playlists_per_month": -1, "max_tracks_per_playlist": 100, "dropdown_max_tracks": 100,
         "can_export": True, "export_scope": "full", "export_track_limit": 0, "export_targets": "spotify,apple",
         "can_rename": True, "can_favorite": True, "can_rate_tracks": True,
-        "uploads_per_month": 100, "analysis_feature_count": 20, "can_similarity_upload": True,
+        "uploads_per_month": 50, "analysis_feature_count": 20, "can_similarity_upload": True,
         "default_playlist_visibility": "private", "signup_bonus_playlists": 2,
         "library_playlists_max": -1, "exports_per_day": -1, "can_view_full_analysis": True,
     },
     "max": {
-        "search_playlists_per_month": 1000, "max_tracks_per_playlist": 100, "dropdown_max_tracks": 100,
+        "search_playlists_per_month": -1, "max_tracks_per_playlist": 100, "dropdown_max_tracks": 100,
         "can_export": True, "export_scope": "full", "export_track_limit": 0,
         "export_targets": "spotify,apple,tidal,serato,rekordbox",
         "can_rename": True, "can_favorite": True, "can_rate_tracks": True,
