@@ -162,6 +162,22 @@ async def _cleanup_test_data():
     * Cleanup failures are logged as warnings and never raise — they must not
       fail an otherwise-green test run.
     """
+    import os
+
+    # Opt-out for runs that touch no DB rows at all (pure unit tests).
+    #
+    # This fixture snapshots and then DELETES every row created during the session, which is
+    # correct for integration tests but destructive if a developer is using the app against the
+    # same dev database at that moment — their playlists and uploads are "rows created during the
+    # run" from its point of view. Pure unit tests need none of it, so they can switch it off:
+    #
+    #     RESOMIX_SKIP_TEST_CLEANUP=1 .venv/bin/pytest tests/unit/services/test_billing_period.py
+    #
+    # Defaults to the existing behaviour, so integration runs are unaffected.
+    if os.getenv("RESOMIX_SKIP_TEST_CLEANUP") == "1":
+        yield
+        return
+
     from database.connection import AsyncSessionLocal
     from sqlalchemy import text
 

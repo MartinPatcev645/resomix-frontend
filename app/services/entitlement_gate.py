@@ -20,6 +20,7 @@ Init Date: July 4, 2026
 """
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -51,14 +52,24 @@ class GateResult:
     cta: Optional[str] = None
     limit: Optional[int] = None
     count: Optional[int] = None
+    # Populated on a COUNTED denial so the controller can build the 402 body without recomputing
+    # the window. `metric` is the feature key; `resets_at` is when the allowance returns.
+    metric: Optional[str] = None
+    resets_at: Optional[datetime] = None
 
 
-def _deny(user: Optional[User], limit: Optional[int] = None, count: Optional[int] = None) -> GateResult:
+def _deny(
+    user: Optional[User],
+    limit: Optional[int] = None,
+    count: Optional[int] = None,
+    metric: Optional[str] = None,
+    resets_at: Optional[datetime] = None,
+) -> GateResult:
     if user is None:
         entitlement_metrics.incr(f"gate.deny.{REASON_LOGIN}")
-        return GateResult(False, REASON_LOGIN, "Log in to do more.", limit, count)
+        return GateResult(False, REASON_LOGIN, "Log in to do more.", limit, count, metric, resets_at)
     entitlement_metrics.incr(f"gate.deny.{REASON_UPGRADE}")
-    return GateResult(False, REASON_UPGRADE, "Upgrade your plan for more.", limit, count)
+    return GateResult(False, REASON_UPGRADE, "Upgrade your plan for more.", limit, count, metric, resets_at)
 
 
 class EntitlementGate:
@@ -138,7 +149,7 @@ class EntitlementGate:
             # No identity to count against → fail open (don't block).
             return GateResult(True, limit=limit)
 
-        period_key, ttl = await self._period(db, user, visitor_id, feature_key)
+        _start, end, period_key, ttl = await self._window(db, user, visitor_id, feature_key)
         result = await self._usage.try_consume(subject[0], subject[1], feature_key, limit, period_key, ttl)
         if result is None:
             # Redis unavailable → fail open (soft limit must not block on infra failure).
@@ -148,7 +159,10 @@ class EntitlementGate:
         allowed, count = result
         if allowed:
             return GateResult(True, limit=limit, count=count)
-        return _deny(user, limit=limit, count=count)
+        # `end` is the moment the allowance returns — the caller needs it for `resets_at` and it is
+        # already computed here, so recomputing it in the controller would risk a different answer
+        # across a period boundary.
+        return _deny(user, limit=limit, count=count, metric=feature_key, resets_at=end)
 
     async def refund(
         self, db, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
@@ -175,13 +189,13 @@ class EntitlementGate:
         subject = self._subject(user, visitor_id)
         if subject is None:
             return GateResult(True, limit=limit)
-        period_key, _ttl = await self._period(db, user, visitor_id, feature_key)
+        _start, end, period_key, _ttl = await self._window(db, user, visitor_id, feature_key)
         count = await self._usage.peek(subject[0], subject[1], feature_key, period_key)
         if count is None:
             entitlement_metrics.incr("gate.fail_open")
             return GateResult(True, limit=limit)  # Redis down → fail open
         if count >= limit:
-            return _deny(user, limit=limit, count=count)
+            return _deny(user, limit=limit, count=count, metric=feature_key, resets_at=end)
         return GateResult(True, limit=limit, count=count)
 
     async def record_use(
