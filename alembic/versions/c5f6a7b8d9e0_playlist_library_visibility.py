@@ -1,6 +1,15 @@
-"""playlists.is_library_visible — Library listing cap (pricing v2.1)
+"""pricing v2.1 — Library visibility column + the three new entitlement features
 
-Adds the flag that decides whether a playlist is LISTED in the Library page. It does not cap
+Two things, deliberately in one revision so a single ``alembic upgrade head`` is the whole deploy:
+
+  1. ``playlists.is_library_visible`` (+ index + backfill)
+  2. the ``library_playlists_max`` / ``exports_per_day`` / ``can_view_full_analysis`` features and
+     their per-plan values — created here rather than left to the manual
+     ``python -m scripts.seed_entitlements``, because a forgotten seed makes gated code raise
+     ``Unknown entitlement feature key`` on live. ``entitlement_seed`` still carries them for
+     fresh installs; both are create-if-missing so they cannot fight.
+
+The flag decides whether a playlist is LISTED in the Library page. It does not cap
 creation: beyond the plan's ``library_playlists_max`` a playlist is created hidden and stays fully
 reachable by link — open, play, rename, export, share, fork all unchanged.
 
@@ -79,7 +88,75 @@ def upgrade() -> None:
             ["user_id", "is_library_visible", "deleted_at"],
         )
 
+    # Create the features BEFORE the backfill — it reads library_playlists_max — and before any
+    # code that gates on them can run. Relying on `python -m scripts.seed_entitlements` for this
+    # would make a forgotten manual step a hard failure: EntitlementService.get_entitlement raises
+    # `Unknown entitlement feature key` for a feature that does not exist.
+    _ensure_features(conn)
     _backfill_visibility(conn)
+
+
+# key -> (name, value_type, window, default, description)
+_NEW_FEATURES = {
+    "library_playlists_max": (
+        "Playlists visible in Library", "int", "none", "0",
+        "How many playlists are LISTED in the Library. Does not cap creation — beyond this they are "
+        "created hidden and stay reachable by link. -1 = unlimited.",
+    ),
+    "exports_per_day": (
+        "Exports per day", "int", "daily", "0",
+        "Playlist exports per UTC day (txt / apple_music / embed all count). -1 = unlimited.",
+    ),
+    "can_view_full_analysis": (
+        "Can open full Track Intelligence", "bool", "none", "false",
+        "The analysis SUMMARY card is available to anyone who can upload; this gates the full "
+        "Track Intelligence page.",
+    ),
+}
+
+# plan_code -> {feature_key: value}.  -1 = unlimited (EntitlementGate.UNLIMITED); 0 denies.
+_NEW_VALUES = {
+    "guest": {"library_playlists_max": 0,  "exports_per_day": 0,  "can_view_full_analysis": False},
+    "free":  {"library_playlists_max": 5,  "exports_per_day": 1,  "can_view_full_analysis": False},
+    "basic": {"library_playlists_max": 25, "exports_per_day": 5,  "can_view_full_analysis": True},
+    "pro":   {"library_playlists_max": -1, "exports_per_day": -1, "can_view_full_analysis": True},
+    "max":   {"library_playlists_max": -1, "exports_per_day": -1, "can_view_full_analysis": True},
+}
+
+
+def _ensure_features(conn) -> None:
+    """Create-if-missing, mirroring ``entitlement_seed``: never clobber an admin's edit."""
+    for key, (name, vtype, window, default, desc) in _NEW_FEATURES.items():
+        conn.execute(
+            text(
+                "INSERT INTO features (`key`, name, value_type, `window`, default_value, description) "
+                "SELECT :k, :n, :vt, :w, :dv, :d "
+                "FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM features WHERE `key` = :k)"
+            ),
+            {"k": key, "n": name, "vt": vtype, "w": window, "dv": default, "d": desc},
+        )
+
+    for plan_code, per_feature in _NEW_VALUES.items():
+        for key, value in per_feature.items():
+            is_bool = _NEW_FEATURES[key][1] == "bool"
+            conn.execute(
+                text(
+                    "INSERT INTO plan_entitlements (plan_id, feature_id, int_value, bool_value) "
+                    "SELECT p.id, f.id, :iv, :bv FROM plans p JOIN features f ON f.`key` = :k "
+                    "WHERE p.code = :code AND NOT EXISTS ("
+                    "  SELECT 1 FROM plan_entitlements pe "
+                    "  WHERE pe.plan_id = p.id AND pe.feature_id = f.id)"
+                ),
+                {
+                    "iv": None if is_bool else int(value),
+                    "bv": bool(value) if is_bool else None,
+                    "k": key,
+                    "code": plan_code,
+                },
+            )
+
+    # Invalidate the Redis entitlement cache, or the old map serves until its TTL expires.
+    conn.execute(text("UPDATE plans SET entitlements_version = entitlements_version + 1"))
 
 
 def _backfill_visibility(conn) -> None:
@@ -142,6 +219,19 @@ def _feature_id(conn, key: str):
 
 def downgrade() -> None:
     conn = op.get_bind()
+
+    # Remove only what this revision inserted. Plan values go first (FK), then the features.
+    for key in _NEW_FEATURES:
+        conn.execute(
+            text(
+                "DELETE pe FROM plan_entitlements pe "
+                "JOIN features f ON f.id = pe.feature_id WHERE f.`key` = :k"
+            ),
+            {"k": key},
+        )
+        conn.execute(text("DELETE FROM features WHERE `key` = :k"), {"k": key})
+    conn.execute(text("UPDATE plans SET entitlements_version = entitlements_version + 1"))
+
     if _has_index(conn, "playlists", "idx_user_visible"):
         op.drop_index("idx_user_visible", table_name="playlists")
     if _has_column(conn, "playlists", "is_library_visible"):
