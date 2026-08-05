@@ -63,6 +63,55 @@ class PlaylistRepository(BaseRepository[Playlist]):
         """Initialize PlaylistRepository with Playlist model."""
         super().__init__(Playlist)
 
+    async def find_same_day_similarity(
+        self,
+        db: AsyncSession,
+        *,
+        seed_track_id: int,
+        since: datetime,
+        user_id: Optional[int] = None,
+        guest_visitor_id: Optional[str] = None,
+    ) -> Optional[Playlist]:
+        """The caller's existing similarity playlist for this seed, created since ``since``.
+
+        Backs the repeat-search rule: asking for the same reference twice in one day returns the
+        playlist already built instead of charging a second search credit. The engine is
+        deterministic for a given seed, so the second result would be identical anyway — charging
+        for it is charging for value already delivered.
+
+        Deliberately a DB lookup rather than a Redis set: the playlist row already carries
+        ``seed_track_id`` and is indexed by owner, so a Redis mirror would duplicate identity for a
+        case that arises rarely, and could disagree with the database after an eviction.
+
+        Scoped to ONE subject — a user id or a guest visitor id, never both — so one caller's
+        playlist can never be handed to another.
+        """
+        if user_id is None and not guest_visitor_id:
+            return None
+
+        owner = (
+            Playlist.user_id == user_id
+            if user_id is not None
+            else and_(Playlist.user_id.is_(None), Playlist.guest_visitor_id == guest_visitor_id)
+        )
+
+        result = await db.execute(
+            select(Playlist)
+            .where(
+                and_(
+                    owner,
+                    Playlist.seed_track_id == seed_track_id,
+                    Playlist.type == PlaylistType.SIMILARITY,
+                    Playlist.deleted_at.is_(None),
+                    Playlist.created_at >= since,
+                )
+            )
+            # Newest first: if a race created two, hand back the one the caller most likely has open.
+            .order_by(Playlist.created_at.desc(), Playlist.id.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
     async def async_get_id_by_uuid(self, db: AsyncSession, uuid: str) -> Optional[int]:
         """Resolve a playlist UUID to its internal integer database ID."""
         stmt = select(self.model.id).where(self.model.uuid == uuid)

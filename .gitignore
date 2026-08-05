@@ -192,3 +192,4 @@ logs/
 scripts/duration/*.csv
 scripts/duration/*.txt
 exports/
+stripe_live_doc.md
