@@ -57,24 +57,41 @@ const EmbedModal: React.FC<EmbedModalProps> = ({
     [playlistUuid, theme, token],
   );
 
-  // Mint once the playlist is actually public — a snippet for a private playlist renders an empty
-  // box, so there is nothing worth handing the user until then.
+  // Mint as soon as the modal opens — deliberately NOT waiting for the playlist to be public.
+  //
+  // Whether the plan includes embedding has nothing to do with visibility, and gating the mint on
+  // `publicNow` meant a free user had to publish their playlist FIRST and only then be told they
+  // cannot embed it. They had changed something about their playlist to learn a fact we already
+  // knew. Minting up front means the refusal arrives before anything is altered.
   React.useEffect(() => {
-    if (!isOpen || !publicNow || token) return;
+    if (!isOpen || token) return;
     let cancelled = false;
     void (async () => {
       const { mintEmbedToken } = await import('@resomix/api-client');
       const res = await mintEmbedToken(playlistUuid);
       if (cancelled) return;
-      if (res.success) setToken(res.data.token);
-      // A 402 here means the plan does not include embed. The message is the server's own, which
-      // is the only thing that knows which capability was refused.
-      else setTokenError((res as { error?: string }).error || 'Embedding is a Pro feature.');
+      if (res.success) {
+        setToken(res.data.token);
+        return;
+      }
+
+      // A quota/plan denial (402) already opens the global upgrade modal, with copy chosen from
+      // the server's `code`. Close this one instead of stacking a second dialog behind it — and
+      // because everything left in here (theme toggle, empty snippet box, dead Copy button) is
+      // useless once we know no token is coming.
+      //
+      // Anything WITHOUT a code is a genuine failure the global modal knows nothing about, so that
+      // still reports inline.
+      if ((res as { code?: string | null }).code) {
+        onClose();
+        return;
+      }
+      setTokenError((res as { error?: string }).error || 'Could not create the embed.');
     })();
     return () => {
       cancelled = true;
     };
-  }, [isOpen, publicNow, token, playlistUuid]);
+  }, [isOpen, token, playlistUuid, onClose]);
 
   React.useEffect(() => {
     if (!isOpen) {

@@ -127,7 +127,9 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
   playlists: [],
   tracks: [],
   error: null,
-  activeTab: 'playlists',
+  // Uploads is the landing tab — it reflects what the user most recently did
+  // (analysed a track), and it now sits first in the tab strip.
+  activeTab: 'tracks',
 
   playlistsLoading: false,
   tracksLoading: false,
@@ -172,7 +174,7 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
     playlists: [],
     tracks: [],
     error: null,
-    activeTab: 'playlists',
+    activeTab: 'tracks',
     playlistsLoading: false,
     tracksLoading: false,
     playlistsPage: 1,

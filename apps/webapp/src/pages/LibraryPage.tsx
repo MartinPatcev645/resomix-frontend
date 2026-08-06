@@ -384,6 +384,17 @@ export default function LibraryPage() {
                 workspace's task cues rather than the old bold-helvetica links. */}
             <div className="flex justify-center gap-[var(--px-24)]">
               <button
+                onClick={() => setSearchParams({ tab: "tracks" }, { replace: true })}
+                aria-current={activeTab === "tracks" ? "page" : undefined}
+                className={`cursor-pointer whitespace-nowrap border-b-2 pb-[var(--px-6)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] transition-colors ${
+                  activeTab === "tracks"
+                    ? "border-[var(--rx-color-accent)] text-[var(--rx-color-text-primary)]"
+                    : "border-transparent text-[var(--rx-color-text-muted)] opacity-60 hover:opacity-100"
+                }`}
+              >
+                Uploads ({tracksTotal})
+              </button>
+              <button
                 onClick={() => setSearchParams({ tab: "playlists" }, { replace: true })}
                 aria-current={activeTab === "playlists" ? "page" : undefined}
                 className={`cursor-pointer whitespace-nowrap border-b-2 pb-[var(--px-6)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] transition-colors ${
@@ -401,17 +412,6 @@ export default function LibraryPage() {
                   ? `${playlistsTotal} of ${playlistsLibraryTotal}`
                   : playlistsTotal}
                 )
-              </button>
-              <button
-                onClick={() => setSearchParams({ tab: "tracks" }, { replace: true })}
-                aria-current={activeTab === "tracks" ? "page" : undefined}
-                className={`cursor-pointer whitespace-nowrap border-b-2 pb-[var(--px-6)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] transition-colors ${
-                  activeTab === "tracks"
-                    ? "border-[var(--rx-color-accent)] text-[var(--rx-color-text-primary)]"
-                    : "border-transparent text-[var(--rx-color-text-muted)] opacity-60 hover:opacity-100"
-                }`}
-              >
-                Uploads ({tracksTotal})
               </button>
             </div>
             <span aria-hidden="true" />

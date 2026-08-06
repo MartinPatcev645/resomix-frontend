@@ -29,12 +29,14 @@ const DownloadExportModal: React.FC<DownloadExportModalProps> = ({ isOpen, onClo
           setFilename(result.filename || 'resomix_playlist.txt');
           setFileContent(result.content || '');
           setIsReady(true);
+        } else if ((result as { code?: string | null }).code) {
+          // A quota denial (402) already opens the global upgrade modal, with copy chosen from the
+          // server's `code`. Close this one rather than leaving it open behind a second dialog
+          // showing an empty file and a dead Download button.
+          onClose();
         } else {
-          // A quota denial (402) already opens the global upgrade modal — see QuotaDenialModal.
-          // An error toast on top would surface the same refusal twice, in two different tones.
-          if (!(result as { code?: string | null }).code) {
-            onStatusChange('error', result.error || 'Failed to prepare playlist for export', 'Export Error');
-          }
+          // A real failure the global modal knows nothing about — report it here.
+          onStatusChange('error', result.error || 'Failed to prepare playlist for export', 'Export Error');
         }
       } catch {
         if (!cancelled) onStatusChange('error', 'Unexpected error while preparing export', 'Export Error');
@@ -42,7 +44,7 @@ const DownloadExportModal: React.FC<DownloadExportModalProps> = ({ isOpen, onClo
     };
     prepareExport();
     return () => { cancelled = true; };
-  }, [isOpen, canExport, exportPlaylist, onStatusChange]);
+  }, [isOpen, canExport, exportPlaylist, onStatusChange, onClose]);
 
   useEffect(() => {
     if (!isOpen) {
