@@ -14,7 +14,7 @@ import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 import { prefetchAudio } from "@/utils/prefetchAudio.ts";
 import { PlaylistUnlockBand } from "@/components/Playlist/PlaylistUnlockBand.tsx";
-import { LOCKED_BLUR_VISIBLE_ROWS, PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
+import { PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
 import { PLAYLIST_ROW_GRID_CLASS, playlistRowGridStyle } from "@/utils/playlistGrid.ts";
 import {
   PLAYLIST_DIVIDER_STRONG,
@@ -109,10 +109,9 @@ const PlaylistTable: React.FC = () => {
         () => windowedTracks.filter((t) => t.rank > maxUnlocked),
         [windowedTracks, maxUnlocked],
     );
-    const visibleLockedTracks = useMemo(
-        () => lockedTracks.slice(0, LOCKED_BLUR_VISIBLE_ROWS),
-        [lockedTracks],
-    );
+    // Every withheld track gets a blurred row. Slicing to five made a 10-track lock look like a
+    // 5-track one — the teaser has to show the real size of what is being held back.
+    const visibleLockedTracks = lockedTracks;
     const analysis = playlistId ? loadPlaylistAnalysis(playlistId) : null;
     const footerResultCount = analysis?.resultCount ?? tracks.length;
     const footerTopMatch = analysis?.topMatchScore != null

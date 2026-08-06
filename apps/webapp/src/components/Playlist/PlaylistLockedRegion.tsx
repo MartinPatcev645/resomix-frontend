@@ -1,20 +1,27 @@
 import React from "react";
 import { PlaylistUnlockBand } from "@/components/Playlist/PlaylistUnlockBand.tsx";
 
-/** Visible blurred rows in the locked block — bounds compositing cost on large playlists. */
-export const LOCKED_BLUR_VISIBLE_ROWS = 5;
+/**
+ * Where the floating unlock panel sits, in rows from the top of the locked block.
+ *
+ * The block itself is NOT cropped: every withheld track gets a blurred row, so the teaser shows
+ * the true size of what is being held back. Cropping it to five rows made a 10-track lock look
+ * like a 5-track one, which undersells the upgrade and reads as a bug. The total row count is
+ * already bounded upstream by `useVisibleResultWindow`, so there is no unbounded-blur case here.
+ */
+const PANEL_TOP_ROWS = 1.5;
 
 export interface PlaylistLockedRegionProps {
   isGuest: boolean;
   maxTracksPerPlaylist: number;
   mobile?: boolean;
-  /** Approximate row height token used for crop + panel anchor. */
+  /** Approximate row height token used to anchor the floating unlock panel. */
   rowHeightVar: string;
   children: React.ReactNode;
 }
 
 /**
- * Guest locked-results block: one blur surface over a bounded row crop, floating unlock panel on top.
+ * Guest locked-results block: one blur surface over every withheld row, floating unlock panel on top.
  * Blurred content is aria-hidden (server sends decoy metadata only).
  */
 export const PlaylistLockedRegion: React.FC<PlaylistLockedRegionProps> = ({
@@ -24,8 +31,7 @@ export const PlaylistLockedRegion: React.FC<PlaylistLockedRegionProps> = ({
   rowHeightVar,
   children,
 }) => {
-  const maxHeight = `calc(${rowHeightVar} * ${LOCKED_BLUR_VISIBLE_ROWS + 0.5})`;
-  const panelTop = `calc(${rowHeightVar} * 1.5)`;
+  const panelTop = `calc(${rowHeightVar} * ${PANEL_TOP_ROWS})`;
 
   return (
     <div className={`relative ${mobile ? "w-full" : ""}`} data-testid="playlist-locked-region">
@@ -34,7 +40,6 @@ export const PlaylistLockedRegion: React.FC<PlaylistLockedRegionProps> = ({
         inert
         className="pointer-events-none relative select-none overflow-hidden border-t border-solid border-[var(--playlist-divider)]"
         style={{
-          maxHeight,
           filter: "blur(7px)",
           opacity: 0.85,
         }}

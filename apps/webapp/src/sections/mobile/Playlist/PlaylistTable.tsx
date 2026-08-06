@@ -3,7 +3,7 @@ import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import { PlaylistUnlockBand } from "@/components/Playlist/PlaylistUnlockBand.tsx";
-import { LOCKED_BLUR_VISIBLE_ROWS, PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
+import { PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import { formatDuration, formatPercentage, useGlobalAudioController, useAccess } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
@@ -72,10 +72,9 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
         () => windowedTracks.filter((t) => t.rank > maxUnlocked),
         [windowedTracks, maxUnlocked],
     );
-    const visibleLockedTracks = useMemo(
-        () => lockedTracks.slice(0, LOCKED_BLUR_VISIBLE_ROWS),
-        [lockedTracks],
-    );
+    // Every withheld track gets a blurred row. Slicing to five made a 10-track lock look like a
+    // 5-track one — the teaser has to show the real size of what is being held back.
+    const visibleLockedTracks = lockedTracks;
 
     const analysis = playlistId ? loadPlaylistAnalysis(playlistId) : null;
     const footerResultCount = analysis?.resultCount ?? tracks.length;

@@ -50,9 +50,18 @@ export function useTrackSimilarity(options?: TrackSimilarityOptions) {
   // Terms acceptance hook
   const { checkTermsAcceptance } = useTermsAcceptance();
 
+  /**
+   * Run a catalogue similarity search.
+   *
+   * Returns **true only when a playlist was produced**. Callers hold their own "processing" state
+   * and cannot otherwise tell a success from a refusal: a 402 quota denial is handled by the global
+   * QuotaDenialModal and deliberately writes NOTHING to the upload store (writing `gateReason` was
+   * what stacked a second modal behind it). With no store change to observe, a panel waiting on
+   * `error || gateReason` waits forever and leaves its progress steps spinning behind the modal.
+   */
   const handleSelectTrack = useCallback(
-    async (trackId: string | number, parameter: boolean = false) => {
-      if (!trackId) return;
+    async (trackId: string | number, parameter: boolean = false): Promise<boolean> => {
+      if (!trackId) return false;
 
       // Reset state first
       setError(null);
@@ -71,7 +80,7 @@ export function useTrackSimilarity(options?: TrackSimilarityOptions) {
           // Only redirect if they came via URL parameter
           window.location.href = BASE_BETA_URL;
         }
-        return;
+        return false;
       }
 
       // Now show overlay after terms are accepted
@@ -110,6 +119,7 @@ export function useTrackSimilarity(options?: TrackSimilarityOptions) {
               });
             }
           }
+          return true;
         } else {
           // API indicated failure. A soft entitlement gate (daily limit / plan cap) drives a
           // login/subscribe CTA rather than a generic error banner.
@@ -126,6 +136,7 @@ export function useTrackSimilarity(options?: TrackSimilarityOptions) {
             setError(mapPlaylistErrorMessage(result?.error, "Failed to fetch similar tracks."));
           }
           setOverlay(false);
+          return false;
         }
       } catch (err: any) {
         // Network / Axios error (or a gate surfaced as a thrown error).
@@ -138,6 +149,7 @@ export function useTrackSimilarity(options?: TrackSimilarityOptions) {
           setError(mapPlaylistErrorMessage(err?.error || err?.message, "Failed to fetch similar tracks."));
         }
         setOverlay(false);
+        return false;
       }
     },
     [setUploading, setProgress, setError, setResponse, setPlaylistResponse, setOverlay, setIsFileUpload, topSk, checkTermsAcceptance, onAnalysis],

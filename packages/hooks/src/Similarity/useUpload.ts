@@ -122,8 +122,16 @@ export function useUpload(options?: UseUploadOptions) {
         return { valid: true };
     }, []);
 
-    const handleUpload = useCallback(async (file: File | null | undefined) => {
-        if (!file) return;
+    /**
+     * Upload a track and run similarity on it.
+     *
+     * Returns **true only when a playlist was produced** — see the note on `handleSelectTrack`.
+     * A 402 quota denial (monthly upload allowance spent) writes nothing to the store because the
+     * global QuotaDenialModal owns that copy, so a caller watching `error || gateReason` would
+     * never learn the upload failed and would leave its progress steps running behind the modal.
+     */
+    const handleUpload = useCallback(async (file: File | null | undefined): Promise<boolean> => {
+        if (!file) return false;
 
         // Similarity-by-upload is login-only. Intercept guests BEFORE any file work / network call
         // so they never upload the file just to hit a server rejection — show the login gate instead,
@@ -134,13 +142,13 @@ export function useUpload(options?: UseUploadOptions) {
                 "Log in to upload your own track",
                 "Uploading your own audio to find matches needs an account. Log in or create a free account to use it.",
             );
-            return;
+            return false;
         }
 
         const isValid = validateFile(file);
         if (!isValid.valid) {
             setError(isValid.error || "Invalid file.");
-            return;
+            return false;
         }
 
         setFile(file);
@@ -217,6 +225,7 @@ export function useUpload(options?: UseUploadOptions) {
                         });
                     }
                 }
+                return true;
             } else {
                 // API indicated failure. A soft entitlement gate drives a login/subscribe CTA.
                 // A quota denial (402) is already handled globally by QuotaDenialModal, with copy
@@ -233,6 +242,7 @@ export function useUpload(options?: UseUploadOptions) {
                 }
                 setUploading(false);
                 setOverlay(false);
+                return false;
             }
         } catch (err: any) {
             // Reset file upload flag on error
@@ -247,6 +257,7 @@ export function useUpload(options?: UseUploadOptions) {
             }
             setUploading(false);
             setOverlay(false);
+            return false;
         }
     }, [setError, setGateReason, setGate, setFile, setOverlay, setProgress, setResponse, setUploading, validateFile, setPlaylistResponse, setIsFileUpload, topSk, setUploadedCoverArt, onAnalysis]);
 

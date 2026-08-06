@@ -163,14 +163,20 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
     if (!reference || isSubmitting) return;
     setIsSubmitting(true);
 
-    if (catalogueTrackId) {
-      await handleSelectTrack(catalogueTrackId);
-      return;
-    }
+    // Both hooks return false when nothing was produced. That is the ONLY reliable signal for a
+    // quota denial: a 402 is answered by the global QuotaDenialModal and writes nothing to the
+    // upload store, so the `error || gateReason` effect below never fires for it and the progress
+    // steps would keep running behind the modal — visible the moment the user dismisses it rather
+    // than clicking its CTA.
+    const ok = catalogueTrackId
+      ? await handleSelectTrack(catalogueTrackId)
+      : pendingUpload
+        ? await handleUpload(pendingUpload)
+        : false;
 
-    if (pendingUpload) {
-      await handleUpload(pendingUpload);
-    }
+    // On SUCCESS deliberately stay in the processing state — the parent is navigating to the
+    // results view, and dropping back here first would flash the reference preview for a frame.
+    if (!ok) setIsSubmitting(false);
   };
 
   const showProcessing = isSubmitting;
