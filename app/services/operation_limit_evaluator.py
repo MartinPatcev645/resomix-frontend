@@ -14,6 +14,7 @@ Email: usman.naeem2212@gmail.com
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +26,7 @@ from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.core.entitlement_keys import FeatureKey
 from app.services.entitlement_service import EntitlementService
 from app.services.entitlement_gate import EntitlementGate
+from app.utils.quota_response import QUOTA_EXCEEDED
 
 # Bridge the legacy OperationType.code space to the new entitlement feature keys.
 # Both are per-subject MONTHLY entitlement counters (peek in check(), record in
@@ -36,8 +38,15 @@ OPERATION_TO_FEATURE = {
 }
 
 # Per-operation soft-deny copy (``{lim}`` is filled with the numeric cap when known).
+#
+# The search wording is DAILY. It used to say "this month's" and that became wrong the moment
+# `search_playlists_per_month` was re-windowed (A2, key deliberately unchanged) — a user who had
+# spent three searches was told to wait a month for an allowance that returns at midnight.
+#
+# No timezone in the prose: `resets_at` travels in the payload as an absolute timestamp and the
+# client renders it in local time. "midnight UTC" would be wrong for almost everyone reading it.
 _LIMIT_DENY_MSG = {
-    "playlist_create": "You've reached this month's search-playlist limit{lim}. Upgrade your plan to create more.",
+    "playlist_create": "You've used today's sonic searches{lim}. Upgrade your plan for unlimited (fair use) searching.",
     "upload_create": "You've used all your uploads this month{lim}. Upgrade your plan to upload more.",
 }
 
@@ -48,6 +57,15 @@ class OperationLimitResult:
     status_code: int
     message: Optional[str] = None
     reason: Optional[str] = None  # login_required | upgrade_required (soft nudge, when denied)
+    # Populated only on an ENTITLEMENT denial (a spent allowance), so the controller can answer with
+    # the 402 contract. Absent on the legacy operation-limit denials ("not yet allowed", "disabled
+    # for your account"), which are genuine permission refusals and stay 403 — waiting will not
+    # help, and offering an upgrade for them would sell something that does not fix the problem.
+    code: Optional[str] = None
+    metric: Optional[str] = None
+    used: Optional[int] = None
+    limit: Optional[int] = None
+    resets_at: Optional[datetime] = None
 
 
 class OperationLimitEvaluator:
@@ -154,12 +172,19 @@ class OperationLimitEvaluator:
         if gate.allowed:
             return OperationLimitResult(allowed=True, status_code=200)
         limit_txt = f" ({gate.limit})" if gate.limit else ""
-        template = _LIMIT_DENY_MSG.get(operation_code, "You've reached this month's limit{lim}.")
+        template = _LIMIT_DENY_MSG.get(operation_code, "You've reached your limit{lim}.")
         return OperationLimitResult(
             allowed=False,
-            status_code=403,
+            # 402, not 403: the request is well-formed and the caller is authenticated — they have
+            # simply spent an allowance that comes back. 403 would say "you may never do this".
+            status_code=402,
             message=template.format(lim=limit_txt),
             reason=gate.reason,
+            code=QUOTA_EXCEEDED,
+            metric=gate.metric or feature_key,
+            used=gate.count,
+            limit=gate.limit,
+            resets_at=gate.resets_at,
         )
 
     async def record_success(

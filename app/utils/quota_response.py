@@ -87,6 +87,48 @@ def quota_denied_response(
     )
 
 
+def operation_limit_response(result) -> JSONResponse:
+    """Turn a denied ``OperationLimitResult`` into a response.
+
+    Two kinds of denial arrive here and they must not be conflated:
+
+      * **a spent allowance** (``result.code`` set) → **402** with the full quota body, so the
+        client can open the right modal and say when it comes back.
+      * **a permission refusal** ("not yet allowed", "disabled for your account") → the legacy
+        **403** with prose only. Waiting will not help and neither will upgrading, so it must not
+        carry a reset time or an upgrade target — that would sell something that cannot fix it.
+
+    Takes the result rather than a ``GateResult`` because the evaluator is a legacy seam that
+    predates the gate and still fronts both kinds.
+    """
+    if not result.code:
+        return JSONResponse(
+            status_code=result.status_code,
+            content=format_response(
+                success=False,
+                error=result.message or "Operation not permitted",
+                reason=result.reason,
+            ),
+        )
+
+    return JSONResponse(
+        status_code=result.status_code,
+        content=format_response(
+            success=False,
+            data={
+                "metric": result.metric,
+                "used": result.used,
+                "limit": result.limit,
+                "resets_at": iso_utc(result.resets_at),
+                "upgrade": "pro",
+            },
+            error=result.message or "You've reached your limit.",
+            code=result.code,
+            reason=result.reason,
+        ),
+    )
+
+
 def plan_required_response(
     gate: GateResult, *, message: str, upgrade: Optional[str] = "pro"
 ) -> JSONResponse:

@@ -33,6 +33,7 @@ from app.services.audio_service import AudioService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
 from app.services.antivirus_service import AntivirusService
 from app.utils.demo_mode_utils import apply_demo_mode_redaction
+from app.utils.quota_response import operation_limit_response
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 from app.services.entitlement_gate import EntitlementGate
@@ -246,15 +247,9 @@ class SimilarityController:
                 operation_code="upload_create",
             )
             if not limit_check.allowed:
-                response_content = format_response(
-                    success=False,
-                    error=limit_check.message or "Operation not permitted",
-                    reason=limit_check.reason,
-                )
-                return JSONResponse(
-                    status_code=limit_check.status_code,
-                    content=response_content,
-                )
+                # 402 + the quota body when an allowance is spent; the legacy 403 for a permission
+                # refusal. One helper so every metered endpoint answers in the same shape.
+                return operation_limit_response(limit_check)
         else:
             logger.info("SIMILARITY UPLOAD: Skipping limit check for anonymous user")
 
@@ -1275,15 +1270,9 @@ class SimilarityController:
                 operation_code="playlist_create",
             )
             if not limit_check.allowed:
-                response_content = format_response(
-                    success=False,
-                    error=limit_check.message or "Operation not permitted",
-                    reason=limit_check.reason,
-                )
-                return JSONResponse(
-                    status_code=limit_check.status_code,
-                    content=response_content,
-                )
+                # 402 + the quota body when an allowance is spent; the legacy 403 for a permission
+                # refusal. One helper so every metered endpoint answers in the same shape.
+                return operation_limit_response(limit_check)
         else:
             logger.info("SIMILARITY BY ID: Skipping limit check for anonymous user")
 

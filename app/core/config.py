@@ -517,6 +517,19 @@ class Settings(BaseModel):
         description="Canonical web-app URL (billing return/success/cancel redirects land here)",
     )
 
+    # Founding-offer window (pricing v2.1). Checkout offers founding prices only while
+    # `now < beta_end_date`; after it, list prices. Existing subscription schedules are never
+    # touched — that is the "keep the founding rate you signed up at" guarantee.
+    #
+    # UTC, deliberately. George's v2 doc writes `2027-02-01T00:00:00+02:00` (Athens); this is the
+    # same calendar date resolved in UTC, two hours earlier, matching the TZ_RESET=UTC decision so
+    # every deadline in the system is expressed on one clock. Env-overridable, so moving the date
+    # is a config change rather than a deploy.
+    beta_end_date: str = Field(
+        default="2027-02-01T00:00:00Z",
+        description="ISO-8601 instant after which founding checkout closes (UTC)",
+    )
+
     # Where operational notifications (ingestion/embedding/etc. outcomes) are CC'd
     # for the company. Falls back to smtp_from_email if unset so we never silently
     # drop the admin copy.

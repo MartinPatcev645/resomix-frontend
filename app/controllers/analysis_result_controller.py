@@ -46,7 +46,7 @@ from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.services.track_analysis_result_service import TrackAnalysisResultService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
 from app.utils.edge_auth import generate_analysis_token
-from app.utils.quota_response import plan_required_response
+from app.utils.quota_response import operation_limit_response, plan_required_response
 from app.utils.response_utils import format_response
 
 logger = logging.getLogger(__name__)
@@ -274,14 +274,9 @@ class AnalysisResultController:
             db, user_id=user_id, operation_code="upload_create"
         )
         if not limit_check.allowed:
-            return JSONResponse(
-                status_code=limit_check.status_code,
-                content=format_response(
-                    success=False,
-                    error=limit_check.message or "Upload not permitted.",
-                    reason=limit_check.reason,
-                ),
-            )
+            # 402 + the quota body when the monthly upload allowance is spent; the legacy 403 for
+            # a permission refusal. Same shape as every other metered endpoint.
+            return operation_limit_response(limit_check)
 
         # 3) The analysis service must be plugged in (URL configured).
         if not self.analysis_client.is_configured:

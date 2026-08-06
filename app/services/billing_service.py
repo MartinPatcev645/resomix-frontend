@@ -11,6 +11,7 @@ price→plan map). Stripe state is written back by the webhook handlers (billing
 """
 
 import logging
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import stripe
@@ -225,9 +226,68 @@ class BillingService:
                     "purchasable": purchasable,
                     "coming_soon": bool(not plan.is_active and not is_free),
                     "is_current": plan.code == current_plan_code,
+                    # The numbers the page prints. Rendered from the SAME rows that enforce them, so
+                    # an admin raising a limit changes the pricing page in the same breath — the
+                    # alternative is a marketing page that quietly starts lying after an edit.
+                    "limits": await self._public_limits(db, plan),
                 }
             )
-        return {"currency": currency, "current_plan_code": current_plan_code, "plans": out}
+        return {
+            "currency": currency,
+            "current_plan_code": current_plan_code,
+            "plans": out,
+            "beta": self.beta_window(),
+        }
+
+    async def _public_limits(self, db: AsyncSession, plan: Plan) -> Dict[str, Any]:
+        """The plan's limits as the pricing page shows them.
+
+        `None` = unlimited, matching `/entitlements/me`: the internal sentinel is `-1`, and a page
+        that received it would print "-1 searches a day". `0` is preserved — it is a real limit
+        meaning "not included", which is how the guest and free rows say what they do not have.
+        """
+        entitlements = await self.entitlements.get_entitlements_map(db, plan)
+
+        def cap(key: str) -> Optional[int]:
+            value = entitlements.get(key)
+            if not isinstance(value, int) or isinstance(value, bool):
+                return None
+            return None if value < 0 else value
+
+        return {
+            "searches_per_day": cap(FeatureKey.SEARCH_PLAYLISTS_PER_MONTH),
+            "uploads_per_month": cap(FeatureKey.UPLOADS_PER_MONTH),
+            "top_sk_max": cap(FeatureKey.MAX_TRACKS_PER_PLAYLIST),
+            "dropdown_max_tracks": cap(FeatureKey.DROPDOWN_MAX_TRACKS),
+            "library_playlists_max": cap(FeatureKey.LIBRARY_PLAYLISTS_MAX),
+            "exports_per_day": cap(FeatureKey.EXPORTS_PER_DAY),
+            "export_track_limit": cap(FeatureKey.EXPORT_TRACK_LIMIT),
+            "can_view_full_analysis": bool(entitlements.get(FeatureKey.CAN_VIEW_FULL_ANALYSIS)),
+            "can_similarity_upload": bool(entitlements.get(FeatureKey.CAN_SIMILARITY_UPLOAD)),
+        }
+
+    @staticmethod
+    def beta_window() -> Dict[str, Any]:
+        """The founding-offer window, for the countdown and the checkout gate.
+
+        `founding_active` is computed HERE rather than in the browser: a client clock can be wrong
+        or deliberately set back, and a countdown that disagrees with what checkout will actually
+        sell is worse than no countdown. The client still gets `end_date` so it can render a live
+        ticker, but the server's answer is the one that decides.
+        """
+        end_date = settings.beta_end_date
+        try:
+            parsed = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            active = datetime.now(timezone.utc) < parsed
+        except (ValueError, AttributeError):
+            # A malformed env value must not take the pricing page down. Fail OPEN — the founding
+            # window stays open, which sells at the lower price rather than silently withdrawing an
+            # offer that is still being advertised.
+            logger.warning("BILLING: could not parse beta_end_date %r; treating as open", end_date)
+            return {"end_date": None, "founding_active": True}
+        return {"end_date": end_date, "founding_active": active}
 
     # ------------------------------------------------------------------ #
     # Subscription summary + invoices (profile "Plan & Billing")
@@ -241,8 +301,11 @@ class BillingService:
 
         usage: List[Dict[str, Any]] = []
         for fk in _USAGE_FEATURES:
-            r = await self.gate.peek_allowed(db, fk, user=user)
-            usage.append({"feature": fk, "used": r.count or 0, "limit": r.limit})
+            snapshot = await self.gate.usage_snapshot(db, fk, user=user)
+            # `limit: None` = unlimited, same contract as /entitlements/me. This used to pass the
+            # raw entitlement through, so a Pro row rendered its cap as **-1** on the "Plan &
+            # Billing" screen. `used` now reports for unlimited plans too, since those are counted.
+            usage.append({"feature": fk, "used": snapshot.used, "limit": snapshot.limit})
 
         subscription = None
         if row is not None:
