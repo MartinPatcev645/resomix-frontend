@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
-import { PlaylistUnlockBand } from "@/components/Playlist/PlaylistUnlockBand.tsx";
 import { PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import { formatDuration, formatPercentage, useGlobalAudioController, useAccess } from "@resomix/hooks";
@@ -63,7 +62,12 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     );
     const hasLockedRows = windowedTracks.some((t) => t.rank > maxUnlocked);
     const showUnlockBand = access.teaseReady && hasLockedRows;
-    const guestBlurLock = isGuest && showUnlockBand;
+    // Locked rows get the blur + floating unlock panel on EVERY plan, not just for guests. This
+    // used to be `isGuest && showUnlockBand`, so a logged-in free user fell through to a second
+    // branch that rendered their locked tracks merely dimmed — readable, selectable, and with an
+    // inline band of its own. Two branches meant two unlock bands on screen and a tease that only
+    // actually concealed anything for guests.
+    const blurLock = showUnlockBand;
     const unlockedTracks = useMemo(
         () => windowedTracks.filter((t) => t.rank <= maxUnlocked),
         [windowedTracks, maxUnlocked],
@@ -417,7 +421,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                     {renderTrackRow(track, "none")}
                 </React.Fragment>
             ))}
-            {guestBlurLock && lockedTracks.length > 0 && (
+            {blurLock && lockedTracks.length > 0 && (
                 <PlaylistLockedRegion
                     isGuest={isGuest}
                     maxTracksPerPlaylist={maxTracksPerPlaylist}
@@ -431,21 +435,6 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                     ))}
                 </PlaylistLockedRegion>
             )}
-            {!guestBlurLock && lockedTracks.map((track) => {
-                const isFirstLockedRow = track.rank === maxUnlocked + 1;
-                return (
-                    <React.Fragment key={track.id}>
-                        {showUnlockBand && isFirstLockedRow && (
-                            <PlaylistUnlockBand
-                                isGuest={isGuest}
-                                maxTracksPerPlaylist={maxTracksPerPlaylist}
-                                mobile
-                            />
-                        )}
-                        {renderTrackRow(track, "dim")}
-                    </React.Fragment>
-                );
-            })}
 
             <div className="mt-[var(--px-10)] flex w-full flex-col items-center gap-[var(--px-8)]">
                 {canLoadMore ? (

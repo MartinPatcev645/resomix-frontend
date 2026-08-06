@@ -2,6 +2,20 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestCo
 import { API_CONFIG } from "./config";
 import { getDeviceHash, initDeviceHash } from "./deviceId";
 import { emitQuotaDenied } from "./quotaEvents";
+
+/**
+ * Request header marking a 402 as **expected and already handled** by the caller.
+ *
+ * A 402 normally means the user just tried something their plan does not allow, so the interceptor
+ * opens the upgrade modal for them. But some requests are speculative — the analysis page tries to
+ * mint a direct-cache token before falling back to the projected result — and refusing those is a
+ * routine branch, not a refusal the user asked for. Without this, opening a perfectly ordinary
+ * summary popped an unprompted "Full Track Intelligence is a Pro feature" modal.
+ *
+ * Only the emit is suppressed. The call still fails, still returns `code`/`quota`, and the caller
+ * still has to handle it — this changes who is told, not what happened.
+ */
+export const QUOTA_SILENT_HEADER = "X-Quota-Silent";
 import type { ApiResponse } from "./types/api";
 
 
@@ -85,6 +99,13 @@ export const handleApiError = (error: AxiosError | Error): {
   // Axios error
   if ((error as AxiosError).isAxiosError && (error as AxiosError).response) {
     const { status, data } = (error as AxiosError).response!;
+    // Some calls are speculative: the caller tries a fast path, expects it may be refused, and has
+    // a working fallback. Their 402 is not a refusal the USER made and must not open the upgrade
+    // modal — see QUOTA_SILENT_HEADER.
+    const silentDenial =
+      ((error as AxiosError).config?.headers as Record<string, unknown> | undefined)?.[
+        QUOTA_SILENT_HEADER
+      ] != null;
 
     // Attempt to respect standardized error format
     if (data && typeof data === "object" && (data as ApiResponse).success === false) {
@@ -107,7 +128,7 @@ export const handleApiError = (error: AxiosError | Error): {
       // A 402 is the one error the whole app reacts to identically: refresh the usage chip and
       // open the upgrade modal. Emitted once here so no call site has to know that.
       // Fire-and-forget; never awaited (see quotaEvents).
-      if (status === 402) {
+      if (status === 402 && !silentDenial) {
         emitQuotaDenied({
           code: apiError.code ?? null,
           error: errorMessage,

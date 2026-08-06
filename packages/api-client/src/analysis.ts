@@ -16,7 +16,7 @@
  */
 
 import authClient from "./authClient";
-import { axiosWrapper, handleApiError, validateAudioFile } from "./utils";
+import { axiosWrapper, handleApiError, validateAudioFile, QUOTA_SILENT_HEADER } from "./utils";
 import { API_CONFIG } from "./config";
 
 /** Single-value analysis summary (mirror of the backend `to_dict`). */
@@ -81,11 +81,21 @@ export const getAnalysisSummary = async (analysisUuid: string) => {
   }
 };
 
-/** Mint a short-lived retrieval token for the full cached JSON (owner-or-public). */
+/**
+ * Mint a short-lived retrieval token for the full cached JSON (owner-or-public).
+ *
+ * This is a **speculative** call: it is the fast path to the served cache, and the caller falls
+ * back to the projected proxy result whenever it fails. On a plan without `can_view_full_analysis`
+ * it is refused with a 402 by design — that refusal is a routine branch, not something the user
+ * did, so it is marked silent and does not open the upgrade modal. Opening a summary must not pop
+ * an upgrade prompt nobody asked for.
+ */
 export const mintAnalysisToken = async (analysisUuid: string) => {
   try {
     return await axiosWrapper<AnalysisTokenEnvelope>(
-      authClient.post(`${analysisPath(analysisUuid)}/token`),
+      authClient.post(`${analysisPath(analysisUuid)}/token`, undefined, {
+        headers: { [QUOTA_SILENT_HEADER]: "1" },
+      }),
     );
   } catch (error) {
     return handleApiError(error as Error);

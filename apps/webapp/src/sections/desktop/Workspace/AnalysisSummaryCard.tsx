@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { shortGenre } from "@resomix/hooks";
+import { shortGenre, useAccess } from "@resomix/hooks";
+import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 import type { AnalysisData, StructureSegment } from "@/pages/analysis/data.ts";
 import { ACCENT } from "@/pages/analysis/charts.tsx";
 import { keyFromCamelot } from "@/pages/analysis/heatviz.tsx";
@@ -100,6 +101,10 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
   onReset,
 }) => {
   const navigate = useNavigate();
+  const access = useAccess();
+  // Answered from the plan we already hold, so an unentitled reader is told here rather than being
+  // sent to a page that would only tell them the same thing after a route change.
+  const [fullGate, setFullGate] = useState<"login_required" | "upgrade_required" | null>(null);
   const resolvedReadings = useMemo(() => resolveAnalysisReadings(data), [data]);
 
   const readings = useMemo(
@@ -330,7 +335,14 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => navigate(`/analysis/full?id=${analysisId}`)}
+          onClick={() => {
+            const reason = access.gateReason("viewFullAnalysis");
+            if (reason) {
+              setFullGate(reason);
+              return;
+            }
+            navigate(`/analysis/full?id=${analysisId}`);
+          }}
           className={WORKSPACE_BTN_SECONDARY}
         >
           {OPEN_FULL_INTELLIGENCE_CTA}
@@ -344,6 +356,17 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
         </button>
       </div>
       <p className="font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] opacity-50">{siblingNote}</p>
+
+      <GateCtaModal
+        reason={fullGate}
+        title="Full Track Intelligence is a Pro feature"
+        body={
+          "Your summary — BPM, key, energy and structure — stays free. Pro adds the full breakdown: " +
+          "spectrograms, the chromagram, beat and phrase grids, mood and genre over time, and stem " +
+          "composition."
+        }
+        onClose={() => setFullGate(null)}
+      />
     </div>
   );
 };

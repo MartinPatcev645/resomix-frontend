@@ -38,7 +38,8 @@ export type AccessAction =
   | "favorite"
   | "rateTrack"
   | "similarityUpload"
-  | "exportApple";
+  | "exportApple"
+  | "viewFullAnalysis";
 
 export type AccessVerdict = "allowed" | "login" | "upgrade" | "pending";
 
@@ -53,6 +54,10 @@ const ACTION_FEATURE: Record<AccessAction, string | null> = {
   rateTrack: FEATURE_KEYS.CAN_RATE_TRACKS,
   similarityUpload: FEATURE_KEYS.CAN_SIMILARITY_UPLOAD,
   exportApple: null, // special-cased in verdict() — a LIST capability, not a boolean
+  // Decided HERE rather than by letting the user navigate and finding out server-side: the summary
+  // already knows the plan, so the upgrade prompt can be shown in place instead of after a route
+  // change onto a page that has nothing to render.
+  viewFullAnalysis: FEATURE_KEYS.CAN_VIEW_FULL_ANALYSIS,
 };
 
 /** Guest defaults used while entitlements are unsettled — always fail-CLOSED on display. */

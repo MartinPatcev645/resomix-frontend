@@ -13,7 +13,6 @@ import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 import { prefetchAudio } from "@/utils/prefetchAudio.ts";
-import { PlaylistUnlockBand } from "@/components/Playlist/PlaylistUnlockBand.tsx";
 import { PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
 import { PLAYLIST_ROW_GRID_CLASS, playlistRowGridStyle } from "@/utils/playlistGrid.ts";
 import {
@@ -100,7 +99,12 @@ const PlaylistTable: React.FC = () => {
     );
     const hasLockedRows = windowedTracks.some((t) => t.rank > maxUnlocked);
     const showUnlockBand = access.teaseReady && hasLockedRows;
-    const guestBlurLock = isGuest && showUnlockBand;
+    // Locked rows get the blur + floating unlock panel on EVERY plan, not just for guests. This
+    // used to be `isGuest && showUnlockBand`, so a logged-in free user fell through to a second
+    // branch that rendered their locked tracks merely dimmed — readable, selectable, and with an
+    // inline band of its own. Two branches meant two unlock bands on screen and a tease that only
+    // actually concealed anything for guests.
+    const blurLock = showUnlockBand;
     const unlockedTracks = useMemo(
         () => windowedTracks.filter((t) => t.rank <= maxUnlocked),
         [windowedTracks, maxUnlocked],
@@ -472,7 +476,7 @@ const PlaylistTable: React.FC = () => {
                     </React.Fragment>
                 );
             })}
-            {guestBlurLock && lockedTracks.length > 0 && (
+            {blurLock && lockedTracks.length > 0 && (
                 <PlaylistLockedRegion
                     isGuest={isGuest}
                     maxTracksPerPlaylist={maxTracksPerPlaylist}
@@ -488,21 +492,6 @@ const PlaylistTable: React.FC = () => {
                     })}
                 </PlaylistLockedRegion>
             )}
-            {!guestBlurLock && lockedTracks.map((track) => {
-                const isFirstLockedRow = track.rank === maxUnlocked + 1;
-                const idx = rowIndex++;
-                return (
-                    <React.Fragment key={track.id}>
-                        {showUnlockBand && isFirstLockedRow && (
-                            <PlaylistUnlockBand
-                                isGuest={isGuest}
-                                maxTracksPerPlaylist={maxTracksPerPlaylist}
-                            />
-                        )}
-                        {renderTrackRow(track, "dim", idx)}
-                    </React.Fragment>
-                );
-            })}
             </div>
 
             <div className="mt-[var(--px-14)] flex flex-col items-center gap-[var(--px-8)]">

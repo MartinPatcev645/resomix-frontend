@@ -22,6 +22,10 @@ import { AnalysisSummaryCard } from "@/sections/desktop/Workspace/AnalysisSummar
  * The card is rendered from the *projected* payload, so a free user sees exactly what they would
  * have seen in the workspace: BPM, key, energy, structure, the persona blurb, and the link through
  * to their similarity playlist.
+ *
+ * Rendered inside `WorkspaceShell` by WorkspacePage / WorkspaceMobile — not as a standalone route —
+ * so the nav, the usage chip and the rest of the page chrome stay put, exactly as they do when a
+ * playlist is open. It carries no page padding of its own for that reason.
  */
 export default function AnalysisSummaryPage() {
   const [searchParams] = useSearchParams();
@@ -43,7 +47,9 @@ export default function AnalysisSummaryPage() {
   const backHref = cameFromLibrary ? "/library" : "/analysis";
 
   return (
-    <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-[var(--px-56)] lg:px-[var(--px-80)] pb-[var(--px-80)]">
+    /* No page padding: this renders INSIDE WorkspaceShell, which already supplies the top offset
+       and gutters — the same arrangement `/sonic-discovery?id=` uses for a playlist. */
+    <section className="w-full">
       <div className="mx-auto w-full max-w-4xl text-[var(--color-primary)]">
         <div className="mb-[var(--px-16)]">
           <button

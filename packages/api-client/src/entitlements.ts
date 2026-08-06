@@ -28,6 +28,10 @@ export const FEATURE_KEYS = {
   CAN_SIMILARITY_UPLOAD: "can_similarity_upload",
   DEFAULT_PLAYLIST_VISIBILITY: "default_playlist_visibility",
   SIGNUP_BONUS_PLAYLISTS: "signup_bonus_playlists",
+  // pricing v2.1
+  LIBRARY_PLAYLISTS_MAX: "library_playlists_max",
+  EXPORTS_PER_DAY: "exports_per_day",
+  CAN_VIEW_FULL_ANALYSIS: "can_view_full_analysis",
 } as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[keyof typeof FEATURE_KEYS];

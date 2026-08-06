@@ -78,17 +78,6 @@ export function WorkspaceMobile({ mode }: { mode: WorkspaceMode }) {
     }
   }, [mode, showFullAnalysis, response, setPlaylistResponse, navigate]);
 
-  if (showFullAnalysis) {
-    return (
-      <>
-        <AnalysisSummaryPage />
-        {error && (
-          <StatusMessage isOpen={true} status="error" message={error} onClose={() => setError(null)} />
-        )}
-      </>
-    );
-  }
-
   const showPlaylistResults =
     mode === "discovery" &&
     ((urlId && isPlaylistUuid(urlId)) || (!!urlState && !urlId));
@@ -99,6 +88,12 @@ export function WorkspaceMobile({ mode }: { mode: WorkspaceMode }) {
       <WorkspaceShell mode={mode}>
         {showPlaylistResults ? (
           <WorkspaceDiscoveryResults />
+        ) : showFullAnalysis ? (
+          /* `/analysis?id=` — the summary, rendered INSIDE the shell exactly as
+             `/sonic-discovery?id=` renders a playlist. It used to early-return above the shell, so
+             opening an analysis dropped the nav, the usage chip and the page chrome and left a bare
+             card floating on the background. */
+          <AnalysisSummaryPage />
         ) : showUrlDiscoveryProcessing ? (
           <div className={WORKSPACE_PANEL_CLASS}>
             <DiscoveryProcessingPanel />
