@@ -1,6 +1,7 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { API_CONFIG } from "./config";
 import { getDeviceHash } from "./deviceId";
+import { emitQuotaDenied } from "./quotaEvents";
 import type { ApiResponse } from "./types/api";
 
 
@@ -94,6 +95,10 @@ export const handleApiError = (error: AxiosError | Error): {
         const first = apiError.details[0] as { message?: string };
         if (first?.message) errorMessage = first.message;
       }
+
+      // The cached entitlements are stale the moment a 402 lands — the user just spent the thing
+      // the usage chip is displaying. Fire-and-forget; never awaited (see quotaEvents).
+      if (status === 402) emitQuotaDenied(apiError.code ?? null);
 
       return {
         success: false,

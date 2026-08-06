@@ -14,6 +14,7 @@ import { getPlaylistPlaybackSession } from "@resomix/api-client";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
 import { useRecentAnalyses } from "./analysis/useRecentAnalyses.js";
 import { AnalysisIntro } from "./analysis/AnalysisIntro.js";
+import { FullAnalysisLocked } from "@/components/Entitlements/FullAnalysisLocked.tsx";
 import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
 import { CamelotWheel, chromaLabelsForKey, ChromaSummary, ChromaView, Donut, keyFromCamelot, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
 
@@ -188,9 +189,14 @@ export default function AnalysisPage() {
     );
   };
 
+  // The server withheld the dashboard sections because this plan lacks `can_view_full_analysis`
+  // (pricing v2.1 §1.6). The data is genuinely absent, so the panels below cannot render — show
+  // the upgrade CTA instead of charts drawn over nothing.
+  const fullAnalysisLocked = !!data?.fullAnalysisLocked;
+
   // Progressive delivery: show the dashboard as soon as part 1 (local DSP) is in;
   // the part-2 (semantic/GPU) panels fill in below once the full result lands.
-  const showDashboard = (part1Ready || status === "done") && data;
+  const showDashboard = (part1Ready || status === "done") && data && !fullAnalysisLocked;
   const part2Done = status === "done";
 
   return (
@@ -223,6 +229,11 @@ export default function AnalysisPage() {
             Upload a track to see what it's actually made of
           </p>
         </header>
+
+        {/* --------------------------------------------- Full analysis is Pro */}
+        {fullAnalysisLocked && status !== "error" && (
+          <FullAnalysisLocked onBack={() => navigate(cameFromLibrary ? "/library" : "/")} />
+        )}
 
         {/* ----------------------------------------------------------- Error */}
         {status === "error" && (

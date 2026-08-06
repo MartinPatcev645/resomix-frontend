@@ -17,6 +17,7 @@ import {
   WORKSPACE_HEADING,
   WORKSPACE_SUBLINE,
 } from "./workspaceCopy.ts";
+import { UsageChip } from "@/components/Entitlements/UsageChip.tsx";
 import { WorkspaceRail } from "./WorkspaceRail.tsx";
 import { PAGE_MARK_INTERACTIVE } from "@resomix/ui";
 import { WORKSPACE_BADGE_ACCENT, WORKSPACE_FOCUS_VISIBLE } from "./workspacePanelStyles.ts";
@@ -91,13 +92,18 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({ mode, children }
             sm+ (self-end) so it always sits directly above the task cards instead of riding up
             beside the heading, under the floating Catalogue-pilot / Feedback buttons. Single-column
             widths stack it under the subline, still right-aligned, on the header's own row gap. */}
-        <span className="inline-flex items-center gap-[var(--px-8)] justify-self-end border border-[var(--rx-color-border-default)] px-[var(--px-13)] py-[var(--px-7)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)] sm:self-end">
-          <i
-            aria-hidden="true"
-            className={`block h-[var(--px-6)] w-[var(--px-6)] rounded-full not-italic ${session.dot}`}
-          />
-          {session.label}
-        </span>
+        <div className="flex flex-wrap items-center gap-[var(--px-8)] justify-self-end sm:self-end">
+          {/* What is left of today's allowance. Renders nothing when there is nothing true to
+              say — loading, or every limit unlimited — so the session chip keeps its position. */}
+          <UsageChip />
+          <span className="inline-flex items-center gap-[var(--px-8)] border border-[var(--rx-color-border-default)] px-[var(--px-13)] py-[var(--px-7)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)]">
+            <i
+              aria-hidden="true"
+              className={`block h-[var(--px-6)] w-[var(--px-6)] rounded-full not-italic ${session.dot}`}
+            />
+            {session.label}
+          </span>
+        </div>
       </header>
 
       <div

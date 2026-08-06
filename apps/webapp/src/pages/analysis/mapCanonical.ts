@@ -77,6 +77,10 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
   const beats = arr<number>(rhy.beat_times_seconds);
 
   return {
+    // The server projected this payload down to the summary card because the caller's plan does
+    // not include `can_view_full_analysis`. Every dashboard section is genuinely absent, so the
+    // full page must show an upgrade CTA rather than render empty charts over missing data.
+    fullAnalysisLocked: raw?.full_analysis_locked === true,
     identity: {
       filename: str(id.input_filename, "track"),
       durationMs: num(id.duration_ms),

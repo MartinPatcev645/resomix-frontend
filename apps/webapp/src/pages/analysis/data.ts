@@ -25,4 +25,10 @@ export interface AnalysisData {
   composition: { stems: Record<string, StemMetrics>; vocalRegions: VoiceRegion[] };
   /** Optional narrative readings from the canonical result (may be absent on partial jobs). */
   readings: { forDj: string; forProducers: string; forCurators: string };
+  /**
+   * True when the server withheld the dashboard sections because the caller's plan lacks
+   * `can_view_full_analysis` (pricing v2.1 §1.6). The summary card is complete either way — only
+   * the full Track Intelligence page is gated.
+   */
+  fullAnalysisLocked?: boolean;
 }

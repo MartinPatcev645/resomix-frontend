@@ -15,7 +15,11 @@ import { useAuthStore } from "@resomix/stores";
 import {
   FEATURE_KEYS,
   getMyEntitlements,
+  onQuotaDenied,
   type EntitlementValue,
+  type EntitlementLimits,
+  type EntitlementResets,
+  type EntitlementUsage,
   type MyEntitlements,
 } from "@resomix/api-client";
 
@@ -77,6 +81,16 @@ export interface UseEntitlements {
   uploadsPerMonth: number;
   /** Whether the plan allows similarity-by-upload at all (upload feature availability). */
   canSimilarityUpload: boolean;
+  /**
+   * Pricing v2.1 — the usage chip's data. `null` inside `limits` means unlimited; `null` inside
+   * `usage` means NOT KNOWN (unlimited features are never counted, and a counter read can fail),
+   * which is not zero. All three are `null` until the fetch settles, and for B2B callers.
+   *
+   * Do not gate on these: they are a report, and the server is the guard.
+   */
+  limits: EntitlementLimits | null;
+  usage: EntitlementUsage | null;
+  resets: EntitlementResets | null;
   /** Force a refetch (call after login/logout/upgrade). */
   refresh: () => Promise<void>;
 }
@@ -137,6 +151,19 @@ export function useEntitlements(): UseEntitlements {
     await load(true);
   }, [load]);
 
+  // A 402 means the server just refused something on a limit, so the cached usage is stale by
+  // definition — the user spent the very thing the chip is showing. Without this the chip keeps
+  // reading "2/3" after the request that made it 3/3, and only a page reload fixes it.
+  //
+  // Forced (`load(true)`) deliberately: the shared cache is what went stale, so a cache-respecting
+  // reload would return the same wrong numbers.
+  useEffect(() => {
+    return onQuotaDenied(() => {
+      if (waitingForToken) return; // no token yet — a fetch now would come back as a guest
+      void load(true);
+    });
+  }, [load, waitingForToken]);
+
   return {
     entitlements: map,
     plan: data?.plan ?? null,
@@ -152,6 +179,9 @@ export function useEntitlements(): UseEntitlements {
     searchPlaylistsPerMonth: getInt(FEATURE_KEYS.SEARCH_PLAYLISTS_PER_MONTH, 5),
     uploadsPerMonth: getInt(FEATURE_KEYS.UPLOADS_PER_MONTH, 0),
     canSimilarityUpload: getBool(FEATURE_KEYS.CAN_SIMILARITY_UPLOAD),
+    limits: data?.limits ?? null,
+    usage: data?.usage ?? null,
+    resets: data?.resets ?? null,
     refresh,
   };
 }
