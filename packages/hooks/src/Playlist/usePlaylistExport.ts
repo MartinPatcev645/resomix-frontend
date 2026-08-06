@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { usePlaylistStore } from '@resomix/stores';
 import { DEMO_MODE } from '@resomix/config';
-import { FEATURE_KEYS, exportPlaylistFile } from '@resomix/api-client';
+import { FEATURE_KEYS, emitUsageChanged, exportPlaylistFile } from '@resomix/api-client';
 import { useEntitlements } from '../Entitlements/useEntitlements';
 
 /**
@@ -83,6 +83,10 @@ export function usePlaylistExport() {
           quota: (response as { quota?: unknown }).quota ?? null,
         };
       }
+
+      // An export spends the daily allowance — refresh the chip rather than leaving it stale
+      // until the next page load.
+      emitUsageChanged();
 
       const result = response.data;
       return {

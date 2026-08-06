@@ -232,7 +232,13 @@ export default function AnalysisPage() {
 
         {/* --------------------------------------------- Full analysis is Pro */}
         {fullAnalysisLocked && status !== "error" && (
-          <FullAnalysisLocked onBack={() => navigate(cameFromLibrary ? "/library" : "/")} />
+          <FullAnalysisLocked
+            onBack={() =>
+              // Back to the SUMMARY for this analysis — what the caller is entitled to and what
+              // they were looking at. Sending them to the upload landing lost their place.
+              navigate(analysisId ? `/analysis?id=${analysisId}` : cameFromLibrary ? "/library" : "/analysis")
+            }
+          />
         )}
 
         {/* ----------------------------------------------------------- Error */}

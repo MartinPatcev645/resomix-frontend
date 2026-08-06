@@ -12,6 +12,15 @@ interface GlobalFooterProps {
 const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://resomix.com", onNavigate }) => {
   const version = useConfig((s) => s.version);
 
+  // Computed ONCE per mount, not per render.
+  //
+  // `fetchGenerationTime()` is randomised, so calling it inline in the JSX produced a different
+  // string on every render. `CodeTyping` restarts its animation whenever `text` changes — it calls
+  // `setDisplay("")` and types again from scratch — so every unrelated re-render of the footer made
+  // this line visibly erase and retype itself, settling only once re-renders stopped. The two
+  // sibling `CodeTyping` blocks have literal text, which is why only this one misbehaved.
+  const generationTime = React.useMemo(() => fetchGenerationTime(), []);
+
   return (
     <footer className="mt-[var(--px-150)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
       {/*
@@ -76,7 +85,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
               <div className="leading-[var(--px-8)]">
                 <CodeTyping
                   speed={50}
-                  text={`upload_protocol: SSL 256-bit // encrypted<br />system_uptime: 99.97%<br />last_waveform_uploaded: ${fetchGenerationTime()} ago`}
+                  text={`upload_protocol: SSL 256-bit // encrypted<br />system_uptime: 99.97%<br />last_waveform_uploaded: ${generationTime} ago`}
                   multiline={true}
                 />
               </div>

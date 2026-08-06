@@ -22,8 +22,12 @@ import {
  */
 
 const FEATURE_LABELS: Record<string, string> = {
-  uploads_per_month: "Uploads",
-  search_playlists_per_month: "Similarity playlists",
+  // `search_playlists_per_month` kept its key when the window went daily (pricing v2.1 Q3), so the
+  // label has to say what it actually is — the key can't be trusted to read correctly.
+  search_playlists_per_month: "Sonic searches (today)",
+  uploads_per_month: "Uploads (this month)",
+  exports_per_day: "Exports (today)",
+  library_playlists_max: "Playlists in your Library",
 };
 
 function fmtDate(iso: string | null): string {
@@ -47,16 +51,19 @@ function fmtMoney(cents: number, currency: string): string {
 
 function UsageMeter({ item }: { item: BillingUsageItem }) {
   const label = FEATURE_LABELS[item.feature] || item.feature;
-  const used = item.used || 0;
+  // `null` used means NOT KNOWN — an unreadable counter. Rendering it as 0 would tell someone they
+  // had spent nothing when we simply could not find out.
+  const known = typeof item.used === "number";
+  const used = known ? (item.used as number) : 0;
   const limit = item.limit;
   const unlimited = limit === null || (typeof limit === "number" && limit < 0);
-  const pct = unlimited || !limit ? 0 : Math.min(100, Math.round((used / limit) * 100));
+  const pct = !known || unlimited || !limit ? 0 : Math.min(100, Math.round((used / limit) * 100));
   return (
     <div className="flex flex-col gap-[var(--px-6)]">
       <div className="flex justify-between gap-[var(--px-10)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)]">
         <span className="min-w-0 truncate text-[var(--rx-color-text-secondary)]">{label}</span>
         <span className="shrink-0 tabular-nums text-[var(--rx-color-text-primary)]">
-          {unlimited ? `${used} / ∞` : `${used} / ${limit ?? 0}`}
+          {!known ? "—" : unlimited ? `${used} / ∞` : `${used} / ${limit ?? 0}`}
         </span>
       </div>
       {/* Square meter on a token border — same treatment as the playlist match meter. */}
@@ -193,7 +200,7 @@ export function PlanBillingCard() {
 
           {summary?.usage?.length ? (
             <div className="flex flex-col gap-[var(--px-12)]">
-              <div className={PAGE_SUBLABEL}>This month's usage</div>
+              <div className={PAGE_SUBLABEL}>Your usage</div>
               {summary.usage.map((u) => (
                 <UsageMeter key={u.feature} item={u} />
               ))}

@@ -88,6 +88,14 @@ export interface LibraryStore {
   playlistsPage: number;
   playlistsTotalPages: number;
   playlistsTotal: number;
+  /**
+   * Every playlist the user OWNS, hidden ones included — the denominator in "5 of 18 shown".
+   *
+   * Distinct from `playlistsTotal`, which counts what the current filter matched. Free accounts
+   * list only `library_playlists_max`; the rest still exist and work by link, so the Library has to
+   * account for them rather than appear to have lost them.
+   */
+  playlistsLibraryTotal: number;
 
   tracksPage: number;
   tracksTotalPages: number;
@@ -106,7 +114,7 @@ export interface LibraryStore {
   setError: (error: string | null) => void;
   setActiveTab: (tab: 'playlists' | 'tracks') => void;
 
-  setPlaylistsPagination: (page: number, totalPages: number, total: number) => void;
+  setPlaylistsPagination: (page: number, totalPages: number, total: number, libraryTotal?: number) => void;
   setTracksPagination: (page: number, totalPages: number, total: number) => void;
 
   setPlaylistsFilters: (filters: LibraryFilters) => void;
@@ -127,6 +135,7 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
   playlistsPage: 1,
   playlistsTotalPages: 1,
   playlistsTotal: 0,
+  playlistsLibraryTotal: 0,
 
   tracksPage: 1,
   tracksTotalPages: 1,
@@ -144,8 +153,15 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
   setError: (error) => set({ error }),
   setActiveTab: (activeTab) => set({ activeTab }),
 
-  setPlaylistsPagination: (playlistsPage, playlistsTotalPages, playlistsTotal) =>
-    set({ playlistsPage, playlistsTotalPages, playlistsTotal }),
+  setPlaylistsPagination: (playlistsPage, playlistsTotalPages, playlistsTotal, playlistsLibraryTotal) =>
+    set({
+      playlistsPage,
+      playlistsTotalPages,
+      playlistsTotal,
+      // Only overwrite when the caller actually supplied it, so a listing from an older server
+      // (no `library_total`) leaves the previous value rather than zeroing the denominator.
+      ...(playlistsLibraryTotal === undefined ? {} : { playlistsLibraryTotal }),
+    }),
   setTracksPagination: (tracksPage, tracksTotalPages, tracksTotal) =>
     set({ tracksPage, tracksTotalPages, tracksTotal }),
 
@@ -162,6 +178,7 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
     playlistsPage: 1,
     playlistsTotalPages: 1,
     playlistsTotal: 0,
+  playlistsLibraryTotal: 0,
     tracksPage: 1,
     tracksTotalPages: 1,
     tracksTotal: 0,

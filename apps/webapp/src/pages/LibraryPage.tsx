@@ -32,6 +32,7 @@ export default function LibraryPage() {
     playlistsPage,
     playlistsTotalPages,
     playlistsTotal,
+    playlistsLibraryTotal,
     tracksPage,
     tracksTotalPages,
     tracksTotal,
@@ -391,7 +392,15 @@ export default function LibraryPage() {
                     : "border-transparent text-[var(--rx-color-text-muted)] opacity-60 hover:opacity-100"
                 }`}
               >
-                Playlists ({playlistsTotal})
+                {/* "5 of 18" whenever some playlists are not listed — free accounts show only
+                    `library_playlists_max`. The rest are NOT deleted and still work by link, so
+                    the count has to acknowledge them rather than let the Library look like it
+                    lost them. Falls back to the plain count when nothing is hidden. */}
+                Playlists (
+                {playlistsLibraryTotal > playlistsTotal
+                  ? `${playlistsTotal} of ${playlistsLibraryTotal}`
+                  : playlistsTotal}
+                )
               </button>
               <button
                 onClick={() => setSearchParams({ tab: "tracks" }, { replace: true })}

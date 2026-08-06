@@ -16,6 +16,7 @@ import {
   FEATURE_KEYS,
   getMyEntitlements,
   onQuotaDenied,
+  onUsageChanged,
   type EntitlementValue,
   type EntitlementLimits,
   type EntitlementResets,
@@ -160,6 +161,16 @@ export function useEntitlements(): UseEntitlements {
   useEffect(() => {
     return onQuotaDenied(() => {
       if (waitingForToken) return; // no token yet — a fetch now would come back as a guest
+      void load(true);
+    });
+  }, [load, waitingForToken]);
+
+  // ...and after an allowance is SPENT successfully. Without this the chip only ever corrects
+  // itself once the user is refused — so it reads 0/3 immediately after their first search and
+  // stays wrong until a page reload, which is the state most users would actually see.
+  useEffect(() => {
+    return onUsageChanged(() => {
+      if (waitingForToken) return;
       void load(true);
     });
   }, [load, waitingForToken]);

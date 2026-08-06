@@ -330,7 +330,7 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => navigate(`/analysis?id=${analysisId}`)}
+          onClick={() => navigate(`/analysis/full?id=${analysisId}`)}
           className={WORKSPACE_BTN_SECONDARY}
         >
           {OPEN_FULL_INTELLIGENCE_CTA}

@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { API_CONFIG } from "./config";
-import { getDeviceHash } from "./deviceId";
+import { getDeviceHash, initDeviceHash } from "./deviceId";
 import { emitQuotaDenied } from "./quotaEvents";
 import type { ApiResponse } from "./types/api";
 
@@ -15,12 +15,20 @@ const axiosInstance: AxiosInstance = axios.create({
 // Request interceptor. The retired static api_key is no longer sent: guests are anonymous
 // (→ System Partner 1) and logged-in users are identified by their JWT (attached by authClient).
 // This base instance only attaches the guest device signal and any idempotency key.
-axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+axiosInstance.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const isAdminRoute = config.url?.includes('admin') || config.url?.includes('/admin/');
 
   // Guest device signal for server-side visitor_id derivation (never sent on admin/B2B routes).
   if (!isAdminRoute) {
-    const deviceHash = getDeviceHash();
+    // AWAIT the hash, never just peek at it. `getDeviceHash()` is synchronous and returns null
+    // until the fingerprint has been computed, so the FIRST requests of a session — including the
+    // `/entitlements/me` fetch that fires at bootstrap — would go out without the header. The
+    // server then derives a *different*, degraded visitor id for those, which splits one guest's
+    // usage across two identities: they get extra free searches, and the usage chip reads a
+    // different counter than enforcement wrote to.
+    //
+    // Cached after the first call (memory + localStorage), so this costs nothing thereafter.
+    const deviceHash = getDeviceHash() ?? (await initDeviceHash());
     if (deviceHash) {
       config.headers['X-Device-Hash'] = deviceHash;
     }

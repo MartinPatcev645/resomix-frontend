@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from "react";
-import { getSimilarTracks, API_CONFIG } from "@resomix/api-client";
+import { emitUsageChanged, getSimilarTracks, API_CONFIG } from "@resomix/api-client";
 // import { waitForSegmentation } from "@resomix/api-client"; // Commented out - segmentation polling no longer needed
 import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { create } from "zustand";
@@ -192,6 +192,9 @@ export function useUpload(options?: UseUploadOptions) {
                 // }
 
                 setResponse(result as UploadResult);
+                // A search/upload spends an allowance. Tell the usage chip so it corrects itself now,
+                // instead of showing a stale count until the next page load.
+                emitUsageChanged();
                 setPlaylistResponse(result as any);
                 // Keep overlay visible; UploadPage effect will hide after navigation
                 setUploading(false);
@@ -216,8 +219,14 @@ export function useUpload(options?: UseUploadOptions) {
                 }
             } else {
                 // API indicated failure. A soft entitlement gate drives a login/subscribe CTA.
+                // A quota denial (402) is already handled globally by QuotaDenialModal, with copy
+                // built from the server's `code`. Setting gateReason here too would stack a second,
+                // vaguer modal on top of it — which is what users saw.
                 const reason = (result as { reason?: string } | null)?.reason;
-                if (reason === "login_required" || reason === "upgrade_required") {
+                const denialCode = (result as { code?: string | null } | null)?.code;
+                if (denialCode) {
+                    /* handled globally */
+                } else if (reason === "login_required" || reason === "upgrade_required") {
                     setGateReason(reason);
                 } else {
                     setError(mapPlaylistErrorMessage(result?.error, "Upload failed."));
@@ -228,7 +237,10 @@ export function useUpload(options?: UseUploadOptions) {
         } catch (err: any) {
             // Reset file upload flag on error
             setIsFileUpload(false);
-            if (err?.reason === "login_required" || err?.reason === "upgrade_required") {
+            // Same as above: a 402 already opened the global modal.
+            if (err?.code) {
+                /* handled globally */
+            } else if (err?.reason === "login_required" || err?.reason === "upgrade_required") {
                 setGateReason(err.reason);
             } else {
                 setError(mapPlaylistErrorMessage(err?.error || err?.message, "Upload failed."));

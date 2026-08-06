@@ -58,3 +58,37 @@ export function emitQuotaDenied(denial: QuotaDenial): void {
     }
   });
 }
+
+
+/**
+ * Fired after an action that SPENDS an allowance succeeds (a search, an upload, an export).
+ *
+ * The denial signal above only covers the moment someone is refused — but the usage chip is just
+ * as wrong after a *successful* action, and that is the common case: create a playlist, watch the
+ * chip still say 0/3 until you reload the page.
+ *
+ * Separate from `emitQuotaDenied` because the two mean different things: this refreshes the
+ * numbers, that one also opens a modal.
+ */
+type UsageListener = () => void;
+
+const usageListeners = new Set<UsageListener>();
+
+/** Subscribe to "an allowance was just spent". Returns an unsubscribe function. */
+export function onUsageChanged(listener: UsageListener): () => void {
+  usageListeners.add(listener);
+  return () => {
+    usageListeners.delete(listener);
+  };
+}
+
+/** Fire after a metered action succeeds. */
+export function emitUsageChanged(): void {
+  usageListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch {
+      /* a broken listener must not break the action that just succeeded */
+    }
+  });
+}

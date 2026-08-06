@@ -22,6 +22,9 @@ const UiSystemSpecimenPage = lazy(() => import("@/pages/UiSystemSpecimenPage.tsx
 // const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
 const UploadLoader = lazy(() => import("@/components/index.ts").then(m => ({ default: m.UploadLoader })));
 const LibraryPage = lazy(() => import("@/pages/LibraryPage.tsx"));
+// The full Track Intelligence dashboard — its own route since pricing v2.1; `/analysis?id=` is
+// the summary.
+const AnalysisFullPage = lazy(() => import("@/pages/AnalysisPage.tsx"));
 // Apple Music connects IN-PAGE via MusicKit (no app-owned redirect page needed — that pattern is
 // only required for Spotify's server-side OAuth redirect flow).
 // const TidalRedirect = lazy(() => import("@/pages/redirect/TidalRedirect.tsx").then(m => ({ default: m.TidalRedirect })));
@@ -161,6 +164,10 @@ function App() {
             <Route path="/sonic-discovery" element={<DiscoveryLanding />} />
             <Route path="/playlist" element={<PlaylistRedirect />} />
             <Route path="/analysis" element={<AnalysisLanding />} />
+            {/* The full Track Intelligence dashboard has its own route (pricing v2.1).
+                `/analysis?id=` shows the SUMMARY — what every plan gets — so the many links that
+                just mean "open this analysis" no longer drop a free user onto an upgrade CTA. */}
+            <Route path="/analysis/full" element={<AnalysisFullPage />} />
             <Route path="/subscribe" element={<SubscribePage />} />
             {import.meta.env.DEV ? <Route path="/__ui-system" element={<UiSystemSpecimenPage />} /> : null}
 

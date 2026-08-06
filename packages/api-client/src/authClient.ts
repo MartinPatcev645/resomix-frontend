@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_CONFIG } from './config';
-import { getDeviceHash } from './deviceId';
+import { getDeviceHash, initDeviceHash } from './deviceId';
 
 // Import will be added after useAuthStore is created
 // For now, we'll use dynamic import to avoid circular dependencies
@@ -56,12 +56,20 @@ const processQueue = (error: unknown, token: string | null = null) => {
 // api_key is no longer sent: guests are anonymous (→ System Partner 1), logged-in users and admins
 // are identified by their JWT from the auth store (admins log in via /admin/auth/login).
 authClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
     const isAdminRoute = config.url?.includes('admin') || config.url?.includes('/admin/');
 
     // Guest device signal for server-side visitor_id derivation (not on admin routes).
     if (!isAdminRoute) {
-      const deviceHash = getDeviceHash();
+      // AWAIT the hash, never just peek at it. `getDeviceHash()` is synchronous and returns null
+      // until the fingerprint has been computed, so the FIRST requests of a session — including the
+      // `/entitlements/me` fetch that fires at bootstrap — would go out without the header. The
+      // server then derives a *different*, degraded visitor id for those, which splits one guest's
+      // usage across two identities: they get extra free searches, and the usage chip reads a
+      // different counter than enforcement wrote to.
+      //
+      // Cached after the first call (memory + localStorage), so this costs nothing thereafter.
+      const deviceHash = getDeviceHash() ?? (await initDeviceHash());
       if (deviceHash) {
         config.headers['X-Device-Hash'] = deviceHash;
       }

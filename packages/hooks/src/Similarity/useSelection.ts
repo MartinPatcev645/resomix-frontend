@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { getSimilarityForSelectedTrack, initDeviceHash } from "@resomix/api-client";
+import { emitUsageChanged, getSimilarityForSelectedTrack, initDeviceHash } from "@resomix/api-client";
 // import { waitForSegmentation } from "@resomix/api-client"; // Commented out - segmentation polling no longer needed
 import { useUploadStore } from "./useUpload";
 import { usePlaylistStore, usePlayerStore } from "@resomix/stores";
@@ -88,6 +88,9 @@ export function useTrackSimilarity(options?: TrackSimilarityOptions) {
           // Success path
           setProgress(100);
           setResponse(result as UploadResult);
+          // A search/upload spends an allowance. Tell the usage chip so it corrects itself now,
+          // instead of showing a stale count until the next page load.
+          emitUsageChanged();
           setPlaylistResponse(result as any);
 
           // Fire analysis callback if provided
@@ -110,8 +113,14 @@ export function useTrackSimilarity(options?: TrackSimilarityOptions) {
         } else {
           // API indicated failure. A soft entitlement gate (daily limit / plan cap) drives a
           // login/subscribe CTA rather than a generic error banner.
+          // A quota denial (402) is already handled globally by QuotaDenialModal, with copy
+          // built from the server's `code`. Setting gateReason here too would stack a second,
+          // vaguer modal on top of it — which is what users saw.
           const reason = (result as { reason?: string } | null)?.reason;
-          if (reason === "login_required" || reason === "upgrade_required") {
+          const denialCode = (result as { code?: string | null } | null)?.code;
+          if (denialCode) {
+            // handled globally
+          } else if (reason === "login_required" || reason === "upgrade_required") {
             setGateReason(reason);
           } else {
             setError(mapPlaylistErrorMessage(result?.error, "Failed to fetch similar tracks."));
@@ -120,7 +129,10 @@ export function useTrackSimilarity(options?: TrackSimilarityOptions) {
         }
       } catch (err: any) {
         // Network / Axios error (or a gate surfaced as a thrown error).
-        if (err?.reason === "login_required" || err?.reason === "upgrade_required") {
+        // Same as above: a 402 already opened the global modal.
+        if (err?.code) {
+          /* handled globally */
+        } else if (err?.reason === "login_required" || err?.reason === "upgrade_required") {
           setGateReason(err.reason);
         } else {
           setError(mapPlaylistErrorMessage(err?.error || err?.message, "Failed to fetch similar tracks."));

@@ -142,7 +142,22 @@ export function ConsumerPricingContent() {
                 : null;
             return (
               <PlanPanel key={p.code} highlighted={!!isCurrent}>
-                <div className="space-y-[var(--px-16)]">
+                {/* Plans that are configured but not on sale yet (basic / max, `is_active = 0`) are
+                    SHOWN so the ladder is visible, but blurred so nobody reads their limits as a
+                    current offer — the numbers are real rows and would otherwise look purchasable.
+                    `select-none` + `aria-hidden` keep the blurred text out of copy-paste and out of
+                    a screen reader, where a blur means nothing. */}
+                {p.coming_soon && (
+                  <span className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+                    <span className="border border-[var(--color-neon-orange)] bg-black/70 px-[var(--px-12)] py-[var(--px-6)] font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] text-[var(--color-neon-orange)]">
+                      Coming soon
+                    </span>
+                  </span>
+                )}
+                <div
+                  className={`space-y-[var(--px-16)] ${p.coming_soon ? "select-none blur-[3px] opacity-60" : ""}`}
+                  aria-hidden={p.coming_soon || undefined}
+                >
                   <div className="flex items-center justify-between gap-[var(--px-8)]">
                     <h3 className="m-0 font-helvetica text-[length:var(--px-18)] font-bold uppercase tracking-[var(--px-1)] text-[var(--color-text-secondary)]">
                       {p.name}

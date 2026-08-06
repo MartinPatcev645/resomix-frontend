@@ -60,6 +60,16 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     priority: 0.9,
   },
 
+  /* The full Track Intelligence dashboard. `noindex` on purpose: it is only ever reachable with a
+     specific `?id=`, it is a Pro capability, and an indexed shell with no analysis behind it would
+     be a dead result. `/analysis` is the page that should rank. */
+  '/analysis/full': {
+    title: 'Full Track Intelligence | Resomix',
+    description:
+      'The complete breakdown of a track: spectrograms, chromagram, beat and phrase grids, mood and genre over time, and stem composition.',
+    noindex: true,
+  },
+
   /* ---------- shared with the marketing site: canonical points there ---------- */
   '/subscribe': {
     title: 'Subscribe to Resomix: Unlock Deeper Sonic Discovery',

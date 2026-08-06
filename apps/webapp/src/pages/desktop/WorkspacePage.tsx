@@ -16,7 +16,7 @@ import {
   WORKSPACE_PANEL_CLASS,
   type WorkspaceMode,
 } from "@/sections/desktop/Workspace/index.ts";
-import AnalysisPage from "@/pages/AnalysisPage.tsx";
+import AnalysisSummaryPage from "@/pages/AnalysisSummaryPage.tsx";
 
 export function WorkspacePage({ mode }: { mode: WorkspaceMode }) {
   const [searchParams] = useSearchParams();
@@ -37,6 +37,9 @@ export function WorkspacePage({ mode }: { mode: WorkspaceMode }) {
   const { handleSelectTrack } = useTrackSimilarity();
   const [urlDiscoveryActive, setUrlDiscoveryActive] = React.useState(false);
 
+  // `/analysis?id=` — the SUMMARY view. The full dashboard lives at `/analysis/full?id=`
+  // and is reached by choosing it, so a free user is never dropped on an upgrade CTA by a
+  // link that only meant "open this analysis".
   const showFullAnalysis = mode === "analysis" && !!urlId;
 
   // `?discover=<track>` (or a legacy numeric `?id=`) → chain-discover: create similarity by track.
@@ -79,7 +82,7 @@ export function WorkspacePage({ mode }: { mode: WorkspaceMode }) {
   if (showFullAnalysis) {
     return (
       <>
-        <AnalysisPage />
+        <AnalysisSummaryPage />
         {error && (
           <StatusMessage isOpen={true} status="error" message={error} onClose={() => setError(null)} />
         )}

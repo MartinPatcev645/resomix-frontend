@@ -72,6 +72,7 @@ export function useLibrary() {
   const playlistsPage = useLibraryStore(state => state.playlistsPage);
   const playlistsTotalPages = useLibraryStore(state => state.playlistsTotalPages);
   const playlistsTotal = useLibraryStore(state => state.playlistsTotal);
+  const playlistsLibraryTotal = useLibraryStore(state => state.playlistsLibraryTotal);
   const tracksPage = useLibraryStore(state => state.tracksPage);
   const tracksTotalPages = useLibraryStore(state => state.tracksTotalPages);
   const tracksTotal = useLibraryStore(state => state.tracksTotal);
@@ -102,7 +103,9 @@ export function useLibrary() {
       if (resp.success && resp.data && Array.isArray(resp.data)) {
         setPlaylists(resp.data.map(formatPlaylist));
         const total = (resp as any).total || 0;
-        setPlaylistsPagination(page, Math.max(1, Math.ceil(total / pageSize)), total);
+        // Everything the user owns, hidden ones included — the denominator in "5 of 18 shown".
+        const libraryTotal = (resp as any).library_total;
+        setPlaylistsPagination(page, Math.max(1, Math.ceil(total / pageSize)), total, libraryTotal);
       } else {
         setError(resp.error || "Failed to load playlists");
       }
@@ -190,7 +193,14 @@ export function useLibrary() {
         clearPlaylistFromCache(uuid);
         const state = useLibraryStore.getState();
         setPlaylists(state.playlists.filter(p => p.uuid !== uuid));
-        setPlaylistsPagination(state.playlistsPage, state.playlistsTotalPages, Math.max(0, state.playlistsTotal - 1));
+        // Decrement the owned-total too, or the Library would keep reading "4 of 18" after a
+        // delete that made it 17.
+        setPlaylistsPagination(
+          state.playlistsPage,
+          state.playlistsTotalPages,
+          Math.max(0, state.playlistsTotal - 1),
+          Math.max(0, state.playlistsLibraryTotal - 1),
+        );
         return { success: true };
       }
       return { success: false, error: (resp as any).error || "Failed to delete playlist" };
@@ -218,7 +228,12 @@ export function useLibrary() {
         const after = useLibraryStore.getState();
         if (!makeFavorite && after.playlistsFilters.favoritesOnly) {
           setPlaylists(after.playlists.filter(p => p.uuid !== uuid));
-          setPlaylistsPagination(after.playlistsPage, after.playlistsTotalPages, Math.max(0, after.playlistsTotal - 1));
+          setPlaylistsPagination(
+            after.playlistsPage,
+            after.playlistsTotalPages,
+            Math.max(0, after.playlistsTotal - 1),
+            Math.max(0, after.playlistsLibraryTotal - 1),
+          );
         }
         return { success: true };
       }
@@ -311,6 +326,7 @@ export function useLibrary() {
     playlistsPage,
     playlistsTotalPages,
     playlistsTotal,
+    playlistsLibraryTotal,
     tracksPage,
     tracksTotalPages,
     tracksTotal,
