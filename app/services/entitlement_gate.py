@@ -324,6 +324,27 @@ class EntitlementGate:
         start, end, period_key, ttl = await self._window(db, user, visitor_id, feature_key)
         await self._rehydrate_if_evicted(db, subject, feature_key, start, period_key, ttl)
         used = await self._usage.peek(subject[0], subject[1], feature_key, period_key)
+
+        # A one-time bonus (the signup grant) is applied by seeding the counter NEGATIVE, so the raw
+        # value is `uses - bonus`. Enforcement is right either way — it only compares against the
+        # limit — but reporting it verbatim put a literal **-2/3** on the usage chip.
+        #
+        # Add the grant back to BOTH sides: the user sees a stable `1/5` that counts up to a
+        # denominator that does not move. Reconstructing it from `-used` instead would work only
+        # while the bonus is unspent, and would show the denominator shrinking 5 → 4 → 3 as they
+        # used it.
+        if used is not None:
+            bonus = await self._usage.peek_bonus(subject[0], subject[1], feature_key, period_key)
+            if not bonus:
+                # No record of a grant (evicted, or granted before this key existed). Fall back to
+                # what the negative itself implies, which at worst restates today's information —
+                # and never leaves a minus sign on screen.
+                bonus = max(0, -used)
+            if bonus:
+                used = used + bonus
+                if reported_limit is not None:
+                    reported_limit = reported_limit + bonus
+
         # `end` is reported even when unlimited: `used` is scoped to a period, so without it the
         # number has no meaning — "12 searches" over what, exactly?
         return UsageSnapshot(feature_key, limit=reported_limit, used=used, resets_at=end)

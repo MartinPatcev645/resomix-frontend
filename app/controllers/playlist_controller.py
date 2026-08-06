@@ -25,8 +25,11 @@ from app.repositories.playlist_repository import DENIAL_STATUS, PlaylistWriteDen
 from app.repositories.operation_limit_repository import OperationLimitRepository
 from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.services.logging_service import LoggingService
-from app.utils.demo_mode_utils import apply_demo_mode_redaction, is_anonymous_frontend, ANON_VISIBLE_COUNT
+from app.utils.demo_mode_utils import apply_demo_mode_redaction
 from app.utils.response_utils import format_response
+from app.core.entitlement_keys import FeatureKey
+from app.services.entitlement_gate import EntitlementGate
+from app.services.guest_identity_service import GuestIdentityService
 from app.models.user import User
 from app.services.admin_operation_log_service import AdminOperationLogService
 from app.core.config import settings
@@ -42,6 +45,8 @@ class PlaylistController:
         self.operation_limit_evaluator = OperationLimitEvaluator()
         self.operation_limit_repository = OperationLimitRepository()
         self.admin_log_service = AdminOperationLogService()
+        self.entitlement_gate = EntitlementGate()
+        self.guest_identity = GuestIdentityService()
 
     async def rename_playlist(
         self,
@@ -430,6 +435,30 @@ class PlaylistController:
             content=format_response(success=False, error=result.get("error")),
         )
 
+    async def _apply_saved_playlist_redaction(
+        self, db, result, *, request, current_user, partner_id
+    ) -> None:
+        """Scramble result tracks beyond the caller's ``max_tracks_per_playlist`` entitlement.
+
+        The mirror of ``SimilarityController._apply_frontend_unlock_redaction``, applied on the read
+        path. B2B partners are never redacted — they authenticate with an API key and have their own
+        quota system.
+
+        Never raises: a redaction that cannot resolve its cap must not take the playlist page down.
+        It falls back to the guest cap, which is the safe direction — showing too little beats
+        leaking the whole list.
+        """
+        if partner_id != settings.system_partner_id:
+            return
+        try:
+            visitor_id = None if current_user else self.guest_identity.derive_visitor_id(request)
+            visible = await self.entitlement_gate.get_cap(
+                db, FeatureKey.MAX_TRACKS_PER_PLAYLIST, user=current_user, visitor_id=visitor_id
+            )
+        except Exception:  # noqa: BLE001 — see the docstring
+            visible = 10
+        apply_demo_mode_redaction(result, visible_count=visible)
+
     async def get_playlist_similarity_data(
         self,
         db: AsyncSession,
@@ -492,8 +521,14 @@ class PlaylistController:
             duration_ms = (time.time() - start_time) * 1000
 
             if result.get("success"):
-                if is_anonymous_frontend(current_user is not None, partner_id, settings.system_partner_id):
-                    apply_demo_mode_redaction(result, visible_count=ANON_VISIBLE_COUNT)
+                # Re-opening a saved playlist must tease EXACTLY as creating it did. This used to
+                # redact for guests only, so a logged-in free user who came back to their own
+                # playlist got all 50 tracks in full — the tease was a one-time illusion that any
+                # page reload dispelled. The cap comes from the same entitlement the creation path
+                # uses, so the two can never drift apart.
+                await self._apply_saved_playlist_redaction(
+                    db, result, request=request, current_user=current_user, partner_id=partner_id
+                )
                 # Extract playlist integer ID if available
                 playlist_int_id = None
                 try:

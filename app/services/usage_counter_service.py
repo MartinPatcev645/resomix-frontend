@@ -30,6 +30,20 @@ class UsageCounterService:
     def _key(subject_type: str, subject_id: str, feature_key: str, period_key: str) -> str:
         return f"usage:{subject_type}:{subject_id}:{feature_key}:{period_key}"
 
+    @staticmethod
+    def _bonus_key(subject_type: str, subject_id: str, feature_key: str, period_key: str) -> str:
+        """Sibling key recording how big this period's one-time bonus was.
+
+        The bonus itself is applied by seeding the counter NEGATIVE, which enforcement handles
+        correctly but reporting cannot: a raw count of ``-1`` is indistinguishable from "granted 2,
+        used 1" and "granted 5, used 4", so the chip rendered a literal **-1/3**. This key keeps the
+        grant size so `usage_snapshot` can report a stable `1/5` instead.
+
+        Purely cosmetic — nothing reads it to decide whether an operation may proceed, so losing it
+        to an eviction degrades the display, never the enforcement.
+        """
+        return f"usage:{subject_type}:{subject_id}:{feature_key}:bonus:{period_key}"
+
     async def try_consume(
         self, subject_type: str, subject_id: str, feature_key: str,
         limit: int, period_key: str, ttl_seconds: int,
@@ -97,6 +111,25 @@ class UsageCounterService:
         so a mid-period up/downgrade adjusts automatically. None if Redis down or ``amount <= 0``."""
         if amount <= 0:
             return None
-        return await redis_counter.incr_by(
+        result = await redis_counter.incr_by(
             self._key(subject_type, subject_id, feature_key, period_key), -int(amount), ttl_seconds
+        )
+        # Best-effort, and deliberately AFTER the grant: the bonus must land even if this bookkeeping
+        # fails. A missing bonus key costs an odd-looking denominator; a missing grant costs the user
+        # allowance they were promised.
+        try:
+            await redis_counter.incr_by(
+                self._bonus_key(subject_type, subject_id, feature_key, period_key),
+                int(amount), ttl_seconds,
+            )
+        except Exception:  # noqa: BLE001 — see above
+            pass
+        return result
+
+    async def peek_bonus(
+        self, subject_type: str, subject_id: str, feature_key: str, period_key: str
+    ) -> Optional[int]:
+        """How much one-time bonus was granted for this period (0 if none, None if Redis down)."""
+        return await redis_counter.get_int(
+            self._bonus_key(subject_type, subject_id, feature_key, period_key)
         )
