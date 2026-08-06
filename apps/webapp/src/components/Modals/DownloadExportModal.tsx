@@ -30,7 +30,11 @@ const DownloadExportModal: React.FC<DownloadExportModalProps> = ({ isOpen, onClo
           setFileContent(result.content || '');
           setIsReady(true);
         } else {
-          onStatusChange('error', result.error || 'Failed to prepare playlist for export', 'Export Error');
+          // A quota denial (402) already opens the global upgrade modal — see QuotaDenialModal.
+          // An error toast on top would surface the same refusal twice, in two different tones.
+          if (!(result as { code?: string | null }).code) {
+            onStatusChange('error', result.error || 'Failed to prepare playlist for export', 'Export Error');
+          }
         }
       } catch {
         if (!cancelled) onStatusChange('error', 'Unexpected error while preparing export', 'Export Error');

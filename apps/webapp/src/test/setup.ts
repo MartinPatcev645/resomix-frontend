@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import { configure } from '@testing-library/react'
 import { server } from './server.ts'
 
 /**
@@ -48,3 +49,14 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: () => false,
   }),
 })
+
+/**
+ * `waitFor` / `findBy*` default to a 1-second budget. That is fine for a component, but several
+ * specs here wait on the full app shell to mount in jsdom — and under a full parallel run those
+ * mounts have been measured taking many times longer than they do in isolation, which surfaced as
+ * an intermittent failure inside the `waitFor` callback rather than as a timeout.
+ *
+ * Raising it does not hide a real failure: the assertion still has to pass, it is just given a
+ * realistic amount of time to become true on a loaded machine.
+ */
+configure({ asyncUtilTimeout: 10_000 })

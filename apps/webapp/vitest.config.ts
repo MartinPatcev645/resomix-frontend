@@ -22,6 +22,17 @@ export default defineConfig({
     // Only pick unit/integration tests inside src/
     include: ['src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
     // Ignore Playwright e2e and its config
-    exclude: [...configDefaults.exclude, 'e2e/**', 'playwright.config.*']
+    exclude: [...configDefaults.exclude, 'e2e/**', 'playwright.config.*'],
+    /**
+     * Vitest's 5s default is a budget for a fast unit test. Several specs here mount the real app
+     * tree in jsdom, and a few (the analysis polling ones) drive real timers for >10s — so under a
+     * full parallel run, files that finish in ~1s alone have been measured at ~12s and tripped the
+     * default, reporting a TIMEOUT as though the assertion had failed.
+     *
+     * Raised rather than worked around: nothing is logically wrong with those tests, the budget was
+     * simply unrealistic for what they do. A genuine hang still fails, just later.
+     */
+    testTimeout: 30_000,
+    hookTimeout: 30_000
   }
 })

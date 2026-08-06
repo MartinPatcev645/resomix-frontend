@@ -32,7 +32,10 @@ export const PlaylistExport: React.FC<PlaylistExportProps> = ({
                     setFilename(result.filename || 'resomix_playlist.txt');
                     setFileContent(result.content || '');
                     setIsReady(true);
-                } else {
+                } else if (!(result as { code?: string | null }).code) {
+                    // A quota denial (402) already opens the global upgrade modal — see
+                    // QuotaDenialModal. Showing an error toast as well would surface the same
+                    // refusal twice, in two different tones.
                     onStatusChange('error', result.error || 'Failed to prepare playlist for export');
                 }
             } catch (error) {
