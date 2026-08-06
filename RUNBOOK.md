@@ -73,6 +73,7 @@ git pull
 source .venv/bin/activate
 pip install -r requirements.txt        # only if requirements changed
 .venv/bin/alembic upgrade head         # if the pull added DB migrations
+.venv/bin/python scripts/seed_rbac.py  # if the pull added keys to app/core/rbac.py PERMISSIONS
 # PYTHONPATH="$PWD" .venv/bin/python scripts/seed_consumer_pro_price.py   # only when (re)seeding billing
 sudo systemctl restart alwyzon
 sudo systemctl status alwyzon
@@ -80,6 +81,10 @@ journalctl -u alwyzon -n 200 --no-pager
 ```
 
 ## Notes / gotchas
+- **`seed_rbac.py` after a permissions change**: `require_permission` checks the `role_permissions`
+  **rows**, not the `ROLE_PERMISSIONS` map in code. A release that adds a permission key ships it
+  granted-in-code and denied-in-production until the seeder runs. It is idempotent, so running it on
+  every deploy is harmless. (`--admin-email <addr>` also grants+activates one admin account.)
 - **Shared secrets** (must equal the media/analysis boxes): `EDGE_JWT_SECRET` (media + analysis),
   `HETZNER_INTERNAL_API_KEY` + `PREVIEW_FERNET_SECRET` + `PREVIEW_HMAC_SECRET` (media),
   `ANALYSIS_INTERNAL_API_KEY` (= analysis `RESOMIX_INTERNAL_API_KEY`). See `SECRET_ROTATION` notes.

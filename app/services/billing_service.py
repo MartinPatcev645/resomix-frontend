@@ -178,6 +178,7 @@ class BillingService:
         plan_code: str,
         country_code: Optional[str],
         *,
+        interval: str = "month",
         consent: bool = False,
         consent_doc_versions: Optional[str] = None,
         client_ip: Optional[str] = None,
@@ -215,12 +216,21 @@ class BillingService:
                 ),
             )
 
+        # Reject anything we cannot price rather than silently selling a monthly subscription to
+        # someone who asked for a year.
+        interval = (interval or "month").strip().lower()
+        if interval not in ("month", "year"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Billing interval must be 'month' or 'year'.",
+            )
+
         currency = self.resolve_currency(country_code)
         # Founding while the window is open, list afterwards (F1/F5). Same resolver as the pricing
         # page, so the two can never quote different numbers.
-        price = await self.resolve_offer_price(db, plan.id, currency)
+        price = await self.resolve_offer_price(db, plan.id, currency, interval)
         if not price:  # fall back to EUR if the resolved currency has no price yet
-            price = await self.resolve_offer_price(db, plan.id, "EUR")
+            price = await self.resolve_offer_price(db, plan.id, "EUR", interval)
         if not price:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -469,6 +479,11 @@ class BillingService:
                     "coming_soon": bool(not plan.is_active and not is_free),
                     "is_current": plan.code == current_plan_code,
                     "is_founding_price": is_founding_price,
+                    # Every interval this plan can actually be bought at, with the price that
+                    # would be charged for each. ADDITIVE — the pricing page ignores it today.
+                    # It exists so a monthly/yearly toggle can be built without another backend
+                    # change, and so the page can never offer an interval that has no price.
+                    "offers": await self._offers(db, plan.id, resolved_currency),
                     "list_unit_amount_cents": (
                         list_price.unit_amount_cents
                         if (is_founding_price and list_price and price
@@ -487,6 +502,34 @@ class BillingService:
             "plans": out,
             "beta": self.beta_window(),
         }
+
+    async def _offers(self, db: AsyncSession, plan_id: int, currency: str) -> List[Dict[str, Any]]:
+        """What this plan can be bought at, per interval.
+
+        Only intervals with an active price appear, so a caller cannot render a "yearly" toggle for
+        a plan that has no yearly price — the failure would otherwise be a checkout that 400s after
+        the user has already chosen.
+        """
+        out: List[Dict[str, Any]] = []
+        for interval in ("month", "year"):
+            price = await self.resolve_offer_price(db, plan_id, currency, interval)
+            if price is None:
+                continue
+            list_price = await self._active_price(db, plan_id, currency, interval, PriceKind.LIST)
+            founding = price.price_kind == PriceKind.FOUNDING
+            out.append({
+                "interval": interval,
+                "unit_amount_cents": price.unit_amount_cents,
+                "currency": price.currency,
+                "is_founding_price": founding,
+                # Only when it differs, so nothing can advertise a saving of zero.
+                "list_unit_amount_cents": (
+                    list_price.unit_amount_cents
+                    if (founding and list_price and list_price.unit_amount_cents != price.unit_amount_cents)
+                    else None
+                ),
+            })
+        return out
 
     async def _public_limits(self, db: AsyncSession, plan: Plan) -> Dict[str, Any]:
         """The plan's limits as the pricing page shows them.

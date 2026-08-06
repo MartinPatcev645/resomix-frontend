@@ -32,6 +32,12 @@ entitlement_service = EntitlementService()
 
 class CheckoutRequest(BaseModel):
     plan_code: str = Field(..., description="Plan code to subscribe to, e.g. 'pro'")
+    # Defaults to "month" so every existing caller behaves exactly as before. A plan can hold a
+    # yearly price; without this the API had no way to ask for it and yearly was unsellable.
+    interval: str = Field(
+        "month",
+        description="Billing interval: 'month' or 'year'. Must have an active price for the plan.",
+    )
     # EU 14-day withdrawal waiver (§5.5). Defaults to False so a caller that does not send it is
     # refused rather than silently consented on the user's behalf — which is the entire point.
     consent: bool = Field(
@@ -100,6 +106,7 @@ async def checkout(
             current_user,
             body.plan_code,
             _country(request),
+            interval=body.interval,
             consent=body.consent,
             client_ip=_client_ip(request),
         )
