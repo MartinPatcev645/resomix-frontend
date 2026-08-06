@@ -196,3 +196,39 @@ class TestEveryMeteredCallSiteUsesTheHelper:
         for module in ("controllers/similarity_controller.py", "controllers/analysis_result_controller.py"):
             src = (app / module).read_text()
             assert "status_code=limit_check.status_code" not in src
+
+
+class TestGuestsGetTheSameContract:
+    """The guest branch in `similarity_controller` had its own bespoke 403 with monthly wording.
+
+    Two things were wrong with it. The frontend opens its signup/upgrade modal on a **402**, so a
+    guest who ran out of searches saw no modal at all. And the copy said "this month's", which
+    stopped being true when the window went daily in A2 — a guest was told to wait a month for an
+    allowance that returns at midnight.
+    """
+
+    @staticmethod
+    def _source() -> str:
+        from pathlib import Path
+
+        return (
+            Path(__file__).resolve().parents[3] / "app" / "controllers" / "similarity_controller.py"
+        ).read_text()
+
+    def test_the_guest_denial_uses_the_shared_402_helper(self):
+        src = self._source()
+        assert "quota_denied_response(" in src
+
+    def test_no_bespoke_403_remains_for_the_search_allowance(self):
+        """The `can_similarity_upload` 403 stays — that is a capability, not a spent allowance."""
+        src = self._source()
+        assert "free playlist limit" not in src
+
+    def test_the_guest_is_told_to_sign_up_not_to_upgrade(self):
+        """A guest has no account to upgrade. `login_required` is what routes the modal to signup."""
+        src = self._source()
+        assert "code=LOGIN_REQUIRED" in src
+
+    def test_the_guest_copy_is_daily(self):
+        src = self._source()
+        assert "today's free sonic searches" in src

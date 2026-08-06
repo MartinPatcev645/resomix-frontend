@@ -237,3 +237,39 @@ class TestTheAdminPathCannotClobberTheListPrice:
         from app.services.admin_entitlement_service import AdminEntitlementService
 
         assert '"price_kind"' in inspect.getsource(AdminEntitlementService._price_meta)
+
+
+@pytest.mark.asyncio
+class TestOnlyFoundingPricesExist:
+    """The configuration actually being deployed: only the €7.99 / €69 founding prices are created,
+    with no list prices behind them.
+
+    That is coherent — no list price means no rollover, so the subscription simply stays at the
+    founding rate. But it puts a time bomb on BETA_END_DATE: once the window closes,
+    `resolve_offer_price` would look for a list price, find nothing, and return None — which is a
+    dead checkout button and a pricing page with a blank where the number goes. Nothing fails
+    loudly; it just stops selling.
+    """
+
+    ONLY_FOUNDING = {("month", "EUR", PriceKind.FOUNDING): FOUNDING}
+
+    async def test_it_sells_while_the_window_is_open(self):
+        price = await _service(self.ONLY_FOUNDING).resolve_offer_price(None, 1, "EUR")
+        assert price.unit_amount_cents == 799
+
+    async def test_it_STILL_sells_after_the_window_closes(self):
+        """The important one. Selling at the old price beats not selling."""
+        price = await _service(self.ONLY_FOUNDING, founding_open=False).resolve_offer_price(
+            None, 1, "EUR"
+        )
+        assert price is not None
+        assert price.unit_amount_cents == 799
+
+    async def test_a_list_price_still_wins_once_the_window_closes(self):
+        """The fallback must not shadow a list price that DOES exist — otherwise creating one
+        later would have no effect."""
+        price = await _service(BOTH, founding_open=False).resolve_offer_price(None, 1, "EUR")
+        assert price.unit_amount_cents == 999
+
+    async def test_no_prices_at_all_is_still_nothing(self):
+        assert await _service({}, founding_open=False).resolve_offer_price(None, 1, "EUR") is None

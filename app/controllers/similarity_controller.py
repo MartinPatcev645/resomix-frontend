@@ -33,7 +33,7 @@ from app.services.audio_service import AudioService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
 from app.services.antivirus_service import AntivirusService
 from app.utils.demo_mode_utils import apply_demo_mode_redaction
-from app.utils.quota_response import operation_limit_response
+from app.utils.quota_response import LOGIN_REQUIRED, operation_limit_response, quota_denied_response
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 from app.services.entitlement_gate import EntitlementGate
@@ -1246,19 +1246,26 @@ class SimilarityController:
                         existing.uuid, repeat.get("error"),
                     )
 
-            # Guests: enforce the monthly playlist limit (peek now, record on success below).
+            # Guests: enforce the DAILY search allowance (peek now, record on success below).
+            #
+            # 402 with the same body a logged-in denial uses, not the old bespoke 403. Two reasons:
+            # the frontend opens its upgrade/signup modal on a 402 and would have shown a guest
+            # nothing at all; and the copy said "this month's", which stopped being true when the
+            # window went daily in A2 — a guest was told to wait a month for an allowance that
+            # returns at midnight.
             if current_user is None:
                 pg = await self.entitlement_gate.peek_allowed(
                     db, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH, visitor_id=gate_visitor_id
                 )
                 if not pg.allowed:
-                    return JSONResponse(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        content=format_response(
-                            success=False,
-                            error="You've reached this month's free playlist limit. Log in to create more.",
-                            reason=pg.reason,
+                    return quota_denied_response(
+                        pg,
+                        code=LOGIN_REQUIRED,
+                        message=(
+                            "You've used today's free sonic searches. They come back tomorrow — "
+                            "or create a free account to save playlists and analyse your own tracks."
                         ),
+                        upgrade=None,
                     )
 
         # Check operation limits before processing - only if user is logged in

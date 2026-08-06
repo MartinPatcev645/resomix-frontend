@@ -108,11 +108,28 @@ class BillingService:
         prices have to be created in Stripe first (F1 is an operator task). Until then the window
         being open changes nothing, rather than breaking checkout.
         """
-        if self.beta_window()["founding_active"]:
-            founding = await self._active_price(db, plan_id, currency, interval, PriceKind.FOUNDING)
-            if founding:
-                return founding
-        return await self._active_price(db, plan_id, currency, interval, PriceKind.LIST)
+        founding = await self._active_price(db, plan_id, currency, interval, PriceKind.FOUNDING)
+        if self.beta_window()["founding_active"] and founding:
+            return founding
+
+        list_price = await self._active_price(db, plan_id, currency, interval, PriceKind.LIST)
+        if list_price:
+            return list_price
+
+        # The window has closed and nobody ever created a list price. Keep selling at the founding
+        # rate rather than returning None — None means "no active price for this plan", which is a
+        # dead checkout button and a pricing page with a blank where the number should be.
+        #
+        # This is a real configuration today: only the founding prices are being created, so on
+        # BETA_END_DATE this branch is the difference between "still sells, at the old price" and
+        # "cannot sell at all", with nothing failing loudly in between.
+        if founding:
+            logger.warning(
+                "BILLING: founding window closed and no %s list price for plan %s/%s — "
+                "still selling the founding price. Create a list price to roll customers onto.",
+                interval, plan_id, currency,
+            )
+        return founding
 
     async def active_subscription(self, db: AsyncSession, user: User) -> Optional[UserSubscription]:
         return (
