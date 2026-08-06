@@ -62,10 +62,7 @@ class PlaylistEmbedController:
         # Ownership, not just existence. Minting a token for someone else's playlist would recreate
         # the exact hole this endpoint closes, only with a token attached.
         if playlist is None or playlist.user_id != current_user.id:
-            return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=format_response(success=False, error="Playlist not found."),
-            )
+            return self._not_yours(playlist)
 
         row = await self.embed_service.mint(db, playlist.id, current_user.id)
         return JSONResponse(
@@ -89,10 +86,7 @@ class PlaylistEmbedController:
             db, playlist_uuid
         )
         if playlist is None or playlist.user_id != current_user.id:
-            return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=format_response(success=False, error="Playlist not found."),
-            )
+            return self._not_yours(playlist)
 
         revoked = await self.embed_service.revoke(db, playlist.id)
         return JSONResponse(
@@ -140,6 +134,31 @@ class PlaylistEmbedController:
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content=format_response(success=True, data=result["data"]),
+        )
+
+    @staticmethod
+    def _not_yours(playlist) -> JSONResponse:
+        """Why the owner-only rule refused, in words that tell the caller what to do.
+
+        "Playlist not found" is accurate but useless when the playlist plainly exists — which is
+        exactly what a guest-created playlist looks like: it is public and openable, but its
+        ``user_id`` is NULL, so nobody owns it and nobody can ever embed it. Saying so beats
+        letting someone conclude the endpoint is broken.
+
+        Still a 404 rather than a 403: to a stranger, "this exists but is not yours" and "this does
+        not exist" must stay indistinguishable, or the endpoint becomes a way to test which UUIDs
+        are real.
+        """
+        if playlist is not None and playlist.user_id is None:
+            message = (
+                "This playlist was created without an account, so it has no owner and can't be "
+                "embedded. Create it again while signed in to embed it."
+            )
+        else:
+            message = "You can only embed a playlist you own."
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content=format_response(success=False, error=message),
         )
 
     @staticmethod

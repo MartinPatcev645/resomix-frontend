@@ -865,7 +865,16 @@ class PlaylistService:
                     db, user_id, page, page_size, filters, partner_id=partner_id
                 )
             )
-            return {"success": True, "data": playlists, "total": total}
+            # `total` counts what this filtered listing matched. `library_total` counts everything
+            # the user owns, hidden included — the two together are what lets the Library say
+            # "5 of 18 shown" instead of silently dropping the 13 beyond the cap.
+            library_total = await self.playlist_repository.count_owned(db, user_id)
+            return {
+                "success": True,
+                "data": playlists,
+                "total": total,
+                "library_total": library_total,
+            }
         except Exception as e:
             print(f"Error getting all user playlists: {e}")
             return {

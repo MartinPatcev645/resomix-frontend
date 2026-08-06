@@ -1,10 +1,22 @@
 """
-Seed the consumer Pro plan's Stripe price into plan_prices (and activate the pro plan).
+Seed the consumer Pro plan's **list** Stripe price into plan_prices (and activate the pro plan).
 
 Idempotent. Pulls the authoritative amount/currency/product from Stripe given the bootstrap price ID
 in STRIPE_PRICE_PRO_MONTHLY_EUR, so plan_prices mirrors Stripe exactly. Safe to re-run.
 
     python scripts/seed_consumer_pro_price.py
+
+⚠️ THIS SCRIPT ONLY EVER TOUCHES THE `list` PRICE.
+
+Since pricing v2.1 a plan can hold a `founding` AND a `list` price for the same interval and
+currency (see PriceKind). This script is the original bootstrap and predates that, so it is pinned
+to `list` explicitly — without the pin its lookup would match whichever row came first and could
+overwrite the founding price with the list one.
+
+**Founding prices are not seeded here.** Attach them through the admin API, which takes the kind:
+
+    POST /admin/entitlements/plans/pro/prices
+    { "stripe_price_id": "price_...", "interval": "month", "price_kind": "founding" }
 """
 import asyncio
 
@@ -12,6 +24,7 @@ import stripe
 from sqlalchemy import select
 
 from app.core.config import settings
+from app.core.entitlement_keys import PriceKind
 from database.connection import AsyncSessionLocal
 from app.models.plan import Plan, PlanPrice
 
@@ -46,6 +59,7 @@ async def main() -> None:
                     PlanPrice.plan_id == plan.id,
                     PlanPrice.interval == interval,
                     PlanPrice.currency == currency,
+                    PlanPrice.price_kind == PriceKind.LIST,
                 )
             )
         ).scalar_one_or_none()
@@ -62,6 +76,7 @@ async def main() -> None:
                     plan_id=plan.id,
                     interval=interval,
                     currency=currency,
+                    price_kind=PriceKind.LIST,
                     unit_amount_cents=amount,
                     stripe_price_id=price_id,
                     stripe_product_id=product,
@@ -72,7 +87,7 @@ async def main() -> None:
 
         await db.commit()
         print(
-            f"plan_price {action}: pro (active={plan.is_active}) → {price_id} "
+            f"plan_price {action}: pro list price (active={plan.is_active}) → {price_id} "
             f"{currency} {amount} /{interval} product={product}"
         )
 

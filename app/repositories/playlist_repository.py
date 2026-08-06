@@ -97,6 +97,20 @@ class PlaylistRepository(BaseRepository[Playlist]):
         )
         return current.scalar() or 0
 
+    async def count_owned(self, db: AsyncSession, user_id: int) -> int:
+        """Every playlist the user owns, listed or not (soft-deleted excluded).
+
+        Deliberately ignores `is_library_visible` AND any list filters. It is the denominator in
+        the Library's "5 of 18 shown", so it has to mean "everything you have" — a number that
+        moved when you typed in the search box would make the cap look like it was changing.
+        """
+        result = await db.execute(
+            select(func.count())
+            .select_from(Playlist)
+            .where(Playlist.user_id == user_id, Playlist.deleted_at.is_(None))
+        )
+        return result.scalar() or 0
+
     async def find_same_day_similarity(
         self,
         db: AsyncSession,

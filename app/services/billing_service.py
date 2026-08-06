@@ -41,8 +41,13 @@ logger = logging.getLogger(__name__)
 # visitor can buy or be assigned by choice — it is the logged-out state.
 PUBLIC_PLAN_CODES = (PlanCode.FREE, PlanCode.BASIC, PlanCode.PRO, PlanCode.MAX)
 
-# Counted features surfaced in the "Plan & Billing" usage meters.
-_USAGE_FEATURES = (FeatureKey.UPLOADS_PER_MONTH, FeatureKey.SEARCH_PLAYLISTS_PER_MONTH)
+# Counted features surfaced in the "Plan & Billing" usage meters — the same set the workspace
+# usage chip shows, so the two never disagree about what someone has spent.
+_USAGE_FEATURES = (
+    FeatureKey.SEARCH_PLAYLISTS_PER_MONTH,
+    FeatureKey.UPLOADS_PER_MONTH,
+    FeatureKey.EXPORTS_PER_DAY,
+)
 
 # Countries billed in USD (everything else → EUR). Extend as needed; USD prices must exist in
 # plan_prices for these to actually resolve to USD (otherwise we fall back to EUR).
@@ -550,6 +555,24 @@ class BillingService:
             # raw entitlement through, so a Pro row rendered its cap as **-1** on the "Plan &
             # Billing" screen. `used` now reports for unlimited plans too, since those are counted.
             usage.append({"feature": fk, "used": snapshot.used, "limit": snapshot.limit})
+
+        # The Library cap is a database count, not a Redis counter — there is no window and no
+        # reset, so it cannot come from `usage_snapshot`. Appended here so the profile shows the
+        # same four figures as the workspace chip.
+        library_max = await self.entitlements.get_int(
+            db, FeatureKey.LIBRARY_PLAYLISTS_MAX, user=user
+        )
+        try:
+            from app.repositories.playlist_repository import PlaylistRepository
+
+            library_used = await PlaylistRepository().count_library_visible(db, user.id)
+        except Exception:  # pragma: no cover — a meter must never break the billing screen
+            library_used = None
+        usage.append({
+            "feature": FeatureKey.LIBRARY_PLAYLISTS_MAX,
+            "used": library_used,
+            "limit": None if library_max < 0 else library_max,
+        })
 
         subscription = None
         if row is not None:
