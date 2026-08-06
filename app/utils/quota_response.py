@@ -43,8 +43,8 @@ PLAN_REQUIRED = "plan_required"              # the capability is not on this pla
 LOGIN_REQUIRED = "login_required"            # guest hit a signed-in-only capability
 
 
-def _iso(dt: Optional[datetime]) -> Optional[str]:
-    """Absolute ISO-8601 with an explicit offset.
+def iso_utc(dt: Optional[datetime]) -> Optional[str]:
+    """Absolute ISO-8601 with an explicit offset. Shared with ``/entitlements/me``'s ``resets``.
 
     The window is computed in naive UTC to match the DB columns, so the tz is attached here. It
     matters: the client renders this in the visitor's local time, and a timestamp with no offset
@@ -72,7 +72,7 @@ def quota_denied_response(
         "metric": gate.metric,
         "used": gate.count,
         "limit": gate.limit,
-        "resets_at": _iso(gate.resets_at),
+        "resets_at": iso_utc(gate.resets_at),
         "upgrade": upgrade,
     }
     return JSONResponse(

@@ -119,11 +119,22 @@ class TestConcurrencySafety:
 
 
 @pytest.mark.asyncio
-class TestWiredIntoBothCountedPaths:
-    async def test_consume_and_peek_both_rehydrate(self):
-        """The meter shown in the UI comes from peek and enforcement from consume. If only one
-        rehydrated, the chip and the 402 would disagree after an eviction."""
+class TestWiredIntoEveryCountedPath:
+    """Enforcement comes from `try_consume`, the pre-flight check from `peek_allowed`, and the
+    usage chip from `usage_snapshot`. If any one of them skipped the rehydrate, an eviction would
+    make them disagree — the chip reporting 0 used while the gate returns 402, or the reverse."""
+
+    @pytest.mark.parametrize("method", ["try_consume", "peek_allowed", "usage_snapshot"])
+    async def test_the_path_rehydrates(self, method):
+        import inspect
+
+        src = inspect.getsource(getattr(EntitlementGate, method))
+        assert "await self._rehydrate_if_evicted(" in src
+
+    async def test_no_counted_path_was_added_without_one(self):
+        """A count, so a new method that reads a counter cannot quietly skip the rehydrate."""
         import inspect
 
         src = inspect.getsource(EntitlementGate)
-        assert src.count("await self._rehydrate_if_evicted(") == 2
+        assert src.count("await self._usage.peek(") + src.count("await self._usage.try_consume(") == 3
+        assert src.count("await self._rehydrate_if_evicted(") == 3

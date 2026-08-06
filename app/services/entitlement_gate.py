@@ -37,9 +37,13 @@ from app.services import entitlement_metrics
 # Sentinel for a counted feature with no ceiling (Pro searches, exports, library).
 #
 # `0` already means "denied" and is relied on across the seeded data, so it could not be reused.
-# `-1` short-circuits BEFORE Redis: an unlimited feature is never counted, which also removes a
-# pointless INCR from Pro's hot path. No existing row is negative, so nothing changes for the
-# values in production today.
+# No existing row is negative, so nothing changes for the values in production today.
+#
+# UNLIMITED MEANS "NEVER DENIED", NOT "NEVER MEASURED. An unlimited feature is still counted: only
+# the comparison against the limit is skipped. Pro consumption is reported on /entitlements/me and
+# is how we find out whether the fair-use position holds — a plan whose usage we cannot see is a
+# plan we cannot price. (This reverses the original Phase A shortcut, which skipped Redis entirely
+# to save an INCR on Pro's hot path. One Redis op per action is the right price for that visibility.)
 UNLIMITED = -1
 
 REASON_LOGIN = "login_required"      # guest → sign up for more
@@ -57,6 +61,29 @@ class GateResult:
     # the window. `metric` is the feature key; `resets_at` is when the allowance returns.
     metric: Optional[str] = None
     resets_at: Optional[datetime] = None
+
+
+@dataclass
+class UsageSnapshot:
+    """A counted feature's state, for reporting rather than enforcement.
+
+    ``limit is None`` = unlimited. ``used is None`` = not counted / not readable — never "zero".
+    """
+    feature_key: str
+    limit: Optional[int] = None
+    used: Optional[int] = None
+    resets_at: Optional[datetime] = None
+
+    @property
+    def remaining(self) -> Optional[int]:
+        """What is left, floored at 0. ``None`` when either side is unknown.
+
+        Floored because a limit can drop below existing usage — a Pro downgrade, or an admin
+        lowering a plan — and "-3 left" is not something to put in front of a user.
+        """
+        if self.limit is None or self.used is None:
+            return None
+        return max(0, self.limit - self.used)
 
 
 def _deny(
@@ -184,10 +211,11 @@ class EntitlementGate:
     async def try_consume(
         self, db: AsyncSession, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
     ) -> GateResult:
-        """Atomically reserve one unit of a daily-counted feature vs the caller's limit."""
+        """Atomically reserve one unit of a counted feature vs the caller's limit.
+
+        Unlimited (``-1``) is never denied but IS counted — see ``_count_unlimited``.
+        """
         limit = await self._entitlements.get_int(db, feature_key, user=user, visitor_id=visitor_id)
-        if limit < 0:
-            return GateResult(True, limit=limit)      # unlimited — never counted
         if limit == 0:
             return _deny(user, limit=limit, count=0)
 
@@ -198,6 +226,10 @@ class EntitlementGate:
 
         start, end, period_key, ttl = await self._window(db, user, visitor_id, feature_key)
         await self._rehydrate_if_evicted(db, subject, feature_key, start, period_key, ttl)
+
+        if limit < 0:
+            return await self._count_unlimited(subject, feature_key, period_key, ttl)
+
         result = await self._usage.try_consume(subject[0], subject[1], feature_key, limit, period_key, ttl)
         if result is None:
             # Redis unavailable → fail open (soft limit must not block on infra failure).
@@ -230,8 +262,6 @@ class EntitlementGate:
         refund complexity on the many early-return failure paths. Fails open if Redis is down.
         """
         limit = await self._entitlements.get_int(db, feature_key, user=user, visitor_id=visitor_id)
-        if limit < 0:
-            return GateResult(True, limit=limit)      # unlimited — never counted
         if limit == 0:
             return _deny(user, limit=limit, count=0)
         subject = self._subject(user, visitor_id)
@@ -240,12 +270,63 @@ class EntitlementGate:
         start, end, period_key, ttl = await self._window(db, user, visitor_id, feature_key)
         await self._rehydrate_if_evicted(db, subject, feature_key, start, period_key, ttl)
         count = await self._usage.peek(subject[0], subject[1], feature_key, period_key)
+        if limit < 0:
+            # Unlimited: report what has been used, never deny on it.
+            return GateResult(True, limit=limit, count=count)
         if count is None:
             entitlement_metrics.incr("gate.fail_open")
             return GateResult(True, limit=limit)  # Redis down → fail open
         if count >= limit:
             return _deny(user, limit=limit, count=count, metric=feature_key, resets_at=end)
         return GateResult(True, limit=limit, count=count)
+
+    async def _count_unlimited(
+        self, subject: Tuple[str, str], feature_key: str, period_key: str, ttl: int
+    ) -> GateResult:
+        """Record a use of an unlimited feature and allow it.
+
+        Unlimited means "never denied", NOT "never measured". Pro usage is reported on
+        ``/entitlements/me`` and is what tells us whether the fair-use position holds — a plan whose
+        consumption we cannot see is a plan we cannot price. So the INCR happens for ``-1`` too;
+        only the *comparison* is skipped.
+
+        A failed INCR still allows: this feature has no ceiling, so there is nothing a counter
+        failure could legitimately deny.
+        """
+        count = await self._usage.increment(subject[0], subject[1], feature_key, period_key, ttl)
+        return GateResult(True, limit=UNLIMITED, count=count)
+
+    async def usage_snapshot(
+        self, db: AsyncSession, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
+    ) -> "UsageSnapshot":
+        """Read a counted feature's limit / usage / reset time **without consuming or denying**.
+
+        Separate from ``peek_allowed`` on purpose. That method answers "may this operation proceed",
+        so it returns a denial once the allowance is spent — a shape a reporting endpoint would have
+        to unpick. This one only reports, and the difference matters where the two disagree: a user
+        at exactly their limit is a **denial** to `peek_allowed` and simply ``used == limit`` here.
+
+        ``None`` never means zero:
+          * ``limit is None``  — unlimited. JSON has no sentinel, and sending ``-1`` to the client
+            invites it to render "3/-1". **Usage is still reported**: unlimited features are
+            counted like every other, because a plan whose consumption we cannot see is a plan we
+            cannot price.
+          * ``used is None``   — genuinely not readable (no identity to count against, or Redis is
+            down). Reporting ``0`` there would be a fabricated number that looks like data.
+        """
+        limit = await self._entitlements.get_int(db, feature_key, user=user, visitor_id=visitor_id)
+        reported_limit = None if limit < 0 else limit
+
+        subject = self._subject(user, visitor_id)
+        if subject is None:
+            return UsageSnapshot(feature_key, limit=reported_limit, used=None, resets_at=None)
+
+        start, end, period_key, ttl = await self._window(db, user, visitor_id, feature_key)
+        await self._rehydrate_if_evicted(db, subject, feature_key, start, period_key, ttl)
+        used = await self._usage.peek(subject[0], subject[1], feature_key, period_key)
+        # `end` is reported even when unlimited: `used` is scoped to a period, so without it the
+        # number has no meaning — "12 searches" over what, exactly?
+        return UsageSnapshot(feature_key, limit=reported_limit, used=used, resets_at=end)
 
     async def record_use(
         self, db, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None

@@ -77,7 +77,15 @@ class PlaylistRepository(BaseRepository[Playlist]):
             return True
         if cap == 0:
             return False
+        return await self.count_library_visible(db, user_id) < cap
 
+    async def count_library_visible(self, db: AsyncSession, user_id: int) -> int:
+        """How many playlists the owner currently has LISTED in their Library.
+
+        One definition, two callers: the visibility decision at creation and the ``usage`` block on
+        ``/entitlements/me``. If they counted differently the chip would say "4/5" while the sixth
+        playlist came back hidden, and nobody would be able to tell which was lying.
+        """
         current = await db.execute(
             select(func.count())
             .select_from(Playlist)
@@ -87,7 +95,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 Playlist.deleted_at.is_(None),
             )
         )
-        return (current.scalar() or 0) < cap
+        return current.scalar() or 0
 
     async def find_same_day_similarity(
         self,

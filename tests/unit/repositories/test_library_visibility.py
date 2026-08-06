@@ -112,5 +112,15 @@ class TestListingFilter:
         import inspect
 
         src = inspect.getsource(PlaylistRepository._resolve_library_visibility)
+        src += inspect.getsource(PlaylistRepository.count_library_visible)
         assert "deleted_at" in src, "the COUNT must exclude soft-deleted rows"
         assert "delete" not in src.lower().replace("deleted_at", ""), "must not delete anything"
+
+    async def test_the_count_has_one_definition(self):
+        """The visibility decision and the `library_playlists_used` figure on /entitlements/me must
+        count the same thing. Two independent COUNTs would eventually disagree, and the chip would
+        say "4/5" while the sixth playlist came back hidden."""
+        import inspect
+
+        src = inspect.getsource(PlaylistRepository._resolve_library_visibility)
+        assert "count_library_visible" in src, "must delegate, not re-implement the COUNT"

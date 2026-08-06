@@ -38,6 +38,7 @@ from app.models.track_analysis_result import (
 from app.models.user import User
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
+from app.services.analysis_projection import project_summary
 from app.services.analysis_service import AnalysisService
 from app.services.antivirus_service import AntivirusService
 from app.services.entitlement_gate import EntitlementGate
@@ -45,6 +46,7 @@ from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.services.track_analysis_result_service import TrackAnalysisResultService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
 from app.utils.edge_auth import generate_analysis_token
+from app.utils.quota_response import plan_required_response
 from app.utils.response_utils import format_response
 
 logger = logging.getLogger(__name__)
@@ -167,6 +169,17 @@ class AnalysisResultController:
         The token embeds this ``analysis_uuid`` + ``scope="analysis"`` + ip + exp; the frontend
         calls ``{hetzner_media_base}/analysis/{analysis_uuid}?token=…`` and Hetzner enforces the
         id match. Refusing to mint (not owner / not public) is what withholds access.
+
+        ⚠️ THIS IS THE BYPASS PATH FOR ``can_view_full_analysis``. What the token buys is the **raw
+        cached JSON straight from the analysis service** — the whole document, with no opportunity
+        to project it, because Alwyzon is not in that request at all. Gating ``get_result`` while
+        leaving this open would mean the full dashboard was one extra call away for everyone.
+        So the mint carries the same entitlement check, and refusing to mint is again what
+        withholds access.
+
+        The client already handles this: ``alwyzonFinalResult`` prefers the cache and falls back to
+        the proxy on any failure, so a free user's failed mint lands on the projected result rather
+        than an error.
         """
         row = await self.service.get_by_analysis_uuid(db, analysis_uuid)
         if row is None:
@@ -181,6 +194,18 @@ class AnalysisResultController:
                     success=False,
                     error="You don't have access to this analysis.",
                     reason="forbidden",
+                ),
+            )
+
+        full_gate = await self.entitlement_gate.check_boolean(
+            db, FeatureKey.CAN_VIEW_FULL_ANALYSIS, user=current_user
+        )
+        if not full_gate.allowed:
+            return plan_required_response(
+                full_gate,
+                message=(
+                    "Full Track Intelligence is a Pro feature. Your summary — BPM, key, energy "
+                    "and structure — stays free."
                 ),
             )
 
@@ -375,7 +400,14 @@ class AnalysisResultController:
     async def get_result(
         self, db: AsyncSession, analysis_id: str, current_user: Optional[User]
     ) -> JSONResponse:
-        """Proxy the (partial or full) canonical result (owner-or-public via the summary row)."""
+        """Proxy the canonical result (owner-or-public), projected to the caller's plan.
+
+        ``can_view_full_analysis`` is a page boundary, not an on/off switch for this endpoint. The
+        summary card and the full dashboard are both built from this payload, so REFUSING the
+        request would take the card away from the free user who is entitled to it. A caller without
+        the entitlement gets the card's fields and nothing else — withheld in the payload, not
+        hidden in the UI.
+        """
         row = await self.service.get_by_analysis_uuid(db, analysis_id)
         if row is None:
             return self._reject(404, "Analysis not found.")
@@ -387,8 +419,32 @@ class AnalysisResultController:
             if result.get("status_code") == 404:
                 return self._reject(404, "This analysis is no longer available.", reason="expired")
             return self._reject(502, result.get("message") or "Result fetch failed.", reason="upstream_error")
+
+        if not await self._may_view_full_analysis(db, current_user):
+            result = project_summary(result)
+
+        # After the projection, never before — the playback ids are plumbing the client needs on
+        # every plan, and the allow-list would drop them if they were attached first.
         result = await self._attach_playback_refs(db, row, result)
         return JSONResponse(status_code=200, content=format_response(success=True, data=result))
+
+    async def _may_view_full_analysis(
+        self, db: AsyncSession, current_user: Optional[User]
+    ) -> bool:
+        """Whether this caller gets the whole dashboard.
+
+        Fails **open** on an entitlement lookup error, matching the rest of the gate layer: this is
+        an upsell boundary, not a security one, and the alternative is silently serving a paying
+        subscriber a stripped result with no error anywhere to explain it.
+        """
+        try:
+            gate = await self.entitlement_gate.check_boolean(
+                db, FeatureKey.CAN_VIEW_FULL_ANALYSIS, user=current_user
+            )
+            return gate.allowed
+        except Exception as exc:  # pragma: no cover — never fail a result on the gate
+            logger.warning("ANALYSIS: full-analysis entitlement lookup failed: %s", exc)
+            return True
 
     # ------------------------------------------------------------------ #
     # helpers
