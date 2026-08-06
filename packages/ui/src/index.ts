@@ -88,6 +88,8 @@ import { PlanBillingCard } from "./Billing/PlanBillingCard";
 import { ConsumerPricingContent } from "./Billing/ConsumerPricingContent";
 import { PartnerPricingContent } from "./Billing/PartnerPricingContent";
 import { PricingContent } from "./Billing/PricingContent";
+import { FoundingBadge, daysRemaining } from "./Billing/FoundingBadge";
+import { planFeatures } from "./Billing/planFeatures";
 import RegisterContent from "./Content/RegisterContent";
 import ForgotPasswordContent from "./Content/ForgotPasswordContent";
 import ResetPasswordContent from "./Content/ResetPasswordContent";
@@ -177,6 +179,9 @@ export {
   GoogleSignInButton,
   GoogleOneTap,
   PlanBillingCard,
+  FoundingBadge,
+  daysRemaining,
+  planFeatures,
   ConsumerPricingContent,
   PartnerPricingContent,
   PricingContent,

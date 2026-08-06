@@ -13,6 +13,8 @@ export * from './Entitlements/useEntitlements';
 export * from './Entitlements/useAccess';
 export * from './Entitlements/useTrackCountOptions';
 export * from './Entitlements/useUsageChip';
+export * from './Entitlements/quotaCopy';
+export * from './Entitlements/useQuotaDenial';
 export { useCustomPeaks } from "./Waveform/useCustomPeaks";
 export { loadPeaksData } from "./Waveform/peaksCache";
 export * from './Playlist/usePlaylistLoader';

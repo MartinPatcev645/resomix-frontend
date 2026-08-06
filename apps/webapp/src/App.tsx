@@ -5,6 +5,7 @@ import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
 import { ProtectedRoute, GuestRoute, WebLayout, SessionExpiredModal, RouteFallback } from "@/components/index.ts";
+import { QuotaDenialModal } from "@/components/Entitlements/QuotaDenialModal.tsx";
 import { RouteMeta } from "@/components/RouteMeta.tsx";
 import { AppBackground } from "@/components/Layout/AppBackground.tsx";
 import { MetricsOverlay } from "@/components/metrics/MetricsOverlay.js";
@@ -138,6 +139,11 @@ function App() {
       {/* Server-invalidated session → "log in again" modal. Mounted once, covers every route
           (desktop + mobile); raised in every tab via the reason-carrying logout broadcast. */}
       <SessionExpiredModal />
+
+      {/* Any 402 from the API → the matching upgrade prompt. Mounted ONCE and driven by the API
+          layer, so a metered endpoint gets the right modal without its call site knowing about
+          quotas — and the next one added cannot ship without one. */}
+      <QuotaDenialModal />
 
       <Suspense fallback={<RouteFallback />}>
         {/* Title, description, canonical and social tags for the current route. */}

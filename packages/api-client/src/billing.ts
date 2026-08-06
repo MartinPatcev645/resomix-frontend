@@ -20,12 +20,43 @@ export interface BillingPlanDisplay {
   purchasable: boolean;
   coming_soon: boolean;
   is_current: boolean;
+  /** What the plan actually gives. Absent from an older server — render defensively. */
+  limits?: BillingPlanLimits;
+}
+
+/**
+ * A plan's limits, resolved from the same rows that enforce them.
+ *
+ * `null` = unlimited (the server maps its `-1` sentinel, so nothing here can print "-1 a day").
+ * `0` is a real limit meaning "not included" — that is how the free row says what it does not have,
+ * so it must not be treated as falsy-unlimited.
+ */
+export interface BillingPlanLimits {
+  searches_per_day: number | null;
+  uploads_per_month: number | null;
+  /** Tracks unlocked in a result. */
+  top_sk_max: number | null;
+  /** Tracks selectable in the depth dropdown. */
+  dropdown_max_tracks: number | null;
+  library_playlists_max: number | null;
+  exports_per_day: number | null;
+  export_track_limit: number | null;
+  can_view_full_analysis: boolean;
+  can_similarity_upload: boolean;
+}
+
+/** The founding-offer window. `founding_active` is the SERVER's answer — a client clock can be
+ *  wrong, and a countdown that disagrees with what checkout will sell is worse than none. */
+export interface BillingBetaWindow {
+  end_date: string | null;
+  founding_active: boolean;
 }
 
 export interface BillingPlansResponse {
   currency: string;
   current_plan_code: string | null;
   plans: BillingPlanDisplay[];
+  beta?: BillingBetaWindow;
 }
 
 export interface BillingUsageItem {

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import type { BillingPlansResponse } from "@resomix/api-client";
 import { PricingButton } from "./PricingButton";
 import { Chip, Eyebrow, PlanPanel, SectionBody, SectionHeading } from "./PricingChrome";
+import { FoundingBadge } from "./FoundingBadge";
+import { planFeatures } from "./planFeatures";
 
 /**
  * Consumer plans — rendered as the FIRST section of the unified pricing page (`PricingContent`).
@@ -113,6 +115,8 @@ export function ConsumerPricingContent() {
         <SectionBody className="mt-[var(--px-14)] max-w-[52ch]">
           Simple monthly plans for individual creators. Upgrade, downgrade or cancel anytime.
         </SectionBody>
+        {/* Only while the server says the founding window is open — see FoundingBadge. */}
+        <FoundingBadge beta={data?.beta} className="mt-[var(--px-20)]" />
       </header>
 
       {loading ? (
@@ -160,6 +164,27 @@ export function ConsumerPricingContent() {
                   <p className="m-0 font-helvetica text-[length:var(--px-13)] font-light leading-[1.65] text-[var(--color-primary-hover)]">
                     {PLAN_TAGLINES[p.code] || ""}
                   </p>
+
+                  {/* Rendered from the SAME rows that enforce these limits, so an admin raising a
+                      cap updates this page too. Hard-coded copy starts lying the first time a plan
+                      is edited — and nothing fails, which is why nobody notices. */}
+                  <ul className="m-0 list-none space-y-[var(--px-8)] p-0">
+                    {planFeatures(p.limits).map((f) => (
+                      <li
+                        key={f.key}
+                        className={`flex items-start gap-[var(--px-8)] font-helvetica text-[length:var(--px-13)] font-light leading-[1.5] ${
+                          f.included
+                            ? "text-[var(--color-primary-hover)]"
+                            : "text-[var(--color-primary-hover)] opacity-40"
+                        }`}
+                      >
+                        <span aria-hidden="true" className="text-[var(--color-neon-orange)]">
+                          {f.included ? "→" : "×"}
+                        </span>
+                        <span>{f.text}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
                 <div className="mt-[var(--px-24)]">
@@ -191,6 +216,14 @@ export function ConsumerPricingContent() {
           })}
         </div>
       )}
+
+      {/* Required for EU consumer pricing: the figure shown must be the figure charged. Stripe
+          resolves the exact rate at checkout, so this says VAT is included rather than quoting a
+          percentage that would be wrong outside one country. */}
+      <p className="m-0 max-w-[52ch] font-helvetica text-[length:var(--px-11)] font-light leading-[1.6] text-[var(--color-primary-hover)] opacity-70">
+        Prices include VAT where applicable. Cancel anytime — your plan stays active until the end
+        of the period you have paid for.
+      </p>
 
       {error && (
         <p className="font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] text-[var(--color-neon-orange)]">

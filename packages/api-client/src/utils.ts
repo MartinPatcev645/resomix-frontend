@@ -96,9 +96,17 @@ export const handleApiError = (error: AxiosError | Error): {
         if (first?.message) errorMessage = first.message;
       }
 
-      // The cached entitlements are stale the moment a 402 lands — the user just spent the thing
-      // the usage chip is displaying. Fire-and-forget; never awaited (see quotaEvents).
-      if (status === 402) emitQuotaDenied(apiError.code ?? null);
+      // A 402 is the one error the whole app reacts to identically: refresh the usage chip and
+      // open the upgrade modal. Emitted once here so no call site has to know that.
+      // Fire-and-forget; never awaited (see quotaEvents).
+      if (status === 402) {
+        emitQuotaDenied({
+          code: apiError.code ?? null,
+          error: errorMessage,
+          reason: apiError.reason ?? null,
+          quota: apiError.data?.metric ? apiError.data : null,
+        });
+      }
 
       return {
         success: false,

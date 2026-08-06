@@ -222,7 +222,7 @@ describe('a 402 refreshes the numbers', () => {
     await given();
     const callsBefore = getMyEntitlements.mock.calls.length;
 
-    emitQuotaDenied('quota_exceeded');
+    emitQuotaDenied({ code: 'quota_exceeded', error: 'x', reason: 'upgrade_required', quota: null });
 
     await waitFor(() => expect(getMyEntitlements.mock.calls.length).toBeGreaterThan(callsBefore));
   });
@@ -252,7 +252,7 @@ describe('a 402 refreshes the numbers', () => {
     expect(result.current.metrics.find((m) => m.key === 'searches')?.spent).toBe(false);
 
     getMyEntitlements.mockResolvedValue({ success: true, data: spent });
-    emitQuotaDenied('quota_exceeded');
+    emitQuotaDenied({ code: 'quota_exceeded', error: 'x', reason: 'upgrade_required', quota: null });
 
     await waitFor(() =>
       expect(result.current.metrics.find((m) => m.key === 'searches')?.spent).toBe(true),
@@ -266,7 +266,7 @@ describe('a 402 refreshes the numbers', () => {
     await given();
     const callsBefore = getMyEntitlements.mock.calls.length;
 
-    emitQuotaDenied(null);
+    emitQuotaDenied({ code: 'quota_exceeded', error: 'x', reason: 'upgrade_required', quota: null });
 
     await waitFor(() => expect(getMyEntitlements.mock.calls.length).toBe(callsBefore + 1));
   });
