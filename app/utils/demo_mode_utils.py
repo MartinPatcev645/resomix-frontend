@@ -62,11 +62,27 @@ def _redact_tracks(tracks: List[MutableMapping[str, Any]], visible_count: int) -
         if "id" in track and track["id"] is not None:
             track["id"] = _mask_id(str(track["id"]))
 
-        for key in ("label", "artist", "title"):
+        # Every free-text field that identifies the recording. `album` and `genre` were missing:
+        # Apple enrichment fills them from the real catalogue, so a scrambled title sitting next to
+        # "La French Touch - EP / House | Music | Dance" still names the record to anyone who knows
+        # it. Masking the title alone is not redaction, it is obfuscation.
+        for key in ("label", "artist", "title", "album", "genre"):
             if key in track and track[key]:
                 track[key] = _mask_text(str(track[key]))
 
+        # An ISRC is a globally unique key for the recording — one lookup turns it straight back
+        # into artist and title, which defeats everything above. Masked with the id pattern rather
+        # than the text pattern: `_mask_text` leaves digits alone, and an ISRC's digits carry its
+        # registration year and designation code.
+        if track.get("isrc"):
+            track["isrc"] = _mask_id(str(track["isrc"]))
+
+        # Constants, not scrambles: a real duration narrows the candidates a lot on its own, and
+        # unlike the text fields there is no way to mangle a number without it still being a number
+        # in the right neighbourhood.
         track["year"] = 2025
+        if "duration" in track:
+            track["duration"] = 300.0
 
         # Hidden tracks must not leak their Apple preview/artwork/deep-link — playback is gated
         # behind login. Null the Apple playback fields so the UI shows "log in to unlock".
