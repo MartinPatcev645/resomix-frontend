@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchPublicPlaylist,
+  readEmbedToken,
   readPlaylistUuid,
   APP_URL,
   type EmbedPlaylistData,
@@ -42,6 +43,8 @@ const ERROR_COPY: Record<string, string> = {
 
 export default function EmbedPlaylist() {
   const uuid = useMemo(() => readPlaylistUuid(), [])
+  // Owner-minted authorisation for THIS playlist to be embedded (G1).
+  const token = useMemo(() => readEmbedToken(), [])
   const [state, setState] = useState<LoadState>({ status: 'loading' })
 
   // One shared WaveSurfer player in the bottom bar; it owns the audio element internally.
@@ -59,14 +62,14 @@ export default function EmbedPlaylist() {
     }
     let cancelled = false
     setState({ status: 'loading' })
-    fetchPublicPlaylist(uuid).then((res) => {
+    fetchPublicPlaylist(uuid, token).then((res) => {
       if (cancelled) return
       setState(res.ok ? { status: 'ready', data: res.data } : { status: 'error', kind: res.error })
     })
     return () => {
       cancelled = true
     }
-  }, [uuid])
+  }, [uuid, token])
 
   // Reflect the loaded playlist in the tab title.
   useEffect(() => {

@@ -49,6 +49,7 @@ export interface ApiConfig {
     PLAYLIST_FORK: string;
     PLAYLIST_PLAY_SESSION: string;
     PLAYLIST_EXPORT: string;
+    PLAYLIST_EMBED_TOKEN: string;
     PLAYLISTS_GET_ALL: string;
     PLAYLIST_DELETE: string;
     PLAYLIST_COVER: string;
@@ -273,6 +274,8 @@ export const API_CONFIG: ApiConfig = {
     // Server-built export. The file is assembled backend-side so the plan's daily allowance and
     // track cap apply to the bytes; the browser only downloads what comes back.
     PLAYLIST_EXPORT: "/api/v1/playlists/{id}/export",
+    // Owner-minted authorisation for a playlist to be embedded (Pro).
+    PLAYLIST_EMBED_TOKEN: "/api/v1/playlists/{id}/embed-token",
     PLAYLISTS_GET_ALL: "/api/v1/playlists/get-all-playlists/",
     PLAYLIST_DELETE: "/api/v1/playlists",
     // Owner-only custom cover upload — full path is `${PLAYLIST_COVER}/${uuid}/cover`.

@@ -22,6 +22,11 @@ export interface BillingPlanDisplay {
   is_current: boolean;
   /** What the plan actually gives. Absent from an older server — render defensively. */
   limits?: BillingPlanLimits;
+  /** True when the price shown is the founding rate rather than the standing one. */
+  is_founding_price?: boolean;
+  /** The undiscounted price, for a struck-through comparison. Sent ONLY when it differs from
+   *  what is being charged, so the card can never advertise a saving of zero. */
+  list_unit_amount_cents?: number | null;
 }
 
 /**
@@ -131,10 +136,17 @@ export const getBillingInvoices = async () => {
 };
 
 /** Start a Stripe subscription Checkout; returns the hosted URL to redirect to. */
-export const startBillingCheckout = async (planCode: string) => {
+/**
+ * Start a subscription checkout.
+ *
+ * `consent` is the EU 14-day withdrawal waiver and the server **refuses without it** — it writes an
+ * audit row before calling Stripe, so a session cannot exist with no record behind it. Passing it
+ * here is the caller asserting the user ticked the box; never default it to true.
+ */
+export const startBillingCheckout = async (planCode: string, consent: boolean) => {
   try {
     return await axiosWrapper<Envelope<{ url: string }>>(
-      authClient.post(API_CONFIG.ENDPOINTS.BILLING_CHECKOUT, { plan_code: planCode })
+      authClient.post(API_CONFIG.ENDPOINTS.BILLING_CHECKOUT, { plan_code: planCode, consent })
     );
   } catch (error) {
     return handleApiError(error as Error);

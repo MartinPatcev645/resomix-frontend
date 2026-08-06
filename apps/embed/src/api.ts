@@ -1,6 +1,13 @@
-// Minimal, dependency-free client for the ONE public endpoint the embed needs.
-// The endpoint allows anonymous access (falls back to public Partner 1) and only ever returns
-// PUBLIC playlists — so no auth, no API key, no cookies.
+// Minimal, dependency-free client for the ONE endpoint the embed needs.
+//
+// It talks to a DEDICATED embed route that requires a token minted by the playlist's owner
+// (pricing v2.1, G1). It used to call the general public-playlist route with no credential of any
+// kind, which meant anyone could drop someone else's public playlist UUID into an embed URL and
+// render it — while embedding was being sold as a Pro feature. The gate was on the button; the
+// data was not behind it.
+//
+// The token is not authentication and unlocks nothing private: the playlist must still be public.
+// It records that the owner authorised THIS playlist to be embedded, and it can be revoked.
 
 const API_BASE: string =
   (import.meta.env.VITE_SERVER_BACKEND as string | undefined)?.replace(/\/$/, '') ||
@@ -49,13 +56,20 @@ type Result =
 // all share this fake id (no preview/art). We drop those and surface a "+N more" CTA instead.
 const isRedacted = (t: EmbedTrack): boolean => !t?.id || String(t.id).startsWith('dEm0')
 
-/** Fetch a public playlist's tracks by UUID. */
-export async function fetchPublicPlaylist(uuid: string): Promise<Result> {
+/**
+ * Fetch an embedded playlist's tracks by UUID + token.
+ *
+ * Every server-side refusal is a 404 with the same body — unknown token, revoked token, token for a
+ * different playlist, playlist no longer public. That is deliberate on an unauthenticated endpoint,
+ * so we cannot tell the viewer *which* it was either; `not_found` covers all of them.
+ */
+export async function fetchPublicPlaylist(uuid: string, token: string | null): Promise<Result> {
+  if (!token) return { ok: false, error: 'not_found' }
   try {
-    const res = await fetch(`${API_BASE}/api/v1/playlists/similarity/${encodeURIComponent(uuid)}`, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-    })
+    const res = await fetch(
+      `${API_BASE}/api/v1/playlists/embed/${encodeURIComponent(uuid)}?t=${encodeURIComponent(token)}`,
+      { method: 'GET', headers: { Accept: 'application/json' } },
+    )
     if (res.status === 403) return { ok: false, error: 'not_public' }
     if (res.status === 404) return { ok: false, error: 'not_found' }
     if (!res.ok) return { ok: false, error: 'network' }
@@ -96,6 +110,17 @@ export function readPlaylistUuid(): string | null {
   if (q) return q.trim()
   const m = window.location.pathname.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)
   return m ? m[1] : null
+}
+
+/**
+ * Embed token from the URL (`?t=`). Minted by the playlist's owner and pasted into the snippet.
+ *
+ * Absent means the snippet predates G1 (or was hand-assembled from a UUID) — the widget shows its
+ * normal "not available" state rather than rendering, which is the point of the change.
+ */
+export function readEmbedToken(): string | null {
+  const t = new URLSearchParams(window.location.search).get('t')
+  return t ? t.trim() : null
 }
 
 /** Theme from the URL (`?theme=light`), defaulting to dark. Passed by the embedder via the src. */

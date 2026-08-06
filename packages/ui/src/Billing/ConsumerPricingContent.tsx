@@ -41,6 +41,10 @@ export function ConsumerPricingContent() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [authed, setAuthed] = useState(false);
+  // EU 14-day withdrawal waiver. Starts UNTICKED, always — a pre-ticked consent box is not
+  // consent, and under the Consumer Rights Directive it is not valid. The server refuses without
+  // it regardless, so this only saves the user a pointless round-trip.
+  const [consented, setConsented] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -73,10 +77,14 @@ export function ConsumerPricingContent() {
       window.location.href = `/auth/login?redirect=${encodeURIComponent("/subscribe")}`;
       return;
     }
+    if (!consented) {
+      setError("Please confirm the statement below before subscribing.");
+      return;
+    }
     setBusy(code);
     try {
       const { startBillingCheckout } = await import("@resomix/api-client");
-      const res: any = await startBillingCheckout(code);
+      const res: any = await startBillingCheckout(code, consented);
       if (res?.success && res.data?.url) {
         window.location.href = res.data.url;
         return;
@@ -148,13 +156,20 @@ export function ConsumerPricingContent() {
                         Coming soon
                       </span>
                     ) : (
-                      <div className="flex items-baseline gap-[var(--px-4)]">
+                      <div className="flex flex-wrap items-baseline gap-[var(--px-6)]">
                         <span className="font-helvetica text-[length:var(--px-36)] font-bold leading-none tracking-tight text-[var(--color-text-secondary)]">
                           {price}
                         </span>
                         {!p.is_free && (
                           <span className="font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] text-[var(--color-primary-hover)] opacity-70">
                             / {p.interval === "year" ? "yr" : "mo"}
+                          </span>
+                        )}
+                        {/* The undiscounted price, struck through. The server only sends this when
+                            it actually differs, so the card can never claim a saving of zero. */}
+                        {p.list_unit_amount_cents != null && (
+                          <span className="font-helvetica text-[length:var(--px-14)] font-light text-[var(--color-primary-hover)] line-through opacity-60">
+                            {fmtMoney(p.list_unit_amount_cents, p.currency)}
                           </span>
                         )}
                       </div>
@@ -215,6 +230,27 @@ export function ConsumerPricingContent() {
             );
           })}
         </div>
+      )}
+
+      {/* EU 14-day withdrawal waiver (§5.5). Rendered only when something is actually purchasable —
+          on a page where every plan is free or "coming soon" there is nothing to consent to, and a
+          stray checkbox would just be confusing. Never pre-ticked: a pre-ticked box is not consent. */}
+      {plans.some((p) => p.purchasable) && (
+        <label className="flex max-w-[62ch] cursor-pointer items-start gap-[var(--px-10)] font-helvetica text-[length:var(--px-12)] font-light leading-[1.6] text-[var(--color-primary-hover)]">
+          <input
+            type="checkbox"
+            checked={consented}
+            onChange={(e) => {
+              setConsented(e.target.checked);
+              if (e.target.checked) setError(null);
+            }}
+            className="mt-[var(--px-3)] h-[var(--px-14)] w-[var(--px-14)] shrink-0 accent-[var(--color-neon-orange)]"
+          />
+          <span>
+            I want my subscription to start immediately. I understand that once it does, I lose my
+            14-day right of withdrawal for the part already provided.
+          </span>
+        </label>
       )}
 
       {/* Required for EU consumer pricing: the figure shown must be the figure charged. Stripe

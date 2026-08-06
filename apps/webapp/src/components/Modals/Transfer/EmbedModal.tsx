@@ -21,8 +21,11 @@ const EMBED_BASE = (
 
 type EmbedTheme = 'dark' | 'light';
 
-function buildSnippet(uuid: string, theme: EmbedTheme): string {
-  const src = `${EMBED_BASE}/?id=${uuid}&theme=${theme}`;
+// The token authorises THIS playlist to be embedded (pricing v2.1, G1). Without it the widget
+// shows its "not available" state — which is the point: a bare UUID used to render any public
+// playlist for anyone, while embedding was sold as a Pro feature.
+function buildSnippet(uuid: string, theme: EmbedTheme, token: string): string {
+  const src = `${EMBED_BASE}/?id=${uuid}&theme=${theme}&t=${encodeURIComponent(token)}`;
   return (
     `<iframe src="${src}" width="100%" height="480" ` +
     `style="border:0;border-radius:12px" loading="lazy" ` +
@@ -44,14 +47,44 @@ const EmbedModal: React.FC<EmbedModalProps> = ({
   // Local flip so the snippet view appears right after the user makes it public, without waiting
   // for the store's is_public to refresh.
   const [madePublic, setMadePublic] = React.useState(false);
+  // Minted server-side, and idempotent there: re-opening this modal returns the SAME token, so a
+  // snippet already pasted into a live page keeps working.
+  const [token, setToken] = React.useState<string | null>(null);
+  const [tokenError, setTokenError] = React.useState<string | null>(null);
   const publicNow = isPublic || madePublic;
-  const snippet = React.useMemo(() => buildSnippet(playlistUuid, theme), [playlistUuid, theme]);
+  const snippet = React.useMemo(
+    () => (token ? buildSnippet(playlistUuid, theme, token) : ''),
+    [playlistUuid, theme, token],
+  );
+
+  // Mint once the playlist is actually public — a snippet for a private playlist renders an empty
+  // box, so there is nothing worth handing the user until then.
+  React.useEffect(() => {
+    if (!isOpen || !publicNow || token) return;
+    let cancelled = false;
+    void (async () => {
+      const { mintEmbedToken } = await import('@resomix/api-client');
+      const res = await mintEmbedToken(playlistUuid);
+      if (cancelled) return;
+      if (res.success) setToken(res.data.token);
+      // A 402 here means the plan does not include embed. The message is the server's own, which
+      // is the only thing that knows which capability was refused.
+      else setTokenError((res as { error?: string }).error || 'Embedding is a Pro feature.');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, publicNow, token, playlistUuid]);
 
   React.useEffect(() => {
     if (!isOpen) {
       setCopied(false);
       setMadePublic(false);
       setTheme('dark');
+      // Cleared so a re-open re-mints. The server returns the same token, so this costs one
+      // request and cannot invalidate a live snippet.
+      setToken(null);
+      setTokenError(null);
     }
   }, [isOpen]);
 
@@ -140,6 +173,18 @@ const EmbedModal: React.FC<EmbedModalProps> = ({
               </div>
             </div>
 
+            {/* The snippet only exists once a token has been minted — a UUID alone no longer
+                renders anything, so showing it early would hand the user a broken embed. */}
+            {tokenError ? (
+              <p className="font-helvetica text-[length:var(--px-12)] font-light leading-[var(--px-18)] text-[var(--color-accent,#EE4A26)]">
+                {tokenError}
+              </p>
+            ) : !token ? (
+              <p className="font-fira text-[length:var(--px-10)] uppercase tracking-[0.14em] text-[var(--rx-color-text-muted)] opacity-70">
+                Preparing your embed…
+              </p>
+            ) : null}
+
             <textarea
               id="embed-snippet"
               readOnly
@@ -151,7 +196,8 @@ const EmbedModal: React.FC<EmbedModalProps> = ({
             <button
               type="button"
               onClick={copy}
-              className={`${PAGE_BTN_PRIMARY} self-center px-[var(--px-24)]`}
+              disabled={!token}
+              className={`${PAGE_BTN_PRIMARY} self-center px-[var(--px-24)] ${!token ? 'opacity-50' : ''}`}
               id="embed-copy"
             >
               {copied ? 'Copied ✓' : 'Copy embed code'}

@@ -196,6 +196,38 @@ export const exportPlaylistFile = async (
   }
 };
 
+/**
+ * Mint (or fetch) this playlist's embed token — Pro-only, owner-only.
+ *
+ * Idempotent server-side: calling it again returns the SAME token, so re-opening the modal cannot
+ * invalidate a snippet already pasted into a live page. Withdrawing an embed is an explicit
+ * `revokeEmbedToken`.
+ */
+export const mintEmbedToken = async (playlistId: string) => {
+  try {
+    const url = API_CONFIG.ENDPOINTS.PLAYLIST_EMBED_TOKEN.replace("{id}", encodeURIComponent(playlistId));
+    const data = await axiosWrapper<ApiResponse<{ token: string; playlist_uuid: string; is_public: boolean }>>(
+      authClient.post(url),
+    );
+    if (data.success === true && data.data) return { success: true as const, data: data.data };
+    return { success: false as const, error: data.error || "Couldn't create the embed." };
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/** Withdraw a playlist's embed. Snippets already pasted elsewhere stop rendering. */
+export const revokeEmbedToken = async (playlistId: string) => {
+  try {
+    const url = API_CONFIG.ENDPOINTS.PLAYLIST_EMBED_TOKEN.replace("{id}", encodeURIComponent(playlistId));
+    const data = await axiosWrapper<ApiResponse<{ revoked: boolean }>>(authClient.delete(url));
+    if (data.success === true) return { success: true as const };
+    return { success: false as const, error: data.error || "Couldn't withdraw the embed." };
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
 // Engagement Methods
 export const addFavorite = async (playlistId: string) => {
   try {
