@@ -1,31 +1,53 @@
-import { useEffect, useState } from "react";
-import type { BillingPlansResponse } from "@resomix/api-client";
+import { useEffect, useMemo, useState } from "react";
+import type {
+  BillingPlanDisplay,
+  BillingPlanOffer,
+  BillingPlansResponse,
+  BillingSubscriptionSummary,
+} from "@resomix/api-client";
 import { PricingButton } from "./PricingButton";
-import { Chip, Eyebrow, PlanPanel, SectionBody, SectionHeading } from "./PricingChrome";
-import { FoundingBadge } from "./FoundingBadge";
+import {
+  IntervalRadiogroup,
+  PlanPanel,
+  PriceSkeleton,
+  QuietPanel,
+  SaveTag,
+  SoftPanel,
+  TextLink,
+  type BillingInterval,
+} from "./PricingChrome";
+import { PlanComparison, PlanComparisonSection } from "./PlanComparison";
+import { PricingFaq } from "./PricingFaq";
 import { planFeatures } from "./planFeatures";
+import {
+  CARDS,
+  CLOSING_CTA,
+  CONSENT,
+  ERRORS,
+  FREE_CARD,
+  GUEST_RAIL,
+  INTERVAL,
+  PAID_CHECKOUT,
+  PAID_CHECKOUT_DISABLED_REASON,
+  PAGE,
+  PRO_CARD,
+  SAMPLE_REPORT,
+  SEE_PRO,
+} from "./pricingCopy";
 
 /**
- * Consumer plans — rendered as the FIRST section of the unified pricing page (`PricingContent`).
- * Fetches /billing/plans and renders Free / Pro (purchasable → Stripe Checkout) / Basic + Max
- * ("Coming soon"). Highlights the viewer's current plan; already-subscribed → Manage (Portal).
- * Section-only: no page chrome (heading/back-link live on the page). Works logged-out too.
- *
- * Presentation follows the marketing system (square hairline panels, mono labels, the landing
- * button). The billing behaviour below is unchanged.
+ * Consumer plans — Free / Pro cards, interval control, guest rail, comparison, FAQ.
+ * Fetches /billing/plans. Billing behaviour (checkout, portal, consent) is unchanged.
+ * Coming-soon ladder tiers are filtered out of the public DOM entirely.
  */
 
-const PLAN_TAGLINES: Record<string, string> = {
-  free: "Core matching with monthly limits — always free.",
-  basic: "A step up from Free.",
-  pro: "For power users — higher monthly limits and priority processing.",
-  max: "Everything in Pro, at the highest limits.",
-};
+/** British house style; no i18n on this surface — pin locale so QA is deterministic. */
+const LOCALE = "en-GB";
 
-function fmtMoney(cents: number | null, currency: string): string {
+function fmtMoney(cents: number | null | undefined, currency: string): string {
   if (cents == null) return "";
   try {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat(LOCALE, {
       style: "currency",
       currency: currency || "EUR",
       maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
@@ -35,9 +57,72 @@ function fmtMoney(cents: number | null, currency: string): string {
   }
 }
 
-export function ConsumerPricingContent() {
+function fmtDateLong(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toLocaleDateString(LOCALE, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  } catch {
+    return null;
+  }
+}
+
+function normalizeInterval(raw: string | undefined | null): BillingInterval | null {
+  if (!raw) return null;
+  const v = raw.toLowerCase();
+  if (v === "month" || v === "monthly") return "month";
+  if (v === "year" || v === "yearly" || v === "annual" || v === "annually") return "year";
+  return null;
+}
+
+function offerFor(plan: BillingPlanDisplay | undefined, interval: BillingInterval): BillingPlanOffer | null {
+  if (!plan) return null;
+  const offers = plan.offers || [];
+  const hit = offers.find((o) => normalizeInterval(o.interval) === interval);
+  if (hit) return hit;
+  if (normalizeInterval(plan.interval) === interval) {
+    return {
+      interval,
+      unit_amount_cents: plan.unit_amount_cents,
+      currency: plan.currency,
+      is_founding_price: !!plan.is_founding_price,
+      list_unit_amount_cents: plan.list_unit_amount_cents ?? null,
+    };
+  }
+  return null;
+}
+
+function annualSavingPercent(monthlyCents: number, yearlyCents: number): number | null {
+  const full = monthlyCents * 12;
+  if (full <= 0 || yearlyCents <= 0 || yearlyCents >= full) return null;
+  return Math.round((1 - yearlyCents / full) * 100);
+}
+
+function perSuffix(interval: BillingInterval): string {
+  return interval === "year" ? "/ year" : "/ month";
+}
+
+function publicPlans(plans: BillingPlanDisplay[]): {
+  free: BillingPlanDisplay | undefined;
+  pro: BillingPlanDisplay | undefined;
+} {
+  // Coming-soon ladder tiers never enter the DOM — filter by code, not CSS.
+  return {
+    free: plans.find((p) => p.code === "free"),
+    pro: plans.find((p) => p.code === "pro"),
+  };
+}
+
+export function ConsumerPricingContent({ baseUrl = "/" }: { baseUrl?: string }) {
   const [data, setData] = useState<BillingPlansResponse | null>(null);
+  const [subSummary, setSubSummary] = useState<BillingSubscriptionSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [priceFailed, setPriceFailed] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [authed, setAuthed] = useState(false);
@@ -45,53 +130,171 @@ export function ConsumerPricingContent() {
   // consent, and under the Consumer Rights Directive it is not valid. The server refuses without
   // it regardless, so this only saves the user a pointless round-trip.
   const [consented, setConsented] = useState(false);
+  const [interval, setInterval] = useState<BillingInterval>("month");
 
   useEffect(() => {
     void (async () => {
+      let isAuthed = false;
       try {
         const { useAuthStore } = await import("@resomix/stores");
-        setAuthed(!!useAuthStore.getState().isAuthenticated);
+        isAuthed = !!useAuthStore.getState().isAuthenticated;
+        setAuthed(isAuthed);
       } catch {
         /* noop */
       }
-      await load();
+      await load(isAuthed);
     })();
   }, []);
 
-  const load = async () => {
+  const load = async (isAuthed: boolean) => {
     setLoading(true);
+    setPriceFailed(false);
     try {
-      const { getBillingPlans } = await import("@resomix/api-client");
+      const { getBillingPlans, getBillingSubscription } = await import("@resomix/api-client");
       const res = await getBillingPlans();
-      if (res.success) setData(res.data as BillingPlansResponse);
+      if (res.success) {
+        setData(res.data as BillingPlansResponse);
+      } else {
+        setPriceFailed(true);
+      }
+      if (isAuthed) {
+        try {
+          const sub = await getBillingSubscription();
+          if (sub.success) setSubSummary(sub.data as BillingSubscriptionSummary);
+        } catch {
+          /* leave null */
+        }
+      }
     } catch {
-      /* leave defaults */
+      setPriceFailed(true);
     } finally {
       setLoading(false);
     }
   };
 
+  const { free, pro } = useMemo(() => publicPlans(data?.plans || []), [data]);
+
+  const intervalOptions = useMemo(() => {
+    const set = new Set<BillingInterval>();
+    for (const o of pro?.offers || []) {
+      const n = normalizeInterval(o.interval);
+      if (n) set.add(n);
+    }
+    if (set.size === 0) {
+      const n = normalizeInterval(pro?.interval);
+      if (n) set.add(n);
+    }
+    const ordered: BillingInterval[] = [];
+    if (set.has("month")) ordered.push("month");
+    if (set.has("year")) ordered.push("year");
+    return ordered;
+  }, [pro]);
+
+  // Keep selection valid when offers load.
+  useEffect(() => {
+    if (intervalOptions.length === 0) return;
+    if (!intervalOptions.includes(interval)) setInterval(intervalOptions[0]);
+  }, [intervalOptions, interval]);
+
+  const selectedOffer = offerFor(pro, interval);
+  const monthlyOffer = offerFor(pro, "month");
+  const yearlyOffer = offerFor(pro, "year");
+
+  const savePct =
+    monthlyOffer?.unit_amount_cents != null && yearlyOffer?.unit_amount_cents != null
+      ? annualSavingPercent(monthlyOffer.unit_amount_cents, yearlyOffer.unit_amount_cents)
+      : null;
+
+  const foundingActive = !!data?.beta?.founding_active;
+  const endDateLabel = fmtDateLong(data?.beta?.end_date);
+  const isFoundingOffer = foundingActive && !!selectedOffer?.is_founding_price;
+
+  const amountLabel =
+    selectedOffer?.unit_amount_cents != null
+      ? fmtMoney(selectedOffer.unit_amount_cents, selectedOffer.currency || pro?.currency || "EUR")
+      : pro?.unit_amount_cents != null
+        ? fmtMoney(pro.unit_amount_cents, pro.currency)
+        : null;
+
+  const listAmountLabel =
+    selectedOffer?.list_unit_amount_cents != null
+      ? fmtMoney(selectedOffer.list_unit_amount_cents, selectedOffer.currency || pro?.currency || "EUR")
+      : null;
+
+  const unitSuffix = perSuffix(interval);
+  const topSkMax = pro?.limits?.top_sk_max;
+
+  const cardNote = (() => {
+    if (!isFoundingOffer || !endDateLabel) return null;
+    return (
+      <>
+        {PRO_CARD.foundingAvailableUntil(endDateLabel)} {PRO_CARD.deadlineNotBetaEnd}
+      </>
+    );
+  })();
+
+  const tablePrice = amountLabel ? `${amountLabel}${unitSuffix.replace(/^\//, " /")}` : "—";
+
+  const closingSummary = (() => {
+    if (!amountLabel) return null;
+    if (isFoundingOffer && listAmountLabel && endDateLabel) {
+      const period = interval === "year" ? "/ year" : "/ month";
+      return (
+        <>
+          Founding offer {amountLabel} {period} + VAT · available until {endDateLabel}.{" "}
+          {PRO_CARD.deadlineNotBetaEnd} Then {listAmountLabel} {period} + VAT · renews automatically
+          until cancelled · cancel anytime and keep Pro until the end of the period you paid for.
+        </>
+      );
+    }
+    return `Pro at ${amountLabel}${unitSuffix.replace(/^\//, " /")} + VAT · renews automatically until cancelled · cancel anytime and keep Pro until the end of the period you paid for.`;
+  })();
+
+  const closingCtaLine = (() => {
+    if (!amountLabel) return null;
+    if (isFoundingOffer && listAmountLabel && endDateLabel) {
+      const period = interval === "year" ? "/ year" : "/ month";
+      return `${amountLabel} ${period} now · ${listAmountLabel} ${period} later · join by ${endDateLabel}`;
+    }
+    return `${amountLabel}${unitSuffix.replace(/^\//, " /")}`;
+  })();
+
+  const isCurrentPro = !!pro?.is_current;
+  const isCurrentFree = !!free?.is_current;
+  const sub = subSummary?.subscription;
+  const cancelAtEnd = !!sub?.cancel_at_period_end;
+  const activeUntilLabel =
+    cancelAtEnd && sub?.current_period_end ? fmtDateLong(sub.current_period_end) : null;
+
+  const goLogin = () => {
+    window.location.href = `/auth/login?redirect=${encodeURIComponent("/subscribe")}`;
+  };
+
   const subscribe = async (code: string) => {
     setError(null);
+    if (!PAID_CHECKOUT.enabled) {
+      setError(PAID_CHECKOUT_DISABLED_REASON);
+      return;
+    }
     if (!authed) {
-      window.location.href = `/auth/login?redirect=${encodeURIComponent("/subscribe")}`;
+      goLogin();
       return;
     }
     if (!consented) {
-      setError("Please confirm the statement below before subscribing.");
+      setError(ERRORS.needConsent);
       return;
     }
     setBusy(code);
     try {
       const { startBillingCheckout } = await import("@resomix/api-client");
-      const res: any = await startBillingCheckout(code, consented);
+      const res: any = await startBillingCheckout(code, consented, interval);
       if (res?.success && res.data?.url) {
         window.location.href = res.data.url;
         return;
       }
-      setError(res?.error || "Couldn't start checkout. Please try again.");
+      setError(res?.error || ERRORS.checkoutFailed);
     } catch {
-      setError("Couldn't start checkout. Please try again.");
+      setError(ERRORS.checkoutFailed);
     }
     setBusy(null);
   };
@@ -106,182 +309,401 @@ export function ConsumerPricingContent() {
         window.location.href = res.data.url;
         return;
       }
-      setError(res?.error || "Couldn't open the billing portal.");
+      setError(res?.error || ERRORS.portalFailed);
     } catch {
-      setError("Couldn't open the billing portal.");
+      setError(ERRORS.portalFailed);
     }
     setBusy(null);
   };
 
-  const plans = data?.plans || [];
+  const freeCta = () => {
+    if (!authed) {
+      goLogin();
+      return;
+    }
+  };
+
+  const proCtaAction = () => {
+    if (isCurrentPro) {
+      void manage();
+      return;
+    }
+    if (!authed) {
+      goLogin();
+      return;
+    }
+    void subscribe(pro?.code || "pro");
+  };
+
+  const freeCtaLabel = !authed
+    ? FREE_CARD.ctaStart
+    : isCurrentFree
+      ? FREE_CARD.ctaCurrent
+      : FREE_CARD.ctaIncluded;
+
+  const proCtaLabel = (() => {
+    if (busy === "__manage__") return PRO_CARD.ctaBusyPortal;
+    if (busy === pro?.code) return PRO_CARD.ctaBusyCheckout;
+    if (isCurrentPro) return PRO_CARD.ctaManage;
+    if (authed) return PRO_CARD.ctaUpgrade;
+    return PRO_CARD.ctaChoose;
+  })();
+
+  const proPurchaseDisabled =
+    isCurrentPro ? !!busy : !PAID_CHECKOUT.enabled || priceFailed || loading || !!busy;
+
+  const freeCtaDisabled = authed || !!busy;
 
   return (
-    <section className="space-y-[var(--px-32)]">
-      <header>
-        <Eyebrow>For Creators</Eyebrow>
-        <SectionHeading>Simple monthly plans</SectionHeading>
-        <SectionBody className="mt-[var(--px-14)] max-w-[52ch]">
-          Simple monthly plans for individual creators. Upgrade, downgrade or cancel anytime.
-        </SectionBody>
-        {/* Only while the server says the founding window is open — see FoundingBadge. */}
-        <FoundingBadge beta={data?.beta} className="mt-[var(--px-20)]" />
-      </header>
-
-      {loading ? (
-        <p className="font-fira text-[length:var(--px-11)] uppercase tracking-[0.18em] text-[var(--color-primary-hover)]">
-          Loading…
+    <>
+      {/* Hero subtitle — match count bound to Pro top_sk_max from the API. */}
+      {typeof topSkMax === "number" && (
+        <p className="mx-auto mt-[var(--px-14)] max-w-[40rem] text-center font-helvetica text-[length:var(--px-17)] font-light leading-[1.65] text-[var(--color-primary-hover)]">
+          {PAGE.subtitle(topSkMax)}
         </p>
-      ) : (
-        <div className="grid grid-cols-1 items-stretch gap-[var(--px-20)] md:grid-cols-2 lg:grid-cols-4">
-          {plans.map((p) => {
-            const isCurrent = p.is_current;
-            const price = p.is_free
-              ? fmtMoney(0, p.currency)
-              : p.unit_amount_cents != null
-                ? fmtMoney(p.unit_amount_cents, p.currency)
-                : null;
-            return (
-              <PlanPanel key={p.code} highlighted={!!isCurrent}>
-                {/* Plans that are configured but not on sale yet (basic / max, `is_active = 0`) are
-                    SHOWN so the ladder is visible, but blurred so nobody reads their limits as a
-                    current offer — the numbers are real rows and would otherwise look purchasable.
-                    `select-none` + `aria-hidden` keep the blurred text out of copy-paste and out of
-                    a screen reader, where a blur means nothing. */}
-                {p.coming_soon && (
-                  <span className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-                    <span className="border border-[var(--color-neon-orange)] bg-black/70 px-[var(--px-12)] py-[var(--px-6)] font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] text-[var(--color-neon-orange)]">
-                      Coming soon
-                    </span>
-                  </span>
-                )}
-                <div
-                  className={`space-y-[var(--px-16)] ${p.coming_soon ? "select-none blur-[3px] opacity-60" : ""}`}
-                  aria-hidden={p.coming_soon || undefined}
-                >
-                  <div className="flex items-center justify-between gap-[var(--px-8)]">
-                    <h3 className="m-0 font-helvetica text-[length:var(--px-18)] font-bold uppercase tracking-[var(--px-1)] text-[var(--color-text-secondary)]">
-                      {p.name}
-                    </h3>
-                    {isCurrent && <Chip>Your plan</Chip>}
-                  </div>
+      )}
 
-                  <div className="border-y border-white/13 py-[var(--px-16)]">
-                    {p.coming_soon ? (
-                      <span className="font-fira text-[length:var(--px-13)] uppercase tracking-[0.14em] text-[var(--color-primary-hover)] opacity-70">
-                        Coming soon
-                      </span>
-                    ) : (
-                      <div className="flex flex-wrap items-baseline gap-[var(--px-6)]">
-                        <span className="font-helvetica text-[length:var(--px-36)] font-bold leading-none tracking-tight text-[var(--color-text-secondary)]">
-                          {price}
-                        </span>
-                        {!p.is_free && (
-                          <span className="font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] text-[var(--color-primary-hover)] opacity-70">
-                            / {p.interval === "year" ? "yr" : "mo"}
-                          </span>
-                        )}
-                        {/* The undiscounted price, struck through. The server only sends this when
-                            it actually differs, so the card can never claim a saving of zero. */}
-                        {p.list_unit_amount_cents != null && (
-                          <span className="font-helvetica text-[length:var(--px-14)] font-light text-[var(--color-primary-hover)] line-through opacity-60">
-                            {fmtMoney(p.list_unit_amount_cents, p.currency)}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
+      <section className="mt-[var(--px-48)] space-y-[var(--px-48)] lg:mt-[var(--px-72)] lg:space-y-[var(--px-72)]">
+        {/* Interval control sits under the page header (PricingContent). */}
+        <div className="flex flex-col items-center gap-[var(--px-14)]">
+          {intervalOptions.length > 1 && (
+            <div className="flex flex-wrap items-center justify-center gap-[var(--px-11)]">
+              <IntervalRadiogroup
+                aria-label={INTERVAL.groupLabel}
+                value={interval}
+                options={intervalOptions}
+                onChange={setInterval}
+              />
+              {savePct != null && interval === "year" && (
+                <SaveTag>{INTERVAL.saveAnnually(savePct)}</SaveTag>
+              )}
+            </div>
+          )}
 
-                  <p className="m-0 font-helvetica text-[length:var(--px-13)] font-light leading-[1.65] text-[var(--color-primary-hover)]">
-                    {PLAN_TAGLINES[p.code] || ""}
-                  </p>
-
-                  {/* Rendered from the SAME rows that enforce these limits, so an admin raising a
-                      cap updates this page too. Hard-coded copy starts lying the first time a plan
-                      is edited — and nothing fails, which is why nobody notices. */}
-                  <ul className="m-0 list-none space-y-[var(--px-8)] p-0">
-                    {planFeatures(p.limits).map((f) => (
-                      <li
-                        key={f.key}
-                        className={`flex items-start gap-[var(--px-8)] font-helvetica text-[length:var(--px-13)] font-light leading-[1.5] ${
-                          f.included
-                            ? "text-[var(--color-primary-hover)]"
-                            : "text-[var(--color-primary-hover)] opacity-40"
-                        }`}
-                      >
-                        <span aria-hidden="true" className="text-[var(--color-neon-orange)]">
-                          {f.included ? "→" : "×"}
-                        </span>
-                        <span>{f.text}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="mt-[var(--px-24)]">
-                  {p.coming_soon ? (
-                    <PricingButton fullWidth disabled>
-                      Coming soon
-                    </PricingButton>
-                  ) : p.is_free ? (
-                    <PricingButton fullWidth disabled>
-                      {isCurrent ? "Your plan" : "Included"}
-                    </PricingButton>
-                  ) : isCurrent ? (
-                    <PricingButton fullWidth onClick={manage} disabled={!!busy}>
-                      {busy === "__manage__" ? "Opening…" : "Manage"}
-                    </PricingButton>
-                  ) : (
-                    <PricingButton
-                      fullWidth
-                      variant="primary"
-                      onClick={() => subscribe(p.code)}
-                      disabled={!!busy}
-                    >
-                      {busy === p.code ? "Redirecting…" : authed ? "Subscribe" : "Sign in to subscribe"}
-                    </PricingButton>
-                  )}
-                </div>
-              </PlanPanel>
-            );
-          })}
+          {priceFailed && (
+            <div
+              role="alert"
+              className="w-full max-w-[34rem] border border-white/13 bg-[#0c0c0d]/60 p-[var(--px-16)] text-left font-helvetica text-[length:var(--px-15)] font-light leading-[1.6] text-[var(--color-primary-hover)]"
+            >
+              {PAGE.pricesUnavailable}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* EU 14-day withdrawal waiver (§5.5). Rendered only when something is actually purchasable —
-          on a page where every plan is free or "coming soon" there is nothing to consent to, and a
-          stray checkbox would just be confusing. Never pre-ticked: a pre-ticked box is not consent. */}
-      {plans.some((p) => p.purchasable) && (
-        <label className="flex max-w-[62ch] cursor-pointer items-start gap-[var(--px-10)] font-helvetica text-[length:var(--px-12)] font-light leading-[1.6] text-[var(--color-primary-hover)]">
-          <input
-            type="checkbox"
-            checked={consented}
-            onChange={(e) => {
-              setConsented(e.target.checked);
-              if (e.target.checked) setError(null);
-            }}
-            className="mt-[var(--px-3)] h-[var(--px-14)] w-[var(--px-14)] shrink-0 accent-[var(--color-neon-orange)]"
-          />
-          <span>
-            I want my subscription to start immediately. I understand that once it does, I lose my
-            14-day right of withdrawal for the part already provided.
-          </span>
-        </label>
-      )}
+        {/* Plan cards */}
+        <section aria-label="Plans">
+          {loading ? (
+            <div className="mx-auto grid max-w-[52rem] grid-cols-1 gap-[var(--px-14)] md:grid-cols-2">
+              {[0, 1].map((i) => (
+                <PlanPanel key={i} className="min-h-[var(--px-48)]">
+                  <PriceSkeleton className="mb-[var(--px-12)] h-[var(--px-17)] w-[var(--px-48)]" />
+                  <PriceSkeleton className="mb-[var(--px-12)] h-[var(--px-15)] w-3/4" />
+                  <PriceSkeleton className="h-[var(--px-26)] w-[var(--px-36)]" />
+                </PlanPanel>
+              ))}
+              <span className="sr-only">{PAGE.loading}</span>
+            </div>
+          ) : (
+            <div className="mx-auto grid max-w-[52rem] grid-cols-1 items-stretch gap-[var(--px-14)] md:grid-cols-2">
+              {/* Free */}
+              {free && (
+                <PlanPanel className="p-[var(--px-18)] md:p-[var(--px-19-259)]">
+                  <div className="flex flex-1 flex-col">
+                    <p className="m-0 font-helvetica text-[length:var(--px-17)] font-bold uppercase tracking-[0.03em] text-[var(--color-text-secondary)]">
+                      {free.name}
+                    </p>
+                    <p className="m-0 mt-[var(--px-3)] font-helvetica text-[length:var(--px-15)] font-light text-[var(--color-primary-hover)]">
+                      {FREE_CARD.tagline}
+                    </p>
+                    <p className="m-0 mt-[var(--px-11)] font-benzin text-[length:var(--px-26)] font-black leading-none text-[var(--color-text-secondary)]">
+                      {fmtMoney(0, free.currency || data?.currency || "EUR")}
+                    </p>
+                    <p className="m-0 mt-[var(--px-6)] min-h-[2.2em] font-fira text-[length:var(--px-11)] leading-[1.5] tracking-[0.04em] text-[var(--color-primary-hover)]">
+                      {FREE_CARD.note}
+                    </p>
+                    <div className="mt-[var(--px-13)]">
+                      <PricingButton fullWidth onClick={freeCta} disabled={freeCtaDisabled}>
+                        {freeCtaLabel}
+                      </PricingButton>
+                    </div>
+                    <p className="m-0 mt-[var(--px-14)] border-t border-white/8 pt-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[0.16em] text-[var(--color-primary-hover)]">
+                      {FREE_CARD.listHeading}
+                    </p>
+                    <ul className="m-0 mt-[var(--px-9-6)] grid list-none gap-[var(--px-6)] p-0">
+                      {planFeatures(free.limits, { compact: true }).map((f) => (
+                        <li
+                          key={f.key}
+                          className="relative pl-[var(--px-18)] font-helvetica text-[length:var(--px-15)] font-light leading-[1.45] text-[var(--color-primary-hover)]"
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="absolute left-0 top-[0.62em] h-px w-[var(--px-6)] bg-[var(--color-neon-orange)]"
+                          />
+                          {f.text}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mb-0 mt-auto pt-[var(--px-13)]">
+                      <TextLink href="#compare">{CARDS.seeComparison}</TextLink>
+                    </p>
+                  </div>
+                </PlanPanel>
+              )}
 
-      {/* Required for EU consumer pricing: the figure shown must be the figure charged. Stripe
-          resolves the exact rate at checkout, so this says VAT is included rather than quoting a
-          percentage that would be wrong outside one country. */}
-      <p className="m-0 max-w-[52ch] font-helvetica text-[length:var(--px-11)] font-light leading-[1.6] text-[var(--color-primary-hover)] opacity-70">
-        Prices include VAT where applicable. Cancel anytime — your plan stays active until the end
-        of the period you have paid for.
-      </p>
+              {/* Pro */}
+              {pro && (
+                <PlanPanel highlighted className="p-[var(--px-18)] md:p-[var(--px-19-259)]">
+                  {isFoundingOffer && (
+                    <span className="absolute -right-px -top-px bg-[var(--color-neon-orange)] px-[var(--px-11)] py-[var(--px-6)] font-fira text-[length:var(--px-11)] font-semibold uppercase tracking-[0.12em] text-[#101010]">
+                      {PRO_CARD.flagFounding}
+                    </span>
+                  )}
+                  {isCurrentPro && !isFoundingOffer && (
+                    <span className="absolute -right-px -top-px bg-[var(--color-neon-orange)] px-[var(--px-11)] py-[var(--px-6)] font-fira text-[length:var(--px-11)] font-semibold uppercase tracking-[0.12em] text-[#101010]">
+                      {PRO_CARD.flagYourPlan}
+                    </span>
+                  )}
+                  <div className="flex flex-1 flex-col">
+                    <p className="m-0 font-helvetica text-[length:var(--px-17)] font-bold uppercase tracking-[0.03em] text-[var(--color-text-secondary)]">
+                      {pro.name}
+                    </p>
+                    <p className="m-0 mt-[var(--px-3)] font-helvetica text-[length:var(--px-15)] font-light text-[var(--color-primary-hover)]">
+                      {PRO_CARD.tagline}
+                    </p>
+                    <p
+                      className="m-0 mt-[var(--px-11)] flex flex-wrap items-baseline gap-[var(--px-6)] font-benzin text-[length:var(--px-26)] font-black leading-none text-[var(--color-text-secondary)]"
+                      data-slot="amount-wrap"
+                    >
+                      {priceFailed || !amountLabel ? (
+                        <span data-slot="amount">—</span>
+                      ) : (
+                        <>
+                          <span data-slot="amount">{amountLabel}</span>
+                          <span
+                            data-slot="per"
+                            className="font-fira text-[length:var(--px-11)] font-normal tracking-[0.06em] text-[var(--color-primary-hover)]"
+                          >
+                            {unitSuffix}
+                          </span>
+                        </>
+                      )}
+                    </p>
+                    <p
+                      className="m-0 mt-[var(--px-6)] min-h-[2.2em] font-fira text-[length:var(--px-11)] leading-[1.5] tracking-[0.04em] text-[var(--color-primary-hover)]"
+                      data-slot="cardnote"
+                    >
+                      {PRO_CARD.vatNote}
+                      {cardNote && (
+                        <>
+                          <br />
+                          {cardNote}
+                        </>
+                      )}
+                      {activeUntilLabel && (
+                        <>
+                          <br />
+                          {PRO_CARD.activeUntil(activeUntilLabel)}
+                        </>
+                      )}
+                    </p>
+                    <div className="mt-[var(--px-13)]">
+                      <PricingButton
+                        fullWidth
+                        variant="primary"
+                        onClick={proCtaAction}
+                        disabled={isCurrentPro ? !!busy : proPurchaseDisabled}
+                      >
+                        {proCtaLabel}
+                      </PricingButton>
+                      {!PAID_CHECKOUT.enabled && !isCurrentPro && (
+                        <p
+                          className="m-0 mt-[var(--px-8)] font-fira text-[length:var(--px-11)] leading-[1.5] tracking-[0.04em] text-[var(--color-primary-hover)] opacity-75"
+                          data-testid="checkout-disabled-notice"
+                        >
+                          {PAID_CHECKOUT_DISABLED_REASON}
+                        </p>
+                      )}
+                    </div>
+                    <p className="m-0 mt-[var(--px-14)] border-t border-white/8 pt-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[0.16em] text-[var(--color-primary-hover)]">
+                      {PRO_CARD.listHeading}
+                    </p>
+                    <ul className="m-0 mt-[var(--px-9-6)] grid list-none gap-[var(--px-6)] p-0">
+                      {planFeatures(pro.limits, { compact: true }).map((f) => (
+                        <li
+                          key={f.key}
+                          className="relative pl-[var(--px-18)] font-helvetica text-[length:var(--px-15)] font-light leading-[1.45] text-[var(--color-primary-hover)]"
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="absolute left-0 top-[0.62em] h-px w-[var(--px-6)] bg-[var(--color-neon-orange)]"
+                          />
+                          {f.text}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mb-0 mt-auto pt-[var(--px-13)]">
+                      <TextLink href="#compare">{CARDS.seeComparison}</TextLink>
+                    </p>
+                  </div>
+                </PlanPanel>
+              )}
+            </div>
+          )}
 
-      {error && (
-        <p className="font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] text-[var(--color-neon-orange)]">
-          {error}
-        </p>
-      )}
-    </section>
+          <p
+            className="mx-auto mt-[var(--px-16)] max-w-[52rem] font-fira text-[length:var(--px-11)] leading-[1.75] tracking-[0.03em] text-[var(--color-primary-hover)] opacity-75"
+            data-slot="finalline"
+          >
+            {closingSummary || CARDS.footnotePrefix}
+            {foundingActive && (
+              <>
+                {" "}
+                <TextLink href="#faq-h">{CARDS.footnoteFaqLink}</TextLink>
+              </>
+            )}
+          </p>
+
+          {/* Guest rail — never a third plan card, never priced */}
+          <QuietPanel className="mt-[var(--px-26)]">
+            <p className="m-0 font-fira text-[length:var(--px-11)] uppercase tracking-[0.16em] text-[var(--color-neon-orange)]">
+              {GUEST_RAIL.label}
+            </p>
+            <div className="mt-[var(--px-9-6)] grid items-center gap-[var(--px-14)] min-[620px]:grid-cols-[minmax(0,1fr)_auto] min-[620px]:gap-[var(--px-26)]">
+              <p className="m-0 font-helvetica text-[length:var(--px-15)] font-light leading-[1.65] text-[var(--color-primary-hover)]">
+                {GUEST_RAIL.body}
+              </p>
+              <PricingButton onClick={() => { window.location.href = baseUrl || "/"; }}>
+                {GUEST_RAIL.cta}
+              </PricingButton>
+            </div>
+          </QuietPanel>
+        </section>
+
+        {/* See Pro band — gated until an approved demo track exists */}
+        {SAMPLE_REPORT.enabled && (
+          <SoftPanel className="grid items-center gap-[var(--px-19-259)] min-[900px]:grid-cols-[1fr_auto] min-[900px]:gap-[var(--px-32)]">
+            <div>
+              <p className="m-0 font-fira text-[length:var(--px-11)] uppercase tracking-[0.16em] text-[var(--color-neon-orange)]">
+                {SEE_PRO.label}
+              </p>
+              <h2 className="m-0 mt-[var(--px-11)] font-helvetica text-[length:var(--px-17)] font-bold uppercase leading-[1.2] tracking-[0.03em] text-[var(--color-text-secondary)]">
+                {SEE_PRO.heading}
+              </h2>
+              <p className="m-0 mt-[var(--px-11)] max-w-[42rem] font-helvetica text-[length:var(--px-15)] font-light leading-[1.65] text-[var(--color-primary-hover)]">
+                {SEE_PRO.body}
+              </p>
+            </div>
+            <PricingButton
+              variant="primary"
+              onClick={() => {
+                // BLOCKED // NEEDS RULING: no approved demo-track id — band stays gated.
+                const root = (baseUrl || "/").replace(/\/$/, "");
+                window.location.href = !root || root === "/" ? "/analysis" : `${root}/analysis`;
+              }}
+            >
+              {SEE_PRO.cta}
+            </PricingButton>
+          </SoftPanel>
+        )}
+
+        {/* Comparison — wait for plans so #compare hash scroll lands on the final layout */}
+        {!loading && (
+          <PlanComparisonSection>
+            <PlanComparison
+              freeLimits={free?.limits}
+              proLimits={pro?.limits}
+              proPriceLabel={tablePrice}
+              freeCtaLabel={freeCtaLabel}
+              proCtaLabel={isCurrentPro ? PRO_CARD.ctaManage : proCtaLabel}
+              onFreeCta={freeCta}
+              onProCta={proCtaAction}
+              freeCtaDisabled={freeCtaDisabled}
+              proCtaDisabled={isCurrentPro ? !!busy : proPurchaseDisabled}
+              hidePurchaseCtas={isCurrentPro}
+            />
+          </PlanComparisonSection>
+        )}
+
+        {/* FAQ */}
+        <PricingFaq
+          beta={{
+            endDateLabel,
+            foundingActive,
+            monthlyFounding:
+              monthlyOffer?.unit_amount_cents != null
+                ? fmtMoney(monthlyOffer.unit_amount_cents, monthlyOffer.currency)
+                : null,
+            monthlyList:
+              monthlyOffer?.list_unit_amount_cents != null
+                ? fmtMoney(monthlyOffer.list_unit_amount_cents, monthlyOffer.currency)
+                : null,
+            yearlyFounding:
+              yearlyOffer?.unit_amount_cents != null
+                ? fmtMoney(yearlyOffer.unit_amount_cents, yearlyOffer.currency)
+                : null,
+            yearlyList:
+              yearlyOffer?.list_unit_amount_cents != null
+                ? fmtMoney(yearlyOffer.list_unit_amount_cents, yearlyOffer.currency)
+                : null,
+          }}
+        />
+
+        {/* Compact closing consumer CTA — between FAQ legal links and the partner banner */}
+        {!isCurrentPro && amountLabel && (
+          <div data-slot="closing-cta">
+            <SoftPanel className="mx-auto max-w-[52rem]">
+              <div className="flex flex-col items-stretch gap-[var(--px-14)] min-[620px]:flex-row min-[620px]:items-center min-[620px]:justify-between">
+                <div className="min-w-0">
+                  <p
+                    className="m-0 font-fira text-[length:var(--px-11)] leading-[1.55] tracking-[0.04em] text-[var(--color-primary-hover)]"
+                    data-slot="closing-price"
+                  >
+                    {closingCtaLine}
+                  </p>
+                  <p className="m-0 mt-[var(--px-6)] font-helvetica text-[length:var(--px-15)] font-light leading-[1.55] text-[var(--color-primary-hover)]">
+                    {CLOSING_CTA.renewLine}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col gap-[var(--px-10)] min-[420px]:flex-row min-[420px]:items-center">
+                  <PricingButton
+                    variant="primary"
+                    onClick={proCtaAction}
+                    disabled={proPurchaseDisabled}
+                  >
+                    {CLOSING_CTA.choosePro}
+                  </PricingButton>
+                  <PricingButton onClick={freeCta} disabled={freeCtaDisabled}>
+                    {CLOSING_CTA.startFree}
+                  </PricingButton>
+                </div>
+              </div>
+            </SoftPanel>
+          </div>
+        )}
+
+        {/* Consent — only when something is purchasable and checkout is enabled */}
+        {PAID_CHECKOUT.enabled && (pro?.purchasable || free?.purchasable) && !isCurrentPro && (
+          <label className="flex max-w-[62ch] cursor-pointer items-start gap-[var(--px-10)] font-helvetica text-[length:var(--px-15)] font-light leading-[1.6] text-[var(--color-primary-hover)]">
+            <input
+              type="checkbox"
+              checked={consented}
+              onChange={(e) => {
+                setConsented(e.target.checked);
+                if (e.target.checked) setError(null);
+              }}
+              className="mt-[var(--px-3)] h-[var(--px-14)] w-[var(--px-14)] shrink-0 accent-[var(--color-neon-orange)]"
+            />
+            <span>{CONSENT}</span>
+          </label>
+        )}
+
+        {error && (
+          <p className="font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] text-[var(--color-neon-orange)]">
+            {error}
+          </p>
+        )}
+      </section>
+    </>
   );
 }
 
