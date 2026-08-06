@@ -84,6 +84,69 @@ class BillingSyncService:
         ).scalar_one_or_none()
 
     # ------------------------------------------------------------------ #
+    # subscription_schedule.* — the founding lock (pricing v2.1 F3)
+    # ------------------------------------------------------------------ #
+    async def sync_schedule(self, db: AsyncSession, schedule: Dict[str, Any], event_type: str) -> None:
+        """Mirror a subscription schedule's state onto the local subscription row.
+
+        Stripe *enforces* the founding lock; this only keeps our copy honest so support and the
+        profile screen can answer "am I still on the founding rate?" without a round-trip.
+
+        The events that matter most are the ones that END a lock. ``released`` fires when the
+        schedule detaches (by design, when phase 2 begins — see ``end_behavior="release"``) and
+        ``canceled`` when the subscription goes away. Either way the lock is gone, and a profile
+        screen still promising a founding rate afterwards would be telling a customer something
+        false about their own money. So the flag is cleared on those, not just set on creation.
+        """
+        subscription_id = schedule.get("subscription")
+        if not subscription_id:
+            # A schedule can exist before its subscription (created from a phase start date). We
+            # only track schedules attached to a live subscription; the later `updated` event
+            # carries the id once Stripe attaches it.
+            return
+
+        row = (
+            await db.execute(
+                select(UserSubscription).where(
+                    UserSubscription.stripe_subscription_id == subscription_id
+                )
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            logger.info("BILLING: schedule %s has no local subscription row yet", schedule.get("id"))
+            return
+
+        ended = event_type.endswith(("released", "canceled", "completed", "aborted"))
+        if ended:
+            # The rate is no longer pinned. `founding_lock_ends_at` is deliberately left in place:
+            # it is a historical fact — when the lock ran out — and clearing it would erase the
+            # only local record that the customer ever had one.
+            row.is_founding = False
+            row.stripe_schedule_id = None
+        else:
+            row.is_founding = True
+            row.stripe_schedule_id = schedule.get("id")
+            end_at = self._phase_one_end(schedule)
+            if end_at is not None:
+                # Stripe's own boundary, which beats the estimate written at checkout — its cycle
+                # dates can shift by a day around month ends.
+                row.founding_lock_ends_at = end_at
+
+        await db.flush()
+
+    @staticmethod
+    def _phase_one_end(schedule: Dict[str, Any]) -> Optional[datetime]:
+        """When the founding phase ends, taken from Stripe's own phase boundary.
+
+        Requires a second phase: a single-phase schedule has nothing to roll onto, so its phase-1
+        end is not a price change and must not be reported as one.
+        """
+        phases = schedule.get("phases") or []
+        if len(phases) < 2:
+            return None
+        return _ts(phases[0].get("end_date"))
+
+    # ------------------------------------------------------------------ #
     # customer.subscription.created / updated / deleted
     # ------------------------------------------------------------------ #
     async def sync_subscription(

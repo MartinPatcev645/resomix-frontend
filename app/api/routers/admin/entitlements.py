@@ -114,7 +114,9 @@ async def add_plan_price(
     current_admin: User = Depends(require_admin),
     _: User = Depends(require_permission("plans:manage")),
 ) -> JSONResponse:
-    return await controller.add_price(db, code, payload.stripe_price_id, payload.interval, current_admin)
+    return await controller.add_price(
+        db, code, payload.stripe_price_id, payload.interval, current_admin, payload.price_kind
+    )
 
 
 @router.patch(

@@ -32,6 +32,27 @@ entitlement_service = EntitlementService()
 
 class CheckoutRequest(BaseModel):
     plan_code: str = Field(..., description="Plan code to subscribe to, e.g. 'pro'")
+    # EU 14-day withdrawal waiver (§5.5). Defaults to False so a caller that does not send it is
+    # refused rather than silently consented on the user's behalf — which is the entire point.
+    consent: bool = Field(
+        False,
+        description=(
+            "The buyer agrees their subscription starts immediately, waiving the 14-day right of "
+            "withdrawal for the part already delivered. Required — no consent, no session."
+        ),
+    )
+
+
+def _client_ip(request: Request) -> str | None:
+    """Originating IP for the consent record, honouring the proxy chain.
+
+    Recorded because a consent nobody can locate in time and place is not much of a record — this
+    is the same reasoning as storing the document versions alongside it.
+    """
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.headers.get("x-real-ip") or (request.client.host if request.client else None)
 
 
 def _country(request: Request) -> str | None:
@@ -68,9 +89,20 @@ async def checkout(
     db: AsyncSession = Depends(get_database_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Create a Stripe hosted Checkout session for a plan and return its URL (frontend redirects)."""
+    """Create a Stripe hosted Checkout session for a plan and return its URL (frontend redirects).
+
+    Refuses without `consent` — the withdrawal waiver is recorded server-side before Stripe is
+    called, so a session cannot exist without an audit row behind it.
+    """
     return await _hosted_flow(
-        billing_service.create_checkout_session(db, current_user, body.plan_code, _country(request))
+        billing_service.create_checkout_session(
+            db,
+            current_user,
+            body.plan_code,
+            _country(request),
+            consent=body.consent,
+            client_ip=_client_ip(request),
+        )
     )
 
 

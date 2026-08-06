@@ -25,6 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.entitlement_keys import PriceKind
 from app.models.plan import Feature, Plan, PlanEntitlement, EntitlementOverride, PlanPrice
 from app.models.user import User
 from app.services.entitlement_service import EntitlementService, _cast_raw, _entitlement_value
@@ -91,6 +92,9 @@ class AdminEntitlementService:
             "id": price.id,
             "interval": price.interval,
             "currency": price.currency,
+            # Surfaced so the admin UI can tell a founding price from a list one — they now sit
+            # side by side on the same plan/interval/currency.
+            "price_kind": price.price_kind,
             "unit_amount_cents": price.unit_amount_cents,
             "stripe_price_id": price.stripe_price_id,
             "stripe_product_id": price.stripe_product_id,
@@ -279,11 +283,19 @@ class AdminEntitlementService:
         code: str,
         stripe_price_id: str,
         interval: str = "month",
+        price_kind: str = PriceKind.LIST,
         updated_by: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Attach/refresh a Stripe price for a plan. Amount/currency/product are pulled from Stripe
-        (source of truth) and upserted by (plan, interval, currency). Raises ``KeyError`` (→404) for
-        an unknown plan and ``ValueError`` (→400) if the Stripe price can't be retrieved."""
+        (source of truth) and upserted by (plan, interval, currency, **price_kind**). Raises
+        ``KeyError`` (→404) for an unknown plan and ``ValueError`` (→400) if the Stripe price can't
+        be retrieved.
+
+        ``price_kind`` is part of the upsert key, not decoration. A founding and a list price coexist
+        at the same interval and currency, so keying without it would make attaching the founding
+        price **overwrite the list price row** — and the list price is what the subscription
+        schedule rolls onto, so the damage would only surface 22 months later.
+        """
         plan = (await db.execute(select(Plan).where(Plan.code == code))).scalar_one_or_none()
         if plan is None:
             raise KeyError(f"Unknown plan: {code}")
@@ -310,6 +322,7 @@ class AdminEntitlementService:
                     PlanPrice.plan_id == plan.id,
                     PlanPrice.interval == resolved_interval,
                     PlanPrice.currency == currency,
+                    PlanPrice.price_kind == price_kind,
                 )
             )
         ).scalar_one_or_none()
@@ -326,6 +339,7 @@ class AdminEntitlementService:
                 plan_id=plan.id,
                 interval=resolved_interval,
                 currency=currency,
+                price_kind=price_kind,
                 unit_amount_cents=amount,
                 stripe_price_id=stripe_price_id,
                 stripe_product_id=product,

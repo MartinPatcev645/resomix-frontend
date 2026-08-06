@@ -47,6 +47,13 @@ class UserSubscription(Base):
     stripe_price_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     currency: Mapped[Optional[str]] = mapped_column(String(3), nullable=True)
 
+    # Founding lock (pricing v2.1 F2). Kept locally so "am I still on the founding rate, and until
+    # when?" is answerable without a Stripe round-trip — support asks it and the profile shows it.
+    # Stripe remains the enforcer; these are a readable mirror of the schedule it is running.
+    is_founding: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="0")
+    founding_lock_ends_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    stripe_schedule_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
     current_period_start: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
     current_period_end: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="0")

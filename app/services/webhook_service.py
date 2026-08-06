@@ -23,6 +23,7 @@ from app.models.log import SystemLog
 from app.repositories.log_repository import LogRepository
 from app.services.purchase_service import PurchaseService
 from app.services.billing_sync_service import BillingSyncService
+from app.services.billing_service import BillingService
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ class WebhookService:
     def __init__(self) -> None:
         self.purchase_service = PurchaseService()
         self.billing_sync = BillingSyncService()
+        self.billing_service = BillingService()
         self.log_repo = LogRepository()
         stripe.api_key = settings.stripe_secret_key
 
@@ -110,6 +112,11 @@ class WebhookService:
                 # Subscription checkouts are applied via the customer.subscription.* events below.
                 if (session.get("metadata") or {}).get("internal_order_id"):
                     await self.purchase_service.fulfill_order(db, session)
+                elif session.get("mode") == "subscription":
+                    # Pin a founding subscription to its rate (F2). Only acts when the session was
+                    # sold at a founding price; never raises, so a lock failure cannot wedge the
+                    # webhook and force Stripe to replay the whole event.
+                    await self.billing_service.apply_founding_lock(db, session)
 
             elif event.type == "charge.dispute.created":
                 dispute = sanitize_for_json(event.data.object.to_dict())
@@ -131,6 +138,23 @@ class WebhookService:
             elif event.type == "invoice.payment_failed":
                 invoice = sanitize_for_json(event.data.object.to_dict())
                 await self.billing_sync.mark_payment_failed(db, invoice, stripe_event_id)
+
+            # --- Founding lock (subscription schedules) ---
+            #
+            # Stripe is the enforcer; these keep our local mirror honest. `released` and `canceled`
+            # matter most: they mean the lock is GONE, and a profile screen still promising a
+            # founding rate after that would be telling the customer something false about their
+            # own money.
+            elif event.type in (
+                "subscription_schedule.created",
+                "subscription_schedule.updated",
+                "subscription_schedule.released",
+                "subscription_schedule.canceled",
+                "subscription_schedule.completed",
+                "subscription_schedule.aborted",
+            ):
+                schedule = sanitize_for_json(event.data.object.to_dict())
+                await self.billing_sync.sync_schedule(db, schedule, event.type)
 
             # Commit the audit log and fulfillment changes atomically
             await db.commit()

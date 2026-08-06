@@ -530,6 +530,15 @@ class Settings(BaseModel):
         description="ISO-8601 instant after which founding checkout closes (UTC)",
     )
 
+    # Which legal documents a billing consent is recorded against. Stored on every consent row so
+    # "which terms did they actually agree to?" stays answerable after the documents are revised —
+    # which is the whole reason the consent is a row rather than a boolean. Bump this whenever the
+    # ToS or privacy policy changes.
+    legal_doc_versions: str = Field(
+        default="tos:2026-07-01,privacy:2026-07-01",
+        description="Document versions recorded against a billing consent",
+    )
+
     # Where operational notifications (ingestion/embedding/etc. outcomes) are CC'd
     # for the company. Falls back to smtp_from_email if unset so we never silently
     # drop the admin copy.

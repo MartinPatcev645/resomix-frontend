@@ -23,6 +23,7 @@ from typing import Optional
 from app.utils.response_utils import format_response
 from app.controllers.playlist_controller import PlaylistController
 from app.controllers.playlist_export_controller import PlaylistExportController
+from app.controllers.playlist_embed_controller import PlaylistEmbedController
 from app.repositories.playlist_repository import DENIAL_MESSAGES, DENIAL_STATUS
 from app.api.dependencies.auth import get_current_user_optional, get_current_user
 from app.api.dependencies.partner import get_current_partner, get_public_partner
@@ -57,6 +58,7 @@ router = APIRouter(
 # Initialize controller
 playlist_controller = PlaylistController()
 playlist_export_controller = PlaylistExportController()
+playlist_embed_controller = PlaylistEmbedController()
 
 
 @router.put(
@@ -606,3 +608,82 @@ async def export_playlist_endpoint(
     return await playlist_export_controller.export_playlist(
         db, request, playlist_id, request_data.target, current_user, request_data.max_tracks
     )
+
+
+@router.post(
+    "/{playlist_id}/embed-token",
+    summary="Mint an embed token for a playlist you own",
+    description=(
+        "Authorise this playlist to be embedded. Pro-only, owner-only, and idempotent — re-opening "
+        "the Embed modal returns the same token so a snippet already pasted into a live page keeps "
+        "working."
+    ),
+    responses={
+        200: {"description": "Token minted or returned"},
+        402: {"model": PlaylistErrorResponse, "description": "Embedding is not on this plan"},
+        404: {"model": PlaylistErrorResponse, "description": "Playlist not found or not yours"},
+    },
+)
+async def mint_embed_token_endpoint(
+    request: Request,
+    playlist_id: str,
+    db: AsyncSession = Depends(get_database_session),
+    partner: Partner = Depends(get_public_partner),
+    current_user: User = Depends(get_current_user),  # REQUIRED auth
+) -> JSONResponse:
+    """Mint (or return) this playlist's embed token."""
+    return await playlist_embed_controller.mint_token(db, playlist_id, current_user)
+
+
+@router.delete(
+    "/{playlist_id}/embed-token",
+    summary="Withdraw a playlist's embed",
+    description="Revoke the active embed token. Snippets already pasted elsewhere stop rendering.",
+    responses={
+        200: {"description": "Embed withdrawn (or there was none)"},
+        404: {"model": PlaylistErrorResponse, "description": "Playlist not found or not yours"},
+    },
+)
+async def revoke_embed_token_endpoint(
+    request: Request,
+    playlist_id: str,
+    db: AsyncSession = Depends(get_database_session),
+    partner: Partner = Depends(get_public_partner),
+    current_user: User = Depends(get_current_user),  # REQUIRED auth
+) -> JSONResponse:
+    """Revoke this playlist's embed token."""
+    return await playlist_embed_controller.revoke_token(db, playlist_id, current_user)
+
+
+@router.get(
+    "/embed/{playlist_id}",
+    summary="Get a playlist for the embed widget (token-checked)",
+    description=(
+        "The ONLY route the embed widget may use. Requires a valid `t` token minted by the "
+        "playlist's owner; the playlist must also still be public. Every failure is a 404."
+    ),
+    responses={
+        200: {"description": "Playlist data for the widget"},
+        404: {
+            "model": PlaylistErrorResponse,
+            "description": (
+                "Unknown or revoked token, token for a different playlist, playlist no longer "
+                "public, or no such playlist — deliberately indistinguishable"
+            ),
+        },
+    },
+)
+async def get_embedded_playlist_endpoint(
+    request: Request,
+    playlist_id: str,
+    t: Optional[str] = Query(None, description="Embed token minted by the playlist's owner"),
+    db: AsyncSession = Depends(get_database_session),
+    partner: Partner = Depends(get_public_partner),
+) -> JSONResponse:
+    """Serve a playlist to the embed widget on a valid (uuid, token) pair.
+
+    Deliberately separate from `GET /playlists/similarity/{id}`: that route serves public playlists
+    to the app and must stay open, and coupling embed access to it is what allowed any public
+    playlist to be embedded by anyone in the first place.
+    """
+    return await playlist_embed_controller.get_embedded_playlist(db, request, playlist_id, t)

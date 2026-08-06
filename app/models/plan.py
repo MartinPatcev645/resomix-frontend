@@ -28,6 +28,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import mysql
 from sqlalchemy.sql import func
 
+from app.core.entitlement_keys import PriceKind
 from . import Base
 
 # value_type values a Feature may declare (kept app-level, not a SQL enum, so adding a
@@ -116,7 +117,12 @@ class PlanPrice(Base):
 
     __tablename__ = "plan_prices"
     __table_args__ = (
-        UniqueConstraint("plan_id", "interval", "currency", name="uq_plan_price_cycle_ccy"),
+        # Includes `price_kind` so a plan can hold a founding AND a list price for the same
+        # interval+currency at once — the subscription schedule needs its phase-2 price to exist
+        # before the phase-1 one is ever sold.
+        UniqueConstraint(
+            "plan_id", "interval", "currency", "price_kind", name="uq_plan_price_cycle_ccy_kind"
+        ),
         {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
     )
 
@@ -127,6 +133,13 @@ class PlanPrice(Base):
     interval: Mapped[str] = mapped_column(String(10), nullable=False, default="month")  # month|year
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
     unit_amount_cents: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), nullable=False, default=0)
+
+    # founding | list. `list` is the default because that is what every price was before a founding
+    # offer existed. A founding price is sold only while the beta window is open; the list price is
+    # what the subscription schedule rolls onto afterwards, and must exist before the first sale.
+    price_kind: Mapped[str] = mapped_column(
+        String(10), nullable=False, default=PriceKind.LIST, server_default=PriceKind.LIST, index=True
+    )
 
     stripe_price_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
     stripe_product_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)

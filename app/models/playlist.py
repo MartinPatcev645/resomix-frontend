@@ -107,3 +107,42 @@ class PlaylistTrack(Base):
     
     def __repr__(self):
         return f"<PlaylistTrack(playlist_id={self.playlist_id}, track_id={self.track_id}, position={self.position})>"
+
+
+class PlaylistEmbedToken(Base):
+    """An owner-minted, revocable token that authorises embedding one playlist (pricing v2.1 G1).
+
+    The embed widget used to fetch any playlist by UUID from the public route, so a Pro gate on the
+    Embed button protected nothing — the button was gated, the data was not. This token moves the
+    gate onto the data: a dedicated embed endpoint serves a playlist only when the token matches.
+
+    It is **not** an authentication credential. It says "the owner authorised this playlist to be
+    embedded", nothing more — the playlist must still be public to be served, so the token can never
+    widen access beyond what the owner already published. Two independent conditions, neither
+    redundant: `is_public` decides who may see it, the token decides whether it may be embedded.
+    """
+
+    __tablename__ = "playlist_embed_tokens"
+    __table_args__ = (
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
+
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True, autoincrement=True)
+    playlist_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("playlists.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    token: Mapped[str] = mapped_column(String(16), nullable=False, unique=True, index=True)
+    created_by: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    # Soft revocation — the row survives so a withdrawn embed stays distinguishable from one that
+    # was never minted.
+    revoked_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.current_timestamp()
+    )
+
+    def __repr__(self) -> str:
+        state = "revoked" if self.revoked_at else "active"
+        return f"<PlaylistEmbedToken(playlist_id={self.playlist_id}, {state})>"

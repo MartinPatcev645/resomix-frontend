@@ -34,6 +34,25 @@ class FeatureKey:
     CAN_VIEW_FULL_ANALYSIS = "can_view_full_analysis"  # the full Track Intelligence page
 
 
+class PriceKind:
+    """Which offer a ``plan_prices`` row belongs to.
+
+    ``FOUNDING`` is sold only while the beta window is open (``settings.beta_end_date``).
+    ``LIST`` is the standing price, and is what a founding subscription's schedule rolls onto —
+    so it must exist in Stripe *before* the first founding sale, even though nobody is charged it
+    yet. Both can exist for the same plan / interval / currency; that is why the unique key on
+    ``plan_prices`` includes this column.
+    """
+    FOUNDING = "founding"
+    LIST = "list"
+
+
+# How many billing cycles a founding subscription keeps its rate before rolling onto the list
+# price. From §5.3: 22 monthly cycles, or 2 yearly ones ("your first two years at the founding
+# rate"). Phase 1 of the Stripe Subscription Schedule runs for exactly this many iterations.
+FOUNDING_LOCK_ITERATIONS = {"month": 22, "year": 2}
+
+
 # Plan codes (tiers).
 class PlanCode:
     GUEST = "guest"

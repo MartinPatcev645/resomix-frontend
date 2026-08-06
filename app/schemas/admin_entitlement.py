@@ -42,6 +42,12 @@ class AddPlanPriceRequest(BaseModel):
 
     stripe_price_id: str = Field(..., description="Stripe Price ID, e.g. price_123...")
     interval: str = Field("month", description="Billing interval fallback (month|year).")
+    # Defaults to `list`, which is what every price was before the founding offer existed — so an
+    # existing caller that omits it keeps its old behaviour exactly.
+    price_kind: str = Field(
+        "list",
+        description="founding | list. Part of the upsert key: a founding price must NOT overwrite the list price it will later roll onto.",
+    )
 
     class Config:
         json_schema_extra = {"example": {"stripe_price_id": "price_123", "interval": "month"}}

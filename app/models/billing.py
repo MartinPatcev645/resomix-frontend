@@ -129,3 +129,41 @@ class UsagePeriodHistory(Base):
             f"<UsagePeriodHistory(subject={self.subject_type}:{self.subject_id}, "
             f"feature='{self.feature_key}', used={self.used_count})>"
         )
+
+
+class BillingConsent(Base):
+    """One row per consent given before a Checkout session (pricing v2.1 §5.5).
+
+    EU consumers have a 14-day withdrawal right on digital services. Access starts immediately, so
+    the buyer must actively agree to begin before that period ends — and we must be able to show,
+    later, *what* they agreed to and *when*.
+
+    Deliberately an append-only audit row, never a boolean on ``users``. A flag answers "did they
+    consent?" and nothing else; it cannot answer "to which version of the terms?", which is the only
+    question that matters once the documents have been revised. Rows are never updated or deleted:
+    a second purchase writes a second row.
+    """
+
+    __tablename__ = "billing_consents"
+    __table_args__ = (
+        Index("idx_user_type", "user_id", "consent_type"),
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
+
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    # 'withdrawal_waiver' today. A string rather than an enum so a new consent type is a data
+    # change, not a migration.
+    consent_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    # Which documents were agreed to, e.g. "tos:2026-07-01,privacy:2026-07-01".
+    doc_versions: Mapped[str] = mapped_column(String(60), nullable=False)
+    ip: Mapped[str] = mapped_column(String(45), nullable=False)
+
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.current_timestamp()
+    )
+
+    def __repr__(self) -> str:
+        return f"<BillingConsent(user={self.user_id}, type='{self.consent_type}', at={self.created_at})>"

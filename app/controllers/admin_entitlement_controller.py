@@ -14,6 +14,7 @@ from fastapi import status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.entitlement_keys import PriceKind
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.services.admin_entitlement_service import AdminEntitlementService
@@ -91,12 +92,13 @@ class AdminEntitlementController:
         return JSONResponse(status_code=200, content=format_response(success=True, data=result))
 
     async def add_price(
-        self, db: AsyncSession, code: str, stripe_price_id: str, interval: str, current_admin: User
+        self, db: AsyncSession, code: str, stripe_price_id: str, interval: str,
+        current_admin: User, price_kind: str = PriceKind.LIST,
     ) -> JSONResponse:
         try:
             result = await self.service.add_or_update_price(
                 db, code=code, stripe_price_id=stripe_price_id, interval=interval,
-                updated_by=self._actor_id(current_admin),
+                price_kind=price_kind, updated_by=self._actor_id(current_admin),
             )
         except KeyError as e:
             return JSONResponse(

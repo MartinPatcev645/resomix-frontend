@@ -10,6 +10,7 @@ This service owns the *initiation* side (Checkout session, Portal session, plan 
 price→plan map). Stripe state is written back by the webhook handlers (billing_sync_service).
 """
 
+import calendar
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -20,8 +21,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.entitlement_keys import ACTIVE_SUBSCRIPTION_STATUSES, PlanCode, FeatureKey
-from app.models.billing import BillingInvoice, UsagePeriodHistory
+from app.core.entitlement_keys import (
+    ACTIVE_SUBSCRIPTION_STATUSES,
+    FOUNDING_LOCK_ITERATIONS,
+    FeatureKey,
+    PlanCode,
+    PriceKind,
+)
+from app.models.billing import BillingConsent, BillingInvoice, UsagePeriodHistory
 from app.models.plan import Plan, PlanPrice
 from app.models.purchase import UserSubscription
 from app.models.user import User
@@ -40,6 +47,10 @@ _USAGE_FEATURES = (FeatureKey.UPLOADS_PER_MONTH, FeatureKey.SEARCH_PLAYLISTS_PER
 # Countries billed in USD (everything else → EUR). Extend as needed; USD prices must exist in
 # plan_prices for these to actually resolve to USD (otherwise we fall back to EUR).
 USD_COUNTRIES = {"US"}
+
+# The consent required before a Checkout session (§5.5): the buyer agrees their subscription starts
+# immediately, which waives the EU 14-day right of withdrawal for the part already delivered.
+CONSENT_WITHDRAWAL_WAIVER = "withdrawal_waiver"
 
 
 class BillingService:
@@ -65,7 +76,12 @@ class BillingService:
         return (await db.execute(select(Plan).where(Plan.code == code))).scalar_one_or_none()
 
     async def _active_price(
-        self, db: AsyncSession, plan_id: int, currency: str, interval: str = "month"
+        self,
+        db: AsyncSession,
+        plan_id: int,
+        currency: str,
+        interval: str = "month",
+        price_kind: str = PriceKind.LIST,
     ) -> Optional[PlanPrice]:
         return (
             await db.execute(
@@ -73,10 +89,30 @@ class BillingService:
                     PlanPrice.plan_id == plan_id,
                     PlanPrice.interval == interval,
                     PlanPrice.currency == currency,
+                    PlanPrice.price_kind == price_kind,
                     PlanPrice.is_active.is_(True),
                 )
             )
         ).scalar_one_or_none()
+
+    async def resolve_offer_price(
+        self, db: AsyncSession, plan_id: int, currency: str, interval: str = "month"
+    ) -> Optional[PlanPrice]:
+        """The price a buyer would actually be charged right now.
+
+        Founding while the beta window is open, list afterwards — one resolver, used by BOTH the
+        pricing page and checkout. If they resolved separately they would eventually disagree, and
+        the failure mode is a page advertising one price and a checkout charging another.
+
+        Falls back to list when no founding price exists yet, which is the state today: the founding
+        prices have to be created in Stripe first (F1 is an operator task). Until then the window
+        being open changes nothing, rather than breaking checkout.
+        """
+        if self.beta_window()["founding_active"]:
+            founding = await self._active_price(db, plan_id, currency, interval, PriceKind.FOUNDING)
+            if founding:
+                return founding
+        return await self._active_price(db, plan_id, currency, interval, PriceKind.LIST)
 
     async def active_subscription(self, db: AsyncSession, user: User) -> Optional[UserSubscription]:
         return (
@@ -114,9 +150,24 @@ class BillingService:
     # Checkout (subscribe / upgrade)
     # ------------------------------------------------------------------ #
     async def create_checkout_session(
-        self, db: AsyncSession, user: User, plan_code: str, country_code: Optional[str]
+        self,
+        db: AsyncSession,
+        user: User,
+        plan_code: str,
+        country_code: Optional[str],
+        *,
+        consent: bool = False,
+        consent_doc_versions: Optional[str] = None,
+        client_ip: Optional[str] = None,
     ) -> str:
-        """Create a Stripe subscription Checkout session for ``plan_code`` and return its URL."""
+        """Create a Stripe subscription Checkout session for ``plan_code`` and return its URL.
+
+        **No consent, no session** (§5.5). EU consumers have a 14-day withdrawal right on digital
+        services; access starts immediately, so the buyer must actively agree to begin before that
+        window closes. The check is here rather than in the UI because a UI checkbox proves nothing
+        after the fact — the consent row written below is the record, and it is written *before*
+        Stripe is called so a session cannot exist without one.
+        """
         plan = await self._plan_by_code(db, plan_code)
         if not plan or plan.code in (PlanCode.GUEST, PlanCode.FREE):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not a purchasable plan.")
@@ -133,18 +184,50 @@ class BillingService:
                 detail="You already have an active subscription. Use 'Manage subscription' to change it.",
             )
 
+        if not consent:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Please confirm you want your subscription to start immediately, and that you "
+                    "understand this waives your 14-day right of withdrawal once it begins."
+                ),
+            )
+
         currency = self.resolve_currency(country_code)
-        price = await self._active_price(db, plan.id, currency)
+        # Founding while the window is open, list afterwards (F1/F5). Same resolver as the pricing
+        # page, so the two can never quote different numbers.
+        price = await self.resolve_offer_price(db, plan.id, currency)
         if not price:  # fall back to EUR if the resolved currency has no price yet
-            price = await self._active_price(db, plan.id, "EUR")
+            price = await self.resolve_offer_price(db, plan.id, "EUR")
         if not price:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="No active price for this plan. Please try again later.",
             )
 
+        # Written BEFORE the Stripe call, and committed with the customer creation below. If Stripe
+        # then fails, we hold a consent for a purchase that did not happen — harmless. The reverse,
+        # a purchase with no consent record, is the one that cannot be allowed to happen.
+        db.add(
+            BillingConsent(
+                user_id=user.id,
+                consent_type=CONSENT_WITHDRAWAL_WAIVER,
+                doc_versions=(consent_doc_versions or settings.legal_doc_versions)[:60],
+                ip=(client_ip or "unknown")[:45],
+            )
+        )
+        await db.commit()
+
         customer_id = await self._get_or_create_customer(db, user)
-        metadata = {"user_id": str(user.id), "plan_id": str(plan.id), "plan_code": plan.code}
+        metadata = {
+            "user_id": str(user.id),
+            "plan_id": str(plan.id),
+            "plan_code": plan.code,
+            # Read back by the founding-lock handler when the checkout completes: it needs to know
+            # which price was actually sold, and the session's line items are not on the event.
+            "price_kind": price.price_kind,
+            "stripe_price_id": price.stripe_price_id,
+        }
 
         kwargs: Dict[str, Any] = {
             "mode": "subscription",
@@ -166,6 +249,133 @@ class BillingService:
 
         session = stripe.checkout.Session.create(**kwargs)
         return session.url
+
+    # ------------------------------------------------------------------ #
+    # Founding lock (subscription schedule)
+    # ------------------------------------------------------------------ #
+    async def apply_founding_lock(self, db: AsyncSession, session: Dict[str, Any]) -> None:
+        """Pin a founding subscription to its rate for the agreed number of cycles (§5.3).
+
+        Phase 1 runs the founding price for a fixed number of ITERATIONS — 22 monthly or 2 yearly —
+        then phase 2 rolls onto the list price. Iterations rather than a date: the guarantee is
+        "your first N cycles at this rate", and a date would shorten the lock for anyone who
+        subscribed late in the window.
+
+        ``end_behavior="release"`` detaches the schedule once phase 2 starts, leaving an ordinary
+        subscription behind. Without it the subscription stays schedule-managed forever and the
+        Customer Portal cannot change it — a paying customer who wants to switch plan would be
+        stuck, and support could not fix it either.
+
+        **Never raises.** This runs inside the Stripe webhook handler; an exception here would make
+        us return 500, Stripe would retry the whole event, and the retry would re-run everything
+        else in it. A missing lock is recoverable by hand from the logged error. A wedged webhook is
+        much worse.
+        """
+        subscription_id = session.get("subscription")
+        metadata = session.get("metadata") or {}
+        if not subscription_id or metadata.get("price_kind") != PriceKind.FOUNDING:
+            return  # not a founding subscription — nothing to lock
+
+        try:
+            plan_id = int(metadata["plan_id"])
+            founding = (
+                await db.execute(
+                    select(PlanPrice).where(PlanPrice.stripe_price_id == metadata["stripe_price_id"])
+                )
+            ).scalar_one_or_none()
+            if founding is None:
+                logger.error("BILLING: founding price %s not found locally; no lock applied",
+                             metadata.get("stripe_price_id"))
+                return
+
+            list_price = await self._active_price(
+                db, plan_id, founding.currency, founding.interval, PriceKind.LIST
+            )
+            if list_price is None:
+                # The schedule cannot be built without somewhere to roll onto. Loud, because the
+                # customer is now on a founding price with no exit — they keep it until someone
+                # notices, which is the generous direction but is not what was agreed.
+                logger.error(
+                    "BILLING: no %s list price for plan %s — founding lock NOT applied to %s",
+                    founding.interval, plan_id, subscription_id,
+                )
+                return
+
+            iterations = FOUNDING_LOCK_ITERATIONS.get(founding.interval)
+            if not iterations:
+                logger.error("BILLING: no founding lock defined for interval %r", founding.interval)
+                return
+
+            schedule = stripe.SubscriptionSchedule.create(from_subscription=subscription_id)
+            # Stripe pre-fills phase 0 from the live subscription. Its start_date must be carried
+            # over verbatim — the API refuses to move the start of a phase already in progress.
+            current_start = schedule.phases[0].start_date if schedule.phases else None
+            phase_one: Dict[str, Any] = {
+                "items": [{"price": founding.stripe_price_id, "quantity": 1}],
+                "iterations": iterations,
+            }
+            if current_start:
+                phase_one["start_date"] = current_start
+            stripe.SubscriptionSchedule.modify(
+                schedule.id,
+                end_behavior="release",
+                phases=[
+                    phase_one,
+                    {"items": [{"price": list_price.stripe_price_id, "quantity": 1}]},
+                ],
+            )
+
+            await self._record_founding_lock(db, subscription_id, schedule.id, iterations, founding.interval)
+            logger.info(
+                "BILLING: founding lock applied to %s (%s x%d -> %s)",
+                subscription_id, founding.stripe_price_id, iterations, list_price.stripe_price_id,
+            )
+        except Exception as exc:  # noqa: BLE001 — see the docstring
+            logger.error("BILLING: could not apply founding lock to %s: %s", subscription_id, exc)
+
+    async def _record_founding_lock(
+        self, db: AsyncSession, subscription_id: str, schedule_id: str,
+        iterations: int, interval: str,
+    ) -> None:
+        """Mirror the lock locally so support and the profile screen can read it without Stripe.
+
+        The row may not exist yet — `customer.subscription.created` and
+        `checkout.session.completed` race, and either can land first. That is fine: the
+        `subscription_schedule.*` webhook writes the same fields when it arrives, so the mirror
+        converges either way.
+        """
+        row = (
+            await db.execute(
+                select(UserSubscription).where(
+                    UserSubscription.stripe_subscription_id == subscription_id
+                )
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            return
+        row.is_founding = True
+        row.stripe_schedule_id = schedule_id
+        row.founding_lock_ends_at = self._lock_end(row.current_period_start, iterations, interval)
+        await db.commit()
+
+    @staticmethod
+    def _lock_end(start: Any, iterations: int, interval: str) -> Optional[datetime]:
+        """When the founding rate ends: start + iterations × interval.
+
+        An estimate for display, deliberately: Stripe's schedule is what actually enforces it, and
+        its cycle boundaries can shift by a day on month-end dates. Shown as a month, never as a
+        precise instant, so the approximation is never presented as more than it is.
+        """
+        if start is None:
+            return None
+        months = iterations * (12 if interval == "year" else 1)
+        year = start.year + (start.month - 1 + months) // 12
+        month = (start.month - 1 + months) % 12 + 1
+        # Clamp the day so 31 January + 1 month lands on the end of February rather than
+        # overflowing into March. `monthrange` knows the real calendar, including the century rule
+        # for leap years that a hand-written `year % 4` gets wrong.
+        day = min(start.day, calendar.monthrange(year, month)[1])
+        return start.replace(year=year, month=month, day=day)
 
     # ------------------------------------------------------------------ #
     # Customer Portal (manage / downgrade / cancel / card / invoices)
@@ -210,9 +420,19 @@ class BillingService:
 
         out: List[Dict[str, Any]] = []
         for plan in plans:
-            price = await self._active_price(db, plan.id, currency)
+            # The SAME resolver checkout uses, so the page cannot advertise a price the checkout
+            # will not charge.
+            price = await self.resolve_offer_price(db, plan.id, currency)
+            resolved_currency = price.currency if price else currency
             if not price and currency != "EUR":
-                price = await self._active_price(db, plan.id, "EUR")
+                price = await self.resolve_offer_price(db, plan.id, "EUR")
+                resolved_currency = price.currency if price else currency
+            # The undiscounted price, shown struck through beside a founding one. Only meaningful
+            # when it differs — otherwise the card would claim a saving of zero.
+            list_price = await self._active_price(
+                db, plan.id, resolved_currency, "month", PriceKind.LIST
+            )
+            is_founding_price = bool(price and price.price_kind == PriceKind.FOUNDING)
             is_free = plan.code == PlanCode.FREE
             purchasable = bool(plan.is_active and price and not is_free)
             out.append(
@@ -226,6 +446,13 @@ class BillingService:
                     "purchasable": purchasable,
                     "coming_soon": bool(not plan.is_active and not is_free),
                     "is_current": plan.code == current_plan_code,
+                    "is_founding_price": is_founding_price,
+                    "list_unit_amount_cents": (
+                        list_price.unit_amount_cents
+                        if (is_founding_price and list_price and price
+                            and list_price.unit_amount_cents != price.unit_amount_cents)
+                        else None
+                    ),
                     # The numbers the page prints. Rendered from the SAME rows that enforce them, so
                     # an admin raising a limit changes the pricing page in the same breath — the
                     # alternative is a marketing page that quietly starts lying after an edit.
