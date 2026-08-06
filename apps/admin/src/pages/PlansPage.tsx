@@ -99,16 +99,31 @@ function EntitlementCell({
   if (feature.value_type === 'csv') {
     const opts = CSV_OPTIONS[feature.key] ?? []
     const arr = String(value ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+    // The selected values are rendered BELOW the control, two per row — not as tags inside the
+    // bar. Antd grows a multi-select horizontally for every tag, so `export_targets` (up to seven
+    // values) stretched its column far wider than any other and pushed the whole table sideways.
+    // `maxTagCount={0}` keeps the bar a fixed width; the summary tells you how many are set.
     return (
-      <Select
-        mode="multiple"
-        value={arr}
-        disabled={disabled}
-        placeholder="none"
-        style={{ minWidth: 170, ...ring }}
-        onChange={(vals: string[]) => onChange(vals.join(','))}
-        options={opts.map((o) => ({ value: o, label: o }))}
-      />
+      <div className="flex flex-col items-stretch gap-1.5" style={{ width: 168 }}>
+        <Select
+          mode="multiple"
+          value={arr}
+          disabled={disabled}
+          placeholder="none"
+          style={{ width: '100%', ...ring }}
+          maxTagCount={0}
+          maxTagPlaceholder={() => (arr.length ? `${arr.length} selected` : 'none')}
+          onChange={(vals: string[]) => onChange(vals.join(','))}
+          options={opts.map((o) => ({ value: o, label: o }))}
+        />
+        {arr.length > 0 && (
+          <div className="grid grid-cols-2 gap-1">
+            {arr.map((v) => (
+              <Tag key={v} className="!m-0 !text-[11px] !px-1.5 truncate" title={v}>{v}</Tag>
+            ))}
+          </div>
+        )}
+      </div>
     )
   }
 
@@ -140,27 +155,40 @@ function PlanHeader({ plan, onChanged }: { plan: AdminPlan; onChanged: () => voi
     }
   }
 
+  // Two lines, not three stacked blocks. The header repeats for every plan column, so each extra
+  // line costs vertical space across the whole table — and "active" as a written word next to its
+  // own switch was saying the same thing twice. The switch's state IS the label; the tooltip
+  // carries the meaning, and `set default` collapses into the same row.
   return (
-    <div className="flex flex-col gap-1.5 min-w-[120px]">
+    <div className="flex flex-col gap-1 min-w-[132px] text-left">
       <div className="flex items-center gap-2">
-        <span className="font-semibold">{plan.name}</span>
+        <Tooltip title={plan.is_active ? 'Active — on sale and assignable' : 'Inactive — hidden from checkout'}>
+          <Switch
+            size="small"
+            checked={plan.is_active}
+            loading={busy}
+            onChange={(c) => void patch({ is_active: c })}
+            aria-label={`${plan.name} active`}
+          />
+        </Tooltip>
+        <span className="font-semibold leading-none">{plan.name}</span>
         {plan.is_default && (
-          <Tooltip title="Default plan assigned to new registrations">
-            <Tag color="gold" className="!m-0">default</Tag>
+          <Tooltip title="Assigned to new registrations">
+            <Tag color="gold" className="!m-0 !text-[10px] !px-1 !leading-4">default</Tag>
           </Tooltip>
         )}
       </div>
-      <Text type="secondary" className="!text-xs font-mono">{plan.code}</Text>
-      <div className="flex items-center gap-3 flex-wrap">
-        <Tooltip title={plan.is_active ? 'Active — visible/usable' : 'Inactive draft'}>
-          <span className="flex items-center gap-1.5 text-xs">
-            <Switch size="small" checked={plan.is_active} loading={busy} onChange={(c) => void patch({ is_active: c })} />
-            active
-          </span>
-        </Tooltip>
+      <div className="flex items-center gap-2">
+        <Text type="secondary" className="!text-[11px] font-mono">{plan.code}</Text>
         {!plan.is_default && plan.is_assignable && (
-          <Tooltip title="Make this the default plan assigned to new registrations">
-            <Button size="small" type="link" className="!px-0 !text-xs" loading={busy} onClick={() => void patch({ is_default: true })}>
+          <Tooltip title="Make this the default plan for new registrations">
+            <Button
+              size="small"
+              type="link"
+              className="!px-0 !h-auto !text-[11px]"
+              loading={busy}
+              onClick={() => void patch({ is_default: true })}
+            >
               set default
             </Button>
           </Tooltip>
@@ -239,6 +267,15 @@ function UserLookup() {
 }
 
 // ── Stripe price management for one plan (data-driven price mapping) ─────────────────────────
+// Which offer a price belongs to. `founding` is sold while the beta window is open; `list` is the
+// standing price a founding subscription's schedule later rolls onto. BOTH can exist for the same
+// plan/interval/currency, which is why this is part of the upsert key — attaching a founding price
+// as "list" would silently overwrite the list row the schedule depends on.
+const PRICE_KIND_OPTIONS = [
+  { value: 'list', label: 'List price' },
+  { value: 'founding', label: 'Founding price' },
+]
+
 const INTERVAL_OPTIONS = [
   { value: 'month', label: 'Monthly' },
   { value: 'year', label: 'Yearly' },
@@ -262,6 +299,9 @@ function PlanPriceEditor({
   const { message } = App.useApp()
   const [priceId, setPriceId] = useState('')
   const [intervalSel, setIntervalSel] = useState('month')
+  // Defaults to 'list' to match the server default, so an untouched form behaves exactly as it did
+  // before this field existed.
+  const [kindSel, setKindSel] = useState('list')
   const [adding, setAdding] = useState(false)
   const [busyId, setBusyId] = useState<number | null>(null)
 
@@ -274,7 +314,7 @@ function PlanPriceEditor({
       return
     }
     setAdding(true)
-    const res = await addPlanPrice(plan.code, id, intervalSel)
+    const res = await addPlanPrice(plan.code, id, intervalSel, kindSel)
     setAdding(false)
     if (res.success) {
       message.success('Price attached')
@@ -320,6 +360,16 @@ function PlanPriceEditor({
       dataIndex: 'interval',
       key: 'interval',
       render: (v: string) => <Tag className="!m-0">{v}</Tag>,
+    },
+    {
+      // Without this a plan holding a founding AND a list price shows two near-identical rows with
+      // no way to tell which is which.
+      title: 'Offer',
+      dataIndex: 'price_kind',
+      key: 'price_kind',
+      render: (v: string) => (
+        <Tag color={v === 'founding' ? 'gold' : undefined} className="!m-0">{v ?? 'list'}</Tag>
+      ),
     },
     { title: 'Currency', dataIndex: 'currency', key: 'currency' },
     {
@@ -382,7 +432,8 @@ function PlanPriceEditor({
           style={{ maxWidth: 300 }}
           allowClear
         />
-        <Select value={intervalSel} onChange={setIntervalSel} options={INTERVAL_OPTIONS} style={{ width: 130 }} />
+        <Select value={intervalSel} onChange={setIntervalSel} options={INTERVAL_OPTIONS} style={{ width: 120 }} />
+        <Select value={kindSel} onChange={setKindSel} options={PRICE_KIND_OPTIONS} style={{ width: 145 }} />
         <Button type="primary" icon={<Plus size={16} />} loading={adding} onClick={() => void add()}>
           Add price
         </Button>
@@ -513,14 +564,23 @@ export default function PlansPage() {
       fixed: 'left',
       width: 280,
       render: (_, { feature }) => (
+        // The description used to print under every row, which made each row 4-5 lines tall and
+        // turned a 15-row table into a wall of prose. It is reference material — needed when you
+        // are unsure what a key means, not while scanning values — so it lives behind the (i).
         <div className="flex flex-col gap-0.5">
-          <span className="font-medium">{feature.name}</span>
-          <span className="font-mono text-xs text-gray-500">{feature.key}</span>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <Tag className="!m-0 !text-[11px]" color="default">{feature.value_type}</Tag>
-            {feature.window && <Tag className="!m-0 !text-[11px]" color="geekblue">{feature.window}</Tag>}
+          <div className="flex items-center gap-1.5">
+            <span className="font-medium">{feature.name}</span>
+            {feature.description && (
+              <Tooltip title={feature.description} styles={{ root: { maxWidth: 340 } }}>
+                <Info size={13} className="shrink-0 text-gray-400 cursor-help" aria-label={`About ${feature.name}`} />
+              </Tooltip>
+            )}
           </div>
-          {feature.description && <Text type="secondary" className="!text-xs mt-0.5">{feature.description}</Text>}
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-xs text-gray-500 truncate" title={feature.key}>{feature.key}</span>
+            <Tag className="!m-0 !text-[10px] !px-1 !leading-4" color="default">{feature.value_type}</Tag>
+            {feature.window && <Tag className="!m-0 !text-[10px] !px-1 !leading-4" color="geekblue">{feature.window}</Tag>}
+          </div>
         </div>
       ),
     },

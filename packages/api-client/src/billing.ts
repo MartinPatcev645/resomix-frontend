@@ -10,6 +10,19 @@ import authClient from "./authClient";
 import { axiosWrapper, handleApiError } from "./utils";
 import { API_CONFIG } from "./config";
 
+/**
+ * One buyable interval for a plan. Only intervals with an ACTIVE price appear, so a monthly/yearly
+ * toggle can never offer something checkout would then refuse.
+ */
+export interface BillingPlanOffer {
+  interval: string;
+  unit_amount_cents: number | null;
+  currency: string;
+  is_founding_price: boolean;
+  /** The undiscounted price, sent only when it differs from what is charged. */
+  list_unit_amount_cents: number | null;
+}
+
 export interface BillingPlanDisplay {
   code: string;
   name: string;
@@ -27,6 +40,8 @@ export interface BillingPlanDisplay {
   /** The undiscounted price, for a struck-through comparison. Sent ONLY when it differs from
    *  what is being charged, so the card can never advertise a saving of zero. */
   list_unit_amount_cents?: number | null;
+  /** Every interval this plan can be bought at. Drives a monthly/yearly toggle when one exists. */
+  offers?: BillingPlanOffer[];
 }
 
 /**
@@ -143,10 +158,19 @@ export const getBillingInvoices = async () => {
  * audit row before calling Stripe, so a session cannot exist with no record behind it. Passing it
  * here is the caller asserting the user ticked the box; never default it to true.
  */
-export const startBillingCheckout = async (planCode: string, consent: boolean) => {
+export const startBillingCheckout = async (
+  planCode: string,
+  consent: boolean,
+  /** "month" | "year". Must match an interval present in the plan's `offers`. */
+  interval: string = "month",
+) => {
   try {
     return await axiosWrapper<Envelope<{ url: string }>>(
-      authClient.post(API_CONFIG.ENDPOINTS.BILLING_CHECKOUT, { plan_code: planCode, consent })
+      authClient.post(API_CONFIG.ENDPOINTS.BILLING_CHECKOUT, {
+        plan_code: planCode,
+        consent,
+        interval,
+      })
     );
   } catch (error) {
     return handleApiError(error as Error);

@@ -18,6 +18,8 @@ export interface AdminFeature {
 
 /** A Stripe price attached to a plan (the data-driven price mapping). */
 export interface AdminPlanPrice {
+  /** "founding" | "list" — which offer this price belongs to. */
+  price_kind?: string;
   id: number;
   interval: string;            // month | year
   currency: string;            // EUR | USD | …
@@ -232,11 +234,19 @@ export const addPlanPrice = async (
   code: string,
   stripePriceId: string,
   interval = "month",
+  /**
+   * "founding" | "list" — part of the UPSERT KEY server-side, not decoration.
+   *
+   * A plan holds a founding AND a list price for the same interval+currency at once. Attaching a
+   * founding price without saying so overwrites the list row — and the list price is what a
+   * founding subscription's schedule rolls onto, so the damage surfaces ~22 months later.
+   */
+  priceKind = "list",
 ): Promise<Envelope<AdminPlanPrice>> => {
   try {
     const url = `${API_CONFIG.ENDPOINTS.ADMIN_PLANS}/${encodeURIComponent(code)}/prices`;
     const res = await axiosWrapper<Envelope<AdminPlanPrice>>(
-      authClient.post(url, { stripe_price_id: stripePriceId.trim(), interval }),
+      authClient.post(url, { stripe_price_id: stripePriceId.trim(), interval, price_kind: priceKind }),
     );
     if (res.success) return res;
     return { success: false, error: res.error || "Failed to add price." };
