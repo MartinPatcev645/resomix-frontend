@@ -6,7 +6,6 @@ import { LogoHeader } from '../icons/LogoHeader.tsx';
 import { MenuIcon } from '../icons/MenuIcon.tsx';
 import {
   BETA_URL,
-  PRICING_HREF,
   CATALOGUE_PILOT_HREF,
   NAV_TOP_GROUPS,
   getNavSectionForPath,
@@ -37,7 +36,6 @@ function NavGroupList({
   withPanels = true,
   idPrefix = '',
   setItemRef = megaMenu.setItemRef,
-  leadingItem,
   trailingItem,
 }: {
   groups: NavTopGroup[];
@@ -50,13 +48,10 @@ function NavGroupList({
   idPrefix?: string;
   setItemRef?: MegaMenuApi['setItemRef'];
   /** Extra <li> appended after the groups — used for plain links that have no mega panel. */
-  /** Extra <li> rendered BEFORE the groups — a plain link that has no mega panel. */
-  leadingItem?: React.ReactNode;
   trailingItem?: React.ReactNode;
 }) {
   return (
     <ul>
-      {leadingItem}
       {groups.map((group) => {
         const index = NAV_TOP_GROUPS.findIndex((g) => g.key === group.key);
         const isOpen = megaMenu.openIndex === index;
@@ -244,24 +239,6 @@ export function SiteHeader({
    * site, so this is a full-page navigation. `idPrefix` keeps the sticky header's copy from
    * colliding with the main one.
    */
-  const pricingNavItem = (idPrefix = '') => (
-    <li key="pricing" id={`${idPrefix}mi-pricing`}>
-      <div className="nav-mm-item-wrap">
-        <a
-          className="nav-mm-trigger"
-          href={PRICING_HREF}
-          id={`${idPrefix}nav-pricing-link`}
-          onClick={(e) => {
-            e.preventDefault();
-            window.location.href = PRICING_HREF;
-          }}
-        >
-          {navT('nav.cta.pricing')}
-        </a>
-      </div>
-    </li>
-  );
-
   const logoLink = (
     <a href="/" aria-label="Resomix home" onClick={handleLogoClick}>
       <LogoHeader className="nav-logo-mark" />
@@ -406,7 +383,6 @@ export function SiteHeader({
                 groups={rightGroups}
                 {...navListProps}
                 setItemRef={mainItemRef}
-                leadingItem={pricingNavItem()}
               />
             </nav>
             {accountControl}
@@ -443,7 +419,6 @@ export function SiteHeader({
                 {...navListProps}
                 idPrefix="sticky-"
                 setItemRef={stickyItemRef}
-                leadingItem={pricingNavItem('sticky-')}
               />
             </nav>
             {accountControl}
