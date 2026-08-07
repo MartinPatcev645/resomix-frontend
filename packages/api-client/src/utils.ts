@@ -4,7 +4,7 @@ import { getDeviceHash, initDeviceHash } from "./deviceId";
 import { emitQuotaDenied } from "./quotaEvents";
 
 /**
- * Request header marking a 402 as **expected and already handled** by the caller.
+ * Axios config flag marking a 402 as **expected and already handled** by the caller.
  *
  * A 402 normally means the user just tried something their plan does not allow, so the interceptor
  * opens the upgrade modal for them. But some requests are speculative — the analysis page tries to
@@ -12,10 +12,18 @@ import { emitQuotaDenied } from "./quotaEvents";
  * routine branch, not a refusal the user asked for. Without this, opening a perfectly ordinary
  * summary popped an unprompted "Full Track Intelligence is a Pro feature" modal.
  *
+ * Deliberately a config property and NOT a request header. A header would have to be added to the
+ * server's `cors_allow_headers` or every one of these calls fails preflight cross-origin — turning
+ * a cosmetic fix into a broken fast path for every plan, Pro included. This flag never leaves the
+ * browser; axios keeps unknown config keys and hands them back on `error.config`.
+ *
  * Only the emit is suppressed. The call still fails, still returns `code`/`quota`, and the caller
  * still has to handle it — this changes who is told, not what happened.
  */
-export const QUOTA_SILENT_HEADER = "X-Quota-Silent";
+export const QUOTA_SILENT = "quotaSilent" as const;
+
+/** Spread into an axios request config to opt a speculative call out of the upgrade modal. */
+export const quotaSilent = () => ({ [QUOTA_SILENT]: true }) as Record<string, unknown>;
 import type { ApiResponse } from "./types/api";
 
 
@@ -101,11 +109,9 @@ export const handleApiError = (error: AxiosError | Error): {
     const { status, data } = (error as AxiosError).response!;
     // Some calls are speculative: the caller tries a fast path, expects it may be refused, and has
     // a working fallback. Their 402 is not a refusal the USER made and must not open the upgrade
-    // modal — see QUOTA_SILENT_HEADER.
+    // modal — see QUOTA_SILENT.
     const silentDenial =
-      ((error as AxiosError).config?.headers as Record<string, unknown> | undefined)?.[
-        QUOTA_SILENT_HEADER
-      ] != null;
+      ((error as AxiosError).config as Record<string, unknown> | undefined)?.[QUOTA_SILENT] === true;
 
     // Attempt to respect standardized error format
     if (data && typeof data === "object" && (data as ApiResponse).success === false) {

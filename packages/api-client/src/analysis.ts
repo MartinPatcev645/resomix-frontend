@@ -16,7 +16,7 @@
  */
 
 import authClient from "./authClient";
-import { axiosWrapper, handleApiError, validateAudioFile, QUOTA_SILENT_HEADER } from "./utils";
+import { axiosWrapper, handleApiError, validateAudioFile, quotaSilent } from "./utils";
 import { API_CONFIG } from "./config";
 
 /** Single-value analysis summary (mirror of the backend `to_dict`). */
@@ -93,9 +93,7 @@ export const getAnalysisSummary = async (analysisUuid: string) => {
 export const mintAnalysisToken = async (analysisUuid: string) => {
   try {
     return await axiosWrapper<AnalysisTokenEnvelope>(
-      authClient.post(`${analysisPath(analysisUuid)}/token`, undefined, {
-        headers: { [QUOTA_SILENT_HEADER]: "1" },
-      }),
+      authClient.post(`${analysisPath(analysisUuid)}/token`, undefined, quotaSilent()),
     );
   } catch (error) {
     return handleApiError(error as Error);
