@@ -137,6 +137,21 @@ class BillingSyncService:
             ("released", "canceled", "completed", "aborted")
         )
         if ended:
+            # Only the schedule we are CURRENTLY tracking may end the lock.
+            #
+            # A subscription can outlive more than one schedule: `repair_founding_locks.py` releases
+            # a broken stump and immediately builds a replacement, and support may do the same by
+            # hand. Both schedules point at the same subscription, so a late-arriving `released` for
+            # the OLD one would otherwise tear down the NEW lock that had just been recorded —
+            # leaving Stripe correctly enforcing a rate our own screens deny exists.
+            incoming = schedule.get("id")
+            if row.stripe_schedule_id and incoming and row.stripe_schedule_id != incoming:
+                logger.info(
+                    "BILLING: ignoring %s for superseded schedule %s (subscription now on %s)",
+                    event_type, incoming, row.stripe_schedule_id,
+                )
+                return
+
             # The rate is no longer pinned. `founding_lock_ends_at` is deliberately left in place:
             # it is a historical fact — when the lock ran out — and clearing it would erase the
             # only local record that the customer ever had one.
