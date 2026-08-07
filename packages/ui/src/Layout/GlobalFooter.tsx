@@ -35,7 +35,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
       */}
       <div
         aria-hidden="true"
-        className="absolute -left-[var(--px-63)] top-[var(--px-140)] min-w-[var(--px-1280)] font-benzin uppercase whitespace-nowrap"
+        className="absolute -left-[var(--px-63)] top-[var(--px-180)] min-w-[var(--px-1280)] font-benzin uppercase whitespace-nowrap"
         style={{ fontSize: "clamp(50.4px, 4.921875vw, 126px)" }}
       >
         Join the Resomix Universe
@@ -59,21 +59,21 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
             </a>
           </div>
           <div className="flex justify-between">
-            <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
+            <div className="flex flex-col text-[length:var(--px-10)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
               <div className="leading-[var(--px-40)]">
                 <CodeTyping
                   speed={50}
                   text="// ──────[ resomix &gt; footer_terminal ]──────"
                 />
               </div>
-              <div className="leading-[var(--px-8)]">
+              <div className="leading-[var(--px-12)]">
                 <CodeTyping
                   speed={50}
                   text={`company_name: Resomix<br />status: online [✓]<br />version: ${version}`}
                   multiline={true}
                 />
               </div>
-              <div className="leading-[var(--px-8)] mt-[var(--px-14)]">
+              <div className="leading-[var(--px-12)] mt-[var(--px-20)]">
                 <CodeTyping
                   speed={120}
                   text={`contact@email: support@resomix.com<br />HQ_coords: RA 0h 42m 44s | Dec +41° 16′ 9″ // Andromeda<br />address: resomix.com`}
@@ -81,8 +81,8 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
                 />
               </div>
             </div>
-            <div className="flex flex-col text-[length:var(--px-7)] text-right font-light font-fira opacity-50 tracking-[var(--px-2)] items-end">
-              <div className="leading-[var(--px-8)]">
+            <div className="flex flex-col text-[length:var(--px-10)] text-right font-light font-fira opacity-50 tracking-[var(--px-2)] items-end">
+              <div className="leading-[var(--px-12)]">
                 <CodeTyping
                   speed={50}
                   text={`upload_protocol: SSL 256-bit // encrypted<br />system_uptime: 99.97%<br />last_waveform_uploaded: ${generationTime} ago`}
@@ -90,7 +90,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
                 />
               </div>
 
-              <div className="leading-[var(--px-8)] mt-[var(--px-40)]">
+              <div className="leading-[var(--px-12)] mt-[var(--px-57)]">
                 <CodeTyping
                   speed={100}
                   text="PYXIS-1 Sonic Analysis Engine: v5.3.9<br />latency: zero-latency-mode = active<br />data_nodes: [New York] [London] [Singapore]"
@@ -101,20 +101,20 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
           </div>
         </div>
         <div className="flex justify-between px-[var(--px-65)]">
-          <div className="flex flex-col text-[length:var(--px-7)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
+          <div className="flex flex-col text-[length:var(--px-10)] font-light font-fira opacity-50 tracking-[var(--px-2)]">
             <CodeTyping
               speed={50}
               text="© 2026 Resomix // Beta Stage"
               multiline={true}
             />
           </div>
-          <div className="flex flex-col text-[length:var(--px-7)] text-right font-light font-fira tracking-[var(--px-2)] items-end">
+          <div className="flex flex-col text-[length:var(--px-10)] text-right font-light font-fira tracking-[var(--px-2)] items-end">
             <a
               href="https://legal.resomix.com"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Resomix legal information"
-              className="inline-flex min-h-[var(--px-24)] items-center justify-end px-[var(--px-8)] py-[var(--px-6)] hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link"
+              className="inline-flex min-h-[var(--px-24)] items-center justify-end px-[var(--px-8)] py-[var(--px-2)] hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link"
               id="footer-legal-link"
             >
               legal.info(): open('/legal')
@@ -124,7 +124,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Resomix support"
-              className="inline-flex min-h-[var(--px-24)] items-center justify-end px-[var(--px-8)] py-[var(--px-6)] hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link"
+              className="inline-flex min-h-[var(--px-24)] items-center justify-end px-[var(--px-8)] py-[var(--px-2)] hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link"
               id="footer-support-link"
             >
               support.to(): open('/support')
@@ -133,7 +133,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
             <a
               href={`${baseUrl}/contact`}
               aria-label="Resomix contact"
-              className="inline-flex min-h-[var(--px-24)] items-center justify-end px-[var(--px-8)] py-[var(--px-6)] hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link"
+              className="inline-flex min-h-[var(--px-24)] items-center justify-end px-[var(--px-8)] py-[var(--px-2)] hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link"
               id="footer-contact-link"
               onClick={(e) => {
                 if (onNavigate) {
@@ -145,7 +145,7 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
               contact_us(): fetch('/contact')
             </a>
             <button
-              className="inline-flex min-h-[var(--px-24)] items-center justify-end px-[var(--px-8)] py-[var(--px-6)] hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link cursor-pointer text-right"
+              className="inline-flex min-h-[var(--px-24)] items-center justify-end px-[var(--px-8)] py-[var(--px-2)] hover:underline decoration-[var(--px-0-5)] opacity-50 hover:opacity-100 transition-opacity footer-link cursor-pointer text-right"
               onClick={(e) => {
                 e.preventDefault();
                 const silktideIcon = document.querySelector('#stcm-icon') as HTMLElement;

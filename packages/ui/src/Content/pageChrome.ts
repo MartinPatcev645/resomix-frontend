@@ -61,7 +61,7 @@ export const PAGE_BTN_SECONDARY =
   "hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)]";
 
 export const PAGE_BTN_PRIMARY =
-  `${PAGE_BTN_BASE} border border-[var(--rx-color-accent)] bg-[var(--rx-color-accent)] font-medium text-[#050505] ` +
+  `${PAGE_BTN_BASE} border border-[var(--rx-color-accent)] bg-[var(--rx-color-accent)] font-semibold text-[#050505] ` +
   "hover:border-[var(--rx-color-accent-hover)] hover:bg-[var(--rx-color-accent-hover)]";
 
 export const PAGE_BTN_DANGER =

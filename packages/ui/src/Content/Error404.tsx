@@ -63,7 +63,7 @@ export default function Error404({
                   onClick={() => {
                     window.location.href = baseUrl;
                   }}
-                  className="inline-flex min-h-[var(--px-44)] cursor-pointer items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-accent)] bg-[var(--rx-color-accent)] px-[var(--px-22)] font-fira text-[length:var(--px-11)] font-medium uppercase tracking-[var(--px-1)] text-[#050505] transition-[background-color,border-color] duration-[var(--rx-duration-base)] ease-[var(--rx-ease-standard)] hover:border-[var(--rx-color-accent-hover)] hover:bg-[var(--rx-color-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rx-color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--rx-color-surface)]"
+                  className="inline-flex min-h-[var(--px-44)] cursor-pointer items-center justify-center rounded-[var(--rx-radius-control)] border border-[var(--rx-color-accent)] bg-[var(--rx-color-accent)] px-[var(--px-22)] font-fira text-[length:var(--px-11)] font-semibold uppercase tracking-[var(--px-1)] text-[#050505] transition-[background-color,border-color] duration-[var(--rx-duration-base)] ease-[var(--rx-ease-standard)] hover:border-[var(--rx-color-accent-hover)] hover:bg-[var(--rx-color-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rx-color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--rx-color-surface)]"
                 >
                   {buttonText}
                 </button>

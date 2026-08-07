@@ -89,3 +89,37 @@ export function scrollWorkspacePanelIntoView(panelId = "workspace-active-panel")
     });
   });
 }
+
+/** Clearance for the sticky navbar so the target does not land underneath it. */
+const STICKY_NAV_CLEARANCE = 80;
+
+/**
+ * Re-anchor the panel after choosing a reference.
+ *
+ * Picking a track swaps a long results list for a short reference preview, so the document gets
+ * dramatically shorter in one frame. The browser clamps the existing scroll position to the new
+ * document height, and on mobile — where the list is tall and the user has scrolled well into it —
+ * that clamp lands them on the footer, with the track they just chose somewhere far above.
+ *
+ * Different intent from `scrollWorkspacePanelIntoView`, which deliberately leaves context ABOVE a
+ * short panel to reveal it after a task switch. Here the panel IS the context: the source tabs and
+ * the chosen track need to be the first thing on screen, so this aligns to the top instead.
+ *
+ * No-op when the panel top is already comfortably in view, so a desktop layout that never collapses
+ * is left alone. Two rAFs so the collapse has actually reflowed before we measure it.
+ */
+export function scrollWorkspacePanelToTop(panelId = "workspace-active-panel"): void {
+  if (typeof window === "undefined") return;
+  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const el = document.getElementById(panelId);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      // Already sitting in the upper part of the viewport → the user can see it; don't nudge.
+      if (rect.top >= 0 && rect.top <= window.innerHeight * 0.35) return;
+      const targetY = Math.max(0, window.scrollY + rect.top - STICKY_NAV_CLEARANCE);
+      window.scrollTo({ top: targetY, behavior: reduce ? "auto" : "smooth" });
+    });
+  });
+}

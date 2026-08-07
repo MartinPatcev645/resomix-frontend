@@ -28,6 +28,7 @@ import {
   getDiscoveryCache,
   patchDiscoveryCache,
   clearDiscoveryReferenceCache,
+  scrollWorkspacePanelToTop,
 } from "./workspaceStateCache.ts";
 import { withViewTransition } from "@/utils/viewTransition.ts";
 
@@ -142,6 +143,10 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
       source: "catalogue",
       detail: "Catalogue track",
     });
+    // The results list collapses to a one-line preview, so the page suddenly gets much shorter and
+    // the browser clamps the scroll to the new bottom — on mobile that dumps the user on the
+    // footer, with the track they just picked off-screen above. Re-anchor to the source tabs.
+    scrollWorkspacePanelToTop();
   };
 
   const onUploadSelected = (file: File) => {
@@ -152,6 +157,8 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
       source: "upload",
       detail: file.name,
     });
+    // Same collapse as a catalogue pick — see onCatalogueSelect.
+    scrollWorkspacePanelToTop();
   };
 
   const tryExample = () => {
