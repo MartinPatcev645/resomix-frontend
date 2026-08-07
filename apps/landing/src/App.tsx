@@ -34,7 +34,7 @@ const MusicLibrariesPage = lazyRoute(PAGE_LOADERS['/solutions/music-libraries-sa
 const DjsPage = lazyRoute(PAGE_LOADERS['/solutions/djs']);
 const MusicCuratorsPage = lazyRoute(PAGE_LOADERS['/solutions/music-curators']);
 const ProducersPage = lazyRoute(PAGE_LOADERS['/solutions/producers']);
-const SubscribePage = lazyRoute(PAGE_LOADERS['/subscribe']);
+const PricingPage = lazyRoute(PAGE_LOADERS['/pricing']);
 import ReferenceSvg from "@/assets/icons/reference.svg";
 import MatchesSvg from "@/assets/icons/matches.svg";
 import AnalysisSvg from "@/assets/icons/analysis.svg";
@@ -142,12 +142,12 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/partners" element={<PartnersPage />} />
-            {/* /pricing and /subscribe rendered the identical component. Consolidated onto
-                /subscribe; this keeps existing links, bookmarks and search results working
+            {/* The public pricing page now lives at /pricing and the purchase flow at
+                beta.resomix.com/subscribe. This keeps old /subscribe links, bookmarks and search results working
                 rather than 404ing them — same treatment as the catalogue-intelligence spelling
                 redirect below. */}
             
-            <Route path="/pricing" element={<Navigate to="/subscribe" replace />} />
+            <Route path="/subscribe" element={<Navigate to="/pricing" replace />} />
             <Route path="/product" element={<ProductPage />} />
             <Route path="/product/sonic-discovery" element={<SonicDiscoveryPage />} />
             <Route path="/product/track-intelligence" element={<TrackIntelligencePage />} />
@@ -163,7 +163,7 @@ function App() {
             <Route path="/solutions/djs" element={<DjsPage />} />
             <Route path="/solutions/music-curators" element={<MusicCuratorsPage />} />
             <Route path="/solutions/producers" element={<ProducersPage />} />
-            <Route path="/subscribe" element={<SubscribePage />} />
+            <Route path="/pricing" element={<PricingPage />} />
 
             {/* Info Pages */}
             <Route path="/contact" element={<InfoPage mode="contact" />} />

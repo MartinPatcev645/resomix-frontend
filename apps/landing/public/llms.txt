@@ -34,7 +34,7 @@ recording; or make an authorised catalogue searchable by sound.
 
 - [About Resomix](https://resomix.com/about)
 - [Trust, rights and security](https://resomix.com/trust): How audio and data are handled.
-- [Pricing](https://resomix.com/subscribe)
+- [Pricing](https://resomix.com/pricing)
 - [Contact](https://resomix.com/contact)
 
 ## Optional

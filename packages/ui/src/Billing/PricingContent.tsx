@@ -2,6 +2,7 @@ import { ConsumerPricingContent } from "./ConsumerPricingContent";
 import { PricingButton } from "./PricingButton";
 import { SoftPanel } from "./PricingChrome";
 import { PAGE, PARTNER_BANNER } from "./pricingCopy";
+import type { PricingVariant } from "./pricingVariant";
 
 /**
  * Consumer pricing page — Free / Pro decision, comparison, FAQ, then a quiet partner signpost.
@@ -24,9 +25,18 @@ interface PricingContentProps {
   baseUrl?: string;
   /** Where the partner signpost CTA sends the user (the partners lead form). */
   partnersUrl?: string;
+  /** See `PricingVariant`: the marketing page compares and hands off, checkout transacts. */
+  variant?: PricingVariant;
+  /** Marketing only: where the plan CTAs send the visitor to actually subscribe. */
+  subscribeUrl?: string;
 }
 
-export function PricingContent({ baseUrl = "/", partnersUrl = "/partners#developer-form" }: PricingContentProps) {
+export function PricingContent({
+  baseUrl = "/",
+  partnersUrl = "/partners#developer-form",
+  variant = "marketing",
+  subscribeUrl,
+}: PricingContentProps) {
   return (
     <section className="py-[var(--px-44)] font-helvetica text-[var(--color-primary)] lg:py-[var(--px-52)]">
       <div className="space-y-[var(--px-48)] lg:space-y-[var(--px-72)]">
@@ -49,7 +59,7 @@ export function PricingContent({ baseUrl = "/", partnersUrl = "/partners#develop
             </h1>
           </header>
 
-          <ConsumerPricingContent baseUrl={baseUrl} />
+          <ConsumerPricingContent baseUrl={baseUrl} variant={variant} subscribeUrl={subscribeUrl} />
         </div>
 
         {/* Partner signpost — no price, no tiers. Outline CTA only; Pro stays the sole primary. */}

@@ -40,7 +40,7 @@ export interface NavPanelNotice {
 }
 
 export interface NavTopGroup {
-  key: 'product' | 'solutions' | 'partners' | 'developers';
+  key: 'product' | 'solutions' | 'partners' | 'developers' | 'company';
   side: 'left' | 'right';
   panelId: string;
   panelWidth: string;
@@ -105,6 +105,35 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
       },
     ],
     noteKey: 'plannedPagesNote',
+  },
+  {
+    // Company sits on the LEFT with Product and Solutions: it is about Resomix itself, not about
+    // what a partner buys. Same panel shape as every other group so the dropdown looks identical.
+    key: 'company',
+    side: 'left',
+    panelId: 'panel-company',
+    panelWidth: '34rem',
+    columns: [
+      {
+        groupLabelKey: 'company',
+        flex: '1 1 50%',
+        items: [
+          { key: 'about', glyph: 'about', live: true, route: '/about' },
+          { key: 'trust-rights-security', glyph: 'trust', live: true, route: '/trust' },
+          { key: 'contact', glyph: 'contact', live: true, route: '/contact' },
+        ],
+      },
+      {
+        groupLabelKey: 'resources',
+        flex: '1 1 50%',
+        items: [
+          { key: 'journal', glyph: 'journal', live: true, route: 'https://resomix.com/blog', external: true, externalAriaKey: 'journalAria' },
+          { key: 'help-centre', glyph: 'help', live: true, route: 'https://support.resomix.com', external: true, externalAriaKey: 'helpCentreAria' },
+          { key: 'faq', glyph: 'help', live: true, route: 'https://support.resomix.com', external: true, externalAriaKey: 'faqAria' },
+          { key: 'legal-documents', glyph: 'legal', live: true, route: 'https://support.resomix.com/hc/categories/1/3/legal', external: true, externalAriaKey: 'legalDocumentsAria' },
+        ],
+      },
+    ],
   },
   {
     key: 'partners',

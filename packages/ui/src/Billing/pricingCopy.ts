@@ -14,7 +14,10 @@ import type { BillingPlanLimits } from "@resomix/api-client";
  * flip produces a clean page with no residue. (Formerly `PAID_CHECKOUT_ENABLED`.)
  */
 export const PAID_CHECKOUT = {
-  enabled: false,
+  // ON: the Alwyzon billing endpoints (/billing/checkout, /portal, /plans, /subscription) are live
+  // and the Stripe Pro price ids are configured, so the Pro CTA opens real Stripe Checkout.
+  // Set back to false to take purchasing down without touching any other code.
+  enabled: true,
   disabledReason: "Checkout is temporarily unavailable. Free and Guest access are unaffected.",
 };
 
@@ -30,7 +33,9 @@ export const SAMPLE_REPORT = {
 
 export const PAGE = {
   backHome: "Back to home",
-  title: "Pricing",
+  // The page H1. "Pricing" alone is a weak heading for what is now the indexable pricing page,
+  // and it fell under the 10-character floor prerenderedBody.spec asserts for a readable H1.
+  title: "Plans and pricing",
   titleAccent: null as string | null,
   /** `topSkMax` is Pro `limits.top_sk_max` from the billing API — never hardcode the match count. */
   subtitle: (topSkMax: number) =>

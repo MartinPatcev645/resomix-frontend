@@ -631,6 +631,14 @@ section[id] {
   width: 36rem;
 }
 
+#panel-company .nav-mm-panel {
+  width: 34rem;
+}
+
+#sticky-panel-company .nav-mm-panel {
+  width: 34rem;
+}
+
 #sticky-panel-product .nav-mm-panel {
   width: 38rem;
 }

@@ -113,6 +113,34 @@ export const NAV_GLYPHS = {
       <path d="M6 6h6M6 9h6M6 12h3.5" />
     </GlyphBase>
   ),
+  // Company group glyphs.
+  about: (
+    <GlyphBase>
+      <circle cx="9" cy="9" r="6.5" />
+      <path d="M9 8v4.5" />
+      <path d="M9 5.6v.9" />
+    </GlyphBase>
+  ),
+  journal: (
+    <GlyphBase>
+      <path d="M3 3.5h5.5a2 2 0 0 1 2 2v9a1.6 1.6 0 0 0-1.6-1.2H3z" />
+      <path d="M15 3.5H9.5a2 2 0 0 0-2 2v9a1.6 1.6 0 0 1 1.6-1.2H15z" />
+    </GlyphBase>
+  ),
+  help: (
+    <GlyphBase>
+      <circle cx="9" cy="9" r="6.5" />
+      <path d="M6.9 7.1a2.1 2.1 0 1 1 2.6 2.4v1.2" />
+      <path d="M9.5 12.8h.01" />
+    </GlyphBase>
+  ),
+  legal: (
+    <GlyphBase>
+      <path d="M4 5.5h7l3 3v8H4z" />
+      <path d="M10.5 5.5v3.2H14" />
+      <path d="M6.5 11h5M6.5 13.5h3" />
+    </GlyphBase>
+  ),
   'code-brackets': (
     <GlyphBase>
       <path d="M6.5 5 3 9l3.5 4M11.5 5 15 9l-3.5 4" />

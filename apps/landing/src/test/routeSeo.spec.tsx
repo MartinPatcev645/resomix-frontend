@@ -25,7 +25,7 @@ const app = readFileSync(resolve(process.cwd(), 'src/App.tsx'), 'utf8')
 
 /** Paths that legitimately have no SEO entry: redirects and hand-offs to the beta app. */
 const NOT_INDEXABLE = new Set([
-  '/pricing', // redirect → /subscribe
+  '/subscribe', // redirect → /pricing
   '/product/catalogue-intelligence', // redirect → the catalog- spelling
   '/auth/*',
   '/profile',

@@ -18,6 +18,7 @@ import {
 } from "./PricingChrome";
 import { PlanComparison, PlanComparisonSection } from "./PlanComparison";
 import { PricingFaq } from "./PricingFaq";
+import type { PricingVariant } from "./pricingVariant";
 import { planFeatures } from "./planFeatures";
 import {
   CARDS,
@@ -118,7 +119,22 @@ function publicPlans(plans: BillingPlanDisplay[]): {
   };
 }
 
-export function ConsumerPricingContent({ baseUrl = "/" }: { baseUrl?: string }) {
+export function ConsumerPricingContent({
+  baseUrl = "/",
+  variant = "marketing",
+  subscribeUrl,
+}: {
+  baseUrl?: string;
+  variant?: PricingVariant;
+  subscribeUrl?: string;
+}) {
+  // "marketing" is the public pricing page on the landing site: it explains and compares, and hands
+  // the actual purchase to the app. "checkout" is the app's own /subscribe: it runs the real Stripe
+  // flow and drops the comparison table and FAQ, which belong to the page that sells.
+  const isMarketing = variant === "marketing";
+  const toSubscribe = () => {
+    window.location.href = subscribeUrl || "/subscribe";
+  };
   const [data, setData] = useState<BillingPlansResponse | null>(null);
   const [subSummary, setSubSummary] = useState<BillingSubscriptionSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -317,6 +333,10 @@ export function ConsumerPricingContent({ baseUrl = "/" }: { baseUrl?: string }) 
   };
 
   const freeCta = () => {
+    if (isMarketing) {
+      toSubscribe();
+      return;
+    }
     if (!authed) {
       goLogin();
       return;
@@ -324,6 +344,12 @@ export function ConsumerPricingContent({ baseUrl = "/" }: { baseUrl?: string }) 
   };
 
   const proCtaAction = () => {
+    // The marketing page never opens Stripe and never reads a session: it sends the visitor to the
+    // app, which checks whether they are signed in and then runs the flow.
+    if (isMarketing) {
+      toSubscribe();
+      return;
+    }
     if (isCurrentPro) {
       void manage();
       return;
@@ -349,10 +375,13 @@ export function ConsumerPricingContent({ baseUrl = "/" }: { baseUrl?: string }) 
     return PRO_CARD.ctaChoose;
   })();
 
-  const proPurchaseDisabled =
-    isCurrentPro ? !!busy : !PAID_CHECKOUT.enabled || priceFailed || loading || !!busy;
+  const proPurchaseDisabled = isMarketing
+    ? false
+    : isCurrentPro
+      ? !!busy
+      : !PAID_CHECKOUT.enabled || priceFailed || loading || !!busy;
 
-  const freeCtaDisabled = authed || !!busy;
+  const freeCtaDisabled = isMarketing ? false : authed || !!busy;
 
   return (
     <>
@@ -443,9 +472,11 @@ export function ConsumerPricingContent({ baseUrl = "/" }: { baseUrl?: string }) 
                         </li>
                       ))}
                     </ul>
-                    <p className="mb-0 mt-auto pt-[var(--px-13)]">
-                      <TextLink href="#compare">{CARDS.seeComparison}</TextLink>
-                    </p>
+                    {isMarketing && (
+                      <p className="mb-0 mt-auto pt-[var(--px-13)]">
+                        <TextLink href="#compare">{CARDS.seeComparison}</TextLink>
+                      </p>
+                    )}
                   </div>
                 </PlanPanel>
               )}
@@ -541,9 +572,11 @@ export function ConsumerPricingContent({ baseUrl = "/" }: { baseUrl?: string }) 
                         </li>
                       ))}
                     </ul>
-                    <p className="mb-0 mt-auto pt-[var(--px-13)]">
-                      <TextLink href="#compare">{CARDS.seeComparison}</TextLink>
-                    </p>
+                    {isMarketing && (
+                      <p className="mb-0 mt-auto pt-[var(--px-13)]">
+                        <TextLink href="#compare">{CARDS.seeComparison}</TextLink>
+                      </p>
+                    )}
                   </div>
                 </PlanPanel>
               )}
@@ -555,7 +588,7 @@ export function ConsumerPricingContent({ baseUrl = "/" }: { baseUrl?: string }) 
             data-slot="finalline"
           >
             {closingSummary || CARDS.footnotePrefix}
-            {foundingActive && (
+            {isMarketing && foundingActive && (
               <>
                 {" "}
                 <TextLink href="#faq-h">{CARDS.footnoteFaqLink}</TextLink>
@@ -606,8 +639,9 @@ export function ConsumerPricingContent({ baseUrl = "/" }: { baseUrl?: string }) 
           </SoftPanel>
         )}
 
-        {/* Comparison — wait for plans so #compare hash scroll lands on the final layout */}
-        {!loading && (
+        {/* Comparison — marketing only, and only once plans have loaded so the #compare hash
+            scroll lands on the final layout. */}
+        {isMarketing && !loading && (
           <PlanComparisonSection>
             <PlanComparison
               freeLimits={free?.limits}
@@ -624,7 +658,8 @@ export function ConsumerPricingContent({ baseUrl = "/" }: { baseUrl?: string }) 
           </PlanComparisonSection>
         )}
 
-        {/* FAQ */}
+        {/* FAQ — marketing only; someone at checkout has already read it. */}
+        {isMarketing && (
         <PricingFaq
           beta={{
             endDateLabel,
@@ -647,6 +682,7 @@ export function ConsumerPricingContent({ baseUrl = "/" }: { baseUrl?: string }) 
                 : null,
           }}
         />
+        )}
 
         {/* Compact closing consumer CTA — between FAQ legal links and the partner banner */}
         {!isCurrentPro && amountLabel && (
@@ -682,7 +718,7 @@ export function ConsumerPricingContent({ baseUrl = "/" }: { baseUrl?: string }) 
         )}
 
         {/* Consent — only when something is purchasable and checkout is enabled */}
-        {PAID_CHECKOUT.enabled && (pro?.purchasable || free?.purchasable) && !isCurrentPro && (
+        {!isMarketing && PAID_CHECKOUT.enabled && (pro?.purchasable || free?.purchasable) && !isCurrentPro && (
           <label className="flex max-w-[62ch] cursor-pointer items-start gap-[var(--px-10)] font-helvetica text-[length:var(--px-15)] font-light leading-[1.6] text-[var(--color-primary-hover)]">
             <input
               type="checkbox"

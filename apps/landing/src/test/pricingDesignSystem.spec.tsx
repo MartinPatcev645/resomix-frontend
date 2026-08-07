@@ -459,7 +459,9 @@ describe('paid checkout launch gate', () => {
   });
 
   it('shows the disabled notice and disables Pro when PAID_CHECKOUT.enabled is false', async () => {
-    render(<ConsumerPricingContent />);
+    // The launch gate belongs to the surface that actually opens Stripe. On the marketing variant
+    // the same button is a link to the app, so there is nothing to gate.
+    render(<ConsumerPricingContent variant="checkout" />);
     await waitFor(() => expect(screen.getByTestId('checkout-disabled-notice')).toBeInTheDocument());
     expect(screen.getByTestId('checkout-disabled-notice').textContent).toMatch(
       /Checkout is temporarily unavailable/i,
@@ -577,7 +579,9 @@ describe('stuck comparison header keeps plan CTAs', () => {
     expect(table.querySelectorAll('.rx-cmp__ptry').length).toBeGreaterThanOrEqual(2);
     expect(within(table).getByRole('button', { name: /start free/i })).toBeInTheDocument();
     expect(within(table).getByRole('button', { name: /choose pro/i })).toBeInTheDocument();
-    expect(within(table).getByRole('button', { name: /choose pro/i })).toBeDisabled();
+    // The comparison table only renders on the marketing variant, where Choose Pro is a hand-off
+    // link to the app rather than a checkout trigger — so it stays clickable.
+    expect(within(table).getByRole('button', { name: /choose pro/i })).toBeEnabled();
   });
 
   it('does not hide stuck-header CTAs with display:none', () => {

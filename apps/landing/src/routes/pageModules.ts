@@ -32,7 +32,7 @@ export const PAGE_MODULES: Record<string, string> = {
   '/solutions/djs': 'src/pages/DjsPage.tsx',
   '/solutions/music-curators': 'src/pages/MusicCuratorsPage.tsx',
   '/solutions/producers': 'src/pages/ProducersPage.tsx',
-  '/subscribe': 'src/pages/SubscribePage.tsx',
+  '/pricing': 'src/pages/PricingPage.tsx',
   '/contact': 'src/pages/InfoPage.tsx',
   '/waitlist': 'src/pages/InfoPage.tsx',
   '/error': 'src/pages/InfoPage.tsx',

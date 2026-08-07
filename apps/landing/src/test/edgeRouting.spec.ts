@@ -68,7 +68,7 @@ describe.skipIf(!built)('edge routing', () => {
   });
 
   it('redirect and hand-off shells are noindex but honestly titled', () => {
-    for (const route of ['/pricing', '/profile']) {
+    for (const route of ['/subscribe', '/profile']) {
       const html = readFileSync(shellFor(route), 'utf8');
       expect(html).toMatch(/<meta\s+name="robots"\s+content="noindex, follow"/);
       // They exist and redirect — claiming "Page not found" would be untrue.
@@ -78,7 +78,7 @@ describe.skipIf(!built)('edge routing', () => {
 
   it('every shell still boots the app', () => {
     // A shell without the entry script would render a blank page instead of redirecting.
-    for (const route of ['/pricing', '/profile', '/trust']) {
+    for (const route of ['/subscribe', '/profile', '/trust']) {
       expect(readFileSync(shellFor(route), 'utf8')).toMatch(/<script[^>]+src="\/assets\//);
     }
   });

@@ -28,7 +28,7 @@ export default defineConfig({
          a path with no file is a real 404. /auth/* is a wildcard and cannot be enumerated, so it
          is handled by public/_redirects instead. */
       extraRoutes: [
-        '/pricing',
+        '/subscribe',
         '/product/catalogue-intelligence',
         '/profile',
         '/sessions',

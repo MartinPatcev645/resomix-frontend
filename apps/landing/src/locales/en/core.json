@@ -4,7 +4,8 @@
       "product": "Product",
       "solutions": "Solutions",
       "partners": "Partners",
-      "developers": "Developers"
+      "developers": "Developers",
+      "company": "Company"
     },
     "groups": {
       "productRoutes": "Product routes",
@@ -14,7 +15,9 @@
       "trustAndDeployment": "Trust and deployment",
       "build": "Build",
       "evaluate": "Evaluate",
-      "resourcesCompany": "Resources & company"
+      "resourcesCompany": "Resources & company",
+      "company": "Company",
+      "resources": "Resources"
     },
     "items": {
       "platform": {
@@ -101,6 +104,30 @@
         "title": "Track Analysis Schema",
         "description": "Explore versioned rhythm, tonality, dynamics, structure and provenance outputs."
       },
+      "about": {
+        "title": "About Resomix",
+        "description": "Who is building the platform, and the thinking behind PYXIS-1."
+      },
+      "contact": {
+        "title": "Contact",
+        "description": "Reach the team about support, press or anything else."
+      },
+      "journal": {
+        "title": "Journal",
+        "description": "Notes on sound-first discovery, the engine and the catalogue."
+      },
+      "help-centre": {
+        "title": "Help Centre",
+        "description": "Guides and answers for the app, uploads and your account."
+      },
+      "faq": {
+        "title": "FAQ",
+        "description": "The questions we are asked most, answered in one place."
+      },
+      "legal-documents": {
+        "title": "Legal Documents",
+        "description": "Privacy, terms, cookies, acceptable use, DMCA and GDPR."
+      },
       "request-api-access": {
         "title": "Request API Access",
         "description": "Begin with a guided partner evaluation using your own authorised catalogue."
@@ -123,7 +150,8 @@
       "tryResomix": "Try Resomix",
       "startPilot": "Start a Catalogue Pilot",
       "cataloguePilot": "Catalogue Pilot",
-      "about": "About"
+      "about": "About",
+      "pricing": "Pricing"
     },
     "utility": {
       "home": "Home",

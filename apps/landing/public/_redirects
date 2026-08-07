@@ -16,7 +16,7 @@
 # "Edge-301" on the catalogue spelling specifically.
 #
 # The React routes stay in place as a fallback for anyone already inside the SPA.
-/pricing                          /subscribe                       301
+/subscribe                        /pricing                         301
 /product/catalogue-intelligence   /product/catalog-intelligence    301
 
 # /auth/* is a wildcard forwarding emailed verify/reset links to the beta app, so it cannot be a

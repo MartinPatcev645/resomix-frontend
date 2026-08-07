@@ -37,7 +37,7 @@ export interface NavPanelNotice {
 }
 
 export interface NavTopGroup {
-  key: 'product' | 'solutions' | 'partners' | 'developers';
+  key: 'product' | 'solutions' | 'partners' | 'developers' | 'company';
   side: 'left' | 'right';
   panelId: string;
   panelWidth: string;
@@ -59,6 +59,9 @@ export function landingHref(path: string): string {
 export const CATALOGUE_PILOT_HREF = landingHref('/partners/pilot');
 
 export const ABOUT_HREF = landingHref('/about');
+
+/** The marketing pricing page. The app's own /subscribe is the flow it hands off to. */
+export const PRICING_HREF = landingHref('/pricing');
 
 export const NAV_TOP_GROUPS: NavTopGroup[] = [
   {
@@ -113,6 +116,35 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
       },
     ],
     noteKey: 'plannedPagesNote',
+  },
+  {
+    // Mirrors the marketing site's Company group so both navbars read the same. Every destination
+    // is on the landing origin, so they go through landingHref() like the rest of this file.
+    key: 'company',
+    side: 'left',
+    panelId: 'panel-company',
+    panelWidth: '34rem',
+    columns: [
+      {
+        groupLabelKey: 'company',
+        flex: '1 1 50%',
+        items: [
+          { key: 'about', glyph: 'about', live: true, route: landingHref('/about') },
+          { key: 'trust-rights-security', glyph: 'trust', live: true, route: landingHref('/trust') },
+          { key: 'contact', glyph: 'contact', live: true, route: landingHref('/contact') },
+        ],
+      },
+      {
+        groupLabelKey: 'resources',
+        flex: '1 1 50%',
+        items: [
+          { key: 'journal', glyph: 'journal', live: true, route: 'https://resomix.com/blog', external: true, externalAriaKey: 'journalAria' },
+          { key: 'help-centre', glyph: 'help', live: true, route: 'https://support.resomix.com', external: true, externalAriaKey: 'helpCentreAria' },
+          { key: 'faq', glyph: 'help', live: true, route: 'https://support.resomix.com', external: true, externalAriaKey: 'faqAria' },
+          { key: 'legal-documents', glyph: 'legal', live: true, route: 'https://support.resomix.com/hc/categories/1/3/legal', external: true, externalAriaKey: 'legalDocumentsAria' },
+        ],
+      },
+    ],
   },
   {
     key: 'partners',

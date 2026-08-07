@@ -140,10 +140,10 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
   },
 
   /* ---------- conversion & support ---------- */
-  '/subscribe': {
-    title: 'Subscribe to Resomix: Unlock Deeper Sonic Discovery',
+  '/pricing': {
+    title: 'Resomix Pricing: Free and Pro Plans Compared',
     description:
-      'Upgrade your Resomix plan for expanded discovery and analysis, and manage billing securely. Start in the free production beta and grow when you are ready.',
+      'Compare the free and Pro Resomix plans for sonic discovery and track analysis. Start free in the production beta and upgrade when you are ready.',
     changefreq: 'monthly',
     priority: 0.7,
   },

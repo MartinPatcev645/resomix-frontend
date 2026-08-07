@@ -33,6 +33,7 @@ function NavGroupList({
   withPanels = true,
   idPrefix = '',
   setItemRef = megaMenu.setItemRef,
+  leadingItem,
   trailingItem,
 }: {
   groups: NavTopGroup[];
@@ -45,11 +46,14 @@ function NavGroupList({
   withPanels?: boolean;
   idPrefix?: string;
   setItemRef?: MegaMenuApi['setItemRef'];
+  /** Extra <li> rendered BEFORE the groups — a plain link that has no mega panel. */
+  leadingItem?: React.ReactNode;
   /** Extra <li> appended after the groups — used for plain links that have no mega panel. */
   trailingItem?: React.ReactNode;
 }) {
   return (
     <ul>
+      {leadingItem}
       {groups.map((group) => {
         const index = NAV_TOP_GROUPS.findIndex((g) => g.key === group.key);
         const isOpen = megaMenu.openIndex === index;
@@ -282,20 +286,22 @@ export function SiteHeader({
    * out of the keyboard/pointer disclosure wiring entirely). `idPrefix` keeps the sticky header's
    * copy from colliding with the main one.
    */
-  // About is a page, not a nav section, so `currentSection` never reports it — match on the path.
-  const onAboutPage = currentPath === '/about';
-  const aboutNavItem = (idPrefix = '') => (
-    <li key="about" id={`${idPrefix}mi-about`} className={onAboutPage ? 'is-section' : ''}>
+  // Pricing is a page, not a nav section, so `currentSection` never reports it — match on the path.
+  // It is a plain link rather than a group: there is one destination, so a dropdown would be a
+  // menu of one. (About moved into the Company group on the left, which is where it belongs.)
+  const onPricingPage = currentPath === '/pricing';
+  const pricingNavItem = (idPrefix = '') => (
+    <li key="pricing" id={`${idPrefix}mi-pricing`} className={onPricingPage ? 'is-section' : ''}>
       <div className="nav-mm-item-wrap">
         <a
           className="nav-mm-trigger"
-          href="/about"
-          id={`${idPrefix}nav-about-link`}
-          aria-current={onAboutPage ? 'page' : undefined}
-          onClick={(e) => handleCtaClick(e, '/about')}
+          href="/pricing"
+          id={`${idPrefix}nav-pricing-link`}
+          aria-current={onPricingPage ? 'page' : undefined}
+          onClick={(e) => handleCtaClick(e, '/pricing')}
         >
-          {t('nav.cta.about')}
-          {onAboutPage ? <span className="nav-sr">{t('nav.status.currentPage')}</span> : null}
+          {t('nav.cta.pricing')}
+          {onPricingPage ? <span className="nav-sr">{t('nav.status.currentPage')}</span> : null}
         </a>
       </div>
     </li>
@@ -435,7 +441,6 @@ export function SiteHeader({
               groups={leftGroups}
               {...navListProps}
               setItemRef={mainItemRef}
-              trailingItem={aboutNavItem()}
             />
           </nav>
 
@@ -443,7 +448,12 @@ export function SiteHeader({
 
           <div className="nav-cl nav-cl-right">
             <nav className="nav-hnav" aria-label="Primary continued">
-              <NavGroupList groups={rightGroups} {...navListProps} setItemRef={mainItemRef} />
+              <NavGroupList
+                groups={rightGroups}
+                {...navListProps}
+                setItemRef={mainItemRef}
+                leadingItem={pricingNavItem()}
+              />
             </nav>
             {accountControl}
           </div>
@@ -467,7 +477,6 @@ export function SiteHeader({
               {...navListProps}
               idPrefix="sticky-"
               setItemRef={stickyItemRef}
-              trailingItem={aboutNavItem('sticky-')}
             />
           </nav>
 
@@ -480,6 +489,7 @@ export function SiteHeader({
                 {...navListProps}
                 idPrefix="sticky-"
                 setItemRef={stickyItemRef}
+                leadingItem={pricingNavItem('sticky-')}
               />
             </nav>
             {accountControl}

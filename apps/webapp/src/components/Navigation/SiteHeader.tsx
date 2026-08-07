@@ -6,7 +6,7 @@ import { LogoHeader } from '../icons/LogoHeader.tsx';
 import { MenuIcon } from '../icons/MenuIcon.tsx';
 import {
   BETA_URL,
-  ABOUT_HREF,
+  PRICING_HREF,
   CATALOGUE_PILOT_HREF,
   NAV_TOP_GROUPS,
   getNavSectionForPath,
@@ -37,6 +37,7 @@ function NavGroupList({
   withPanels = true,
   idPrefix = '',
   setItemRef = megaMenu.setItemRef,
+  leadingItem,
   trailingItem,
 }: {
   groups: NavTopGroup[];
@@ -49,10 +50,13 @@ function NavGroupList({
   idPrefix?: string;
   setItemRef?: MegaMenuApi['setItemRef'];
   /** Extra <li> appended after the groups — used for plain links that have no mega panel. */
+  /** Extra <li> rendered BEFORE the groups — a plain link that has no mega panel. */
+  leadingItem?: React.ReactNode;
   trailingItem?: React.ReactNode;
 }) {
   return (
     <ul>
+      {leadingItem}
       {groups.map((group) => {
         const index = NAV_TOP_GROUPS.findIndex((g) => g.key === group.key);
         const isOpen = megaMenu.openIndex === index;
@@ -240,19 +244,19 @@ export function SiteHeader({
    * site, so this is a full-page navigation. `idPrefix` keeps the sticky header's copy from
    * colliding with the main one.
    */
-  const aboutNavItem = (idPrefix = '') => (
-    <li key="about" id={`${idPrefix}mi-about`}>
+  const pricingNavItem = (idPrefix = '') => (
+    <li key="pricing" id={`${idPrefix}mi-pricing`}>
       <div className="nav-mm-item-wrap">
         <a
           className="nav-mm-trigger"
-          href={ABOUT_HREF}
-          id={`${idPrefix}nav-about-link`}
+          href={PRICING_HREF}
+          id={`${idPrefix}nav-pricing-link`}
           onClick={(e) => {
             e.preventDefault();
-            window.location.href = ABOUT_HREF;
+            window.location.href = PRICING_HREF;
           }}
         >
-          {navT('nav.cta.about')}
+          {navT('nav.cta.pricing')}
         </a>
       </div>
     </li>
@@ -391,7 +395,6 @@ export function SiteHeader({
               groups={leftGroups}
               {...navListProps}
               setItemRef={mainItemRef}
-              trailingItem={aboutNavItem()}
             />
           </nav>
 
@@ -399,7 +402,12 @@ export function SiteHeader({
 
           <div className="nav-cl nav-cl-right">
             <nav className="nav-hnav" aria-label="Primary continued">
-              <NavGroupList groups={rightGroups} {...navListProps} setItemRef={mainItemRef} />
+              <NavGroupList
+                groups={rightGroups}
+                {...navListProps}
+                setItemRef={mainItemRef}
+                leadingItem={pricingNavItem()}
+              />
             </nav>
             {accountControl}
           </div>
@@ -423,7 +431,6 @@ export function SiteHeader({
               {...navListProps}
               idPrefix="sticky-"
               setItemRef={stickyItemRef}
-              trailingItem={aboutNavItem('sticky-')}
             />
           </nav>
 
@@ -436,6 +443,7 @@ export function SiteHeader({
                 {...navListProps}
                 idPrefix="sticky-"
                 setItemRef={stickyItemRef}
+                leadingItem={pricingNavItem('sticky-')}
               />
             </nav>
             {accountControl}

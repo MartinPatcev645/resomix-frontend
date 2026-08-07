@@ -75,7 +75,8 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     title: 'Subscribe to Resomix: Unlock Deeper Sonic Discovery',
     description:
       'Upgrade your Resomix plan for expanded discovery and analysis, and manage billing securely. Start in the free production beta and grow when you are ready.',
-    canonical: `${LANDING_ORIGIN}/subscribe`,
+    // The marketing page at /pricing is the indexable one; this is the signed-in flow behind it.
+    canonical: `${LANDING_ORIGIN}/pricing`,
     priority: 0.6,
   },
   '/contact': {

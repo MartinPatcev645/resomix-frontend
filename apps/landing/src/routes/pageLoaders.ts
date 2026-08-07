@@ -60,7 +60,7 @@ export const PAGE_LOADERS: Record<string, Loader> = {
   '/solutions/djs': page(() => import('@/pages/DjsPage.tsx'), () => import('@/locales/en/pages/djs.json')),
   '/solutions/music-curators': page(() => import('@/pages/MusicCuratorsPage.tsx'), () => import('@/locales/en/pages/musicCurators.json')),
   '/solutions/producers': page(() => import('@/pages/ProducersPage.tsx'), () => import('@/locales/en/pages/producers.json')),
-  '/subscribe': page(() => import('@/pages/SubscribePage.tsx')),
+  '/pricing': page(() => import('@/pages/PricingPage.tsx')),
   '/contact': page(() => import('@/pages/InfoPage.tsx')),
   '/waitlist': page(() => import('@/pages/InfoPage.tsx')),
   '/error': page(() => import('@/pages/InfoPage.tsx')),

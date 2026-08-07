@@ -75,8 +75,14 @@ describe.skipIf(!built)('privacy holds in the raw HTML', () => {
 });
 
 describe.skipIf(!built)('pages shared with the marketing site defer to it', () => {
-  it.each(['/subscribe', '/contact'])('%s canonicalises cross-origin in the served HTML', (route) => {
-    expect(tag(html(route), CANONICAL)).toBe(`${LANDING_ORIGIN}${route}`);
+  it('/contact canonicalises cross-origin in the served HTML', () => {
+    expect(tag(html('/contact'), CANONICAL)).toBe(`${LANDING_ORIGIN}/contact`);
+  });
+
+  it('/subscribe canonicalises to the marketing pricing page in the served HTML', () => {
+    // Different content now: this page transacts, /pricing explains. The crawler is pointed at
+    // the one that is meant to rank.
+    expect(tag(html('/subscribe'), CANONICAL)).toBe(`${LANDING_ORIGIN}/pricing`);
   });
 
   it('keeps app-only pages canonical to this origin', () => {

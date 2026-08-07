@@ -77,8 +77,14 @@ describe('the signed-in app stays out of the index', () => {
 });
 
 describe('pages shared with the marketing site do not compete with it', () => {
-  it.each(['/subscribe', '/contact'])('%s canonicalises to the landing origin', (path) => {
-    expect(canonicalUrlFor(path)).toBe(`${LANDING_ORIGIN}${path}`);
+  it('/contact canonicalises to the same path on the landing origin', () => {
+    expect(canonicalUrlFor('/contact')).toBe(`${LANDING_ORIGIN}/contact`);
+  });
+
+  it('/subscribe canonicalises to the marketing pricing page, not to itself', () => {
+    // The app's subscribe flow and the marketing pricing page are no longer the same content:
+    // this one transacts, /pricing explains and compares. /pricing is the indexable one.
+    expect(canonicalUrlFor('/subscribe')).toBe(`${LANDING_ORIGIN}/pricing`);
   });
 
   it('leaves app-only pages canonical to this origin', () => {
