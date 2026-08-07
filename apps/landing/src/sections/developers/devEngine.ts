@@ -287,3 +287,9 @@ export const ENVELOPE_LINES: CodeLine[] = [
 ];
 
 export const API_DOCS_URL = 'https://api-docs.resomix.com/';
+
+/** The ingestion checklist behind section 04 — every requirement, stage by stage. Deep-linked
+ *  rather than pointing at the docs root, so "View Ingestion Requirements" lands on the answer
+ *  instead of a home page the reader then has to navigate from. */
+export const API_DOCS_INGESTION_REQUIREMENTS_URL =
+  'https://api-docs.resomix.com/ingestion-requirements';

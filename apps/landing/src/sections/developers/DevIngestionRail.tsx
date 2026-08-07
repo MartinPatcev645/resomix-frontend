@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { API_DOCS_URL, drawCls } from './devEngine.ts';
+import { API_DOCS_INGESTION_REQUIREMENTS_URL, drawCls } from './devEngine.ts';
 import { SvgText } from './devSvgHelpers.tsx';
 
 function IngestRailSvg() {
@@ -169,7 +169,12 @@ export function DevIngestionRail() {
         </div>
         <div className="dev-viz-foot">
           <span className="dev-lbl-dim">{t('developers.ingestion.formats')}</span>
-          <a className="dev-bracket uppercase" href={API_DOCS_URL} target="_blank" rel="noopener noreferrer">
+          <a
+            className="dev-bracket uppercase"
+            href={API_DOCS_INGESTION_REQUIREMENTS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {t('developers.ingestion.requirementsLink')}
           </a>
         </div>
