@@ -1233,6 +1233,14 @@ class SimilarityController:
                         db, existing.uuid, user_id=current_user.id, partner_id=partner_id
                     )
                     if repeat.get("success"):
+                        # Tease it exactly as a fresh computation would. This early return used to
+                        # skip the redaction applied further down, so a free user who simply ran the
+                        # same search twice got all 50 tracks in full the second time — the tease
+                        # survived only until someone repeated themselves.
+                        await self._apply_frontend_unlock_redaction(
+                            db, repeat, request=request,
+                            current_user=current_user, partner_id=partner_id,
+                        )
                         # No metering: this consumed nothing the first time it was free, and the
                         # user is receiving value they already paid for.
                         return JSONResponse(

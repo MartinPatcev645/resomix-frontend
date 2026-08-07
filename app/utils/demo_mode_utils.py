@@ -52,6 +52,13 @@ def _redact_tracks(tracks: List[MutableMapping[str, Any]], visible_count: int) -
     if not isinstance(tracks, list):
         return
 
+    # `-1` is this system's sentinel for "unlimited" and callers pass a plan entitlement straight
+    # in. Left unguarded, `position < -1` is never true and EVERY track would be scrambled — a plan
+    # that grants the most would show the least. No seeded plan uses -1 for
+    # `max_tracks_per_playlist` today, but the admin can set it and the convention invites it.
+    if visible_count < 0:
+        return
+
     for position, track in enumerate(tracks):
         if position < visible_count:
             continue
