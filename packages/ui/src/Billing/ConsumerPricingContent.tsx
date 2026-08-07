@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   BillingPlanDisplay,
   BillingPlanOffer,
@@ -147,6 +147,8 @@ export function ConsumerPricingContent({
   // it regardless, so this only saves the user a pointless round-trip.
   const [consented, setConsented] = useState(false);
   const [interval, setInterval] = useState<BillingInterval>("month");
+  const consentRef = useRef<HTMLDivElement | null>(null);
+  const consentBoxRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -298,6 +300,10 @@ export function ConsumerPricingContent({
     }
     if (!consented) {
       setError(ERRORS.needConsent);
+      // Take the user to the control they have to act on. Setting an error alone was the whole bug:
+      // the message rendered below the fold, so the button read as dead.
+      consentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      consentBoxRef.current?.focus({ preventScroll: true });
       return;
     }
     setBusy(code);
@@ -382,6 +388,11 @@ export function ConsumerPricingContent({
       : !PAID_CHECKOUT.enabled || priceFailed || loading || !!busy;
 
   const freeCtaDisabled = isMarketing ? false : authed || !!busy;
+
+  // Whether the consent panel is on screen. Both the panel and the generic error block read this,
+  // so a consent error can never render in two places at once.
+  const showConsentGate =
+    !isMarketing && PAID_CHECKOUT.enabled && (pro?.purchasable || free?.purchasable) && !isCurrentPro;
 
   return (
     <>
@@ -717,27 +728,54 @@ export function ConsumerPricingContent({
           </div>
         )}
 
-        {/* Consent — only when something is purchasable and checkout is enabled */}
+        {/* Consent + its error, as ONE panel directly under the plans.
+            Previously these were two separate children of a `space-y-72` section, so the checkbox
+            sat 72px below the cards and the error another 72px below that — far enough off-screen
+            that pressing the CTA looked like nothing happened at all. Consent belongs beside the
+            action it authorises, and an error belongs beside the control that caused it. */}
         {!isMarketing && PAID_CHECKOUT.enabled && (pro?.purchasable || free?.purchasable) && !isCurrentPro && (
-          <label className="flex max-w-[62ch] cursor-pointer items-start gap-[var(--px-10)] font-helvetica text-[length:var(--px-15)] font-light leading-[1.6] text-[var(--color-primary-hover)]">
-            <input
-              type="checkbox"
-              checked={consented}
-              onChange={(e) => {
-                setConsented(e.target.checked);
-                if (e.target.checked) setError(null);
-              }}
-              className="mt-[var(--px-3)] h-[var(--px-14)] w-[var(--px-14)] shrink-0 accent-[var(--color-neon-orange)]"
-            />
-            <span>{CONSENT}</span>
-          </label>
+          <div
+            ref={consentRef}
+            className={`-mt-[var(--px-24)] rounded-[var(--px-4)] border p-[var(--px-20)] transition-colors lg:-mt-[var(--px-40)] ${
+              error
+                ? "border-[var(--color-neon-orange)] bg-[rgba(226,89,58,0.06)]"
+                : "border-white/15 bg-white/[0.02]"
+            }`}
+          >
+            <label className="flex max-w-[62ch] cursor-pointer items-start gap-[var(--px-10)] font-helvetica text-[length:var(--px-15)] font-light leading-[1.6] text-[var(--color-primary-hover)]">
+              <input
+                ref={consentBoxRef}
+                type="checkbox"
+                checked={consented}
+                onChange={(e) => {
+                  setConsented(e.target.checked);
+                  if (e.target.checked) setError(null);
+                }}
+                className="mt-[var(--px-3)] h-[var(--px-16)] w-[var(--px-16)] shrink-0 accent-[var(--color-neon-orange)]"
+              />
+              <span>{CONSENT}</span>
+            </label>
+
+            {/* Directly under the checkbox it refers to — not at the foot of the page. */}
+            {error && (
+              <p
+                role="alert"
+                className="m-0 mt-[var(--px-12)] pl-[var(--px-26)] font-fira text-[length:var(--px-12)] uppercase leading-[1.5] tracking-[0.12em] text-[var(--color-neon-orange)]"
+              >
+                {error}
+              </p>
+            )}
+          </div>
         )}
 
-        {error && (
+        {/* Anything that is not the consent gate — a Stripe or network failure. The consent error
+            renders in the panel above instead, so it cannot appear twice. */}
+        {error && !showConsentGate && (
           <p className="font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] text-[var(--color-neon-orange)]">
             {error}
           </p>
         )}
+
       </section>
     </>
   );

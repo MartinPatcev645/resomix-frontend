@@ -241,7 +241,7 @@ export const CONSENT =
   "I want my subscription to start immediately. I understand that once it does, I lose my 14-day right of withdrawal for the part already provided.";
 
 export const ERRORS = {
-  needConsent: "Please confirm the statement below before subscribing.",
+  needConsent: "Tick the box above to confirm, then choose your plan again.",
   checkoutFailed: "Couldn't start checkout. Please try again.",
   portalFailed: "Couldn't open the billing portal.",
 } as const;
