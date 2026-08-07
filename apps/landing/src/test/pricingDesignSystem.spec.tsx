@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -547,6 +547,44 @@ describe('founding offer framing and locale', () => {
       expect(closing()).toMatch(/year/i);
       expect(closing()).not.toMatch(/7[.,]?99/);
     });
+  });
+});
+
+describe('stuck comparison header keeps plan CTAs', () => {
+  beforeEach(() => {
+    vi.spyOn(useAuthStore, 'getState').mockReturnValue({
+      isAuthenticated: false,
+      user: null,
+    } as never);
+    vi.mocked(getBillingPlans).mockResolvedValue({ success: true, data: mockPlans() });
+    vi.mocked(getBillingSubscription).mockResolvedValue({
+      success: true,
+      data: null as unknown as BillingSubscriptionSummary,
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('keeps Start free and Choose Pro present when the table is stuck', async () => {
+    render(<ConsumerPricingContent />);
+    const table = await waitFor(() => screen.getByTestId('plan-comparison'));
+    table.classList.add('is-stuck');
+
+    const header = within(table).getAllByRole('columnheader');
+    expect(header.length).toBeGreaterThan(0);
+    expect(table.querySelectorAll('.rx-cmp__ptry').length).toBeGreaterThanOrEqual(2);
+    expect(within(table).getByRole('button', { name: /start free/i })).toBeInTheDocument();
+    expect(within(table).getByRole('button', { name: /choose pro/i })).toBeInTheDocument();
+    expect(within(table).getByRole('button', { name: /choose pro/i })).toBeDisabled();
+  });
+
+  it('does not hide stuck-header CTAs with display:none', () => {
+    // Fix 3A — owner overruled hiding CTAs in the stuck bar. Guard against silent regression.
+    expect(ui('PlanComparison.tsx')).not.toMatch(
+      /\.rx-cmp\.is-stuck[^{]*\.rx-cmp__ptry\s*\{\s*display:\s*none/,
+    );
   });
 });
 

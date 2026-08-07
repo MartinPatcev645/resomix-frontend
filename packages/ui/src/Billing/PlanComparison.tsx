@@ -499,16 +499,32 @@ const RX_CMP_CSS = `
 .rx-cmp thead th.rx-cmp__feat { text-align: left; }
 .rx-cmp thead th.rx-cmp__pcol { text-align: center; }
 .rx-cmp.is-stuck thead th {
-  padding-block: var(--px-8);
+  padding-block: var(--px-4);
   box-shadow: inset 0 -1px 0 rgba(255,255,255,0.22), 0 6px 14px rgba(0,0,0,0.5);
+  /* Focus rings on the compact CTAs must not be clipped by the sticky cell. */
+  overflow: visible;
 }
-.rx-cmp.is-stuck thead th .rx-cmp__ptry { display: none; }
-.rx-cmp.is-stuck thead th .rx-cmp__pname { font-size: var(--px-13); }
-.rx-cmp.is-stuck thead th .rx-cmp__pprice { margin-top: var(--px-2); font-size: var(--px-11); }
+/* Owner ruling (Fix 3A): keep Start free / Choose Pro visible while stuck — compact, not hidden. */
+.rx-cmp.is-stuck thead th .rx-cmp__ptry {
+  display: inline-flex;
+  margin-top: var(--px-2);
+}
+.rx-cmp.is-stuck thead th .rx-cmp__ptry button {
+  min-height: var(--px-26);
+  padding: var(--px-3) var(--px-10);
+  font-size: var(--px-11);
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+}
+.rx-cmp.is-stuck thead th .rx-cmp__ptry button:focus-visible {
+  outline: 2px solid var(--color-neon-orange);
+  outline-offset: 2px;
+}
+.rx-cmp.is-stuck thead th .rx-cmp__pname { font-size: var(--px-12); }
+.rx-cmp.is-stuck thead th .rx-cmp__pprice { margin-top: var(--px-1); font-size: var(--px-11); }
+/* Dropped " · comparing" (Fix 3A) — needed the width/height budget for the sticky CTAs. */
 .rx-cmp.is-stuck thead th.rx-cmp__feat .rx-cmp__lbl::after {
-  content: " · comparing";
-  color: var(--color-primary-hover);
-  opacity: 0.75;
+  content: none;
 }
 @media (max-width: 900px) {
   .rx-cmp__switch { display: inline-flex; }
