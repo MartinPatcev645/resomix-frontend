@@ -29,9 +29,24 @@ export type WorkspaceMode = "discovery" | "analysis";
 interface WorkspaceShellProps {
   mode: WorkspaceMode;
   children: React.ReactNode;
+  /**
+   * Replace the default two-card task block. When omitted, desktop markup is unchanged.
+   * Mobile passes a segmented radiogroup — see `sections/mobile/Workspace/WorkspaceTaskSelector`.
+   */
+  taskSelector?: React.ReactNode;
+  /**
+   * Replace the header usage chip. `undefined` keeps `<UsageChip />`; pass `null` to hide
+   * (mobile renders a searches-only counter inside its task selector instead).
+   */
+  usageChip?: React.ReactNode;
 }
 
-export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({ mode, children }) => {
+export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
+  mode,
+  children,
+  taskSelector,
+  usageChip,
+}) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlId = searchParams.get("id");
@@ -95,7 +110,7 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({ mode, children }
         <div className="flex flex-wrap items-center gap-[var(--px-8)] justify-self-end sm:self-end">
           {/* What is left of today's allowance. Renders nothing when there is nothing true to
               say — loading, or every limit unlimited — so the session chip keeps its position. */}
-          <UsageChip />
+          {usageChip === undefined ? <UsageChip /> : usageChip}
           <span className="inline-flex items-center gap-[var(--px-8)] border border-[var(--rx-color-border-default)] px-[var(--px-13)] py-[var(--px-7)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)]">
             <i
               aria-hidden="true"
@@ -106,30 +121,32 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({ mode, children }
         </div>
       </header>
 
-      <div
-        className="mb-[var(--px-16)] grid grid-cols-1 gap-[var(--px-12)] sm:grid-cols-2 sm:gap-[var(--px-16)]"
-        role="group"
-        aria-label="Choose your task"
-      >
-        <TaskCard
-          pressed={mode === "discovery"}
-          title={DISCOVERY_TASK_TITLE}
-          description={DISCOVERY_TASK_DESC}
-          outputLabel={DISCOVERY_OUTPUT_LABEL}
-          switchCue={SWITCH_TO_DISCOVERY}
-          icon={<DiscoveryModeIcon />}
-          onClick={() => selectTask("discovery")}
-        />
-        <TaskCard
-          pressed={mode === "analysis"}
-          title={ANALYSIS_TASK_TITLE}
-          description={ANALYSIS_TASK_DESC}
-          outputLabel={ANALYSIS_OUTPUT_LABEL}
-          switchCue={SWITCH_TO_ANALYSIS}
-          icon={<AnalysisModeIcon />}
-          onClick={() => selectTask("analysis")}
-        />
-      </div>
+      {taskSelector ?? (
+        <div
+          className="mb-[var(--px-16)] grid grid-cols-1 gap-[var(--px-12)] sm:grid-cols-2 sm:gap-[var(--px-16)]"
+          role="group"
+          aria-label="Choose your task"
+        >
+          <TaskCard
+            pressed={mode === "discovery"}
+            title={DISCOVERY_TASK_TITLE}
+            description={DISCOVERY_TASK_DESC}
+            outputLabel={DISCOVERY_OUTPUT_LABEL}
+            switchCue={SWITCH_TO_DISCOVERY}
+            icon={<DiscoveryModeIcon />}
+            onClick={() => selectTask("discovery")}
+          />
+          <TaskCard
+            pressed={mode === "analysis"}
+            title={ANALYSIS_TASK_TITLE}
+            description={ANALYSIS_TASK_DESC}
+            outputLabel={ANALYSIS_OUTPUT_LABEL}
+            switchCue={SWITCH_TO_ANALYSIS}
+            icon={<AnalysisModeIcon />}
+            onClick={() => selectTask("analysis")}
+          />
+        </div>
+      )}
 
       {mode === "discovery" && !viewingResults && (
         <div className="mb-[var(--px-20)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)]">
