@@ -14,6 +14,9 @@ import type { ReactNode } from "react";
  *
  * Fira Code at 12px / 0.09em / uppercase and a 44px minimum height match the marketing buttons
  * exactly — see `.ci-btn` and `.ci-hero .ci-btn.ci-primary` in the landing's section CSS.
+ *
+ * Disabled primary must not read as live: opacity alone on full accent still looks clickable on a
+ * payment page, so the fill is desaturated and hover is suppressed.
  */
 
 /** The corner notch. Expressed inline because the polygon's commas fight Tailwind's arbitrary-value parser. */
@@ -38,6 +41,18 @@ const VARIANT = {
     "hover:text-[var(--color-neon-orange)]",
 } as const;
 
+const VARIANT_DISABLED = {
+  primary:
+    "bg-[#6a3a2f] border-[#6a3a2f] text-[#101010]/55 font-semibold cursor-not-allowed " +
+    "hover:bg-[#6a3a2f] hover:border-[#6a3a2f] opacity-90",
+  secondary:
+    "bg-transparent border-white/15 text-[var(--color-primary)]/45 cursor-not-allowed " +
+    "hover:border-white/15 opacity-70",
+  accentLine:
+    "bg-transparent border-[var(--color-neon-orange)]/35 text-[var(--color-primary)]/45 " +
+    "font-medium cursor-not-allowed hover:text-[var(--color-primary)]/45 opacity-70",
+} as const;
+
 interface PricingButtonProps {
   children: ReactNode;
   onClick?: () => void;
@@ -58,14 +73,15 @@ export function PricingButton({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
       disabled={disabled}
+      aria-disabled={disabled || undefined}
       style={notched ? NOTCH : undefined}
       className={[
         BASE,
-        VARIANT[variant],
+        disabled ? VARIANT_DISABLED[variant] : VARIANT[variant],
         fullWidth ? "w-full" : "",
-        disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+        disabled ? "" : "cursor-pointer",
       ]
         .filter(Boolean)
         .join(" ")}

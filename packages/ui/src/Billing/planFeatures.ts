@@ -25,72 +25,105 @@ export interface PlanFeature {
   included: boolean;
 }
 
+export interface PlanFeaturesOptions {
+  /**
+   * Four headline lines for the compact plan cards (searches · depth · uploads · analysis).
+   * Full mode keeps the longer list including library and exports.
+   */
+  compact?: boolean;
+}
+
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-export function planFeatures(limits: BillingPlanLimits | undefined | null): PlanFeature[] {
-  if (!limits) return [];
+function searchFeature(limits: BillingPlanLimits): PlanFeature {
+  return limits.searches_per_day === null
+    ? { key: "searches", text: "Unlimited (fair use) sonic searches", included: true }
+    : {
+        key: "searches",
+        text: `${plural(limits.searches_per_day, "sonic search", "sonic searches")} a day`,
+        included: limits.searches_per_day > 0,
+      };
+}
 
-  const features: PlanFeature[] = [];
+function depthFeature(limits: BillingPlanLimits): PlanFeature | null {
+  if (limits.top_sk_max === null) return null;
+  return {
+    key: "depth",
+    text: `Top ${limits.top_sk_max} matches per search`,
+    included: limits.top_sk_max > 0,
+  };
+}
 
-  // Searches — the headline number, and the only one that is unlimited on Pro.
-  features.push(
-    limits.searches_per_day === null
-      ? { key: "searches", text: "Unlimited (fair use) sonic searches", included: true }
-      : {
-          key: "searches",
-          text: `${plural(limits.searches_per_day, "sonic search", "sonic searches")} a day`,
-          included: limits.searches_per_day > 0,
-        },
-  );
-
-  // Depth: what you SEE, not what you may select. The dropdown number is larger on free and
-  // quoting it here would promise 50 matches to someone who gets 20 unlocked.
-  if (limits.top_sk_max !== null) {
-    features.push({
-      key: "depth",
-      text: `Top ${limits.top_sk_max} matches per search`,
-      included: limits.top_sk_max > 0,
-    });
-  }
-
-  // Uploads.
+function uploadsFeature(limits: BillingPlanLimits): PlanFeature {
   if (limits.uploads_per_month === null) {
-    features.push({ key: "uploads", text: "Unlimited (fair use) uploads", included: true });
-  } else if (limits.uploads_per_month > 0) {
-    features.push({
+    return { key: "uploads", text: "Unlimited (fair use) uploads", included: true };
+  }
+  if (limits.uploads_per_month > 0) {
+    return {
       key: "uploads",
       text: `${plural(limits.uploads_per_month, "track upload", "track uploads")} a month`,
       included: true,
-    });
-  } else {
-    features.push({ key: "uploads", text: "Track uploads", included: false });
+    };
   }
+  return { key: "uploads", text: "Track uploads", included: false };
+}
 
-  // Library — a listing cap, never a deletion. The card must not imply playlists disappear.
-  features.push(
-    limits.library_playlists_max === null
-      ? { key: "library", text: "Every playlist kept in your Library", included: true }
-      : {
-          key: "library",
-          text: `${plural(limits.library_playlists_max, "playlist", "playlists")} in your Library`,
-          included: limits.library_playlists_max > 0,
-        },
-  );
+function libraryFeature(limits: BillingPlanLimits): PlanFeature {
+  return limits.library_playlists_max === null
+    ? { key: "library", text: "Every playlist kept in your Library", included: true }
+    : {
+        key: "library",
+        text: `${plural(limits.library_playlists_max, "playlist", "playlists")} in your Library`,
+        included: limits.library_playlists_max > 0,
+      };
+}
 
-  // Exports.
+function exportsFeature(limits: BillingPlanLimits): PlanFeature {
   if (limits.exports_per_day === null) {
-    features.push({ key: "exports", text: "Unlimited (fair use) exports", included: true });
-  } else if (limits.exports_per_day > 0) {
-    features.push({
+    return { key: "exports", text: "Unlimited (fair use) exports", included: true };
+  }
+  if (limits.exports_per_day > 0) {
+    return {
       key: "exports",
       text: `${plural(limits.exports_per_day, "export", "exports")} a day`,
       included: true,
-    });
-  } else {
-    features.push({ key: "exports", text: "Playlist export", included: false });
+    };
+  }
+  return { key: "exports", text: "Playlist export", included: false };
+}
+
+function analysisFeature(limits: BillingPlanLimits): PlanFeature {
+  return {
+    key: "analysis",
+    text: limits.can_view_full_analysis
+      ? "Full Track Intelligence"
+      : "Complete analysis summary",
+    included: true,
+  };
+}
+
+export function planFeatures(
+  limits: BillingPlanLimits | undefined | null,
+  options: PlanFeaturesOptions = {},
+): PlanFeature[] {
+  if (!limits) return [];
+
+  if (options.compact) {
+    const features: PlanFeature[] = [searchFeature(limits)];
+    const depth = depthFeature(limits);
+    if (depth) features.push(depth);
+    features.push(uploadsFeature(limits));
+    features.push(analysisFeature(limits));
+    return features;
   }
 
-  // The analysis boundary — a page, not a count.
+  const features: PlanFeature[] = [searchFeature(limits)];
+  const depth = depthFeature(limits);
+  if (depth) features.push(depth);
+  features.push(uploadsFeature(limits));
+  features.push(libraryFeature(limits));
+  features.push(exportsFeature(limits));
+  // Full mode keeps the longer free-summary wording used by existing tests.
   features.push({
     key: "analysis",
     text: limits.can_view_full_analysis
@@ -100,4 +133,40 @@ export function planFeatures(limits: BillingPlanLimits | undefined | null): Plan
   });
 
   return features;
+}
+
+/** Format a limit count for the comparison table. `null` → Unlimited (fair use). */
+export function formatLimitCount(
+  value: number | null | undefined,
+  unit: { singular: string; plural: string },
+  cadence?: string,
+): string {
+  if (value === null) return "Unlimited (fair use)";
+  if (value === undefined || value === 0) return "—";
+  const n = `${value} / ${value === 1 ? unit.singular : unit.plural}`;
+  return cadence ? `${n}` : n;
+}
+
+export function formatPerDay(value: number | null | undefined): string {
+  if (value === null) return "Unlimited (fair use)";
+  if (value === undefined || value === 0) return "—";
+  return `${value} / day`;
+}
+
+export function formatPerMonth(value: number | null | undefined): string {
+  if (value === null) return "Unlimited (fair use)";
+  if (value === undefined || value === 0) return "—";
+  return `${value} / month`;
+}
+
+export function formatTopN(value: number | null | undefined): string {
+  if (value === null) return "Unlimited (fair use)";
+  if (value === undefined || value === 0) return "—";
+  return `Top ${value}`;
+}
+
+export function formatPlainCount(value: number | null | undefined): string {
+  if (value === null) return "Unlimited (fair use)";
+  if (value === undefined || value === 0) return "—";
+  return String(value);
 }

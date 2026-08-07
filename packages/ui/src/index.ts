@@ -88,8 +88,10 @@ import { PlanBillingCard } from "./Billing/PlanBillingCard";
 import { ConsumerPricingContent } from "./Billing/ConsumerPricingContent";
 import { PartnerPricingContent } from "./Billing/PartnerPricingContent";
 import { PricingContent } from "./Billing/PricingContent";
+import { PricingFaq } from "./Billing/PricingFaq";
 import { FoundingBadge, daysRemaining } from "./Billing/FoundingBadge";
 import { planFeatures } from "./Billing/planFeatures";
+import { PAID_CHECKOUT, SAMPLE_REPORT } from "./Billing/pricingCopy";
 import RegisterContent from "./Content/RegisterContent";
 import ForgotPasswordContent from "./Content/ForgotPasswordContent";
 import ResetPasswordContent from "./Content/ResetPasswordContent";
@@ -185,6 +187,9 @@ export {
   ConsumerPricingContent,
   PartnerPricingContent,
   PricingContent,
+  PricingFaq,
+  PAID_CHECKOUT,
+  SAMPLE_REPORT,
   RegisterContent,
   ForgotPasswordContent,
   ResetPasswordContent,
