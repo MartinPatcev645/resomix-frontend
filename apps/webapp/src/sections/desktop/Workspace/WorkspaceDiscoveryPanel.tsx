@@ -12,6 +12,7 @@ import {
 import { displayArtistOrOmit } from "@/utils/trackUtils.ts";
 import { savePlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 import {
+  SOURCE_SECTION_HEADING,
   SOURCE_TAB_SEARCH,
   SOURCE_TAB_UPLOAD,
   UPLOAD_OUTCOME_LINE,
@@ -200,21 +201,35 @@ export const WorkspaceDiscoveryPanel: React.FC = () => {
 
       <WorkspaceStage stageKey={stageKey}>
         {!showProcessing && (
-          <div
-            className="flex w-full overflow-hidden border border-[var(--rx-color-border-default)] max-[640px]:grid max-[640px]:grid-cols-2"
-            role="tablist"
-            aria-label="Reference source"
-          >
-            <SourceTab
-              selected={source === "search"}
-              onClick={() => switchSource("search")}
-              label={SOURCE_TAB_SEARCH}
-            />
-            <SourceTab
-              selected={source === "upload"}
-              onClick={() => switchSource("upload")}
-              label={SOURCE_TAB_UPLOAD}
-            />
+          <div className="w-full overflow-hidden border border-[var(--rx-color-border-default)]">
+            <div
+              id="workspace-source-heading"
+              className="flex items-center gap-[var(--px-8)] border-b border-[var(--rx-color-border-default)] px-[var(--px-22)] py-[var(--px-13)]"
+            >
+              <span
+                aria-hidden="true"
+                className="block h-[var(--px-8)] w-[var(--px-8)] shrink-0 bg-[var(--rx-color-accent)]"
+              />
+              <span className="font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)]">
+                {SOURCE_SECTION_HEADING}
+              </span>
+            </div>
+            <div
+              className="flex w-full max-[640px]:grid max-[640px]:grid-cols-2"
+              role="tablist"
+              aria-labelledby="workspace-source-heading"
+            >
+              <SourceTab
+                selected={source === "search"}
+                onClick={() => switchSource("search")}
+                label={SOURCE_TAB_SEARCH}
+              />
+              <SourceTab
+                selected={source === "upload"}
+                onClick={() => switchSource("upload")}
+                label={SOURCE_TAB_UPLOAD}
+              />
+            </div>
           </div>
         )}
 

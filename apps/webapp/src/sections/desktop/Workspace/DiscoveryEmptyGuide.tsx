@@ -28,12 +28,12 @@ export const DiscoveryEmptyGuide: React.FC<DiscoveryEmptyGuideProps> = ({
 
   return (
     <div className="-mx-[var(--px-22)] mt-[var(--px-8)] grid grid-cols-1 max-[1023px]:gap-0 min-[1024px]:grid-cols-[minmax(0,62fr)_minmax(0,38fr)]">
-      <div className="relative border-b border-[var(--rx-color-border-subtle)] px-[var(--px-24)] pb-[var(--px-28)] pt-[var(--px-16)] max-[640px]:px-[var(--px-16)] min-[1024px]:border-b-0 min-[1024px]:border-r min-[1024px]:border-[var(--rx-color-border-subtle)] min-[1024px]:pr-[var(--px-32)] min-[1024px]:pl-[var(--px-24)]">
-        <p className="mb-[var(--px-20)] max-w-[34rem] text-[length:var(--px-16)] font-helvetica font-light leading-[var(--px-24)] text-[var(--rx-color-text-secondary)]">
+      <div className="relative border-b border-[var(--rx-color-border-subtle)] px-[var(--px-24)] pb-[var(--px-16)] pt-[var(--px-16)] max-[640px]:px-[var(--px-16)] min-[641px]:pb-[var(--px-28)] min-[1024px]:border-b-0 min-[1024px]:border-r min-[1024px]:border-[var(--rx-color-border-subtle)] min-[1024px]:pr-[var(--px-32)] min-[1024px]:pl-[var(--px-24)]">
+        <p className="mb-0 max-w-[34rem] text-[length:var(--px-16)] font-helvetica font-light leading-[var(--px-24)] text-[var(--rx-color-text-secondary)] min-[641px]:mb-[var(--px-20)]">
           {EMPTY_SEARCH_OUTCOME}
         </p>
         <div
-          className="text-[rgba(255,255,255,.55)]"
+          className="hidden min-[641px]:block text-[rgba(255,255,255,.55)]"
           role="img"
           aria-label={OUTCOME_ARIA}
         >
@@ -85,47 +85,6 @@ export const DiscoveryEmptyGuide: React.FC<DiscoveryEmptyGuideProps> = ({
               <circle cx="446" cy="38" r="2.2" />
               <circle cx="446" cy="84" r="2.2" />
               <circle cx="446" cy="130" r="2.2" />
-            </g>
-          </svg>
-          <svg className="block w-full min-[641px]:hidden" viewBox="0 0 358 190" aria-hidden="true">
-            <g
-              style={{
-                stroke: "rgba(255,255,255,.55)",
-                fill: "none",
-                strokeWidth: 1.4,
-                strokeLinecap: "round",
-                strokeLinejoin: "round",
-              }}
-            >
-              <path d="M24 30 l10-8 8 13 9-19 9 22 8-16 7 8 7-4 8 5 H310" />
-            </g>
-            <circle
-              className="motion-safe:animate-[sd-pulse_2.6s_ease-in-out_infinite]"
-              cx="24"
-              cy="30"
-              r="3.5"
-              style={{ fill: "#EE4A26" }}
-            />
-            <path
-              className="motion-safe:animate-[sd-dash_9s_linear_infinite]"
-              d="M24 30 V96"
-              style={{
-                stroke: "rgba(238,74,38,.8)",
-                fill: "none",
-                strokeWidth: 1.8,
-                strokeDasharray: "5 7",
-              }}
-            />
-            <path
-              d="M24 96 C 24 110 40 112 52 112 M24 96 C 24 128 40 142 52 142 M24 96 C 24 158 40 172 52 172"
-              style={{ stroke: "rgba(238,74,38,.45)", fill: "none", strokeWidth: 1.2 }}
-            />
-            <g style={{ stroke: "rgba(255,255,255,.7)", fill: "none", strokeWidth: 1.3 }}>
-              <rect x="58" y="99" width="252" height="26" />
-            </g>
-            <g style={{ stroke: "rgba(255,255,255,.3)", fill: "none", strokeWidth: 1.2 }}>
-              <rect x="58" y="129" width="216" height="26" />
-              <rect x="58" y="159" width="180" height="26" />
             </g>
           </svg>
           <div
