@@ -39,6 +39,7 @@ from app.models.user import User
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
 from app.services.analysis_projection import project_summary
+from app.services.analysis_readings_service import attach_readings
 from app.services.analysis_service import AnalysisService
 from app.services.antivirus_service import AntivirusService
 from app.services.entitlement_gate import EntitlementGate
@@ -414,6 +415,10 @@ class AnalysisResultController:
             if result.get("status_code") == 404:
                 return self._reject(404, "This analysis is no longer available.", reason="expired")
             return self._reject(502, result.get("message") or "Result fetch failed.", reason="upstream_error")
+
+        # Before the projection, not after: `readings` is an allow-listed summary-card field, so
+        # attaching it first means the free card and the Pro dashboard show the same sentences.
+        result = attach_readings(result, analysis_id)
 
         if not await self._may_view_full_analysis(db, current_user):
             result = project_summary(result)

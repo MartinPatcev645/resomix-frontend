@@ -13,8 +13,11 @@ subscribes to is not something you can quietly delete afterwards.
 
 The founding window is open (`BETA_END_DATE = 2027-02-01T00:00:00Z`), and `resolve_offer_price`
 falls back to the **list** price when no founding price exists. So today the pricing page and
-checkout both sell the current €9.00 list price, exactly as before. Nothing is broken while this
+checkout both sell the current list price, exactly as before. Nothing is broken while this
 runbook is outstanding — it simply is not yet a founding offer.
+
+> **Status 2026-08-07:** all four prices exist in the sandbox (€7.99 / €9.99 monthly, €69 / €89
+> yearly) and the lock has been proven end-to-end. Steps 1–3 below are what to repeat **in live**.
 
 ---
 
@@ -39,8 +42,10 @@ existing Pro product.
 > The list prices are **created but never exposed in checkout** until the window closes — that is
 > what `price_kind` is for.
 
-There is already a €9.00 monthly list price in `plan_prices`. Decide deliberately whether the list
-price becomes €9.99 (per the spec) or stays €9.00, and if it changes, attach the new one as the
+The sandbox originally held a €9.00 monthly list price; **€9.99 was chosen** (matching the spec) and
+attached. Decide the same deliberately for live before the first founding sale — the list price is
+what a founding subscriber rolls onto, and existing schedules are never rewritten. If it changes,
+attach the new one as the
 `list` kind in step 2 — it replaces the old row for that plan/interval/currency.
 
 ---
@@ -79,19 +84,22 @@ the list price.
 
 ---
 
-## Step 4 — prove the lock with a Stripe test clock
+## Step 4 — prove the lock ✅ (now automated)
 
-This is the only way to confirm the part that matters, and it cannot be checked by reading code:
+This used to be a manual test-clock walkthrough. It is a script now, because running it by hand
+found four defects that reading the code had not — see `stripe_live_doc.md` §1.5b.
 
-1. Test clock → subscribe to Pro monthly at the founding price.
-2. Confirm a Subscription Schedule exists on the subscription, `end_behavior = release`, phase 1
-   = founding × **22**, phase 2 = list.
-3. Advance the clock through cycle 22 → invoices stay **€7.99**.
-4. Advance one more → invoice is **€9.99**, and the schedule releases.
-5. Confirm `user_subscriptions.is_founding` flips to `0` on release (the
-   `subscription_schedule.released` webhook).
+```bash
+PYTHONPATH="$PWD" .venv/bin/python scripts/pricing_e2e_test.py clock-yearly
+```
 
-Yearly is the same with **2** iterations.
+15 checks: schedule shape, `end_behavior = release`, phase 1 = founding × N, phase 2 = list, the
+local mirror, every cycle's invoice amount, the rollover to the list price, the release, and the
+flag clearing. Refuses to run on a non-`sk_test` key.
+
+**Prove it on yearly.** Stripe allows at most 2 billing intervals per advance and 20 new invoices
+per subscription per day, so a full 22-cycle monthly lock cannot finish in one sitting. `clock-yearly`
+proves the whole transition in 3 invoices; `clock-monthly` proves the shape plus a few cycles.
 
 ---
 
