@@ -8,6 +8,7 @@ import {
   DISCOVERY_OUTPUT_LABEL,
   DISCOVERY_TASK_DESC,
   DISCOVERY_TASK_TITLE,
+  TASK_GROUP_HEADING,
 } from "../../desktop/Workspace/workspaceCopy.ts";
 import { WORKSPACE_FOCUS_VISIBLE } from "../../desktop/Workspace/workspacePanelStyles.ts";
 import type { WorkspaceMode } from "../../desktop/Workspace/WorkspaceShell.tsx";
@@ -90,7 +91,7 @@ export const WorkspaceTaskSelector: React.FC<{ mode: WorkspaceMode }> = ({ mode 
         id={labelId}
         className="mb-[var(--px-10)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)]"
       >
-        What do you want to do?
+        {TASK_GROUP_HEADING}
       </p>
 
       <div className="border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)]">

@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthStore } from "@resomix/stores";
 import {
-  ACTIVE_TASK_LABEL,
   ANALYSIS_OUTPUT_LABEL,
   ANALYSIS_TASK_DESC,
   ANALYSIS_TASK_TITLE,
@@ -12,15 +11,17 @@ import {
   HOW_IT_WORKS_COLLAPSED_KEY,
   HOW_IT_WORKS_STEPS,
   HOW_IT_WORKS_TITLE,
-  SWITCH_TO_ANALYSIS,
-  SWITCH_TO_DISCOVERY,
+  SELECT_TASK_LABEL,
+  SELECTED_TASK_LABEL,
+  TASK_GROUP_HEADING,
+  TASK_GROUP_HINT,
   WORKSPACE_HEADING,
   WORKSPACE_SUBLINE,
 } from "./workspaceCopy.ts";
 import { UsageChip } from "@/components/Entitlements/UsageChip.tsx";
 import { WorkspaceRail } from "./WorkspaceRail.tsx";
 import { PAGE_MARK_INTERACTIVE } from "@resomix/ui";
-import { WORKSPACE_BADGE_ACCENT, WORKSPACE_FOCUS_VISIBLE } from "./workspacePanelStyles.ts";
+import { WORKSPACE_FOCUS_VISIBLE } from "./workspacePanelStyles.ts";
 import { isPlaylistUuid } from "@/utils/urlIdKind.ts";
 import { withViewTransition } from "@/utils/viewTransition.ts";
 
@@ -54,6 +55,9 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const sessionExpired = useAuthStore((s) => s.sessionExpired);
   const [guideCollapsed, setGuideCollapsed] = useState(false);
+  const headingId = useId();
+  const hintId = useId();
+  const radioRefs = useRef<Partial<Record<WorkspaceMode, HTMLButtonElement | null>>>({});
 
   // Session badge — the dot carries the state as colour, so it reads at a glance without parsing
   // the label. Expired outranks the others: it is signed-out too, but "Guest session" would hide
@@ -89,6 +93,36 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
     });
   };
 
+  // Keyboard semantics mirrored from mobile WorkspaceTaskSelector — duplicated rather than shared
+  // so the mobile diff stays limited to the TASK_GROUP_HEADING copy substitution (§9).
+  const focusMode = (next: WorkspaceMode) => {
+    radioRefs.current[next]?.focus();
+  };
+
+  const moveTo = (next: WorkspaceMode) => {
+    selectTask(next);
+    // Focus follows selection even when already on that mode (arrow onto the active radio).
+    requestAnimationFrame(() => focusMode(next));
+  };
+
+  const onRadioKeyDown = (event: React.KeyboardEvent, current: WorkspaceMode) => {
+    const other: WorkspaceMode = current === "discovery" ? "analysis" : "discovery";
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      event.preventDefault();
+      moveTo(other);
+      return;
+    }
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      event.preventDefault();
+      moveTo(other);
+      return;
+    }
+    if (event.key === " " || event.key === "Enter") {
+      event.preventDefault();
+      moveTo(current);
+    }
+  };
+
   return (
     <div className="webapp-approved-container px-[var(--px-12)] pb-[var(--px-40)]">
       <header className="mb-[var(--px-28)] grid grid-cols-1 items-start gap-[var(--px-16)] sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-x-[var(--px-32)]">
@@ -122,29 +156,50 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
       </header>
 
       {taskSelector ?? (
-        <div
-          className="mb-[var(--px-16)] grid grid-cols-1 gap-[var(--px-12)] sm:grid-cols-2 sm:gap-[var(--px-16)]"
-          role="group"
-          aria-label="Choose your task"
-        >
-          <TaskCard
-            pressed={mode === "discovery"}
-            title={DISCOVERY_TASK_TITLE}
-            description={DISCOVERY_TASK_DESC}
-            outputLabel={DISCOVERY_OUTPUT_LABEL}
-            switchCue={SWITCH_TO_DISCOVERY}
-            icon={<DiscoveryModeIcon />}
-            onClick={() => selectTask("discovery")}
-          />
-          <TaskCard
-            pressed={mode === "analysis"}
-            title={ANALYSIS_TASK_TITLE}
-            description={ANALYSIS_TASK_DESC}
-            outputLabel={ANALYSIS_OUTPUT_LABEL}
-            switchCue={SWITCH_TO_ANALYSIS}
-            icon={<AnalysisModeIcon />}
-            onClick={() => selectTask("analysis")}
-          />
+        <div className="mb-[var(--px-16)]">
+          <h2
+            id={headingId}
+            className="mt-[var(--px-4)] font-helvetica text-[length:var(--px-22)] font-bold leading-[var(--px-28)] text-[var(--rx-color-text-primary)]"
+          >
+            {TASK_GROUP_HEADING}
+          </h2>
+          <p
+            id={hintId}
+            className="mt-[var(--px-6)] mb-[var(--px-16)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)]"
+          >
+            {TASK_GROUP_HINT}
+          </p>
+          <div
+            className="grid grid-cols-1 gap-[var(--px-12)] sm:grid-cols-2 sm:gap-[var(--px-16)] sm:items-stretch"
+            role="radiogroup"
+            aria-labelledby={headingId}
+            aria-describedby={hintId}
+          >
+            <TaskCard
+              pressed={mode === "discovery"}
+              title={DISCOVERY_TASK_TITLE}
+              description={DISCOVERY_TASK_DESC}
+              outputLabel={DISCOVERY_OUTPUT_LABEL}
+              icon={<DiscoveryModeIcon />}
+              onClick={() => moveTo("discovery")}
+              onKeyDown={(event) => onRadioKeyDown(event, "discovery")}
+              radioRef={(el) => {
+                radioRefs.current.discovery = el;
+              }}
+            />
+            <TaskCard
+              pressed={mode === "analysis"}
+              title={ANALYSIS_TASK_TITLE}
+              description={ANALYSIS_TASK_DESC}
+              outputLabel={ANALYSIS_OUTPUT_LABEL}
+              icon={<AnalysisModeIcon />}
+              onClick={() => moveTo("analysis")}
+              onKeyDown={(event) => onRadioKeyDown(event, "analysis")}
+              radioRef={(el) => {
+                radioRefs.current.analysis = el;
+              }}
+            />
+          </div>
         </div>
       )}
 
@@ -205,68 +260,102 @@ const TaskCard: React.FC<{
   title: string;
   description: string;
   outputLabel: string;
-  switchCue: string;
   icon: React.ReactNode;
   onClick: () => void;
-}> = ({ pressed, title, description, outputLabel, switchCue, icon, onClick }) => {
+  onKeyDown: (event: React.KeyboardEvent) => void;
+  radioRef: (el: HTMLButtonElement | null) => void;
+}> = ({ pressed, title, description, outputLabel, icon, onClick, onKeyDown, radioRef }) => {
   const [outPrefix, outValue] = splitOutputLabel(outputLabel);
 
   return (
     <button
       type="button"
-      aria-pressed={pressed}
+      role="radio"
+      aria-checked={pressed}
+      tabIndex={pressed ? 0 : -1}
+      ref={radioRef}
       onClick={onClick}
+      onKeyDown={onKeyDown}
       className={[
-        "ws-transition grid min-h-0 grid-cols-[auto_minmax(0,1fr)] gap-x-[var(--px-16)] gap-y-[var(--px-6)] border bg-[var(--rx-color-surface)] p-[var(--px-17)] pb-[var(--px-16)] text-left transition-[border-color,background-color] duration-[var(--rx-duration-base)] ease-[var(--rx-ease-standard)] sm:min-h-[var(--px-108)] sm:p-[var(--px-20)] sm:pb-[var(--px-16)]",
+        "ws-transition flex h-full min-h-[var(--px-120)] flex-col gap-[var(--px-12)] border p-[var(--px-17)] pb-[var(--px-16)] text-left transition-[border-color,background-color] duration-[var(--rx-duration-base)] ease-[var(--rx-ease-standard)] sm:p-[var(--px-20)] sm:pb-[var(--px-16)]",
         // The whole card is a button, so it carries the full-weight top-left mark — on BOTH cards,
-        // because the mark says "operable", not "chosen". Which one is active is still carried by
-        // the selected background and the ▸ Active task badge, so nothing is lost by dropping the
-        // old inset bar down the left edge.
+        // because the mark says "operable", not "chosen". Selection is carried by the accent
+        // border, selected fill, radio mark, and SELECTED label.
         PAGE_MARK_INTERACTIVE,
         WORKSPACE_FOCUS_VISIBLE,
         pressed
-          ? "ws-mode-card-selected cursor-default border-[var(--rx-color-border-default)] bg-[var(--rx-color-selected)]"
-          : "cursor-pointer border-[var(--rx-color-border-default)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.035)]",
+          ? "ws-mode-card-selected cursor-default border-[var(--rx-color-accent)] bg-[var(--rx-color-selected)]"
+          : "cursor-pointer border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.035)]",
       ].join(" ")}
     >
-      <span
-        aria-hidden="true"
-        className={[
-          "col-start-1 row-start-1 mt-[var(--px-3)] h-[var(--px-24)] w-[var(--px-24)] transition-colors duration-[var(--rx-duration-base)]",
-          pressed ? "text-[var(--rx-color-accent)]" : "text-[var(--rx-color-text-muted)]",
-        ].join(" ")}
-      >
-        {icon}
-      </span>
-      <span className="col-start-2 row-start-1 min-w-0">
-        <span className="block font-helvetica text-[length:var(--px-16)] font-bold uppercase leading-[var(--px-20)] tracking-[0.03em] text-[var(--rx-color-text-primary)]">
-          {title}
-        </span>
-        <span className="mt-[var(--px-3)] block text-[length:var(--px-14)] font-helvetica font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)]">
-          {description}
-        </span>
-      </span>
-      <span className="col-start-2 row-start-2 mt-[var(--px-9)] flex flex-wrap items-baseline justify-between gap-x-[var(--px-16)] gap-y-[var(--px-6)] border-t border-[var(--rx-color-border-subtle)] pt-[var(--px-9)]">
+      {/* Row 1 — control header: radio · icon · title · state label */}
+      <span className="flex min-w-0 items-center gap-[var(--px-12)]">
+        <RadioMark checked={pressed} />
         <span
+          aria-hidden="true"
           className={[
-            "font-fira text-[length:var(--px-10-5)] uppercase tracking-[var(--px-1)]",
-            pressed ? "text-[var(--rx-color-text-secondary)]" : "text-[var(--rx-color-text-muted)]",
+            "flex h-[var(--px-32)] w-[var(--px-32)] shrink-0 items-center justify-center border transition-colors duration-[var(--rx-duration-base)]",
+            pressed
+              ? "border-[var(--rx-color-accent)] text-[var(--rx-color-accent)]"
+              : "border-[var(--rx-color-border-default)] text-[var(--rx-color-text-muted)]",
           ].join(" ")}
         >
+          <span className="block h-[var(--px-18)] w-[var(--px-18)]">{icon}</span>
+        </span>
+        <span className="min-w-0 flex-1 font-helvetica text-[length:var(--px-16)] font-bold uppercase leading-[var(--px-20)] tracking-[0.03em] text-[var(--rx-color-text-primary)]">
+          {title}
+        </span>
+        {pressed ? (
+          <span
+            aria-hidden="true"
+            className="inline-flex shrink-0 items-center gap-[var(--px-6)] border border-[rgba(238,74,38,0.55)] bg-[var(--rx-color-accent-soft)] px-[var(--px-8)] py-[var(--px-2)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-accent)]"
+          >
+            <i aria-hidden="true" className="not-italic">
+              ●
+            </i>
+            {SELECTED_TASK_LABEL}
+          </span>
+        ) : (
+          <span
+            aria-hidden="true"
+            className="shrink-0 font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)]"
+          >
+            {SELECT_TASK_LABEL}
+          </span>
+        )}
+      </span>
+
+      {/* Row 2 — description, full card width */}
+      <span className="block flex-1 text-[length:var(--px-15)] font-helvetica font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)]">
+        {description}
+      </span>
+
+      {/* Row 3 — output */}
+      <span className="mt-auto flex flex-wrap items-baseline gap-x-[var(--px-16)] gap-y-[var(--px-6)] border-t border-[var(--rx-color-border-subtle)] pt-[var(--px-9)]">
+        <span className="font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)]">
           <span className="font-medium text-[var(--rx-color-text-secondary)]">{outPrefix}</span>{" "}
           <span className="text-[rgba(238,74,38,.7)]">//</span> {outValue}
         </span>
-        {pressed ? (
-          <span className={WORKSPACE_BADGE_ACCENT}>▸ {ACTIVE_TASK_LABEL}</span>
-        ) : (
-          <span className="task-cue font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)] transition-colors duration-[var(--rx-duration-base)]">
-            {switchCue}
-          </span>
-        )}
       </span>
     </button>
   );
 };
+
+const RadioMark: React.FC<{ checked: boolean }> = ({ checked }) => (
+  <span
+    aria-hidden="true"
+    className={[
+      "flex h-[var(--px-16)] w-[var(--px-16)] shrink-0 items-center justify-center rounded-full border-[1.5px]",
+      checked
+        ? "border-[var(--rx-color-accent)] bg-transparent"
+        : "border-[var(--rx-color-text-muted)] bg-transparent",
+    ].join(" ")}
+  >
+    {checked ? (
+      <span className="block h-[var(--px-8)] w-[var(--px-8)] rounded-full bg-[var(--rx-color-accent)]" />
+    ) : null}
+  </span>
+);
 
 function splitOutputLabel(label: string): [string, string] {
   const idx = label.indexOf("//");

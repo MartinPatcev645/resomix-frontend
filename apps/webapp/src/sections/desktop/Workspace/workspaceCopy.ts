@@ -15,9 +15,10 @@ export const ANALYSIS_TASK_TITLE = "Analyse a track";
 export const ANALYSIS_TASK_DESC =
   "Read the track before deciding where it belongs.";
 
-export const ACTIVE_TASK_LABEL = "Active task";
-export const SWITCH_TO_ANALYSIS = "Switch to Track Analysis";
-export const SWITCH_TO_DISCOVERY = "Switch to Find Similar";
+export const TASK_GROUP_HEADING = "What do you want to do?";
+export const TASK_GROUP_HINT = "Pick one — you can switch at any time";
+export const SELECTED_TASK_LABEL = "Selected";
+export const SELECT_TASK_LABEL = "Select";
 
 export const DISCOVERY_OUTPUT_LABEL = "Output // Ranked similarity playlist";
 export const ANALYSIS_OUTPUT_LABEL = "Output // Track Intelligence profile";
