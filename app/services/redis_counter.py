@@ -130,6 +130,26 @@ async def seed_if_absent(key: str, value: int, ttl_seconds: int) -> Optional[boo
         await client.close()
 
 
+async def delete(key: str) -> Optional[bool]:
+    """Drop a counter. True if a key was removed, False if there was nothing there, None if Redis
+    is down.
+
+    Simulates the eviction that `EntitlementGate._rehydrate_if_evicted` exists to survive, and gives
+    support a way to clear one subject's counter without a redis-cli session. Enforcement never
+    calls this — a counter that vanishes on its own is exactly the case rehydration handles.
+    """
+    client = await get_redis_or_none()
+    if client is None:
+        return None
+    try:
+        return bool(await client.delete(key))
+    except Exception as exc:
+        logger.warning("redis delete failed for %s: %s", key, exc)
+        return None
+    finally:
+        await client.close()
+
+
 async def exists(key: str) -> Optional[bool]:
     """Whether the counter key is present. None if Redis is unavailable.
 

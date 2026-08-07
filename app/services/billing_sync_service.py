@@ -98,7 +98,12 @@ class BillingSyncService:
         screen still promising a founding rate afterwards would be telling a customer something
         false about their own money. So the flag is cleared on those, not just set on creation.
         """
-        subscription_id = schedule.get("subscription")
+        # A RELEASED schedule reports `subscription: null` and moves the id to
+        # `released_subscription` — releasing is precisely the act of detaching the two. Reading
+        # only `subscription` meant the release event bailed out one line into this method, so
+        # `is_founding` never cleared and the profile kept promising a founding rate the customer
+        # had already rolled off. That is the single event this method exists to handle.
+        subscription_id = schedule.get("subscription") or schedule.get("released_subscription")
         if not subscription_id:
             # A schedule can exist before its subscription (created from a phase start date). We
             # only track schedules attached to a live subscription; the later `updated` event
@@ -116,7 +121,21 @@ class BillingSyncService:
             logger.info("BILLING: schedule %s has no local subscription row yet", schedule.get("id"))
             return
 
-        ended = event_type.endswith(("released", "canceled", "completed", "aborted"))
+        # Decide from the schedule's STATUS first, and only fall back to the event name.
+        #
+        # Releasing emits `subscription_schedule.released` immediately followed by a
+        # `subscription_schedule.updated` for the same schedule, in the same second. Judging by
+        # event name alone, `released` cleared the flag and the trailing `updated` — not being in
+        # the "ended" list — set it straight back. The customer had rolled onto the list price and
+        # the profile went on promising them a founding rate, permanently.
+        #
+        # The status is the state; the event name is only how we were told about it.
+        # Stripe's schedule statuses are not_started | active | completed | released | canceled.
+        ENDED_STATUSES = ("released", "canceled", "completed")
+        status = str(schedule.get("status") or "").lower()
+        ended = status in ENDED_STATUSES or event_type.endswith(
+            ("released", "canceled", "completed", "aborted")
+        )
         if ended:
             # The rate is no longer pinned. `founding_lock_ends_at` is deliberately left in place:
             # it is a historical fact — when the lock ran out — and clearing it would erase the
@@ -124,15 +143,69 @@ class BillingSyncService:
             row.is_founding = False
             row.stripe_schedule_id = None
         else:
+            # A schedule with ONE phase is not a founding lock — it is a founding price running
+            # forever with nothing to roll onto. `from_subscription` always creates exactly that,
+            # and phase 2 is added immediately afterwards; claiming the lock on the `created` event
+            # reported success for a schedule that might never get its second phase. That is how a
+            # silently-failed `modify` still produced `is_founding=1` in production.
+            #
+            # Requiring two phases costs nothing in the happy path — the `updated` event that adds
+            # phase 2 sets the flag a moment later — and makes a broken lock visible as is_founding=0.
+            phases = schedule.get("phases") or []
+            if len(phases) < 2:
+                logger.info(
+                    "BILLING: schedule %s has %d phase(s); not claiming a founding lock yet",
+                    schedule.get("id"), len(phases),
+                )
+                return
+
             row.is_founding = True
             row.stripe_schedule_id = schedule.get("id")
             end_at = self._phase_one_end(schedule)
+            if end_at is None and row.founding_lock_ends_at is None:
+                # This event carried no usable boundary AND we still have no date on file.
+                #
+                # `subscription_schedule.created` fires while the schedule has ONE phase (we add
+                # phase 2 immediately afterwards), so it can never supply a boundary; the `.updated`
+                # event that follows can. But webhook order is not guaranteed, and either can arrive
+                # before the subscription row exists — in which case it returns early above. Lose
+                # that race with `.updated` and the date stays NULL forever, so the profile screen
+                # cannot say when the founding rate ends.
+                #
+                # Re-read the schedule from Stripe, which is current whatever order events landed.
+                end_at = self._phase_one_end_from_stripe(schedule.get("id"))
             if end_at is not None:
                 # Stripe's own boundary, which beats the estimate written at checkout — its cycle
                 # dates can shift by a day around month ends.
                 row.founding_lock_ends_at = end_at
 
         await db.flush()
+
+    @staticmethod
+    def _phase_one_end_from_stripe(schedule_id: Optional[str]) -> Optional[datetime]:
+        """Read the founding phase's end straight from Stripe.
+
+        Only used to repair a missing date — see the caller. Never raises: this runs inside the
+        webhook handler, and an exception would make us return 500, Stripe would retry the whole
+        event, and a cosmetic date would have cost us the whole sync.
+        """
+        if not schedule_id:
+            return None
+        try:
+            import stripe
+
+            # Attribute access, not `.get`: a live `StripeObject` is not a dict, and its
+            # `__getattr__` shadows `dict.get` so `.get("phases")` raises AttributeError. (The
+            # `schedule` argument to sync_schedule IS a plain dict — it has been through
+            # `sanitize_for_json` — which is why the two use different access styles.)
+            fresh = stripe.SubscriptionSchedule.retrieve(schedule_id)
+            phases = fresh.phases or []
+            if len(phases) < 2:
+                return None
+            return _ts(phases[0].end_date)
+        except Exception as exc:  # noqa: BLE001 — see the docstring
+            logger.warning("BILLING: could not re-read schedule %s for its phase end: %s", schedule_id, exc)
+            return None
 
     @staticmethod
     def _phase_one_end(schedule: Dict[str, Any]) -> Optional[datetime]:

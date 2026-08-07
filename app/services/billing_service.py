@@ -344,7 +344,13 @@ class BillingService:
             current_start = schedule.phases[0].start_date if schedule.phases else None
             phase_one: Dict[str, Any] = {
                 "items": [{"price": founding.stripe_price_id, "quantity": 1}],
-                "iterations": iterations,
+                # `duration`, NOT `iterations`. Stripe removed `iterations` from phases; on the
+                # current API version (2026-04-22.dahlia) sending it fails the whole modify with
+                # "Received unknown parameter: phases[iterations]". Because this method never
+                # raises, that failure was invisible: the schedule stayed at the single phase
+                # `from_subscription` creates, so the founding price ran forever with nothing to
+                # roll onto — the exact outcome the lock exists to prevent, reported as success.
+                "duration": {"interval": founding.interval, "interval_count": iterations},
             }
             if current_start:
                 phase_one["start_date"] = current_start

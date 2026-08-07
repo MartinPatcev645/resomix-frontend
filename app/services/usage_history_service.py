@@ -48,6 +48,39 @@ class UsageHistoryService:
         except Exception:
             return None
 
+    async def release(
+        self, subject_type: str, subject_id: str, feature_key: str, period_start: datetime
+    ) -> None:
+        """Give back one durable use, floored at zero.
+
+        The mirror of ``record``, for when a reserved unit is refunded because the operation failed.
+        Without it the durable row sits one above the Redis counter, and a later eviction would
+        rehydrate a use the subject never had — charging them for a failure twice over.
+
+        Floored at zero because the two stores can legitimately disagree (a write-through that
+        failed, a counter seeded by a bonus), and a negative durable count would rehydrate as a free
+        allowance — the exact failure this whole mechanism exists to prevent.
+        """
+        from database.connection import AsyncSessionLocal
+
+        try:
+            async with AsyncSessionLocal() as db:
+                await db.execute(
+                    text(
+                        """
+                        UPDATE usage_period_history
+                           SET used_count = GREATEST(used_count - 1, 0),
+                               updated_at = CURRENT_TIMESTAMP
+                         WHERE subject_type = :st AND subject_id = :si
+                           AND feature_key = :fk AND period_start = :ps
+                        """
+                    ),
+                    {"st": subject_type, "si": str(subject_id), "fk": feature_key, "ps": period_start},
+                )
+                await db.commit()
+        except Exception as exc:  # noqa: BLE001 — best-effort, same as record()
+            logger.warning("usage history release failed for %s/%s: %s", subject_id, feature_key, exc)
+
     async def record(
         self,
         subject_type: str,

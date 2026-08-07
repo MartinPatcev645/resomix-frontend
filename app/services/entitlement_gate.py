@@ -228,7 +228,9 @@ class EntitlementGate:
         await self._rehydrate_if_evicted(db, subject, feature_key, start, period_key, ttl)
 
         if limit < 0:
-            return await self._count_unlimited(subject, feature_key, period_key, ttl)
+            gate_result = await self._count_unlimited(subject, feature_key, period_key, ttl)
+            await self._write_through(db, subject, feature_key, start, end, user=user, visitor_id=visitor_id)
+            return gate_result
 
         result = await self._usage.try_consume(subject[0], subject[1], feature_key, limit, period_key, ttl)
         if result is None:
@@ -238,6 +240,10 @@ class EntitlementGate:
 
         allowed, count = result
         if allowed:
+            # Mirror it durably, exactly as `record_use` does. This was missing, so `exports_per_day`
+            # — the one feature metered atomically — had NO durable row, and `_rehydrate_if_evicted`
+            # restored it to 0: a Redis restart handed every user their daily export back.
+            await self._write_through(db, subject, feature_key, start, end, user=user, visitor_id=visitor_id)
             return GateResult(True, limit=limit, count=count)
         # `end` is the moment the allowance returns — the caller needs it for `resets_at` and it is
         # already computed here, so recomputing it in the controller would risk a different answer
@@ -250,8 +256,14 @@ class EntitlementGate:
         """Return a previously reserved unit (operation failed after reserving)."""
         subject = self._subject(user, visitor_id)
         if subject is not None:
-            period_key, _ttl = await self._period(db, user, visitor_id, feature_key)
+            start, _end, period_key, _ttl = await self._window(db, user, visitor_id, feature_key)
             await self._usage.refund(subject[0], subject[1], feature_key, period_key)
+            # Give the durable row back too. Without this the mirror sits one above the counter, and
+            # a later eviction would restore a use that was refunded — the user pays for a failure.
+            try:
+                await self._history.release(subject[0], subject[1], feature_key, start)
+            except Exception:  # noqa: BLE001 — best-effort, same as the write
+                pass
 
     async def peek_allowed(
         self, db: AsyncSession, feature_key: str, *, user: Optional[User] = None, visitor_id: Optional[str] = None
@@ -358,15 +370,28 @@ class EntitlementGate:
             return
         start, end, period_key, ttl = await self._window(db, user, visitor_id, feature_key)
         await self._usage.increment(subject[0], subject[1], feature_key, period_key, ttl)
-        # Durable write-through so this period's usage survives the Redis TTL (best-effort; a
-        # failure here must never break the upload / playlist creation that just succeeded).
+        await self._write_through(db, subject, feature_key, start, end, user=user, visitor_id=visitor_id)
+
+    async def _write_through(
+        self, db, subject, feature_key: str, start, end, *, user=None, visitor_id=None
+    ) -> None:
+        """Mirror one use into the durable store.
+
+        Redis is authoritative for enforcement, but its keys can vanish — eviction under memory
+        pressure, a flush, a restart without persistence. This row is what
+        ``_rehydrate_if_evicted`` restores from; without it an eviction reads as 0 and silently
+        hands the subject a brand-new allowance.
+
+        Best-effort by design: a failure here must never break the export or upload that just
+        succeeded. Losing the mirror costs accuracy after an eviction, not the operation.
+        """
         try:
             limit = await self._entitlements.get_int(db, feature_key, user=user, visitor_id=visitor_id)
             plan = await self._entitlements.get_effective_plan(db, user)
             await self._history.record(
                 subject[0], subject[1], plan.id if plan else None, feature_key, start, end, limit
             )
-        except Exception:
+        except Exception:  # noqa: BLE001 — see the docstring
             pass
 
     async def grant_playlist_signup_bonus(self, db, user: User) -> int:
