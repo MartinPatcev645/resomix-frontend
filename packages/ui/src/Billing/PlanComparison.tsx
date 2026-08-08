@@ -45,6 +45,24 @@ function cellClass(value: Cell, pro: boolean): string {
   return parts.filter(Boolean).join(" ");
 }
 
+/** Included — accent tick. */
+function TickIcon() {
+  return (
+    <svg className="rx-cmp__ico rx-cmp__ico--yes" viewBox="0 0 16 16" aria-label="Included" role="img">
+      <path d="M3 8.5l3.2 3.2L13 5" />
+    </svg>
+  );
+}
+
+/** Not included — white cross. Deliberately not red: this is an absence, not an error. */
+function CrossIcon() {
+  return (
+    <svg className="rx-cmp__ico rx-cmp__ico--no" viewBox="0 0 16 16" aria-label="Not included" role="img">
+      <path d="M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6" />
+    </svg>
+  );
+}
+
 function CellTd({
   value,
   pro,
@@ -57,7 +75,7 @@ function CellTd({
   const colClass = col === "guest" ? "rx-cmp__guest" : col === "free" ? "rx-cmp__free" : "";
   return (
     <td className={[cellClass(value, !!pro), colClass].filter(Boolean).join(" ")}>
-      {value === "on" ? "" : value}
+      {value === "on" ? <TickIcon /> : value === "—" ? <CrossIcon /> : value}
     </td>
   );
 }
@@ -83,6 +101,8 @@ export function PlanComparison({
   hidePurchaseCtas = false,
 }: PlanComparisonProps) {
   const tableRef = useRef<HTMLTableElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
   const [stuck, setStuck] = useState(false);
   const [leftPlan, setLeftPlan] = useState<LeftPlan>("free");
   // Guest column — route (b): fallback constant until `/billing/plans` exposes the guest row.
@@ -90,7 +110,10 @@ export function PlanComparison({
 
   useEffect(() => {
     const table = tableRef.current;
-    if (!table || typeof IntersectionObserver === "undefined") return;
+    const topSentinel = topSentinelRef.current;
+    const bottomSentinel = bottomSentinelRef.current;
+    if (!table || !topSentinel || !bottomSentinel) return;
+    if (typeof IntersectionObserver === "undefined") return;
 
     const measureTop = () => {
       const probe = document.createElement("div");
@@ -124,19 +147,39 @@ export function PlanComparison({
       }, 450);
     }
 
-    const io = new IntersectionObserver(
+    // Two markers, two thresholds. Both are zero-height and sit OUTSIDE the table, so nothing the
+    // stuck state does can move them, so the decision cannot feed back into itself.
+    let topAbove = false;
+    let bottomAbove = false;
+    const apply = () => setStuck(topAbove && !bottomAbove);
+
+    // Engage as the table's top crosses under the site header.
+    const topIo = new IntersectionObserver(
       ([entry]) => {
-        setStuck(entry.isIntersecting);
+        topAbove = entry.boundingClientRect.top < top;
+        apply();
       },
-      { root: null, rootMargin: `-${top}px 0px -99.9% 0px`, threshold: 0 },
+      { root: null, rootMargin: `-${top}px 0px 0px 0px`, threshold: 0 },
     );
-    // Observe the scroll host (not a point sentinel). Tables with sticky thead can report a
-    // bounding box that sits below the stick band even when the host has crossed it.
-    io.observe(host);
+
+    // Release once the table's end — and therefore the FAQ heading below it — reaches the MIDDLE
+    // of the viewport, rather than clinging until the last row scrolls under the header. Letting
+    // go early is why the release no longer coincides with the FAQ arriving.
+    const bottomIo = new IntersectionObserver(
+      ([entry]) => {
+        bottomAbove = entry.boundingClientRect.top < window.innerHeight / 2;
+        apply();
+      },
+      { root: null, rootMargin: "-50% 0px 0px 0px", threshold: 0 },
+    );
+
+    topIo.observe(topSentinel);
+    bottomIo.observe(bottomSentinel);
 
     return () => {
       if (hashTimer) clearTimeout(hashTimer);
-      io.disconnect();
+      topIo.disconnect();
+      bottomIo.disconnect();
     };
   }, []);
 
@@ -353,6 +396,12 @@ export function PlanComparison({
         })}
       </div>
 
+      {/* Zero-height markers bracketing the table. The observer watches THESE, never the table:
+          observing the table (or its scroll host) meant the observed geometry depended on the very
+          state it was deciding. A sentinel outside the table cannot move when the header changes,
+          so the decision can no longer feed back into itself. */}
+      <div ref={topSentinelRef} aria-hidden="true" className="rx-cmp-sentinel" />
+
       <table
         ref={tableRef}
         className={`rx-cmp rx-cmp--left-${leftPlan}${stuck ? " is-stuck" : ""}`}
@@ -420,6 +469,8 @@ export function PlanComparison({
           )}
         </tbody>
       </table>
+
+      <div ref={bottomSentinelRef} aria-hidden="true" className="rx-cmp-sentinel" />
     </div>
   );
 }
@@ -455,6 +506,8 @@ export function PlanComparisonSection({
 
 const RX_CMP_CSS = `
 .rx-cmp-scroll { overflow-x: visible; width: 100%; }
+/* Measurement markers only — never occupy space, never paint. */
+.rx-cmp-sentinel { height: 0; width: 100%; pointer-events: none; }
 .rx-cmp__switch {
   display: none;
   margin: 0 auto var(--px-16);
@@ -497,40 +550,31 @@ const RX_CMP_CSS = `
   padding: var(--px-16) var(--px-14);
   box-shadow: inset 0 -1px 0 rgba(255,255,255,0.22);
   vertical-align: top;
-  transition: padding 0.18s ease;
+  /* No transition and no fixed height: the header has one appearance now, so there is nothing to
+     animate and nothing to reserve space for. */
+  transition: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .rx-cmp thead th { transition: none; }
 }
-.rx-cmp thead th.rx-cmp__feat { text-align: left; }
+.rx-cmp thead th.rx-cmp__feat { text-align: center; }
 .rx-cmp thead th.rx-cmp__pcol { text-align: center; }
 .rx-cmp.is-stuck thead th {
-  padding-block: var(--px-4);
+  /* The ONLY difference between stuck and unstuck: a drop shadow to lift the header off the rows.
+     Everything else is deliberately identical.
+
+     It used to also shrink the plan name, the price, the CTA buttons and drop part of the label —
+     so the header rendered at two different sizes and read as two different components swapping
+     places. Because a sticky thead sits in the table's flow, each swap also moved every row under
+     it. At the release point the two states could alternate frame to frame, which is what the
+     flicker was. A single appearance cannot flicker, however often the class toggles. */
   box-shadow: inset 0 -1px 0 rgba(255,255,255,0.22), 0 6px 14px rgba(0,0,0,0.5);
-  /* Focus rings on the compact CTAs must not be clipped by the sticky cell. */
+  /* Focus rings on the CTAs must not be clipped by the sticky cell. */
   overflow: visible;
 }
-/* Owner ruling (Fix 3A): keep Start free / Choose Pro visible while stuck — compact, not hidden. */
-.rx-cmp.is-stuck thead th .rx-cmp__ptry {
-  display: inline-flex;
-  margin-top: var(--px-2);
-}
-.rx-cmp.is-stuck thead th .rx-cmp__ptry button {
-  min-height: var(--px-26);
-  padding: var(--px-3) var(--px-10);
-  font-size: var(--px-11);
-  letter-spacing: 0.08em;
-  line-height: 1.1;
-}
-.rx-cmp.is-stuck thead th .rx-cmp__ptry button:focus-visible {
+.rx-cmp thead th .rx-cmp__ptry button:focus-visible {
   outline: 2px solid var(--color-neon-orange);
   outline-offset: 2px;
-}
-.rx-cmp.is-stuck thead th .rx-cmp__pname { font-size: var(--px-12); }
-.rx-cmp.is-stuck thead th .rx-cmp__pprice { margin-top: var(--px-1); font-size: var(--px-11); }
-/* Dropped " · comparing" (Fix 3A) — needed the width/height budget for the sticky CTAs. */
-.rx-cmp.is-stuck thead th.rx-cmp__feat .rx-cmp__lbl::after {
-  content: none;
 }
 @media (max-width: 900px) {
   /* The page sidelines run flush to the viewport edge; without this the table border lands on
@@ -544,13 +588,6 @@ const RX_CMP_CSS = `
     width: 100%;
   }
   .rx-cmp thead th { position: static; box-shadow: inset 0 -1px 0 rgba(255,255,255,0.22); }
-  .rx-cmp.is-stuck thead th {
-    padding-block: var(--px-12);
-    box-shadow: inset 0 -1px 0 rgba(255,255,255,0.22);
-  }
-  .rx-cmp.is-stuck thead th.rx-cmp__feat .rx-cmp__lbl::after { content: none; }
-  .rx-cmp.is-stuck thead th .rx-cmp__pname { font-size: var(--px-16); }
-  .rx-cmp.is-stuck thead th .rx-cmp__pprice { font-size: var(--px-11); }
   .rx-cmp .rx-cmp__ptry { display: none; }
   .rx-cmp__feat-col { width: 48%; }
   .rx-cmp__guest-col,
@@ -607,8 +644,8 @@ const RX_CMP_CSS = `
 }
 .rx-cmp__lbl {
   font-family: var(--font-fira, "Fira Code", monospace);
-  font-size: var(--px-11);
-  letter-spacing: 0.16em;
+  font-size: var(--px-16);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-primary-hover);
 }
@@ -629,12 +666,20 @@ const RX_CMP_CSS = `
   padding: var(--px-13) var(--px-14);
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-.rx-cmp tbody td.rx-cmp__na { color: var(--color-primary-hover); opacity: 0.75; }
-.rx-cmp tbody td.rx-cmp__on::before {
-  content: "●";
-  color: var(--color-neon-orange);
-  font-size: var(--px-13);
+.rx-cmp tbody td.rx-cmp__na { color: var(--color-primary-hover); }
+.rx-cmp__ico {
+  width: var(--px-16);
+  height: var(--px-16);
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: middle;
 }
+.rx-cmp__ico--yes { stroke: var(--color-neon-orange); }
+/* White, and a touch thinner than the tick: "not included" should read as neutral, not as a
+   warning competing with the accent. */
+.rx-cmp__ico--no { stroke: #ffffff; stroke-width: 1.6; opacity: 0.65; }
 .rx-cmp tbody td.rx-cmp__pro,
 .rx-cmp tr.rx-cmp__grp td.rx-cmp__pro {
   background: rgba(238, 74, 38, 0.035);

@@ -27,13 +27,13 @@ function Disc({ q, children }: { q: string; children: ReactNode }) {
         {q}
         <span
           aria-hidden="true"
-          className="absolute right-[var(--px-3)] top-1/2 -translate-y-1/2 font-fira text-[length:var(--px-16)] text-[var(--color-neon-orange)] group-open:hidden"
+          className="absolute right-[var(--px-3)] top-1/2 -translate-y-1/2 font-fira text-[length:var(--px-20)] leading-none text-[var(--color-neon-orange)] group-open:hidden"
         >
           +
         </span>
         <span
           aria-hidden="true"
-          className="absolute right-[var(--px-3)] top-1/2 hidden -translate-y-1/2 font-fira text-[length:var(--px-16)] text-[var(--color-neon-orange)] group-open:inline"
+          className="absolute right-[var(--px-3)] top-1/2 hidden -translate-y-1/2 font-fira text-[length:var(--px-20)] leading-none text-[var(--color-neon-orange)] group-open:inline"
         >
           –
         </span>
@@ -153,21 +153,25 @@ export function PricingFaq({ beta }: { beta: FoundingOfferCopy }) {
                 /* Toggle: pressing the open category closes it, so all three can be collapsed. */
                 onClick={() => setTab(open ? -1 : i)}
                 className={[
-                  "flex w-full items-center justify-between gap-[var(--px-14)] px-[var(--px-4)] py-[var(--px-18)]",
+                  "flex w-full items-center justify-between gap-[var(--px-14)] px-[var(--px-14)] py-[var(--px-18)]",
                   "text-left font-fira text-[length:var(--px-12)] uppercase tracking-[0.12em] transition-colors",
+                  // Faint accent wash so a CATEGORY row is visibly a different kind of control
+                  // from a question row, which sits plain on the page background.
                   open
-                    ? "text-[var(--color-neon-orange)]"
-                    : "text-[var(--color-primary-hover)] hover:text-[var(--color-text-secondary)]",
+                    ? "bg-[rgba(226,89,58,0.10)] text-[var(--color-neon-orange)]"
+                    : "bg-[rgba(226,89,58,0.04)] text-[var(--color-primary-hover)] hover:bg-[rgba(226,89,58,0.08)] hover:text-[var(--color-text-secondary)]",
                 ].join(" ")}
               >
                 <span>{t.name}</span>
                 <svg
                   aria-hidden="true"
                   viewBox="0 0 24 24"
-                  className={`h-[var(--px-16)] w-[var(--px-16)] shrink-0 fill-none stroke-[var(--color-neon-orange)] transition-transform duration-200 ${
+                  // 22px, up from 16: at the old size the chevron and the questions' +/- glyphs
+                  // were near-indistinguishable at a glance.
+                  className={`h-[var(--px-22)] w-[var(--px-22)] shrink-0 fill-none stroke-[var(--color-neon-orange)] transition-transform duration-200 ${
                     open ? "rotate-180" : ""
                   }`}
-                  strokeWidth="2"
+                  strokeWidth="2.2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
