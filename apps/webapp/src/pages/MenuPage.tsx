@@ -5,7 +5,7 @@ import { useAuthStore } from "@resomix/stores";
 import CrossSvg from "@/assets/icons/cross.svg";
 import RIconsFooter from "@/assets/icons/r_icon_footer.svg";
 import MenuSeparator from "@/assets/icons/menu_separator.svg";
-import { BASE_LANDING_URL, BASE_BETA_URL } from "@resomix/config";
+import { BASE_LANDING_URL, BASE_BETA_URL, BLOG_URL } from "@resomix/config";
 
 interface MenuPageProps {
   onClose?: () => void;
@@ -60,7 +60,7 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
           >
             [Waitlist]
           </a>
-          <a href={`${BASE_LANDING_URL}/blog`} aria-label="Resomix blog" target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="beta-menu-journal-link">
+          <a href={BLOG_URL} aria-label="Resomix blog" target="_blank" rel="noopener noreferrer" className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" id="beta-menu-journal-link">
             [Journal]
           </a>
 

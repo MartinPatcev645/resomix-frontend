@@ -1,4 +1,4 @@
-import { BASE_BETA_URL } from '@resomix/config';
+import { BASE_BETA_URL, BLOG_URL } from '@resomix/config';
 import type { NavGlyphKey } from './NavGlyphs.tsx';
 
 /** BASE_BETA_URL is env-driven and empty when VITE_BASE_BETA_URL is unset — never ship an empty CTA target. */
@@ -127,7 +127,7 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
         groupLabelKey: 'resources',
         flex: '1 1 50%',
         items: [
-          { key: 'journal', glyph: 'journal', live: true, route: 'https://resomix.com/blog', external: true, externalAriaKey: 'journalAria' },
+          { key: 'journal', glyph: 'journal', live: true, route: BLOG_URL, external: true, externalAriaKey: 'journalAria' },
           { key: 'help-centre', glyph: 'help', live: true, route: 'https://support.resomix.com', external: true, externalAriaKey: 'helpCentreAria' },
           { key: 'faq', glyph: 'help', live: true, route: 'https://support.resomix.com', external: true, externalAriaKey: 'faqAria' },
           { key: 'legal-documents', glyph: 'legal', live: true, route: 'https://support.resomix.com/hc/categories/1/3/legal', external: true, externalAriaKey: 'legalDocumentsAria' },
@@ -205,7 +205,7 @@ export const NAV_UTILITY_LINKS: NavUtilityLink[] = [
   // since the landing site IS resomix.com — no full page load needed.
   { key: 'home', route: '/' },
   { key: 'about', route: '/about' },
-  { key: 'journal', route: 'https://resomix.com/blog', external: true, externalAriaKey: 'journalAria' },
+  { key: 'journal', route: BLOG_URL, external: true, externalAriaKey: 'journalAria' },
   // TODO: confirm per-section support URLs
   { key: 'help-centre', route: 'https://support.resomix.com', external: true, externalAriaKey: 'helpCentreAria' },
   // TODO: confirm per-section support URLs
@@ -241,7 +241,7 @@ export function isCurrentNavRoute(pathname: string, hash: string, route?: string
 
 export const ALLOWED_EXTERNAL_URLS = [
   'https://api-docs.resomix.com',
-  'https://resomix.com/blog',
+  BLOG_URL,
   'https://support.resomix.com',
   'https://support.resomix.com/hc/categories/1/3/legal',
 ] as const;

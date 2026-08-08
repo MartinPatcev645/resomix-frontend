@@ -1,4 +1,5 @@
 import React, { useCallback } from "react";
+import { BLOG_URL } from "@resomix/config";
 import { LinkButton } from "../Buttons/LinkButton";
 import { ButtonHeavyRight } from "../Buttons/ButtonHeavyRight";
 import { ButtonHeavyLeft } from "../Buttons/ButtonHeavyLeft";
@@ -104,7 +105,7 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
         }}>
         <LinkButton text="About Us" path={`${baseUrl}/about`} className="nav-link" id="navbar-about-link" onClick={() => onNavigate?.(`${baseUrl}/about`)} />
         <LinkButton text="Waitlist" path={`${baseUrl}/waitlist`} className="nav-link" id="navbar-waitlist-link" onClick={() => onNavigate?.(`${baseUrl}/waitlist`)} />
-        <LinkButton text="Journal" path={`https://resomix.com/blog`} newTab={true} className="nav-link" id="navbar-journal-link" />
+        <LinkButton text="Journal" path={BLOG_URL} newTab={true} className="nav-link" id="navbar-journal-link" />
       </div>
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pt-[var(--px-28)]">
         {logo}

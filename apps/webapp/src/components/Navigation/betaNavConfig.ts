@@ -1,4 +1,4 @@
-import { BASE_BETA_URL, BASE_LANDING_URL } from '@resomix/config';
+import { BASE_BETA_URL, BASE_LANDING_URL, BLOG_URL } from '@resomix/config';
 import type { NavGlyphKey } from './NavGlyphs.tsx';
 
 /**
@@ -135,7 +135,7 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
         groupLabelKey: 'resources',
         flex: '1 1 50%',
         items: [
-          { key: 'journal', glyph: 'journal', live: true, route: 'https://resomix.com/blog', external: true, externalAriaKey: 'journalAria' },
+          { key: 'journal', glyph: 'journal', live: true, route: BLOG_URL, external: true, externalAriaKey: 'journalAria' },
           { key: 'help-centre', glyph: 'help', live: true, route: 'https://support.resomix.com', external: true, externalAriaKey: 'helpCentreAria' },
           { key: 'faq', glyph: 'help', live: true, route: 'https://support.resomix.com', external: true, externalAriaKey: 'faqAria' },
           { key: 'legal-documents', glyph: 'legal', live: true, route: 'https://support.resomix.com/hc/categories/1/3/legal', external: true, externalAriaKey: 'legalDocumentsAria' },
@@ -213,7 +213,7 @@ export const NAV_UTILITY_LINKS: NavUtilityLink[] = [
   // reads as the natural top of this list. `landingHref('/')` is resomix.com.
   { key: 'home', route: landingHref('/') },
   { key: 'about', route: landingHref('/about') },
-  { key: 'journal', route: 'https://resomix.com/blog', external: true, externalAriaKey: 'journalAria' },
+  { key: 'journal', route: BLOG_URL, external: true, externalAriaKey: 'journalAria' },
   { key: 'help-centre', route: 'https://support.resomix.com', external: true, externalAriaKey: 'helpCentreAria' },
   { key: 'faq', route: 'https://support.resomix.com', external: true, externalAriaKey: 'faqAria' },
   { key: 'legal-documents', route: 'https://support.resomix.com/hc/categories/1/3/legal', external: true, externalAriaKey: 'legalDocumentsAria' },
