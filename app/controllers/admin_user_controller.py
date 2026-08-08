@@ -272,6 +272,110 @@ class AdminUserController:
                 content=format_response(success=False, error="Internal error during role removal")
             )
 
+    async def purge_user(
+        self,
+        db: AsyncSession,
+        request: Request,
+        user_uuid: str,
+        current_admin: User,
+        *,
+        dry_run: bool = True,
+    ) -> JSONResponse:
+        """Destroy a deleted account's data, or report what that would destroy.
+
+        Three guards before anything irreversible happens, because this is the one admin action
+        with no undo:
+
+        1. the account must already be **deactivated** — purging a live account would delete
+           someone mid-session, with no notice and no grace period;
+        2. an admin cannot purge themselves;
+        3. the tombstone user is refused (enforced in the service).
+
+        The 30-day window is deliberately NOT enforced here: support sometimes needs to honour an
+        erasure request immediately, and blocking that would mean editing the database by hand —
+        which is worse. The manifest reports how long is left so the decision is informed.
+        """
+        from app.services.account_purge_service import AccountPurgeService
+
+        try:
+            user = await self.user_service.user_repo.async_get_by_uuid(db, user_uuid)
+            if not user:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(success=False, error="User not found"),
+                )
+
+            if user.id == current_admin.id:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content=format_response(success=False, error="You cannot purge your own account"),
+                )
+
+            if user.is_active:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content=format_response(
+                        success=False,
+                        error="This account is still active. Deactivate it first — purging a live "
+                              "account destroys someone's data with no notice.",
+                    ),
+                )
+
+            service = AccountPurgeService()
+            email, name = user.email, (user.name or user.username or "there")
+
+            manifest = await service.purge(db, user, dry_run=dry_run)
+            payload = manifest.as_dict()
+            payload["purge_due_at"] = user.purge_due_at.isoformat() if user.purge_due_at else None
+
+            if dry_run:
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content=format_response(success=True, data=payload),
+                )
+
+            await self.admin_log_service.log_operation(
+                db=db,
+                admin_user_id=current_admin.id,
+                action="user.purge",
+                target_type="user",
+                target_id=user_uuid,
+                before_state={"email": email},
+                after_state=payload,
+                ip_address=request.client.host if request and request.client else None,
+            )
+            await db.commit()
+
+            # Last: the row is gone, so the address had to be captured above. Best-effort — a mail
+            # failure cannot un-delete anything, and reporting it as an error would suggest the
+            # purge had not happened.
+            try:
+                from app.services.email_service import EmailService
+
+                await EmailService().send_account_deleted(email=email, name=name)
+            except Exception as exc:  # noqa: BLE001
+                logger.error("Could not send account-deleted email to %s: %s", email, exc)
+
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(success=True, data=payload),
+            )
+
+        except (RuntimeError, ValueError) as e:
+            # The service aborts rather than half-purge — e.g. a missing tombstone user, which
+            # would let CASCADE destroy the financial records instead of preserving them.
+            logger.error("Purge refused for %s: %s", user_uuid, e)
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content=format_response(success=False, error=str(e)),
+            )
+        except Exception as e:
+            logger.error(f"Error purging user {user_uuid}: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="Failed to purge user"),
+            )
+
     async def toggle_user_status(
         self,
         db: AsyncSession,

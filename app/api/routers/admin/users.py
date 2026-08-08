@@ -114,6 +114,36 @@ async def remove_role(
     )
 
 
+@router.delete("/{user_uuid}", dependencies=[Depends(require_permission("user:delete"))])
+async def purge_user(
+    user_uuid: str,
+    dry_run: bool = Query(
+        True,
+        description="Report what would happen without changing anything. Defaults to TRUE — the "
+                    "destructive path has to be asked for by name.",
+    ),
+    db: AsyncSession = Depends(get_async_db),
+    request: Request = None,
+    current_admin: User = Depends(require_admin),
+):
+    """Permanently destroy a deleted account's data.
+
+    Never automatic and never reversible. A user's deletion request only *schedules* this
+    (`users.purge_due_at`, 30 days out); an admin decides when it actually happens.
+
+    Financial and analytics records survive, repointed to the tombstone user — invoices,
+    subscription events, orders, consents and the admin audit trail. Everything that is the person
+    or their content is destroyed: playlists, uploaded tracks and their media, analyses, contacts,
+    feedback, sessions.
+
+    Call it once with `dry_run=true` (the default) to see the manifest, then again with
+    `dry_run=false` to carry it out.
+    """
+    return await user_controller.purge_user(
+        db, request, user_uuid, current_admin, dry_run=dry_run
+    )
+
+
 @router.post("/{user_uuid}/toggle-status", dependencies=[Depends(require_permission("user:update"))])
 async def toggle_status(
     user_uuid: str,

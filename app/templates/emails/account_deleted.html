@@ -1,0 +1,34 @@
+{# Final notice — the data is gone.
+
+   Sent AFTER the purge, to an address captured before the row was deleted. Deliberately short:
+   there is nothing to action, nothing to recover, and no link that would help. Its only job is to
+   close the loop on a request the user made 30 days earlier and may well have forgotten. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your Resomix account has been deleted</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>As you asked, your Resomix account and its data have now been permanently deleted. This finishes
+   the request you made on {{ requested_date }}.</p>
+
+<div class="alert">
+    <p style="margin: 0;"><strong>What's gone:</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        Your profile, playlists, uploaded tracks and their analyses. None of it can be recovered.
+    </p>
+</div>
+
+<p class="text-muted">
+    We keep a minimal record of past payments where the law requires it, with your personal details
+    removed. Nothing in it identifies you.
+</p>
+
+<p>Thanks for having given Resomix a try. You're welcome back any time &mdash; you'd just be
+   starting fresh.</p>
+
+<p class="text-muted" style="margin-top: 30px;">
+    If you didn't ask for this, reply to this email and we'll look into it.
+</p>
+{% endblock %}

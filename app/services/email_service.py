@@ -351,6 +351,25 @@ class EmailService:
             },
         )
 
+    async def send_account_deleted(
+        self, email: EmailStr, name: str, requested_date: str = "your request date"
+    ) -> bool:
+        """Final confirmation, sent after the purge.
+
+        The recipient address has to be captured BEFORE the user row is deleted — by the time this
+        is called there is nothing left to look it up from.
+        """
+        return await self.send_templated(
+            email=email,
+            subject="Your Resomix account has been deleted",
+            template_name="account_deleted.html",
+            context={
+                "name": name or "there",
+                "requested_date": requested_date,
+                "app_url": settings.app_url,
+            },
+        )
+
     async def send_contact_confirmation(
         self, email: EmailStr, name: str, contact_type: str = "consumer"
     ) -> bool:
