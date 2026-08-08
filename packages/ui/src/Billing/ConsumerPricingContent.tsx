@@ -283,8 +283,21 @@ export function ConsumerPricingContent({
   const grant = subSummary?.grant || null;
 
   const isCurrentPro = !!pro?.is_current;
+
   const isCurrentFree = !!free?.is_current;
   const sub = subSummary?.subscription;
+  /**
+   * Is there anything in Stripe to manage?
+   *
+   * `is_current` reflects the EFFECTIVE plan, so a comped user reads as "current Pro" — and the
+   * CTA became "Manage billing", opening the Customer Portal on an account with no subscription in
+   * it (or a 400 from our own server if they never had one). The portal cannot charge anyone, so
+   * nothing was at risk, but it is a dead end either way.
+   *
+   * An ENDED subscription is equally unmanageable. A cancelling one is not: they may want to
+   * resume it, which is exactly what the portal is for.
+   */
+  const canManageBilling = !!sub && !sub.cancellation?.ended;
   // Same rule as the profile card: the server decides whether this is cancelling, because
   // `cancel_at_period_end` alone misses the schedule-managed case that every founding subscriber
   // is in. The `??` keeps an older server working rather than silently dropping the notice.
@@ -365,7 +378,7 @@ export function ConsumerPricingContent({
       toSubscribe();
       return;
     }
-    if (isCurrentPro) {
+    if (canManageBilling) {
       void manage();
       return;
     }
@@ -373,6 +386,8 @@ export function ConsumerPricingContent({
       goLogin();
       return;
     }
+    // A comped user has no subscription, so this is a real checkout — the point of it is to keep
+    // Pro once the complimentary period runs out.
     void subscribe(pro?.code || "pro");
   };
 
@@ -385,14 +400,17 @@ export function ConsumerPricingContent({
   const proCtaLabel = (() => {
     if (busy === "__manage__") return PRO_CARD.ctaBusyPortal;
     if (busy === pro?.code) return PRO_CARD.ctaBusyCheckout;
-    if (isCurrentPro) return PRO_CARD.ctaManage;
+    if (canManageBilling) return PRO_CARD.ctaManage;
+    // On Pro via a grant: not an upgrade, and nothing to manage — they are deciding whether to
+    // keep it when the free period ends.
+    if (grant) return "Keep Pro after the free period";
     if (authed) return PRO_CARD.ctaUpgrade;
     return PRO_CARD.ctaChoose;
   })();
 
   const proPurchaseDisabled = isMarketing
     ? false
-    : isCurrentPro
+    : canManageBilling
       ? !!busy
       : !PAID_CHECKOUT.enabled || priceFailed || loading || !!busy;
 
@@ -448,6 +466,24 @@ export function ConsumerPricingContent({
           >
             {PAGE.pricesUnavailable}
           </div>
+        )}
+
+        {/* Complimentary plan — stated before the cards, not buried in the price small print.
+            Someone reading this page is deciding whether to pay; the first thing they need to know
+            is that right now they do not have to. */}
+        {grant && !loading && (
+          <QuietPanel className="mx-auto mb-[var(--px-18)] max-w-[52rem]">
+            <p className="m-0 font-fira text-[length:var(--px-11)] uppercase tracking-[0.12em] text-[var(--color-neon-orange)]">
+              {PRO_CARD.grantHeadline(grant.plan_name || "Pro")}
+            </p>
+            <p className="m-0 mt-[var(--px-8)] font-helvetica text-[length:var(--px-14)] font-light leading-[var(--px-21)] text-[var(--color-text-secondary)]">
+              {PRO_CARD.grantBody(
+                grant.plan_name || "Pro",
+                fmtDateLong(grant.ends_at) || "the end of the period",
+                grant.days_remaining
+              )}
+            </p>
+          </QuietPanel>
         )}
 
         {/* Plan cards */}
@@ -522,7 +558,8 @@ export function ConsumerPricingContent({
                   )}
                   {isCurrentPro && !isFoundingOffer && (
                     <span className="absolute -right-px -top-px bg-[var(--color-neon-orange)] px-[var(--px-11)] py-[var(--px-6)] font-fira text-[length:var(--px-11)] font-semibold uppercase tracking-[0.12em] text-[#101010]">
-                      {PRO_CARD.flagYourPlan}
+                      {/* "Your plan" would imply they bought it. They did not. */}
+                      {grant ? PRO_CARD.flagComplimentary : PRO_CARD.flagYourPlan}
                     </span>
                   )}
                   <div className="flex flex-1 flex-col">
@@ -567,16 +604,7 @@ export function ConsumerPricingContent({
                           {PRO_CARD.activeUntil(activeUntilLabel)}
                         </>
                       )}
-                      {grant && (
-                        <>
-                          <br />
-                          {`You're on ${grant.plan_name || "Pro"} free until ${fmtDateLong(
-                            grant.ends_at
-                          )} — ${grant.days_remaining} day${
-                            grant.days_remaining === 1 ? "" : "s"
-                          } left. Subscribe to keep it after that.`}
-                        </>
-                      )}
+
                     </p>
                     <div className="mt-[var(--px-13)]">
                       <PricingButton

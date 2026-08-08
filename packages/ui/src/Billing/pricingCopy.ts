@@ -76,6 +76,19 @@ export const PRO_CARD = {
   ctaBusyCheckout: "Redirecting…",
   ctaBusyPortal: "Opening…",
   activeUntil: (date: string) => `Pro active until ${date}`,
+  /** Corner flag when Pro is comped rather than bought — "Your plan" would imply they pay for it. */
+  flagComplimentary: "On us",
+  /**
+   * The complimentary notice, stated the same way as the profile card so a customer who checks
+   * both is not left comparing two different answers.
+   *
+   * Leads with "free": the failure mode is someone believing they have subscribed, being surprised
+   * when it stops, and taking that surprise to support.
+   */
+  grantHeadline: (plan: string) => `${plan} is on us right now`,
+  grantBody: (plan: string, date: string, days: number) =>
+    `Free until ${date} — ${days} day${days === 1 ? "" : "s"} left. You're not being billed, and ` +
+    `there's no subscription to cancel. Subscribe below to keep ${plan} after that date.`,
 } as const;
 
 export const CARDS = {

@@ -145,9 +145,6 @@ export function PlanBillingCard() {
   // subscription in it.
   const grant = summary?.grant || null;
 
-  // `isPaid` gates the Manage button, so it has to mean "has a real Stripe subscription", not
-  // "is on a paid plan". A granted user IS on Pro but has nothing to manage.
-  const isPaid = planCode !== "free" && planCode !== "guest" && !!sub;
 
   // The server decides whether this is cancelling; the client only words it.
   //
@@ -164,6 +161,21 @@ export function PlanBillingCard() {
     (sub?.cancel_at_period_end
       ? { pending: true, ended: false, effective_at: sub.current_period_end, reason: null }
       : null);
+
+  // `isPaid` gates the Manage button, so it has to mean "has something in Stripe to manage", not
+  // "is on a paid plan".
+  //
+  // Two ways that came apart. A granted user is on Pro with no subscription at all. And someone
+  // who subscribed, cancelled, and was later comped has a subscription ROW — an ended one — so a
+  // `!!sub` test still offered them Manage, and the portal opened on an account with nothing live
+  // in it.
+  //
+  // A CANCELLING subscription is still manageable: they may want to resume it, which is exactly
+  // what the portal is for. Only an ended one is not.
+  //
+  // (Nothing here could ever charge anyone — the Customer Portal cannot start a subscription — but
+  // a button that leads to an empty portal or a 400 is a dead end either way.)
+  const isPaid = !!sub && !cancellation?.ended;
 
   let statusLine: string | null = null;
   if (grant) {
