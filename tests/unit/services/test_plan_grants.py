@@ -33,9 +33,21 @@ from app.services.plan_grant_service import GRANT_DURATIONS, PlanGrantService
 NOW = datetime.utcnow()
 
 
-def _plan(code="pro", name="Pro", plan_id=2, is_free=False):
-    p = MagicMock()
-    p.id, p.code, p.name, p.is_free = plan_id, code, name, is_free
+def _plan(code="pro", name="Pro", plan_id=2):
+    """The REAL Plan model, not a MagicMock.
+
+    A MagicMock invents any attribute you ask for, so a fixture with `is_free` on it made the
+    controller's `plan.is_free` check pass in tests and raise AttributeError in production —
+    `Plan` has no such column (that field belongs to the BillingPlanDisplay DTO). The real model
+    is what makes a typo or a DTO/model mix-up fail here instead of at runtime.
+    """
+    from app.models.plan import Plan
+
+    p = Plan()
+    p.id, p.code, p.name = plan_id, code, name
+    p.price_cents = 0 if code in ("free", "guest") else 799
+    p.is_active = True
+    p.is_assignable = True
     return p
 
 
@@ -213,3 +225,33 @@ def test_describe_rounds_the_last_day_up() -> None:
 
 def test_describe_of_nothing_is_nothing() -> None:
     assert PlanGrantService.describe(None, _plan()) is None
+
+
+# --------------------------------------------------------------------------- #
+# The model is the contract
+# --------------------------------------------------------------------------- #
+
+def test_plan_has_no_is_free_column() -> None:
+    """THE REGRESSION FOR A LIVE 500.
+
+    The grant endpoint read `plan.is_free` to reject granting a free plan. `Plan` has no such
+    column — `is_free` belongs to `BillingPlanDisplay`, the DTO the pricing page consumes. The
+    AttributeError was swallowed by a broad `except`, so the admin saw only "Failed to grant plan"
+    and nothing was logged with a stack trace.
+
+    If `is_free` is ever added to the model this fails, which is the prompt to simplify the
+    controller back — not a reason to delete the test.
+    """
+    from app.models.plan import Plan
+
+    columns = {c.name for c in Plan.__table__.columns}
+    assert "is_free" not in columns
+    # What the check uses instead must all genuinely exist.
+    assert {"code", "price_cents", "is_active", "is_assignable"} <= columns
+
+
+def test_the_real_plan_model_rejects_invented_attributes() -> None:
+    """Guards the fixture itself: if `_plan()` ever goes back to a MagicMock, this stops being
+    true and the DTO/model confusion can silently return."""
+    p = _plan()
+    assert not hasattr(p, "is_free")

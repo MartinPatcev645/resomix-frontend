@@ -32,6 +32,38 @@ class AdminUserController:
         self.user_service = UserService()
         self.logging_service = LoggingService()
 
+    def _log_error(
+        self,
+        db: AsyncSession,
+        request: Optional[Request],
+        action: str,
+        message: str,
+        error: Exception,
+        **metadata,
+    ) -> None:
+        """Record a failure in ``system_logs`` with its stack trace.
+
+        `logger.error` alone only reaches the process log, which is not where anyone looks when an
+        admin reports "it just says Failed". The log row is what carries the exception — without
+        it, a 500 here is a dead end: the generic message tells the admin nothing and there is
+        nothing to read afterwards either.
+        """
+        try:
+            self.logging_service.log(
+                async_db=db,
+                level="ERROR",
+                category="ADMIN_USER",
+                action=action,
+                message=message,
+                request=request,
+                status_code=500,
+                metadata=metadata or None,
+                error=error,
+            )
+        except Exception:  # noqa: BLE001 — logging must never mask the original failure
+            logger.exception("Could not write the admin error log for %s", action)
+        logger.exception("%s: %s", action, message)
+
     async def get_users_list(
         self,
         db: AsyncSession,
@@ -92,7 +124,8 @@ class AdminUserController:
             return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
 
         except Exception as e:
-            logger.error(f"Error listing users: {str(e)}")
+            self._log_error(db, request, "list_users_failed", "Failed to list users", e,
+                            page=page, search=search)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="Failed to retrieve users list")
@@ -130,7 +163,8 @@ class AdminUserController:
             )
 
         except Exception as e:
-            logger.error(f"Error getting user detail: {str(e)}")
+            self._log_error(db, None, "user_detail_failed",
+                            f"Failed to load detail for {user_uuid}", e, user_uuid=user_uuid)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="Failed to retrieve user details")
@@ -154,7 +188,8 @@ class AdminUserController:
                 content=format_response(success=True, data=data),
             )
         except Exception as e:
-            logger.error(f"Error building overview for {user_uuid}: {e}")
+            self._log_error(db, None, "user_overview_failed",
+                            f"Failed to build overview for {user_uuid}", e, user_uuid=user_uuid)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="Failed to load user overview"),
@@ -187,7 +222,7 @@ class AdminUserController:
                 content=format_response(success=False, error=he.detail)
             )
         except Exception as e:
-            logger.error(f"Error creating user: {str(e)}")
+            self._log_error(db, request, "user_create_failed", "Failed to create user", e)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="Failed to create user")
@@ -222,7 +257,8 @@ class AdminUserController:
                 content=format_response(success=False, error=he.detail)
             )
         except Exception as e:
-            logger.error(f"Error updating user: {str(e)}")
+            self._log_error(db, request, "user_update_failed",
+                            f"Failed to update {user_uuid}", e, user_uuid=user_uuid)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="Failed to update user")
@@ -262,7 +298,8 @@ class AdminUserController:
                 content=format_response(success=False, error=he.detail)
             )
         except Exception as e:
-            logger.error(f"Error assigning role: {str(e)}")
+            self._log_error(db, request, "role_assign_failed",
+                            f"Failed to assign {role_name} to {user_uuid}", e, user_uuid=user_uuid)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="Internal error during role assignment")
@@ -302,7 +339,8 @@ class AdminUserController:
                 content=format_response(success=False, error=he.detail)
             )
         except Exception as e:
-            logger.error(f"Error removing role: {str(e)}")
+            self._log_error(db, request, "role_remove_failed",
+                            f"Failed to remove {role_name} from {user_uuid}", e, user_uuid=user_uuid)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="Internal error during role removal")
@@ -327,7 +365,10 @@ class AdminUserController:
         """
         from sqlalchemy import select
 
+        from app.core.entitlement_keys import ACTIVE_SUBSCRIPTION_STATUSES, PlanCode
         from app.models.plan import Plan
+        from app.models.purchase import UserSubscription
+        from app.services.billing_service import BillingService
         from app.services.plan_grant_service import PlanGrantService
 
         try:
@@ -346,15 +387,50 @@ class AdminUserController:
                     status_code=status.HTTP_404_NOT_FOUND,
                     content=format_response(success=False, error=f"No plan with code {plan_code!r}"),
                 )
-            if plan.is_free:
-                # Granting "free" is a no-op dressed up as an action, and it would show the user a
-                # complimentary-plan notice for something they already have.
+            # `Plan` has NO `is_free` column — that field belongs to the BillingPlanDisplay DTO the
+            # pricing page consumes. Reading it here raised AttributeError, which the broad
+            # `except` below turned into a bare "Failed to grant plan" with nothing to debug from.
+            # The model's own columns are `price_cents`, `is_active` and `is_assignable`.
+            if plan.code in (PlanCode.FREE, PlanCode.GUEST) or plan.price_cents == 0:
                 return JSONResponse(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     content=format_response(
-                        success=False, error="That plan is already free — nothing to grant."
+                        success=False, error="That plan is already free — there is nothing to grant."
                     ),
                 )
+            if not plan.is_active or not plan.is_assignable:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content=format_response(
+                        success=False,
+                        error=f"{plan.name} cannot be assigned (inactive or not assignable).",
+                    ),
+                )
+
+            # Granting on top of a LIVE paid subscription does nothing visible: the subscription
+            # outranks a grant in `get_effective_plan`, so the comp would sit inert and the admin
+            # would reasonably think it had worked. Refused with an explanation rather than
+            # silently accepted.
+            #
+            # A subscription that is CANCELLING or already ended is a different case — the grant
+            # takes over when it lapses, which is a legitimate thing to want — so that is allowed.
+            subscription = (
+                await db.execute(
+                    select(UserSubscription).where(UserSubscription.user_id == user.id)
+                )
+            ).scalar_one_or_none()
+            if subscription is not None and subscription.status in ACTIVE_SUBSCRIPTION_STATUSES:
+                cancellation = BillingService.cancellation_state(subscription)
+                if not cancellation or not cancellation.get("pending"):
+                    return JSONResponse(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        content=format_response(
+                            success=False,
+                            error="This user already has a live paid subscription, which takes "
+                                  "precedence over a complimentary plan. Cancel it first, or wait "
+                                  "until it is set to end.",
+                        ),
+                    )
 
             service = PlanGrantService()
             grant = await service.grant(
@@ -403,7 +479,9 @@ class AdminUserController:
                 content=format_response(success=False, error=str(e)),
             )
         except Exception as e:
-            logger.error(f"Error granting plan to {user_uuid}: {e}")
+            self._log_error(db, request, "plan_grant_failed",
+                            f"Failed to grant plan to {user_uuid}", e,
+                            user_uuid=user_uuid, plan_code=plan_code, duration=duration_code)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="Failed to grant plan"),
@@ -449,7 +527,8 @@ class AdminUserController:
                 content=format_response(success=True, message="Complimentary plan ended."),
             )
         except Exception as e:
-            logger.error(f"Error revoking grant for {user_uuid}: {e}")
+            self._log_error(db, request, "plan_grant_revoke_failed",
+                            f"Failed to revoke grant for {user_uuid}", e, user_uuid=user_uuid)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="Failed to revoke the grant"),
@@ -557,7 +636,9 @@ class AdminUserController:
                 ),
             )
         except Exception as e:
-            logger.error(f"Error cancelling subscription for {user_uuid}: {e}")
+            self._log_error(db, request, "subscription_cancel_failed",
+                            f"Failed to cancel subscription for {user_uuid}", e,
+                            user_uuid=user_uuid, immediate=immediate)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="Failed to cancel the subscription"),
@@ -655,13 +736,15 @@ class AdminUserController:
         except (RuntimeError, ValueError) as e:
             # The service aborts rather than half-purge — e.g. a missing tombstone user, which
             # would let CASCADE destroy the financial records instead of preserving them.
-            logger.error("Purge refused for %s: %s", user_uuid, e)
+            self._log_error(db, request, "user_purge_refused",
+                            f"Purge refused for {user_uuid}: {e}", e, user_uuid=user_uuid)
             return JSONResponse(
                 status_code=status.HTTP_409_CONFLICT,
                 content=format_response(success=False, error=str(e)),
             )
         except Exception as e:
-            logger.error(f"Error purging user {user_uuid}: {e}")
+            self._log_error(db, request, "user_purge_failed",
+                            f"Failed to purge {user_uuid}", e, user_uuid=user_uuid, dry_run=dry_run)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="Failed to purge user"),
@@ -695,7 +778,8 @@ class AdminUserController:
                 content=format_response(success=False, error=he.detail)
             )
         except Exception as e:
-            logger.error(f"Error toggling user status: {str(e)}")
+            self._log_error(db, request, "toggle_status_failed",
+                            f"Failed to toggle status for {user_uuid}", e, user_uuid=user_uuid)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="Failed to toggle user status")
