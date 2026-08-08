@@ -117,7 +117,18 @@ export const handleApiError = (error: AxiosError | Error): {
     if (data && typeof data === "object" && (data as ApiResponse).success === false) {
       const apiError = data as any;
       let errorMessage = apiError.error || "An error occurred.";
-      
+      let errorCode: string | null = apiError.code ?? null;
+
+      // A machine-readable refusal arrives as an OBJECT, not a string: FastAPI passes a dict
+      // `detail` straight through, so `error` can be `{code, error}` — e.g. ACCOUNT_DEACTIVATED.
+      // Unwrapped here rather than at each call site, because without it every one of them renders
+      // "[object Object]" to the user.
+      if (errorMessage && typeof errorMessage === "object") {
+        const nested = errorMessage as { code?: string; error?: string; detail?: string };
+        errorCode = nested.code ?? errorCode;
+        errorMessage = nested.error || nested.detail || "An error occurred.";
+      }
+
       // Try to extract detailed validation errors (for Pydantic exceptions wrapped by standard-response format)
       if (apiError.data?.details && Array.isArray(apiError.data.details) && apiError.data.details.length > 0) {
         const first = apiError.data.details[0];
@@ -136,7 +147,7 @@ export const handleApiError = (error: AxiosError | Error): {
       // Fire-and-forget; never awaited (see quotaEvents).
       if (status === 402 && !silentDenial) {
         emitQuotaDenied({
-          code: apiError.code ?? null,
+          code: errorCode,
           error: errorMessage,
           reason: apiError.reason ?? null,
           quota: apiError.data?.metric ? apiError.data : null,
@@ -149,7 +160,7 @@ export const handleApiError = (error: AxiosError | Error): {
         details: apiError.data?.details || apiError.details || null,
         status,
         reason: apiError.reason ?? null,
-        code: apiError.code ?? null,
+        code: errorCode,
         // Only a quota denial carries this shape; `metric` is what distinguishes it from any other
         // endpoint that happens to return a `data` block alongside an error.
         quota: status === 402 && apiError.data?.metric ? apiError.data : null,
