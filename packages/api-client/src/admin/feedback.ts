@@ -312,3 +312,29 @@ export const getFeedbackStats = async () => {
     };
   }
 };
+
+import type { SubmissionSubmitter, SubmissionReply } from "./contact";
+
+export interface FeedbackDetail {
+  id: number;
+  status: string;
+  category: string | null;
+  submitted_at: string | null;
+  message: string | null;
+  /** Two separate 1–10 scores; labelled server-side so the UI never has to guess which is which. */
+  satisfaction: number | null;
+  recommendation: number | null;
+  request: { client_ip: string | null; user_agent: string | null };
+  submitter: SubmissionSubmitter;
+  replies: SubmissionReply[];
+}
+
+export const getFeedbackDetail = async (feedbackId: number) => {
+  try {
+    return await axiosWrapper<{ success: boolean; data?: FeedbackDetail; error?: string }>(
+      authClient.get(`/api/v1/admin/feedback/${feedbackId}`)
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};

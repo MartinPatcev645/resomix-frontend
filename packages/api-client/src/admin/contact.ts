@@ -284,3 +284,67 @@ export const getContactById = async (contactId: number) => {
     };
   }
 };
+/**
+ * Full detail for one submission — everything captured, plus WHO sent it.
+ *
+ * `submitter` is one of two shapes, and the difference is the point: an account carries a plan,
+ * a join date and how much they have written before; a guest carries only what the form itself
+ * held. It is deliberately not padded out to look the same — "we don't know who this was" is the
+ * honest answer.
+ */
+export interface SubmissionSubmitter {
+  type: "account" | "guest";
+  matched_account: boolean;
+  /** True when we found them by email AFTER the fact — an inference, not a signed-in session. */
+  matched_by_email?: boolean;
+  id?: number;
+  uuid?: string;
+  email?: string;
+  username?: string | null;
+  name?: string | null;
+  is_active?: boolean;
+  is_email_verified?: boolean;
+  created_at?: string | null;
+  last_seen_at?: string | null;
+  deactivated_at?: string | null;
+  plan?: { code: string; name: string } | null;
+  /** -1 means the figure could not be read, which is not the same as none. */
+  total_contacts?: number;
+  total_feedbacks?: number;
+}
+
+export interface SubmissionReply {
+  id: number;
+  subject: string;
+  body: string;
+  recipient_email: string;
+  status: "sent" | "failed";
+  created_at: string | null;
+}
+
+export interface ContactDetail {
+  id: number;
+  status: string;
+  contact_type: string;
+  submitted_at: string | null;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  subject: string | null;
+  message: string | null;
+  /** Populated only on a partner request — hide the block entirely when every field is null. */
+  business: Record<string, string | null>;
+  request: { client_ip: string | null; user_agent: string | null };
+  submitter: SubmissionSubmitter;
+  replies: SubmissionReply[];
+}
+
+export const getContactDetail = async (contactId: number) => {
+  try {
+    return await axiosWrapper<{ success: boolean; data?: ContactDetail; error?: string }>(
+      authClient.get(`/api/v1/admin/contact/${contactId}`)
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};

@@ -1,69 +1,12 @@
 import { useState } from 'react'
-import { Table, Tag, Dropdown, Button, App, Modal, Input } from 'antd'
+import { Table, Tag, Dropdown, Button, App } from 'antd'
 import type { TableColumnsType, MenuProps } from 'antd'
 import { CheckCircle, XCircle, Trash2, MoreVertical, Eye, Mail } from 'lucide-react'
 import type { ContactItem } from '@/hooks/useContact.ts'
 import { useConfirmDialog } from '@resomix/hooks'
 import { replyToContact } from '@resomix/api-client'
 import SendMessageModal from '@/components/SendMessageModal.tsx'
-
-const { TextArea } = Input
-
-/**
- * The B2B qualification answers, in the order the /partners form asks them, with the
- * unanswered ones dropped.
- *
- * The two landing partner forms collect different subsets — /partners asks role, partner type,
- * preferred path and catalogue context; /partners-pilot asks role, partner type and catalogue
- * size — so a blank is normal, not missing data, and is simply not rendered.
- */
-interface PartnerField {
-  label: string
-  value: string
-  /** Free text — give it the full row rather than half of one. */
-  wide?: boolean
-}
-
-const partnerFields = (c: ContactItem): PartnerField[] => {
-  const all: { label: string; value: string | null; wide?: boolean }[] = [
-    { label: 'Company', value: c.company_name },
-    { label: 'Role', value: c.role },
-    { label: 'Partner type', value: c.partner_type },
-    { label: 'Preferred path', value: c.preferred_path },
-    { label: 'Catalogue / product context', value: c.catalog_context, wide: true },
-    { label: 'Estimated catalogue size', value: c.catalog_size },
-    { label: 'Estimated monthly calls', value: c.estimated_calls },
-  ]
-  return all.flatMap((f) => (f.value ? [{ ...f, value: f.value }] : []))
-}
-
-interface SubmitterRow {
-  label: string
-  value: string
-  /** The account's copy differs from what was typed on the form — worth flagging. */
-  differs?: boolean
-}
-
-/**
- * The account behind a submission, for BOTH consumer and partner contacts.
- *
- * Only rows that add something. The modal already shows the name and email as submitted, and the
- * consumer form pre-fills both from the signed-in account, so echoing them back verbatim would be
- * pure duplication — the account's own name/email appear only when they differ from what was
- * typed, which is the case an admin actually needs to notice.
- */
-const submitterRows = (c: ContactItem): SubmitterRow[] => {
-  if (!c.is_signed_in) return []
-  const u = c.user
-  // Signed in per the stored user_id, but the account row didn't come back.
-  if (!u) return [{ label: 'User ID', value: `#${c.user_id ?? '—'}` }]
-
-  const rows: SubmitterRow[] = [{ label: 'User ID', value: `#${u.id}` }]
-  if (u.username) rows.push({ label: 'Username', value: u.username })
-  if (u.name && u.name !== c.name) rows.push({ label: 'Account name', value: u.name, differs: true })
-  if (u.email && u.email !== c.email) rows.push({ label: 'Account email', value: u.email, differs: true })
-  return rows
-}
+import SubmissionDetailDrawer from '@/components/SubmissionDetailDrawer.tsx'
 
 interface ContactTableProps {
   data: ContactItem[]
@@ -98,15 +41,8 @@ function ContactTable({
 }: ContactTableProps) {
   const { modal } = App.useApp()
   const { confirmDelete } = useConfirmDialog()
-  const [viewingContact, setViewingContact] = useState<ContactItem | null>(null)
   const [replyTo, setReplyTo] = useState<ContactItem | null>(null)
-  const partnerDetails = viewingContact ? partnerFields(viewingContact) : []
-  const submitterDetails = viewingContact ? submitterRows(viewingContact) : []
-  // Only surfaced when something is off — a healthy account needs no badge.
-  const accountWarnings = [
-    viewingContact?.user?.is_email_verified === false ? 'Email not verified' : null,
-    viewingContact?.user?.is_active === false ? 'Account inactive' : null,
-  ].filter((w): w is string => w !== null)
+  const [detailId, setDetailId] = useState<number | null>(null)
 
   const handleDeleteSingle = (record: ContactItem) => {
     confirmDelete({
@@ -153,21 +89,6 @@ function ContactTable({
     })
   }
 
-  const handleViewContact = (record: ContactItem) => {
-    setViewingContact(record)
-  }
-
-  const handleCloseContactModal = () => {
-    setViewingContact(null)
-  }
-
-  const handleMarkStatusFromModal = async (status: 'open' | 'resolved') => {
-    if (viewingContact) {
-      await onMarkStatus(viewingContact.id, status)
-      setViewingContact(null)
-    }
-  }
-
   const getActionMenu = (record: ContactItem): MenuProps['items'] => [
     {
       key: 'mark-status',
@@ -179,7 +100,7 @@ function ContactTable({
       key: 'view-contact',
       label: 'View Details',
       icon: <Eye size={16} />,
-      onClick: () => handleViewContact(record),
+      onClick: () => setDetailId(Number(record.id)),
     },
     {
       key: 'reply',
@@ -234,6 +155,16 @@ function ContactTable({
         <Tag color={t === 'partner' ? 'blue' : 'default'}>
           {t === 'partner' ? 'Partner' : 'Consumer'}
         </Tag>
+      ),
+    },
+    {
+      title: 'From',
+      key: 'from',
+      render: (_: any, record: ContactItem) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{record.name || '—'}</span>
+          <span className="text-secondary text-xs">{record.email}</span>
+        </div>
       ),
     },
     {
@@ -329,161 +260,22 @@ function ContactTable({
         scroll={{ x: 'max-content' }}
       />
 
-      {/* View Contact Modal */}
-      <Modal
-        title={
-          <div className="flex items-center gap-4">
-            <span>Contact Details</span>
-            {viewingContact && (
-              <Tag color={viewingContact.status === 'open' ? 'orange' : 'green'}>
-                {viewingContact.status.charAt(0).toUpperCase() + viewingContact.status.slice(1)}
-              </Tag>
-            )}
-          </div>
-        }
-        open={viewingContact !== null}
-        onCancel={handleCloseContactModal}
-        centered
-        width={600}
-        footer={[
-          <Button key="close" onClick={handleCloseContactModal}>
-            Close
-          </Button>,
-          viewingContact && (
-            <Button
-              key="mark-status"
-              type="primary"
-              icon={viewingContact.status === 'open' ? <CheckCircle size={16} /> : <XCircle size={16} />}
-              onClick={() => handleMarkStatusFromModal(viewingContact.status === 'open' ? 'resolved' : 'open')}
-            >
-              Mark as {viewingContact.status === 'open' ? 'Resolved' : 'Open'}
-            </Button>
-          ),
-        ]}
-      >
-        {viewingContact && (
-          <div className="space-y-4">
-            {/* Contact details */}
-            <div className="grid grid-cols-2 gap-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--color-background-secondary)' }}>
-              <div>
-                <p className="text-sm text-secondary">ID</p>
-                <p className="font-mono text-sm text-primary">{viewingContact.id}</p>
-              </div>
-              {viewingContact.name && (
-                <div>
-                  <p className="text-sm text-secondary">Name</p>
-                  <p className="text-primary">{viewingContact.name}</p>
-                </div>
-              )}
-              {viewingContact.email && (
-                <div>
-                  <p className="text-sm text-secondary">Email</p>
-                  <p className="text-primary">{viewingContact.email}</p>
-                </div>
-              )}
-              {viewingContact.phone && (
-                <div>
-                  <p className="text-sm text-secondary">Phone</p>
-                  <p className="text-primary">{viewingContact.phone}</p>
-                </div>
-              )}
-              {viewingContact.subject && (
-                <div className="col-span-2">
-                  <p className="text-sm text-secondary">Subject</p>
-                  <p className="text-primary">{viewingContact.subject}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-sm text-secondary">Type</p>
-                <Tag color={viewingContact.contact_type === 'partner' ? 'blue' : 'default'}>
-                  {viewingContact.contact_type === 'partner' ? 'Partner' : 'Consumer'}
-                </Tag>
-              </div>
-              {viewingContact.submitted_at && (
-                <div>
-                  <p className="text-sm text-secondary">Submitted</p>
-                  <p className="text-primary text-sm">
-                    {new Date(viewingContact.submitted_at).toLocaleString()}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Partner qualification — its own section so the B2B answers don't get lost among the
-                generic contact details. Every field is optional: the two landing partner forms ask
-                different questions, so only what was actually answered is rendered. */}
-            {viewingContact.contact_type === 'partner' && partnerDetails.length > 0 && (
-              <div>
-                <p className="text-sm text-secondary mb-2">Partner qualification</p>
-                <div
-                  className="grid grid-cols-2 gap-4 p-4 rounded-lg"
-                  style={{ backgroundColor: 'var(--color-background-secondary)' }}
-                >
-                  {partnerDetails.map(({ label, value, wide }) => (
-                    <div key={label} className={wide ? 'col-span-2' : undefined}>
-                      <p className="text-sm text-secondary">{label}</p>
-                      <p className="text-primary">{value}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Submitted by — stored data, not runtime: `contacts.user_id` is persisted at submit
-                time, so this is accurate forever. Shown for consumer and partner alike. */}
-            <div>
-              <p className="text-sm text-secondary mb-2">Submitted by</p>
-              <div
-                className="grid grid-cols-2 gap-4 p-4 rounded-lg"
-                style={{ backgroundColor: 'var(--color-background-secondary)' }}
-              >
-                <div>
-                  <p className="text-sm text-secondary">Account</p>
-                  <Tag color={viewingContact.is_signed_in ? 'green' : 'default'}>
-                    {viewingContact.is_signed_in ? 'Signed in' : 'Anonymous'}
-                  </Tag>
-                </div>
-                {submitterDetails.map(({ label, value, differs }) => (
-                  <div key={label}>
-                    <p className="text-sm text-secondary">{label}</p>
-                    <p className="text-primary">
-                      {value}
-                      {differs && (
-                        <Tag color="orange" className="ml-2">
-                          differs from form
-                        </Tag>
-                      )}
-                    </p>
-                  </div>
-                ))}
-                {accountWarnings.length > 0 && (
-                  <div className="col-span-2">
-                    <p className="text-sm text-secondary">Account status</p>
-                    <div className="flex flex-wrap gap-2">
-                      {accountWarnings.map((w) => (
-                        <Tag key={w} color="red">
-                          {w}
-                        </Tag>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Message */}
-            <div>
-              <p className="text-sm text-secondary mb-2">Message</p>
-              <TextArea
-                value={viewingContact.message || 'No message provided'}
-                readOnly
-                autoSize={{ minRows: 4, maxRows: 12 }}
-                className="font-sans"
-              />
-            </div>
-          </div>
-        )}
-      </Modal>
+      <SubmissionDetailDrawer
+        open={detailId !== null}
+        onClose={() => setDetailId(null)}
+        kind="contact"
+        id={detailId}
+        onReply={() => {
+          const row = data.find((d) => Number(d.id) === detailId)
+          if (row) setReplyTo(row)
+        }}
+        onMarkStatus={(next) => {
+          if (detailId !== null) {
+            void onMarkStatus(String(detailId), next)
+            setDetailId(null)
+          }
+        }}
+      />
 
       <SendMessageModal
         open={!!replyTo}
