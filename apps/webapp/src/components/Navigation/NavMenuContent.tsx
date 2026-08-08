@@ -313,14 +313,30 @@ export const CataloguePilotIcon = () => (
   </svg>
 );
 
+/** Upgrade / Manage — the signed-in counterpart to the guest header's Pricing button. */
+export const UpgradeIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" className="w-full h-full" aria-hidden="true">
+    <path
+      d="M12 19V5M12 5l-6 6M12 5l6 6"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 export function buildProfileMenuItems({
   onNavigate,
   onProfileClick,
   onLogout,
+  isPro = false,
 }: {
   onNavigate: (path: string) => void;
   onProfileClick?: () => void;
   onLogout: () => void;
+  /** Pro users get "Manage" instead of "Upgrade" — same destination, honest label. */
+  isPro?: boolean;
 }) {
   return [
     {
@@ -329,6 +345,16 @@ export function buildProfileMenuItems({
       href: '/profile',
       icon: <AccountIcon />,
       onClick: () => onProfileClick?.() ?? onNavigate('/profile'),
+    },
+    {
+      // Signed-in users have no header Pricing button; this is how they reach the plans. Both
+      // labels go to /subscribe: for a Pro subscriber that page shows their current plan and the
+      // portal link, so "Upgrade" would be describing something they have already done.
+      label: isPro ? 'Manage' : 'Upgrade',
+      id: 'nav-upgrade-menu-item',
+      href: '/subscribe?from=app',
+      icon: <UpgradeIcon />,
+      onClick: () => onNavigate('/subscribe?from=app'),
     },
     {
       label: 'Library',

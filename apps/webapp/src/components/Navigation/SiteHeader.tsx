@@ -2,6 +2,7 @@ import React, { useCallback, useLayoutEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ProfileDropdown } from '@resomix/ui';
 import { useAuthStore, useFeedbackStore } from '@resomix/stores';
+import { useEntitlements } from '@resomix/hooks';
 import { LogoHeader } from '../icons/LogoHeader.tsx';
 import { MenuIcon } from '../icons/MenuIcon.tsx';
 import {
@@ -36,6 +37,7 @@ function NavGroupList({
   withPanels = true,
   idPrefix = '',
   setItemRef = megaMenu.setItemRef,
+  leadingItem,
   trailingItem,
 }: {
   groups: NavTopGroup[];
@@ -48,10 +50,12 @@ function NavGroupList({
   idPrefix?: string;
   setItemRef?: MegaMenuApi['setItemRef'];
   /** Extra <li> appended after the groups — used for plain links that have no mega panel. */
+  leadingItem?: React.ReactNode;
   trailingItem?: React.ReactNode;
 }) {
   return (
     <ul>
+      {leadingItem}
       {groups.map((group) => {
         const index = NAV_TOP_GROUPS.findIndex((g) => g.key === group.key);
         const isOpen = megaMenu.openIndex === index;
@@ -129,6 +133,9 @@ export function SiteHeader({
 }: SiteHeaderProps) {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
+  // Plan-aware CTA. `useEntitlements` is already cached app-wide, so this costs no extra request.
+  const { plan } = useEntitlements();
+  const isPro = plan?.code === 'pro';
   const { showFeedbackForm } = useFeedbackStore();
   const isScrolled = useHeaderScroll();
   const megaMenu = useMegaMenu(NAV_TOP_GROUPS.length);
@@ -157,6 +164,7 @@ export function SiteHeader({
     onNavigate,
     onProfileClick,
     onLogout: handleLogout,
+    isPro,
   });
 
   const handleLogoClick = (e: React.MouseEvent) => {
@@ -207,6 +215,37 @@ export function SiteHeader({
 
   const accountControl = renderAccountControl(profileMenuItems);
   const mobileAccountControl = renderAccountControl(mobileProfileMenuItems);
+
+  /**
+   * Pricing — GUESTS ONLY, rendered as a NAV ITEM leading the right-hand group, which is exactly
+   * where and how the marketing header presents it. It is a plain link rather than a group: there
+   * is one destination, so a dropdown would be a menu of one.
+   *
+   * Signed-in users reach the same page from Upgrade / Manage in the account dropdown instead — a
+   * header link saying "Pricing" to someone who already pays reads as though they are not
+   * subscribed.
+   */
+  const onPricingPage = currentPath === '/subscribe';
+  const pricingNavItem = (idPrefix = '') =>
+    isAuthenticated ? null : (
+      <li key="pricing" id={`${idPrefix}mi-pricing`} className={onPricingPage ? 'is-section' : ''}>
+        <div className="nav-mm-item-wrap">
+          <a
+            className="nav-mm-trigger"
+            href="/subscribe?from=app"
+            id={`${idPrefix}nav-pricing-link`}
+            aria-current={onPricingPage ? 'page' : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate('/subscribe?from=app');
+            }}
+          >
+            {navT('nav.cta.pricing')}
+            {onPricingPage ? <span className="nav-sr">{navT('nav.status.currentPage')}</span> : null}
+          </a>
+        </div>
+      </li>
+    );
 
   const feedbackCta = (
     <button
@@ -390,6 +429,7 @@ export function SiteHeader({
                 groups={rightGroups}
                 {...navListProps}
                 setItemRef={mainItemRef}
+                leadingItem={pricingNavItem()}
               />
             </nav>
             {accountControl}
@@ -426,6 +466,7 @@ export function SiteHeader({
                 {...navListProps}
                 idPrefix="sticky-"
                 setItemRef={stickyItemRef}
+                leadingItem={pricingNavItem('sticky-')}
               />
             </nav>
             {accountControl}
