@@ -557,7 +557,7 @@ const RX_CMP_CSS = `
 @media (prefers-reduced-motion: reduce) {
   .rx-cmp thead th { transition: none; }
 }
-.rx-cmp thead th.rx-cmp__feat { text-align: center; }
+.rx-cmp thead th.rx-cmp__feat { text-align: center; vertical-align: middle; }
 .rx-cmp thead th.rx-cmp__pcol { text-align: center; }
 .rx-cmp.is-stuck thead th {
   /* The ONLY difference between stuck and unstuck: a drop shadow to lift the header off the rows.
@@ -668,6 +668,10 @@ const RX_CMP_CSS = `
 }
 .rx-cmp tbody td.rx-cmp__na { color: var(--color-primary-hover); }
 .rx-cmp__ico {
+  /* inline-block, NOT the browser default. Tailwind's preflight sets svg to display:block, which
+     made these ignore the cell's text-align and sit hard against its left edge — while every text
+     value in the same column stayed centred. */
+  display: inline-block;
   width: var(--px-16);
   height: var(--px-16);
   fill: none;
