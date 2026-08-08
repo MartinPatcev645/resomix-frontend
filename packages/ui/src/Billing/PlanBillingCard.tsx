@@ -187,7 +187,8 @@ export function PlanBillingCard() {
                 <button
                   type="button"
                   onClick={() => {
-                    window.location.href = "/subscribe";
+                    // `?from=profile` so the back control on /subscribe says "Back to profile".
+                    window.location.href = "/subscribe?from=profile";
                   }}
                   disabled={busy}
                   className={PAGE_BTN_PRIMARY}

@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { FAQ, FAQ_ITEMS, LEGAL_BASE, LEGAL_LINKS, PRO_CARD } from "./pricingCopy";
 
 export interface FoundingOfferCopy {
@@ -126,76 +126,71 @@ export function PricingFaq({ beta }: { beta: FoundingOfferCopy }) {
     { name: FAQ.tabs.managing, items: managingItems },
   ];
 
-  const onTabKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    let next: number | null = null;
-    if (e.key === "ArrowRight") next = (tab + 1) % tabs.length;
-    if (e.key === "ArrowLeft") next = (tab - 1 + tabs.length) % tabs.length;
-    if (e.key === "Home") next = 0;
-    if (e.key === "End") next = tabs.length - 1;
-    if (next === null) return;
-    e.preventDefault();
-    setTab(next);
-    const btn = e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next];
-    btn?.focus();
-  };
 
   return (
     <section className="space-y-[var(--px-14)]" aria-labelledby="faq-h">
       <h2
         id="faq-h"
-        className="m-0 text-center font-helvetica text-[length:var(--px-23)] font-bold uppercase leading-[1.15] tracking-[var(--px-1)] text-[var(--color-text-secondary)] lg:text-[length:var(--px-34)]"
+        className="m-0 px-[var(--px-12)] text-center font-helvetica text-[length:var(--px-19)] font-bold uppercase leading-[1.2] tracking-[var(--px-1)] text-[var(--color-text-secondary)] md:text-[length:var(--px-23)] md:leading-[1.15] lg:text-[length:var(--px-34)]"
       >
         {FAQ.heading}
       </h2>
 
-      <div
-        role="tablist"
-        aria-label={FAQ.tablistLabel}
-        onKeyDown={onTabKey}
-        className="mx-auto mt-[var(--px-26)] flex w-fit flex-wrap justify-center border border-white/13"
-      >
+      {/* Categories as full-width disclosures, not tabs.
+          A tab strip hid two thirds of the content behind controls that looked like filters, and on
+          mobile the three labels wrapped into a stack that read as broken. Each category is now a
+          row you open; its questions expand underneath it, in place. */}
+      <div className="mx-auto mt-[var(--px-26)] max-w-[56rem]">
         {tabs.map((t, i) => {
-          const selected = i === tab;
+          const open = i === tab;
           return (
-            <button
-              key={t.name}
-              type="button"
-              role="tab"
-              id={`rx-faq-tab-${i}`}
-              aria-selected={selected}
-              aria-controls={`rx-faq-panel-${i}`}
-              tabIndex={selected ? 0 : -1}
-              onClick={() => setTab(i)}
-              className={[
-                "min-h-[var(--px-44)] px-[var(--px-19-259)] py-[var(--px-14)] font-fira text-[length:var(--px-11)] uppercase tracking-[0.12em]",
-                selected
-                  ? "bg-[var(--color-neon-orange)] font-semibold text-[#101010]"
-                  : "bg-transparent text-[var(--color-primary-hover)] hover:text-[var(--color-text-secondary)]",
-              ].join(" ")}
-            >
-              {t.name}
-            </button>
+            <div key={t.name} className="border-t border-white/13 last:border-b">
+              <button
+                type="button"
+                aria-expanded={open}
+                aria-controls={`rx-faq-panel-${i}`}
+                id={`rx-faq-cat-${i}`}
+                /* Toggle: pressing the open category closes it, so all three can be collapsed. */
+                onClick={() => setTab(open ? -1 : i)}
+                className={[
+                  "flex w-full items-center justify-between gap-[var(--px-14)] px-[var(--px-4)] py-[var(--px-18)]",
+                  "text-left font-fira text-[length:var(--px-12)] uppercase tracking-[0.12em] transition-colors",
+                  open
+                    ? "text-[var(--color-neon-orange)]"
+                    : "text-[var(--color-primary-hover)] hover:text-[var(--color-text-secondary)]",
+                ].join(" ")}
+              >
+                <span>{t.name}</span>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className={`h-[var(--px-16)] w-[var(--px-16)] shrink-0 fill-none stroke-[var(--color-neon-orange)] transition-transform duration-200 ${
+                    open ? "rotate-180" : ""
+                  }`}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+
+              {open && (
+                <div
+                  id={`rx-faq-panel-${i}`}
+                  aria-labelledby={`rx-faq-cat-${i}`}
+                  className="pb-[var(--px-8)] pl-[var(--px-4)]"
+                >
+                  {t.items.map((item) => (
+                    <Disc key={item.id} q={item.q}>
+                      {item.a}
+                    </Disc>
+                  ))}
+                </div>
+              )}
+            </div>
           );
         })}
-      </div>
-
-      <div className="mx-auto mt-[var(--px-26)] max-w-[56rem]">
-        {tabs.map((t, i) =>
-          i === tab ? (
-            <div
-              key={t.name}
-              role="tabpanel"
-              id={`rx-faq-panel-${i}`}
-              aria-labelledby={`rx-faq-tab-${i}`}
-            >
-              {t.items.map((item) => (
-                <Disc key={item.id} q={item.q}>
-                  {item.a}
-                </Disc>
-              ))}
-            </div>
-          ) : null,
-        )}
       </div>
 
       <p className="mt-[var(--px-24)] text-center font-fira text-[length:var(--px-11)] uppercase leading-[2] tracking-[0.16em] text-[var(--color-primary-hover)] opacity-75">

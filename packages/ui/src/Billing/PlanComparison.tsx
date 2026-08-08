@@ -431,14 +431,20 @@ export function PlanComparisonSection({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-[var(--px-14)]" aria-labelledby="cmp-h">
+    /* Capped and centred to match the plan cards above. Uncapped, the table stretched to the
+       viewport edges on a wide screen while the cards stayed at 52rem — the two read as parts of
+       different pages. Slightly wider than the cards because it carries three columns, not two. */
+    <section className="mx-auto w-full max-w-[64rem] space-y-[var(--px-14)]" aria-labelledby="cmp-h">
+      {/* Mobile steps the heading down to 19px and the subtitle to 15px, and narrows the subtitle
+          to ~34rem. At the desktop sizes a phone broke "COMPARE EVERY PLAN" across two lines and
+          ragged the subtitle into four, which read as a layout fault rather than a section title. */}
       <h2
         id="cmp-h"
-        className="m-0 text-center font-helvetica text-[length:var(--px-23)] font-bold uppercase leading-[1.15] tracking-[var(--px-1)] text-[var(--color-text-secondary)] lg:text-[length:var(--px-34)]"
+        className="m-0 px-[var(--px-12)] text-center font-helvetica text-[length:var(--px-19)] font-bold uppercase leading-[1.2] tracking-[var(--px-1)] text-[var(--color-text-secondary)] md:text-[length:var(--px-23)] md:leading-[1.15] lg:text-[length:var(--px-34)]"
       >
         {COMPARE.heading}
       </h2>
-      <p className="mx-auto m-0 max-w-[40rem] text-center font-helvetica text-[length:var(--px-17)] font-light leading-[1.65] text-[var(--color-primary-hover)]">
+      <p className="mx-auto m-0 max-w-[34rem] px-[var(--px-12)] text-center font-helvetica text-[length:var(--px-15)] font-light leading-[1.6] text-[var(--color-primary-hover)] md:max-w-[40rem] md:text-[length:var(--px-17)] md:leading-[1.65]">
         {COMPARE.subtitle}
       </p>
       {/* Spacing above the table; #compare lives on the scroll host so the anchor lands on the stick line. */}
@@ -527,7 +533,11 @@ const RX_CMP_CSS = `
   content: none;
 }
 @media (max-width: 900px) {
-  .rx-cmp__switch { display: inline-flex; }
+  /* The page sidelines run flush to the viewport edge; without this the table border lands on
+     top of them and the two hairlines read as one broken line. */
+  .rx-cmp-scroll { padding-inline: 2px; }
+  /* block-level, so the auto margins above actually centre it (inline-flex did not) */
+  .rx-cmp__switch { display: flex; }
   .rx-cmp-scroll { overflow-x: visible; }
   .rx-cmp {
     min-width: 0;

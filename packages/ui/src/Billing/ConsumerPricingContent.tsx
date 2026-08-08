@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
   BillingPlanDisplay,
   BillingPlanOffer,
@@ -26,6 +26,7 @@ import {
   CONSENT,
   ERRORS,
   FREE_CARD,
+  COMPARE_LINK,
   GUEST_RAIL,
   INTERVAL,
   PAID_CHECKOUT,
@@ -120,6 +121,8 @@ function publicPlans(plans: BillingPlanDisplay[]): {
 }
 
 export function ConsumerPricingContent({
+  backSlot,
+  compareUrl,
   baseUrl = "/",
   variant = "marketing",
   subscribeUrl,
@@ -127,6 +130,10 @@ export function ConsumerPricingContent({
   baseUrl?: string;
   variant?: PricingVariant;
   subscribeUrl?: string;
+  /** Checkout only: the marketing page's comparison table. Omit to hide the signpost. */
+  compareUrl?: string;
+  /** Desktop-only Back control, placed on the interval row (mobile renders its own above). */
+  backSlot?: ReactNode;
 }) {
   // "marketing" is the public pricing page on the landing site: it explains and compares, and hands
   // the actual purchase to the app. "checkout" is the app's own /subscribe: it runs the real Stripe
@@ -142,13 +149,7 @@ export function ConsumerPricingContent({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [authed, setAuthed] = useState(false);
-  // EU 14-day withdrawal waiver. Starts UNTICKED, always — a pre-ticked consent box is not
-  // consent, and under the Consumer Rights Directive it is not valid. The server refuses without
-  // it regardless, so this only saves the user a pointless round-trip.
-  const [consented, setConsented] = useState(false);
   const [interval, setInterval] = useState<BillingInterval>("month");
-  const consentRef = useRef<HTMLDivElement | null>(null);
-  const consentBoxRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -298,18 +299,14 @@ export function ConsumerPricingContent({
       goLogin();
       return;
     }
-    if (!consented) {
-      setError(ERRORS.needConsent);
-      // Take the user to the control they have to act on. Setting an error alone was the whole bug:
-      // the message rendered below the fold, so the button read as dead.
-      consentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      consentBoxRef.current?.focus({ preventScroll: true });
-      return;
-    }
+
     setBusy(code);
     try {
       const { startBillingCheckout } = await import("@resomix/api-client");
-      const res: any = await startBillingCheckout(code, consented, interval);
+      // `true` because pressing this button IS the express request — the statement under the CTA
+      // says so in the buyer's own reading order. The server still records a `billing_consents` row
+      // against it, so the act stays auditable.
+      const res: any = await startBillingCheckout(code, true, interval);
       if (res?.success && res.data?.url) {
         window.location.href = res.data.url;
         return;
@@ -389,10 +386,6 @@ export function ConsumerPricingContent({
 
   const freeCtaDisabled = isMarketing ? false : authed || !!busy;
 
-  // Whether the consent panel is on screen. Both the panel and the generic error block read this,
-  // so a consent error can never render in two places at once.
-  const showConsentGate =
-    !isMarketing && PAID_CHECKOUT.enabled && (pro?.purchasable || free?.purchasable) && !isCurrentPro;
 
   return (
     <>
@@ -403,35 +396,50 @@ export function ConsumerPricingContent({
         </p>
       )}
 
-      <section className="mt-[var(--px-48)] space-y-[var(--px-48)] lg:mt-[var(--px-72)] lg:space-y-[var(--px-72)]">
+      <section className="mt-[var(--px-28)] space-y-[var(--px-48)] lg:mt-[var(--px-36)] lg:space-y-[var(--px-72)]">
         {/* Interval control sits under the page header (PricingContent). */}
-        <div className="flex flex-col items-center gap-[var(--px-14)]">
-          {intervalOptions.length > 1 && (
-            <div className="flex flex-wrap items-center justify-center gap-[var(--px-11)]">
+        {/* Constrained to the plan cards' own width and centred, so Back sits just left of the
+            toggle rather than stranded against the viewport edge — the same arrangement the Library
+            uses, where the row lives inside the content column instead of spanning the page. */}
+        <div className="mx-auto grid w-full max-w-[52rem] grid-cols-[1fr_auto_1fr] items-start gap-[var(--px-10)]">
+          <div className="flex justify-start">
+            <div className="hidden md:block">{backSlot}</div>
+          </div>
+          {intervalOptions.length > 1 ? (
+            /* Chip sits UNDER the control, not beside it. Beside it, switching to yearly widened
+               the row and shifted the whole toggle sideways under the user's cursor. The reserved
+               min-height keeps the layout still whether or not the chip is showing. */
+            <div className="flex flex-col items-center gap-[var(--px-10)]">
               <IntervalRadiogroup
                 aria-label={INTERVAL.groupLabel}
                 value={interval}
                 options={intervalOptions}
                 onChange={setInterval}
               />
-              {savePct != null && interval === "year" && (
-                <SaveTag>{INTERVAL.saveAnnually(savePct)}</SaveTag>
-              )}
+              <div className="flex min-h-[var(--px-30)] items-center justify-center">
+                {savePct != null && interval === "year" && (
+                  <SaveTag>{INTERVAL.saveAnnually(savePct)}</SaveTag>
+                )}
+              </div>
             </div>
+          ) : (
+            <div />
           )}
-
-          {priceFailed && (
-            <div
-              role="alert"
-              className="w-full max-w-[34rem] border border-white/13 bg-[#0c0c0d]/60 p-[var(--px-16)] text-left font-helvetica text-[length:var(--px-15)] font-light leading-[1.6] text-[var(--color-primary-hover)]"
-            >
-              {PAGE.pricesUnavailable}
-            </div>
-          )}
+          <span aria-hidden="true" />
         </div>
 
+        {/* Outside the Back/toggle grid — a full-width alert, not a third column. */}
+        {priceFailed && (
+          <div
+            role="alert"
+            className="mx-auto w-full max-w-[34rem] border border-white/13 bg-[#0c0c0d]/60 p-[var(--px-16)] text-left font-helvetica text-[length:var(--px-15)] font-light leading-[1.6] text-[var(--color-primary-hover)]"
+          >
+            {PAGE.pricesUnavailable}
+          </div>
+        )}
+
         {/* Plan cards */}
-        <section aria-label="Plans">
+        <section aria-label="Plans" className="px-[2px] md:px-0">
           {loading ? (
             <div className="mx-auto grid max-w-[52rem] grid-cols-1 gap-[var(--px-14)] md:grid-cols-2">
               {[0, 1].map((i) => (
@@ -557,6 +565,15 @@ export function ConsumerPricingContent({
                       >
                         {proCtaLabel}
                       </PricingButton>
+                      {!isMarketing && !isCurrentPro && PAID_CHECKOUT.enabled && (
+                        /* The EU withdrawal waiver. It has to be read BEFORE the act that relies on
+                           it, so it sits under the CTA in the buyer's reading order rather than in
+                           a tick-box further down the page. Pressing the button is the express
+                           request; the server records it against a `billing_consents` row. */
+                        <p className="m-0 mt-[var(--px-10)] font-helvetica text-[length:var(--px-12)] font-light leading-[1.55] text-[var(--color-primary-hover)] opacity-80">
+                          {CONSENT}
+                        </p>
+                      )}
                       {!PAID_CHECKOUT.enabled && !isCurrentPro && (
                         <p
                           className="m-0 mt-[var(--px-8)] font-fira text-[length:var(--px-11)] leading-[1.5] tracking-[0.04em] text-[var(--color-primary-hover)] opacity-75"
@@ -607,7 +624,9 @@ export function ConsumerPricingContent({
             )}
           </p>
 
-          {/* Guest rail — never a third plan card, never priced */}
+          {/* Guest rail — never a third plan card, never priced. Marketing only: anyone on
+              /subscribe is signed in, so "No account yet?" is nonsense there. */}
+          {isMarketing && (
           <QuietPanel className="mt-[var(--px-26)]">
             <p className="m-0 font-fira text-[length:var(--px-11)] uppercase tracking-[0.16em] text-[var(--color-neon-orange)]">
               {GUEST_RAIL.label}
@@ -621,6 +640,22 @@ export function ConsumerPricingContent({
               </PricingButton>
             </div>
           </QuietPanel>
+          )}
+
+          {/* Checkout only: the full comparison lives on the marketing page, so point at it rather
+              than duplicating a 40-row table in front of someone who is mid-purchase. */}
+          {!isMarketing && compareUrl && (
+            <QuietPanel className="mt-[var(--px-26)]">
+              <div className="grid items-center gap-[var(--px-14)] min-[620px]:grid-cols-[minmax(0,1fr)_auto] min-[620px]:gap-[var(--px-26)]">
+                <p className="m-0 font-helvetica text-[length:var(--px-15)] font-light leading-[1.65] text-[var(--color-primary-hover)]">
+                  {COMPARE_LINK.body}
+                </p>
+                <PricingButton onClick={() => { window.location.href = compareUrl; }}>
+                  {COMPARE_LINK.cta}
+                </PricingButton>
+              </div>
+            </QuietPanel>
+          )}
         </section>
 
         {/* See Pro band — gated until an approved demo track exists */}
@@ -728,50 +763,11 @@ export function ConsumerPricingContent({
           </div>
         )}
 
-        {/* Consent + its error, as ONE panel directly under the plans.
-            Previously these were two separate children of a `space-y-72` section, so the checkbox
-            sat 72px below the cards and the error another 72px below that — far enough off-screen
-            that pressing the CTA looked like nothing happened at all. Consent belongs beside the
-            action it authorises, and an error belongs beside the control that caused it. */}
-        {!isMarketing && PAID_CHECKOUT.enabled && (pro?.purchasable || free?.purchasable) && !isCurrentPro && (
-          <div
-            ref={consentRef}
-            className={`-mt-[var(--px-24)] rounded-[var(--px-4)] border p-[var(--px-20)] transition-colors lg:-mt-[var(--px-40)] ${
-              error
-                ? "border-[var(--color-neon-orange)] bg-[rgba(226,89,58,0.06)]"
-                : "border-white/15 bg-white/[0.02]"
-            }`}
+        {error && (
+          <p
+            role="alert"
+            className="font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] text-[var(--color-neon-orange)]"
           >
-            <label className="flex max-w-[62ch] cursor-pointer items-start gap-[var(--px-10)] font-helvetica text-[length:var(--px-15)] font-light leading-[1.6] text-[var(--color-primary-hover)]">
-              <input
-                ref={consentBoxRef}
-                type="checkbox"
-                checked={consented}
-                onChange={(e) => {
-                  setConsented(e.target.checked);
-                  if (e.target.checked) setError(null);
-                }}
-                className="mt-[var(--px-3)] h-[var(--px-16)] w-[var(--px-16)] shrink-0 accent-[var(--color-neon-orange)]"
-              />
-              <span>{CONSENT}</span>
-            </label>
-
-            {/* Directly under the checkbox it refers to — not at the foot of the page. */}
-            {error && (
-              <p
-                role="alert"
-                className="m-0 mt-[var(--px-12)] pl-[var(--px-26)] font-fira text-[length:var(--px-12)] uppercase leading-[1.5] tracking-[0.12em] text-[var(--color-neon-orange)]"
-              >
-                {error}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Anything that is not the consent gate — a Stripe or network failure. The consent error
-            renders in the panel above instead, so it cannot appear twice. */}
-        {error && !showConsentGate && (
-          <p className="font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] text-[var(--color-neon-orange)]">
             {error}
           </p>
         )}

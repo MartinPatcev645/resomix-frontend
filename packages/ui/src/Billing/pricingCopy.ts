@@ -92,6 +92,12 @@ export const GUEST_RAIL = {
   cta: "Try Sonic Discovery",
 } as const;
 
+/** Checkout-only signpost to the marketing comparison table. */
+export const COMPARE_LINK = {
+  body: "Want the full breakdown? Compare every limit, export target and analysis feature side by side.",
+  cta: "Compare plans in detail",
+} as const;
+
 export const SEE_PRO = {
   label: "Before you decide",
   heading: "Look at a full Track Intelligence report.",

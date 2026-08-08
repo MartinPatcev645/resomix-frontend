@@ -1,6 +1,7 @@
 import { ConsumerPricingContent } from "./ConsumerPricingContent";
 import { PricingButton } from "./PricingButton";
 import { SoftPanel } from "./PricingChrome";
+import { PricingBackLink, resolveBackTarget } from "./PricingBackLink";
 import { PAGE, PARTNER_BANNER } from "./pricingCopy";
 import type { PricingVariant } from "./pricingVariant";
 
@@ -29,6 +30,12 @@ interface PricingContentProps {
   variant?: PricingVariant;
   /** Marketing only: where the plan CTAs send the visitor to actually subscribe. */
   subscribeUrl?: string;
+  /** Checkout only: the marketing comparison table, for the "compare in detail" signpost. */
+  compareUrl?: string;
+  /** Absolute origin of the marketing site, so cross-origin back targets resolve. */
+  landingOrigin?: string;
+  /** Client-side navigator for in-app back targets. Omit on the marketing site. */
+  onNavigate?: (path: string) => void;
 }
 
 export function PricingContent({
@@ -36,7 +43,20 @@ export function PricingContent({
   partnersUrl = "/partners#developer-form",
   variant = "marketing",
   subscribeUrl,
+  compareUrl,
+  landingOrigin,
+  onNavigate,
 }: PricingContentProps) {
+  const isMarketing = variant === "marketing";
+  // The marketing page has exactly one sensible destination — its own site root. Checkout is the
+  // page reached from four places, so it resolves per visit.
+  const backTarget = isMarketing
+    ? { label: PAGE.backHome, href: baseUrl, internal: false }
+    : resolveBackTarget(
+        typeof window === "undefined" ? "" : window.location.search,
+        typeof document === "undefined" ? "" : document.referrer,
+        landingOrigin,
+      );
   return (
     <section className="py-[var(--px-44)] font-helvetica text-[var(--color-primary)] lg:py-[var(--px-52)]">
       <div className="space-y-[var(--px-48)] lg:space-y-[var(--px-72)]">
@@ -45,25 +65,33 @@ export function PricingContent({
             Subtitle lives in ConsumerPricingContent so the match count binds to top_sk_max. */}
         <div>
           <header className="text-center">
-            <a
-              href={baseUrl}
-              aria-label="Resomix home"
-              className="mb-[var(--px-24)] inline-flex items-center gap-[var(--px-8)] font-fira text-[length:var(--px-11)] uppercase tracking-[0.14em] text-[var(--color-primary-hover)] transition-colors hover:text-[var(--color-primary)]"
-            >
-              <span aria-hidden="true" className="text-[var(--color-neon-orange)]">←</span>
-              {PAGE.backHome}
-            </a>
+            {/* Mobile places Back above the heading; desktop moves it onto the interval row, which
+                is the same arrangement the Library uses for its own Back control. */}
+            <div className="mb-[var(--px-16)] flex md:hidden">
+              <PricingBackLink target={backTarget} onNavigate={onNavigate} id="pricing-back-mobile" />
+            </div>
 
             <h1 className="m-0 mx-auto font-benzin font-black uppercase leading-[1.06] text-[length:var(--px-32)] md:text-[length:var(--px-36)] lg:text-[length:var(--px-48)]">
               <span className="text-[var(--color-neon-orange)]">{PAGE.title}</span>
             </h1>
           </header>
 
-          <ConsumerPricingContent baseUrl={baseUrl} variant={variant} subscribeUrl={subscribeUrl} />
+          <ConsumerPricingContent
+            backSlot={
+              <PricingBackLink target={backTarget} onNavigate={onNavigate} id="pricing-back" />
+            }
+            baseUrl={baseUrl}
+            variant={variant}
+            subscribeUrl={subscribeUrl}
+            compareUrl={compareUrl}
+          />
         </div>
 
-        {/* Partner signpost — no price, no tiers. Outline CTA only; Pro stays the sole primary. */}
-        <section aria-labelledby="partner-banner-h" className="pt-0">
+        {/* Partner signpost — no price, no tiers. Outline CTA only; Pro stays the sole primary.
+            Marketing only: someone on /subscribe is buying a consumer plan, and a "not a consumer
+            plan" panel underneath the card they are about to pay for is a distraction. */}
+        {isMarketing && (
+        <section aria-labelledby="partner-banner-h" className="mx-auto w-full max-w-[64rem] pt-0">
           <SoftPanel className="grid items-center gap-[var(--px-16)] min-[900px]:grid-cols-[minmax(0,1fr)_auto] min-[900px]:gap-[var(--px-32)]">
             <div>
               <p className="m-0 font-fira text-[length:var(--px-11)] uppercase tracking-[0.16em] text-[var(--color-primary-hover)]">
@@ -88,6 +116,7 @@ export function PricingContent({
             </PricingButton>
           </SoftPanel>
         </section>
+        )}
       </div>
     </section>
   );

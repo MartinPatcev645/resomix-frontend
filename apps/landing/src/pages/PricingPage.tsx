@@ -10,5 +10,5 @@ import { BETA_URL } from "@/components/Navigation/navData.ts";
  * which resolves the session first and then runs the real flow.
  */
 export default function PricingPage() {
-  return <PricingContent baseUrl="/" variant="marketing" subscribeUrl={`${BETA_URL}/subscribe`} />;
+  return <PricingContent baseUrl="/" variant="marketing" subscribeUrl={`${BETA_URL}/subscribe?from=pricing`} />;
 }

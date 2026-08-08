@@ -382,14 +382,22 @@ export function SiteHeader({
       }
     } else {
       panel.style.right = 'auto';
-      let left = triggerRect.left - containerRect.left;
-      const maxLeft = Math.max(0, containerRect.width - panelWidth);
-      left = Math.max(0, Math.min(left, maxLeft));
-      if (isScrolled) {
-        panel.style.left = `${triggerRect.left}px`;
-      } else {
-        panel.style.left = `${left}px`;
-      }
+
+      // Work in VIEWPORT coordinates, then convert once against the real offset parent.
+      //
+      // `.nav-cl` is `position: absolute`, so it — not `.nav-hframe` — is what a left/top on the
+      // panel resolves against. Measuring the offset from `.nav-hframe` and assigning it anyway
+      // pushed every left-side panel right by the column's own inset, and the further along the
+      // bar the trigger sat the worse it got: Resources, third in the row, opened near mid-screen.
+      const offsetParent = (panel.offsetParent as HTMLElement | null) ?? container;
+      const parentLeft = offsetParent.getBoundingClientRect().left;
+
+      // Align the panel's left edge to the trigger, then keep it inside the header frame.
+      const minX = containerRect.left;
+      const maxX = Math.max(minX, containerRect.right - panelWidth);
+      const x = Math.max(minX, Math.min(triggerRect.left, maxX));
+
+      panel.style.left = `${x - parentLeft}px`;
     }
   }, [isScrolled, megaMenu.openIndex]);
 

@@ -18,7 +18,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 export type EntitlementCtaAction = "login" | "register" | "subscribe" | null;
 
 export const SUBSCRIPTION_ENABLED = true;
-export const SUBSCRIBE_ROUTE = "/subscribe";
+// `?from=app` so /subscribe's back control offers Sonic Discovery rather than guessing.
+export const SUBSCRIBE_ROUTE = "/subscribe?from=app";
 
 export function useEntitlementCta() {
   const navigate = useNavigate();
