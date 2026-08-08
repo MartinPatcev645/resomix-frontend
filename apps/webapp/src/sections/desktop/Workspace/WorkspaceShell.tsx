@@ -142,9 +142,6 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
             beside the heading, under the floating Catalogue-pilot / Feedback buttons. Single-column
             widths stack it under the subline, still right-aligned, on the header's own row gap. */}
         <div className="flex flex-wrap items-center gap-[var(--px-8)] justify-self-end sm:self-end">
-          {/* What is left of today's allowance. Renders nothing when there is nothing true to
-              say — loading, or every limit unlimited — so the session chip keeps its position. */}
-          {usageChip === undefined ? <UsageChip /> : usageChip}
           <span className="inline-flex items-center gap-[var(--px-8)] border border-[var(--rx-color-border-default)] px-[var(--px-13)] py-[var(--px-7)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)]">
             <i
               aria-hidden="true"
@@ -157,12 +154,20 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
 
       {taskSelector ?? (
         <div className="mb-[var(--px-16)]">
-          <h2
-            id={headingId}
-            className="mt-[var(--px-4)] font-helvetica text-[length:var(--px-22)] font-bold leading-[var(--px-28)] text-[var(--rx-color-text-primary)]"
-          >
-            {TASK_GROUP_HEADING}
-          </h2>
+          {/* Allowance sits on the task heading's row — directly above the cards it constrains.
+              It used to live in the page header, which read correctly until TASK_GROUP_HEADING was
+              added between the two: the chip then floated up beside the h1, far from anything it
+              describes. Renders nothing when there is nothing true to say, and the heading keeps
+              its position either way. */}
+          <div className="flex flex-wrap items-end justify-between gap-[var(--px-12)]">
+            <h2
+              id={headingId}
+              className="mt-[var(--px-4)] font-helvetica text-[length:var(--px-22)] font-bold leading-[var(--px-28)] text-[var(--rx-color-text-primary)]"
+            >
+              {TASK_GROUP_HEADING}
+            </h2>
+            {usageChip === undefined ? <UsageChip /> : usageChip}
+          </div>
           <p
             id={hintId}
             className="mt-[var(--px-6)] mb-[var(--px-16)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)]"

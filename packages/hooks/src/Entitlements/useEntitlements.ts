@@ -107,6 +107,11 @@ export function useEntitlements(): UseEntitlements {
   // (verifySession/useAuthInit resolves it, or logs the user out — either way `identity`/token
   // changes and this re-runs).
   const waitingForToken = useAuthStore((s) => s.isAuthenticated && !s.accessToken);
+  // The token VALUE, not just its presence. `identity` and `waitingForToken` both stay put across a
+  // token REFRESH, so a fetch that failed on a stale token had nothing to re-trigger it: the hook
+  // sat on `data: null` (a failure is deliberately not cached) and the usage chip stayed hidden
+  // until the next remount with a good token — which is what a trip to Profile and back provides.
+  const accessToken = useAuthStore((s) => s.accessToken);
 
   const [data, setData] = useState<MyEntitlements | null>(_cacheFresh(identity) ? cache : null);
   const [loading, setLoading] = useState<boolean>(!_cacheFresh(identity));
@@ -121,7 +126,8 @@ export function useEntitlements(): UseEntitlements {
     setLoading(false);
   }, [identity]);
 
-  // (Re)load whenever the identity changes (login/logout) or on first mount.
+  // (Re)load on first mount, on identity change (login/logout), and whenever the access token is
+  // replaced — the last of which is what recovers from a request that failed against a stale one.
   useEffect(() => {
     if (waitingForToken) return; // stay loading; re-runs when the token lands or auth flips off
     if (_cacheFresh(identity)) {
@@ -129,8 +135,10 @@ export function useEntitlements(): UseEntitlements {
       setLoading(false);
       return;
     }
+    // `force` on a retry-after-token-change: the previous attempt cached nothing, but a stale entry
+    // from before a refresh must not be trusted either.
     void load(false);
-  }, [identity, load, waitingForToken]);
+  }, [identity, load, waitingForToken, accessToken]);
 
   const map = data?.entitlements ?? {};
 

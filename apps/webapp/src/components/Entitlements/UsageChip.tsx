@@ -23,6 +23,9 @@ export const UsageChip: React.FC<{ className?: string }> = ({ className = "" }) 
     <span
       className={[
         "inline-flex flex-wrap items-center gap-x-[var(--px-10)] gap-y-[var(--px-4)]",
+        // Read-only status, not content: an I-beam cursor and a text selection both invite the
+        // user to treat it as something to copy or edit, which it is not.
+        "cursor-default select-none",
         "border border-[var(--rx-color-border-default)] px-[var(--px-13)] py-[var(--px-7)]",
         "font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)]",
         "text-[var(--rx-color-text-secondary)]",
@@ -37,6 +40,9 @@ export const UsageChip: React.FC<{ className?: string }> = ({ className = "" }) 
             </i>
           )}
           <span
+            // Native tooltip: the glyphs are compact to the point of being cryptic, and this needs
+            // to work on a plain <span> inside a wrapping flex row without a portal or positioning.
+            title={metric.hint}
             className={`inline-flex items-center gap-[var(--px-5)] ${
               // Spent reads as the accent, the same colour every other "you've hit a limit" state
               // in the app uses — the chip should look like the modal the user is about to see.

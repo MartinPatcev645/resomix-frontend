@@ -28,6 +28,8 @@ export interface UsageMetric {
   period: string;
   /** Accessible label, since the glyph carries no meaning to a screen reader. */
   label: string;
+  /** Hover/focus explanation — the glyphs are compact to the point of being cryptic. */
+  hint: string;
   /** True once the allowance is fully spent — the caller may style it as depleted. */
   spent: boolean;
 }
@@ -46,6 +48,7 @@ interface MetricSpec {
   glyph: string;
   period: string;
   label: string;
+  hint: string;
   used: number | null | undefined;
   limit: number | null | undefined;
   resetAt?: string | null;
@@ -62,6 +65,7 @@ export function useUsageChip(): UseUsageChip {
     const specs: MetricSpec[] = [
       {
         key: "searches",
+        hint: "Sonic searches you have run today. Resets at midnight UTC.",
         glyph: "⌕",
         period: "today",
         label: "Sonic searches used today",
@@ -71,6 +75,7 @@ export function useUsageChip(): UseUsageChip {
       },
       {
         key: "uploads",
+        hint: "Tracks you have uploaded this billing period. Resets on your renewal date.",
         glyph: "↑",
         period: "this month",
         label: "Uploads used this month",
@@ -80,6 +85,7 @@ export function useUsageChip(): UseUsageChip {
       },
       {
         key: "exports",
+        hint: "Playlist exports today — TXT, Apple Music and embed all count. Resets at midnight UTC.",
         glyph: "⤓",
         period: "today",
         label: "Exports used today",
@@ -89,6 +95,7 @@ export function useUsageChip(): UseUsageChip {
       },
       {
         key: "library",
+        hint: "Playlists listed in your Library. Beyond this they are still saved and open by link, just not listed.",
         glyph: "≡",
         // The Library cap is not a window — deleting a playlist frees a slot immediately — so it
         // carries no period wording and contributes no reset time.
@@ -115,6 +122,7 @@ export function useUsageChip(): UseUsageChip {
         limit: spec.limit,
         period: spec.period,
         label: spec.label,
+        hint: spec.hint,
         spent: spec.used >= spec.limit,
       });
 
