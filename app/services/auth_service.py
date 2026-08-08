@@ -374,11 +374,19 @@ class AuthService:
         # Correct password — clear the failed-attempt counter for this account.
         await _clear_login_failures(user.id)
 
-        # Require verified email before issuing tokens
+        # Require verified email before issuing tokens.
+        #
+        # Carries a `code` because login can now refuse for more than one reason with the same 403,
+        # and the client has to tell them apart: this one offers "resend verification email", the
+        # deactivated one below must not. The frontend used to branch on the status alone, so a
+        # deactivated user was shown the verification screen.
         if not user.is_email_verified:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Email not verified. Please verify your email before logging in.",
+                detail={
+                    "code": "EMAIL_NOT_VERIFIED",
+                    "error": "Email not verified. Please verify your email before logging in.",
+                },
             )
 
         # Deactivated accounts get no new session.
