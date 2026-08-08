@@ -42,6 +42,8 @@ export interface PlaylistCreator {
 }
 
 export interface PlaylistListParams {
+  /** Only playlists owned by this user (UUID). Set by the user detail page link. */
+  user_uuid?: string;
   page?: number;
   page_size?: number;
   search?: string;

@@ -61,6 +61,8 @@ export interface TrackDetailResponse {
 }
 
 export interface ListTracksParams {
+  /** Only tracks uploaded by this user (UUID). Used by the user detail page. */
+  user_uuid?: string;
   partner_id: number;
   is_active?: boolean;
   page?: number;

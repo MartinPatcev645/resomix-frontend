@@ -23,6 +23,9 @@ export function useAdminTracks() {
   const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
   const [sourceFilter, setSourceFilter] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  // Set from ?user= when arriving from a user's detail page. Not part of the search box —
+  // nobody types a UUID; it is only ever a click-through.
+  const [uploaderFilter, setUploaderFilter] = useState<string | undefined>(undefined);
   const [debouncedQuery, setDebouncedQuery] = useState<string>('');
 
   // Debounce search query
@@ -36,7 +39,7 @@ export function useAdminTracks() {
   // Reset page to 1 when filters or queries change
   useEffect(() => {
     setPagination(prev => ({ ...prev, current: 1 }));
-  }, [partnerFilter, statusFilter, debouncedQuery, sourceFilter]);
+  }, [partnerFilter, statusFilter, debouncedQuery, sourceFilter, uploaderFilter]);
 
   const fetchTracks = useCallback(async () => {
     if (partnerFilter === undefined) {
@@ -54,6 +57,7 @@ export function useAdminTracks() {
         is_active: statusFilter,
         ingestion_source: sourceFilter,
         q: debouncedQuery || undefined,
+        user_uuid: uploaderFilter,
       };
 
       const result = await listAdminTracks(params);
@@ -69,7 +73,7 @@ export function useAdminTracks() {
     } finally {
       setLoading(false);
     }
-  }, [pagination.current, pagination.pageSize, partnerFilter, statusFilter, debouncedQuery, sourceFilter]);
+  }, [pagination.current, pagination.pageSize, partnerFilter, statusFilter, debouncedQuery, sourceFilter, uploaderFilter]);
 
   const activateTrack = async (trackId: number) => {
     try {
@@ -129,6 +133,8 @@ export function useAdminTracks() {
   }, [fetchTracks]);
 
   return {
+    uploaderFilter,
+    setUploaderFilter,
     tracks,
     loading,
     pagination,

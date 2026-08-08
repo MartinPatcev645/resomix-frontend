@@ -2,6 +2,11 @@ import authClient from "../authClient";
 import { axiosWrapper, handleApiError } from "../utils";
 import { API_CONFIG } from "../config";
 
+export interface AdminUserPlanRef {
+  code: string;
+  name: string;
+}
+
 export interface AdminUserSearchItem {
   id: number;
   uuid: string | null;
@@ -11,7 +16,91 @@ export interface AdminUserSearchItem {
   is_email_verified: boolean | null;
   is_active?: boolean | null;
   created_at: string | null;
+  /** Effective plan — the one they actually get, not just the subscription's. */
+  plan?: AdminUserPlanRef | null;
+  /** Last authenticated request. Distinct from last LOGIN; see the overview endpoint. */
+  last_seen_at?: string | null;
+  deactivated_at?: string | null;
+  purge_due_at?: string | null;
 }
+
+/** Per-user admin overview. One request; see `AdminUserOverviewService` for why. */
+export interface AdminUserOverview {
+  identity: {
+    id: number;
+    uuid: string;
+    /** The tracks endpoint requires a partner, so the "view their tracks" link needs it. */
+    partner_id: number | null;
+    email: string;
+    username: string | null;
+    name: string | null;
+    profile_picture: string | null;
+    roles: string[];
+    is_active: boolean;
+    is_email_verified: boolean;
+    is_two_factor_enabled: boolean;
+    language: string | null;
+    timezone: string | null;
+    created_at: string | null;
+  };
+  activity: {
+    /** Last authenticated request (throttled write). */
+    last_seen_at: string | null;
+    /** Last sign-in — a different question: a long-lived session reports when it STARTED. */
+    last_login: string | null;
+    last_ip: string | null;
+    last_user_agent: string | null;
+  };
+  lifecycle: {
+    deactivated_at: string | null;
+    deactivation_reason: string | null;
+    deletion_requested_at: string | null;
+    purge_due_at: string | null;
+  };
+  /** What they actually get. Disagrees with `subscription` on suspension or mid-cancellation. */
+  effective_plan: AdminUserPlanRef | null;
+  subscription: {
+    plan_code: string | null;
+    plan_name: string | null;
+    status: string;
+    currency: string | null;
+    current_period_end: string | null;
+    is_founding: boolean;
+    founding_lock_ends_at: string | null;
+    access_suspended_at: string | null;
+    access_suspended_reason: string | null;
+    cancellation: { pending: boolean; ended: boolean; effective_at: string | null; reason: string | null } | null;
+    stripe_subscription_id: string | null;
+    stripe_customer_id: string | null;
+  } | null;
+  /** -1 means the figure could not be read, which is not the same as 0. */
+  counts: Record<string, number>;
+  support: {
+    latest_contact: { id: number; subject: string | null; excerpt: string | null; status: string; submitted_at: string | null } | null;
+    latest_feedback: { id: number; category: string | null; excerpt: string | null; satisfaction: number | null; status: string; submitted_at: string | null } | null;
+  };
+  invoices: Array<{
+    stripe_invoice_id: string;
+    amount_paid_cents: number;
+    currency: string;
+    status: string;
+    period_start: string | null;
+    period_end: string | null;
+    hosted_invoice_url: string | null;
+    created_at: string | null;
+  }>;
+}
+
+/** Everything about one user, for the admin detail page. */
+export const getAdminUserOverview = async (userUuid: string) => {
+  try {
+    return await axiosWrapper<{ success: boolean; data?: AdminUserOverview; error?: string }>(
+      authClient.get(`/api/v1/admin/users/${userUuid}/overview`)
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
 
 export interface AdminUserSearchResponse {
   success: boolean;

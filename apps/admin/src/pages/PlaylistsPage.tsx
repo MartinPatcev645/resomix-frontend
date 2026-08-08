@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { App, Tag } from 'antd'
 import { usePlaylist } from '@/hooks/usePlaylist.ts'
 import PlaylistTableControls from '@/components/playlist/PlaylistTableControls.tsx'
@@ -44,10 +46,19 @@ function PlaylistsPage() {
     handleExport,
     handleSortChange,
     handleChangeVisibility,
+    setOwnerFilter,
   } = usePlaylist({
     onError: showErrorModal,
     onSuccess: showSuccessModal
   })
+
+  // Arriving from a user's detail page: ?user=<uuid>. Clearing the param clears the filter, so
+  // "Back" behaves the way the URL says it should.
+  const [searchParams] = useSearchParams()
+  useEffect(() => {
+    setOwnerFilter(searchParams.get('user') || undefined)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   const handleDeleteSelected = () => {
     if (selectedRowKeys.length === 0) return

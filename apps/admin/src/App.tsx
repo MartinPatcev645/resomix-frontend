@@ -17,6 +17,7 @@ import SpotifyAppsPage from '@/pages/SpotifyAppsPage.tsx'
 import PartnersPage from '@/pages/PartnersPage.tsx'
 import PartnerDetailsPage from '@/pages/PartnerDetailsPage.tsx'
 import UsersPage from '@/pages/UsersPage.tsx'
+import UserDetailsPage from '@/pages/UserDetailsPage.tsx'
 import LoginPage from '@/pages/LoginPage.tsx'
 import { useTheme } from '@/hooks/useTheme.ts'
 import { lightTheme, darkTheme } from '@/lib/antdTheme.ts'
@@ -99,6 +100,7 @@ function App() {
               <Route path="partners" element={<PartnersPage />} />
               <Route path="partners/:id" element={<PartnerDetailsPage />} />
               <Route path="users" element={<UsersPage />} />
+              <Route path="users/:uuid" element={<UserDetailsPage />} />
             </Route>
 
             {/* Fallback Catch-All Redirect */}

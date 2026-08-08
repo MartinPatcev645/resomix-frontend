@@ -49,6 +49,8 @@ export function usePlaylist(options?: UsePlaylistOptions) {
   const [data, setData] = useState<PlaylistItem[]>([])
   const [searchText, setSearchText] = useState('')
   const [searchColumn, setSearchColumn] = useState<'id' | 'uuid' | 'name'>('name')
+  // Set from ?user= when arriving from a user's detail page. A filter, not a search term.
+  const [ownerFilter, setOwnerFilter] = useState<string | undefined>(undefined)
   const [dateRange, setDateRange] = useState<[string, string] | null>(null)
   const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'public' | 'private'>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'custom' | 'similarity' | 'waiting_segments'>('all')
@@ -70,6 +72,9 @@ export function usePlaylist(options?: UsePlaylistOptions) {
       const params: PlaylistListParams = {
         page: pagination.current,
         page_size: pagination.pageSize,
+      }
+      if (ownerFilter) {
+        params.user_uuid = ownerFilter
       }
 
       // Add search filter if present
@@ -131,7 +136,7 @@ export function usePlaylist(options?: UsePlaylistOptions) {
     } finally {
       setLoading(false)
     }
-  }, [pagination.current, pagination.pageSize, searchText, searchColumn, dateRange, visibilityFilter, typeFilter, sortBy, sortOrder])
+  }, [pagination.current, pagination.pageSize, searchText, searchColumn, dateRange, visibilityFilter, typeFilter, sortBy, sortOrder, ownerFilter])
 
   // Load data on mount and when filters change
   useEffect(() => {
@@ -384,6 +389,8 @@ export function usePlaylist(options?: UsePlaylistOptions) {
     exportLoading,
     searchText,
     searchColumn,
+    ownerFilter,
+    setOwnerFilter,
     dateRange,
     visibilityFilter,
     typeFilter,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Table, 
   Button, 
@@ -43,6 +44,7 @@ function TracksPage() {
     pagination,
     partnerFilter,
     setPartnerFilter,
+    setUploaderFilter,
     statusFilter,
     setStatusFilter,
     sourceFilter,
@@ -55,6 +57,17 @@ function TracksPage() {
     deactivateTracksBatch,
     handlePageChange,
   } = useAdminTracks();
+
+  // Arriving from a user's detail page: ?user=<uuid>&partner=<id>. The partner is required by the
+  // tracks endpoint, so the link carries it rather than making the admin pick it again.
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const user = searchParams.get('user');
+    const partner = searchParams.get('partner');
+    if (partner) setPartnerFilter(Number(partner));
+    if (user) setUploaderFilter(user);
+    // Run once per URL change; the hook owns the refetch.
+  }, [searchParams]);
 
   // Reset selection on filter or page change
   useEffect(() => {

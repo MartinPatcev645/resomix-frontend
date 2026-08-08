@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Table,
   Button,
@@ -13,10 +14,7 @@ import {
   Form,
   Tooltip,
   Dropdown,
-  Drawer,
-  Descriptions,
   Spin,
-  Divider,
 } from 'antd';
 import type { MenuProps } from 'antd';
 import {
@@ -41,7 +39,26 @@ import type { AdminUserSearchItem } from '@resomix/api-client';
 const { Title, Text } = Typography;
 const { Option } = Select;
 
+/**
+ * "3 days ago" beats a date here: the column exists to spot dormant and just-active accounts at a
+ * glance, and a wall of identical-looking timestamps does not support that.
+ */
+function relativeTime(iso: string | null | undefined): string {
+  if (!iso) return 'Never';
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '—';
+  const mins = Math.round((Date.now() - then) / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-GB', { dateStyle: 'medium' });
+}
+
 function UsersPage() {
+  const navigate = useNavigate();
   const [modal, modalContextHolder] = Modal.useModal();
 
   const {
@@ -84,13 +101,10 @@ function UsersPage() {
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [roleModalVisible, setRoleModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [detailDrawerVisible, setDetailDrawerVisible] = useState(false);
 
   // ── Selected / Loading State ───────────────────────────────
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [editingUser, setEditingUser] = useState<AdminUserSearchItem | null>(null);
-  const [detailUser, setDetailUser] = useState<any | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
   const [roleModalLoading, setRoleModalLoading] = useState(false);
 
   const [createForm] = Form.useForm();
@@ -124,18 +138,6 @@ function UsersPage() {
       setEditingUser(null);
       editForm.resetFields();
     }
-  };
-
-  const handleViewDetail = async (user: AdminUserSearchItem) => {
-    setDetailUser(user); // pre-fill with list data while loading
-    setDetailDrawerVisible(true);
-    if (!user.uuid) return;
-    setDetailLoading(true);
-    const result = await getUserDetail(user.uuid);
-    if (result?.success && result.data) {
-      setDetailUser(result.data);
-    }
-    setDetailLoading(false);
   };
 
   const handleOpenRoleModal = async (user: AdminUserSearchItem) => {
@@ -205,7 +207,7 @@ function UsersPage() {
           <div className="flex flex-col">
             <button
               className="text-left font-semibold text-primary hover:underline focus:outline-none"
-              onClick={() => handleViewDetail(record)}
+              onClick={() => record.uuid && navigate(`/users/${record.uuid}`)}
             >
               {record.name || record.username || 'N/A'}
             </button>
@@ -232,6 +234,29 @@ function UsersPage() {
             {record.is_email_verified ? 'Verified' : 'Unverified'}
           </Tag>
         </Space>
+      ),
+    },
+    {
+      title: 'Plan',
+      key: 'plan',
+      render: (_: any, record: AdminUserSearchItem) =>
+        record.plan ? (
+          <Tag
+            color={record.plan.code === 'free' ? 'default' : 'gold'}
+            className="rounded-full px-3"
+          >
+            {record.plan.name}
+          </Tag>
+        ) : (
+          <Text className="text-secondary text-xs">—</Text>
+        ),
+    },
+    {
+      title: 'Last activity',
+      dataIndex: 'last_seen_at',
+      key: 'last_seen_at',
+      render: (date: string | null) => (
+        <Text className="text-secondary text-xs">{relativeTime(date)}</Text>
       ),
     },
     {
@@ -284,11 +309,11 @@ function UsersPage() {
 
         return (
           <Space>
-            <Tooltip title="View Details">
+            <Tooltip title="Open full profile">
               <Button
                 type="text"
                 icon={<Eye size={16} />}
-                onClick={() => handleViewDetail(record)}
+                onClick={() => record.uuid && navigate(`/users/${record.uuid}`)}
               />
             </Tooltip>
             <Tooltip title="Manage Roles">
@@ -405,81 +430,6 @@ function UsersPage() {
         />
       </div>
 
-      {/* ── User Detail Drawer ── */}
-      <Drawer
-        title={
-          <div className="flex items-center gap-2">
-            <Avatar icon={<User size={16} />} className="bg-primary/10 text-primary" />
-            <span className="font-semibold text-primary">
-              {detailUser?.name || detailUser?.username || 'User Details'}
-            </span>
-          </div>
-        }
-        width={480}
-        open={detailDrawerVisible}
-        onClose={() => { setDetailDrawerVisible(false); setDetailUser(null); }}
-        extra={
-          detailUser && (
-            <Button
-              icon={<Edit size={16} />}
-              onClick={() => {
-                setDetailDrawerVisible(false);
-                handleEditUser(detailUser as AdminUserSearchItem);
-              }}
-            >
-              Edit
-            </Button>
-          )
-        }
-      >
-        {detailLoading ? (
-          <div className="flex justify-center py-16">
-            <Spin size="large" />
-          </div>
-        ) : detailUser ? (
-          <>
-            <Descriptions bordered column={1} size="small">
-              <Descriptions.Item label="UUID">
-                <span className="font-mono text-xs break-all">{detailUser.uuid ?? '—'}</span>
-              </Descriptions.Item>
-              <Descriptions.Item label="Name">{detailUser.name ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Username">
-                <span className="font-mono">{detailUser.username ?? '—'}</span>
-              </Descriptions.Item>
-              <Descriptions.Item label="Email">{detailUser.email ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Account Status">
-                <Tag color={(detailUser.is_active ?? true) ? 'success' : 'error'}>
-                  {(detailUser.is_active ?? true) ? 'Active' : 'Inactive'}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Email Verified">
-                <Tag color={detailUser.is_email_verified ? 'success' : 'warning'}>
-                  {detailUser.is_email_verified ? 'Yes' : 'No'}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Joined">
-                {detailUser.created_at ? new Date(detailUser.created_at).toLocaleString() : '—'}
-              </Descriptions.Item>
-            </Descriptions>
-
-            {detailUser.roles && detailUser.roles.length > 0 && (
-              <>
-                <Divider />
-                <Title level={5} className="!mb-3">Assigned Roles</Title>
-                <Space wrap>
-                  {detailUser.roles.map((r: any) => (
-                    <Tag key={r.name ?? r} color="blue" className="rounded-full px-3">
-                      {r.name ?? r}
-                    </Tag>
-                  ))}
-                </Space>
-              </>
-            )}
-          </>
-        ) : (
-          <Text className="text-secondary">No data available.</Text>
-        )}
-      </Drawer>
 
       {/* ── Create User Modal ── */}
       <Modal
