@@ -76,6 +76,40 @@ async def _refresh_redis_session_ttl(user_id: int):
         logger.warning(f"Failed to update Redis user session TTL: {str(e)}")
 
 
+# How stale `users.last_seen_at` is allowed to get. Five minutes is precise enough to answer
+# "when was this account last used?" on an admin screen, and coarse enough that a busy session
+# writes a handful of rows a day instead of one per request.
+_LAST_SEEN_THROTTLE_SECONDS = 300
+
+
+async def _touch_last_seen(db: AsyncSession, user: User) -> None:
+    """Record that this user did something, at most once per throttle window.
+
+    Nothing else in the schema can answer this. `system_logs` records `client_ip` and endpoints but
+    has **no user_id**, so a request cannot be attributed to a person; `user_sessions.created_at`
+    records logins, which is a different question — a session opened in January and used daily
+    since would still report January.
+
+    Best-effort by design: this runs on the hot path of every authenticated request, and a
+    telemetry write must never be the reason a real request fails.
+    """
+    try:
+        now = datetime.utcnow()
+        last = user.last_seen_at
+        if last is not None and (now - last).total_seconds() < _LAST_SEEN_THROTTLE_SECONDS:
+            return
+        # Targeted UPDATE rather than mutating the ORM object: the caller's session may be used for
+        # a request that later rolls back, and losing a real change to save a timestamp would be a
+        # bad trade in the other direction.
+        await db.execute(
+            update(User).where(User.id == user.id).values(last_seen_at=now)
+        )
+        await db.commit()
+        user.last_seen_at = now
+    except Exception as exc:  # noqa: BLE001 — see the docstring
+        logging.getLogger(__name__).warning("Failed to update last_seen_at: %s", exc)
+
+
 # OAuth2 scheme for JWT tokens
 # auto_error=False allows optional authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
@@ -146,8 +180,31 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Deactivated accounts stop here — every authenticated endpoint in the app passes through this
+    # dependency, so this one check covers uploads, playlists, analysis, exports and the rest.
+    #
+    # It used to live only inside `require_permission`, which guards ADMIN routes. The result was a
+    # deactivation that deactivated nothing: the user's existing token kept working across the
+    # whole webapp, and they could log back in with their password. Blocking at login alone would
+    # not have been enough either — a live session outlives it by however long the token has left.
+    #
+    # 403 with a machine-readable code, not a bare 401: the frontend's 401 interceptor would try to
+    # refresh the token and loop. `ACCOUNT_DEACTIVATED` is what lets it show the real explanation.
+    if not user.is_active:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail={
+                "code": "ACCOUNT_DEACTIVATED",
+                "error": "This account is deactivated. Contact support to restore access.",
+            },
+        )
+
     # Fast TTL refresh in Redis for activity tracking
     await _refresh_redis_session_ttl(user.id)
+
+    # "When did this user last do anything?" — throttled to at most one write per user per
+    # interval, so an active session costs a handful of UPDATEs a day rather than one per request.
+    await _touch_last_seen(db, user)
 
     return user
 

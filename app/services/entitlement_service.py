@@ -113,6 +113,21 @@ class EntitlementService:
         if user.plan_id:
             plan = await self._plan_by_id(db, user.plan_id)
             if plan:
+                if plan.code not in (PlanCode.FREE, PlanCode.GUEST):
+                    # `users.plan_id` exists to record the DEFAULT (free) plan — see
+                    # `_assign_default_plan`, the only thing that writes it. A paid plan here
+                    # grants paid access with no subscription behind it, which no cancellation,
+                    # refund or chargeback can ever revoke: those all act on `user_subscriptions`,
+                    # and this branch is reached precisely when that row no longer qualifies.
+                    #
+                    # Loud rather than fatal: an account comped by hand is a legitimate reason for
+                    # this, and failing closed would revoke it. But it is indistinguishable from a
+                    # stale write, so it must not pass silently.
+                    logger.warning(
+                        "ENTITLEMENTS: user %s has no active subscription but users.plan_id "
+                        "grants the PAID plan %r — access cannot be revoked while this is set",
+                        user.id, plan.code,
+                    )
                 return plan
 
         return await self._default_plan(db)

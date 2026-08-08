@@ -174,6 +174,60 @@ async def test_resume_clears_every_cancellation_field() -> None:
 
 
 @pytest.mark.asyncio
+async def test_our_reason_survives_stripes_generic_one() -> None:
+    """THE DOUBLE-EMAIL BUG.
+
+    A refund cancels the subscription through the API, and Stripe reports that back as
+    `cancellation_details.reason = "cancellation_requested"` — true, but less specific than the
+    `refunded` we already recorded. Letting it win sent the customer a second, generic "your
+    subscription has ended" email on top of the refund notice, because the suppression list keys
+    off exactly this field.
+    """
+    user = MagicMock()
+    user.id = 42
+    existing = Row(cancellation_reason="refunded")
+    db = _mock_db([_scalar(user), _first((7,)), _scalar(existing)])
+
+    await BillingSyncService().sync_subscription(
+        db,
+        _subscription_payload(
+            canceled_at=CANCEL_EPOCH,
+            ended_at=CANCEL_EPOCH,
+            cancellation_details={"reason": "cancellation_requested"},
+        ),
+        "customer.subscription.deleted",
+        "evt_z",
+    )
+    assert existing.cancellation_reason == "refunded"
+
+
+@pytest.mark.asyncio
+async def test_a_dispute_reason_also_survives() -> None:
+    user = MagicMock()
+    user.id = 42
+    existing = Row(cancellation_reason="disputed")
+    db = _mock_db([_scalar(user), _first((7,)), _scalar(existing)])
+
+    await BillingSyncService().sync_subscription(
+        db,
+        _subscription_payload(cancellation_details={"reason": "cancellation_requested"}),
+        "customer.subscription.updated",
+        "evt_z2",
+    )
+    assert existing.cancellation_reason == "disputed"
+
+
+@pytest.mark.asyncio
+async def test_stripes_reason_is_used_when_we_have_none_of_our_own() -> None:
+    """The ordinary case: a cancellation we did not originate."""
+    row = await _sync(_subscription_payload(
+        cancel_at_period_end=True,
+        cancellation_details={"reason": "payment_failed"},
+    ))
+    assert row.cancellation_reason == "payment_failed"
+
+
+@pytest.mark.asyncio
 async def test_plain_update_does_not_erase_an_existing_reason() -> None:
     """A refund handler records `reason='refunded'`; the `.updated` event that follows carries no
     cancellation_details and must not wipe it."""

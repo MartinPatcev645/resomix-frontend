@@ -122,6 +122,67 @@ def summarise(event_type: str, obj: Dict[str, Any]) -> Dict[str, Any]:
     return {}
 
 
+async def explain_effective_plan(db, user: Optional[User], row: Optional[UserSubscription]) -> List[str]:
+    """Walk `EntitlementService.get_effective_plan`'s branches and say which one wins.
+
+    "The profile still says Pro" has three possible causes and they need different fixes: an
+    active subscription row, a `users.plan_id` pointing at a paid plan (which NOTHING can revoke,
+    because cancellation only touches `user_subscriptions`), or the default plan itself being the
+    wrong one. Guessing between them wastes a deploy; this reads the actual rows.
+    """
+    from app.core.entitlement_keys import ACTIVE_SUBSCRIPTION_STATUSES
+    from app.models.plan import Plan
+
+    out: List[str] = []
+    if user is None:
+        return ["(no user)"]
+
+    async def plan_label(plan_id) -> str:
+        if not plan_id:
+            return "—"
+        plan = (await db.execute(select(Plan).where(Plan.id == plan_id))).scalar_one_or_none()
+        return f"{plan.code} ({plan.name})" if plan else f"id={plan_id} — MISSING"
+
+    # 1. an active subscription
+    if row is not None:
+        qualifies = (
+            row.status in ACTIVE_SUBSCRIPTION_STATUSES
+            and row.plan_id is not None
+            and getattr(row, "access_suspended_at", None) is None
+        )
+        out.append(f"1. subscription row     status={row.status}  plan={await plan_label(row.plan_id)}"
+                   f"  suspended={getattr(row, 'access_suspended_at', None) or '—'}")
+        if qualifies:
+            out.append(f"   → GRANTS {await plan_label(row.plan_id)}   (this is the winning branch)")
+            return out
+        out.append("   → does not qualify; falling through")
+    else:
+        out.append("1. subscription row     (none)")
+
+    # 2. users.plan_id
+    out.append(f"2. users.plan_id        {await plan_label(user.plan_id)}")
+    if user.plan_id:
+        plan = (await db.execute(select(Plan).where(Plan.id == user.plan_id))).scalar_one_or_none()
+        if plan:
+            out.append(f"   → GRANTS {plan.code}   (this is the winning branch)")
+            if plan.code not in ("free", "guest"):
+                out.append("   ⚠ THIS IS A PAID PLAN WITH NO SUBSCRIPTION BEHIND IT.")
+                out.append("     Cancellation, refund and chargeback all act on user_subscriptions,")
+                out.append("     so none of them can revoke it. `users.plan_id` is only ever written")
+                out.append("     by _assign_default_plan, which sets the plan flagged is_default —")
+                out.append("     so either that flag is on the wrong plan, or this row was set by hand.")
+                out.append("     Fix: UPDATE users SET plan_id = <free plan id> WHERE id = %s;" % user.id)
+            return out
+
+    # 3. the default plan
+    default = (await db.execute(select(Plan).where(Plan.is_default.is_(True)))).scalar_one_or_none()
+    out.append(f"3. plans.is_default     {default.code + ' (' + default.name + ')' if default else '(none set)'}")
+    if default and default.code not in ("free", "guest"):
+        out.append("   ⚠ THE DEFAULT PLAN IS NOT FREE. Every user without a subscription gets this.")
+    out.append("   → GRANTS the above   (this is the winning branch)")
+    return out
+
+
 async def load_events(db, needles: List[str], limit: int) -> List[Dict[str, Any]]:
     """Webhook audit rows mentioning any of these Stripe ids, newest first.
 
@@ -306,6 +367,7 @@ async def main(email: Optional[str], subscription_id: Optional[str], limit: int,
         needles = [n for n in (subscription_id, row.stripe_customer_id if row else None,
                                user.stripe_customer_id if user else None) if n]
         events = await load_events(db, list(dict.fromkeys(needles)), limit)
+        plan_lines = await explain_effective_plan(db, user, row)
 
     live = read_stripe(subscription_id)
     lines = verdict(events, row, live)
@@ -323,6 +385,7 @@ async def main(email: Optional[str], subscription_id: Optional[str], limit: int,
                 "is_founding": bool(row.is_founding),
                 "stripe_schedule_id": row.stripe_schedule_id,
             } if row else None,
+            "effective_plan": plan_lines,
             "events": [{**e, "received_at": dt(e["received_at"])} for e in events],
             "live": live,
             "verdict": lines,
@@ -362,6 +425,10 @@ async def main(email: Optional[str], subscription_id: Optional[str], limit: int,
             if hasattr(row, extra):
                 value = getattr(row, extra)
                 print(f"  {extra:<22} {dt(value) if isinstance(value, datetime) else (value or '—')}")
+
+    print("\n── 2b. which plan the app actually grants, and why ────────────────────────")
+    for line in plan_lines:
+        print(f"  {line}")
 
     print("\n── 3. what Stripe holds now ───────────────────────────────────────────────")
     if not live:

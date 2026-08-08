@@ -24,6 +24,11 @@ from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
+# Cancellation reasons WE determine, which Stripe has no vocabulary for. They are more specific
+# than anything Stripe reports back, so a later sync must never overwrite them: each one selects a
+# different customer email, and losing it sends a second, wrong message about the same event.
+OUR_CANCELLATION_REASONS = ("refunded", "disputed")
+
 
 def _ts(value: Optional[int]) -> Optional[datetime]:
     """Unix epoch → UTC-naive datetime (matches the timezone-naive billing columns)."""
@@ -349,9 +354,16 @@ class BillingSyncService:
         # Refund- and dispute-driven cancellations set their own reasons from the charge handlers.
         details = sub.get("cancellation_details") or {}
         reason = details.get("reason") if isinstance(details, dict) else None
-        # Only overwrite with a real value: a plain `.updated` event carries no cancellation_details
-        # and must not erase a reason a refund or dispute handler has already recorded.
-        if reason:
+        if row.cancellation_reason in OUR_CANCELLATION_REASONS:
+            # OURS WINS. When a refund or a chargeback cancels a subscription we cancel it through
+            # the API, and Stripe reports that back as `cancellation_details.reason =
+            # "cancellation_requested"` — technically true, and less specific than what we already
+            # know. Letting it overwrite `refunded` sent the customer a second, generic "your
+            # subscription has ended" email on top of the refund notice, because the suppression
+            # list keys off exactly this field.
+            pass
+        elif reason:
+            # Stripe's own reason, for a cancellation we did not originate.
             row.cancellation_reason = reason
         elif not (row.cancel_at_period_end or row.cancel_at or row.canceled_at):
             # Not cancelling by any mechanism — clear a stale reason left by a cancellation that

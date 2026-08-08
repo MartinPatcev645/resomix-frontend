@@ -225,6 +225,9 @@ class User(Base):
     )
 
     # Security flags
+    #
+    # `is_active` is the gate everything checks — login, `get_current_user`, and the admin
+    # permission dependency. False means the account is blocked outright, not merely flagged.
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_two_factor_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -243,6 +246,22 @@ class User(Base):
 
     # Stripe Integration
     stripe_customer_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, unique=True)
+
+    # Account lifecycle. `is_active` says WHETHER access is withdrawn; these say when, why, and —
+    # when the user asked to leave — the date after which an admin may destroy the data.
+    #
+    # Deletion is never automatic. The 30-day window exists so a change of mind costs one flag
+    # flip instead of an unrecoverable loss, and `purge_due_at` is stored rather than derived so a
+    # single account can be held longer (a support case, an open dispute) without a code change.
+    deactivated_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    deactivation_reason: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    deletion_requested_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    purge_due_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True, index=True)
+
+    # Last authenticated activity. Nothing else in the schema can answer this: `system_logs` has no
+    # user_id, and `user_sessions.created_at` records logins rather than use. Written by a
+    # throttled touch — see `touch_last_seen`.
+    last_seen_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
 
     # Timestamps
     created_at: Mapped[DateTime] = mapped_column(
