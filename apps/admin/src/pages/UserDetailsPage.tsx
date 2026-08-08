@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Spin, Button, Tag, Descriptions, Card, Space, Typography, Table, Alert, Statistic, Row, Col, Modal, Select, Input, App } from 'antd'
+import { Spin, Button, Tag, Descriptions, Card, Space, Typography, Table, Alert, Statistic, Row, Col, Modal, Select, Input, App, Tooltip } from 'antd'
 import { ArrowLeft, RefreshCw, ListMusic, Music, ExternalLink, Gift, XCircle } from 'lucide-react'
 import {
   getAdminUserOverview,
@@ -172,6 +172,18 @@ function UserDetailsPage() {
   }
 
   const { identity, activity, lifecycle, effective_plan, subscription, grant, grant_history, counts, support, invoices } = data
+
+  // Granting on top of a LIVE paid subscription does nothing: the subscription outranks a grant
+  // in the entitlement order, so the comp would sit inert while looking like it worked. The server
+  // refuses this too — the button is disabled so the reason is visible BEFORE the click, not as a
+  // 400 afterwards.
+  //
+  // A subscription that is cancelling is fine: the grant takes over when it lapses, which is a
+  // legitimate thing to want.
+  const hasLiveSubscription =
+    !!subscription &&
+    ['active', 'trialing'].includes(subscription.status) &&
+    !subscription.cancellation?.pending
 
   // The mismatch worth surfacing: Stripe still bills them, but they do not have the plan.
   const planMismatch =
@@ -378,9 +390,22 @@ function UserDetailsPage() {
             </Descriptions>
 
             <Space className="mt-3" wrap>
-              <Button icon={<Gift size={14} />} onClick={() => setGrantOpen(true)}>
-                {grant ? 'Replace complimentary plan' : 'Grant complimentary plan'}
-              </Button>
+              <Tooltip
+                title={
+                  hasLiveSubscription
+                    ? 'They have a live paid subscription, which takes precedence over a ' +
+                      'complimentary plan. Cancel it first, or wait until it is set to end.'
+                    : ''
+                }
+              >
+                <Button
+                  icon={<Gift size={14} />}
+                  disabled={hasLiveSubscription}
+                  onClick={() => setGrantOpen(true)}
+                >
+                  {grant ? 'Replace complimentary plan' : 'Grant complimentary plan'}
+                </Button>
+              </Tooltip>
               {subscription && ['active', 'trialing', 'past_due'].includes(subscription.status) && (
                 <>
                   <Button danger icon={<XCircle size={14} />} onClick={() => confirmCancelSubscription(false)}>
