@@ -40,7 +40,9 @@ class FeedbackService:
     async def process_feedback_submission(
         self,
         db: AsyncSession,
-        feedback_data: Dict[str, Any]
+        feedback_data: Dict[str, Any],
+        client_ip: Optional[str] = None,
+        user_agent: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Process a feedback submission.
@@ -83,7 +85,9 @@ class FeedbackService:
                 category=category,
                 message=message,
                 satisfaction=satisfaction,
-                recommendation=recommendation
+                recommendation=recommendation,
+                client_ip=client_ip,
+                user_agent=user_agent,
             )
             await db.commit()
             

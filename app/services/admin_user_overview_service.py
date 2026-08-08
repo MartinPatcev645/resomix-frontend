@@ -64,6 +64,22 @@ def _iso(value) -> Optional[str]:
     return value.isoformat() if value else None
 
 
+def _role_names(user: User) -> list:
+    """Role names, without letting a half-loaded relationship take the page down.
+
+    The nested `UserRole.role` must be eager-loaded (see `async_get_user_with_roles`); reading it
+    lazily under async SQLAlchemy raises `MissingGreenlet` — which is exactly how one list
+    comprehension 500'd this whole screen. The loader is fixed, but this page is what an admin
+    opens when something is already wrong, so it should not be the second casualty if another
+    caller ever passes in a differently-loaded user.
+    """
+    try:
+        return [r.role.name for r in (user.roles or [])]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("OVERVIEW: roles unavailable for user %s: %s", user.id, exc)
+        return []
+
+
 class AdminUserOverviewService:
     """Assembles the per-user admin overview."""
 
@@ -351,7 +367,7 @@ class AdminUserOverviewService:
                 "username": user.username,
                 "name": user.name,
                 "profile_picture": user.profile_picture,
-                "roles": [r.role.name for r in user.roles] if user.roles else [],
+                "roles": _role_names(user),
                 "is_active": user.is_active,
                 "is_email_verified": user.is_email_verified,
                 "is_two_factor_enabled": user.is_two_factor_enabled,

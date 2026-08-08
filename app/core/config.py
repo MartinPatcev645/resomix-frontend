@@ -506,7 +506,17 @@ class Settings(BaseModel):
     # Frontend URLs (for email links)
     frontend_url: str = Field(
         default="https://resomix.com",
-        description="Frontend URL for email verification/reset links",
+        description="Marketing site URL (resomix.com) — email links to public pages",
+    )
+
+    # The web app host, for emailed links whose destination is an APP screen. /auth/verify-email and
+    # /auth/reset-password are routes in apps/webapp only; the marketing host has no such pages, just
+    # a wildcard `/auth/*` forwarder. Building those links off `frontend_url` made the recipient load
+    # the marketing site, fail to match a page, and only then get bounced to the app. Set via
+    # FRONTEND_BETA_URL (prod: https://beta.resomix.com; dev: the webapp dev server).
+    frontend_beta_url: str = Field(
+        default="https://beta.resomix.com",
+        description="Web app URL for emailed auth links (verify email, reset password)",
     )
 
     # Canonical APP url — the actual web app (playlist/analysis/profile live here). Distinct from
@@ -694,6 +704,7 @@ class Settings(BaseModel):
             "SMTP_PASSWORD": "smtp_password",
             "SMTP_FROM_EMAIL": "smtp_from_email",
             "FRONTEND_URL": "frontend_url",
+            "FRONTEND_BETA_URL": "frontend_beta_url",
             "APP_URL": "app_url",
             "ADMIN_NOTIFICATION_EMAIL": "admin_notification_email",
             # SCP Configuration

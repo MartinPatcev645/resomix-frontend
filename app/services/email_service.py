@@ -59,13 +59,13 @@ class EmailService:
         Returns:
             True if sent successfully
         """
-        # `app_url`, not `frontend_url`: /auth/verify-email is a real route only in the web app
-        # (apps/webapp App.tsx). The marketing host has no such page, just a wildcard `/auth/*`
-        # forwarder, so a link built from `frontend_url` made the user load resomix.com, watch it
-        # fail to match a page, and only then get bounced to beta to be verified. Pointing straight
-        # at the app removes that hop. The forwarder stays for links already sitting in inboxes.
+        # `frontend_beta_url`, not `frontend_url`: /auth/verify-email is a real route only in the
+        # web app (apps/webapp App.tsx). The marketing host has no such page, just a wildcard
+        # `/auth/*` forwarder, so a link built from `frontend_url` made the user load resomix.com,
+        # watch it fail to match a page, and only then get bounced to beta to be verified. Pointing
+        # straight at the app removes that hop. The forwarder stays for links already in inboxes.
         verification_url = (
-            f"{settings.app_url.rstrip('/')}/auth/verify-email?token={verification_token}"
+            f"{settings.frontend_beta_url.rstrip('/')}/auth/verify-email?token={verification_token}"
         )
 
         # Render template

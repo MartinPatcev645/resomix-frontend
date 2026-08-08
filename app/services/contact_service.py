@@ -41,6 +41,8 @@ class ContactService:
         db: AsyncSession,
         contact_data: Dict[str, Any],
         current_user: Optional[Any] = None,
+        client_ip: Optional[str] = None,
+        user_agent: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Process a contact form submission.

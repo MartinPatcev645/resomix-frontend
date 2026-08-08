@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import time
 import logging
 from app.services.contact_service import ContactService
+from app.utils.request_utils import client_ip, user_agent
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 from app.services.admin_operation_log_service import AdminOperationLogService
@@ -168,7 +169,10 @@ class ContactController:
                 contact_data['user_id'] = current_user.id  # Use integer ID, not UUID
             
             # Process contact submission
-            result = await self.contact_service.process_contact_submission(db, contact_data, current_user=current_user)
+            result = await self.contact_service.process_contact_submission(
+                db, contact_data, current_user=current_user,
+                client_ip=client_ip(request), user_agent=user_agent(request),
+            )
             
             if result.get("success"):
                 await db.commit()

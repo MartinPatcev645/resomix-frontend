@@ -54,6 +54,11 @@ class Feedback(Base):
     satisfaction: Mapped[Optional[int]] = mapped_column(mysql.INTEGER, nullable=True)
     recommendation: Mapped[Optional[int]] = mapped_column(mysql.INTEGER, nullable=True)
     
+    # Where the submission came from. Nullable: everything submitted before these columns
+    # existed genuinely has no answer, and NULL says so honestly.
+    client_ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
     status: Mapped[str] = mapped_column(
         Enum('open', 'resolved', name='feedback_status'), 
         nullable=False, 

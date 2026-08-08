@@ -56,7 +56,9 @@ class FeedbackRepository(BaseRepository[Feedback]):
         category: Optional[str],
         message: Optional[str],
         satisfaction: int,
-        recommendation: int
+        recommendation: int,
+        client_ip: Optional[str] = None,
+        user_agent: Optional[str] = None,
     ) -> Feedback:
         """
         Create a new feedback submission.
@@ -79,6 +81,10 @@ class FeedbackRepository(BaseRepository[Feedback]):
             message=message,
             satisfaction=satisfaction,
             recommendation=recommendation,
+            # Where it came from. Feedback carries no name or email of its own, so for a guest
+            # submission this is the ONLY thing distinguishing one from another.
+            client_ip=client_ip,
+            user_agent=user_agent,
             status='open'
         )
         

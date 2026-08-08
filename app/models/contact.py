@@ -76,6 +76,11 @@ class Contact(Base):
     catalog_size: Mapped[Optional[str]] = mapped_column(String(60), nullable=True)      # est. catalog tracks (free text)
     estimated_calls: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)  # est. monthly API calls / tier
 
+    # Where the submission came from. Nullable: everything submitted before these columns
+    # existed genuinely has no answer, and NULL says so honestly.
+    client_ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
     status: Mapped[str] = mapped_column(
         Enum('open', 'resolved', name='contact_status'), 
         nullable=False, 

@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import time
 import logging
 from app.services.feedback_service import FeedbackService
+from app.utils.request_utils import client_ip, user_agent
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 from app.services.admin_operation_log_service import AdminOperationLogService
@@ -69,7 +70,10 @@ class FeedbackController:
             feedback_data['partner_id'] = partner_id
             
             # Process feedback submission
-            result = await self.feedback_service.process_feedback_submission(db, feedback_data)
+            result = await self.feedback_service.process_feedback_submission(
+                db, feedback_data,
+                client_ip=client_ip(request), user_agent=user_agent(request),
+            )
 
             print(feedback_data)
             
