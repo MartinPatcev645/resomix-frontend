@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Table, Tag, Dropdown, Button, App, Modal, Input } from 'antd'
 import type { TableColumnsType, MenuProps } from 'antd'
-import { CheckCircle, XCircle, Trash2, MoreVertical, Eye } from 'lucide-react'
+import { CheckCircle, XCircle, Trash2, MoreVertical, Eye, Mail } from 'lucide-react'
 import type { ContactItem } from '@/hooks/useContact.ts'
 import { useConfirmDialog } from '@resomix/hooks'
+import { replyToContact } from '@resomix/api-client'
+import SendMessageModal from '@/components/SendMessageModal.tsx'
 
 const { TextArea } = Input
 
@@ -97,6 +99,7 @@ function ContactTable({
   const { modal } = App.useApp()
   const { confirmDelete } = useConfirmDialog()
   const [viewingContact, setViewingContact] = useState<ContactItem | null>(null)
+  const [replyTo, setReplyTo] = useState<ContactItem | null>(null)
   const partnerDetails = viewingContact ? partnerFields(viewingContact) : []
   const submitterDetails = viewingContact ? submitterRows(viewingContact) : []
   // Only surfaced when something is off — a healthy account needs no badge.
@@ -177,6 +180,12 @@ function ContactTable({
       label: 'View Details',
       icon: <Eye size={16} />,
       onClick: () => handleViewContact(record),
+    },
+    {
+      key: 'reply',
+      label: 'Reply by email',
+      icon: <Mail size={16} />,
+      onClick: () => setReplyTo(record),
     },
     {
       type: 'divider',
@@ -475,6 +484,17 @@ function ContactTable({
           </div>
         )}
       </Modal>
+
+      <SendMessageModal
+        open={!!replyTo}
+        onClose={() => setReplyTo(null)}
+        channel="contact"
+        sourceId={replyTo ? Number(replyTo.id) : undefined}
+        recipientHint={replyTo?.email || replyTo?.name || undefined}
+        send={(body, subject) =>
+          replyToContact(Number(replyTo!.id), body, subject) as Promise<any>
+        }
+      />
     </>
   )
 }

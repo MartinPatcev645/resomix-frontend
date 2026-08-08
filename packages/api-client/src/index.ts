@@ -29,6 +29,7 @@ export * from "./admin/operationLimits";
 export * from "./admin/plans";
 export * from "./admin/spotifyApps";
 export * from "./admin/users";
+export * from "./admin/messages";
 export * from "./admin/partners";
 export * from "./admin/logs";
 export * from "./admin/auth";

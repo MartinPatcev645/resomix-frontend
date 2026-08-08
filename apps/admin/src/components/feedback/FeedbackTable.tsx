@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Table, Tag, Dropdown, Button, App, Modal, Input } from 'antd'
 import type { TableColumnsType, MenuProps } from 'antd'
-import { CheckCircle, XCircle, Trash2, MoreVertical, Eye } from 'lucide-react'
+import { CheckCircle, XCircle, Trash2, MoreVertical, Eye, Mail } from 'lucide-react'
 import type { FeedbackItem } from '@/hooks/useFeedback.ts'
 import { useConfirmDialog } from '@resomix/hooks'
+import { replyToFeedback } from '@resomix/api-client'
+import SendMessageModal from '@/components/SendMessageModal.tsx'
 
 const { TextArea } = Input
 
@@ -41,6 +43,7 @@ function FeedbackTable({
   const { modal } = App.useApp()
   const { confirmDelete } = useConfirmDialog()
   const [viewingMessage, setViewingMessage] = useState<FeedbackItem | null>(null)
+  const [replyTo, setReplyTo] = useState<FeedbackItem | null>(null)
 
   const handleDeleteSingle = (record: FeedbackItem) => {
     confirmDelete({
@@ -114,6 +117,14 @@ function FeedbackTable({
       label: 'View Message',
       icon: <Eye size={16} />,
       onClick: () => handleViewMessage(record),
+    },
+    {
+      key: 'reply',
+      label: 'Reply by email',
+      icon: <Mail size={16} />,
+      // Feedback is always tied to an account, so there is always an address — unlike a contact
+      // form, which can be submitted by someone who is not signed in.
+      onClick: () => setReplyTo(record),
     },
     {
       type: 'divider',
@@ -350,6 +361,19 @@ function FeedbackTable({
           </div>
         )}
       </Modal>
+
+      {/* No `recipientHint`: the feedback list carries no email — it is resolved server-side
+          from the account. The preview shows the real recipient before anything is sent,
+          which is the guard that matters. */}
+      <SendMessageModal
+        open={!!replyTo}
+        onClose={() => setReplyTo(null)}
+        channel="feedback"
+        sourceId={replyTo ? Number(replyTo.id) : undefined}
+        send={(body, subject) =>
+          replyToFeedback(Number(replyTo!.id), body, subject) as Promise<any>
+        }
+      />
     </>
   )
 }
