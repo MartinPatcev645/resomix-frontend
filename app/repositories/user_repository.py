@@ -94,11 +94,23 @@ class UserRepository(BaseRepository[User]):
         return result.scalar_one_or_none()
 
     async def async_get_user_with_roles(self, db: AsyncSession, user_uuid: str) -> Optional[User]:
-        """Retrieve a user and pre-load their roles using selectinload."""
+        """Retrieve a user with their roles AND each role's row eager-loaded.
+
+        The nested `selectinload(UserRole.role)` is not optional. `selectinload(User.roles)` alone
+        fetches the join rows but leaves `UserRole.role` lazy — and every caller reads
+        `r.role.name`. Under async SQLAlchemy a lazy load outside the greenlet context raises
+        `MissingGreenlet`, so the request 500s.
+
+        It looked healthy because a user with NO roles never triggers the load: the list
+        comprehension iterates nothing. It failed the moment an account with a role was opened,
+        i.e. only ever for admins — which is also the only kind of account anyone views here.
+
+        `async_list_users_admin` already chains both. This is the same query for one user.
+        """
         stmt = (
             select(User)
             .where(User.uuid == user_uuid)
-            .options(selectinload(User.roles))
+            .options(selectinload(User.roles).selectinload(UserRole.role))
         )
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
