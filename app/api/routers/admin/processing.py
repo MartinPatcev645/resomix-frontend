@@ -744,6 +744,7 @@ async def list_tracks(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     ingestion_source: Optional[str] = Query(None, description="Filter by ingestion source (csv, cc_by, user_upload, …)"),
     q: Optional[str] = Query(None, description="Search in title, ISRC, UUID, or display_artist"),
+    user_uuid: Optional[str] = Query(None, description="Only tracks uploaded by this user (UUID)"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_database_session),
@@ -752,6 +753,13 @@ async def list_tracks(
     set_admin_context(True)
 
     base_where = [Track.partner_id == partner_id]
+    if user_uuid:
+        # Uploader filter, for the "N tracks uploaded" link on the user detail page. A subquery
+        # rather than a join so it composes with the existing filters without changing the
+        # result shape.
+        from app.models.user import User as _User
+
+        base_where.append(Track.user_id.in_(select(_User.id).where(_User.uuid == user_uuid)))
     if is_active is not None:
         base_where.append(Track.is_active == is_active)
     if ingestion_source is not None:

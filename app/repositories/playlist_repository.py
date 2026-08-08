@@ -1284,6 +1284,19 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     # Default to name search
                     conditions.append(Playlist.name.like(f"%{search}%"))
 
+            # Owner filter — a real filter, not a search term.
+            #
+            # Deliberately NOT another `search_column`: an admin never types a UUID here. It is
+            # only ever arrived at by clicking through from a user's playlist count, and adding it
+            # to the free-text search would put an unusable option in that dropdown.
+            user_uuid = filters.get("user_uuid")
+            if user_uuid:
+                from app.models.user import User as _User
+
+                conditions.append(
+                    Playlist.user_id.in_(select(_User.id).where(_User.uuid == user_uuid))
+                )
+
             # Visibility filter
             if is_public is not None and is_public != "":
                 conditions.append(Playlist.is_public == (is_public == "1"))
@@ -1578,6 +1591,19 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     conditions.append(Playlist.name.like(f"%{search}%"))
                 else:
                     conditions.append(Playlist.name.like(f"%{search}%"))
+
+            # Owner filter — a real filter, not a search term.
+            #
+            # Deliberately NOT another `search_column`: an admin never types a UUID here. It is
+            # only ever arrived at by clicking through from a user's playlist count, and adding it
+            # to the free-text search would put an unusable option in that dropdown.
+            user_uuid = filters.get("user_uuid")
+            if user_uuid:
+                from app.models.user import User as _User
+
+                conditions.append(
+                    Playlist.user_id.in_(select(_User.id).where(_User.uuid == user_uuid))
+                )
 
             # Visibility filter
             if is_public is not None and is_public != "":

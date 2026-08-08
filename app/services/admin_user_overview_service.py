@@ -281,6 +281,8 @@ class AdminUserOverviewService:
             "identity": {
                 "id": user.id,
                 "uuid": user.uuid,
+                # Needed by the "view their tracks" link — that endpoint requires a partner.
+                "partner_id": user.partner_id,
                 "email": user.email,
                 "username": user.username,
                 "name": user.name,
