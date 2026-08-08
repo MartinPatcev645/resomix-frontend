@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Spin, Button, Tag, Descriptions, Card, Space, Typography, Table, Alert, Statistic, Row, Col, Modal, Select, Input, App, Tooltip } from 'antd'
-import { ArrowLeft, RefreshCw, ListMusic, Music, ExternalLink, Gift, XCircle } from 'lucide-react'
+import { ArrowLeft, RefreshCw, ListMusic, Music, ExternalLink, Gift, XCircle, Mail } from 'lucide-react'
 import {
   getAdminUserOverview,
   grantUserPlan,
@@ -9,10 +9,12 @@ import {
   cancelUserSubscription,
   PLAN_GRANT_DURATIONS,
   PLAN_GRANT_REASONS,
+  messageUser,
   type AdminUserOverview,
 } from '@resomix/api-client'
 import { useStatusModals } from '@resomix/hooks'
 import { StatusModal } from '@resomix/ui'
+import SendMessageModal from '@/components/SendMessageModal.tsx'
 
 const { Title, Text } = Typography
 
@@ -52,6 +54,7 @@ function UserDetailsPage() {
   const { errorModalVisible, errorDetails, showErrorModal, closeErrorModal } = useStatusModals()
   const { modal, message } = App.useApp()
   const [grantOpen, setGrantOpen] = useState(false)
+  const [messageOpen, setMessageOpen] = useState(false)
   const [granting, setGranting] = useState(false)
   const [duration, setDuration] = useState<string>('14d')
   const [grantReason, setGrantReason] = useState<string>('trial')
@@ -198,6 +201,9 @@ function UserDetailsPage() {
           </Button>
           <Button icon={<RefreshCw size={16} />} onClick={() => void fetchOverview()}>
             Refresh
+          </Button>
+          <Button icon={<Mail size={16} />} onClick={() => setMessageOpen(true)}>
+            Message
           </Button>
         </Space>
         <Space size={4} wrap>
@@ -586,6 +592,15 @@ function UserDetailsPage() {
           </div>
         </Space>
       </Modal>
+
+      <SendMessageModal
+        open={messageOpen}
+        onClose={() => setMessageOpen(false)}
+        channel="direct"
+        userUuid={identity.uuid}
+        recipientHint={identity.email}
+        send={(body, subject) => messageUser(identity.uuid, body, subject) as Promise<any>}
+      />
 
       <StatusModal
         type="error"
