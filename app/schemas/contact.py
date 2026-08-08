@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, validator, EmailStr
 from app.schemas.common import StatusEnum
 
@@ -140,6 +140,64 @@ class ContactEntity(BaseModel):
         from_attributes = True
 
 
+class SubmissionRequestMeta(BaseModel):
+    """Where a submission came from. Both nullable: rows predating capture have neither."""
+    client_ip: Optional[str] = Field(None, description="Caller IP, proxy headers honoured")
+    user_agent: Optional[str] = Field(None, description="Raw User-Agent string")
+
+
+class SubmissionSubmitter(BaseModel):
+    """Who sent it.
+
+    Two shapes in one model, distinguished by ``matched_account``. When false, everything below it
+    is absent — we genuinely do not know who this was, and padding the fields out would invite an
+    admin to trust an anonymous form fill.
+    """
+    type: str = Field(..., description="'account' or 'guest'")
+    matched_account: bool = Field(..., description="False when no account could be resolved")
+    matched_by_email: Optional[bool] = Field(
+        None,
+        description="True when they were NOT signed in and we matched on the email they typed — "
+                    "an inference, not a verified session",
+    )
+    id: Optional[int] = None
+    uuid: Optional[str] = None
+    email: Optional[str] = None
+    username: Optional[str] = None
+    name: Optional[str] = None
+    is_active: Optional[bool] = None
+    is_email_verified: Optional[bool] = None
+    created_at: Optional[str] = None
+    last_seen_at: Optional[str] = None
+    deactivated_at: Optional[str] = None
+    plan: Optional[Dict[str, Any]] = Field(None, description="Effective plan: {code, name}")
+    total_contacts: Optional[int] = Field(None, description="-1 when the count was unavailable")
+    total_feedbacks: Optional[int] = Field(None, description="-1 when the count was unavailable")
+
+
+class SubmissionReply(BaseModel):
+    """A reply already sent for this submission, so nobody answers the same thread twice."""
+    id: int
+    subject: Optional[str] = None
+    body: Optional[str] = None
+    recipient_email: Optional[str] = None
+    status: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class ContactDetailEntity(ContactEntity):
+    """One contact submission in full, as the admin detail screen receives it.
+
+    Extends the list entity rather than restating it, so the two can never drift apart.
+    """
+    business: Optional[Dict[str, Any]] = Field(
+        None, description="B2B answers, grouped. Only populated on a partner request."
+    )
+    request: Optional[SubmissionRequestMeta] = None
+    submitter: Optional[SubmissionSubmitter] = None
+    replies: List[SubmissionReply] = Field(default_factory=list)
+
+
 class ContactUpdateRequest(BaseModel):
     """Request schema for updating contact status."""
     status: StatusEnum = Field(..., description="New status for the contact")
@@ -206,8 +264,8 @@ class AdminBatchDeleteResponse(BaseModel):
 class AdminContactDetailResponse(BaseModel):
     """Response schema for admin contact detail operations."""
     success: bool = Field(True, description="Always true for successful responses")
-    data: ContactEntity = Field(..., description="Contact data")
-    message: str = Field(..., description="Success message")
+    data: ContactDetailEntity = Field(..., description="Contact data, submitter and replies")
+    message: Optional[str] = Field(None, description="Success message")
 
 
 class AdminContactExportRequest(BaseModel):

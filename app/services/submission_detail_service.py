@@ -95,6 +95,39 @@ class SubmissionDetailService:
         }
 
     @staticmethod
+    async def resolve_submitters(
+        db: AsyncSession, user_ids
+    ) -> Dict[int, Dict[str, Any]]:
+        """Thin submitter details for a whole PAGE of rows, in one query.
+
+        The feedback list stores nothing but ``user_id``, so the admin table could only ever show a
+        number — useless for deciding which row to open first. This resolves the page in a single
+        round trip rather than N.
+
+        Deliberately thinner than :meth:`submitter`: no plan, no submission counts. Those cost a
+        query each and only matter once a row is actually opened.
+        """
+        ids = {int(i) for i in user_ids if i}
+        if not ids:
+            return {}
+        try:
+            rows = (await db.execute(select(User).where(User.id.in_(ids)))).scalars().all()
+            return {
+                u.id: {
+                    "id": u.id,
+                    "uuid": u.uuid,
+                    "email": u.email,
+                    "username": u.username,
+                    "name": u.name,
+                    "is_active": u.is_active,
+                }
+                for u in rows
+            }
+        except Exception as exc:  # noqa: BLE001 — a name column must never take the list down
+            logger.warning("SUBMISSION: could not resolve submitters: %s", exc)
+            return {}
+
+    @staticmethod
     async def _submission_counts(db: AsyncSession, user_id: int) -> Dict[str, int]:
         """How much this person has written to us before.
 

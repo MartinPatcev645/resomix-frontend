@@ -15,8 +15,11 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
+
+# Shared with contacts — one definition, so the two detail screens cannot drift.
+from app.schemas.contact import SubmissionReply, SubmissionRequestMeta, SubmissionSubmitter
 from app.schemas.common import StatusEnum
 
 
@@ -232,11 +235,18 @@ class AdminFeedbackUpdateRequest(BaseModel):
         }
 
 
+class FeedbackDetailEntity(FeedbackEntity):
+    """One piece of feedback in full, as the admin detail screen receives it."""
+    request: Optional[SubmissionRequestMeta] = None
+    submitter: Optional[SubmissionSubmitter] = None
+    replies: List[SubmissionReply] = Field(default_factory=list)
+
+
 class AdminFeedbackDetailResponse(BaseModel):
     """Response schema for admin feedback detail operations."""
     success: bool = Field(True, description="Always true for successful responses")
-    data: FeedbackEntity = Field(..., description="Feedback data")
-    message: str = Field(..., description="Success message")
+    data: FeedbackDetailEntity = Field(..., description="Feedback data, submitter and replies")
+    message: Optional[str] = Field(None, description="Success message")
 
     class Config:
         json_schema_extra = {

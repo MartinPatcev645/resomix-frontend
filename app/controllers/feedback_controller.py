@@ -448,12 +448,24 @@ class FeedbackController:
             result = await self.feedback_service.get_feedback_list_admin(db, filters, partner_id=partner_id)
             
             if result.get("success"):
+                rows = result.get("data", [])
+                # Who wrote each one, resolved for the whole page in a single query. Without this
+                # the table can only show a bare user_id, which tells an admin nothing about which
+                # row to open first.
+                from app.services.submission_detail_service import SubmissionDetailService
+
+                submitters = await SubmissionDetailService.resolve_submitters(
+                    db, [f.user_id for f in rows]
+                )
+
                 # Convert feedback objects to dictionaries
                 feedback_list = []
-                for feedback in result.get("data", []):
+                for feedback in rows:
                     feedback_list.append({
                         "id": feedback.id,
                         "user_id": feedback.user_id,
+                        "is_signed_in": feedback.user_id is not None,
+                        "user": submitters.get(feedback.user_id) if feedback.user_id else None,
                         "category": feedback.category,
                         "message": feedback.message,
                         "satisfaction": feedback.satisfaction,
