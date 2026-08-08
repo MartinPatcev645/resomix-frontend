@@ -24,10 +24,13 @@ export interface NavItem {
   externalAriaKey?: string;
   status?: NavStatus;
   featured?: boolean;
+  /** Opens the Silktide consent manager instead of navigating. Has no route. */
+  isCookieSettings?: boolean;
 }
 
 export interface NavColumn {
-  groupLabelKey: string;
+  /** Omit for an unlabelled column — the panel then renders the list with no heading. */
+  groupLabelKey?: string;
   flex?: string;
   items: NavItem[];
   featured?: NavItem;
@@ -112,25 +115,31 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
     key: 'company',
     side: 'left',
     panelId: 'panel-company',
-    panelWidth: '34rem',
+    // Matches Solutions, the widest panel. At 34rem the two columns were cramped enough that
+    // titles wrapped.
+    panelWidth: '44rem',
     columns: [
       {
-        groupLabelKey: 'company',
-        flex: '1 1 50%',
-        items: [
-          { key: 'about', glyph: 'about', live: true, route: '/about' },
-          { key: 'trust-rights-security', glyph: 'trust', live: true, route: '/trust' },
-          { key: 'contact', glyph: 'contact', live: true, route: '/contact' },
-        ],
-      },
-      {
-        groupLabelKey: 'resources',
+        // Unlabelled: the trigger already says "Resources", so a "Resources" heading directly
+        // under it was the same word twice.
         flex: '1 1 50%',
         items: [
           { key: 'journal', glyph: 'journal', live: true, route: BLOG_URL, external: true, externalAriaKey: 'journalAria' },
           { key: 'help-centre', glyph: 'help', live: true, route: 'https://support.resomix.com', external: true, externalAriaKey: 'helpCentreAria' },
           { key: 'faq', glyph: 'help', live: true, route: 'https://support.resomix.com', external: true, externalAriaKey: 'faqAria' },
           { key: 'legal-documents', glyph: 'legal', live: true, route: 'https://support.resomix.com/hc/categories/1/3/legal', external: true, externalAriaKey: 'legalDocumentsAria' },
+        ],
+      },
+      {
+        groupLabelKey: 'company',
+        flex: '1 1 50%',
+        items: [
+          { key: 'home', glyph: 'resomix', live: true, route: '/' },
+          { key: 'about', glyph: 'about', live: true, route: '/about' },
+          { key: 'contact', glyph: 'contact', live: true, route: '/contact' },
+          // Trust, Rights & Security is not here: it already sits in the Partners panel, and a
+          // link that appears in two dropdowns makes both look like they are guessing.
+          { key: 'cookie-settings', glyph: 'legal', live: true, isCookieSettings: true },
         ],
       },
     ],

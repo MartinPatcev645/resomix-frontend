@@ -489,6 +489,25 @@ button.nav-cta-primary:hover {
   border-radius: 0.25rem;
 }
 
+/* Cookie Settings is the one panel row rendered as a <button>. Browsers give buttons centred text,
+   a default font and no pointer, so without these resets it sat centred and un-clickable-looking
+   beside four left-aligned anchors. */
+button.nav-mm-row {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  appearance: none;
+}
+
+button.nav-mm-row:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .nav-mm-glyph {
   grid-row: 1 / span 2;
   width: 1.125rem;
@@ -513,6 +532,7 @@ button.nav-cta-primary:hover {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
 
 .nav-mm-t {
   font-family: var(--font-helvetica, 'Helvetica Neue', Helvetica, Arial, sans-serif);
@@ -651,11 +671,11 @@ button.nav-cta-primary:hover {
 }
 
 #panel-company .nav-mm-panel {
-  width: 34rem;
+  width: 44rem;
 }
 
 #sticky-panel-company .nav-mm-panel {
-  width: 34rem;
+  width: 44rem;
 }
 
 #sticky-panel-product .nav-mm-panel {

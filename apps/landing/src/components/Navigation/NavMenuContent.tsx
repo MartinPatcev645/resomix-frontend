@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { openCookiePreferences, isCookiePreferencesAvailable } from './cookiePreferences.ts';
 import { NavGlyph } from './NavGlyphs.tsx';
 import type { NavItem, NavPanelNotice, NavTopGroup } from './navData.ts';
 import { isCurrentNavRoute } from './navData.ts';
@@ -63,6 +64,25 @@ export function NavLinkRow({
   const description = (
     <p className="nav-mm-d">{t(`nav.items.${item.key}.description`)}</p>
   );
+
+  if (item.isCookieSettings) {
+    const available = isCookiePreferencesAvailable();
+    return (
+      <button
+        type="button"
+        className={`nav-mm-row${item.featured ? ' nav-mm-featured' : ''}`}
+        aria-describedby={describedBy}
+        disabled={!available}
+        onClick={() => {
+          if (openCookiePreferences()) onClose?.();
+        }}
+      >
+        {item.glyph ? <NavGlyph name={item.glyph} /> : null}
+        {title}
+        {description}
+      </button>
+    );
+  }
 
   if (!item.live) {
     return (
@@ -168,10 +188,16 @@ export function NavPanelContent({
       <>
         <div className="nav-mm-cols">
           {group.columns.map((col) => (
-            <div key={col.groupLabelKey} className="nav-mm-col" style={{ flex: col.flex }}>
-              <p className="nav-mm-group" id={`g-${col.groupLabelKey}`}>
-                {t(`nav.groups.${col.groupLabelKey}`)}
-              </p>
+            <div
+              key={col.groupLabelKey ?? col.items[0]?.key ?? 'col'}
+              className="nav-mm-col"
+              style={{ flex: col.flex }}
+            >
+              {col.groupLabelKey ? (
+                <p className="nav-mm-group" id={`g-${col.groupLabelKey}`}>
+                  {t(`nav.groups.${col.groupLabelKey}`)}
+                </p>
+              ) : null}
               {col.featured ? (
                 <NavLinkRow
                   item={col.featured}
@@ -182,7 +208,10 @@ export function NavPanelContent({
                   describedBy={noteId}
                 />
               ) : null}
-              <ul className="nav-mm-list" aria-labelledby={`g-${col.groupLabelKey}`}>
+              <ul
+                className="nav-mm-list"
+                aria-labelledby={col.groupLabelKey ? `g-${col.groupLabelKey}` : undefined}
+              >
                 {col.items.map((item) => (
                   <li key={item.key}>
                     <NavLinkRow

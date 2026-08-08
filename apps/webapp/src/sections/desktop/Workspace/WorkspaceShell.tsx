@@ -208,8 +208,12 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
         </div>
       )}
 
+      {/* Guide + workspace share a flex column purely so the guide can drop below the panel on
+          mobile via `order`, rather than being rendered twice. `lg` because `useResponsive` uses
+          `(min-width: 1024px)` and that file warns the two must not disagree. */}
+      <div className="flex flex-col">
       {mode === "discovery" && !viewingResults && (
-        <div className="mb-[var(--px-20)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)]">
+        <div className="order-2 mt-[var(--px-20)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] lg:order-1 lg:mt-0 lg:mb-[var(--px-20)]">
           <button
             type="button"
             className={`flex w-full min-h-[var(--px-44)] items-center justify-between gap-[var(--px-16)] px-[var(--px-20)] py-[var(--px-13)] text-left ${WORKSPACE_FOCUS_VISIBLE}`}
@@ -249,12 +253,13 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
 
       <div
         className={[
-          "grid grid-cols-1 gap-[var(--px-24)]",
+          "order-1 grid grid-cols-1 gap-[var(--px-24)] lg:order-2",
           isAuthenticated ? "lg:[grid-template-columns:minmax(0,1fr)_16rem]" : "",
         ].join(" ")}
       >
         <div className="mx-auto w-full max-w-[60rem] lg:mx-0 lg:max-w-none">{children}</div>
         {isAuthenticated && <WorkspaceRail mode={mode} />}
+      </div>
       </div>
     </div>
   );

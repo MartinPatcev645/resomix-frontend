@@ -131,6 +131,14 @@
       "request-api-access": {
         "title": "Request API Access",
         "description": "Begin with a guided partner evaluation using your own authorised catalogue."
+      },
+      "home": {
+        "title": "Home",
+        "description": "The Resomix front page."
+      },
+      "cookie-settings": {
+        "title": "Cookie Settings",
+        "description": "Review or change what you allow us to store."
       }
     },
     "notes": {
