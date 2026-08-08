@@ -51,8 +51,13 @@ class Row:
 
 
 def _charge(amount=999, refunded=999, invoice=INVOICE_ID):
+    """A legacy-shaped charge: still carries `invoice`.
+
+    Current API versions do NOT — see the payment-intent tests below, which cover the shape
+    Stripe actually sends today.
+    """
     return {"id": CHARGE_ID, "amount": amount, "amount_refunded": refunded,
-            "currency": "eur", "invoice": invoice}
+            "currency": "eur", "invoice": invoice, "payment_intent": "pi_test_1"}
 
 
 def _db(subscription_row=None, invoice_row=None):
@@ -142,10 +147,85 @@ async def test_partial_refund_changes_nothing() -> None:
 
 
 @pytest.mark.asyncio
-async def test_a_charge_with_no_invoice_is_not_ours() -> None:
+async def test_a_charge_with_neither_invoice_nor_payment_intent_is_not_ours() -> None:
     """One-time cart charges reach the same webhook; returning None hands them back."""
     svc = BillingRefundService()
-    assert await svc.handle_refund(MagicMock(), _charge(invoice=None)) is None
+    charge = _charge(invoice=None)
+    charge.pop("payment_intent", None)
+    assert await svc.handle_refund(MagicMock(), charge) is None
+
+
+# --------------------------------------------------------------------------- #
+# `charge.invoice` no longer exists — the regression that made refunds a no-op
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.asyncio
+async def test_a_charge_without_an_invoice_field_resolves_via_payment_intent() -> None:
+    """THE BUG THIS COVERS.
+
+    Stripe REMOVED `invoice` from the Charge object; a current-API charge carries only
+    `payment_intent`. Reading `charge.invoice` alone meant every refund resolved to None and did
+    nothing at all — money returned, subscription untouched, no email, no log.
+    """
+    row = Row()
+    db = _db(subscription_row=row, invoice_row=_invoice_row())
+    svc = BillingRefundService()
+
+    charge = {"id": CHARGE_ID, "amount": 999, "amount_refunded": 999,
+              "currency": "eur", "payment_intent": "pi_test_1"}   # no `invoice` key at all
+
+    invoice_payment = MagicMock()
+    invoice_payment.invoice = INVOICE_ID
+    listing = MagicMock()
+    listing.data = [invoice_payment]
+
+    with patch("stripe.InvoicePayment.list", return_value=listing) as lookup, \
+         patch.object(svc, "cancel_in_stripe", return_value=True):
+        outcome = await svc.handle_refund(db, charge)
+
+    assert outcome[0] == "full"
+    assert row.status == "canceled"
+    assert lookup.call_args.kwargs["payment"] == {
+        "type": "payment_intent", "payment_intent": "pi_test_1"
+    }
+
+
+@pytest.mark.asyncio
+async def test_a_legacy_charge_with_an_invoice_field_needs_no_lookup() -> None:
+    """Older API versions and replayed historical events still carry `invoice`."""
+    row = Row()
+    db = _db(subscription_row=row, invoice_row=_invoice_row())
+    svc = BillingRefundService()
+
+    with patch("stripe.InvoicePayment.list") as lookup, \
+         patch.object(svc, "cancel_in_stripe", return_value=True):
+        outcome = await svc.handle_refund(db, _charge())
+
+    assert outcome[0] == "full"
+    lookup.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_a_payment_intent_with_no_invoice_payment_is_not_ours() -> None:
+    """A cart charge has a payment intent too — it just has no invoice behind it."""
+    svc = BillingRefundService()
+    charge = {"id": CHARGE_ID, "amount": 999, "amount_refunded": 999,
+              "currency": "eur", "payment_intent": "pi_cart_1"}
+    empty = MagicMock()
+    empty.data = []
+
+    with patch("stripe.InvoicePayment.list", return_value=empty):
+        assert await svc.handle_refund(MagicMock(), charge) is None
+
+
+@pytest.mark.asyncio
+async def test_a_stripe_failure_during_lookup_is_swallowed() -> None:
+    svc = BillingRefundService()
+    charge = {"id": CHARGE_ID, "amount": 999, "amount_refunded": 999,
+              "currency": "eur", "payment_intent": "pi_test_1"}
+
+    with patch("stripe.InvoicePayment.list", side_effect=Exception("network")):
+        assert await svc.handle_refund(MagicMock(), charge) is None
 
 
 @pytest.mark.asyncio

@@ -88,7 +88,13 @@ class BillingRefundService:
         Returning None is a normal outcome, not a failure — one-time cart charges reach the same
         webhook and are handled elsewhere.
         """
-        invoice_id = _id_of(charge.get("invoice"))
+        # `charge.invoice` was REMOVED from the Charge object (it is gone in 2026-04-22.dahlia;
+        # a Charge now carries only `payment_intent`). Reading it alone meant every refund
+        # resolved to None and silently did nothing — the money went back and the customer kept
+        # their plan, which is the exact defect this service exists to prevent.
+        #
+        # Kept first because older API versions and replayed historical events still send it.
+        invoice_id = _id_of(charge.get("invoice")) or self._invoice_id_from_payment_intent(charge)
 
         if invoice_id:
             row = (
@@ -105,6 +111,38 @@ class BillingRefundService:
 
         # No invoice at all: a one-off charge (the track cart). Not ours.
         return None
+
+    @staticmethod
+    def _invoice_id_from_payment_intent(charge: Dict[str, Any]) -> Optional[str]:
+        """The invoice a charge paid, for API versions where `charge.invoice` no longer exists.
+
+        Stripe restructured invoice payments: the link now lives on the ``InvoicePayment`` object,
+        which can be listed by the payment intent that settled it. One API call, on an event that
+        is rare (a refund), so it is not worth denormalising a payment-intent column onto
+        ``billing_invoices`` to avoid.
+
+        Never raises — a network blip must not fail the webhook, and returning None simply means
+        "not one of ours", which is already a normal outcome for cart charges.
+        """
+        payment_intent = _id_of(charge.get("payment_intent"))
+        if not payment_intent:
+            return None
+        try:
+            payments = stripe.InvoicePayment.list(
+                payment={"type": "payment_intent", "payment_intent": payment_intent},
+                limit=1,
+            )
+            data = payments.data or []
+            if not data:
+                return None
+            # Attribute access: a live StripeObject's `__getattr__` shadows dict.get.
+            return _id_of(getattr(data[0], "invoice", None))
+        except Exception as exc:  # noqa: BLE001 — see the docstring
+            logger.warning(
+                "REFUND: could not resolve an invoice for payment_intent %s: %s",
+                payment_intent, exc,
+            )
+            return None
 
     @staticmethod
     def _subscription_id_from_stripe_invoice(invoice_id: str) -> Optional[str]:
@@ -303,12 +341,22 @@ class BillingRefundService:
 
         charge_id = _id_of(charge)
         if not charge_id:
-            return None
+            # A dispute can also name only the payment intent. That is enough on its own.
+            payment_intent = _id_of(dispute.get("payment_intent"))
+            if not payment_intent:
+                return None
+            return await self._subscription_for_charge(db, {"payment_intent": payment_intent})
+
         try:
             fetched = stripe.Charge.retrieve(charge_id)
-            return await self._subscription_for_charge(
-                db, {"id": fetched.id, "invoice": _id_of(getattr(fetched, "invoice", None))}
-            )
+            # BOTH fields: `invoice` is gone on current API versions and `payment_intent` is the
+            # only remaining link, but older versions still carry `invoice`. Passing just one
+            # would make disputes silently resolve to "not ours".
+            return await self._subscription_for_charge(db, {
+                "id": fetched.id,
+                "invoice": _id_of(getattr(fetched, "invoice", None)),
+                "payment_intent": _id_of(getattr(fetched, "payment_intent", None)),
+            })
         except Exception as exc:  # noqa: BLE001 — see the module docstring
             logger.warning("DISPUTE: could not read charge %s from Stripe: %s", charge_id, exc)
             return None
