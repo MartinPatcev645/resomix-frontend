@@ -370,6 +370,26 @@ class EmailService:
             },
         )
 
+    async def send_plan_granted(
+        self, email: EmailStr, name: str, plan_name: str, ends_at: str
+    ) -> bool:
+        """Tell a user an admin has comped them a plan.
+
+        Deliberately makes the *temporary* and *free* parts unmissable: someone who thinks they
+        have subscribed will be surprised when it stops, and that surprise lands on support.
+        """
+        return await self.send_templated(
+            email=email,
+            subject=f"{plan_name} is on us — Resomix",
+            template_name="plan_granted.html",
+            context={
+                "name": name or "there",
+                "plan_name": plan_name,
+                "ends_at": ends_at,
+                "app_url": settings.app_url,
+            },
+        )
+
     async def send_contact_confirmation(
         self, email: EmailStr, name: str, contact_type: str = "consumer"
     ) -> bool:

@@ -70,3 +70,32 @@ class AdminUserListResponse(APIResponse):
     total: int = Field(..., description="Total count across all pages")
     page: int = Field(..., description="Current page number")
     page_size: int = Field(..., description="Items per page")
+
+
+class AdminPlanGrantRequest(BaseModel):
+    """Grant a user a plan free of charge, for a fixed period.
+
+    ``plan_code`` rather than an id so the request is readable in a log a year from now, and so the
+    admin UI does not have to know database keys. ``duration`` is a code from a fixed set — every
+    option is a deliberate product decision, and a free-text number of days would let "997" through
+    on a mis-key.
+    """
+
+    plan_code: str = Field("pro", description="Plan to grant, e.g. 'pro'")
+    duration: str = Field(..., description="One of: 3d, 7d, 14d, 1m, 3m")
+    reason: str = Field(
+        "trial", description="trial | goodwill | partner | support | compensation"
+    )
+    note: Optional[str] = Field(
+        None, max_length=255, description="Free-text note for whoever reads this later"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "plan_code": "pro",
+                "duration": "14d",
+                "reason": "trial",
+                "note": "Reached out about the founding offer — giving them a look first.",
+            }
+        }

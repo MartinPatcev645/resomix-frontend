@@ -21,7 +21,8 @@ from app.schemas.admin_user import (
     AdminUserListResponse,
     AdminUserCreateRequest,
     AdminUserUpdateRequest,
-    AdminRoleAssignRequest
+    AdminRoleAssignRequest,
+    AdminPlanGrantRequest,
 )
 from app.models.user import User
 
@@ -124,6 +125,66 @@ async def remove_role(
     """Remove an RBAC role from a user."""
     return await user_controller.remove_role(
         db, request, user_uuid, role_name, current_admin
+    )
+
+
+@router.post("/{user_uuid}/plan-grant", dependencies=[Depends(require_permission("user:update"))])
+async def grant_plan(
+    user_uuid: str,
+    payload: AdminPlanGrantRequest,
+    db: AsyncSession = Depends(get_async_db),
+    request: Request = None,
+    current_admin: User = Depends(require_admin),
+):
+    """Give a user a plan free of charge, for a fixed period.
+
+    No money changes hands and no Stripe object is created — this is complimentary access we
+    control, and it ends by itself. The user is emailed, and the grant is visible on their profile
+    and pricing page so they are never in any doubt that it is free and temporary.
+    """
+    return await user_controller.grant_plan(
+        db, request, user_uuid, current_admin,
+        plan_code=payload.plan_code,
+        duration_code=payload.duration,
+        reason=payload.reason,
+        note=payload.note,
+    )
+
+
+@router.delete("/{user_uuid}/plan-grant", dependencies=[Depends(require_permission("user:update"))])
+async def revoke_plan_grant(
+    user_uuid: str,
+    db: AsyncSession = Depends(get_async_db),
+    request: Request = None,
+    current_admin: User = Depends(require_admin),
+):
+    """End a complimentary plan early. The record is kept, stamped as revoked."""
+    return await user_controller.revoke_plan_grant(db, request, user_uuid, current_admin)
+
+
+@router.post("/{user_uuid}/cancel-subscription", dependencies=[Depends(require_permission("user:update"))])
+async def cancel_user_subscription(
+    user_uuid: str,
+    immediate: bool = Query(
+        False,
+        description="End access now instead of at the end of the paid period. Still no refund.",
+    ),
+    db: AsyncSession = Depends(get_async_db),
+    request: Request = None,
+    current_admin: User = Depends(require_admin),
+):
+    """Cancel a user's paid subscription on their behalf.
+
+    **This never refunds anything.** Money is returned only from the Stripe dashboard, which fires
+    `charge.refunded` and ends the subscription through that path instead. By default this behaves
+    exactly like the customer cancelling from the billing portal: billing stops, access runs to the
+    end of the period they have already paid for.
+
+    The confirmation email is sent by the `customer.subscription.*` webhook Stripe fires in
+    response, so the customer gets the same message whoever pressed the button.
+    """
+    return await user_controller.cancel_subscription(
+        db, request, user_uuid, current_admin, immediate=immediate
     )
 
 

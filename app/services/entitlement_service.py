@@ -110,6 +110,22 @@ class EntitlementService:
             if plan:
                 return plan
 
+        # A complimentary, time-boxed plan an admin granted. Ranked BELOW a paid subscription on
+        # purpose: someone actually paying has a founding lock, a renewal date and an invoice
+        # history hanging off that subscription, and letting a comp shadow it would make every
+        # billing screen describe the wrong thing. A grant on top of a subscription is inert until
+        # the subscription lapses — then it takes over, which is what support meant by adding it.
+        #
+        # Expiry is read-time: `active_grant` compares `ends_at` on every call, so a lapsed grant
+        # stops applying immediately with no sweep job to fall behind.
+        from app.services.plan_grant_service import PlanGrantService
+
+        granted = await PlanGrantService.active_grant(db, user.id)
+        if granted is not None:
+            plan = await self._plan_by_id(db, granted.plan_id)
+            if plan:
+                return plan
+
         if user.plan_id:
             plan = await self._plan_by_id(db, user.plan_id)
             if plan:

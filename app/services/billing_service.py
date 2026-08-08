@@ -694,9 +694,24 @@ class BillingService:
                 # The one field a client should branch on. See `cancellation_state`.
                 "cancellation": self.cancellation_state(row),
             }
+        # A complimentary plan an admin granted. Surfaced separately from `subscription` because
+        # it is NOT one: there is nothing to manage in Stripe, nothing to cancel, and no card on
+        # file. Both the profile card and the pricing page need to say "you have Pro, free, until
+        # X" rather than offering to manage a subscription that does not exist.
+        from app.services.plan_grant_service import PlanGrantService
+
+        grant_row = await PlanGrantService.active_grant(db, user.id)
+        grant = None
+        if grant_row is not None:
+            grant_plan = (
+                await db.execute(select(Plan).where(Plan.id == grant_row.plan_id))
+            ).scalar_one_or_none()
+            grant = PlanGrantService.describe(grant_row, grant_plan)
+
         return {
             "plan": {"code": plan.code, "name": plan.name} if plan else None,
             "subscription": subscription,
+            "grant": grant,
             "usage": usage,
         }
 

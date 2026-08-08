@@ -308,6 +308,261 @@ class AdminUserController:
                 content=format_response(success=False, error="Internal error during role removal")
             )
 
+    async def grant_plan(
+        self,
+        db: AsyncSession,
+        request: Request,
+        user_uuid: str,
+        current_admin: User,
+        *,
+        plan_code: str,
+        duration_code: str,
+        reason: str,
+        note: Optional[str] = None,
+    ) -> JSONResponse:
+        """Give a user a plan free of charge, for a fixed period.
+
+        No money and no Stripe object: this is entirely ours, and it is why the grant lives in its
+        own table rather than in `user_subscriptions`.
+        """
+        from sqlalchemy import select
+
+        from app.models.plan import Plan
+        from app.services.plan_grant_service import PlanGrantService
+
+        try:
+            user = await self.user_service.user_repo.async_get_by_uuid(db, user_uuid)
+            if not user:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(success=False, error="User not found"),
+                )
+
+            plan = (
+                await db.execute(select(Plan).where(Plan.code == plan_code))
+            ).scalar_one_or_none()
+            if plan is None:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(success=False, error=f"No plan with code {plan_code!r}"),
+                )
+            if plan.is_free:
+                # Granting "free" is a no-op dressed up as an action, and it would show the user a
+                # complimentary-plan notice for something they already have.
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content=format_response(
+                        success=False, error="That plan is already free — nothing to grant."
+                    ),
+                )
+
+            service = PlanGrantService()
+            grant = await service.grant(
+                db, user=user, plan=plan, duration_code=duration_code,
+                granted_by=current_admin.id, reason=reason, note=note,
+            )
+
+            await self.admin_log_service.log_operation(
+                db=db,
+                admin_user_id=current_admin.id,
+                action="user.plan_grant",
+                target_type="user",
+                target_id=user_uuid,
+                before_state=None,
+                after_state={
+                    "plan": plan.code, "duration": duration_code,
+                    "ends_at": grant.ends_at.isoformat(), "reason": reason,
+                },
+                ip_address=request.client.host if request and request.client else None,
+            )
+            await db.commit()
+
+            try:
+                from app.services.email_service import EmailService
+
+                await EmailService().send_plan_granted(
+                    email=user.email,
+                    name=user.name or user.username or "there",
+                    plan_name=plan.name,
+                    ends_at=grant.ends_at.strftime("%-d %B %Y"),
+                )
+            except Exception as exc:  # noqa: BLE001 — the grant is already committed
+                logger.error("Could not send plan-granted email to %s: %s", user.email, exc)
+
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(
+                    success=True,
+                    data=PlanGrantService.describe(grant, plan),
+                    message=f"{plan.name} granted until {grant.ends_at.strftime('%-d %B %Y')}",
+                ),
+            )
+        except ValueError as e:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content=format_response(success=False, error=str(e)),
+            )
+        except Exception as e:
+            logger.error(f"Error granting plan to {user_uuid}: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="Failed to grant plan"),
+            )
+
+    async def revoke_plan_grant(
+        self, db: AsyncSession, request: Request, user_uuid: str, current_admin: User
+    ) -> JSONResponse:
+        """End a complimentary plan early. The row is kept and stamped, never deleted."""
+        from app.services.plan_grant_service import PlanGrantService
+
+        try:
+            user = await self.user_service.user_repo.async_get_by_uuid(db, user_uuid)
+            if not user:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(success=False, error="User not found"),
+                )
+
+            grant = await PlanGrantService().revoke(
+                db, user_id=user.id, revoked_by=current_admin.id
+            )
+            if grant is None:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content=format_response(success=False, error="This user has no active grant."),
+                )
+
+            await self.admin_log_service.log_operation(
+                db=db,
+                admin_user_id=current_admin.id,
+                action="user.plan_grant_revoked",
+                target_type="user",
+                target_id=user_uuid,
+                before_state={"ends_at": grant.ends_at.isoformat()},
+                after_state={"revoked_at": grant.revoked_at.isoformat()},
+                ip_address=request.client.host if request and request.client else None,
+            )
+            await db.commit()
+
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(success=True, message="Complimentary plan ended."),
+            )
+        except Exception as e:
+            logger.error(f"Error revoking grant for {user_uuid}: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="Failed to revoke the grant"),
+            )
+
+    async def cancel_subscription(
+        self,
+        db: AsyncSession,
+        request: Request,
+        user_uuid: str,
+        current_admin: User,
+        *,
+        immediate: bool = False,
+    ) -> JSONResponse:
+        """Cancel a user's paid subscription on their behalf.
+
+        **No refund.** Money is returned only from the Stripe dashboard, which then fires
+        `charge.refunded` and ends the subscription through that path instead. Cancelling here
+        matches what the customer gets from the billing portal: billing stops, access continues to
+        the end of the period they already paid for.
+
+        `immediate=True` is the exception — access stops now, still with no refund. It exists for
+        abuse cases, where letting someone run out the month is the wrong outcome.
+
+        Stripe is called AFTER the local commit, the same rule the refund path follows: cancelling
+        inside the transaction provokes a burst of subscription webhooks that race the uncommitted
+        write, and the last one to land wins.
+        """
+        from sqlalchemy import select
+
+        from app.models.purchase import UserSubscription
+        from app.services.billing_refund_service import BillingRefundService
+
+        try:
+            user = await self.user_service.user_repo.async_get_by_uuid(db, user_uuid)
+            if not user:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(success=False, error="User not found"),
+                )
+
+            row = (
+                await db.execute(
+                    select(UserSubscription).where(UserSubscription.user_id == user.id)
+                )
+            ).scalar_one_or_none()
+            if row is None or not row.stripe_subscription_id:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content=format_response(
+                        success=False, error="This user has no Stripe subscription to cancel."
+                    ),
+                )
+            if row.status not in ("active", "trialing", "past_due"):
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content=format_response(
+                        success=False,
+                        error=f"That subscription is already {row.status} — nothing to cancel.",
+                    ),
+                )
+
+            subscription_id = row.stripe_subscription_id
+            await self.admin_log_service.log_operation(
+                db=db,
+                admin_user_id=current_admin.id,
+                action="user.subscription_cancelled",
+                target_type="user",
+                target_id=user_uuid,
+                before_state={"status": row.status, "subscription": subscription_id},
+                after_state={"immediate": immediate},
+                ip_address=request.client.host if request and request.client else None,
+            )
+            await db.commit()
+
+            # Stripe is the source of truth for the cancellation; the `customer.subscription.*`
+            # webhook it fires writes our row and sends the customer's email through the same path
+            # a self-service cancellation uses. No second email from here — that would duplicate it.
+            service = BillingRefundService()
+            ok = (
+                service.cancel_in_stripe(subscription_id)
+                if immediate
+                else service.cancel_at_period_end(subscription_id)
+            )
+            if not ok:
+                return JSONResponse(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    content=format_response(
+                        success=False,
+                        error="Stripe refused the cancellation. Nothing has changed — check the "
+                              "Stripe dashboard before retrying.",
+                    ),
+                )
+
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(
+                    success=True,
+                    message=(
+                        "Subscription cancelled immediately. The customer has been emailed."
+                        if immediate
+                        else "Subscription will end at the end of the paid period. The customer "
+                             "has been emailed."
+                    ),
+                ),
+            )
+        except Exception as e:
+            logger.error(f"Error cancelling subscription for {user_uuid}: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="Failed to cancel the subscription"),
+            )
+
     async def purge_user(
         self,
         db: AsyncSession,

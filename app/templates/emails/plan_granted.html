@@ -1,0 +1,42 @@
+{# A complimentary plan an admin gave someone.
+
+   It has to be unmistakably free and unmistakably temporary. The failure mode is a customer who
+   believes they have subscribed, is surprised when it stops, and blames us — so the end date and
+   the words "no charge" both appear above the fold, and there is no billing link to imply
+   otherwise. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>{{ plan_name }} is on us</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>We've added {{ plan_name }} to your Resomix account, free of charge.</p>
+
+<div class="alert">
+    <p style="margin: 0;"><strong>Yours until {{ ends_at }} — no payment, no card needed.</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        Nothing happens automatically at the end: you will not be charged, and there is no
+        subscription to cancel. Your account simply returns to the free plan.
+    </p>
+</div>
+
+<div class="features">
+    <h3>What you can do with {{ plan_name }}</h3>
+    <ul>
+        <li>Unlimited similarity searches across the catalogue</li>
+        <li>Upload your own tracks and find what sounds like them</li>
+        <li>Full Track Intelligence &mdash; the complete sonic analysis</li>
+        <li>Bigger playlists, and exports to Apple Music, Spotify and rekordbox</li>
+    </ul>
+</div>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ app_url }}" class="button">START DIGGING</a>
+</div>
+
+<p class="text-muted" style="margin-top: 30px;">
+    Want to keep {{ plan_name }} after {{ ends_at }}? You can subscribe any time from your profile
+    &mdash; and anything you make in the meantime stays yours either way.
+</p>
+{% endblock %}

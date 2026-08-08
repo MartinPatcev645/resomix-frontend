@@ -27,6 +27,7 @@ from .playlist_engagement import UserPlaylistEngagement
 from .playlist_transfer_track import PlaylistTransferTrack
 from .rating import TrackRating, PlaylistRating
 from .purchase import UserSubscription
+from .plan_grant import UserPlanGrant
 from .ecommerce import PromoCode, Cart, CartItem, Order, Purchase
 from .feedback import Feedback
 from .contact import Contact

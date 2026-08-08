@@ -213,6 +213,36 @@ class BillingRefundService:
             )
             return False
 
+    @staticmethod
+    def cancel_at_period_end(subscription_id: str) -> bool:
+        """Stop the subscription renewing, leaving access until the period already paid for.
+
+        The default for an admin-initiated cancellation, and identical to what the customer gets
+        from the billing portal — no refund, no early cut-off. `cancel_in_stripe` is the immediate
+        variant, kept for refunds and abuse.
+
+        A **schedule-managed** subscription (every founding subscriber) cannot take
+        `cancel_at_period_end` directly — Stripe owns the lifecycle through the schedule. For those
+        the schedule's `end_behavior` is switched to `cancel`, which our `sync_schedule` handler
+        already reads and mirrors onto `cancel_at`.
+        """
+        try:
+            subscription = stripe.Subscription.retrieve(subscription_id)
+            schedule_id = _id_of(getattr(subscription, "schedule", None))
+            if schedule_id:
+                stripe.SubscriptionSchedule.modify(schedule_id, end_behavior="cancel")
+                logger.info(
+                    "ADMIN CANCEL: schedule %s set to cancel at the end of its phase", schedule_id
+                )
+                return True
+
+            stripe.Subscription.modify(subscription_id, cancel_at_period_end=True)
+            logger.info("ADMIN CANCEL: %s will cancel at period end", subscription_id)
+            return True
+        except Exception as exc:  # noqa: BLE001 — see the module docstring
+            logger.error("ADMIN CANCEL: could not cancel %s at period end: %s", subscription_id, exc)
+            return False
+
     # ------------------------------------------------------------------ #
     # charge.refunded
     # ------------------------------------------------------------------ #
