@@ -278,6 +278,10 @@ export function ConsumerPricingContent({
     return `${amountLabel}${unitSuffix.replace(/^\//, " /")}`;
   })();
 
+  // A complimentary plan an admin granted. Someone on one IS on Pro — but there is nothing to
+  // manage in Stripe, so the card must not offer "Manage billing" for it.
+  const grant = subSummary?.grant || null;
+
   const isCurrentPro = !!pro?.is_current;
   const isCurrentFree = !!free?.is_current;
   const sub = subSummary?.subscription;
@@ -561,6 +565,16 @@ export function ConsumerPricingContent({
                         <>
                           <br />
                           {PRO_CARD.activeUntil(activeUntilLabel)}
+                        </>
+                      )}
+                      {grant && (
+                        <>
+                          <br />
+                          {`You're on ${grant.plan_name || "Pro"} free until ${fmtDateLong(
+                            grant.ends_at
+                          )} — ${grant.days_remaining} day${
+                            grant.days_remaining === 1 ? "" : "s"
+                          } left. Subscribe to keep it after that.`}
                         </>
                       )}
                     </p>

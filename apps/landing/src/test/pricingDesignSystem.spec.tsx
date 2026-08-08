@@ -355,6 +355,7 @@ describe('consumer pricing upgrade contract', () => {
       data: {
         plan: { code: 'pro', name: 'Pro' },
         subscription: mockSubscription(),
+        grant: null,
         usage: [],
       } satisfies BillingSubscriptionSummary,
     });
@@ -413,6 +414,7 @@ describe('consumer pricing upgrade contract', () => {
       data: {
         plan: { code: 'pro', name: 'Pro' },
         subscription,
+        grant: null,
         usage: [],
       } satisfies BillingSubscriptionSummary,
     });

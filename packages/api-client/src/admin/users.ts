@@ -24,6 +24,83 @@ export interface AdminUserSearchItem {
   purge_due_at?: string | null;
 }
 
+/** Complimentary, time-boxed plan access granted by an admin. No money, no Stripe object. */
+export interface AdminPlanGrant {
+  plan_code: string | null;
+  plan_name: string | null;
+  reason: string;
+  note: string | null;
+  starts_at: string;
+  ends_at: string;
+  /** Rounded up, so something with hours left still reads as "1 day". */
+  days_remaining: number;
+}
+
+/** The durations an admin may pick. A fixed set — mirrors GRANT_DURATIONS on the server. */
+export const PLAN_GRANT_DURATIONS = [
+  { value: "3d", label: "3 days" },
+  { value: "7d", label: "7 days" },
+  { value: "14d", label: "14 days" },
+  { value: "1m", label: "1 month" },
+  { value: "3m", label: "3 months" },
+] as const;
+
+export const PLAN_GRANT_REASONS = [
+  { value: "trial", label: "Trial" },
+  { value: "goodwill", label: "Goodwill" },
+  { value: "partner", label: "Partner" },
+  { value: "support", label: "Support" },
+  { value: "compensation", label: "Compensation" },
+] as const;
+
+/** Give a user a plan free of charge for a fixed period. */
+export const grantUserPlan = async (
+  userUuid: string,
+  body: { plan_code?: string; duration: string; reason?: string; note?: string }
+) => {
+  try {
+    return await axiosWrapper<{ success: boolean; data?: AdminPlanGrant; message?: string; error?: string }>(
+      authClient.post(`/api/v1/admin/users/${userUuid}/plan-grant`, {
+        plan_code: body.plan_code ?? "pro",
+        duration: body.duration,
+        reason: body.reason ?? "trial",
+        note: body.note,
+      })
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/** End a complimentary plan early. The record is kept, stamped as revoked. */
+export const revokeUserPlanGrant = async (userUuid: string) => {
+  try {
+    return await axiosWrapper<{ success: boolean; message?: string; error?: string }>(
+      authClient.delete(`/api/v1/admin/users/${userUuid}/plan-grant`)
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/**
+ * Cancel a user's paid subscription.
+ *
+ * NEVER refunds — money is returned only from the Stripe dashboard. Defaults to cancelling at the
+ * end of the paid period, exactly like the customer doing it from the billing portal.
+ */
+export const cancelUserSubscription = async (userUuid: string, immediate = false) => {
+  try {
+    return await axiosWrapper<{ success: boolean; message?: string; error?: string }>(
+      authClient.post(`/api/v1/admin/users/${userUuid}/cancel-subscription`, null, {
+        params: { immediate },
+      })
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
 /** Per-user admin overview. One request; see `AdminUserOverviewService` for why. */
 export interface AdminUserOverview {
   identity: {
@@ -73,6 +150,18 @@ export interface AdminUserOverview {
     stripe_subscription_id: string | null;
     stripe_customer_id: string | null;
   } | null;
+  /** A complimentary plan an admin granted. NOT a subscription — nothing to manage in Stripe. */
+  grant: AdminPlanGrant | null;
+  /** Every past grant, newest first. "Has this account been comped before?" */
+  grant_history: Array<{
+    id: number;
+    plan_name: string | null;
+    reason: string;
+    note: string | null;
+    starts_at: string | null;
+    ends_at: string | null;
+    revoked_at: string | null;
+  }>;
   /** -1 means the figure could not be read, which is not the same as 0. */
   counts: Record<string, number>;
   support: {

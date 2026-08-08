@@ -138,8 +138,16 @@ export function PlanBillingCard() {
   const planName = summary?.plan?.name || "Free";
   const planCode = summary?.plan?.code || "free";
   const sub = summary?.subscription || null;
-  const isPaid = planCode !== "free" && planCode !== "guest";
   const status = sub?.status;
+
+  // A complimentary plan an admin granted. NOT a subscription: no Stripe object, no card, nothing
+  // to manage — so "Manage" must not be offered for it, or the portal opens on an account with no
+  // subscription in it.
+  const grant = summary?.grant || null;
+
+  // `isPaid` gates the Manage button, so it has to mean "has a real Stripe subscription", not
+  // "is on a paid plan". A granted user IS on Pro but has nothing to manage.
+  const isPaid = planCode !== "free" && planCode !== "guest" && !!sub;
 
   // The server decides whether this is cancelling; the client only words it.
   //
@@ -158,7 +166,14 @@ export function PlanBillingCard() {
       : null);
 
   let statusLine: string | null = null;
-  if (sub) {
+  if (grant) {
+    // Stated before anything else, and in terms that cannot be mistaken for a subscription: this
+    // person will not be charged, and nothing renews.
+    statusLine =
+      `Complimentary until ${fmtDate(grant.ends_at)} — ` +
+      `${grant.days_remaining} day${grant.days_remaining === 1 ? "" : "s"} left. ` +
+      `You're not being billed for this.`;
+  } else if (sub) {
     if (cancellation?.pending) {
       // A missing date must not suppress the notice — "cancelled, date unknown" beats implying
       // the plan is still renewing.
@@ -217,7 +232,9 @@ export function PlanBillingCard() {
                   disabled={busy}
                   className={PAGE_BTN_PRIMARY}
                 >
-                  Upgrade
+                  {/* Someone already ON Pro via a grant is not "upgrading" — they are deciding
+                      whether to keep it once the complimentary period runs out. */}
+                  {grant ? "Keep it after" : "Upgrade"}
                 </button>
               )}
             </div>

@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Spin, Button, Tag, Descriptions, Card, Space, Typography, Table, Alert, Statistic, Row, Col } from 'antd'
-import { ArrowLeft, RefreshCw, ListMusic, Music, ExternalLink } from 'lucide-react'
-import { getAdminUserOverview, type AdminUserOverview } from '@resomix/api-client'
+import { Spin, Button, Tag, Descriptions, Card, Space, Typography, Table, Alert, Statistic, Row, Col, Modal, Select, Input, App } from 'antd'
+import { ArrowLeft, RefreshCw, ListMusic, Music, ExternalLink, Gift, XCircle } from 'lucide-react'
+import {
+  getAdminUserOverview,
+  grantUserPlan,
+  revokeUserPlanGrant,
+  cancelUserSubscription,
+  PLAN_GRANT_DURATIONS,
+  PLAN_GRANT_REASONS,
+  type AdminUserOverview,
+} from '@resomix/api-client'
 import { useStatusModals } from '@resomix/hooks'
 import { StatusModal } from '@resomix/ui'
 
@@ -42,6 +50,12 @@ function UserDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<AdminUserOverview | null>(null)
   const { errorModalVisible, errorDetails, showErrorModal, closeErrorModal } = useStatusModals()
+  const { modal, message } = App.useApp()
+  const [grantOpen, setGrantOpen] = useState(false)
+  const [granting, setGranting] = useState(false)
+  const [duration, setDuration] = useState<string>('14d')
+  const [grantReason, setGrantReason] = useState<string>('trial')
+  const [note, setNote] = useState('')
 
   const fetchOverview = async () => {
     if (!uuid) return
@@ -67,6 +81,67 @@ function UserDetailsPage() {
     void fetchOverview()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uuid])
+
+  const submitGrant = async () => {
+    if (!uuid) return
+    setGranting(true)
+    const res = await grantUserPlan(uuid, { duration, reason: grantReason, note: note || undefined })
+    setGranting(false)
+    if (res.success) {
+      message.success(('message' in res && res.message) || 'Complimentary plan granted')
+      setGrantOpen(false)
+      setNote('')
+      void fetchOverview()
+    } else {
+      showErrorModal('Could not grant plan', ('error' in res && res.error) || 'Please try again.')
+    }
+  }
+
+  const confirmRevokeGrant = () => {
+    modal.confirm({
+      title: 'End the complimentary plan?',
+      content:
+        'They lose the granted plan immediately and return to free. The record is kept, so this ' +
+        'still shows in their history.',
+      okText: 'End it now',
+      okType: 'danger',
+      onOk: async () => {
+        if (!uuid) return
+        const res = await revokeUserPlanGrant(uuid)
+        if (res.success) {
+          message.success('Complimentary plan ended')
+          void fetchOverview()
+        } else {
+          showErrorModal('Could not end the grant', ('error' in res && res.error) || 'Please try again.')
+        }
+      },
+    })
+  }
+
+  const confirmCancelSubscription = (immediate: boolean) => {
+    modal.confirm({
+      title: immediate ? 'End the subscription now?' : 'Cancel at the end of the paid period?',
+      // The refund boundary is the thing most likely to be misunderstood, so it is stated on
+      // BOTH options rather than assumed.
+      content: immediate
+        ? 'Access stops immediately and billing stops. NO money is refunded — refunds are issued ' +
+          'from the Stripe dashboard, which is a separate action.'
+        : 'Billing stops, and they keep their plan until the period they have already paid for ' +
+          'runs out. NO money is refunded — refunds are issued from the Stripe dashboard.',
+      okText: immediate ? 'End now' : 'Cancel at period end',
+      okType: 'danger',
+      onOk: async () => {
+        if (!uuid) return
+        const res = await cancelUserSubscription(uuid, immediate)
+        if (res.success) {
+          message.success(('message' in res && res.message) || 'Subscription cancelled')
+          void fetchOverview()
+        } else {
+          showErrorModal('Could not cancel', ('error' in res && res.error) || 'Please try again.')
+        }
+      },
+    })
+  }
 
   if (loading) {
     return (
@@ -96,7 +171,7 @@ function UserDetailsPage() {
     )
   }
 
-  const { identity, activity, lifecycle, effective_plan, subscription, counts, support, invoices } = data
+  const { identity, activity, lifecycle, effective_plan, subscription, grant, grant_history, counts, support, invoices } = data
 
   // The mismatch worth surfacing: Stripe still bills them, but they do not have the plan.
   const planMismatch =
@@ -171,6 +246,22 @@ function UserDetailsPage() {
           description={
             `Suspended ${fmt(subscription.access_suspended_at)} (${subscription.access_suspended_reason || 'unknown'}). ` +
             'Stripe still reports the subscription as live — access returns automatically if a dispute is won.'
+          }
+        />
+      )}
+      {grant && (
+        <Alert
+          className="mt-4"
+          type="success"
+          showIcon
+          message={`Complimentary ${grant.plan_name || 'plan'} — ${grant.days_remaining} day${grant.days_remaining === 1 ? '' : 's'} left`}
+          description={
+            `Granted free until ${fmtDate(grant.ends_at)} (${grant.reason})` +
+            (grant.note ? ` — "${grant.note}"` : '') +
+            '. They are not being billed and there is no subscription to cancel.'
+          }
+          action={
+            <Button size="small" danger onClick={confirmRevokeGrant}>End now</Button>
           }
         />
       )}
@@ -271,6 +362,11 @@ function UserDetailsPage() {
                   Locked until {fmtDate(subscription.founding_lock_ends_at)}
                 </Descriptions.Item>
               )}
+              {grant && (
+                <Descriptions.Item label="Complimentary">
+                  {grant.plan_name} until {fmtDate(grant.ends_at)} ({grant.days_remaining}d left)
+                </Descriptions.Item>
+              )}
               <Descriptions.Item label="Total paid">
                 {money(counts.total_spend_cents ?? 0, subscription?.currency || 'EUR')}
               </Descriptions.Item>
@@ -280,6 +376,28 @@ function UserDetailsPage() {
                 </Descriptions.Item>
               )}
             </Descriptions>
+
+            <Space className="mt-3" wrap>
+              <Button icon={<Gift size={14} />} onClick={() => setGrantOpen(true)}>
+                {grant ? 'Replace complimentary plan' : 'Grant complimentary plan'}
+              </Button>
+              {subscription && ['active', 'trialing', 'past_due'].includes(subscription.status) && (
+                <>
+                  <Button danger icon={<XCircle size={14} />} onClick={() => confirmCancelSubscription(false)}>
+                    Cancel at period end
+                  </Button>
+                  <Button danger type="text" onClick={() => confirmCancelSubscription(true)}>
+                    Cancel immediately
+                  </Button>
+                </>
+              )}
+            </Space>
+            <div className="mt-2">
+              <Text className="text-secondary text-xs">
+                Cancelling never refunds. Money is returned from the Stripe dashboard, which ends
+                the subscription through that path instead.
+              </Text>
+            </div>
           </Card>
         </Col>
 
@@ -361,6 +479,88 @@ function UserDetailsPage() {
           ]}
         />
       </Card>
+
+      {grant_history.length > 0 && (
+        <Card size="small" title="Complimentary plan history" className="mt-4">
+          <Table
+            rowKey="id"
+            size="small"
+            pagination={false}
+            dataSource={grant_history}
+            columns={[
+              { title: 'Plan', dataIndex: 'plan_name', render: (v: string) => v || '—' },
+              { title: 'Reason', dataIndex: 'reason', render: (v: string) => <Tag>{v}</Tag> },
+              { title: 'From', dataIndex: 'starts_at', render: (v: string) => fmtDate(v) },
+              { title: 'Until', dataIndex: 'ends_at', render: (v: string) => fmtDate(v) },
+              {
+                title: 'Outcome',
+                key: 'outcome',
+                render: (_: unknown, r) =>
+                  r.revoked_at ? (
+                    <Tag color="warning">Ended early {fmtDate(r.revoked_at)}</Tag>
+                  ) : new Date(r.ends_at || 0) > new Date() ? (
+                    <Tag color="success">Active</Tag>
+                  ) : (
+                    <Tag>Expired</Tag>
+                  ),
+              },
+              { title: 'Note', dataIndex: 'note', render: (v: string) => v || '—' },
+            ]}
+          />
+        </Card>
+      )}
+
+      <Modal
+        title={grant ? 'Replace complimentary plan' : 'Grant complimentary plan'}
+        open={grantOpen}
+        onCancel={() => setGrantOpen(false)}
+        onOk={submitGrant}
+        confirmLoading={granting}
+        okText={grant ? 'Replace' : 'Grant'}
+      >
+        <Space direction="vertical" size={12} className="w-full">
+          <Text className="text-secondary">
+            {identity.name || identity.email} gets Pro free for the period below. They pay nothing,
+            no card is needed, and it ends by itself — there is no subscription to cancel.
+          </Text>
+          {grant && (
+            <Alert
+              type="warning"
+              showIcon
+              message="This replaces their current complimentary plan"
+              description={`The existing one (until ${fmtDate(grant.ends_at)}) ends now and the new period starts today.`}
+            />
+          )}
+          <div>
+            <Text strong className="block mb-1">Duration</Text>
+            <Select
+              className="w-full"
+              value={duration}
+              onChange={setDuration}
+              options={PLAN_GRANT_DURATIONS.map((d) => ({ value: d.value, label: d.label }))}
+            />
+          </div>
+          <div>
+            <Text strong className="block mb-1">Reason</Text>
+            <Select
+              className="w-full"
+              value={grantReason}
+              onChange={setGrantReason}
+              options={PLAN_GRANT_REASONS.map((r) => ({ value: r.value, label: r.label }))}
+            />
+          </div>
+          <div>
+            <Text strong className="block mb-1">Note (optional)</Text>
+            <Input.TextArea
+              rows={2}
+              maxLength={255}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Why — for whoever reads this later"
+            />
+          </div>
+        </Space>
+      </Modal>
 
       <StatusModal
         type="error"

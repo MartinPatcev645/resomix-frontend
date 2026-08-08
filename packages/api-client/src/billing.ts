@@ -121,9 +121,28 @@ export interface BillingSubscription {
   cancellation: BillingCancellation | null;
 }
 
+/**
+ * A complimentary plan an admin granted — NOT a subscription.
+ *
+ * There is no Stripe object, no card, and nothing to cancel. Surfaced separately so the UI can
+ * say "you have Pro, free, until X" instead of offering to manage a subscription that does not
+ * exist.
+ */
+export interface BillingGrant {
+  plan_code: string | null;
+  plan_name: string | null;
+  reason: string;
+  note: string | null;
+  starts_at: string;
+  ends_at: string;
+  /** Rounded up — something with hours left still reads as "1 day". */
+  days_remaining: number;
+}
+
 export interface BillingSubscriptionSummary {
   plan: { code: string; name: string } | null;
   subscription: BillingSubscription | null;
+  grant: BillingGrant | null;
   usage: BillingUsageItem[];
 }
 
