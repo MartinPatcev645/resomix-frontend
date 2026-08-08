@@ -154,7 +154,24 @@ class AdminUserOverviewService:
         }
 
     async def grants(self, db: AsyncSession, user_id: int) -> Dict[str, Any]:
-        """The live complimentary plan, plus the history of every past one."""
+        """The live complimentary plan, plus the history of every past one.
+
+        Degrades rather than failing, like `counts`. `user_plan_grants` is newer than this page:
+        on a deployment where the migration has not run yet, an unguarded query here would take
+        down the WHOLE user profile instead of hiding one card.
+        """
+        from sqlalchemy import select
+
+        from app.models.plan import Plan
+        from app.services.plan_grant_service import PlanGrantService
+
+        try:
+            return await self._grants(db, user_id)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("OVERVIEW: grants unavailable for user %s: %s", user_id, exc)
+            return {"grant": None, "grant_history": []}
+
+    async def _grants(self, db: AsyncSession, user_id: int) -> Dict[str, Any]:
         from sqlalchemy import select
 
         from app.models.plan import Plan
@@ -298,16 +315,31 @@ class AdminUserOverviewService:
                 out[user.id] = {"code": plan.code, "name": plan.name}
         return out
 
+    async def _safe(self, label: str, user_id: int, coro_factory, fallback):
+        """Run one section of the page, or fall back.
+
+        THE WHOLE SCREEN MUST NOT DIE FOR ONE CARD. This page is what an admin opens when something
+        is already wrong, so a single unreadable table taking it down is the worst possible moment
+        to be strict — and it is also how a missing migration turned into a blank 500 rather than a
+        page with one section missing.
+
+        Each failure is logged, so a degraded card is visible in the logs rather than silent.
+        """
+        try:
+            return await coro_factory()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("OVERVIEW: %s unavailable for user %s: %s", label, user_id, exc)
+            return fallback
+
     async def build(self, db: AsyncSession, user: User) -> Dict[str, Any]:
-        """The whole screen."""
+        """The whole screen. Every section degrades independently — see `_safe`."""
         from app.services.entitlement_service import EntitlementService
 
-        effective_plan = None
-        try:
+        async def _plan():
             plan = await EntitlementService().get_effective_plan(db, user)
-            effective_plan = {"code": plan.code, "name": plan.name} if plan else None
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("OVERVIEW: could not resolve effective plan for %s: %s", user.id, exc)
+            return {"code": plan.code, "name": plan.name} if plan else None
+
+        effective_plan = await self._safe("effective plan", user.id, _plan, None)
 
         return {
             "identity": {
@@ -330,7 +362,8 @@ class AdminUserOverviewService:
             "activity": {
                 # Different questions — see the module docstring.
                 "last_seen_at": _iso(user.last_seen_at),
-                **await self.last_session(db, user.id),
+                **await self._safe("sessions", user.id, lambda: self.last_session(db, user.id),
+                                   {"last_login": None, "last_ip": None, "last_user_agent": None}),
             },
             "lifecycle": {
                 "deactivated_at": _iso(user.deactivated_at),
@@ -342,11 +375,14 @@ class AdminUserOverviewService:
             # suspension or a cancelled subscription both make these two disagree, and that gap is
             # exactly what an admin is looking for.
             "effective_plan": effective_plan,
-            "subscription": await self.subscription(db, user.id),
+            "subscription": await self._safe("subscription", user.id,
+                                             lambda: self.subscription(db, user.id), None),
             # Complimentary access, and whether this account has been comped before — a second
             # free month is a different conversation from a first.
-            **await self.grants(db, user.id),
-            "counts": await self.counts(db, user.id),
-            "support": await self.recent(db, user.id),
-            "invoices": await self.invoices(db, user.id),
+            **await self._safe("grants", user.id, lambda: self.grants(db, user.id),
+                               {"grant": None, "grant_history": []}),
+            "counts": await self._safe("counts", user.id, lambda: self.counts(db, user.id), {}),
+            "support": await self._safe("support", user.id, lambda: self.recent(db, user.id),
+                                        {"latest_contact": None, "latest_feedback": None}),
+            "invoices": await self._safe("invoices", user.id, lambda: self.invoices(db, user.id), []),
         }

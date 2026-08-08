@@ -376,6 +376,13 @@ app.add_middleware(IdempotencyMiddleware)
 # Add audit middleware before timing
 app.add_middleware(PartnerAuditMiddleware)
 # Add timing middleware *after* CORS so we measure downstream handlers too
+# Captures the live traceback whenever anything logs an ERROR while handling an exception, so the
+# TimingMiddleware 5xx row can carry it. Without this a controller that catches its own exception
+# leaves a log entry saying only "returned 500". See app/core/error_context.py.
+from app.core.error_context import install as _install_error_capture
+
+_install_error_capture()
+
 app.add_middleware(TimingMiddleware)
 
 # Mount static files for exports BEFORE including routers to avoid conflicts

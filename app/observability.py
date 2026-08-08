@@ -22,6 +22,11 @@ class TimingMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:  # type: ignore[override]
+        # Contexts can be inherited by tasks and threads, so a leftover value could otherwise be
+        # attributed to a later request. A misleading traceback is worse than a missing one.
+        from app.core.error_context import reset_error
+
+        reset_error()
         start = time.perf_counter()
         try:
             response = await call_next(request)
@@ -55,7 +60,17 @@ class TimingMiddleware(BaseHTTPMiddleware):
             # Skip if the request was already error-logged upstream to avoid duplicate entries.
             if not getattr(request.state, "_db_error_logged", False):
                 try:
+                    from app.core.error_context import take_error
                     from app.services.logging_service import LoggingService
+
+                    # Whatever exception was being handled when the controller logged its
+                    # failure. Without this the row said only "returned 500", which tells the
+                    # reader nothing they did not already know — no type, no message, no
+                    # traceback, and no way to find out afterwards.
+                    captured = take_error()
+                    detail = ""
+                    if captured:
+                        detail = f" — {captured['type']}: {captured['message']}"
 
                     LoggingService().log(
                         level="ERROR",
@@ -63,11 +78,16 @@ class TimingMiddleware(BaseHTTPMiddleware):
                         action="http_5xx_response",
                         message=(
                             f"{request.method} {request.url.path} returned "
-                            f"{response.status_code}"
+                            f"{response.status_code}{detail}"
                         ),
                         request=request,
                         status_code=response.status_code,
                         duration_ms=dur * 1000,
+                        stack_trace=(captured or {}).get("traceback"),
+                        metadata={
+                            "exception_type": (captured or {}).get("type"),
+                            "exception_message": (captured or {}).get("message"),
+                        } if captured else None,
                     )
                 except Exception as exc:  # never let logging break the response
                     file_logger.error(f"Failed to persist 5xx to system logs: {exc}")
