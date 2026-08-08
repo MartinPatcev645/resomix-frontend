@@ -405,9 +405,19 @@ class Disable2FARequest(BaseModel):
 
 
 class DeleteAccountRequest(BaseModel):
-    """Delete account request"""
+    """Delete account request.
 
-    password: str = Field(..., description="Password for confirmation")
+    ``password`` is OPTIONAL because not every account has one: a Google-only sign-up has
+    ``password_hash = NULL``. It was previously required, which made deletion impossible for those
+    users — and the server fed the missing value straight to ``verify_password``, which raised.
+
+    The server still requires it whenever a password exists; being signed in is the confirmation
+    for accounts that have none.
+    """
+
+    password: Optional[str] = Field(
+        None, description="Password for confirmation. Not required for social-login-only accounts."
+    )
 
     class Config:
         json_schema_extra = {"example": {"password": "SecurePass123"}}

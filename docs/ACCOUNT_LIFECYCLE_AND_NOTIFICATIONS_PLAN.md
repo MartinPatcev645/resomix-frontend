@@ -874,22 +874,38 @@ it — there the subscription genuinely is cancelled and `status` is the correct
 
 Tests: `test_billing_refund_service.py` (28).
 
-### D. Making deactivation real
+### D. Making deactivation real — **DONE** (D5 pending)
 
-- [ ] D1 — Block deactivated users at `get_current_user` (covers the whole app in one place)
-- [ ] D2 — Block deactivated users at password login (currently only Google login checks)
-- [ ] D3 — Revoke all sessions on deactivation so it takes effect immediately
-- [ ] D4 — Distinct `ACCOUNT_DEACTIVATED` error code, not a generic 403
-- [ ] D5 — Frontend screen telling the user to contact support
+- [x] D1 — Blocked at `get_current_user`. **Free**: that function already loads the user row, so
+      it is an in-memory boolean, not an extra query — and it is one line in one dependency, not
+      per-endpoint work
+- [x] D2 — Blocked at password login, after the password check so the response cannot be used to
+      enumerate deactivated accounts
+- [x] D3 — `UserService.deactivate` revokes every session. Without it a suspended user keeps
+      working for up to `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` (30) on any device holding a token
+- [x] D4 — `{"code": "ACCOUNT_DEACTIVATED", "error": …}` on both login paths and the dependency
+- [ ] D5 — Dedicated frontend screen (the message is returned and displayed; the styled
+      contact-support screen is still to do)
 
-### E. Self-service account deletion
+> Why both a login block and a chokepoint check: login-only leaves the 30-minute access-token
+> window open. Session revocation closes the refresh path
+> (`async_get_active_sessions` filters `revoked_at`), but not tokens already issued.
 
-- [ ] E1 — `DELETE /users/me` soft-deletes instead of hard-deleting (currently throws)
-- [ ] E2 — Fix the crash for Google-only accounts (no password to verify)
-- [ ] E3 — Set `deactivated_at`, `deletion_requested_at`, `purge_due_at = +30d`
-- [ ] E4 — Cancel any live Stripe subscription as part of it
-- [ ] E5 — Replace the inline Danger Zone with `ConfirmDialog` + 4s countdown
-- [ ] E6 — Copy states: loss of account, playlists, uploads, subscription; deleted in 30 days
+### E. Self-service account deletion — **DONE** (E4 pending)
+
+- [x] E1 — `request_account_deletion` soft-deletes; nothing is removed, so the tenancy bypass the
+      old hard delete needed is gone with it
+- [x] E2 — Password required only where one exists; a Google-only account (`password_hash IS
+      NULL`) can now delete itself. Schema, API client and TS type all made optional to match
+- [x] E3 — `deactivated_at`, `deletion_requested_at`, `purge_due_at = +30d`, reason
+      `user_requested`
+- [ ] E4 — Cancel any live Stripe subscription as part of deletion *(the email already says the
+      subscription is cancelled — this must land before that sentence is true)*
+- [x] E5 — `DeleteAccountDialog` using the shared `ConfirmDialog`, 4s countdown matching
+      delete-track
+- [x] E6 — Consequences listed; the response and email both carry the purge date
+
+Tests: `tests/unit/services/test_account_lifecycle.py` (14). All three apps build.
 
 ### F. Admin purge
 

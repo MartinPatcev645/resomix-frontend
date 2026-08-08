@@ -381,6 +381,25 @@ class AuthService:
                 detail="Email not verified. Please verify your email before logging in.",
             )
 
+        # Deactivated accounts get no new session.
+        #
+        # `get_current_user` already blocks an EXISTING token, which is what stops someone
+        # mid-session. This is the other door: until now the password path checked the password,
+        # the lockout counter, email verification and 2FA — but never `is_active` — so a
+        # deactivated user could simply log in again. (Google sign-in has always checked it,
+        # which made the gap easy to miss.)
+        #
+        # Checked AFTER the password so the response cannot be used to enumerate which addresses
+        # belong to deactivated accounts.
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": "ACCOUNT_DEACTIVATED",
+                    "error": "This account is deactivated. Contact support to restore access.",
+                },
+            )
+
         # Check if 2FA is enabled
         if user.is_two_factor_enabled:
             # Generate 2FA code
@@ -515,8 +534,13 @@ class AuthService:
             await self._assign_default_plan(db, user)
 
         if not user.is_active:
+            # Same shape as the password path so one frontend handler covers both.
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="User account is deactivated."
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": "ACCOUNT_DEACTIVATED",
+                    "error": "This account is deactivated. Contact support to restore access.",
+                },
             )
 
         return await self._create_user_session(

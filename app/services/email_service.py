@@ -323,6 +323,34 @@ class EmailService:
             )
             return False
 
+    async def send_account_deletion_scheduled(
+        self,
+        email: EmailStr,
+        name: str,
+        purge_date: str,
+        had_subscription: bool = False,
+    ) -> bool:
+        """Confirm a deletion request and, more importantly, the way back out of it.
+
+        The only notice the user gets: deletion is carried out by an admin on or after the purge
+        date, and there is no automatic reminder before it. So the grace period and how to cancel
+        have to be unmissable here rather than implied.
+
+        No dedupe needed — unlike the billing mail this is user-initiated, not webhook-driven, so
+        there are no retries to collapse.
+        """
+        return await self.send_templated(
+            email=email,
+            subject="Your Resomix account is scheduled for deletion",
+            template_name="account_deletion_scheduled.html",
+            context={
+                "name": name or "there",
+                "purge_date": purge_date,
+                "had_subscription": had_subscription,
+                "app_url": settings.app_url,
+            },
+        )
+
     async def send_contact_confirmation(
         self, email: EmailStr, name: str, contact_type: str = "consumer"
     ) -> bool:

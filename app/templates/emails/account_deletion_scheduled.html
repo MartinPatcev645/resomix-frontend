@@ -1,0 +1,44 @@
+{# Account deletion requested — the 30-day grace notice.
+
+   This is a receipt for an irreversible act, so it has one job above all others: make the way BACK
+   obvious. Someone who deleted in anger, or by accident, has thirty days and needs to know that in
+   the first two lines rather than the last.
+
+   It is also the only warning that will arrive. There is no automatic reminder before the purge —
+   deletion is carried out by an admin, on or after `purge_due_at`. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your account is scheduled for deletion</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>We've received your request to delete your Resomix account. You've been signed out everywhere,
+   and you can no longer sign in.</p>
+
+<div class="alert alert-danger">
+    <p style="margin: 0;"><strong>Everything will be permanently deleted on {{ purge_date }}.</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        That includes your playlists, uploaded tracks, analyses and profile. After that date it
+        cannot be recovered by us or by anyone else.
+    </p>
+</div>
+
+<div class="alert">
+    <p style="margin: 0;"><strong>Changed your mind? You have until {{ purge_date }}.</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        Nothing has been deleted yet &mdash; your account is simply switched off. Reply to this
+        email and we'll restore it exactly as you left it. After {{ purge_date }} we can't.
+    </p>
+</div>
+
+{% if had_subscription %}
+<p>Your subscription has been cancelled, so you won't be charged again. Any period you've already
+   paid for is not refunded &mdash; deleting the account ends access immediately.</p>
+{% endif %}
+
+<p class="text-muted" style="margin-top: 30px;">
+    If you didn't request this, reply straight away &mdash; someone may have access to your
+    account.
+</p>
+{% endblock %}

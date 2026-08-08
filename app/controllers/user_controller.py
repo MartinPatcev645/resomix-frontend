@@ -17,12 +17,17 @@ from fastapi import status, Request, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 import time
 
+import logging
+
 from app.services.user_service import UserService
 from app.services.auth_service import AuthService
+from app.services.email_service import EmailService
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 from app.services.admin_operation_log_service import AdminOperationLogService
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 
 class UserController:
@@ -32,6 +37,7 @@ class UserController:
         self.user_service = UserService()
         self.auth_service = AuthService()
         self.logging_service = LoggingService()
+        self.email_service = EmailService()
         self.admin_log_service = AdminOperationLogService()
 
     async def search_users(
@@ -693,6 +699,35 @@ class UserController:
 
             return JSONResponse(status_code=e.status_code, content=jsonable_encoder(response_data))
 
+    async def _notify_deletion_scheduled(
+        self, db: AsyncSession, user_id: int, purge_due_at, *, had_subscription: bool = False
+    ) -> None:
+        """Tell the user their account is going, and how long they have to change their mind.
+
+        Best-effort: the deletion has already been recorded and committed, and a mail failure must
+        not turn a completed request into an error the user might retry. Matches the convention in
+        `contact_service`.
+        """
+        try:
+            from sqlalchemy import select
+
+            from app.models.user import User as UserModel
+
+            user = (
+                await db.execute(select(UserModel).where(UserModel.id == user_id))
+            ).scalar_one_or_none()
+            if user is None or not user.email:
+                return
+
+            await self.email_service.send_account_deletion_scheduled(
+                email=user.email,
+                name=user.name or user.username or "there",
+                purge_date=purge_due_at.strftime("%-d %B %Y"),
+                had_subscription=had_subscription,
+            )
+        except Exception as exc:  # noqa: BLE001 — see the docstring
+            logger.error("Could not send deletion-scheduled email to user %s: %s", user_id, exc)
+
     async def delete_account(
         self, db: AsyncSession, request: Request, user_id: int, password: str
     ) -> JSONResponse:
@@ -712,20 +747,37 @@ class UserController:
         correlation_id = self.logging_service.generate_correlation_id()
 
         try:
-            # Bypass multi-tenancy failsafe for account deletion
-            # This allows cascade deletion of partner-scoped records (like tracks) 
-            # associated with the user without requiring a partner_id in the request context.
-            from app.core.context import set_admin_context
-            set_admin_context(True)
-            
-            await self.user_service.delete_account(
+            # SOFT delete: access stops now, the data is kept untouched for 30 days, an admin
+            # destroys it afterwards. Nothing is removed here, so the tenancy bypass the old hard
+            # delete needed is gone with it.
+            result = await self.user_service.request_account_deletion(
                 db=db, user_id=user_id, password=password
+            )
+
+            # Stop Stripe billing — AFTER the commit, so the webhooks this provokes cannot race
+            # our own write. Best-effort: the account is already gone from the user's point of
+            # view, and a Stripe hiccup must not turn that into an error they might retry. A
+            # failure logs "it will keep billing", which is the signal to reconcile by hand.
+            if result.get("stripe_subscription_id"):
+                from app.services.billing_refund_service import BillingRefundService
+
+                BillingRefundService.cancel_in_stripe(result["stripe_subscription_id"])
+
+            await self._notify_deletion_scheduled(
+                db, user_id, result["purge_due_at"], had_subscription=result["had_subscription"]
             )
 
             duration_ms = (time.time() - start_time) * 1000
             response_data = format_response(
                 success=True,
-                data={"message": "Account deleted successfully"},
+                data={
+                    "message": (
+                        "Your account has been deactivated and is scheduled for deletion on "
+                        f"{result['purge_due_at'].strftime('%-d %B %Y')}."
+                    ),
+                    "purge_due_at": result["purge_due_at"].isoformat(),
+                    "grace_days": result["grace_days"],
+                },
             )
 
             self.logging_service.log(

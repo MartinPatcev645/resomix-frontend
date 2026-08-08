@@ -10,7 +10,10 @@ Author: Muhammad Usman Naeem
 Date: October 23, 2025
 """
 
+import logging
+from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any, Tuple
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
@@ -22,6 +25,8 @@ from app.repositories.user_repository import (
 from app.repositories.rbac_repository import RBACRepository
 from app.core.security import hash_password, verify_password, validate_password_strength
 from app.services.admin_operation_log_service import AdminOperationLogService
+
+logger = logging.getLogger(__name__)
 
 
 class UserService:
@@ -188,38 +193,138 @@ class UserService:
 
         return await self.user_repo.async_unlink_provider(db, user_id, provider)
 
-    async def delete_account(
-        self, db: AsyncSession, user_id: int, password: str
-    ) -> bool:
+    # How long a deleted account is kept before an admin may destroy it. Nothing is touched during
+    # this window, so a change of mind costs one flag flip rather than an unrecoverable loss.
+    DELETION_GRACE_DAYS = 30
+
+    async def deactivate(
+        self,
+        db: AsyncSession,
+        user: User,
+        *,
+        reason: str,
+        commit: bool = True,
+    ) -> User:
+        """Withdraw access, and make it stick.
+
+        THE ONE PLACE THAT DEACTIVATES. Both the admin toggle and self-service deletion go through
+        here, because "deactivated" is three facts that have to move together:
+
+        1. ``is_active = False`` — the flag `get_current_user` and both login paths check;
+        2. ``deactivated_at`` / ``deactivation_reason`` — when and why, which the flag cannot say;
+        3. **every session revoked** — without this the user keeps working until their access token
+           expires, which is the difference between "deactivated" and "deactivated eventually".
+
+        Doing (1) without (3) is what made the old admin toggle a label rather than a control.
         """
-        Delete user account (requires password confirmation).
+        user.is_active = False
+        user.deactivated_at = datetime.utcnow()
+        user.deactivation_reason = reason
 
-        Args:
-            db: Database session
-            user_id: User's internal ID
-            password: Password for confirmation
+        revoked = await self.session_repo.async_revoke_all_user_sessions(db, user.id)
+        logger.info(
+            "Deactivated user %s (reason=%s), revoked %s session(s)", user.id, reason, revoked
+        )
 
-        Returns:
-            True if deleted successfully
+        if commit:
+            await db.commit()
+        return user
 
-        Raises:
-            HTTPException: If password is incorrect
+    async def reactivate(self, db: AsyncSession, user: User, *, commit: bool = True) -> User:
+        """Restore access and cancel any pending deletion.
+
+        Clearing `purge_due_at` is the point: an account that comes back must not still be sitting
+        on an admin's purge list, or someone reinstated on Monday is destroyed on Tuesday.
+        """
+        user.is_active = True
+        user.deactivated_at = None
+        user.deactivation_reason = None
+        user.deletion_requested_at = None
+        user.purge_due_at = None
+        if commit:
+            await db.commit()
+        return user
+
+    async def request_account_deletion(
+        self, db: AsyncSession, user_id: int, password: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """The user asks to delete their account.
+
+        SOFT, NOT HARD. This used to call `async_delete` — a bare `DELETE FROM users` relying on a
+        cascade that does not exist: `orders.user_id`, `admin_operation_logs.admin_user_id` and
+        `tracks.uploaded_by` are all RESTRICT, so it raised an IntegrityError for anyone who had
+        ever uploaded a track or placed an order. It also called `verify_password` unconditionally,
+        which crashes for a Google-only account with no password hash.
+
+        What happens instead: access stops now, the data is kept untouched for 30 days, and an
+        admin destroys it afterwards. Nothing is deleted automatically.
+
+        Returns the purge date so the caller can tell the user, and to notify them.
         """
         user = await self.user_repo.async_get_by_id(db, user_id)
-
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-        # Verify password
-        if not verify_password(password, user.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Password is incorrect"
-            )
+        # Confirm identity — but only where there is a password to confirm with. A Google-only
+        # account has `password_hash = NULL`, and the old code fed that straight to
+        # `verify_password`. Being signed in is the confirmation for those; the UI's typed
+        # confirmation is what makes it deliberate.
+        if user.password_hash:
+            if not password:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Password is required to delete your account.",
+                )
+            if not verify_password(password, user.password_hash):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Password is incorrect"
+                )
 
-        # Delete user (cascade will handle related records)
-        return await self.user_repo.async_delete(db, user_id)
+        # A live subscription has to stop billing — someone who deleted their account must not
+        # keep being charged. The row is marked here, inside the same transaction; Stripe itself is
+        # told by the CALLER, after this commits.
+        #
+        # That split is deliberate and was learned the hard way: cancelling in Stripe mid-transaction
+        # provokes a burst of subscription webhooks that race the uncommitted write, and the last
+        # one to land wins. See `BillingRefundService.handle_refund`.
+        from app.core.entitlement_keys import ACTIVE_SUBSCRIPTION_STATUSES
+        from app.models.purchase import UserSubscription
+
+        subscription = (
+            await db.execute(
+                select(UserSubscription).where(
+                    UserSubscription.user_id == user.id,
+                    UserSubscription.status.in_(ACTIVE_SUBSCRIPTION_STATUSES),
+                )
+            )
+        ).scalar_one_or_none()
+
+        now = datetime.utcnow()
+        purge_due_at = now + timedelta(days=self.DELETION_GRACE_DAYS)
+        user.deletion_requested_at = now
+        user.purge_due_at = purge_due_at
+        await self.deactivate(db, user, reason="user_requested", commit=False)
+
+        stripe_subscription_id = None
+        if subscription is not None:
+            stripe_subscription_id = subscription.stripe_subscription_id
+            subscription.status = "canceled"
+            subscription.ended_at = subscription.ended_at or now
+            subscription.canceled_at = subscription.canceled_at or now
+            subscription.cancellation_reason = "account_deleted"
+            subscription.is_founding = False
+            subscription.stripe_schedule_id = None
+
+        await db.commit()
+
+        return {
+            "deletion_requested_at": now,
+            "purge_due_at": purge_due_at,
+            "grace_days": self.DELETION_GRACE_DAYS,
+            "had_subscription": subscription is not None,
+            # For the caller to cancel in Stripe once this transaction has landed.
+            "stripe_subscription_id": stripe_subscription_id,
+        }
 
     async def get_user_sessions(
         self, db: AsyncSession, user_id: int
@@ -658,12 +763,14 @@ class UserService:
         old_status = user.is_active
         new_status = not old_status
 
-        updated_user = await self.user_repo.async_update(
-            db=db,
-            id=user.id,
-            commit=False,
-            is_active=new_status
-        )
+        # Route through the shared transitions rather than flipping the flag directly. Setting
+        # `is_active = False` on its own left every existing session working until its token
+        # expired, and recorded neither when nor why. Reactivating has to clear `purge_due_at`
+        # too, or an account reinstated on Monday is still on the admin's purge list on Tuesday.
+        if new_status:
+            updated_user = await self.reactivate(db, user, commit=False)
+        else:
+            updated_user = await self.deactivate(db, user, reason="admin", commit=False)
 
         await self.admin_log_service.log_operation(
             db=db,
