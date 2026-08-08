@@ -308,6 +308,33 @@ class BillingSyncService:
         row = await self._get_subscription_row(db, user.id)
         prev_plan_id = row.plan_id if row else None
 
+        # A subscription that has ENDED must never come back to life.
+        #
+        # Cancelling one produces several events in the same second, and they are delivered and
+        # processed concurrently — so a `customer.subscription.updated` carrying `status: active`
+        # can land AFTER the `.deleted` that ended it. That is stale information, not a state
+        # change: Stripe's subscription lifecycle is terminal at `canceled`, and a cancelled
+        # subscription never becomes active again.
+        #
+        # Without this guard the last writer wins, and a full refund could leave the customer
+        # looking subscribed with the money already returned.
+        #
+        # Scoped to the SAME subscription id, because resubscribing reuses this row: a genuinely
+        # new subscription arrives with a new id and must be allowed to overwrite the dead one.
+        if (
+            row is not None
+            and row.ended_at is not None
+            and row.stripe_subscription_id == sub.get("id")
+            and not deleted
+            and new_status not in ("canceled", "incomplete_expired")
+        ):
+            logger.info(
+                "BILLING: ignoring out-of-order %s reporting status=%r for already-ended "
+                "subscription %s",
+                event_type, new_status, sub.get("id"),
+            )
+            return
+
         if row is None:
             row = UserSubscription(user_id=user.id, stripe_subscription_id=sub.get("id"))
             db.add(row)

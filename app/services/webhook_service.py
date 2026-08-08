@@ -417,6 +417,13 @@ class WebhookService:
                     db, notify_subscription_id, stripe_event_id, event_type=event.type
                 )
             if pending_refund_notice:
+                # Cancel in Stripe only now. Doing it inside the transaction provoked a burst of
+                # subscription webhooks that raced our own uncommitted write and left the
+                # subscription looking active after a full refund. See `handle_refund`.
+                outcome, _charge = pending_refund_notice
+                kind, refunded_row = outcome
+                if kind == "full" and refunded_row.stripe_subscription_id:
+                    self.billing_refund.cancel_in_stripe(refunded_row.stripe_subscription_id)
                 await self._notify_refund(db, *pending_refund_notice, stripe_event_id)
             if pending_dispute_notice:
                 await self._notify_dispute(db, *pending_dispute_notice, stripe_event_id)

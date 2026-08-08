@@ -247,10 +247,18 @@ class BillingRefundService:
             )
             return ("partial", row)
 
-        # Stripe first: cancelling locally while Stripe keeps billing is the worse half-state.
-        if row.stripe_subscription_id:
-            self.cancel_in_stripe(row.stripe_subscription_id)
-
+        # NOTE: Stripe is NOT called here.
+        #
+        # Cancelling inside this transaction provokes four more webhooks — two schedule events,
+        # `customer.subscription.updated` and `.deleted` — which arrive within milliseconds and
+        # are processed concurrently. Each opens its own session, reads a row that still says
+        # `active` because our changes are uncommitted, and writes its own values. Whichever
+        # commits last wins, and in practice that was the stale `updated` carrying `status:
+        # active`: the refund left the subscription looking live, with `cancellation_reason`
+        # overwritten by the generic Stripe wording.
+        #
+        # The caller cancels in Stripe AFTER committing — the same rule the notification emails
+        # follow, and for the same reason.
         now = datetime.utcnow()
         row.status = "canceled"
         row.ended_at = row.ended_at or now

@@ -243,6 +243,70 @@ async def test_plain_update_does_not_erase_an_existing_reason() -> None:
 
 
 # --------------------------------------------------------------------------- #
+# Out-of-order delivery — an ended subscription must never come back
+# --------------------------------------------------------------------------- #
+
+async def _sync_existing(row, payload, event_type):
+    user = MagicMock()
+    user.id = 42
+    db = _mock_db([_scalar(user), _first((7,)), _scalar(row)])
+    await BillingSyncService().sync_subscription(db, payload, event_type, "evt_ooo")
+    return row
+
+
+@pytest.mark.asyncio
+async def test_a_stale_active_event_cannot_resurrect_an_ended_subscription() -> None:
+    """THE RACE A FULL REFUND EXPOSED.
+
+    Cancelling produces several events in the same second, delivered and processed concurrently,
+    so `customer.subscription.updated` carrying `status: active` can land AFTER the `.deleted`
+    that ended it. Last-writer-wins left a refunded customer looking subscribed — money returned,
+    plan still Pro.
+    """
+    row = Row(status="canceled", ended_at=_ts(CANCEL_EPOCH), cancellation_reason="refunded")
+    await _sync_existing(row, _subscription_payload(status="active"),
+                         "customer.subscription.updated")
+
+    assert row.status == "canceled"
+    assert row.cancellation_reason == "refunded"
+
+
+@pytest.mark.asyncio
+async def test_a_late_deleted_event_still_applies() -> None:
+    """The guard must not swallow the terminal event itself."""
+    row = Row(status="canceled", ended_at=_ts(CANCEL_EPOCH))
+    await _sync_existing(row, _subscription_payload(status="canceled"),
+                         "customer.subscription.deleted")
+    assert row.status == "canceled"
+
+
+@pytest.mark.asyncio
+async def test_a_resubscribe_overwrites_the_dead_row() -> None:
+    """Resubscribing reuses this row with a NEW Stripe id — that must not be blocked.
+
+    Scoping the guard to the same subscription id is what separates "stale event" from "new
+    subscription"; without it a returning customer would be stuck on the free plan.
+    """
+    row = Row(status="canceled", ended_at=_ts(CANCEL_EPOCH), cancellation_reason="refunded")
+    payload = _subscription_payload(status="active")
+    payload["id"] = "sub_test_2"          # a different subscription
+
+    await _sync_existing(row, payload, "customer.subscription.created")
+
+    assert row.status == "active"
+    assert row.stripe_subscription_id == "sub_test_2"
+
+
+@pytest.mark.asyncio
+async def test_an_active_subscription_is_unaffected_by_the_guard() -> None:
+    """`ended_at` is NULL for every healthy subscription, so the guard never fires for them."""
+    row = Row(status="active", ended_at=None)
+    await _sync_existing(row, _subscription_payload(status="past_due"),
+                         "customer.subscription.updated")
+    assert row.status == "past_due"
+
+
+# --------------------------------------------------------------------------- #
 # sync_schedule — the founding-lock path
 # --------------------------------------------------------------------------- #
 

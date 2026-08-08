@@ -105,14 +105,16 @@ async def test_full_refund_ends_the_subscription() -> None:
     db = _db(subscription_row=row, invoice_row=_invoice_row())
     svc = BillingRefundService()
 
-    with patch.object(svc, "cancel_in_stripe", return_value=True) as cancel:
+    with patch.object(svc, "cancel_in_stripe") as cancel:
         outcome = await svc.handle_refund(db, _charge())
 
     assert outcome[0] == "full"
     assert row.status == "canceled"
     assert isinstance(row.ended_at, datetime)
     assert row.cancellation_reason == "refunded"
-    cancel.assert_called_once_with(SUB_ID)
+    # Stripe is NOT called from here — the caller does it after committing. Cancelling inside the
+    # transaction provoked a burst of subscription webhooks that raced our own uncommitted write.
+    cancel.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -236,14 +238,16 @@ async def test_an_unknown_subscription_does_nothing() -> None:
 
 
 @pytest.mark.asyncio
-async def test_a_stripe_cancel_failure_still_ends_it_locally() -> None:
-    """Access must stop even if Stripe rejects the cancel — the log is what flags the mismatch."""
+async def test_the_local_row_ends_without_any_stripe_call() -> None:
+    """Access stops on our side regardless of what Stripe does next.
+
+    The caller cancels in Stripe after committing; if that fails it logs loudly, but the customer
+    has already lost the access they were refunded for.
+    """
     row = Row()
     db = _db(subscription_row=row, invoice_row=_invoice_row())
-    svc = BillingRefundService()
 
-    with patch.object(svc, "cancel_in_stripe", return_value=False):
-        outcome = await svc.handle_refund(db, _charge())
+    outcome = await BillingRefundService().handle_refund(db, _charge())
 
     assert outcome[0] == "full"
     assert row.status == "canceled"
