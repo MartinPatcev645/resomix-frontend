@@ -141,10 +141,34 @@ export function PlanBillingCard() {
   const isPaid = planCode !== "free" && planCode !== "guest";
   const status = sub?.status;
 
+  // The server decides whether this is cancelling; the client only words it.
+  //
+  // This used to branch on `sub.cancel_at_period_end`, which Stripe sets ONLY for a plain cancel
+  // on an unmanaged subscription. Every founding subscriber has a schedule attached, and
+  // cancelling one of those leaves the boolean false — so a customer who had just cancelled fell
+  // through to the branch below and was told their plan would RENEW.
+  //
+  // `cancellation` collapses all of those mechanisms into one answer. The `??` keeps a browser
+  // running against an older server working: it falls back to the legacy boolean rather than
+  // silently reporting no cancellation at all.
+  const cancellation =
+    sub?.cancellation ??
+    (sub?.cancel_at_period_end
+      ? { pending: true, ended: false, effective_at: sub.current_period_end, reason: null }
+      : null);
+
   let statusLine: string | null = null;
   if (sub) {
-    if (sub.cancel_at_period_end && sub.current_period_end) {
-      statusLine = `Cancels on ${fmtDate(sub.current_period_end)} — you keep ${planName} until then`;
+    if (cancellation?.pending) {
+      // A missing date must not suppress the notice — "cancelled, date unknown" beats implying
+      // the plan is still renewing.
+      statusLine = cancellation.effective_at
+        ? `Active till ${fmtDate(cancellation.effective_at)} (Cancelled)`
+        : `Cancelled — you keep ${planName} until the end of your current period`;
+    } else if (cancellation?.ended) {
+      statusLine = cancellation.effective_at
+        ? `Ended on ${fmtDate(cancellation.effective_at)}`
+        : "Subscription ended";
     } else if (status === "active" && sub.current_period_end) {
       statusLine = `Renews on ${fmtDate(sub.current_period_end)}`;
     } else if (status === "trialing" && sub.trial_end) {

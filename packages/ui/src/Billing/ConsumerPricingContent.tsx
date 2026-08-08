@@ -281,9 +281,17 @@ export function ConsumerPricingContent({
   const isCurrentPro = !!pro?.is_current;
   const isCurrentFree = !!free?.is_current;
   const sub = subSummary?.subscription;
-  const cancelAtEnd = !!sub?.cancel_at_period_end;
+  // Same rule as the profile card: the server decides whether this is cancelling, because
+  // `cancel_at_period_end` alone misses the schedule-managed case that every founding subscriber
+  // is in. The `??` keeps an older server working rather than silently dropping the notice.
+  const cancellation =
+    sub?.cancellation ??
+    (sub?.cancel_at_period_end
+      ? { pending: true, ended: false, effective_at: sub.current_period_end, reason: null }
+      : null);
+  const cancelAtEnd = !!cancellation?.pending;
   const activeUntilLabel =
-    cancelAtEnd && sub?.current_period_end ? fmtDateLong(sub.current_period_end) : null;
+    cancelAtEnd && cancellation?.effective_at ? fmtDateLong(cancellation.effective_at) : null;
 
   const goLogin = () => {
     window.location.href = `/auth/login?redirect=${encodeURIComponent("/subscribe")}`;

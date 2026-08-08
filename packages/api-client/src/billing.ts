@@ -85,13 +85,40 @@ export interface BillingUsageItem {
   limit: number | null;
 }
 
+/**
+ * Server's verdict on whether this subscription is cancelling, and when access stops.
+ *
+ * BRANCH ON THIS, never on the raw fields below it. Stripe expresses a cancellation in more than
+ * one way — `cancel_at_period_end` is set only for a plain cancel on an unmanaged subscription,
+ * while a schedule-managed one (every founding subscriber) records it as `cancel_at` or on the
+ * schedule itself. Reading the boolean alone is what made the profile screen tell customers who
+ * had just cancelled that their plan would renew.
+ *
+ * `null` means there is nothing to report: no subscription, or one running normally.
+ */
+export interface BillingCancellation {
+  /** Cancelling, but access continues until `effective_at`. */
+  pending: boolean;
+  /** Access has already stopped. */
+  ended: boolean;
+  /** ISO-8601. Null when no boundary is known — still show the cancellation, just without a date. */
+  effective_at: string | null;
+  /** cancellation_requested | payment_failed | payment_disputed | refunded | disputed | admin */
+  reason: string | null;
+}
+
 export interface BillingSubscription {
   status: string;
   currency: string | null;
   current_period_end: string | null;
+  /** Raw Stripe fields — kept for support tooling. For display logic use `cancellation`. */
   cancel_at_period_end: boolean;
+  cancel_at: string | null;
   canceled_at: string | null;
+  ended_at: string | null;
+  cancellation_reason: string | null;
   trial_end: string | null;
+  cancellation: BillingCancellation | null;
 }
 
 export interface BillingSubscriptionSummary {

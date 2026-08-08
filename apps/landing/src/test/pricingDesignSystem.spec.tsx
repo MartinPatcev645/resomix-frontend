@@ -62,6 +62,30 @@ const PRO_LIMITS = {
   can_similarity_upload: true,
 };
 
+/**
+ * A healthy, renewing Pro subscription. Override only the fields a test is about.
+ *
+ * Exists so that adding a field to `BillingSubscription` does not break every fixture in the
+ * file — which is exactly what happened when `cancellation` was introduced.
+ */
+function mockSubscription(
+  overrides: Partial<NonNullable<BillingSubscriptionSummary['subscription']>> = {},
+): NonNullable<BillingSubscriptionSummary['subscription']> {
+  return {
+    status: 'active',
+    currency: 'EUR',
+    current_period_end: '2027-03-14T00:00:00Z',
+    cancel_at_period_end: false,
+    cancel_at: null,
+    canceled_at: null,
+    ended_at: null,
+    cancellation_reason: null,
+    trial_end: null,
+    cancellation: null,
+    ...overrides,
+  };
+}
+
 function mockPlans(overrides: Partial<BillingPlansResponse> = {}): BillingPlansResponse {
   return {
     currency: 'EUR',
@@ -330,14 +354,7 @@ describe('consumer pricing upgrade contract', () => {
       success: true,
       data: {
         plan: { code: 'pro', name: 'Pro' },
-        subscription: {
-          status: 'active',
-          currency: 'EUR',
-          current_period_end: '2027-03-14T00:00:00Z',
-          cancel_at_period_end: false,
-          canceled_at: null,
-          trial_end: null,
-        },
+        subscription: mockSubscription(),
         usage: [],
       } satisfies BillingSubscriptionSummary,
     });
@@ -347,7 +364,41 @@ describe('consumer pricing upgrade contract', () => {
     expect(screen.queryByRole('button', { name: /choose pro|upgrade to pro|subscribe/i })).not.toBeInTheDocument();
   });
 
-  it('with cancel_at_period_end prints active-until and never next renewal', async () => {
+  /**
+   * Both cancellation mechanisms must produce the same notice.
+   *
+   * `cancel_at_period_end` is set only for a plain cancel on an unmanaged subscription. Every
+   * founding subscriber has a schedule attached, and cancelling one of those leaves the boolean
+   * FALSE — the server reports it through `cancellation` instead. Reading the boolean alone told
+   * customers who had just cancelled that their plan would renew.
+   */
+  it.each([
+    [
+      'cancel_at_period_end (unmanaged subscription)',
+      mockSubscription({
+        cancel_at_period_end: true,
+        cancellation: {
+          pending: true,
+          ended: false,
+          effective_at: '2027-03-14T00:00:00Z',
+          reason: 'cancellation_requested',
+        },
+      }),
+    ],
+    [
+      'cancel_at only (schedule-managed founding subscription)',
+      mockSubscription({
+        cancel_at_period_end: false,
+        cancel_at: '2027-03-14T00:00:00Z',
+        cancellation: {
+          pending: true,
+          ended: false,
+          effective_at: '2027-03-14T00:00:00Z',
+          reason: 'cancellation_requested',
+        },
+      }),
+    ],
+  ])('%s prints active-until and never next renewal', async (_label, subscription) => {
     vi.spyOn(useAuthStore, 'getState').mockReturnValue({
       isAuthenticated: true,
       user: { uuid: 'u1' },
@@ -361,14 +412,7 @@ describe('consumer pricing upgrade contract', () => {
       success: true,
       data: {
         plan: { code: 'pro', name: 'Pro' },
-        subscription: {
-          status: 'active',
-          currency: 'EUR',
-          current_period_end: '2027-03-14T00:00:00Z',
-          cancel_at_period_end: true,
-          canceled_at: null,
-          trial_end: null,
-        },
+        subscription,
         usage: [],
       } satisfies BillingSubscriptionSummary,
     });
