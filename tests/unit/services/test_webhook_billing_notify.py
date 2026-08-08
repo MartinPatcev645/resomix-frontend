@@ -44,6 +44,10 @@ class Row:
         self.canceled_at = None
         self.ended_at = None
         self.cancellation_reason = None
+        self.stripe_price_id = None
+        self.currency = "EUR"
+        self.is_founding = False
+        self.founding_lock_ends_at = None
         for key, value in overrides.items():
             setattr(self, key, value)
 
@@ -58,11 +62,16 @@ def _result(value, kind="scalar"):
 
 
 def _service_and_db(row, *, plan_name="Pro"):
-    """Wire a service whose db returns: the subscription row, the user, then the plan."""
+    """Wire a service whose db returns: the subscription row, the user, then the plan.
+
+    This is the ordering of the CANCELLATION paths. The `created` path inserts a PlanPrice
+    look-up before the plan — see `_service_and_db_created`.
+    """
     svc = WebhookService()
     svc.billing_email.subscription_cancelled = AsyncMock(return_value=True)
     svc.billing_email.subscription_ended = AsyncMock(return_value=True)
     svc.billing_email.subscription_resumed = AsyncMock(return_value=True)
+    svc.billing_email.subscription_started = AsyncMock(return_value=True)
 
     user = MagicMock()
     user.id = 42
@@ -72,6 +81,100 @@ def _service_and_db(row, *, plan_name="Pro"):
     db = MagicMock()
     db.execute = AsyncMock(side_effect=[_result(row), _result(user), _result(plan)])
     return svc, db
+
+
+# --------------------------------------------------------------------------- #
+# Welcome — on `created` only
+# --------------------------------------------------------------------------- #
+
+def _price(cents=799, currency="EUR", interval="month"):
+    p = MagicMock()
+    p.unit_amount_cents, p.currency, p.interval = cents, currency, interval
+    return p
+
+
+def _service_and_db_created(row, price=None, *, plan_name="Pro"):
+    """The `created` path queries in this order: subscription row → user → PlanPrice → Plan.
+
+    A separate builder because the welcome look-up sits BETWEEN the user and the plan, so the
+    generic helper's fixed row/user/plan ordering hands a Plan back where a PlanPrice is expected.
+    """
+    svc, _ = _service_and_db(row, plan_name=plan_name)
+    plan = MagicMock()
+    plan.name = plan_name
+    user = MagicMock()
+    user.id = 42
+    db = MagicMock()
+    db.execute = AsyncMock(
+        side_effect=[_result(row), _result(user), _result(price), _result(plan)]
+    )
+    return svc, db
+
+
+@pytest.mark.asyncio
+async def test_a_new_subscription_is_welcomed() -> None:
+    row = Row(stripe_price_id="price_founding_eur")
+    svc, db = _service_and_db_created(row, _price())
+
+    await svc._notify_subscription_state(db, SUB_ID, "evt_1", event_type="customer.subscription.created")
+
+    svc.billing_email.subscription_started.assert_awaited_once()
+    kwargs = svc.billing_email.subscription_started.call_args.kwargs
+    assert kwargs["amount_cents"] == 799
+    assert kwargs["interval"] == "month"
+    assert kwargs["renews_at"] == PERIOD_END
+
+
+@pytest.mark.parametrize("event_type", [
+    "customer.subscription.updated",
+    "customer.subscription.deleted",
+    "subscription_schedule.updated",
+    None,
+])
+@pytest.mark.asyncio
+async def test_only_created_triggers_the_welcome(event_type) -> None:
+    """THE REGRESSION GUARD FOR A DEPLOY HAZARD.
+
+    The dedupe key alone would make this send once per subscription however it were triggered —
+    but "once" is not "once, at the right moment". Firing on any event for a healthy subscription
+    would greet every existing subscriber the first time a webhook touched them after deploy.
+    """
+    svc, db = _service_and_db_created(Row(), _price())
+    await svc._notify_subscription_state(db, SUB_ID, "evt_1", event_type=event_type)
+    svc.billing_email.subscription_started.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_a_founding_subscriber_is_told_when_their_rate_is_locked_until() -> None:
+    """The locked rate is the offer they bought; omitting it undersells what they paid for."""
+    locked_until = datetime(2028, 6, 8)
+    row = Row(stripe_price_id="price_founding_eur", is_founding=True,
+              founding_lock_ends_at=locked_until)
+    svc, db = _service_and_db_created(row, _price())
+
+    await svc._notify_subscription_state(db, SUB_ID, "evt_1", event_type="customer.subscription.created")
+    assert svc.billing_email.subscription_started.call_args.kwargs["founding_until"] == locked_until
+
+
+@pytest.mark.asyncio
+async def test_a_list_price_subscriber_gets_no_founding_claim() -> None:
+    row = Row(stripe_price_id="price_list_eur", is_founding=False,
+              founding_lock_ends_at=datetime(2028, 6, 8))
+    svc, db = _service_and_db_created(row, _price())
+
+    await svc._notify_subscription_state(db, SUB_ID, "evt_1", event_type="customer.subscription.created")
+    assert svc.billing_email.subscription_started.call_args.kwargs["founding_until"] is None
+
+
+@pytest.mark.asyncio
+async def test_a_missing_price_row_still_sends_a_welcome() -> None:
+    """No figures beats no email — the customer just paid us."""
+    row = Row(stripe_price_id="price_unknown")
+    svc, db = _service_and_db_created(row, None)
+
+    await svc._notify_subscription_state(db, SUB_ID, "evt_1", event_type="customer.subscription.created")
+    svc.billing_email.subscription_started.assert_awaited_once()
+    assert svc.billing_email.subscription_started.call_args.kwargs["amount_cents"] is None
 
 
 # --------------------------------------------------------------------------- #

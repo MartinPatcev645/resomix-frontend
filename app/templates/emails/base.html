@@ -120,6 +120,37 @@
             margin: 20px 0;
         }
 
+        /* Boxed list — "what you've unlocked", "in the meantime, try Resomix". Defined here
+           because welcome.html and contact_confirmation.html each carry an identical copy in
+           their own inline CSS; new templates extend this instead of adding a third. */
+        .features {
+            padding: 20px;
+            background-color: transparent;
+            border: 1px dotted #cccccc;
+            margin: 24px 0;
+        }
+
+        .features h3 {
+            margin-top: 0;
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            color: #1a1a1a;
+        }
+
+        .features ul {
+            margin: 16px 0;
+            padding-left: 20px;
+        }
+
+        .features li {
+            margin: 12px 0;
+            color: #1a1a1a;
+            font-size: 13px;
+            font-weight: 300;
+            line-height: 1.6;
+        }
+
         .alert-danger {
             border-color: #666666;
         }
@@ -182,6 +213,7 @@
             }
 
             .code-box,
+            .features,
             .alert {
                 border-color: #666666;
             }

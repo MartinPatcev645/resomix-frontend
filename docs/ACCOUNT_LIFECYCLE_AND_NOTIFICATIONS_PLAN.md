@@ -821,6 +821,13 @@ Tests: `tests/unit/services/test_billing_cancellation_state.py` (15),
 - [x] B1 — `BillingEmailService`, inline post-commit like `contact_service`; delivery goes through
       a new generic `EmailService.send_templated`
 - [x] B2 — `billing_notifications` table (migration `c9e2a7d4f1b8`), keyed by **state** not event
+- [x] B2a — **Subscription started (welcome)** — added after review: a first-time subscriber
+      received nothing from us, only Stripe's payment receipt if that was even enabled, while a
+      cancellation got a well-written email. Quotes the price actually paid (from `plan_prices`,
+      so a founding subscriber is not shown the list price) and, for founding subscribers, the
+      date their rate is locked until. Fires on `customer.subscription.created` **only** — the
+      dedupe key alone would still have greeted every existing subscriber the first time a
+      webhook touched them after deploy
 - [x] B3 — Subscription cancelled — template + wired
 - [x] B4 — Subscription ended — template + wired
 - [x] B5 — Full refund — template + wired

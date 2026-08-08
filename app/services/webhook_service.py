@@ -22,7 +22,7 @@ from sqlalchemy import select
 
 from app.core.config import settings
 from app.models.log import SystemLog
-from app.models.plan import Plan
+from app.models.plan import Plan, PlanPrice
 from app.models.purchase import UserSubscription
 from app.models.user import User
 from app.repositories.log_repository import LogRepository
@@ -71,6 +71,41 @@ class WebhookService:
             return "Pro"
         plan = (await db.execute(select(Plan).where(Plan.id == plan_id))).scalar_one_or_none()
         return plan.name if plan else "Pro"
+
+    async def _notify_subscription_started(
+        self,
+        db: AsyncSession,
+        row: UserSubscription,
+        user: User,
+        stripe_event_id: Optional[str],
+    ) -> None:
+        """The welcome email, with the price the customer actually bought at.
+
+        The amount comes from `plan_prices` rather than the plan, because a founding subscriber
+        pays a different price from the list one and quoting the list price back to them would
+        misstate the offer they took. Missing price rows degrade to a welcome with no figures —
+        still worth sending.
+        """
+        price = None
+        if row.stripe_price_id:
+            price = (
+                await db.execute(
+                    select(PlanPrice).where(PlanPrice.stripe_price_id == row.stripe_price_id)
+                )
+            ).scalar_one_or_none()
+
+        await self.billing_email.subscription_started(
+            db, user,
+            subscription_id=row.stripe_subscription_id,
+            plan_name=await self._plan_name(db, row.plan_id),
+            amount_cents=price.unit_amount_cents if price else None,
+            currency=price.currency if price else row.currency,
+            interval=price.interval if price else None,
+            renews_at=row.current_period_end,
+            # Only for a founding subscriber: the locked rate IS the offer they bought.
+            founding_until=row.founding_lock_ends_at if row.is_founding else None,
+            stripe_event_id=stripe_event_id,
+        )
 
     async def _notify_refund(
         self,
@@ -144,7 +179,11 @@ class WebhookService:
             logger.error("BILLING EMAIL: could not notify dispute %s: %s", dispute.get("id"), exc)
 
     async def _notify_subscription_state(
-        self, db: AsyncSession, subscription_id: str, stripe_event_id: Optional[str]
+        self,
+        db: AsyncSession,
+        subscription_id: str,
+        stripe_event_id: Optional[str],
+        event_type: Optional[str] = None,
     ) -> None:
         """Send a cancellation notice, if the committed state calls for one.
 
@@ -177,6 +216,16 @@ class WebhookService:
             ).scalar_one_or_none()
             if user is None:
                 return
+
+            # Welcome, on `created` ONLY.
+            #
+            # The dedupe key would make this send once per subscription however it were triggered,
+            # but "once" is not the same as "once, at the right moment": firing on any event for a
+            # healthy subscription would greet every existing subscriber the first time a webhook
+            # touched them after this deploy — a burst of "welcome to Pro" to people who have been
+            # paying for months.
+            if event_type and event_type.endswith("created"):
+                await self._notify_subscription_started(db, row, user, stripe_event_id)
 
             if not state:
                 # Not cancelling. That is also true of every ordinary renewal, so this is only a
@@ -364,7 +413,9 @@ class WebhookService:
             # Only now, with the transaction landed, tell the customer. An email announcing a
             # state change that then rolled back is worse than no email.
             if notify_subscription_id:
-                await self._notify_subscription_state(db, notify_subscription_id, stripe_event_id)
+                await self._notify_subscription_state(
+                    db, notify_subscription_id, stripe_event_id, event_type=event.type
+                )
             if pending_refund_notice:
                 await self._notify_refund(db, *pending_refund_notice, stripe_event_id)
             if pending_dispute_notice:

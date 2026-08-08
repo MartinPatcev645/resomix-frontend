@@ -1,0 +1,61 @@
+{# Welcome — the one email a paying customer most expects, and the one we did not send.
+
+   Until this existed a new subscriber paid and heard nothing from us; the only message was
+   Stripe's payment receipt, if that was even switched on. Meanwhile a cancellation got a
+   well-written email. That asymmetry is what this closes.
+
+   `founding_until` is worth its own block: the locked rate IS the offer they bought, and stating
+   it in writing is what makes it feel real. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Welcome to {{ plan_name }}</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>Your {{ plan_name }} subscription is active. Thanks for backing Resomix.</p>
+
+<div class="alert">
+    {% if price %}
+    <p style="margin: 0;"><strong>{{ price }}{% if interval %} / {{ interval }}{% endif %}</strong></p>
+    {% endif %}
+    {% if renews_at %}
+    <p style="margin: {% if price %}8px{% else %}0{% endif %} 0 0 0;" class="text-muted">
+        Your next payment is on {{ renews_at }}. You can cancel any time and keep {{ plan_name }}
+        until the end of the period you've paid for.
+    </p>
+    {% else %}
+    <p style="margin: {% if price %}8px{% else %}0{% endif %} 0 0 0;" class="text-muted">
+        You can cancel any time and keep {{ plan_name }} until the end of the period you've paid for.
+    </p>
+    {% endif %}
+</div>
+
+{% if founding_until %}
+<div class="alert">
+    <p style="margin: 0;"><strong>Your founding rate is locked until {{ founding_until }}.</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        The price above is held for you until then, whatever the list price does in the meantime.
+    </p>
+</div>
+{% endif %}
+
+<div class="features">
+    <h3>What you've unlocked</h3>
+    <ul>
+        <li>Unlimited similarity searches across the catalogue</li>
+        <li>Upload your own tracks and find what sounds like them</li>
+        <li>Full Track Intelligence &mdash; the complete sonic analysis, not just the summary</li>
+        <li>Bigger playlists, and exports to Apple Music, Spotify and rekordbox</li>
+    </ul>
+</div>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ app_url }}" class="button">START DIGGING</a>
+</div>
+
+<p class="text-muted" style="margin-top: 30px;">
+    Your invoices are in your profile under Plan &amp; Billing. Any questions, just reply to this
+    email &mdash; it reaches a person.
+</p>
+{% endblock %}

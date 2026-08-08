@@ -48,6 +48,7 @@ logger = logging.getLogger(__name__)
 # Subject lines. Kept together so the whole outbound voice can be read at a glance rather than
 # reconstructed from six call sites.
 SUBJECTS: Dict[str, str] = {
+    "subscription_started": "Welcome to Resomix Pro",
     "subscription_cancelled": "Your Resomix subscription is cancelled",
     "subscription_ended": "Your Resomix subscription has ended",
     "subscription_refunded": "Your Resomix subscription has been refunded",
@@ -264,6 +265,45 @@ class BillingEmailService:
             stripe_event_id=stripe_event_id,
             stripe_object_id=subscription_id,
             context={"plan_name": plan_name, "effective_at": fmt_date(effective_at)},
+        )
+
+    async def subscription_started(
+        self,
+        db: AsyncSession,
+        user: Optional[User],
+        *,
+        subscription_id: str,
+        plan_name: str = "Pro",
+        amount_cents: Optional[int] = None,
+        currency: Optional[str] = None,
+        interval: Optional[str] = None,
+        renews_at: Optional[datetime] = None,
+        founding_until: Optional[datetime] = None,
+        stripe_event_id: Optional[str] = None,
+    ) -> bool:
+        """Welcome — sent once, when a subscription first becomes real.
+
+        Keyed on the subscription id alone: a customer who cancels and later resubscribes gets a
+        NEW subscription from Stripe, so they are welcomed again, which is right. A repeated
+        `customer.subscription.created` for the same id is a webhook replay and stays silent.
+
+        `founding_until` is passed only for a founding subscriber — the locked rate is the offer
+        they actually bought, and putting it in writing is the point.
+        """
+        return await self.send(
+            db,
+            user=user,
+            template="subscription_started",
+            dedupe_key=f"started:{subscription_id}",
+            stripe_event_id=stripe_event_id,
+            stripe_object_id=subscription_id,
+            context={
+                "plan_name": plan_name,
+                "price": fmt_money(amount_cents, currency),
+                "interval": interval,
+                "renews_at": fmt_date(renews_at),
+                "founding_until": fmt_date(founding_until),
+            },
         )
 
     async def subscription_resumed(
