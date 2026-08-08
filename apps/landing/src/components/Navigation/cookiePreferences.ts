@@ -7,6 +7,11 @@ type SilktideWindow = Window & {
 };
 
 function getSilktideManager() {
+  // Guarded for the server: these helpers are called during render (NavMenuContent's cookie-settings
+  // row, MobileDrawer's lazy useState), and the marketing pages are prerendered in Node at build
+  // time. An unguarded `window` here threw inside React's renderer, which abandoned the whole tree
+  // and shipped every route with an empty <div id="root"> — a silent, total loss of crawlable HTML.
+  if (typeof window === "undefined") return undefined;
   return (window as SilktideWindow).silktideConsentManager;
 }
 

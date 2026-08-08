@@ -11,6 +11,8 @@ describe('BETA_URL guard', () => {
     vi.doMock('@resomix/config', () => ({
       BASE_BETA_URL: '',
       BASE_LANDING_URL: '',
+      // navData also reads BLOG_URL; a factory mock must supply every export it imports.
+      BLOG_URL: 'https://blog.resomix.com',
     }));
     const { BETA_URL } = await import('../components/Navigation/navData.ts');
     expect(BETA_URL).toBe(FALLBACK);
@@ -21,6 +23,8 @@ describe('BETA_URL guard', () => {
     vi.doMock('@resomix/config', () => ({
       BASE_BETA_URL: FALLBACK,
       BASE_LANDING_URL: '',
+      // navData also reads BLOG_URL; a factory mock must supply every export it imports.
+      BLOG_URL: 'https://blog.resomix.com',
     }));
     const { BETA_URL } = await import('../components/Navigation/navData.ts');
     expect(BETA_URL).toBe(FALLBACK);
