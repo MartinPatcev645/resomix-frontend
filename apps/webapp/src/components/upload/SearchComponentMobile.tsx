@@ -1,15 +1,11 @@
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 import searchIcon from "@/assets/icons/search.svg";
 import uploadIcon from "@/assets/icons/arrow_upload.svg";
 import SoundWavesSvg from "@/assets/icons/sound_waves.svg";
-import InfoSvg from "@/assets/icons/info.svg";
-import { SearchInput, SearchDropdown, Tooltip } from "@resomix/ui";
+import { SearchInput, SearchDropdown } from "@resomix/ui";
 import { useSearch } from "@resomix/hooks";
-import { usePlayerStore } from "@resomix/stores";
 import type { SearchResult } from "@resomix/hooks";
 import { WorkspaceSearchField } from "./WorkspaceSearchField.tsx";
-import { SEARCH_MODE_HINT, SEARCH_MODE_LABEL } from "@/sections/desktop/Workspace/workspaceCopy.ts";
-import { WORKSPACE_FIELD_CLASS, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
 
 interface SearchComponentProps {
     onUploadClick?: () => void;
@@ -29,68 +25,17 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({
     variant = "legacy",
 }) => {
     const sectionRef = useRef<HTMLDivElement | null>(null);
-    const [searchModeHelpOpen, setSearchModeHelpOpen] = useState(false);
     const { query, results, isLoading, handleQueryChange } = useSearch();
 
-    const { searchMode, setSearchMode } = usePlayerStore();
+    // Fixed to `auto` — see SearchComponent. Store value still feeds the search API.
 
-    const handleSearchModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSearchMode(e.target.value as "auto" | "artist" | "title");
-    };
 
     if (variant === "workspace") {
         return (
             <div ref={sectionRef}>
                 <div className="grid grid-cols-1 items-stretch gap-[var(--px-16)] py-[var(--px-20)]">
                     <WorkspaceSearchField compact onTrackSelect={onTrackSelect} />
-                    <div className="flex min-w-0 flex-col gap-[var(--px-7)]">
-                        <span
-                            className="flex items-center gap-[var(--px-7)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[rgba(255,255,255,.55)]"
-                            id="search-mode-dropdown-mobile-label"
-                        >
-                            {SEARCH_MODE_LABEL}
-                            <button
-                                type="button"
-                                className={[
-                                    WORKSPACE_FOCUS_VISIBLE,
-                                    "inline-flex h-[var(--px-17)] w-[var(--px-17)] shrink-0 items-center justify-center rounded-[var(--rx-radius-control)] border font-fira text-[length:var(--px-10)] transition-colors duration-[var(--rx-duration-base)]",
-                                    searchModeHelpOpen
-                                        ? "border-[var(--rx-color-accent)] text-[var(--rx-color-accent)]"
-                                        : "border-[var(--rx-color-border-subtle)] text-[var(--rx-color-text-muted)] hover:border-[var(--rx-color-accent)] hover:text-[var(--rx-color-accent)]",
-                                ].join(" ")}
-                                aria-expanded={searchModeHelpOpen}
-                                aria-controls="search-mode-help-mobile"
-                                aria-label="About search mode"
-                                onClick={() => setSearchModeHelpOpen((v) => !v)}
-                            >
-                                i
-                            </button>
-                        </span>
-                        <select
-                            id="search-mode-dropdown-mobile"
-                            aria-labelledby="search-mode-dropdown-mobile-label"
-                            aria-describedby={searchModeHelpOpen ? "search-mode-help-mobile" : undefined}
-                            value={searchMode}
-                            onChange={handleSearchModeChange}
-                            className={`${WORKSPACE_FIELD_CLASS} w-full appearance-none bg-[length:var(--px-10)] bg-[position:right_var(--px-14)_center] bg-no-repeat px-[var(--px-14)] font-fira text-[length:var(--px-14)]`}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23B9B9B9' stroke-width='1.2'/%3E%3C/svg%3E")`,
-                            }}
-                        >
-                            <option value="auto">Auto</option>
-                            <option value="artist">Artist</option>
-                            <option value="title">Title</option>
-                        </select>
-                    </div>
                 </div>
-                {searchModeHelpOpen && (
-                    <p
-                        id="search-mode-help-mobile"
-                        className="mb-[var(--px-12)] border border-[var(--rx-color-border-default)] px-[var(--px-16)] py-[var(--px-12)] text-[length:var(--px-13)] font-helvetica font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)]"
-                    >
-                        {SEARCH_MODE_HINT}
-                    </p>
-                )}
             </div>
         );
     }
@@ -149,37 +94,6 @@ export const SearchComponentMobile: React.FC<SearchComponentProps> = ({
                     )}
                     <div id="panel-search-mobile" role="tabpanel" aria-labelledby="tab-search-mobile" className="m-[var(--px-20)]">
                         <div className="w-full h-[var(--px-300)] border border-dotted border-slate-300 my-[var(--px-20)] relative">
-                            {/* Search Mode Dropdown for Mobile */}
-                            <div className="absolute top-[var(--px-8)] right-[var(--px-8)]">
-                                <div className="flex items-center gap-[var(--px-4)]">
-                                    <Tooltip message="Choose how Resomix should search: Auto (all fields), Artist (artist name only), or Title (track title only)." displayOnClick={true}>
-                                        <div className="flex items-center gap-[var(--px-4)] hover:cursor-pointer">
-                                            <label
-                                                htmlFor="search-mode-dropdown-mobile"
-                                                className="text-[length:var(--px-8)] font-fira font-light"
-                                            >
-                                                Mode
-                                            </label>
-                                            <div>
-                                                <img src={InfoSvg} draggable={false} alt="" aria-hidden="true" className="w-[var(--px-8)] h-[var(--px-8)]" />
-                                            </div>
-                                        </div>
-                                    </Tooltip>
-                                    <div className="">
-                                        <select
-                                            id="search-mode-dropdown-mobile"
-                                            aria-label="Search mode"
-                                            value={searchMode}
-                                            onChange={handleSearchModeChange}
-                                            className="w-[var(--px-60)] h-[var(--px-20)] bg-transparent border border-dotted border-slate-200 text-[length:var(--px-9)] font-fira font-extralight text-center text-[var(--color-primary)]"
-                                        >
-                                            <option className="text-[length:var(--px-9)] font-fira font-extralight bg-[var(--color-primary-background)]" value="auto">Auto</option>
-                                            <option className="text-[length:var(--px-9)] font-fira font-extralight bg-[var(--color-primary-background)]" value="artist">Artist</option>
-                                            <option className="text-[length:var(--px-9)] font-fira font-extralight bg-[var(--color-primary-background)]" value="title">Title</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
                             <div className="flex flex-col w-full h-full justify-center items-center">
                                 <div className="mt-[var(--px-10)] relative">
                                     {/** Search bar & dropdown */}

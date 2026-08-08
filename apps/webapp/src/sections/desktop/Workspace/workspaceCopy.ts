@@ -25,7 +25,7 @@ export const ANALYSIS_OUTPUT_LABEL = "Output // Track Intelligence profile";
 export const UPLOAD_OUTCOME_LINE =
   "Upload a reference to generate a ranked similarity playlist.";
 
-export const SOURCE_SECTION_HEADING = "Upload your track";
+export const SOURCE_SECTION_HEADING = "Sonic Discovery for your track";
 export const SOURCE_TAB_SEARCH = "Search a known track";
 export const SOURCE_TAB_UPLOAD = "Upload a reference";
 
