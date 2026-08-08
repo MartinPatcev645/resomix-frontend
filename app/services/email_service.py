@@ -95,6 +95,54 @@ class EmailService:
             )
             return False
 
+    async def send_templated(
+        self, email: EmailStr, subject: str, template_name: str, context: dict
+    ) -> bool:
+        """Render a Jinja template and send it. The generic primitive behind the typed methods.
+
+        Every other method here duplicates the same four steps — get template, render, build
+        MessageSchema, send with try/except — differing only in which template and which context.
+        New message families (billing, admin replies) go through this instead of copying that
+        block again; the vocabulary of *which* message to send belongs in the caller's service, not
+        in another near-identical method here.
+
+        Returns True on success; logs and returns False on failure, so a caller inside a webhook
+        handler cannot be made to raise by an SMTP hiccup.
+        """
+        try:
+            template = jinja_env.get_template(template_name)
+            html = template.render(subject=subject, **context)
+        except Exception as e:
+            self.logging_service.log(
+                level="ERROR",
+                category="EMAIL",
+                action="template_render_failed",
+                message=f"Failed to render {template_name}",
+                metadata={"template": template_name, "email": str(email)},
+                error=e,
+            )
+            return False
+
+        message = MessageSchema(
+            subject=subject,
+            recipients=[email],
+            body=html,
+            subtype=MessageType.html,
+        )
+        try:
+            await self.fast_mail.send_message(message)
+            return True
+        except Exception as e:
+            self.logging_service.log(
+                level="ERROR",
+                category="EMAIL",
+                action="templated_send_failed",
+                message=f"Failed to send {template_name}",
+                metadata={"template": template_name, "email": str(email), "subject": subject},
+                error=e,
+            )
+            return False
+
     async def send_operation_notification(
         self, email: EmailStr, subject: str, context: dict
     ) -> bool:

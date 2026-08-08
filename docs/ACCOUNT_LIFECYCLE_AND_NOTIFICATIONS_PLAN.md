@@ -363,6 +363,19 @@ All additive — new nullable columns, one new table, one seeded row. No backfil
 column drops. One Alembic revision per section (5.1, 5.2, 5.3+5.4), because 5.1 ships in Phase 1
 while the rest are not needed until Phases 4 and 7.
 
+> **Check the graph before pushing a migration.** Revision ids here are hand-written, not
+> generated, and this history already contains ids that look like near-neighbours of each other
+> (`b3c4d5e6f7a8`, `c4d5e6f7a8b9`, `d5e6f7a8b9c0`…). Reusing one produces
+> *"Cycle is detected in revisions"* at `upgrade` time — the graph fails to parse, so nothing is
+> applied and the deploy simply stops. One command catches it:
+>
+> ```
+> .venv/bin/alembic heads
+> ```
+>
+> Exactly one head, and it should be the revision you just wrote. Anything else — two heads, or a
+> cycle error — means the id collides or the `down_revision` is wrong.
+
 Existing `RESTRICT` foreign keys are deliberately **left alone**. Loosening them to `SET NULL` would
 make purging trivial but would silently orphan financial records the first time anyone deletes a
 user by hand in a SQL client.
@@ -790,7 +803,7 @@ Everything this plan covers, as a flat list. Nothing here is built yet.
 
 - [x] A1 — `scripts/diagnose_subscription.py` (read-only) reads the stored raw payloads
 - [x] A2 — `cancel_at`, `ended_at`, `cancellation_reason` on `user_subscriptions`
-      (migration `b3c4d5e6f7a8`)
+      (migration `f4a1c8e2d9b6`)
 - [x] A3 — `sync_subscription` stores all three, clears them on resume, and never erases a
       reason a refund/dispute handler set
 - [x] A4 — `sync_schedule` reads `end_behavior == "cancel"` **before** the two-phase guard, so a
@@ -803,20 +816,31 @@ Everything this plan covers, as a flat list. Nothing here is built yet.
 Tests: `tests/unit/services/test_billing_cancellation_state.py` (15),
 `test_billing_cancellation_sync.py` (13). All three frontend apps build.
 
-### B. Billing emails
+### B. Billing emails — **infrastructure + cancellation DONE**
 
-- [ ] B1 — `BillingEmailService`, dispatching inline post-commit like `contact_service`
-- [ ] B2 — Idempotency guard so Stripe retries don't re-send
-- [ ] B3 — Subscription cancelled (access until *date*)
-- [ ] B4 — Subscription ended (access stopped now)
-- [ ] B5 — Full refund → cancelled + refunded
-- [ ] B6 — Partial refund → refunded, plan unaffected
-- [ ] B7 — Dispute opened → access suspended
-- [ ] B8 — Dispute won → access restored
-- [ ] B9 — Account deletion scheduled (30-day notice)
-- [ ] B10 — Account deleted (final)
-- [ ] B11 — Admin inbox: purge due
-- [ ] B12 — Generic admin→user message template
+- [x] B1 — `BillingEmailService`, inline post-commit like `contact_service`; delivery goes through
+      a new generic `EmailService.send_templated`
+- [x] B2 — `billing_notifications` table (migration `c9e2a7d4f1b8`), keyed by **state** not event
+- [x] B3 — Subscription cancelled — template + wired
+- [x] B4 — Subscription ended — template + wired
+- [x] B5 — Full refund template *(wiring in Phase 3)*
+- [x] B6 — Partial refund template *(wiring in Phase 3)*
+- [x] B7 — Dispute opened template *(wiring in Phase 3)*
+- [x] B8 — Dispute won template *(wiring in Phase 3)*
+- [ ] B9 — Account deletion scheduled (30-day notice) — Phase 4
+- [ ] B10 — Account deleted (final) — Phase 5
+- [ ] B11 — Admin inbox: purge due — Phase 5
+- [ ] B12 — Generic admin→user message template — Phase 7
+
+All six templates `{% extends "base.html" %}`. **This is a deliberate change from §1.4's
+"standalone" note:** `base.html` already carried the header, footer, full CSS and dark mode with an
+unused `{% block content %}`, and six more copies of that 35-line CSS block would mean a brand
+tweak touching six files. The inheritance machinery was already in the repo — it had simply never
+been used.
+
+Tests: `test_billing_email_service.py` (21), `test_webhook_billing_notify.py` (14). All twelve
+render paths (6 templates × with/without optional fields) verified to produce complete documents
+with no unrendered placeholders.
 
 ### C. Refunds and disputes
 

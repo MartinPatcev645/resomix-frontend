@@ -1,0 +1,35 @@
+{# Access has stopped now. Sent on `customer.subscription.deleted` — a cancellation reaching its
+   date, or an immediate cancellation from the Stripe dashboard.
+
+   Distinct from subscription_cancelled.html on purpose: that one says "you still have it", this
+   one says "it's over". Telling someone their access continues when it has already stopped is the
+   worst version of this email. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your {{ plan_name }} subscription has ended</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>Your {{ plan_name }} subscription {% if effective_at %}ended on {{ effective_at }}{% else %}has
+   ended{% endif %}. Your account is now on the free plan, and there's nothing further to pay.</p>
+
+<div class="alert">
+    <p style="margin: 0;"><strong>Your work is still here.</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        Nothing has been deleted. Your playlists, uploads and analyses stay in your library &mdash;
+        the free plan just limits how much you can add and what you can export.
+    </p>
+</div>
+
+<p>If this wasn't what you intended, you can resubscribe at any time and pick up where you left
+   off.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ app_url }}/subscribe" class="button">VIEW PLANS</a>
+</div>
+
+<p class="text-muted" style="margin-top: 30px;">
+    Questions about your account? Reply to this email and we'll help.
+</p>
+{% endblock %}

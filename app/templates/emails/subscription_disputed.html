@@ -1,0 +1,40 @@
+{# Chargeback opened → access suspended while the bank decides.
+
+   TONE MATTERS HERE. A dispute has two very different causes: the cardholder disputed a charge
+   they recognise, or someone else used their card. The second person is a victim, and an
+   accusatory email aimed at the first lands on them instead. So: state what happened, state what
+   it means for their account, invite a reply. No blame, no threats, no "fraud". #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your subscription has been suspended</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>Your bank has opened a payment dispute on your {{ plan_name }} subscription
+   {% if amount %}for {{ amount }}{% endif %}. That happens when a charge is queried through the
+   bank rather than through us.</p>
+
+<div class="alert alert-danger">
+    <p style="margin: 0;"><strong>Your {{ plan_name }} access is paused while the dispute is open.</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        Your account is on the free plan for now. Banks usually take a few weeks to reach a
+        decision.
+    </p>
+</div>
+
+<p><strong>Nothing has been deleted.</strong> Your playlists, uploads and analyses are all still in
+   your library, and full access returns automatically if the dispute is resolved in your favour.</p>
+
+<p>If you didn't open this dispute &mdash; or if it was raised by mistake &mdash; reply to this
+   email. We can often sort it out faster directly than through the bank.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ app_url }}/profile" class="button">VIEW YOUR ACCOUNT</a>
+</div>
+
+<p class="text-muted" style="margin-top: 30px;">
+    If you don't recognise this charge at all, contact your bank as well &mdash; it may mean your
+    card details have been used by someone else.
+</p>
+{% endblock %}

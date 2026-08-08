@@ -1,0 +1,35 @@
+{# Partial refund — money back, plan untouched.
+
+   The whole point of this email is the sentence saying their subscription is UNCHANGED. A partial
+   refund with no explanation reads as "something went wrong with my subscription", and the
+   support ticket that follows costs more than the email. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>A refund has been issued</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>We've refunded {% if amount %}<strong>{{ amount }}</strong>{% else %}part of your payment{% endif %}
+   {% if plan_name %}on your {{ plan_name }} subscription{% endif %}.</p>
+
+<div class="alert">
+    <p style="margin: 0;"><strong>Your subscription is not affected.</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        This was a partial refund, so {% if plan_name %}your {{ plan_name }} plan{% else %}your
+        plan{% endif %} continues exactly as before &mdash; same features, same renewal date.
+        Nothing has been cancelled.
+    </p>
+</div>
+
+<p>The refund goes back to your original payment method. Most banks show it within 5&ndash;10
+   business days.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ app_url }}/profile" class="button">VIEW BILLING</a>
+</div>
+
+<p class="text-muted" style="margin-top: 30px;">
+    If you weren't expecting this refund, reply to this email and we'll explain what happened.
+</p>
+{% endblock %}

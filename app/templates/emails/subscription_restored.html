@@ -1,0 +1,33 @@
+{# Dispute resolved in our favour → access back.
+
+   Sent only on `charge.dispute.closed` with status "won". A dispute we LOSE gets no email: the
+   customer was already told access was suspended, and "you lost, we kept your money" adds nothing
+   but friction. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your {{ plan_name }} access is back</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>The payment dispute on your subscription has been resolved, and your {{ plan_name }} plan is
+   active again.</p>
+
+<div class="alert">
+    <p style="margin: 0;"><strong>Everything is exactly where you left it.</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        Your playlists, uploads and analyses were never touched &mdash; only the plan limits were
+        paused. Full access has been restored.
+    </p>
+</div>
+
+<p>Sorry for the interruption. Nothing is needed from you.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ app_url }}" class="button">BACK TO RESOMIX</a>
+</div>
+
+<p class="text-muted" style="margin-top: 30px;">
+    If anything still looks wrong with your account, reply to this email and we'll fix it.
+</p>
+{% endblock %}

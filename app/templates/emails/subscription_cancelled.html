@@ -1,0 +1,40 @@
+{# Cancellation confirmed, access continues. Sent when a subscription is set to cancel — by the
+   customer in the portal or by us in the Stripe dashboard. Stripe reports both identically, so
+   this email deliberately never says who did it.
+
+   The one thing it must get right: they have NOT lost access yet. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your {{ plan_name }} subscription is cancelled</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>We've cancelled your {{ plan_name }} subscription. You won't be charged again.</p>
+
+<div class="alert">
+    {% if effective_at %}
+    <p style="margin: 0;"><strong>You keep {{ plan_name }} until {{ effective_at }}.</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        Everything works exactly as it does today until then &mdash; your playlists, uploads and
+        analyses are all still there. After that date your account moves to the free plan.
+    </p>
+    {% else %}
+    <p style="margin: 0;"><strong>You keep {{ plan_name }} until the end of the period you've paid for.</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        After that your account moves to the free plan.
+    </p>
+    {% endif %}
+</div>
+
+<p>Nothing is deleted when you move to the free plan. Your playlists and library stay where they
+   are &mdash; some features become limited, and you can pick {{ plan_name }} back up at any time.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ app_url }}/subscribe" class="button">MANAGE SUBSCRIPTION</a>
+</div>
+
+<p class="text-muted" style="margin-top: 30px;">
+    Didn't expect this email? Reply to it and we'll look into it straight away.
+</p>
+{% endblock %}

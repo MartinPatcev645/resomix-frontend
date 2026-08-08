@@ -1,0 +1,43 @@
+{# Full refund → subscription ended immediately. Only an admin can trigger this; customers cannot
+   request a refund through the app.
+
+   Two facts have to land unambiguously, because they arrive together and pull in opposite
+   directions: the money is coming back, AND access has stopped now (not at period end). Leaving
+   the second implicit invites "why can't I log into Pro?" the next morning. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your {{ plan_name }} subscription has been refunded</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>We've refunded {% if amount %}<strong>{{ amount }}</strong>{% else %}your payment{% endif %} for
+   your {{ plan_name }} subscription.</p>
+
+<div class="alert">
+    <p style="margin: 0;"><strong>The refund is on its way back to your original payment method.</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        Most banks show it within 5&ndash;10 business days. The exact timing is set by your bank,
+        not by us.
+    </p>
+</div>
+
+<div class="alert alert-danger">
+    <p style="margin: 0;"><strong>Your {{ plan_name }} access has ended.</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        Because the payment was returned in full, your account moved to the free plan immediately
+        rather than at the end of the billing period.
+    </p>
+</div>
+
+<p>Nothing has been deleted. Your playlists, uploads and analyses are all still in your library on
+   the free plan.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ app_url }}/subscribe" class="button">VIEW PLANS</a>
+</div>
+
+<p class="text-muted" style="margin-top: 30px;">
+    If you weren't expecting this refund, reply to this email and we'll explain what happened.
+</p>
+{% endblock %}

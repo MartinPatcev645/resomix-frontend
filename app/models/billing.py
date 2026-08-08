@@ -167,3 +167,55 @@ class BillingConsent(Base):
 
     def __repr__(self) -> str:
         return f"<BillingConsent(user={self.user_id}, type='{self.consent_type}', at={self.created_at})>"
+
+
+class BillingNotification(Base):
+    """One row per billing email we have sent — and the thing that stops us sending it twice.
+
+    WHY THIS EXISTS
+
+    ``WebhookService`` already drops a *repeat delivery* of the same Stripe event (dedupe by
+    ``stripe_event_id`` against ``system_logs``), so retries are covered. This table solves the
+    other half: Stripe emits **several distinct events for one real-world change**. Setting a
+    subscription to cancel typically produces two or three ``customer.subscription.updated`` events
+    within seconds, each with its own id, each passing the event-level dedupe. Without a second
+    guard the customer receives three identical "your subscription is cancelled" emails.
+
+    So the key is the **state**, not the event: ``dedupe_key`` describes what happened
+    (``cancelled:sub_123:2027-03-14``), not which message told us about it. A genuinely new
+    change produces a new key and sends again — someone who cancels, resumes, and cancels a month
+    later gets two emails, which is correct.
+
+    Also the audit trail: "did we tell them?" is the first question in any billing dispute, and
+    ``recipient_email`` is denormalised so the answer survives the account being deleted.
+    """
+
+    __tablename__ = "billing_notifications"
+    __table_args__ = (
+        UniqueConstraint("dedupe_key", name="uq_billing_notification_dedupe"),
+        Index("ix_billing_notification_user", "user_id", "created_at"),
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
+    )
+
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True, autoincrement=True)
+    # SET NULL, not CASCADE: the record that we notified someone must outlive their account, or a
+    # purged user takes the evidence with them.
+    user_id: Mapped[Optional[int]] = mapped_column(
+        mysql.INTEGER(unsigned=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    # e.g. "cancelled:sub_123:2027-03-14T00:00:00" — see the class docstring.
+    dedupe_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Template stem, without the .html: subscription_cancelled | subscription_refunded | …
+    template: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    recipient_email: Mapped[str] = mapped_column(String(100), nullable=False)
+    stripe_event_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    # sent | failed. A failed row is kept: it holds the dedupe key, and a bounce that retried
+    # forever would be worse than one that did not arrive.
+    status: Mapped[str] = mapped_column(String(10), nullable=False, server_default="sent")
+
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, server_default=func.current_timestamp()
+    )
+
+    def __repr__(self) -> str:
+        return f"<BillingNotification(user={self.user_id}, template='{self.template}', status='{self.status}')>"

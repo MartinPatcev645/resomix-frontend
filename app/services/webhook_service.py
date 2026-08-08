@@ -18,10 +18,16 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from decimal import Decimal
 
+from sqlalchemy import select
+
 from app.core.config import settings
 from app.models.log import SystemLog
+from app.models.plan import Plan
+from app.models.purchase import UserSubscription
+from app.models.user import User
 from app.repositories.log_repository import LogRepository
 from app.services.purchase_service import PurchaseService
+from app.services.billing_email_service import BillingEmailService
 from app.services.billing_sync_service import BillingSyncService
 from app.services.billing_service import BillingService
 
@@ -46,8 +52,80 @@ class WebhookService:
         self.purchase_service = PurchaseService()
         self.billing_sync = BillingSyncService()
         self.billing_service = BillingService()
+        self.billing_email = BillingEmailService()
         self.log_repo = LogRepository()
         stripe.api_key = settings.stripe_secret_key
+
+    # Reasons that already have their own, more specific message. Sending the generic "your
+    # subscription has ended" on top would be a second email about the same event, and in the
+    # payment_failed case it lands on someone whose card merely expired — which decision Q5 of
+    # the account-lifecycle plan explicitly rules out (Stripe's dunning mail already covers it).
+    _SUPPRESS_ENDED_EMAIL_REASONS = ("payment_failed", "refunded", "disputed", "payment_disputed")
+
+    async def _notify_subscription_state(
+        self, db: AsyncSession, subscription_id: str, stripe_event_id: Optional[str]
+    ) -> None:
+        """Send a cancellation notice, if the committed state calls for one.
+
+        WHY THE ROW IS RE-READ RATHER THAN PASSED IN
+
+        A single cancellation reaches us through more than one event, and for a founding
+        subscriber it may arrive only on the *schedule*. Deriving the message from the committed
+        row through `cancellation_state` means every path produces the same wording and — because
+        the dedupe key is built from that same date — the same key. Deciding inside each handler
+        would let two events disagree by a day and send two emails.
+
+        Never raises. This runs after the commit, and the caller's `except` would otherwise turn a
+        mail problem into a 500 and make Stripe replay an event we have already applied.
+        """
+        try:
+            row = (
+                await db.execute(
+                    select(UserSubscription).where(
+                        UserSubscription.stripe_subscription_id == subscription_id
+                    )
+                )
+            ).scalar_one_or_none()
+            if row is None:
+                return
+
+            state = BillingService.cancellation_state(row)
+            if not state:
+                return  # running normally — nothing to say
+
+            user = (
+                await db.execute(select(User).where(User.id == row.user_id))
+            ).scalar_one_or_none()
+            if user is None:
+                return
+
+            plan = (
+                await db.execute(select(Plan).where(Plan.id == row.plan_id))
+            ).scalar_one_or_none() if row.plan_id else None
+            plan_name = plan.name if plan else "Pro"
+
+            if state["ended"]:
+                if (row.cancellation_reason or "") in self._SUPPRESS_ENDED_EMAIL_REASONS:
+                    return
+                await self.billing_email.subscription_ended(
+                    db, user,
+                    subscription_id=subscription_id,
+                    effective_at=row.ended_at or row.cancel_at or row.current_period_end,
+                    plan_name=plan_name,
+                    stripe_event_id=stripe_event_id,
+                )
+            elif state["pending"]:
+                await self.billing_email.subscription_cancelled(
+                    db, user,
+                    subscription_id=subscription_id,
+                    effective_at=row.cancel_at or row.current_period_end,
+                    plan_name=plan_name,
+                    stripe_event_id=stripe_event_id,
+                )
+        except Exception as exc:  # noqa: BLE001 — see the docstring
+            logger.error(
+                "BILLING EMAIL: could not notify for subscription %s: %s", subscription_id, exc
+            )
 
     async def handle_stripe_webhook(
         self,
@@ -105,6 +183,10 @@ class WebhookService:
         await db.flush()
 
         # 4. Route and Process Event
+        #
+        # Handlers record WHICH subscription they touched; nothing is emailed from inside the
+        # transaction. See `_notify_subscription_state` for why the notice waits for the commit.
+        notify_subscription_id: Optional[str] = None
         try:
             if event.type == "checkout.session.completed":
                 session = sanitize_for_json(event.data.object.to_dict())
@@ -130,6 +212,7 @@ class WebhookService:
             ):
                 sub = sanitize_for_json(event.data.object.to_dict())
                 await self.billing_sync.sync_subscription(db, sub, event.type, stripe_event_id)
+                notify_subscription_id = sub.get("id")
 
             elif event.type in ("invoice.paid", "invoice.payment_succeeded"):
                 invoice = sanitize_for_json(event.data.object.to_dict())
@@ -155,9 +238,20 @@ class WebhookService:
             ):
                 schedule = sanitize_for_json(event.data.object.to_dict())
                 await self.billing_sync.sync_schedule(db, schedule, event.type)
+                # A founding subscriber's cancellation lands HERE, not on the subscription object,
+                # so this path has to be able to notify too.
+                notify_subscription_id = (
+                    schedule.get("subscription") or schedule.get("released_subscription")
+                )
 
             # Commit the audit log and fulfillment changes atomically
             await db.commit()
+
+            # Only now, with the transaction landed, tell the customer. An email announcing a
+            # state change that then rolled back is worse than no email.
+            if notify_subscription_id:
+                await self._notify_subscription_state(db, notify_subscription_id, stripe_event_id)
+
             return {"status": "success"}
 
         except Exception as e:
