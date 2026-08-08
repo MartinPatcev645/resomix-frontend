@@ -1,6 +1,6 @@
 import React, { useId, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUsageChip } from "@resomix/hooks";
+import { UsageChip } from "@/components/Entitlements/UsageChip.tsx";
 import {
   ANALYSIS_OUTPUT_LABEL,
   ANALYSIS_TASK_DESC,
@@ -85,7 +85,11 @@ export const WorkspaceTaskSelector: React.FC<{ mode: WorkspaceMode }> = ({ mode 
 
   return (
     <div className="mb-[var(--px-16)]">
-      <SearchesQuotaChip />
+      {/* Same multi-metric chip as desktop. It used to be a searches-only line here, which meant
+          uploads, exports and the Library cap were invisible on mobile — the three allowances a
+          user is most likely to hit without warning. Full width, since there is no room beside the
+          heading at this size. */}
+      <UsageChip className="mb-[var(--px-12)] w-full" />
 
       <p
         id={labelId}
@@ -168,59 +172,7 @@ const RadioMark: React.FC<{ checked: boolean }> = ({ checked }) => (
   />
 );
 
-/** Searches-only remaining counter — mobile discovery header. Does not touch shared UsageChip. */
-const SearchesQuotaChip: React.FC = () => {
-  const { metrics, nextResetAt } = useUsageChip();
-  const searches = metrics.find((m) => m.key === "searches");
-  if (!searches) return null;
 
-  const remaining = Math.max(0, searches.limit - searches.used);
-  const spent = remaining === 0;
-  const label = spent
-    ? formatZeroRemaining(nextResetAt)
-    : remaining === 1
-      ? "1 free search left today"
-      : `${remaining} free searches left today`;
-
-  return (
-    <span
-      className={[
-        "mb-[var(--px-12)] flex w-full items-center gap-[var(--px-8)]",
-        "border border-[var(--rx-color-border-default)] px-[var(--px-13)] py-[var(--px-7)]",
-        "font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)]",
-        spent
-          ? "text-[var(--color-accent,#EE4A26)]"
-          : "text-[var(--rx-color-text-secondary)]",
-      ].join(" ")}
-      aria-label={label}
-    >
-      <i
-        aria-hidden="true"
-        className={[
-          "block h-[var(--px-6)] w-[var(--px-6)] shrink-0 rounded-full not-italic",
-          spent ? "bg-[var(--rx-color-accent)]" : "bg-[var(--rx-color-text-secondary)]",
-        ].join(" ")}
-      />
-      <span aria-hidden="true">{label}</span>
-    </span>
-  );
-};
-
-function formatZeroRemaining(nextResetAt: string | null): string {
-  const base = "No free searches left today";
-  if (!nextResetAt) return base;
-  const reset = formatLocalReset(nextResetAt);
-  return reset ? `${base} · resets ${reset}` : base;
-}
-
-function formatLocalReset(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 function splitOutputLabel(label: string): [string, string] {
   const idx = label.indexOf("//");

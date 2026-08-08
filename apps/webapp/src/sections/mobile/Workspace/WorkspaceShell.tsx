@@ -20,8 +20,9 @@ export const WorkspaceShell: React.FC<{
 }> = ({ mode, children }) => (
   <DesktopWorkspaceShell
     mode={mode}
-    // Searches-only remaining counter lives in WorkspaceTaskSelector; hide the shared multi-metric
-    // UsageChip so guests do not see two counters. Session chip stays in the header.
+    // The chip is rendered inside WorkspaceTaskSelector on mobile — full width above the task
+    // heading, where the desktop puts it beside that heading. Suppressed here so there is only
+    // ever one. Session pill stays in the header.
     usageChip={null}
     taskSelector={<WorkspaceTaskSelector mode={mode} />}
   >
