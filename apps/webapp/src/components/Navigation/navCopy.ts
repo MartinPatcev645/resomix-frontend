@@ -8,7 +8,7 @@ const NAV_COPY: Record<string, string> = {
   'nav.topGroups.solutions': 'Solutions',
   'nav.topGroups.partners': 'Partners',
   'nav.topGroups.developers': 'Developers',
-  'nav.topGroups.company': 'Company',
+  'nav.topGroups.company': 'Resources',
   'nav.groups.productRoutes': 'Product routes',
   'nav.groups.rightsCatalogueLicensing': 'Rights, catalogue and licensing',
   'nav.groups.musicProfessionals': 'Music professionals',
