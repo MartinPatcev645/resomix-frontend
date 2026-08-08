@@ -912,29 +912,41 @@ Tests: `test_billing_refund_service.py` (28).
 
 Tests: `tests/unit/services/test_account_lifecycle.py` (14). All three apps build.
 
-### F. Admin purge
+### F. Admin purge — **BUILT, ON HOLD pending George's decision**
 
-- [ ] F1 — Seed the tombstone user
-- [ ] F2 — Daily systemd timer + script emailing admins when accounts are purge-due
-- [ ] F3 — `DELETE /admin/users/{uuid}` with a new `user:delete` permission
-- [ ] F4 — Keep + anonymise: orders, invoices, subscription events, consumption events, usage history
-- [ ] F5 — Never delete admin operation logs — repoint to tombstone
-- [ ] F6 — Delete: tracks + storage artefacts, analyses + payloads, playlists, ratings, cart,
-      exports, transfers, contacts, feedback, sessions, tokens, the user row
-- [ ] F7 — Dry-run mode returning the full keep/delete manifest
-- [ ] F8 — Wire the admin UI button to the real endpoint (currently a hardcoded error)
+See `ACCOUNT_DELETION_GDPR_OPTIONS.md`. Hard delete may be replaced by anonymise-in-place, which
+would *remove* most of F1 and the cascade hazard. Shipped but inert: the endpoint defaults to
+`dry_run=true`, requires a deactivated account, and the admin UI is not wired to it.
+
+- [x] F1 — Tombstone user seeded (migration `f5d1c3b8e7a2`)
+- [ ] F2 — Daily systemd timer + purge-due email to admins
+- [x] F3 — `DELETE /admin/users/{uuid}` behind the existing `user:delete` permission
+- [x] F4 — Keep + anonymise (orders, invoices, subscription events, consents, consumption IPs,
+      usage history)
+- [x] F5 — Admin operation logs repointed, never deleted
+- [x] F6 — Content deleted, media assets queued through the existing idempotent Celery task
+- [x] F7 — Dry-run manifest (the default)
+- [ ] F8 — Admin UI still shows the hardcoded "not available" message — deliberately, until the
+      approach is confirmed
+
+**Correction to §1.6 of this plan.** It claimed three RESTRICT foreign keys. Parsing all 37 keys to
+`users.id` found 4 RESTRICT, 15 SET NULL and 18 CASCADE — and, critically, that
+`billing_invoices`, `subscription_events` and `billing_consents` are **CASCADE + NOT NULL**.
+Deleting the user row would have destroyed every invoice silently. That is why the repoint step
+runs first, and why its ordering is asserted in tests rather than trusted to a comment.
 
 ### G. Admin user visibility
 
-- [ ] G1 — `last_seen_at` column + throttled middleware touch (nothing today can answer "last action")
-- [ ] G2 — Replace the hardcoded `"last_login": None` with the real value
-- [ ] G3 — Surface last login, last IP and active session count
-- [ ] G4 — `GET /admin/users/{uuid}/overview` — identity, activity, plan, billing, counts, support,
-      lifecycle
+- [x] G1 — `last_seen_at` + throttled touch in the auth dependency (both paths)
+- [x] G2 — Real last login, from `MAX(user_sessions.created_at)`
+- [x] G3 — Last login, last IP, last user agent, active session count
+- [x] G4 — `GET /admin/users/{uuid}/overview` — 12 aggregates in **one** round trip (an async
+      session cannot run queries concurrently, so a loop would be 12 sequential trips)
 - [ ] G5 — New `UserDetailsPage` at `users/:uuid`, following `PlaylistDetailsPage`
 - [ ] G6 — Playlist count → `/playlists?user=<uuid>`; track count → `/tracks?user=<uuid>`
 - [ ] G7 — Add a `user` filter to the playlists and tracks admin pages
-- [ ] G8 — Add **Plan** and **Last activity** columns to the users table (via a join, not N+1)
+- [x] G8 — **Plan** and **Last activity** on the list endpoint. `resolve_plans` does a whole page
+      in 3 queries; calling `get_effective_plan` per row would be 2 each — 100 for a 50-row page
 
 ### H. Admin → user messaging
 

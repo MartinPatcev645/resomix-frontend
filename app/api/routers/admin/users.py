@@ -59,6 +59,19 @@ async def get_user(
     return await user_controller.get_user_detail(db, user_uuid)
 
 
+@router.get("/{user_uuid}/overview")
+async def get_user_overview(
+    user_uuid: str,
+    db: AsyncSession = Depends(get_async_db),
+):
+    """Everything about one user on one screen — identity, activity, plan, billing, counts, support.
+
+    Separate from `GET /{uuid}` on purpose: this is a dozen aggregates, and only the detail PAGE
+    needs them. The list endpoint and the edit dialog must not pay for them.
+    """
+    return await user_controller.get_user_overview(db, user_uuid)
+
+
 @router.post("", dependencies=[Depends(require_permission("user:create"))])
 async def create_user(
     user_data: AdminUserCreateRequest,

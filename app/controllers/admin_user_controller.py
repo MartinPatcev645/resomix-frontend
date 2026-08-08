@@ -51,6 +51,12 @@ class AdminUserController:
                 db, page=page, page_size=page_size, search=search, role_id=role_id, is_active=is_active
             )
 
+            # Plan for the whole page in three queries. Calling `get_effective_plan` per row would
+            # be two queries each — a hundred for a fifty-row page.
+            from app.services.admin_user_overview_service import AdminUserOverviewService
+
+            plans = await AdminUserOverviewService.resolve_plans(db, list(users))
+
             user_list = []
             for u in users:
                 user_list.append({
@@ -62,7 +68,13 @@ class AdminUserController:
                     "is_active": u.is_active,
                     "is_email_verified": u.is_email_verified,
                     "roles": [r.role.name for r in u.roles],
-                    "created_at": u.created_at.isoformat() if u.created_at else None
+                    "created_at": u.created_at.isoformat() if u.created_at else None,
+                    # The plan they actually get, and when they were last here — the two questions
+                    # the list was missing, both answerable without opening a row.
+                    "plan": plans.get(u.id),
+                    "last_seen_at": u.last_seen_at.isoformat() if u.last_seen_at else None,
+                    "deactivated_at": u.deactivated_at.isoformat() if u.deactivated_at else None,
+                    "purge_due_at": u.purge_due_at.isoformat() if u.purge_due_at else None,
                 })
 
             duration_ms = (time.time() - start_time) * 1000
@@ -122,6 +134,30 @@ class AdminUserController:
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="Failed to retrieve user details")
+            )
+
+    async def get_user_overview(self, db: AsyncSession, user_uuid: str) -> JSONResponse:
+        """The admin user detail page, in one response."""
+        from app.services.admin_user_overview_service import AdminUserOverviewService
+
+        try:
+            user = await self.user_service.get_user_detail(db, user_uuid)
+            if not user:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(success=False, error="User not found"),
+                )
+
+            data = await AdminUserOverviewService().build(db, user)
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(success=True, data=data),
+            )
+        except Exception as e:
+            logger.error(f"Error building overview for {user_uuid}: {e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="Failed to load user overview"),
             )
 
     async def create_user(
