@@ -33,7 +33,7 @@ same answer it gives today.
 Guarded and reversible: each step checks for its own presence, so a partial re-run cannot fail on a
 column that is already there.
 
-Revision ID: b3c4d5e6f7a8
+Revision ID: f4a1c8e2d9b6
 Revises: a9d0e1f2b3c4
 Create Date: 2026-08-08
 """
@@ -42,7 +42,7 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy import text
 
-revision = "b3c4d5e6f7a8"
+revision = "f4a1c8e2d9b6"
 down_revision = "a9d0e1f2b3c4"
 branch_labels = None
 depends_on = None
