@@ -56,8 +56,27 @@ class UserSubscription(Base):
 
     current_period_start: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
     current_period_end: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+
+    # Cancellation. THREE fields, not one, because Stripe expresses a cancellation in more than one
+    # way and the boolean alone is not a reliable answer to "is this cancelling?".
+    #
+    # `cancel_at_period_end` is set by a plain cancel on an unmanaged subscription. But every
+    # founding subscriber has a subscription SCHEDULE attached (see `apply_founding_lock`), and a
+    # schedule-managed subscription records its cancellation as a `cancel_at` timestamp and/or an
+    # amendment to the schedule — the boolean stays false. Stripe also sets `canceled_at` at the
+    # moment cancellation is *requested*, not when it takes effect.
+    #
+    # Reading only the boolean is what made the profile screen promise a renewal to customers who
+    # had already cancelled. Callers should use `BillingService`'s derived `cancellation` block
+    # rather than any single field here.
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="0")
+    cancel_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
     canceled_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    ended_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    # Stripe's `cancellation_details.reason`, widened with our own values for the cases Stripe has
+    # no vocabulary for (`refunded`, `disputed`). Selects the notification template.
+    cancellation_reason: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+
     trial_end: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
 
     # Timestamps

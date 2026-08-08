@@ -590,6 +590,62 @@ class BillingService:
     # ------------------------------------------------------------------ #
     # Subscription summary + invoices (profile "Plan & Billing")
     # ------------------------------------------------------------------ #
+    @staticmethod
+    def cancellation_state(row: Optional[UserSubscription]) -> Optional[Dict[str, Any]]:
+        """Is this subscription cancelling, when does access stop, and why.
+
+        THE ONE PLACE THAT DECIDES THIS. Clients must branch on the result rather than on any
+        single column, because no single column is a reliable answer:
+
+        * ``cancel_at_period_end`` is set only for a plain cancel on an UNMANAGED subscription.
+          Every founding subscriber has a schedule attached, and cancelling one of those leaves the
+          boolean false — the cancellation lands on ``cancel_at`` or on the schedule instead.
+        * ``canceled_at`` is set when cancellation is *requested*, so on its own it cannot tell
+          "cancelling next month" from "already over".
+        * ``status`` stays ``active`` for the whole notice period, which is the point of cancelling
+          at period end.
+
+        Branching on `cancel_at_period_end` alone is what made the profile screen tell customers
+        who had just cancelled that their subscription would renew.
+
+        Returns ``None`` when there is nothing to report — no row, or a subscription running
+        normally. Otherwise:
+
+            {"pending": bool,      # cancelling, but access continues until effective_at
+             "ended": bool,        # access has already stopped
+             "effective_at": str,  # ISO-8601, or None if no boundary is known
+             "reason": str|None}
+        """
+        if row is None:
+            return None
+
+        ended = bool(row.ended_at) or str(row.status or "").lower() in ("canceled", "cancelled")
+        if ended:
+            # Prefer the moment access actually stopped; fall back through the boundaries Stripe
+            # gave us so a row synced before `ended_at` existed still reports a date.
+            effective = row.ended_at or row.cancel_at or row.current_period_end
+            return {
+                "pending": False,
+                "ended": True,
+                "effective_at": effective.isoformat() if effective else None,
+                "reason": row.cancellation_reason,
+            }
+
+        cancelling = bool(row.cancel_at_period_end or row.cancel_at or row.canceled_at)
+        if not cancelling:
+            return None
+
+        # `cancel_at` is Stripe's explicit boundary and beats the period end: for a
+        # schedule-managed subscription the current period is a PHASE, which can end well before
+        # the subscription does.
+        effective = row.cancel_at or row.current_period_end
+        return {
+            "pending": True,
+            "ended": False,
+            "effective_at": effective.isoformat() if effective else None,
+            "reason": row.cancellation_reason,
+        }
+
     async def get_subscription_summary(self, db: AsyncSession, user: User) -> Dict[str, Any]:
         """Effective plan + the raw subscription row (status/renewal/cancel) + this period's usage."""
         plan = await self.entitlements.get_effective_plan(db, user)
@@ -630,8 +686,13 @@ class BillingService:
                 "currency": row.currency,
                 "current_period_end": row.current_period_end.isoformat() if row.current_period_end else None,
                 "cancel_at_period_end": bool(row.cancel_at_period_end),
+                "cancel_at": row.cancel_at.isoformat() if row.cancel_at else None,
                 "canceled_at": row.canceled_at.isoformat() if row.canceled_at else None,
+                "ended_at": row.ended_at.isoformat() if row.ended_at else None,
+                "cancellation_reason": row.cancellation_reason,
                 "trial_end": row.trial_end.isoformat() if row.trial_end else None,
+                # The one field a client should branch on. See `cancellation_state`.
+                "cancellation": self.cancellation_state(row),
             }
         return {
             "plan": {"code": plan.code, "name": plan.name} if plan else None,

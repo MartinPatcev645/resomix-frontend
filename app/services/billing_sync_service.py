@@ -158,6 +158,26 @@ class BillingSyncService:
             row.is_founding = False
             row.stripe_schedule_id = None
         else:
+            # A schedule-managed subscription records its CANCELLATION here, not on the
+            # subscription object. Cancelling one through the portal or the dashboard sets the
+            # schedule's `end_behavior` to "cancel" (and usually truncates it to the phase in
+            # progress) while leaving `cancel_at_period_end` false on the subscription itself.
+            #
+            # Every founding subscriber is in exactly this state for their whole lock, so this is
+            # the normal path for them, not an edge case. Checked BEFORE the two-phase guard below:
+            # a cancelled schedule is frequently truncated to a single phase, and returning early
+            # would discard the only notice of the cancellation we ever get.
+            if str(schedule.get("end_behavior") or "").lower() == "cancel":
+                cancel_at = self._final_phase_end(schedule)
+                if cancel_at is not None:
+                    row.cancel_at = cancel_at
+                if not row.cancellation_reason:
+                    row.cancellation_reason = "cancellation_requested"
+                logger.info(
+                    "BILLING: schedule %s is set to cancel at %s (subscription %s)",
+                    schedule.get("id"), cancel_at, subscription_id,
+                )
+
             # A schedule with ONE phase is not a founding lock — it is a founding price running
             # forever with nothing to roll onto. `from_subscription` always creates exactly that,
             # and phase 2 is added immediately afterwards; claiming the lock on the `created` event
@@ -223,6 +243,20 @@ class BillingSyncService:
             return None
 
     @staticmethod
+    def _final_phase_end(schedule: Dict[str, Any]) -> Optional[datetime]:
+        """When a schedule set to ``end_behavior="cancel"`` stops billing.
+
+        The LAST phase's end, not the first: a cancelled schedule may still have a phase to run
+        (someone who cancels mid-lock keeps what they paid for), and the customer keeps access
+        until the whole schedule finishes. Using phase 1's end would cut them off early — and tell
+        them so on the profile screen.
+        """
+        phases = schedule.get("phases") or []
+        if not phases:
+            return None
+        return _ts(phases[-1].get("end_date"))
+
+    @staticmethod
     def _phase_one_end(schedule: Dict[str, Any]) -> Optional[datetime]:
         """When the founding phase ends, taken from Stripe's own phase boundary.
 
@@ -286,8 +320,44 @@ class BillingSyncService:
         item0 = items[0] if items else {}
         row.current_period_start = _ts(item0.get("current_period_start") or sub.get("current_period_start"))
         row.current_period_end = _ts(item0.get("current_period_end") or sub.get("current_period_end"))
+
+        # Cancellation — mirrored in full, not just the boolean.
+        #
+        # `cancel_at_period_end` is only ever set for a plain cancel on an UNMANAGED subscription.
+        # Every founding subscriber has a schedule attached (`apply_founding_lock`), and cancelling
+        # one of those is expressed by Stripe as a `cancel_at` timestamp and/or a change to the
+        # schedule's `end_behavior` — the boolean stays false. Storing only the boolean is what let
+        # the profile screen tell a customer who had just cancelled that their plan would renew.
+        #
+        # Every field is assigned unconditionally so that RESUMING a cancellation (the portal's
+        # "renew" button clears all three on Stripe's side) clears them here too. A conditional
+        # write would leave a resumed subscription permanently displaying as cancelling.
         row.cancel_at_period_end = bool(sub.get("cancel_at_period_end"))
+        row.cancel_at = _ts(sub.get("cancel_at"))
         row.canceled_at = _ts(sub.get("canceled_at"))
+
+        # `ended_at` is when access actually stopped, which `status` alone cannot express during the
+        # window between "cancellation requested" and "period over". Stripe populates it on the
+        # subscription; on a `.deleted` event it is authoritative, and we fall back to the event's
+        # own moment if Stripe omitted it so a deleted subscription is never left looking open.
+        ended_at = _ts(sub.get("ended_at"))
+        if deleted and ended_at is None:
+            ended_at = datetime.utcnow()
+        row.ended_at = ended_at
+
+        # Stripe's own vocabulary: cancellation_requested | payment_failed | payment_disputed.
+        # Refund- and dispute-driven cancellations set their own reasons from the charge handlers.
+        details = sub.get("cancellation_details") or {}
+        reason = details.get("reason") if isinstance(details, dict) else None
+        # Only overwrite with a real value: a plain `.updated` event carries no cancellation_details
+        # and must not erase a reason a refund or dispute handler has already recorded.
+        if reason:
+            row.cancellation_reason = reason
+        elif not (row.cancel_at_period_end or row.cancel_at or row.canceled_at):
+            # Not cancelling by any mechanism — clear a stale reason left by a cancellation that
+            # was subsequently resumed.
+            row.cancellation_reason = None
+
         row.trial_end = _ts(sub.get("trial_end"))
 
         ev_type = "canceled" if deleted else ("created" if event_type.endswith("created") else "updated")
