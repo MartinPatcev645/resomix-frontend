@@ -874,7 +874,7 @@ it — there the subscription genuinely is cancelled and `status` is the correct
 
 Tests: `test_billing_refund_service.py` (28).
 
-### D. Making deactivation real — **DONE** (D5 pending)
+### D. Making deactivation real — **DONE**
 
 - [x] D1 — Blocked at `get_current_user`. **Free**: that function already loads the user row, so
       it is an in-memory boolean, not an extra query — and it is one line in one dependency, not
@@ -884,8 +884,13 @@ Tests: `test_billing_refund_service.py` (28).
 - [x] D3 — `UserService.deactivate` revokes every session. Without it a suspended user keeps
       working for up to `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` (30) on any device holding a token
 - [x] D4 — `{"code": "ACCOUNT_DEACTIVATED", "error": …}` on both login paths and the dependency
-- [ ] D5 — Dedicated frontend screen (the message is returned and displayed; the styled
-      contact-support screen is still to do)
+- [x] D5 — Dedicated explanation on both surfaces: the login screen branches on the CODE (a 403
+      used to be assumed to mean "unverified email", so a deactivated user was shown Verify Your
+      Email and a resend button that could never help), and a mid-session deactivation logs out
+      through `logout({reason: 'deactivated'})` → its own modal, broadcast to every tab
+- [x] D6 — `assert_active` shared by **both** token-resolving dependencies. `get_current_user_optional`
+      was missed first time round, leaving 17 endpoints — similarity search among them — still
+      granting a deactivated user full entitlements
 
 > Why both a login block and a chokepoint check: login-only leaves the 30-minute access-token
 > window open. Session revocation closes the refresh path

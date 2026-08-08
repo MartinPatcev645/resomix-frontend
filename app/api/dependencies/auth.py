@@ -84,6 +84,33 @@ async def _refresh_redis_session_ttl(user_id: int):
 _LAST_SEEN_THROTTLE_SECONDS = 300
 
 
+def assert_active(user: User) -> None:
+    """Refuse a deactivated account. Call from EVERY path that resolves a token to a user.
+
+    Deliberately a shared helper rather than an inline check. There are two token-resolving
+    dependencies — `get_current_user` and `get_current_user_optional` — and the optional one was
+    missed the first time round. That left 17 endpoints, including similarity search, still
+    recognising a deactivated user and granting their full entitlements while the admin screen
+    reported them as inactive.
+
+    403 with a machine-readable code, never a bare 401: the frontend's 401 interceptor would try to
+    refresh the token and loop. `ACCOUNT_DEACTIVATED` is what lets the client explain rather than
+    show a generic failure.
+
+    Optional auth refuses too rather than degrading to guest — a token that identifies a blocked
+    account is not the same as no token, and silently downgrading someone to guest limits while
+    they still look signed in is more confusing than telling them.
+    """
+    if not user.is_active:
+        raise HTTPException(
+            status_code=HTTP_403_FORBIDDEN,
+            detail={
+                "code": "ACCOUNT_DEACTIVATED",
+                "error": "This account is deactivated. Contact support to restore access.",
+            },
+        )
+
+
 async def _touch_last_seen(db: AsyncSession, user: User) -> None:
     """Record that this user did something, at most once per throttle window.
 
@@ -182,24 +209,9 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Deactivated accounts stop here — every authenticated endpoint in the app passes through this
-    # dependency, so this one check covers uploads, playlists, analysis, exports and the rest.
-    #
-    # It used to live only inside `require_permission`, which guards ADMIN routes. The result was a
-    # deactivation that deactivated nothing: the user's existing token kept working across the
-    # whole webapp, and they could log back in with their password. Blocking at login alone would
-    # not have been enough either — a live session outlives it by however long the token has left.
-    #
-    # 403 with a machine-readable code, not a bare 401: the frontend's 401 interceptor would try to
-    # refresh the token and loop. `ACCOUNT_DEACTIVATED` is what lets it show the real explanation.
-    if not user.is_active:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail={
-                "code": "ACCOUNT_DEACTIVATED",
-                "error": "This account is deactivated. Contact support to restore access.",
-            },
-        )
+    # Deactivated accounts stop here. Blocking at login alone is not enough — a live session
+    # outlives it by however long the access token has left (30 minutes by default).
+    assert_active(user)
 
     # Fast TTL refresh in Redis for activity tracking
     await _refresh_redis_session_ttl(user.id)
@@ -272,13 +284,21 @@ async def get_current_user_optional(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
+        # Same gate as the required path. Missing here, "optional auth" meant a deactivated user
+        # kept full entitlements on the 17 endpoints that use this dependency — similarity search
+        # among them — while the admin screen showed them as inactive.
+        assert_active(user)
+
         # Fast TTL refresh in Redis for activity tracking
         await _refresh_redis_session_ttl(user.id)
+
+        await _touch_last_seen(db, user)
 
         return user
 
     except HTTPException:
-        # Re-raise HTTPException (401 errors from decode_token or above)
+        # Re-raise HTTPException (401 errors from decode_token or above), including the 403 from
+        # `assert_active` — the generic `except Exception` below must not turn it into a 401.
         raise
     except Exception:
         # Unexpected error - treat as invalid token
