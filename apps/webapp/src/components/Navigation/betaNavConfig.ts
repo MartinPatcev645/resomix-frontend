@@ -63,6 +63,9 @@ export const CATALOGUE_PILOT_HREF = landingHref('/partners/pilot');
 
 export const ABOUT_HREF = landingHref('/about');
 
+/** The marketing pricing page on resomix.com. Where the guest header's Pricing button points. */
+export const PRICING_HREF = landingHref('/pricing');
+
 export const NAV_TOP_GROUPS: NavTopGroup[] = [
   {
     key: 'product',

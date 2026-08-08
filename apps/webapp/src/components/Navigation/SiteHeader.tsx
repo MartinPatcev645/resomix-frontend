@@ -8,6 +8,7 @@ import { MenuIcon } from '../icons/MenuIcon.tsx';
 import {
   BETA_URL,
   CATALOGUE_PILOT_HREF,
+  PRICING_HREF,
   NAV_TOP_GROUPS,
   getNavSectionForPath,
   type NavTopGroup,
@@ -225,23 +226,20 @@ export function SiteHeader({
    * header link saying "Pricing" to someone who already pays reads as though they are not
    * subscribed.
    */
-  const onPricingPage = currentPath === '/subscribe';
   const pricingNavItem = (idPrefix = '') =>
     isAuthenticated ? null : (
-      <li key="pricing" id={`${idPrefix}mi-pricing`} className={onPricingPage ? 'is-section' : ''}>
+      <li key="pricing" id={`${idPrefix}mi-pricing`}>
         <div className="nav-mm-item-wrap">
           <a
             className="nav-mm-trigger"
-            href="/subscribe?from=app"
+            href={PRICING_HREF}
             id={`${idPrefix}nav-pricing-link`}
-            aria-current={onPricingPage ? 'page' : undefined}
             onClick={(e) => {
               e.preventDefault();
-              onNavigate('/subscribe?from=app');
+              window.location.href = PRICING_HREF;
             }}
           >
             {navT('nav.cta.pricing')}
-            {onPricingPage ? <span className="nav-sr">{navT('nav.status.currentPage')}</span> : null}
           </a>
         </div>
       </li>
