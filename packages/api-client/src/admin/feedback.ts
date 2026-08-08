@@ -15,6 +15,17 @@ export interface FeedbackItem {
   recommendation: number | null;
   status: 'open' | 'resolved';
   submitted_at: string; // ISO datetime string
+  /** Derived from the stored user_id, so it stays accurate even if the account is later removed. */
+  is_signed_in?: boolean;
+  /** Resolved for the whole page in one query. Null for anonymous feedback. */
+  user?: {
+    id: number;
+    uuid: string;
+    email: string;
+    username: string | null;
+    name: string | null;
+    is_active: boolean;
+  } | null;
 }
 
 export interface FeedbackListParams {

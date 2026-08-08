@@ -21,6 +21,8 @@ export interface FeedbackItem {
   submitted_at: string
   user_id: string | null
   category: string | null
+  is_signed_in?: boolean
+  user?: ApiFeedbackItem['user']
 }
 
 export type FeedbackSearchColumn = FeedbackListParams['search_column']
@@ -35,6 +37,8 @@ const convertApiFeedback = (apiData: ApiFeedbackItem): FeedbackItem => ({
   submitted_at: apiData.submitted_at,
   user_id: apiData.user_id,
   category: apiData.category,
+  is_signed_in: apiData.is_signed_in,
+  user: apiData.user,
 })
 
 interface UseFeedbackOptions {

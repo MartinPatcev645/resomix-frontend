@@ -160,22 +160,19 @@ function ContactTable({
     {
       title: 'From',
       key: 'from',
+      width: 260,
       render: (_: any, record: ContactItem) => (
         <div className="flex flex-col">
-          <span className="font-medium">{record.name || '—'}</span>
-          <span className="text-secondary text-xs">{record.email}</span>
+          <span className="font-medium">
+            {record.name || record.user?.name || '—'}
+            {record.is_signed_in ? (
+              <Tag color="green" className="ml-2">Account</Tag>
+            ) : (
+              <Tag className="ml-2">Guest</Tag>
+            )}
+          </span>
+          <span className="text-secondary text-xs">{record.email || '-'}</span>
         </div>
-      ),
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-      width: 200,
-      render: (email: string | null) => (
-        <span className="text-secondary">
-          {email || '-'}
-        </span>
       ),
     },
     {

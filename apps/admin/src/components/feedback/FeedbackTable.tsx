@@ -1,13 +1,12 @@
 import { useState } from 'react'
-import { Table, Tag, Dropdown, Button, App, Modal, Input } from 'antd'
+import { Table, Tag, Dropdown, Button, App } from 'antd'
 import type { TableColumnsType, MenuProps } from 'antd'
 import { CheckCircle, XCircle, Trash2, MoreVertical, Eye, Mail } from 'lucide-react'
 import type { FeedbackItem } from '@/hooks/useFeedback.ts'
 import { useConfirmDialog } from '@resomix/hooks'
 import { replyToFeedback } from '@resomix/api-client'
 import SendMessageModal from '@/components/SendMessageModal.tsx'
-
-const { TextArea } = Input
+import SubmissionDetailDrawer from '@/components/SubmissionDetailDrawer.tsx'
 
 interface FeedbackTableProps {
   data: FeedbackItem[]
@@ -42,8 +41,8 @@ function FeedbackTable({
 }: FeedbackTableProps) {
   const { modal } = App.useApp()
   const { confirmDelete } = useConfirmDialog()
-  const [viewingMessage, setViewingMessage] = useState<FeedbackItem | null>(null)
   const [replyTo, setReplyTo] = useState<FeedbackItem | null>(null)
+  const [detailId, setDetailId] = useState<number | null>(null)
 
   const handleDeleteSingle = (record: FeedbackItem) => {
     confirmDelete({
@@ -90,21 +89,6 @@ function FeedbackTable({
     })
   }
 
-  const handleViewMessage = (record: FeedbackItem) => {
-    setViewingMessage(record)
-  }
-
-  const handleCloseMessageModal = () => {
-    setViewingMessage(null)
-  }
-
-  const handleMarkStatusFromModal = async (status: 'open' | 'resolved') => {
-    if (viewingMessage) {
-      await onMarkStatus(viewingMessage.id, status)
-      setViewingMessage(null)
-    }
-  }
-
   const getActionMenu = (record: FeedbackItem): MenuProps['items'] => [
     {
       key: 'mark-status',
@@ -116,7 +100,7 @@ function FeedbackTable({
       key: 'view-message',
       label: 'View Message',
       icon: <Eye size={16} />,
-      onClick: () => handleViewMessage(record),
+      onClick: () => setDetailId(Number(record.id)),
     },
     {
       key: 'reply',
@@ -163,6 +147,34 @@ function FeedbackTable({
       render: (id: string) => (
         <span className="font-mono text-sm text-primary">{id}</span>
       ),
+    },
+    {
+      title: 'From',
+      key: 'from',
+      width: 220,
+      render: (_: any, record: FeedbackItem) => {
+        // Feedback can be left by anyone; saying so plainly beats an empty cell that reads as
+        // missing data.
+        if (!record.user) {
+          return <span className="text-secondary">{record.is_signed_in ? `User #${record.user_id}` : 'Anonymous'}</span>
+        }
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium">
+              {record.user.name || record.user.username || record.user.email}
+              {!record.user.is_active && <Tag color="red" className="ml-2">Inactive</Tag>}
+            </span>
+            <span className="text-secondary text-xs">{record.user.email}</span>
+          </div>
+        )
+      },
+    },
+    {
+      title: 'Category',
+      dataIndex: 'category',
+      key: 'category',
+      width: 130,
+      render: (c: string | null) => (c ? <Tag>{c}</Tag> : <span className="text-secondary">-</span>),
     },
     {
       title: 'Satisfaction',
@@ -280,87 +292,22 @@ function FeedbackTable({
         scroll={{ x: 'max-content' }}
       />
 
-      {/* View Message Modal */}
-      <Modal
-        title={
-          <div className="flex items-center gap-4">
-            <span>Feedback Message</span>
-            {viewingMessage && (
-              <Tag color={viewingMessage.status === 'open' ? 'orange' : 'green'}>
-                {viewingMessage.status.charAt(0).toUpperCase() + viewingMessage.status.slice(1)}
-              </Tag>
-            )}
-          </div>
-        }
-        open={viewingMessage !== null}
-        onCancel={handleCloseMessageModal}
-        centered
-        width={600}
-        footer={[
-          <Button key="close" onClick={handleCloseMessageModal}>
-            Close
-          </Button>,
-          viewingMessage && (
-            <Button
-              key="mark-status"
-              type="primary"
-              icon={viewingMessage.status === 'open' ? <CheckCircle size={16} /> : <XCircle size={16} />}
-              onClick={() => handleMarkStatusFromModal(viewingMessage.status === 'open' ? 'resolved' : 'open')}
-            >
-              Mark as {viewingMessage.status === 'open' ? 'Resolved' : 'Open'}
-            </Button>
-          ),
-        ]}
-      >
-        {viewingMessage && (
-          <div className="space-y-4">
-            {/* Feedback details */}
-            <div className="grid grid-cols-2 gap-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--color-background-secondary)' }}>
-              <div>
-                <p className="text-sm text-secondary">ID</p>
-                <p className="font-mono text-sm text-primary">{viewingMessage.id}</p>
-              </div>
-              {viewingMessage.satisfaction !== null && (
-                <div>
-                  <p className="text-sm text-secondary">Satisfaction</p>
-                  <p className="text-primary">{viewingMessage.satisfaction}/10</p>
-                </div>
-              )}
-              {viewingMessage.recommendation !== null && (
-                <div>
-                  <p className="text-sm text-secondary">Recommendation</p>
-                  <p className="text-primary">{viewingMessage.recommendation}/10</p>
-                </div>
-              )}
-              {viewingMessage.category && (
-                <div>
-                  <p className="text-sm text-secondary">Category</p>
-                  <p className="text-primary">{viewingMessage.category}</p>
-                </div>
-              )}
-              {viewingMessage.submitted_at && (
-                <div>
-                  <p className="text-sm text-secondary">Submitted</p>
-                  <p className="text-primary text-sm">
-                    {new Date(viewingMessage.submitted_at).toLocaleString()}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Message */}
-            <div>
-              <p className="text-sm text-secondary mb-2">Message</p>
-              <TextArea
-                value={viewingMessage.message || 'No message provided'}
-                readOnly
-                autoSize={{ minRows: 4, maxRows: 12 }}
-                className="font-sans"
-              />
-            </div>
-          </div>
-        )}
-      </Modal>
+      <SubmissionDetailDrawer
+        open={detailId !== null}
+        onClose={() => setDetailId(null)}
+        kind="feedback"
+        id={detailId}
+        onReply={() => {
+          const row = data.find((d) => Number(d.id) === detailId)
+          if (row) setReplyTo(row)
+        }}
+        onMarkStatus={(next) => {
+          if (detailId !== null) {
+            void onMarkStatus(String(detailId), next)
+            setDetailId(null)
+          }
+        }}
+      />
 
       {/* No `recipientHint`: the feedback list carries no email — it is resolved server-side
           from the account. The preview shows the real recipient before anything is sent,
