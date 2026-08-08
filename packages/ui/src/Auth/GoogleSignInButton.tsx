@@ -12,7 +12,9 @@ interface GoogleSignInButtonProps {
   onCredential?: (credential: string) => void;
   /** Called after a successful sign-in (auth store is already populated). Ignored in link mode. */
   onSuccess?: (data: any) => void;
-  onError?: (message: string) => void;
+  /** `code` is the machine-readable refusal (e.g. ACCOUNT_DEACTIVATED) when the server sent
+   *  one. Optional second argument, so callers that only want the message are unaffected. */
+  onError?: (message: string, code?: string | null) => void;
   /** Visible label. */
   label?: string;
   /** Pixel width of the pill (and the invisible GIS button behind it). Google enforces 200–400. */
@@ -79,7 +81,7 @@ export function GoogleSignInButton({
             }
             const res = await handleGoogleCredential(response.credential);
             if (res.success) onSuccess?.(res.data);
-            else onError?.(res.error);
+            else onError?.(res.error, (res as { code?: string | null }).code ?? null);
           },
           use_fedcm_for_prompt: true,
         });

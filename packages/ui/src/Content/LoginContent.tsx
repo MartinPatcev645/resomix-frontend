@@ -126,12 +126,22 @@ export default function LoginContent({
     }, 1500);
   };
 
-  const handleGoogleError = (message: string) => {
+  const handleGoogleError = (message: string, code?: string | null) => {
     setStatusType("error");
+    // A deactivated account is not a Google problem — framing it as one sends the user off to
+    // debug their Google account instead of contacting us.
+    if (code === "ACCOUNT_DEACTIVATED") {
+      setStatusTitle("Account deactivated");
+      setStatusMessage(
+        "This account has been deactivated, so you can't sign in. If you asked us to delete it, " +
+          "your data is kept for 30 days — contact support before then and we can restore everything."
+      );
+      setShowResendCTA(false);
+      return;
+    }
     setStatusTitle("Google sign-in failed");
     setStatusMessage(message || "We couldn't sign you in with Google. Please try again.");
     setShowResendCTA(false);
-    setShowStatus(true);
   };
 
   const handleSubmit = async (e?: FormEvent) => {
@@ -194,10 +204,39 @@ export default function LoginContent({
           setStatusMessage("Unexpected response from server");
         }
       } else {
-        const errorResult = result as { success: false; error: string; status?: number };
+        const errorResult = result as {
+          success: false;
+          error: string;
+          status?: number;
+          code?: string | null;
+        };
         const trimmedInput = form.email_or_username.trim();
         setStatusType("error");
-        if (errorResult.status === 403 || errorResult.error?.toLowerCase().includes("not verified")) {
+
+        // Branch on the CODE, not the HTTP status.
+        //
+        // This used to read `status === 403`, which was fine only while an unverified email was
+        // the single reason login could 403. It isn't any more: a deactivated account refuses with
+        // the same status, and was being shown "Verify your email" plus a resend button that could
+        // never help.
+        //
+        // The `not verified` string check stays as a fallback for a browser on a cached bundle
+        // talking to a server that has not been updated yet.
+        const isDeactivated = errorResult.code === "ACCOUNT_DEACTIVATED";
+        const needsVerification =
+          !isDeactivated &&
+          (errorResult.code === "EMAIL_NOT_VERIFIED" ||
+            errorResult.error?.toLowerCase().includes("not verified"));
+
+        if (isDeactivated) {
+          setStatusTitle("Account deactivated");
+          setStatusMessage(
+            "This account has been deactivated, so you can't sign in. If you asked us to delete " +
+              "it, your data is kept for 30 days — contact support before then and we can restore " +
+              "everything exactly as you left it."
+          );
+          setShowResendCTA(false);
+        } else if (needsVerification) {
           const emailHint = trimmedInput && trimmedInput.includes("@")
             ? `We just sent ${trimmedInput} a verification email when you signed up.`
             : "Please check the inbox associated with your account.";
@@ -208,7 +247,7 @@ export default function LoginContent({
           setShowResendCTA(true);
         } else {
           setStatusTitle("Sign-in failed");
-        setStatusMessage(errorResult.error || "Invalid credentials. Please try again.");
+          setStatusMessage(errorResult.error || "Invalid credentials. Please try again.");
           setShowResendCTA(false);
         }
       }
