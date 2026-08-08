@@ -28,6 +28,7 @@ from app.models.user import User
 from app.repositories.log_repository import LogRepository
 from app.services.purchase_service import PurchaseService
 from app.services.billing_email_service import BillingEmailService
+from app.services.billing_refund_service import BillingRefundService
 from app.services.billing_sync_service import BillingSyncService
 from app.services.billing_service import BillingService
 
@@ -53,6 +54,7 @@ class WebhookService:
         self.billing_sync = BillingSyncService()
         self.billing_service = BillingService()
         self.billing_email = BillingEmailService()
+        self.billing_refund = BillingRefundService()
         self.log_repo = LogRepository()
         stripe.api_key = settings.stripe_secret_key
 
@@ -61,6 +63,85 @@ class WebhookService:
     # payment_failed case it lands on someone whose card merely expired — which decision Q5 of
     # the account-lifecycle plan explicitly rules out (Stripe's dunning mail already covers it).
     _SUPPRESS_ENDED_EMAIL_REASONS = ("payment_failed", "refunded", "disputed", "payment_disputed")
+
+    async def _plan_name(self, db: AsyncSession, plan_id: Optional[int]) -> str:
+        """The plan's display name for an email. Falls back to "Pro" rather than an empty phrase —
+        a mail reading "your subscription is cancelled" beats one reading "your  is cancelled"."""
+        if not plan_id:
+            return "Pro"
+        plan = (await db.execute(select(Plan).where(Plan.id == plan_id))).scalar_one_or_none()
+        return plan.name if plan else "Pro"
+
+    async def _notify_refund(
+        self,
+        db: AsyncSession,
+        outcome: tuple,
+        charge: Dict[str, Any],
+        stripe_event_id: Optional[str],
+    ) -> None:
+        """Tell the customer money went back — and, for a full refund, that access stopped.
+
+        Those two facts arrive together and pull in opposite directions, so they are never split
+        across two emails. Never raises: runs after the commit, see `_notify_subscription_state`.
+        """
+        try:
+            kind, row = outcome
+            user = await self.billing_refund.user_for(db, row)
+            if user is None:
+                return
+
+            common = dict(
+                charge_id=charge.get("id") or "",
+                amount_cents=int(charge.get("amount_refunded") or 0),
+                currency=charge.get("currency"),
+                plan_name=await self._plan_name(db, row.plan_id),
+                stripe_event_id=stripe_event_id,
+            )
+            if kind == "full":
+                await self.billing_email.subscription_refunded(db, user, **common)
+            else:
+                await self.billing_email.subscription_partial_refund(db, user, **common)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("BILLING EMAIL: could not notify refund on %s: %s", charge.get("id"), exc)
+
+    async def _notify_dispute(
+        self,
+        db: AsyncSession,
+        kind: str,
+        dispute: Dict[str, Any],
+        row: UserSubscription,
+        stripe_event_id: Optional[str],
+    ) -> None:
+        """Chargeback opened → suspended; won → restored; lost → nothing.
+
+        A lost dispute sends no email on purpose: the customer was already told access was
+        suspended, and "you lost" adds friction without adding information.
+        """
+        try:
+            if kind == "lost":
+                return
+            user = await self.billing_refund.user_for(db, row)
+            if user is None:
+                return
+
+            dispute_id = dispute.get("id") or ""
+            plan_name = await self._plan_name(db, row.plan_id)
+            if kind == "opened":
+                await self.billing_email.subscription_disputed(
+                    db, user,
+                    dispute_id=dispute_id,
+                    amount_cents=int(dispute.get("amount") or 0) or None,
+                    currency=dispute.get("currency"),
+                    plan_name=plan_name,
+                    stripe_event_id=stripe_event_id,
+                )
+            elif kind == "won":
+                await self.billing_email.subscription_restored(
+                    db, user, dispute_id=dispute_id, plan_name=plan_name,
+                    stripe_event_id=stripe_event_id,
+                )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("BILLING EMAIL: could not notify dispute %s: %s", dispute.get("id"), exc)
 
     async def _notify_subscription_state(
         self, db: AsyncSession, subscription_id: str, stripe_event_id: Optional[str]
@@ -90,8 +171,6 @@ class WebhookService:
                 return
 
             state = BillingService.cancellation_state(row)
-            if not state:
-                return  # running normally — nothing to say
 
             user = (
                 await db.execute(select(User).where(User.id == row.user_id))
@@ -99,10 +178,21 @@ class WebhookService:
             if user is None:
                 return
 
-            plan = (
-                await db.execute(select(Plan).where(Plan.id == row.plan_id))
-            ).scalar_one_or_none() if row.plan_id else None
-            plan_name = plan.name if plan else "Pro"
+            if not state:
+                # Not cancelling. That is also true of every ordinary renewal, so this is only a
+                # story if we previously told them it WAS cancelling — `subscription_resumed`
+                # checks that and stays silent otherwise. Leaving the last word as "your
+                # subscription is cancelled" when it is no longer true is the failure mode.
+                await self.billing_email.subscription_resumed(
+                    db, user,
+                    subscription_id=subscription_id,
+                    renews_at=row.current_period_end,
+                    plan_name=await self._plan_name(db, row.plan_id),
+                    stripe_event_id=stripe_event_id,
+                )
+                return
+
+            plan_name = await self._plan_name(db, row.plan_id)
 
             if state["ended"]:
                 if (row.cancellation_reason or "") in self._SUPPRESS_ENDED_EMAIL_REASONS:
@@ -187,6 +277,8 @@ class WebhookService:
         # Handlers record WHICH subscription they touched; nothing is emailed from inside the
         # transaction. See `_notify_subscription_state` for why the notice waits for the commit.
         notify_subscription_id: Optional[str] = None
+        pending_refund_notice: Optional[tuple] = None
+        pending_dispute_notice: Optional[tuple] = None
         try:
             if event.type == "checkout.session.completed":
                 session = sanitize_for_json(event.data.object.to_dict())
@@ -200,9 +292,31 @@ class WebhookService:
                     # webhook and force Stripe to replay the whole event.
                     await self.billing_service.apply_founding_lock(db, session)
 
+            elif event.type == "charge.refunded":
+                charge = sanitize_for_json(event.data.object.to_dict())
+                # Stripe does NOT cancel a subscription when its invoice is refunded — the two are
+                # unrelated objects to it. Without this the money goes back and the customer keeps
+                # a live, renewing Pro plan.
+                refund_outcome = await self.billing_refund.handle_refund(db, charge)
+                if refund_outcome:
+                    pending_refund_notice = (refund_outcome, charge)
+
             elif event.type == "charge.dispute.created":
                 dispute = sanitize_for_json(event.data.object.to_dict())
-                await self.purchase_service.handle_dispute(db, dispute)
+                # A dispute can be on a one-time cart order OR on a subscription. The subscription
+                # path is tried first; `handle_dispute` only ever matched `orders`, so a
+                # subscription chargeback used to fall straight through and do nothing.
+                suspended = await self.billing_refund.handle_dispute_opened(db, dispute)
+                if suspended is not None:
+                    pending_dispute_notice = ("opened", dispute, suspended)
+                else:
+                    await self.purchase_service.handle_dispute(db, dispute)
+
+            elif event.type == "charge.dispute.closed":
+                dispute = sanitize_for_json(event.data.object.to_dict())
+                closed = await self.billing_refund.handle_dispute_closed(db, dispute)
+                if closed:
+                    pending_dispute_notice = (closed[0], dispute, closed[1])
 
             # --- Consumer subscription billing ---
             elif event.type in (
@@ -251,6 +365,10 @@ class WebhookService:
             # state change that then rolled back is worse than no email.
             if notify_subscription_id:
                 await self._notify_subscription_state(db, notify_subscription_id, stripe_event_id)
+            if pending_refund_notice:
+                await self._notify_refund(db, *pending_refund_notice, stripe_event_id)
+            if pending_dispute_notice:
+                await self._notify_dispute(db, *pending_dispute_notice, stripe_event_id)
 
             return {"status": "success"}
 

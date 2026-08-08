@@ -97,6 +97,12 @@ class EntitlementService:
                 UserSubscription.user_id == user.id,
                 UserSubscription.status.in_(ACTIVE_SUBSCRIPTION_STATUSES),
                 UserSubscription.plan_id.isnot(None),
+                # Revoked by us while Stripe still reports the subscription as active — a
+                # chargeback. This cannot be expressed as a `status`, because the next
+                # `customer.subscription.updated` would mirror Stripe's "active" back over it and
+                # hand access straight back. NULL is the normal case, so no existing row is
+                # affected.
+                UserSubscription.access_suspended_at.is_(None),
             )
         )).scalar_one_or_none()
         if sub and sub.plan_id:

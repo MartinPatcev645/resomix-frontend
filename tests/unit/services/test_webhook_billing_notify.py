@@ -62,6 +62,7 @@ def _service_and_db(row, *, plan_name="Pro"):
     svc = WebhookService()
     svc.billing_email.subscription_cancelled = AsyncMock(return_value=True)
     svc.billing_email.subscription_ended = AsyncMock(return_value=True)
+    svc.billing_email.subscription_resumed = AsyncMock(return_value=True)
 
     user = MagicMock()
     user.id = 42
@@ -78,11 +79,32 @@ def _service_and_db(row, *, plan_name="Pro"):
 # --------------------------------------------------------------------------- #
 
 @pytest.mark.asyncio
-async def test_healthy_subscription_sends_nothing() -> None:
+async def test_healthy_subscription_sends_no_cancellation_notice() -> None:
     svc, db = _service_and_db(Row())
     await svc._notify_subscription_state(db, SUB_ID, "evt_1")
     svc.billing_email.subscription_cancelled.assert_not_awaited()
     svc.billing_email.subscription_ended.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_a_healthy_subscription_offers_the_resume_notice_to_its_own_guard() -> None:
+    """The dispatcher always asks; `subscription_resumed` is what decides.
+
+    That guard lives in the email service because it needs the notification history — and it is
+    what stops a renewal being announced as "your subscription is back on". The test below proves
+    the guard itself works.
+    """
+    svc, db = _service_and_db(Row())
+    await svc._notify_subscription_state(db, SUB_ID, "evt_1")
+    svc.billing_email.subscription_resumed.assert_awaited_once()
+    assert svc.billing_email.subscription_resumed.call_args.kwargs["renews_at"] == PERIOD_END
+
+
+@pytest.mark.asyncio
+async def test_a_cancelling_subscription_is_never_offered_the_resume_notice() -> None:
+    svc, db = _service_and_db(Row(cancel_at_period_end=True))
+    await svc._notify_subscription_state(db, SUB_ID, "evt_1")
+    svc.billing_email.subscription_resumed.assert_not_awaited()
 
 
 @pytest.mark.asyncio

@@ -205,6 +205,13 @@ class BillingNotification(Base):
     )
     # e.g. "cancelled:sub_123:2027-03-14T00:00:00" — see the class docstring.
     dedupe_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    # The Stripe object this message was about: sub_… / ch_… / dp_…
+    #
+    # Denormalised out of `dedupe_key` so "what have we already told this customer about THIS
+    # subscription?" is an indexed equality lookup. Answering it is what lets a resumed
+    # subscription send a confirmation only to people who were told it was cancelling, rather than
+    # on every ordinary renewal.
+    stripe_object_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
     # Template stem, without the .html: subscription_cancelled | subscription_refunded | …
     template: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
     recipient_email: Mapped[str] = mapped_column(String(100), nullable=False)

@@ -823,10 +823,12 @@ Tests: `tests/unit/services/test_billing_cancellation_state.py` (15),
 - [x] B2 — `billing_notifications` table (migration `c9e2a7d4f1b8`), keyed by **state** not event
 - [x] B3 — Subscription cancelled — template + wired
 - [x] B4 — Subscription ended — template + wired
-- [x] B5 — Full refund template *(wiring in Phase 3)*
-- [x] B6 — Partial refund template *(wiring in Phase 3)*
-- [x] B7 — Dispute opened template *(wiring in Phase 3)*
-- [x] B8 — Dispute won template *(wiring in Phase 3)*
+- [x] B5 — Full refund — template + wired
+- [x] B6 — Partial refund — template + wired
+- [x] B7 — Dispute opened — template + wired
+- [x] B8 — Dispute won — template + wired
+- [x] B8a — **Cancellation reversed** — added after testing showed a resume updated the profile
+      but told the customer nothing, leaving "your subscription is cancelled" as the last word
 - [ ] B9 — Account deletion scheduled (30-day notice) — Phase 4
 - [ ] B10 — Account deleted (final) — Phase 5
 - [ ] B11 — Admin inbox: purge due — Phase 5
@@ -842,16 +844,28 @@ Tests: `test_billing_email_service.py` (21), `test_webhook_billing_notify.py` (1
 render paths (6 templates × with/without optional fields) verified to produce complete documents
 with no unrendered placeholders.
 
-### C. Refunds and disputes
+### C. Refunds and disputes — **DONE**
 
-- [ ] C1 — Handle `charge.refunded`; full vs partial decided on `amount_refunded >= amount`
-- [ ] C2 — Full refund → cancel in Stripe **and** locally, downgrade to free immediately
-- [ ] C3 — Partial refund → email only, plan untouched
-- [ ] C4 — Release the founding schedule before cancelling, or Stripe refuses
-- [ ] C5 — Extend `handle_dispute` to match subscriptions, not just cart orders
-- [ ] C6 — Handle `charge.dispute.closed`: won → restore Pro, lost → stay free
-- [ ] C7 — Add the 3 new events in the Stripe dashboard (production set 12 → 15)
-- [ ] C8 — Update `stripe_live_doc.md`'s event table
+- [x] C1 — `charge.refunded` handled; full vs partial on `amount_refunded >= amount`
+- [x] C2 — Full refund → cancelled in Stripe **and** locally, free immediately, founding lock cleared
+- [x] C3 — Partial refund → email only, plan untouched
+- [x] C4 — Founding schedule released before cancelling (Stripe refuses otherwise)
+- [x] C5 — Subscription chargebacks handled; cart orders still fall through to `PurchaseService`
+- [x] C6 — `charge.dispute.closed`: won → restored, lost → stays suspended
+- [x] C7 — **2** new events to add in Stripe (12 → 14): `charge.refunded`,
+      `charge.dispute.closed`. `charge.dispute.created` was already selected — it just never
+      matched subscriptions
+- [x] C8 — `stripe_live_doc.md` event table updated
+
+**Design note not in the original plan.** A chargeback cannot be expressed as a `status` value:
+Stripe keeps a disputed subscription **active**, so the next `customer.subscription.updated` would
+mirror that straight back over ours and return access mid-dispute. Suspension is our own decision
+about our own product, so it lives in `user_subscriptions.access_suspended_at`
+(migration `d8b4f2a6c1e3`), which no sync path touches, and
+`EntitlementService.get_effective_plan` gained one `IS NULL` condition. A full refund does not use
+it — there the subscription genuinely is cancelled and `status` is the correct durable answer.
+
+Tests: `test_billing_refund_service.py` (28).
 
 ### D. Making deactivation real
 

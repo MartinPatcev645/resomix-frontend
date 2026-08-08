@@ -77,6 +77,15 @@ class UserSubscription(Base):
     # no vocabulary for (`refunded`, `disputed`). Selects the notification template.
     cancellation_reason: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
 
+    # Access revoked by US while the subscription stays live in Stripe — a chargeback, today.
+    #
+    # Deliberately NOT a `status` value: Stripe keeps a disputed subscription `active`, so the next
+    # `customer.subscription.updated` would mirror that straight back over any status we wrote and
+    # hand access back mid-dispute. `status` mirrors Stripe; this is our own decision, and no sync
+    # path touches it. Cleared when a dispute closes in our favour.
+    access_suspended_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    access_suspended_reason: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+
     trial_end: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
 
     # Timestamps

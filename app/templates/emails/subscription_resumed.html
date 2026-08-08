@@ -1,0 +1,39 @@
+{# Cancellation reversed — the subscription is renewing again.
+
+   Sent ONLY to someone who was previously told their subscription was cancelling. Without that
+   guard this would fire on every ordinary renewal, because "not cancelling" is the normal state.
+
+   The job of this email is to close the loop: they were told it would end on a date, and that is
+   no longer true. Leaving the last word as "your subscription is cancelled" is the failure mode. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your {{ plan_name }} subscription is back on</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>You've reversed the cancellation, so your {{ plan_name }} subscription will continue as normal.
+   Please ignore our earlier email saying it was going to end.</p>
+
+<div class="alert">
+    {% if renews_at %}
+    <p style="margin: 0;"><strong>Your next payment is on {{ renews_at }}.</strong></p>
+    {% else %}
+    <p style="margin: 0;"><strong>Billing continues on your usual schedule.</strong></p>
+    {% endif %}
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        Nothing changed while the cancellation was pending &mdash; you never lost access, and
+        everything in your library is exactly where you left it.
+    </p>
+</div>
+
+<p>Nothing further is needed from you.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ app_url }}/profile" class="button">VIEW BILLING</a>
+</div>
+
+<p class="text-muted" style="margin-top: 30px;">
+    Didn't mean to do this? You can cancel again at any time from your billing settings.
+</p>
+{% endblock %}

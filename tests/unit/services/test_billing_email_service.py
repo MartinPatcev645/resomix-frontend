@@ -193,6 +193,101 @@ async def test_a_second_partial_refund_is_a_new_message() -> None:
 
 
 # --------------------------------------------------------------------------- #
+# Resume — the guard that stops every renewal being announced
+# --------------------------------------------------------------------------- #
+
+def _db_with_history(cancelled_row, already_resumed=False):
+    """Session stub for the resume path: the history lookup, then the dedupe check."""
+    db = MagicMock()
+    history, dedupe = MagicMock(), MagicMock()
+    history.scalar_one_or_none.return_value = cancelled_row
+    dedupe.first.return_value = MagicMock() if already_resumed else None
+    db.execute = AsyncMock(side_effect=[history, dedupe])
+    db.add = MagicMock()
+    db.commit = AsyncMock()
+    db.rollback = AsyncMock()
+    return db
+
+
+@pytest.mark.asyncio
+async def test_resume_sends_nothing_when_no_cancellation_was_ever_announced() -> None:
+    """THE IMPORTANT ONE. "Not cancelling" is the normal state of a healthy subscription, so
+    without this guard every renewal would be announced as "your subscription is back on"."""
+    svc, send = _service()
+    db = _db_with_history(cancelled_row=None)
+
+    assert await svc.subscription_resumed(db, _user(), subscription_id=SUB_ID) is False
+    send.assert_not_awaited()
+    db.add.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_resume_sends_when_a_cancellation_was_announced() -> None:
+    svc, send = _service()
+    cancelled = MagicMock()
+    cancelled.id = 17
+    db = _db_with_history(cancelled_row=cancelled)
+
+    assert await svc.subscription_resumed(
+        db, _user(), subscription_id=SUB_ID, renews_at=EFFECTIVE
+    ) is True
+
+    send.assert_awaited_once()
+    assert send.call_args.kwargs["template_name"] == "subscription_resumed.html"
+    assert send.call_args.kwargs["context"]["renews_at"] == "14 March 2027"
+
+
+@pytest.mark.asyncio
+async def test_resume_is_keyed_to_the_cancellation_it_answers() -> None:
+    """Cancel → resume → cancel → resume must send TWO confirmations, not one.
+
+    Keying on the subscription alone would swallow the second; keying on the cancellation row's id
+    gives each cycle its own key.
+    """
+    svc, _ = _service()
+    keys = []
+    for cancellation_id in (17, 31):
+        cancelled = MagicMock()
+        cancelled.id = cancellation_id
+        db = _db_with_history(cancelled_row=cancelled)
+        await svc.subscription_resumed(db, _user(), subscription_id=SUB_ID)
+        keys.append(db.add.call_args_list[0].args[0].dedupe_key)
+
+    assert keys == [f"resumed:{SUB_ID}:17", f"resumed:{SUB_ID}:31"]
+    assert len(set(keys)) == 2
+
+
+@pytest.mark.asyncio
+async def test_repeated_events_for_one_resume_send_once() -> None:
+    svc, send = _service()
+    cancelled = MagicMock()
+    cancelled.id = 17
+    db = _db_with_history(cancelled_row=cancelled, already_resumed=True)
+
+    assert await svc.subscription_resumed(db, _user(), subscription_id=SUB_ID) is False
+    send.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_resume_records_the_subscription_it_relates_to() -> None:
+    """`stripe_object_id` is what the history lookup keys on — an unset one breaks the next cycle."""
+    svc, _ = _service()
+    cancelled = MagicMock()
+    cancelled.id = 17
+    db = _db_with_history(cancelled_row=cancelled)
+    await svc.subscription_resumed(db, _user(), subscription_id=SUB_ID)
+    assert db.add.call_args_list[0].args[0].stripe_object_id == SUB_ID
+
+
+@pytest.mark.asyncio
+async def test_cancellation_records_the_subscription_it_relates_to() -> None:
+    svc, _ = _service()
+    db = _db(existing=None)
+    await svc.subscription_cancelled(db, _user(), subscription_id=SUB_ID, effective_at=EFFECTIVE)
+    assert db.add.call_args_list[0].args[0].stripe_object_id == SUB_ID
+
+
+# --------------------------------------------------------------------------- #
 # Failure isolation — the webhook must survive anything here
 # --------------------------------------------------------------------------- #
 

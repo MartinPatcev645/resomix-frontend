@@ -54,6 +54,7 @@ SUBJECTS: Dict[str, str] = {
     "subscription_partial_refund": "A refund has been issued — Resomix",
     "subscription_disputed": "Your Resomix subscription has been suspended",
     "subscription_restored": "Your Resomix access is back",
+    "subscription_resumed": "Your Resomix subscription is back on",
 }
 
 
@@ -95,6 +96,28 @@ class BillingEmailService:
         ).first()
         return row is not None
 
+    async def last_notification(
+        self, db: AsyncSession, stripe_object_id: str, template: str
+    ) -> Optional[BillingNotification]:
+        """The most recent message of this kind we sent about this Stripe object, if any.
+
+        Used to answer "have we already told them this subscription was cancelling?" — the
+        precondition for confirming a reversal. Without it, a resume confirmation would fire on
+        every ordinary renewal, since "not cancelling" is the normal state of a healthy
+        subscription.
+        """
+        return (
+            await db.execute(
+                select(BillingNotification)
+                .where(
+                    BillingNotification.stripe_object_id == stripe_object_id,
+                    BillingNotification.template == template,
+                )
+                .order_by(BillingNotification.id.desc())
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+
     async def _claim(
         self,
         db: AsyncSession,
@@ -103,6 +126,7 @@ class BillingEmailService:
         dedupe_key: str,
         template: str,
         stripe_event_id: Optional[str],
+        stripe_object_id: Optional[str] = None,
     ) -> bool:
         """Reserve the right to send this message. False means someone already has it.
 
@@ -120,6 +144,7 @@ class BillingEmailService:
                 template=template,
                 recipient_email=user.email,
                 stripe_event_id=stripe_event_id,
+                stripe_object_id=stripe_object_id,
                 status="sent",
             )
         )
@@ -163,6 +188,7 @@ class BillingEmailService:
         dedupe_key: str,
         context: Optional[Dict[str, Any]] = None,
         stripe_event_id: Optional[str] = None,
+        stripe_object_id: Optional[str] = None,
         subject: Optional[str] = None,
     ) -> bool:
         """Send one billing notification. Returns True only if it was actually delivered.
@@ -175,7 +201,8 @@ class BillingEmailService:
             return False
 
         if not await self._claim(
-            db, user=user, dedupe_key=dedupe_key, template=template, stripe_event_id=stripe_event_id
+            db, user=user, dedupe_key=dedupe_key, template=template,
+            stripe_event_id=stripe_event_id, stripe_object_id=stripe_object_id,
         ):
             return False
 
@@ -235,7 +262,42 @@ class BillingEmailService:
             template="subscription_cancelled",
             dedupe_key=key,
             stripe_event_id=stripe_event_id,
+            stripe_object_id=subscription_id,
             context={"plan_name": plan_name, "effective_at": fmt_date(effective_at)},
+        )
+
+    async def subscription_resumed(
+        self,
+        db: AsyncSession,
+        user: Optional[User],
+        *,
+        subscription_id: str,
+        renews_at: Optional[datetime] = None,
+        plan_name: str = "Pro",
+        stripe_event_id: Optional[str] = None,
+    ) -> bool:
+        """Cancellation reversed — closes the loop on a cancellation notice we already sent.
+
+        ONLY sends if we previously told this customer the subscription was cancelling. "Not
+        cancelling" is the normal state of a healthy subscription, so without that precondition
+        this would fire on every renewal, card update and plan change.
+
+        The dedupe key hangs off the cancellation row's id, so a customer who cancels, resumes,
+        cancels again and resumes again gets both confirmations — each one answers a different
+        cancellation.
+        """
+        cancelled = await self.last_notification(db, subscription_id, "subscription_cancelled")
+        if cancelled is None:
+            return False
+
+        return await self.send(
+            db,
+            user=user,
+            template="subscription_resumed",
+            dedupe_key=f"resumed:{subscription_id}:{cancelled.id}",
+            stripe_event_id=stripe_event_id,
+            stripe_object_id=subscription_id,
+            context={"plan_name": plan_name, "renews_at": fmt_date(renews_at)},
         )
 
     async def subscription_ended(
@@ -255,6 +317,7 @@ class BillingEmailService:
             template="subscription_ended",
             dedupe_key=f"ended:{subscription_id}",
             stripe_event_id=stripe_event_id,
+            stripe_object_id=subscription_id,
             context={"plan_name": plan_name, "effective_at": fmt_date(effective_at)},
         )
 
@@ -276,6 +339,7 @@ class BillingEmailService:
             template="subscription_refunded",
             dedupe_key=f"refunded:{charge_id}",
             stripe_event_id=stripe_event_id,
+            stripe_object_id=charge_id,
             context={"plan_name": plan_name, "amount": fmt_money(amount_cents, currency)},
         )
 
@@ -301,6 +365,7 @@ class BillingEmailService:
             template="subscription_partial_refund",
             dedupe_key=f"partial_refund:{charge_id}:{amount_cents or 0}",
             stripe_event_id=stripe_event_id,
+            stripe_object_id=charge_id,
             context={"plan_name": plan_name, "amount": fmt_money(amount_cents, currency)},
         )
 
@@ -322,6 +387,7 @@ class BillingEmailService:
             template="subscription_disputed",
             dedupe_key=f"disputed:{dispute_id}",
             stripe_event_id=stripe_event_id,
+            stripe_object_id=dispute_id,
             context={"plan_name": plan_name, "amount": fmt_money(amount_cents, currency)},
         )
 
@@ -341,5 +407,6 @@ class BillingEmailService:
             template="subscription_restored",
             dedupe_key=f"restored:{dispute_id}",
             stripe_event_id=stripe_event_id,
+            stripe_object_id=dispute_id,
             context={"plan_name": plan_name},
         )
