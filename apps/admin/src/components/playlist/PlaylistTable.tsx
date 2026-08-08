@@ -176,7 +176,12 @@ function PlaylistTable({
     },
   ]
 
-  const handleTableChange = (_pagination: any, _filters: any, sorter: any) => {
+  const handleTableChange = (_pagination: any, _filters: any, sorter: any, extra?: { action?: string }) => {
+    // antd fires this for EVERY table change, including paging. Without the action guard, turning
+    // the page called onSortChange(undefined, undefined) — which resets the page to 1 — so the
+    // table snapped straight back to page one and pagination looked broken.
+    if (extra?.action && extra.action !== 'sort') return
+
     if (sorter.columnKey) {
       const order = sorter.order === 'ascend' ? 'asc' : sorter.order === 'descend' ? 'desc' : undefined
       onSortChange(sorter.columnKey, order)

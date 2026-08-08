@@ -175,6 +175,9 @@ export const getPlaylistList = async (params: PlaylistListParams = {}) => {
       queryParams.is_public = params.visibility === 'public' ? '1' : '0';
     }
     if (params.type && params.type !== 'all') queryParams.type = params.type;
+    // This function WHITELISTS rather than spreading, so a new field is silently dropped
+    // unless it is forwarded here as well as added to PlaylistListParams.
+    if (params.user_uuid) queryParams.user_uuid = params.user_uuid;
     if (params.date_from) queryParams.date_from = params.date_from;
     if (params.date_to) queryParams.date_to = params.date_to;
     if (params.sort_by) queryParams.sort_by = params.sort_by;
