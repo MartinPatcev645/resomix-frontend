@@ -10,5 +10,14 @@ import { BETA_URL } from "@/components/Navigation/navData.ts";
  * which resolves the session first and then runs the real flow.
  */
 export default function PricingPage() {
-  return <PricingContent baseUrl="/" variant="marketing" subscribeUrl={`${BETA_URL}/subscribe?from=pricing`} />;
+  return (
+    // Extra top gap, landing-only. LandingLayout offsets the fixed header by
+    // `calc(--nav-hdr-h - 3px)`, which clears the nav ROW but not the Catalogue Pilot / Try Resomix
+    // buttons that float beneath it — leaving the headline almost touching them. The webapp's
+    // /subscribe sits under a taller offset and already reads correctly, so this stays here rather
+    // than going into the shared PricingContent, where it would push that page down too.
+    <div className="pt-[var(--px-16)] lg:pt-[var(--px-64)]">
+      <PricingContent baseUrl="/" variant="marketing" subscribeUrl={`${BETA_URL}/subscribe?from=pricing`} />
+    </div>
+  );
 }
