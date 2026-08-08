@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { StatusMessage } from "../Elements/StatusMessage";
+import { ConfirmDialog } from "../Modals/ConfirmDialog";
 import { InputModal } from "../Modals/InputModal";
 import { SineWaves } from "../Animations/SineWaves";
 import { ProfileIcon } from "../Vectors/ProfileIcon";
@@ -29,6 +30,85 @@ interface ProfileContentProps {
   /** Rendered in the Account tab ABOVE Danger Zone. The webapp passes the Linked Accounts panel
    *  here (Google/Apple connect + disconnect); omit it and the tab is unchanged. */
   linkedAccounts?: ReactNode;
+}
+
+/**
+ * Delete-account confirmation.
+ *
+ * Two deliberate frictions on an irreversible action:
+ *
+ * - a **4-second countdown** on the confirm button, matching the delete-track dialog so the app
+ *   has one destructive-action idiom rather than a different one per screen;
+ * - the consequences spelled out as a list, including the part people most need to hear — the
+ *   account is recoverable for 30 days, so this is not the cliff edge it feels like.
+ *
+ * The password field appears only for accounts that HAVE a password. A Google-only sign-up has
+ * none, and asking for one made deletion impossible for those users.
+ */
+function DeleteAccountDialog({
+  isOpen,
+  onClose,
+  onConfirm,
+  hasPassword,
+  password,
+  onPasswordChange,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  hasPassword: boolean;
+  password: string;
+  onPasswordChange: (value: string) => void;
+}) {
+  const [countdown, setCountdown] = useState(4);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setCountdown(4);
+      return;
+    }
+    // Keyed on the open cycle only: re-renders (typing a password) must not restart the clock.
+    const id = setInterval(() => setCountdown((n) => (n > 0 ? n - 1 : 0)), 1000);
+    return () => clearInterval(id);
+  }, [isOpen]);
+
+  const blocked = countdown > 0 || (hasPassword && !password);
+
+  return (
+    <ConfirmDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      onConfirm={onConfirm}
+      tone="danger"
+      title="Delete your account"
+      message="Your account will be deactivated immediately and permanently deleted after 30 days."
+      detailsTitle="You will lose:"
+      details={[
+        "Access to your account — you'll be signed out everywhere and won't be able to sign in",
+        "Every playlist you've created",
+        "Every track you've uploaded, and its analysis",
+        "Any active subscription, cancelled with no refund for the remaining period",
+      ]}
+      confirmLabel={countdown > 0 ? `Delete account (${countdown}s)` : "Delete account"}
+      confirmDisabled={blocked}
+      cancelLabel="Keep my account"
+    >
+      <p className="mb-[var(--px-12)] font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)]">
+        Nothing is deleted for 30 days. Contact us before then and we&rsquo;ll restore your account
+        exactly as you left it.
+      </p>
+      {hasPassword && (
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => onPasswordChange(e.target.value)}
+          placeholder="Enter your password to confirm"
+          aria-label="Password"
+          className={FIELD}
+        />
+      )}
+    </ConfirmDialog>
+  );
 }
 
 export default function ProfileContent({
@@ -393,47 +473,17 @@ export default function ProfileContent({
               </h3>
 
               <div className="flex flex-col gap-[var(--px-10)]">
-                {!showDeleteConfirm ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className={`${BTN_DANGER} self-start`}
-                  >
-                    Delete Account
-                  </button>
-                ) : (
-                  <div className="border border-[var(--rx-color-border-subtle)] bg-[rgba(255,255,255,0.02)] p-[var(--px-12)]">
-                    <p className="mb-[var(--px-12)] font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-error)]">
-                      This action cannot be undone. Enter your password to confirm:
-                    </p>
-                    <input
-                      type="password"
-                      value={deletePassword}
-                      onChange={(e) => setDeletePassword(e.target.value)}
-                      placeholder="Enter your password"
-                      className={`${FIELD} mb-[var(--px-12)]`}
-                    />
-                    <div className="flex flex-wrap gap-[var(--px-10)]">
-                      <button
-                        type="button"
-                        onClick={handleDeleteAccount}
-                        className={`${BTN_BASE} border border-[var(--rx-color-error)] bg-[var(--rx-color-error)] font-medium text-[#050505] hover:opacity-90`}
-                      >
-                        Confirm Delete
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowDeleteConfirm(false);
-                          setDeletePassword("");
-                        }}
-                        className={BTN_SECONDARY}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className={`${BTN_DANGER} self-start`}
+                >
+                  Delete Account
+                </button>
+                <p className="font-helvetica text-[length:var(--px-12)] font-light leading-[var(--px-18)] text-[var(--rx-color-text-secondary)]">
+                  Your account is deactivated straight away and permanently deleted after 30 days.
+                  You can ask us to restore it any time before then.
+                </p>
               </div>
             </div>
             </>
@@ -446,6 +496,18 @@ export default function ProfileContent({
           onClose={() => setShowStatus(false)}
           status={statusType}
           message={statusMessage}
+        />
+
+        <DeleteAccountDialog
+          isOpen={showDeleteConfirm}
+          onClose={() => {
+            setShowDeleteConfirm(false);
+            setDeletePassword("");
+          }}
+          onConfirm={handleDeleteAccount}
+          hasPassword={!!user?.has_password}
+          password={deletePassword}
+          onPasswordChange={setDeletePassword}
         />
 
         <InputModal

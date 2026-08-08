@@ -182,6 +182,7 @@ export interface Disable2FARequest {
 
 // Delete Account Request
 export interface DeleteAccountRequest {
-  password: string;
+  /** Omitted for social-login-only accounts, which have no password to confirm with. */
+  password?: string;
 }
 

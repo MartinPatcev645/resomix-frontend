@@ -308,7 +308,11 @@ export function useProfileSettings({ onLogout }: UseProfileSettingsOptions = {})
   };
 
   const handleDeleteAccount = async () => {
-    if (!deletePassword) {
+    // A password is required only when the account HAS one. A Google-only sign-up has no password
+    // hash, and demanding one made deletion impossible for those users — the server now decides,
+    // and `hasPassword` mirrors that rule here so the dialog asks for the right thing.
+    const hasPassword = !!user?.has_password;
+    if (hasPassword && !deletePassword) {
       setStatusType("error");
       setShowStatus(true);
       setStatusMessage("Password is required to delete account");
@@ -324,15 +328,30 @@ export function useProfileSettings({ onLogout }: UseProfileSettingsOptions = {})
       const { deleteAccount } = await import("@resomix/api-client");
       const { useAuthStore } = await import("@resomix/stores");
 
-      const result = await deleteAccount(deletePassword);
+      const result = await deleteAccount(deletePassword || undefined);
 
       if (result.success) {
+        // Deletion is SCHEDULED, not immediate — there is a 30-day grace period in which the
+        // account can be restored. Saying "deleted successfully" would misstate that, and the
+        // date is the single most useful thing to put in front of someone having second thoughts.
+        const purgeDate = (result as { data?: { purge_due_at?: string } }).data?.purge_due_at;
+        const when = purgeDate
+          ? new Date(purgeDate).toLocaleDateString("en-GB", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          : null;
         setStatusType("success");
-        setStatusMessage("Account deleted successfully. Redirecting...");
+        setStatusMessage(
+          when
+            ? `Your account is deactivated and will be permanently deleted on ${when}. We've emailed you the details — contact us before then if you change your mind.`
+            : "Your account is deactivated and scheduled for deletion. Check your email for the details."
+        );
         setTimeout(() => {
           useAuthStore.getState().logout();
           onLogout?.();
-        }, 2000);
+        }, 4000);
       } else {
         const errorResult = result as { success: false; error: string };
         setStatusType("error");

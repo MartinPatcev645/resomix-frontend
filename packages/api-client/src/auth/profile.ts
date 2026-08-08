@@ -70,12 +70,21 @@ export const unlinkProvider = async (provider: string) => {
   }
 };
 
-// Delete account
-export const deleteAccount = async (password: string) => {
+/**
+ * Request account deletion.
+ *
+ * SOFT: the account is deactivated immediately and permanently deleted after a 30-day grace
+ * period, during which it can still be restored. The response carries `purge_due_at`.
+ *
+ * `password` is optional because a social-login-only account has none — the server requires it
+ * only where one exists. Sending `{password: undefined}` omits the key entirely, which is what the
+ * server expects, rather than sending an explicit null.
+ */
+export const deleteAccount = async (password?: string) => {
   try {
     const response = await axiosWrapper<SuccessResponse>(
       authClient.delete(API_CONFIG.ENDPOINTS.USER_ME, {
-        data: { password } as DeleteAccountRequest,
+        data: (password ? { password } : {}) as DeleteAccountRequest,
       })
     );
     return response;
