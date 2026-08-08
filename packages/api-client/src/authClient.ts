@@ -133,6 +133,29 @@ authClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // The account was deactivated mid-session — by an admin, or by the user deleting it from
+    // another tab. The server revokes every session at the same moment, so there is nothing left
+    // to refresh and no way for this request to succeed on a retry.
+    //
+    // Handled here rather than at call sites because it can surface on ANY request, and a
+    // deactivated user would otherwise see a different unexplained failure on whichever screen
+    // they happened to be on. Logging out immediately also keeps the tabs consistent: the store
+    // broadcasts, so every open tab raises the same explanation.
+    //
+    // A 403 is deliberately NOT part of the refresh flow below — refreshing would fail anyway, and
+    // 403 means "we know who you are and the answer is still no".
+    if (error.response?.status === 403) {
+      const body = error.response.data as { error?: { code?: string } | string; code?: string } | undefined;
+      const nested = typeof body?.error === "object" ? body?.error : undefined;
+      if ((nested?.code ?? body?.code) === "ACCOUNT_DEACTIVATED") {
+        const authStore = getAuthStore();
+        if (authStore?.getState().isAuthenticated) {
+          authStore.getState().logout({ reason: "deactivated" });
+        }
+        return Promise.reject(error);
+      }
+    }
+
     // If error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       // console.log(`[authClient] 401 error for ${originalRequest.url}, attempting token refresh...`);

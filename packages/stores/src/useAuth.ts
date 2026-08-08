@@ -10,7 +10,14 @@ interface LogoutOptions {
      * verifySession invalid) — the UI shows a "session expired, please log in again" modal.
      * "user" (default) = the user clicked logout — no modal.
      */
-    reason?: 'user' | 'expired';
+    /**
+     * Why the session ended, which decides what (if anything) the user is told:
+     *  - 'user'        they clicked log out — say nothing
+     *  - 'expired'     the server invalidated the session — "please log in again"
+     *  - 'deactivated' the account was deactivated or deleted — logging in again will NOT help,
+     *                  so this needs its own explanation rather than the expiry copy
+     */
+    reason?: 'user' | 'expired' | 'deactivated';
 }
 
 interface AuthState {
@@ -21,6 +28,8 @@ interface AuthState {
     isLoading: boolean;
     /** True after a server-side session invalidation → App shows the "log in again" modal. */
     sessionExpired: boolean;
+    /** Set when the session ended because the ACCOUNT was deactivated, not merely expired. */
+    accountDeactivated: boolean;
 
     // Actions
     setAuth: (user: User, accessToken: string) => void;
@@ -29,6 +38,7 @@ interface AuthState {
     logout: (options?: LogoutOptions) => void;
     /** Dismiss (or programmatically raise) the session-expired modal. */
     setSessionExpired: (value: boolean) => void;
+    setAccountDeactivated: (value: boolean) => void;
     updateUser: (updates: Partial<User>) => void;
 
     // Utility
@@ -56,6 +66,7 @@ const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             isLoading: false,
             sessionExpired: false,
+            accountDeactivated: false,
 
             // Set full authentication
             setAuth: (user, accessToken) => {
@@ -76,6 +87,7 @@ const useAuthStore = create<AuthState>()(
                     accessToken,
                     isAuthenticated: true,
                     sessionExpired: false, // fresh login clears any pending "session expired" modal
+                    accountDeactivated: false,
                 });
                 // Also persist access token in sessionStorage
                 if (typeof window !== 'undefined' && accessToken) {
@@ -158,6 +170,10 @@ const useAuthStore = create<AuthState>()(
                     // Server-invalidated sessions raise the "log in again" modal; a user-initiated
                     // logout must never show it.
                     sessionExpired: options?.reason === 'expired',
+                    // A deactivated account must NOT raise the expiry modal — "log in again"
+                    // is advice that cannot work, and sending them round that loop is worse
+                    // than saying nothing.
+                    accountDeactivated: options?.reason === 'deactivated',
                 });
                 // Clear both localStorage and cookies
                 try {
@@ -193,6 +209,8 @@ const useAuthStore = create<AuthState>()(
             },
 
             setSessionExpired: (value) => set({ sessionExpired: value }),
+
+            setAccountDeactivated: (value) => set({ accountDeactivated: value }),
 
             // Update user fields
             updateUser: (updates) => {
@@ -254,10 +272,14 @@ if (typeof window !== 'undefined') {
         // Handle logout broadcast from other tabs (value carries the reason; legacy plain-timestamp
         // values parse as a user-initiated logout).
         if (event.key === 'resomix-logout' && event.newValue) {
-            let reason: 'user' | 'expired' = 'user';
+            let reason: 'user' | 'expired' | 'deactivated' = 'user';
             try {
                 const parsed = JSON.parse(event.newValue);
-                if (parsed && parsed.reason === 'expired') reason = 'expired';
+                // Carry 'deactivated' across tabs too, or the other tabs would show
+                // "session expired — log in again" for an account that cannot log in.
+                if (parsed && (parsed.reason === 'expired' || parsed.reason === 'deactivated')) {
+                    reason = parsed.reason;
+                }
             } catch { /* legacy format — treat as user logout */ }
             useAuthStore.getState().logout({ broadcast: false, reason });
             return;
