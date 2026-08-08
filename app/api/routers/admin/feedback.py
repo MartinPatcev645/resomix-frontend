@@ -120,8 +120,27 @@ async def get_feedback_detail(
     db: AsyncSession = Depends(get_database_session),
     current_admin: User = Depends(require_admin)
 ) -> JSONResponse:
-    """Get feedback detail."""
-    return await feedback_controller.get_feedback_by_id(db, request, feedback_id)
+    """Full detail for one piece of feedback.
+
+    Everything we hold, plus WHO sent it. Feedback carries no email of its own, so a guest
+    submission genuinely cannot be matched to an account — the request metadata is all there is,
+    and the response says so rather than implying otherwise.
+    """
+    from fastapi import status as http_status
+
+    from app.services.submission_detail_service import SubmissionDetailService
+    from app.utils.response_utils import format_response
+
+    data = await SubmissionDetailService().feedback(db, feedback_id)
+    if data is None:
+        return JSONResponse(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            content=format_response(success=False, error="Feedback not found"),
+        )
+    return JSONResponse(
+        status_code=http_status.HTTP_200_OK,
+        content=format_response(success=True, data=data),
+    )
 
 
 @router.patch(

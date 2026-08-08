@@ -111,8 +111,27 @@ async def get_contact_detail(
     db: AsyncSession = Depends(get_database_session),
     current_admin: User = Depends(require_admin)
 ) -> JSONResponse:
-    """Get contact detail."""
-    return await contact_controller.get_contact_by_id(db, request, contact_id)
+    """Full detail for one contact submission.
+
+    Everything we hold, plus WHO sent it: the resolved account with its plan and history when they
+    were signed in, or the guest's own form details and request metadata when they were not.
+    """
+    from fastapi import status as http_status
+    from fastapi.responses import JSONResponse
+
+    from app.services.submission_detail_service import SubmissionDetailService
+    from app.utils.response_utils import format_response
+
+    data = await SubmissionDetailService().contact(db, contact_id)
+    if data is None:
+        return JSONResponse(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            content=format_response(success=False, error="Contact not found"),
+        )
+    return JSONResponse(
+        status_code=http_status.HTTP_200_OK,
+        content=format_response(success=True, data=data),
+    )
 
 
 @router.delete(
