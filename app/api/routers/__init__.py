@@ -27,6 +27,7 @@ from .admin.partners import router as admin_partners_router
 from .admin.similarity import router as admin_similarity_router
 from .admin.auth import router as admin_auth_router
 from .admin.users import router as admin_users_router
+from .admin.messages import router as admin_messages_router
 from .admin.roles import router as admin_roles_router
 from .admin.processing import router as admin_processing_router
 from .admin.logs import router as admin_logs_router
@@ -97,6 +98,7 @@ v1_routers = [
     (admin_spotify_apps_router, V1_PREFIX),
     (admin_auth_router, V1_PREFIX),
     (admin_users_router, V1_PREFIX),
+    (admin_messages_router, V1_PREFIX),
     (admin_roles_router, V1_PREFIX),
     (admin_processing_router, V1_PREFIX),
     (admin_logs_router, V1_PREFIX),
@@ -126,6 +128,7 @@ admin_routers = [
     admin_spotify_apps_router,
     admin_auth_router,
     admin_users_router,
+    admin_messages_router,
     admin_roles_router,
     admin_processing_router,
     admin_logs_router,

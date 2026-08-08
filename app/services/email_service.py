@@ -59,8 +59,13 @@ class EmailService:
         Returns:
             True if sent successfully
         """
+        # `app_url`, not `frontend_url`: /auth/verify-email is a real route only in the web app
+        # (apps/webapp App.tsx). The marketing host has no such page, just a wildcard `/auth/*`
+        # forwarder, so a link built from `frontend_url` made the user load resomix.com, watch it
+        # fail to match a page, and only then get bounced to beta to be verified. Pointing straight
+        # at the app removes that hop. The forwarder stays for links already sitting in inboxes.
         verification_url = (
-            f"{settings.frontend_url}/auth/verify-email?token={verification_token}"
+            f"{settings.app_url.rstrip('/')}/auth/verify-email?token={verification_token}"
         )
 
         # Render template
@@ -139,6 +144,31 @@ class EmailService:
                 action="templated_send_failed",
                 message=f"Failed to send {template_name}",
                 metadata={"template": template_name, "email": str(email), "subject": subject},
+                error=e,
+            )
+            return False
+
+    async def send_html(self, email: EmailStr, subject: str, html: str) -> bool:
+        """Send HTML that has ALREADY been rendered.
+
+        `send_templated` renders and sends in one step, which is right for a message whose content
+        is fixed. It is wrong where a human previews the output first: the preview would have to
+        render separately, and two render paths can drift — letting an admin approve one thing and
+        the customer receive another. Here the caller renders once and this only delivers.
+        """
+        message = MessageSchema(
+            subject=subject, recipients=[email], body=html, subtype=MessageType.html
+        )
+        try:
+            await self.fast_mail.send_message(message)
+            return True
+        except Exception as e:
+            self.logging_service.log(
+                level="ERROR",
+                category="EMAIL",
+                action="html_send_failed",
+                message="Failed to send a pre-rendered email",
+                metadata={"email": str(email), "subject": subject},
                 error=e,
             )
             return False

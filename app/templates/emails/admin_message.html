@@ -1,0 +1,38 @@
+{# An admin's reply, or a direct message.
+
+   The quoted original is the whole point for a reply: someone who wrote in three weeks ago has no
+   idea what "yes, that's fixed" refers to. It appears BELOW our answer, the way every mail client
+   quotes — the reply is what they opened the email to read.
+
+   `body_paragraphs` arrives pre-split by the service. Rendering the raw string would collapse the
+   admin's line breaks into one block, which reads as carelessness on a support reply. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>{{ heading }}</h2>
+
+<p>Hi {{ name }},</p>
+
+{% for para in body_paragraphs %}
+<p>{{ para }}</p>
+{% endfor %}
+
+{% if quoted %}
+<div class="alert">
+    <p style="margin: 0 0 8px 0;" class="text-muted">
+        {{ quoted_label }} on {{ quoted_at }} UTC{% if quoted_meta %} · {{ quoted_meta }}{% endif %}:
+    </p>
+    {% for para in quoted %}
+    <p style="margin: 0 0 8px 0;" class="text-muted">{{ para }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ app_url }}" class="button">OPEN RESOMIX</a>
+</div>
+
+<p class="text-muted" style="margin-top: 30px;">
+    Just reply to this email if you need anything else &mdash; it reaches a person.
+</p>
+{% endblock %}

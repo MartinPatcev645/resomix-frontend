@@ -21,6 +21,7 @@ from .similarity import router as admin_similarity_router
 from .promo import router as admin_promo_router
 from .auth import router as admin_auth_router
 from .users import router as admin_users_router
+from .messages import router as admin_messages_router
 from .roles import router as admin_roles_router
 from .processing import router as admin_processing_router
 from .logs import router as admin_logs_router
@@ -37,6 +38,7 @@ __all__ = [
     "admin_promo_router",
     "admin_auth_router",
     "admin_users_router",
+    "admin_messages_router",
     "admin_roles_router",
     "admin_processing_router",
     "admin_logs_router",

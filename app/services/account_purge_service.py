@@ -56,6 +56,8 @@ REPOINT: tuple[tuple[str, str, str], ...] = (
     ("billing_consents", "user_id", "legal evidence of consent — CASCADE would DELETE it"),
     ("admin_operation_logs", "admin_user_id", "audit trail of what an ADMIN did — never deleted"),
     ("manual_takedowns", "admin_user_id", "audit trail — RESTRICT, NOT NULL"),
+    ("user_messages", "admin_user_id",
+     "who answered a customer — RESTRICT, so purging an admin would fail without this"),
 )
 
 # ---------------------------------------------------------------------------

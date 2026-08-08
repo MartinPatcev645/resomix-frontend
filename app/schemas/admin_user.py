@@ -99,3 +99,37 @@ class AdminPlanGrantRequest(BaseModel):
                 "note": "Reached out about the founding offer — giving them a look first.",
             }
         }
+
+
+class AdminMessageRequest(BaseModel):
+    """Compose an email to a user.
+
+    ``subject`` is optional: each channel has a sensible default, and an admin answering a contact
+    form should not have to invent one. ``body`` is what they typed, verbatim — line breaks are
+    preserved when it is rendered.
+    """
+
+    body: str = Field(..., min_length=1, description="The message, as typed")
+    subject: Optional[str] = Field(
+        None, max_length=200, description="Overrides the channel's default subject"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "body": "Thanks for flagging this — it's fixed as of this morning.",
+                "subject": None,
+            }
+        }
+
+
+class AdminMessagePreviewRequest(AdminMessageRequest):
+    """Render a message without sending it.
+
+    Goes through the SAME renderer as the send path, so what an admin approves is byte-for-byte
+    what the customer receives.
+    """
+
+    channel: str = Field(..., description="contact | feedback | direct")
+    source_id: Optional[int] = Field(None, description="contacts.id / feedbacks.id being answered")
+    user_uuid: Optional[str] = Field(None, description="Recipient, for a direct message")

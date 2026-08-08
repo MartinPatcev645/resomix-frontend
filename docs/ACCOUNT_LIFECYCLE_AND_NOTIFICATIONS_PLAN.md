@@ -959,6 +959,42 @@ runs first, and why its ordering is asserted in tests rather than trusted to a c
 - [ ] H7 — Shared `SendMessageModal`: compose → preview → send / edit / discard
 - [ ] H8 — New `user:message` permission; every send audit-logged
 
+### K. Complimentary plans & admin billing control — **DONE** *(added after the plan was written)*
+
+- [x] K1 — `user_plan_grants` (migration `c1a4e8b3f6d2`). 3NF; `plan_id` is a **foreign key**, so
+      granting a future plan needs no schema change
+- [x] K2 — Could not reuse `users.plan_id` (grants access nothing revokes) or `user_subscriptions`
+      (one row per user, `stripe_subscription_id` NOT NULL UNIQUE — a grant and a subscription must
+      coexist)
+- [x] K3 — Durations 3d / 7d / 14d / 1m / 3m, a fixed set rather than free-text days
+- [x] K4 — Entitlement order: **paid subscription → live grant → users.plan_id → default**
+- [x] K5 — **Read-time expiry.** `ends_at` compared per lookup; no sweep job to fall behind
+- [x] K6 — Granting again *replaces*; revoking stamps the row rather than deleting it
+- [x] K7 — Admin UI: grant / replace / end-now, plus full grant history
+- [x] K8 — Refused (server **and** disabled button) when a live paid subscription would outrank it
+- [x] K9 — Customer sees it on profile **and** subscribe, worded identically; **Manage is hidden**
+      unless there is a live subscription to manage
+- [x] K10 — `plan_granted.html` email
+- [x] K11 — Admin cancel: at period end (default) or immediate. **Never refunds** — stated on both
+      confirm dialogs. Schedule-managed subscriptions switch `end_behavior`, which Stripe requires
+- [x] K12 — Every failure path in the admin user controller now writes to `system_logs` **with a
+      stack trace** (13 paths, not just the new ones)
+
+> **Two defects this shipped with, both now fixed and covered by tests.** `Plan` has no `is_free`
+> column — that belongs to the `BillingPlanDisplay` DTO — so the grant endpoint raised
+> AttributeError and returned a bare "Failed to grant plan". The test missed it because the fixture
+> was a `MagicMock`, which invents any attribute asked of it; it now builds a **real `Plan`**.
+> Separately, `Manage` opened Stripe for comped users on both pages.
+
+### L. Known gaps
+
+- [ ] L1 — **No notice when a grant expires.** Read-time expiry means nothing fires, so a comped
+      user silently drops to free. A warning a few days out is the industry norm and would need a
+      scheduled job (same systemd-timer pattern as F2). **Worth a decision.**
+- [ ] L2 — F2 / B11: daily purge-due notification to admins
+- [ ] L3 — F8: admin delete button still shows the hardcoded "not available" message (deliberate,
+      pending George's decision)
+
 ### I. Tests
 
 - [ ] I1 — Unit: cancellation-state matrix (all four Stripe mechanisms → `pending == true`)

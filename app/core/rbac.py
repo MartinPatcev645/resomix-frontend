@@ -28,6 +28,7 @@ PERMISSIONS = {
     "user:delete": "Deactivate or delete a user",
     "user:message": "Email a user directly, or reply to their contact or feedback",
     "user:role:assign": "Assign or revoke roles on any user",
+    "user:message": "Email a user directly, or reply to their contact/feedback",
     "partner:read": "View partner records",
     "partner:create": "Create a new partner tenant",
     "partner:update": "Update partner details",
