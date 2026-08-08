@@ -153,6 +153,38 @@ class AdminUserOverviewService:
             "stripe_customer_id": row.stripe_customer_id,
         }
 
+    async def grants(self, db: AsyncSession, user_id: int) -> Dict[str, Any]:
+        """The live complimentary plan, plus the history of every past one."""
+        from sqlalchemy import select
+
+        from app.models.plan import Plan
+        from app.services.plan_grant_service import PlanGrantService
+
+        live = await PlanGrantService.active_grant(db, user_id)
+        plan = None
+        if live is not None and live.plan_id:
+            plan = (await db.execute(select(Plan).where(Plan.id == live.plan_id))).scalar_one_or_none()
+
+        past = await PlanGrantService.history(db, user_id)
+        plans = {
+            p.id: p for p in (await db.execute(select(Plan))).scalars().all()
+        }
+        return {
+            "grant": PlanGrantService.describe(live, plan),
+            "grant_history": [
+                {
+                    "id": g.id,
+                    "plan_name": plans[g.plan_id].name if g.plan_id in plans else None,
+                    "reason": g.reason,
+                    "note": g.note,
+                    "starts_at": _iso(g.starts_at),
+                    "ends_at": _iso(g.ends_at),
+                    "revoked_at": _iso(g.revoked_at),
+                }
+                for g in past
+            ],
+        }
+
     async def recent(self, db: AsyncSession, user_id: int) -> Dict[str, Any]:
         """The latest contact and feedback, so an admin sees what they said without leaving.
 
@@ -311,6 +343,9 @@ class AdminUserOverviewService:
             # exactly what an admin is looking for.
             "effective_plan": effective_plan,
             "subscription": await self.subscription(db, user.id),
+            # Complimentary access, and whether this account has been comped before — a second
+            # free month is a different conversation from a first.
+            **await self.grants(db, user.id),
             "counts": await self.counts(db, user.id),
             "support": await self.recent(db, user.id),
             "invoices": await self.invoices(db, user.id),
