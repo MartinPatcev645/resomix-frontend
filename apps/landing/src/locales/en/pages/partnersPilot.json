@@ -9,7 +9,7 @@
       "eyebrowHighlight": "Managed evaluation",
       "eyebrowSuffix": "· Powered by PYXIS-1",
       "title": "Test PYXIS-1 on the music that [[matters to your team.]]",
-      "sub": "A managed private pilot for labels, distributors and catalogue teams that want to evaluate sonic discovery using authorised material and success criteria agreed in advance.",
+      "sub": "A managed private pilot for labels, distributors and catalogue teams. Test sonic discovery on authorised material, with success criteria agreed up front.",
       "ctaPrimary": "Start a Catalogue Pilot",
       "ctaSecondary": "See the Pilot Method",
       "trustline": "MANAGED EVALUATION · PARTNER-SCOPED · NO PUBLIC SANDBOX",
@@ -79,7 +79,7 @@
         }
       ],
       "interpBold": "You must control or be authorised to supply the evaluation material.",
-      "interpBody": "Submitting an inquiry starts a qualification conversation, and not every request will fit a pilot immediately.",
+      "interpBody": "Submitting an inquiry starts a conversation about fit; not every request becomes a pilot right away.",
       "fitBtnClosed": "Strong fit vs more scoping ▸",
       "fitBtnOpen": "Strong fit vs more scoping ▾",
       "strongFitLabel": "Strong fit",
@@ -102,8 +102,8 @@
     },
     "pilotPack": {
       "eyebrow": "02 // The sample",
-      "title": "Bring a representative sample, not your entire catalogue",
-      "lead": "Sample size and composition are scoped together, around your use case and the catalogue's diversity.",
+      "title": "Bring a representative sample, not the full catalogue",
+      "lead": "We scope sample size and mix together, around your use case and the range of the catalogue.",
       "items": [
         {
           "title": "Authorised audio",
@@ -119,7 +119,7 @@
         },
         {
           "title": "Known reference tracks",
-          "body": "Tracks your team already understands, the anchors the evaluation is scored against."
+          "body": "Tracks your team already knows: the anchors the evaluation is scored against."
         },
         {
           "title": "Expert reviewers",
@@ -147,13 +147,13 @@
     "scorecard": {
       "eyebrow": "04 // The scorecard",
       "title": "Agree the scorecard before you see the results",
-      "lead": "No pre-filled percentages, no fabricated outcomes. Targets are agreed in scoping, results are measured in the pilot.",
+      "lead": "No pre-filled percentages and no fabricated outcomes: targets are agreed in scoping, results are measured in the pilot.",
       "tableAria": "Pilot scorecard: each measure with how it is assessed; target and result fields are intentionally empty until agreed and measured",
       "colMeasure": "measure",
       "colAssessment": "how it is assessed",
       "colTarget": "target",
       "colResult": "result",
-      "latencyNote": "pre-indexed queries and uploaded-reference processing are reported separately and never combined into one \"search speed\" figure",
+      "latencyNote": "search on indexed tracks and processing of uploads are timed separately, never merged into one \"search speed\" figure",
       "deepBtnClosed": "View all measures ▸",
       "deepBtnOpen": "View all measures ▾",
       "optBtnClosed": "Optional product measures, where you supply event data ▸",
@@ -171,7 +171,7 @@
         },
         {
           "title": "Extend",
-          "body": "A second bounded evaluation for another catalogue area or question."
+          "body": "A second bounded test, on another catalogue area or question."
         },
         {
           "title": "Plan production",
@@ -191,7 +191,7 @@
           "text": "Partner catalogues are logically isolated and restricted to authorised partner access."
         },
         {
-          "text": "You retain catalogue ownership and commercial control throughout."
+          "text": "You keep ownership and commercial control of your catalogue throughout."
         },
         {
           "text": "Partner content is not used to train or fine-tune PYXIS-1. It is not a model, and it does not generate derivative audio."
@@ -209,8 +209,8 @@
     },
     "form": {
       "eyebrow": "07 // Apply",
-      "title": "Start with the question you want the pilot to answer",
-      "lead": "Submitting the form starts a qualification conversation. It does not create an account, a public sandbox or an automatic pilot.",
+      "title": "Tell us what you want to explore",
+      "lead": "Tell us about your catalogue, API integration or potential pilot. Submitting this form doesn't create an account or automatically start a pilot.",
       "formLabel": "Pilot inquiry",
       "emailLabel": "Work email",
       "emailError": "Enter a valid work email address.",
@@ -266,7 +266,7 @@
       "successLabel": "Inquiry received",
       "successLead": "Thank you. Here is what happens next:",
       "nextSteps": [
-        "Resomix reviews fit against the qualification principles above",
+        "Resomix checks fit against the principles above",
         "A scoping call is arranged with your team",
         "Both teams agree inputs, method, scorecard and terms",
         "Ingestion begins only after approval"

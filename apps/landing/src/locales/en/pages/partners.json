@@ -5,7 +5,7 @@
       "eyebrowHighlight": "Guided pilot available",
       "eyebrowSuffix": "· REST API live",
       "title": "Make your catalogue part of [[sound-first discovery.]]",
-      "sub": "Start with a private catalogue pilot, integrate the live API, or scope the right deployment for your catalogue, platform or music product.",
+      "sub": "Start with a private catalogue pilot, or integrate the live API. Bring sound-first discovery to your catalogue, platform or music product.",
       "ctaPilot": "Start a Catalogue Pilot",
       "ctaApi": "Explore the API",
       "ctaContact": "[ Contact Partnerships → ]",
@@ -27,7 +27,7 @@
         "title": "PRIVATE CATALOGUE PILOT",
         "panelTitle": "PRIVATE CATALOGUE PILOT",
         "status": "AVAILABLE",
-        "note": "Outcome: an evidence-based decision, measured on your own repertoire.",
+        "note": "Outcome: a decision backed by evidence from your own repertoire.",
         "outcomeTitle": "Private catalogue pilot.",
         "cta": "Explore the Private Pilot",
         "question": "\"Does Resomix surface useful relationships in our own repertoire?\"",
@@ -116,7 +116,7 @@
       "profiles": {
         "label": {
           "label": "Labels & label groups",
-          "question": "Can our own repertoire, current and back catalogue, be surfaced from the references that matter now?",
+          "question": "Can our repertoire, current and back catalogue, be surfaced from the references that matter now?",
           "route": "<b>Private Catalogue Pilot</b>: test on a representative authorised sample first.",
           "conversation": "Catalogue scope, reference tracks, reviewers and an agreed scorecard."
         },
@@ -135,7 +135,7 @@
         "cat": {
           "label": "Catalogue teams",
           "question": "Which assets are hard to find, inconsistently described, or worth a campaign?",
-          "route": "<b>Private Catalogue Pilot</b> with metadata-review observations in scope.",
+          "route": "<b>Private Catalogue Pilot</b>, with metadata review included in scope.",
           "conversation": "Sample composition, review workflow and evidence needs."
         },
         "tech": {
@@ -152,7 +152,7 @@
       "statements": [
         "You retain catalogue ownership and commercial control.",
         "Partner catalogues are logically isolated and restricted to authorised partner access.",
-        "Similarity searches only within the catalogue authorised for that partner.",
+        "Similarity searches only the catalogue authorised for that partner.",
         "PYXIS-1 does not train or fine-tune itself on partner audio, and does not generate derivative audio.",
         "No public sandbox or shared partner catalogue exists.",
         "Detailed rights, retention and deletion terms are agreed for the relevant service."
@@ -163,8 +163,8 @@
     },
     "form": {
       "eyebrow": "06 // Contact",
-      "title": "Start with the partner question you need answered",
-      "lead": "Submitting this form starts a qualification conversation. It does not create an account, API key, public sandbox or automatic pilot.",
+      "title": "Tell us what you want to explore",
+      "lead": "Tell us about your catalogue, API integration or potential pilot. Submitting this form doesn't create an account or automatically start a pilot.",
       "formLabel": "Contact partnerships",
       "emailLabel": "Work email",
       "emailError": "Enter a valid work email address.",

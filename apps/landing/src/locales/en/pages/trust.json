@@ -15,7 +15,7 @@
       "legend": {
         "current": "A control or behaviour operating now and approved for public description.",
         "agreementBound": "A partner or Private Library control whose exact scope, duration, access or deletion terms are governed by the applicable account terms, partner agreement or Data Processing Addendum.",
-        "betaControl": "A control operating during the production beta but still being documented, expanded or verified, and not presented as mature enterprise assurance.",
+        "betaControl": "A control operating during the production beta but still being documented, expanded or verified, not presented as mature enterprise assurance.",
         "roadmap": "A control or capability not implemented today.",
         "notClaimed": "A deliberately explicit boundary where Resomix does not currently make a certification, guarantee or technical assurance."
       }
@@ -152,7 +152,7 @@
         }
       },
       "noteBold": "Private Library audio is not a Temporary Reference Upload.",
-      "noteRest": " The three lifecycles have different purposes, different retention rules and different deletion triggers, and the ledger above states each one separately."
+      "noteRest": " The three lifecycles have different purposes, retention rules and deletion triggers; the ledger above states each one separately."
     },
     "rights": {
       "eyebrow": "03 // Rights & access",

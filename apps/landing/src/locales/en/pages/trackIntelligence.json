@@ -2,9 +2,9 @@
   "trackIntelligence": {
     "hero": {
       "eyebrow": "TRACK INTELLIGENCE // BETA · SAMPLE DATA · POWERED BY PYXIS-1",
-      "sub": "PYXIS-1 measures rhythm, energy, harmony, timbre, spectral behaviour and structure, 70+ measurable audio characteristics in total, and organises them into one readable track profile. Evidence first, interpretation alongside.",
+      "sub": "Through 70+ measurable audio characteristics, PYXIS-1 measures a song's rhythm, energy, harmony, timbre, spectral behaviour and structure, and turns these traits into one readable track profile.",
       "ctaPrimary": "Analyse a Track",
-      "ctaSecondary": "Explore the Anatomy",
+      "ctaSecondary": "Explore the Analysis",
       "anatomyLabel": "SONIC ANATOMY · ONE RECORDING, MANY MEASUREMENTS",
       "sampleData": "SAMPLE DATA",
       "interpLabel": "EXAMPLE INTERPRETATION FROM MEASURED OUTPUTS",
@@ -21,7 +21,7 @@
     "profile": {
       "eyebrow": "01 // THE PROFILE",
       "title": "One track. One readable profile.",
-      "lead": "The first level of analysis: a concise professional summary, before any chart asks for your attention.",
+      "lead": "The first level of analysis is a concise and professional summary, unbiased by charts.",
       "betaSample": "BETA · SAMPLE DATA",
       "miniLabel": "structure · energy",
       "miniAlt": "Compact profile strip: the track's six sections as blocks with the energy contour drawn above them. Sample data.",
@@ -81,7 +81,7 @@
       "notes": {
         "djs": {
           "role": "DJS",
-          "text": "understand the arrangement before preparing it for a set"
+          "text": "read the arrangement before it goes into a set"
         },
         "producers": {
           "role": "PRODUCERS",
@@ -110,7 +110,7 @@
       "legendPeak": "global peak",
       "readingInterp": "<b>Reading it:</b> intensity climbs gradually, with no abrupt jumps; the long break releases energy before the strongest section; the final drop carries the global peak, then the outro steps down rather than cutting.",
       "interpTruth": "EXAMPLE INTERPRETATION FROM MEASURED OUTPUTS",
-      "body": "DJs read the internal movement before set preparation. Producers study arrangement and intensity. Curators assess pacing. Catalogue teams turn the journey into searchable energy descriptors. The analysis describes the track; the decision stays yours."
+      "body": "DJs check the track's flow before building a set. Producers study how arrangements are made. Curators focus on the pacing. Catalogue teams turn libraries into searchable tags. Our analysis just describes the music; the decision-making process is in your hands only."
     },
     "harmony": {
       "eyebrow": "04 // HARMONY & PITCH",
@@ -123,7 +123,7 @@
       "confLabel": "confidence",
       "confAlt": "Key confidence: high, 88 percent",
       "confValue": "high",
-      "interp": "The track stays centred on G minor throughout, with its strongest tonal movement during the break, where pitch content spreads before the final drop re-anchors the key.",
+      "interp": "The track stays centred on G minor throughout, with its strongest tonal movement in the break: pitch content spreads, then the final drop re-anchors the key.",
       "expanderShow": "Show the evidence: chromagram ▸",
       "expanderHide": "Hide the evidence: chromagram ▾",
       "tonalAlt": "Harmonic field: a key-agreement line across the six sections that dips during the break, above a compact chromagram strip of the twelve pitch classes over time, where G and B-flat dominate. Sample data.",
@@ -142,7 +142,7 @@
     "spectral": {
       "eyebrow": "05 // TIMBRE & SPECTRAL CHARACTER",
       "title": "The texture of the recording",
-      "lead": "A branded spectral terrain from sub to air, with the brightness contour and texture regions read in plain language.",
+      "lead": "A visual of the sound's frequencies, from deep bass to high air, described in plain language.",
       "panelLabel": "SPECTRAL TERRAIN · SUB → AIR",
       "sampleData": "SAMPLE DATA",
       "terrainAlt": "Spectral terrain: a spectrogram field from sub frequencies at the bottom to air at the top across the track timeline, rendered in greys with orange marking the hottest regions. A brightness contour is drawn over it, rising at the final drop. Sample data.",
@@ -153,14 +153,14 @@
       "timbreAlt": "Timbre evolution: stacked bands showing how the balance between sub, body, presence and air changes across the track, sub-weighted early, with presence and air widening at the final drop. Sample data.",
       "mfccLabel": "mfcc timbral fingerprint · 13 coefficients",
       "mfccAlt": "MFCC timbral fingerprint: thirteen coefficient cells summarising the track's texture. Sample data.",
-      "textureInterp": "<b>Texture read:</b> dark and dense through the first half, smooth, sub-weighted and percussive; the final drop lifts brightness and opens the top end without losing weight.",
+      "textureInterp": "<b>Texture read:</b> dark and dense through the first half, smooth, sub-weighted and percussive. The final drop lifts brightness and opens the top end without losing weight.",
       "interpTruth": "EXAMPLE INTERPRETATION FROM MEASURED OUTPUTS",
-      "body": "Described as measured character: dark or bright, dense or open, smooth or percussive, stable or evolving. Never as a verdict on the mix."
+      "body": "Described as measured character — dark or bright, dense or open, smooth or percussive, stable or evolving."
     },
     "identity": {
       "eyebrow": "06 // SONIC IDENTITY",
       "title": "A profile, not a label",
-      "lead": "Genre, style, mood and vibe as coordinated signals, stronger and weaker, never absolute.",
+      "lead": "Genre, style, mood and vibe as coordinated signals: stronger and weaker, never absolute.",
       "genreTitle": "Genre & style",
       "genreDetail": "detailed style: deep · dub-inflected · rolling",
       "moodTitle": "Mood & theme",
@@ -172,13 +172,13 @@
         "chip4": "bass-forward",
         "chip5": "long phrases"
       },
-      "vibeBody": "Compositional indicators from the analysis: instrumentation balance and phrasing character as shown in the current dashboard.",
+      "vibeBody": "What the analysis reads from the composition: instrument balance and phrasing, as shown in the dashboard.",
       "legendAlt": "Confidence envelope legend: solid orange marks strong signals, solid grey marks supporting signals, dotted outlines mark uncertain or overlapping signals",
       "legendStrong": "strong signal",
       "legendSupport": "supporting signal",
       "legendUncertain": "uncertain / overlapping",
       "sampleData": "SAMPLE DATA",
-      "overlapInterp": "Primary classification: deep house. Secondary characteristics suggest tech house and minimal influences, so the profile keeps the overlap visible instead of forcing one answer."
+      "overlapInterp": "Primary classification: deep house. Secondary signals suggest tech house and minimal influences. The profile keeps the overlap visible instead of forcing one answer."
     },
     "decision": {
       "eyebrow": "07 // FROM DATA TO DECISION",
@@ -193,7 +193,7 @@
       "modes": {
         "dj": {
           "head": "For DJs",
-          "copy": "Read the track before it enters your preparation: arrangement, tempo, key, movement and weight, at a glance.",
+          "copy": "Read the track before you hear it — arrangement, tempo, key, movement and weight, at a glance.",
           "attrs": [
             "Structure: where every section starts and ends",
             "BPM: stable 124, confirmed across the beat grid",
@@ -201,12 +201,12 @@
             "Energy journey: where it holds, lifts and releases",
             "Loudness and dynamics: how heavy it actually plays"
           ],
-          "outcome": "Understand the track before adding it to a set-preparation workflow.",
+          "outcome": "Know the track before it goes anywhere near your set.",
           "cta": "Analyse a track"
         },
         "prod": {
           "head": "For Producers",
-          "copy": "Study how a reference builds texture, movement and intensity, as measured evidence rather than guesswork.",
+          "copy": "Study how a reference builds texture, movement and energy: measured evidence, not guesswork.",
           "attrs": [
             "Arrangement: pacing and section balance",
             "Timbre: texture and weight over time",
@@ -214,12 +214,12 @@
             "Energy movement: how intensity is shaped",
             "Harmony: tonal centre and movement"
           ],
-          "outcome": "Study how a reference track builds texture, movement and intensity.",
+          "outcome": "See exactly how your references are put together.",
           "cta": "Analyse a reference"
         },
         "label": {
           "head": "For Labels & Distributors",
-          "copy": "One analytical language across the catalogue: consistent, repeatable track-level descriptors.",
+          "copy": "One shared language across the catalogue: the same clear terms for every track.",
           "attrs": [
             "Genre and style signals with confidence",
             "Mood and vibe descriptors",
@@ -227,12 +227,12 @@
             "Consistent metadata across the catalogue",
             "Flagging inconsistent tagging"
           ],
-          "outcome": "Turn catalogue audio into consistent, searchable track intelligence.",
+          "outcome": "Turn catalogue audio into searchable track intelligence.",
           "cta": "Start a catalogue pilot"
         },
         "sup": {
           "head": "For Supervisors & Curators",
-          "copy": "Assess fit fast: mood, pacing, tonal character and texture, before the full listen.",
+          "copy": "Judge whether a track fits in terms of mood, pacing, tone, and texture; all before listening all the way through.",
           "attrs": [
             "Mood and theme indicators",
             "Pacing: how the track unfolds",
@@ -253,7 +253,7 @@
             "Catalogue-scale processing",
             "Explainable, versioned results"
           ],
-          "outcome": "Add track intelligence to another platform without building the signal-processing layer internally.",
+          "outcome": "Add track intelligence to your platform without building the audio analysis layer yourself.",
           "cta": "View the API"
         }
       }
@@ -261,10 +261,10 @@
     "confidence": {
       "eyebrow": "08 // TRUST",
       "title": "Measured, interpreted, never presented as absolute.",
-      "lead": "Classification is contextual. Styles overlap. Confidence stays visible, and every number traces back to the analysis that produced it.",
+      "lead": "Classification depends on context. Styles overlap. Confidence is always shown, and every number is traceable back to how it was produced.",
       "statements": [
-        "Measured values (tempo, key, loudness, structure) are read directly from the audio and are deterministic, so the same file returns the same profile.",
-        "Predicted values (genre, style, mood, vibe) are classification signals, shown with confidence, and secondary signals are kept visible.",
+        "Measured values (tempo, key, loudness, structure) are read straight from the audio: the same file always returns the same profile.",
+        "Predicted values (genre, style, mood, vibe) are signals, shown with confidence. Secondary signals stay visible.",
         "Similar styles overlap; the profile presents the overlap instead of hiding it behind one label.",
         "Raw charts never stand alone; each carries a plain-language interpretation.",
         "Every result is traceable to its analysis run: engine version, date and scope."
@@ -303,13 +303,13 @@
     },
     "platform": {
       "eyebrow": "09 // THE PLATFORM",
-      "title": "The profile is a beginning",
+      "title": "The profile is just the beginning",
       "diagramLabel": "ONE PROFILE → THREE ROUTES",
       "diagramAlt": "A single signal line runs from the track profile node to three destinations: Sonic Discovery, Catalogue Intelligence and the API. Sample diagram.",
       "routes": {
         "sonic": {
           "node": "SONIC DISCOVERY",
-          "copy": "Use the profile to find recordings with related sonic characteristics.",
+          "copy": "Use the profile to find tracks that share its sonic character.",
           "link": "[ Explore Sonic Discovery → ]",
           "statusLabel": "status:",
           "status": "live in beta"
@@ -334,11 +334,11 @@
       "leftEyebrow": "FOR MUSIC PROFESSIONALS",
       "leftTitle": "See your track as data you can use.",
       "leftBtn": "Analyse a Track",
-      "leftNote": "beta · the analysis dashboard currently demonstrates sample data",
+      "leftNote": "beta · the dashboard currently shows sample data",
       "rightEyebrow": "FOR CATALOGUES & PLATFORMS",
       "rightTitle": "Need track intelligence across a catalogue?",
       "rightBtn": "Start a Catalogue Pilot",
-      "rightNote": "private pilot · bounded · scoped together · destinations wired in production"
+      "rightNote": "private pilot · bounded · scoped together"
     }
   }
 }
