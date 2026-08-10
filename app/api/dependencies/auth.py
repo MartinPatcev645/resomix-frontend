@@ -28,6 +28,7 @@ from database.connection import AsyncSessionLocal
 from app.core.config import settings
 from app.core.security import decode_token
 from app.models.user import User
+from app.utils.account_state import inactive_account_detail
 from app.api.dependencies.database import get_database_session
 from app.repositories.rbac_repository import RBACRepository
 from app.repositories.user_repository import UserRepository, UserSessionRepository
@@ -102,12 +103,10 @@ def assert_active(user: User) -> None:
     they still look signed in is more confusing than telling them.
     """
     if not user.is_active:
+        # One definition of "why", shared with both login paths — see app/utils/account_state.py.
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN,
-            detail={
-                "code": "ACCOUNT_DEACTIVATED",
-                "error": "This account is deactivated. Contact support to restore access.",
-            },
+            detail=inactive_account_detail(user),
         )
 
 

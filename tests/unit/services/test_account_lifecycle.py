@@ -31,9 +31,21 @@ from fastapi import HTTPException
 from app.services.user_service import UserService
 
 
-def _user(password_hash="hash", is_active=True):
-    u = MagicMock()
+def _user(password_hash="hash", is_active=True, scrubbed=None):
+    """The REAL User model, not a MagicMock.
+
+    A MagicMock answers to any attribute with a truthy Mock, so when `reactivate` grew a guard on
+    `anonymized_at` every account in this file suddenly read as already-scrubbed and two tests
+    failed for a reason that had nothing to do with what they were testing.
+
+    The same trap once shipped a 500 from the plan-grant endpoint (`Plan.is_free`, a field that
+    does not exist). The real model is what makes a typo or a new column fail honestly.
+    """
+    from app.models.user import User
+
+    u = User()
     u.id = 42
+    u.uuid = "uuid-42"
     u.email = "buyer@example.com"
     u.name = "Alex"
     u.username = "alex"
@@ -43,6 +55,7 @@ def _user(password_hash="hash", is_active=True):
     u.deactivation_reason = None
     u.deletion_requested_at = None
     u.purge_due_at = None
+    u.anonymized_at = scrubbed
     return u
 
 
@@ -317,3 +330,22 @@ async def test_deletion_does_not_call_stripe_itself() -> None:
     with patch("app.services.billing_refund_service.BillingRefundService.cancel_in_stripe") as cancel:
         await _service(_user(password_hash=None)).request_account_deletion(_db(subscription), 42, None)
     cancel.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_a_scrubbed_account_cannot_be_reactivated() -> None:
+    """The counterpart to the fixture fix above.
+
+    `reactivate` flips `is_active` back. On a scrubbed row that produces a working account with no
+    email, no name and no password — and the admin screen would report success. The guard belongs
+    in the service rather than only in the UI, because there are three callers and the next one
+    will not remember to check.
+
+    Declared async rather than driven with `asyncio.run`: that call creates and closes its own
+    event loop, which tears down the one the rest of the async suite is sharing — the first
+    version of this test left nine unrelated tests failing in another module.
+    """
+    from app.services.user_service import UserService
+
+    with pytest.raises(ValueError, match="already been scrubbed"):
+        await UserService().reactivate(None, _user(is_active=False, scrubbed=datetime.utcnow()))

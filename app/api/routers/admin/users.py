@@ -51,6 +51,21 @@ async def list_users(
     )
 
 
+@router.get("/pending-deletions", dependencies=[Depends(require_permission("user:read"))])
+async def pending_deletions(
+    request: Request,
+    db: AsyncSession = Depends(get_async_db),
+    current_admin: User = Depends(require_admin),
+):
+    """Accounts that asked to be deleted and have not been actioned yet, oldest first.
+
+    Each row carries `waiting_days`, `approaching` and `overdue`. Art. 12(3) gives us one month,
+    nothing scrubs on a timer, and the user is told "within 4 weeks" rather than a date — so this
+    queue is the only thing that surfaces the obligation.
+    """
+    return await user_controller.pending_deletions(db, request)
+
+
 @router.get("/{user_uuid}")
 async def get_user(
     user_uuid: str,

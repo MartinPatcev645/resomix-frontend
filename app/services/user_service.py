@@ -193,9 +193,18 @@ class UserService:
 
         return await self.user_repo.async_unlink_provider(db, user_id, provider)
 
-    # How long a deleted account is kept before an admin may destroy it. Nothing is touched during
-    # this window, so a change of mind costs one flag flip rather than an unrecoverable loss.
-    DELETION_GRACE_DAYS = 30
+    # Days within which an admin should have actioned a deletion request. NOT a timer and NOT a
+    # deadline for the user: nothing fires automatically, and a change of mind is welcome for as
+    # long as the account is still there.
+    #
+    # It exists because Art. 12(3) gives us one month to act on an erasure request, and
+    # `purge_due_at` is the only thing that surfaces that obligation — it ages the admin queue.
+    # See docs/ACCOUNT_DELETION_GDPR_OPTIONS.md §1.4.
+    @property
+    def DELETION_GRACE_DAYS(self) -> int:  # noqa: N802 — kept as-is; existing callers read it
+        from app.core.config import settings
+
+        return settings.deletion_request_sla_days
 
     async def deactivate(
         self,
@@ -234,8 +243,17 @@ class UserService:
         """Restore access and cancel any pending deletion.
 
         Clearing `purge_due_at` is the point: an account that comes back must not still be sitting
-        on an admin's purge list, or someone reinstated on Monday is destroyed on Tuesday.
+        on an admin's queue, or someone reinstated on Monday is scrubbed on Tuesday.
+
+        REFUSES ONCE THE ACCOUNT HAS BEEN SCRUBBED. Past that point there is no email, no name and
+        no password left, so flipping `is_active` back would produce a working account belonging to
+        nobody — and the admin screen would report success. Failing loudly is the only honest
+        answer.
         """
+        from app.services.account_scrub_service import AccountScrubService
+
+        AccountScrubService.assert_restorable(user)
+
         user.is_active = True
         user.deactivated_at = None
         user.deactivation_reason = None

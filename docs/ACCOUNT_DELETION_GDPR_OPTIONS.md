@@ -587,6 +587,17 @@ before they are answered.
 Ordered so that each phase is independently shippable and independently useful. Phase 1 has
 standalone value even if the rest slipped.
 
+**Status as of 2026-08-10:** Phases 1–4 are built and tested (72 tests). Phase 5 is the remaining
+work, and it is the one that needs the lawyer.
+
+| Phase | State | Notes |
+|---|---|---|
+| 1 — `system_logs` containment | ✅ done | 34 call sites; `mask_email`; prune script + systemd timer |
+| 2 — schema | ✅ done | migration `d3f7a1c5e982`; 4 config values |
+| 3 — `AccountScrubService` | ✅ done | schema-resolved statements; dry run verified on real data |
+| 4 — wiring and the admin queue | ✅ done | restore guard; `GET /admin/users/pending-deletions`; three blocked-sign-in states |
+| 5 — copy, templates and policy | ⬜ next | **blocked on §8 items 1 and 5** (uploads, legal sign-off) |
+
 ### Phase 1 — `system_logs` containment *(no dependencies, do first)*
 
 Independent of the deletion feature and the highest-value work in this document.

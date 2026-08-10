@@ -13,9 +13,11 @@ Author: Muhammad Usman Naeem
 from typing import Dict, Any, List, Optional
 from fastapi.responses import JSONResponse
 from fastapi import status, Request, HTTPException
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 import time
 import logging
+from datetime import datetime
 
 from app.services.user_service import UserService
 from app.services.logging_service import LoggingService
@@ -644,6 +646,75 @@ class AdminUserController:
                 content=format_response(success=False, error="Failed to cancel the subscription"),
             )
 
+    async def pending_deletions(self, db: AsyncSession, request: Request) -> JSONResponse:
+        """Accounts waiting to be scrubbed, oldest first.
+
+        THE ONLY PLACE THE LEGAL CLOCK IS VISIBLE. Nothing scrubs on a timer, and the user is told
+        "within 4 weeks" rather than a date — so if this queue is not watched, a request simply
+        sits. Art. 12(3) gives us one month to act, and "failed to respond in time / no proper
+        process" is the category regulators actually fine.
+
+        `waiting_days` is computed here rather than in the UI so the amber/red thresholds cannot
+        drift between screens, and `overdue` is stated outright rather than left to a comparison
+        someone might get the wrong way round.
+
+        Already-scrubbed accounts are excluded: `deletion_requested_at IS NOT NULL AND
+        anonymized_at IS NULL` is exactly "asked to leave, not yet actioned".
+        """
+        from app.core.config import settings
+
+        try:
+            sla = settings.deletion_request_sla_days
+            rows = (
+                await db.execute(
+                    text(
+                        "SELECT uuid, email, name, username, deletion_requested_at, purge_due_at "
+                        "FROM users "
+                        "WHERE deletion_requested_at IS NOT NULL AND anonymized_at IS NULL "
+                        "ORDER BY deletion_requested_at ASC"
+                    )
+                )
+            ).fetchall()
+
+            now = datetime.utcnow()
+            items = []
+            for uuid_, email, name, username, requested_at, due_at in rows:
+                waiting = (now - requested_at).days if requested_at else 0
+                items.append(
+                    {
+                        "uuid": uuid_,
+                        "email": email,
+                        "name": name or username,
+                        "deletion_requested_at": requested_at.isoformat() if requested_at else None,
+                        "purge_due_at": due_at.isoformat() if due_at else None,
+                        "waiting_days": waiting,
+                        # Amber from two-thirds of the window, so it is noticed with time to act
+                        # rather than on the day it is already too late.
+                        "approaching": sla * 2 // 3 <= waiting < sla,
+                        "overdue": waiting >= sla,
+                    }
+                )
+
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(
+                    success=True,
+                    data={
+                        "items": items,
+                        "total": len(items),
+                        "sla_days": sla,
+                        "overdue": sum(1 for i in items if i["overdue"]),
+                    },
+                ),
+            )
+        except Exception as e:
+            self._log_error(db, request, "pending_deletions_failed",
+                            "Failed to list pending deletions", e)
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="Failed to list pending deletions"),
+            )
+
     async def purge_user(
         self,
         db: AsyncSession,
@@ -653,21 +724,27 @@ class AdminUserController:
         *,
         dry_run: bool = True,
     ) -> JSONResponse:
-        """Destroy a deleted account's data, or report what that would destroy.
+        """Scrub a deleted account, or report what that would change.
+
+        Runs :class:`AccountScrubService`, not the purge service. The account row survives with its
+        `id` and `uuid` intact — that is what keeps playlists, invoices and support history joined
+        and analysable — and only the identifying columns are cleared. See
+        ``docs/ACCOUNT_DELETION_GDPR_OPTIONS.md`` §1.
 
         Three guards before anything irreversible happens, because this is the one admin action
         with no undo:
 
-        1. the account must already be **deactivated** — purging a live account would delete
-           someone mid-session, with no notice and no grace period;
-        2. an admin cannot purge themselves;
-        3. the tombstone user is refused (enforced in the service).
+        1. the account must already be **deactivated** — scrubbing a live account strips someone's
+           identity mid-session, with no notice;
+        2. an admin cannot scrub themselves;
+        3. an already-scrubbed account is reported as such rather than scrubbed twice.
 
-        The 30-day window is deliberately NOT enforced here: support sometimes needs to honour an
-        erasure request immediately, and blocking that would mean editing the database by hand —
-        which is worse. The manifest reports how long is left so the decision is informed.
+        The 30-day SLA is deliberately NOT enforced here. It is an obligation on *us*, not a
+        waiting period to serve: support sometimes needs to honour an erasure request the same day,
+        and blocking that would mean editing the database by hand, which is worse. The manifest
+        reports how long the request has been waiting so the decision is informed.
         """
-        from app.services.account_purge_service import AccountPurgeService
+        from app.services.account_scrub_service import AccountScrubService
 
         try:
             user = await self.user_service.user_repo.async_get_by_uuid(db, user_uuid)
@@ -680,7 +757,9 @@ class AdminUserController:
             if user.id == current_admin.id:
                 return JSONResponse(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    content=format_response(success=False, error="You cannot purge your own account"),
+                    content=format_response(
+                        success=False, error="You cannot delete your own account"
+                    ),
                 )
 
             if user.is_active:
@@ -688,16 +767,34 @@ class AdminUserController:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     content=format_response(
                         success=False,
-                        error="This account is still active. Deactivate it first — purging a live "
-                              "account destroys someone's data with no notice.",
+                        error="This account is still active. Deactivate it first — scrubbing a "
+                              "live account removes someone's details with no notice.",
                     ),
                 )
 
-            service = AccountPurgeService()
+            service = AccountScrubService()
+
+            if service.is_scrubbed(user) and not dry_run:
+                # Not an error: the admin has almost certainly clicked twice, or two admins picked
+                # up the same queue row. Saying so beats a second no-op reported as a fresh success.
+                return JSONResponse(
+                    status_code=status.HTTP_409_CONFLICT,
+                    content=format_response(
+                        success=False,
+                        error="This account was already scrubbed on "
+                              f"{user.anonymized_at:%-d %B %Y}.",
+                    ),
+                )
+
+            # Captured BEFORE the scrub: the row will not carry them afterwards, and the completion
+            # email is the only signal the user gets that their request was actioned (Art. 12(3)).
             email, name = user.email, (user.name or user.username or "there")
 
-            manifest = await service.purge(db, user, dry_run=dry_run)
+            manifest = await service.scrub(db, user, dry_run=dry_run)
             payload = manifest.as_dict()
+            payload["deletion_requested_at"] = (
+                user.deletion_requested_at.isoformat() if user.deletion_requested_at else None
+            )
             payload["purge_due_at"] = user.purge_due_at.isoformat() if user.purge_due_at else None
 
             if dry_run:
@@ -709,7 +806,7 @@ class AdminUserController:
             await self.admin_log_service.log_operation(
                 db=db,
                 admin_user_id=current_admin.id,
-                action="user.purge",
+                action="user.scrub",
                 target_type="user",
                 target_id=user_uuid,
                 before_state={"email": email},
@@ -718,9 +815,8 @@ class AdminUserController:
             )
             await db.commit()
 
-            # Last: the row is gone, so the address had to be captured above. Best-effort — a mail
-            # failure cannot un-delete anything, and reporting it as an error would suggest the
-            # purge had not happened.
+            # Last, and best-effort. A mail failure cannot un-scrub anything, and reporting it as
+            # an error would suggest the scrub had not happened.
             try:
                 from app.services.email_service import EmailService
 
@@ -734,20 +830,19 @@ class AdminUserController:
             )
 
         except (RuntimeError, ValueError) as e:
-            # The service aborts rather than half-purge — e.g. a missing tombstone user, which
-            # would let CASCADE destroy the financial records instead of preserving them.
-            self._log_error(db, request, "user_purge_refused",
-                            f"Purge refused for {user_uuid}: {e}", e, user_uuid=user_uuid)
+            # The service aborts rather than half-scrub, so nothing has changed at this point.
+            self._log_error(db, request, "user_scrub_refused",
+                            f"Scrub refused for {user_uuid}: {e}", e, user_uuid=user_uuid)
             return JSONResponse(
                 status_code=status.HTTP_409_CONFLICT,
                 content=format_response(success=False, error=str(e)),
             )
         except Exception as e:
-            self._log_error(db, request, "user_purge_failed",
-                            f"Failed to purge {user_uuid}", e, user_uuid=user_uuid, dry_run=dry_run)
+            self._log_error(db, request, "user_scrub_failed",
+                            f"Failed to scrub {user_uuid}", e, user_uuid=user_uuid, dry_run=dry_run)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content=format_response(success=False, error="Failed to purge user"),
+                content=format_response(success=False, error="Failed to delete user"),
             )
 
     async def toggle_user_status(

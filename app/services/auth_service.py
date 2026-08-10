@@ -21,6 +21,7 @@ from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
 
 from app.models.user import User
+from app.utils.account_state import inactive_account_detail
 from app.models.plan import Plan
 
 logger = logging.getLogger(__name__)
@@ -402,10 +403,7 @@ class AuthService:
         if not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "code": "ACCOUNT_DEACTIVATED",
-                    "error": "This account is deactivated. Contact support to restore access.",
-                },
+                detail=inactive_account_detail(user),
             )
 
         # Check if 2FA is enabled
@@ -545,10 +543,7 @@ class AuthService:
             # Same shape as the password path so one frontend handler covers both.
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "code": "ACCOUNT_DEACTIVATED",
-                    "error": "This account is deactivated. Contact support to restore access.",
-                },
+                detail=inactive_account_detail(user),
             )
 
         return await self._create_user_session(
