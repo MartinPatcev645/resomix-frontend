@@ -229,16 +229,32 @@ function UserDetailsPage() {
       <Text className="text-secondary">{identity.email}</Text>
 
       {/* Lifecycle first when it applies — it changes how everything below should be read. */}
-      {lifecycle.deletion_requested_at && (
+      {lifecycle.deletion_requested_at && !lifecycle.anonymized_at && (
         <Alert
           className="mt-4"
           type="error"
           showIcon
           message="Deletion requested"
           description={
-            `Requested ${fmtDate(lifecycle.deletion_requested_at)}. Data is kept until ` +
-            `${fmtDate(lifecycle.purge_due_at)}, after which an admin may permanently delete it. ` +
-            `Reactivating this account cancels the deletion.`
+            // `purge_due_at` is a DEADLINE ON US, not a date anything acts on — nothing scrubs
+            // automatically, so saying "kept until <date>" (as this did) described a timer that
+            // does not exist and implied the account expires on its own.
+            `Requested ${fmtDate(lifecycle.deletion_requested_at)}. Nothing has been removed yet — ` +
+            `an admin must run the deletion. We should have actioned it by ` +
+            `${fmtDate(lifecycle.purge_due_at)}. Reactivating this account cancels the request.`
+          }
+        />
+      )}
+      {lifecycle.anonymized_at && (
+        <Alert
+          className="mt-4"
+          type="warning"
+          showIcon
+          message="Account deleted"
+          description={
+            `Personal details were removed on ${fmtDate(lifecycle.anonymized_at)}. Playlists, ` +
+            `activity and invoices are kept against this anonymous id. This cannot be reversed — ` +
+            `reactivating is refused.`
           }
         />
       )}

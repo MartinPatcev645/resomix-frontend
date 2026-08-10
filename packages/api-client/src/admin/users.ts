@@ -133,6 +133,8 @@ export interface AdminUserOverview {
     deactivation_reason: string | null;
     deletion_requested_at: string | null;
     purge_due_at: string | null;
+    /** When the scrub ran. Null = still restorable; set = terminal, and reactivation is refused. */
+    anonymized_at?: string | null;
   };
   /** What they actually get. Disagrees with `subscription` on suspension or mid-cancellation. */
   effective_plan: AdminUserPlanRef | null;
@@ -349,6 +351,106 @@ export const updateRolePermissions = async (roleName: string, permissions: strin
       )
     );
     return response;
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/* ------------------------------------------------------------------------- *
+ * Account deletion
+ *
+ * Two steps, and the second is manual. A user's request deactivates the account and nothing more;
+ * an admin runs the scrub later from the queue below. Nothing fires on a timer.
+ * ------------------------------------------------------------------------- */
+
+/** What a scrub would change, or did. Returned by both the dry run and the real thing. */
+export interface ScrubManifest {
+  user_id: number;
+  user_uuid: string;
+  email: string;
+  dry_run: boolean;
+  already_scrubbed: boolean;
+  /** table -> rows deleted outright */
+  deleted: Record<string, number>;
+  /** table -> rows kept with their identifying columns cleared */
+  scrubbed: Record<string, number>;
+  /** table -> rows left completely untouched */
+  kept: Record<string, number>;
+  playlists_made_private: number;
+  waitlist_entries: number;
+  media_assets_queued: number;
+  profile_picture: string | null;
+  /** Tables or columns this database could not reach — those rows keep their personal data. */
+  warnings: string[];
+  deletion_requested_at: string | null;
+  purge_due_at: string | null;
+}
+
+export interface PendingDeletion {
+  uuid: string;
+  email: string;
+  name: string | null;
+  deletion_requested_at: string | null;
+  purge_due_at: string | null;
+  /** Days since the request. The legal clock, computed server-side so screens cannot disagree. */
+  waiting_days: number;
+  /** Past two-thirds of the SLA — act now, while there is still time. */
+  approaching: boolean;
+  /** Past the Art. 12(3) month. Needs either the scrub or an extension notice. */
+  overdue: boolean;
+}
+
+/**
+ * Accounts that asked to be deleted and have not been actioned, oldest first.
+ *
+ * The only surface where the one-month obligation is visible: nothing scrubs automatically, and
+ * the user is told "within 4 weeks" rather than a date, so an unwatched queue is a silent breach.
+ */
+export const getPendingDeletions = async () => {
+  try {
+    return await axiosWrapper<{
+      success: boolean;
+      data?: { items: PendingDeletion[]; total: number; sla_days: number; overdue: number };
+      error?: string;
+    }>(authClient.get(`${API_CONFIG.ENDPOINTS.ADMIN_USER_DETAIL}pending-deletions`));
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/**
+ * Scrub an account, or preview what that would change.
+ *
+ * `dryRun` defaults to TRUE, matching the server. The irreversible call is the one you have to ask
+ * for by name, in both places — an admin confirms against the manifest this returns, not against a
+ * description of it that might have drifted from what the scrub does.
+ */
+export const scrubUser = async (userUuid: string, dryRun = true) => {
+  try {
+    return await axiosWrapper<{ success: boolean; data?: ScrubManifest; error?: string }>(
+      authClient.delete(
+        `${API_CONFIG.ENDPOINTS.ADMIN_USER_DETAIL}${userUuid}?dry_run=${dryRun}`
+      )
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/**
+ * Tell a user their erasure request is running past a month.
+ *
+ * Art. 12(3) permits extending to three months only if the person is told inside the first one,
+ * *with reasons* — so `reason` is written by the admin and the server rejects an empty one.
+ */
+export const notifyDeletionDelay = async (userUuid: string, reason: string) => {
+  try {
+    return await axiosWrapper<{ success: boolean; message?: string; error?: string }>(
+      authClient.post(
+        `${API_CONFIG.ENDPOINTS.ADMIN_USER_DETAIL}${userUuid}/deletion-delay-notice`,
+        { reason }
+      )
+    );
   } catch (error) {
     return handleApiError(error as Error);
   }

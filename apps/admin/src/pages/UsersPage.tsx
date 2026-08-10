@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DeleteAccountModal from '@/components/DeleteAccountModal.tsx';
+import PendingDeletionsPanel from '@/components/PendingDeletionsPanel.tsx';
 import {
   Table,
   Button,
@@ -99,6 +101,7 @@ function UsersPage() {
 
   // ── Modal & Drawer Visibility ──────────────────────────────
   const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<any>(null);
   const [roleModalVisible, setRoleModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
 
@@ -293,17 +296,11 @@ function UsersPage() {
             label: 'Delete User',
             icon: <Trash2 size={14} />,
             danger: true,
-            onClick: () =>
-              modal.confirm({
-                title: 'Delete User',
-                content: `This will permanently delete ${record.username ?? 'this user'}. This action cannot be undone.`,
-                okText: 'Delete',
-                okType: 'danger',
-                onOk: () => {
-                  // deleteAdminUser not yet in API — show graceful message
-                  showErrorModal('Not Available', 'Delete user endpoint is not yet available on the server.');
-                },
-              }),
+            // Opens the manifest-backed modal rather than a confirm dialog. The old one promised
+            // "permanently delete... cannot be undone" and then did nothing at all — the endpoint
+            // did not exist. Both halves of that were wrong: it exists now, and it removes the
+            // person while KEEPING their playlists, activity and invoices.
+            onClick: () => setDeletingUser(record),
           },
         ];
 
@@ -356,6 +353,13 @@ function UsersPage() {
         >
           Create User
         </Button>
+      </div>
+
+      {/* ── Pending deletions ──
+          Above the table on purpose. Nothing scrubs on a timer and the user is told a window
+          rather than a date, so this is the only place the one-month clock is visible. */}
+      <div className="mb-8">
+        <PendingDeletionsPanel />
       </div>
 
       {/* ── Filters ── */}
@@ -590,6 +594,14 @@ function UsersPage() {
         title={successDetails?.title || 'Success'}
         message={successDetails?.message || ''}
         onClose={closeSuccessModal}
+      />
+
+      <DeleteAccountModal
+        open={!!deletingUser}
+        onClose={() => setDeletingUser(null)}
+        userUuid={deletingUser?.uuid || null}
+        email={deletingUser?.email}
+        onDeleted={() => void fetchUsers()}
       />
     </div>
   );
