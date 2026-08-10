@@ -646,6 +646,90 @@ class AdminUserController:
                 content=format_response(success=False, error="Failed to cancel the subscription"),
             )
 
+    async def notify_deletion_delay(
+        self, db: AsyncSession, request: Request, user_uuid: str, current_admin: User, reason: str
+    ) -> JSONResponse:
+        """Tell someone their erasure request is taking longer than a month.
+
+        Art. 12(3) allows extending to three months **provided the person is told inside the first
+        month, with reasons.** Sending this is what keeps a slipped request from becoming a
+        procedural violation — and "failed to respond in time" is the category regulators actually
+        fine, far more than the substance of what was retained.
+
+        ``reason`` is written by the admin and is required. The regulation asks for the actual
+        reason for the delay; a templated sentence is not one, which is why there is no default.
+        """
+        try:
+            if not (reason or "").strip():
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content=format_response(
+                        success=False,
+                        error="A reason is required — Art. 12(3) asks for the actual reason for "
+                              "the delay, so it cannot be canned.",
+                    ),
+                )
+
+            user = await self.user_service.user_repo.async_get_by_uuid(db, user_uuid)
+            if not user:
+                return JSONResponse(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    content=format_response(success=False, error="User not found"),
+                )
+            if not user.deletion_requested_at:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content=format_response(
+                        success=False, error="This account has no pending deletion request."
+                    ),
+                )
+
+            from app.services.email_service import EmailService
+
+            sent = await EmailService().send_account_deletion_extended(
+                email=user.email,
+                name=user.name or user.username or "there",
+                requested_date=user.deletion_requested_at.strftime("%-d %B %Y"),
+                reason=reason.strip(),
+            )
+
+            await self.admin_log_service.log_operation(
+                db=db,
+                admin_user_id=current_admin.id,
+                action="user.deletion_delay_notified",
+                target_type="user",
+                target_id=user_uuid,
+                before_state=None,
+                after_state={"reason": reason.strip(), "sent": sent},
+                ip_address=request.client.host if request and request.client else None,
+            )
+            await db.commit()
+
+            if not sent:
+                # Reported honestly. An unsent extension notice is exactly the gap that turns a
+                # late request into a finding, so it must not read as done.
+                return JSONResponse(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    content=format_response(
+                        success=False,
+                        error="The notice could not be delivered. Check the mail settings — this "
+                              "one matters, it is what keeps a late request compliant.",
+                    ),
+                )
+
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=format_response(success=True, message=f"Notice sent to {user.email}"),
+            )
+        except Exception as e:
+            self._log_error(db, request, "deletion_delay_notify_failed",
+                            f"Failed to notify {user_uuid} of a deletion delay", e,
+                            user_uuid=user_uuid)
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="Failed to send the notice"),
+            )
+
     async def pending_deletions(self, db: AsyncSession, request: Request) -> JSONResponse:
         """Accounts waiting to be scrubbed, oldest first.
 

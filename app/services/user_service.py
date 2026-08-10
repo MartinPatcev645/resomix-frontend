@@ -785,6 +785,10 @@ class UserService:
         # `is_active = False` on its own left every existing session working until its token
         # expired, and recorded neither when nor why. Reactivating has to clear `purge_due_at`
         # too, or an account reinstated on Monday is still on the admin's purge list on Tuesday.
+        # Whether this reactivation is also cancelling a pending deletion — read BEFORE the call,
+        # because `reactivate` clears the very field that says so.
+        was_pending_deletion = bool(getattr(user, "deletion_requested_at", None))
+
         if new_status:
             updated_user = await self.reactivate(db, user, commit=False)
         else:
@@ -803,4 +807,23 @@ class UserService:
 
         await db.commit()
         await db.refresh(updated_user)
+
+        # Only when a pending deletion was actually cancelled. Reactivating an account an admin had
+        # merely switched off is not news worth an email, and one would just be confusing.
+        #
+        # After the commit, and best-effort: the account IS restored, and a mail failure must not
+        # report that as an error the admin might retry.
+        if new_status and was_pending_deletion and updated_user.email:
+            try:
+                from app.services.email_service import EmailService
+
+                await EmailService().send_account_deletion_cancelled(
+                    email=updated_user.email,
+                    name=updated_user.name or updated_user.username or "there",
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.error(
+                    "Could not send deletion-cancelled email to user %s: %s", updated_user.id, exc
+                )
+
         return updated_user

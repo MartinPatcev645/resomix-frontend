@@ -1,41 +1,53 @@
-{# Account deletion requested — the 30-day grace notice.
+{# Deletion requested — the confirmation, and the way back.
 
-   This is a receipt for an irreversible act, so it has one job above all others: make the way BACK
-   obvious. Someone who deleted in anger, or by accident, has thirty days and needs to know that in
-   the first two lines rather than the last.
+   NO DATE. The scrub is run by an admin, not a timer, so naming a day would either be a promise we
+   might miss or a deadline the user does not actually have. We commit to a window ("within 4
+   weeks", inside Art. 12(3)'s one month) and to a completion email; the 30-day clock is an
+   obligation on US, surfaced in the admin queue rather than here.
 
-   It is also the only warning that will arrive. There is no automatic reminder before the purge —
-   deletion is carried out by an admin, on or after `purge_due_at`. #}
+   Nor does it promise that everything is deleted. Playlists, activity, support history and
+   invoices are all retained — see docs/ACCOUNT_DELETION_GDPR_OPTIONS.md §4. The previous version
+   of this template said "Everything will be permanently deleted", which under the current design
+   would be a false statement about erasure, and that is itself a violation.
+
+   Copy source: docs/ACCOUNT_DELETION_GDPR_OPTIONS.md §6.4. #}
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Your account is scheduled for deletion</h2>
+<h2>Your Resomix account has been closed</h2>
 
 <p>Hi {{ name }},</p>
 
-<p>We've received your request to delete your Resomix account. You've been signed out everywhere,
-   and you can no longer sign in.</p>
+<p>We've received your request to delete your Resomix account. You've been signed out everywhere
+   and can no longer sign in.</p>
 
 <div class="alert alert-danger">
-    <p style="margin: 0;"><strong>Everything will be permanently deleted on {{ purge_date }}.</strong></p>
+    <p style="margin: 0;"><strong>We'll finish removing your personal details within 4 weeks.</strong></p>
     <p style="margin: 8px 0 0 0;" class="text-muted">
-        That includes your playlists, uploaded tracks, analyses and profile. After that date it
-        cannot be recovered by us or by anyone else.
+        That means your name, email address, password and profile picture, and disconnecting any
+        Google, Apple Music or Spotify account you've linked. We'll email you when it's done.
     </p>
 </div>
 
 <div class="alert">
-    <p style="margin: 0;"><strong>Changed your mind? You have until {{ purge_date }}.</strong></p>
+    <p style="margin: 0;"><strong>Changed your mind? Just reply to this email.</strong></p>
     <p style="margin: 8px 0 0 0;" class="text-muted">
-        Nothing has been deleted yet &mdash; your account is simply switched off. Reply to this
-        email and we'll restore it exactly as you left it. After {{ purge_date }} we can't.
+        Nothing has been removed yet &mdash; your account is switched off, not erased. If you reach
+        out before we've finished, we'll restore it exactly as you left it. There's no deadline: if
+        it's still here, you can have it back.
     </p>
 </div>
 
 {% if had_subscription %}
 <p>Your subscription has been cancelled, so you won't be charged again. Any period you've already
-   paid for is not refunded &mdash; deleting the account ends access immediately.</p>
+   paid for isn't refunded &mdash; closing the account ends access immediately.</p>
 {% endif %}
+
+<p class="text-muted">
+    Your playlists and activity are kept without your personal details, and we're required to keep
+    payment records. Our <a href="{{ app_url }}/privacy">Privacy Policy</a> explains exactly what
+    stays and for how long.
+</p>
 
 <p class="text-muted" style="margin-top: 30px;">
     If you didn't request this, reply straight away &mdash; someone may have access to your

@@ -1,0 +1,27 @@
+{# Deletion cancelled — the account is back.
+
+   Sent when a user changes their mind, or an admin restores on their behalf. Until now this
+   produced no email at all: the account quietly came back and the person had no way to know. The
+   same gap we closed once already for subscription reactivation.
+
+   Deliberately short. Nothing was lost, so there is nothing to explain.
+
+   Copy source: docs/ACCOUNT_DELETION_GDPR_OPTIONS.md §6.5. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your Resomix account is back</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>Good news &mdash; your account is no longer scheduled for deletion, and nothing was removed.
+   Everything is exactly as you left it: your playlists, your uploads and your settings.</p>
+
+<p style="margin-top: 24px;">
+    <a href="{{ app_url }}/login" class="button">Sign in</a>
+</p>
+
+<p class="text-muted" style="margin-top: 30px;">
+    If you didn't ask for this, reply to this email straight away.
+</p>
+{% endblock %}

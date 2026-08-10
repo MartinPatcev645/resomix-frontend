@@ -1,8 +1,17 @@
-{# Final notice — the data is gone.
+{# Deletion completed.
 
-   Sent AFTER the purge, to an address captured before the row was deleted. Deliberately short:
-   there is nothing to action, nothing to recover, and no link that would help. Its only job is to
-   close the loop on a request the user made 30 days earlier and may well have forgotten. #}
+   NOT OPTIONAL. Art. 12(3) obliges us to inform the person of the action taken on their request,
+   and since sign-in is blocked this is the only signal they get that anything happened at all.
+
+   Says what was removed AND what was kept. The previous version claimed the retained payment
+   record had "your personal details removed. Nothing in it identifies you" — which is false: an
+   invoice keeps the customer's name because tax law requires it. A false statement about erasure
+   is a violation in its own right, so the honest version is also the safe one.
+
+   Sent to an address captured BEFORE the scrub; afterwards the row carries a placeholder, and
+   `name` is NULL — hence the fallback in the greeting.
+
+   Copy source: docs/ACCOUNT_DELETION_GDPR_OPTIONS.md §6.6. #}
 {% extends "base.html" %}
 
 {% block content %}
@@ -10,25 +19,36 @@
 
 <p>Hi {{ name }},</p>
 
-<p>As you asked, your Resomix account and its data have now been permanently deleted. This finishes
-   the request you made on {{ requested_date }}.</p>
+<p>As you asked, your Resomix account has been deleted. This completes the request you made on
+   {{ requested_date }}.</p>
+
+<div class="alert alert-danger">
+    <p style="margin: 0;"><strong>What we removed</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        Your name, username, email address, password and profile picture, along with any Google,
+        Apple Music or Spotify accounts you'd linked. You can't sign in, and we can't undo this.
+    </p>
+</div>
 
 <div class="alert">
-    <p style="margin: 0;"><strong>What's gone:</strong></p>
+    <p style="margin: 0;"><strong>What we kept</strong></p>
     <p style="margin: 8px 0 0 0;" class="text-muted">
-        Your profile, playlists, uploaded tracks and their analyses. None of it can be recovered.
+        Your playlists and activity, and your support messages &mdash; all with your personal
+        details removed and linked only to an internal reference number. We use them for
+        statistics. We also keep your payment records in full, including your name, because tax law
+        requires it.
     </p>
 </div>
 
 <p class="text-muted">
-    We keep a minimal record of past payments where the law requires it, with your personal details
-    removed. Nothing in it identifies you.
+    Our <a href="{{ app_url }}/privacy">Privacy Policy</a> sets out exactly what we keep and for
+    how long. If you'd like anything explained, reply to this email.
 </p>
 
-<p>Thanks for having given Resomix a try. You're welcome back any time &mdash; you'd just be
-   starting fresh.</p>
+<p>Thanks for giving Resomix a try. You're welcome back any time &mdash; you'd just be starting
+   fresh.</p>
 
 <p class="text-muted" style="margin-top: 30px;">
-    If you didn't ask for this, reply to this email and we'll look into it.
+    If you didn't ask for this, reply and we'll look into it.
 </p>
 {% endblock %}

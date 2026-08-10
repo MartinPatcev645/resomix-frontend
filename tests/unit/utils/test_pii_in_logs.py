@@ -118,12 +118,19 @@ def _mentions_email(node: ast.AST) -> bool:
     return False
 
 
-def _log_payload_violations():
-    """Every `metadata=` dict and `message=` string in `app/` that carries an unmasked email.
+# `logging_service.log()` always passes these; nothing else in the codebase does. They are what
+# separates a log call from `format_response(message=...)`, which is a user-facing sentence and may
+# legitimately name an address — an admin screen saying "Notice sent to x@y.com" is the point of
+# the screen, and it never reaches `system_logs`.
+LOG_CALL_MARKERS = {"action", "category", "level"}
 
-    Only these two keyword arguments are inspected. That is the whole point: `data=`, `content=`
-    and `context=` payloads legitimately carry the address, because they are what we send to the
-    user or return to the frontend.
+
+def _log_payload_violations():
+    """Every `metadata=` dict and logging `message=` string in `app/` carrying an unmasked email.
+
+    Only these are inspected. That is the whole point: `data=`, `content=`, `context=` and
+    `format_response(message=...)` legitimately carry the address, because they are what we send to
+    the user or return to the frontend.
     """
     violations = []
     for path in _python_files():
@@ -147,7 +154,11 @@ def _log_payload_violations():
                                 f"{path.relative_to(APP_ROOT.parent)}:{key.lineno} "
                                 f"metadata={{'email': ...}} is not masked"
                             )
-                elif kw.arg == "message" and isinstance(kw.value, ast.JoinedStr):
+                elif (
+                    kw.arg == "message"
+                    and isinstance(kw.value, ast.JoinedStr)
+                    and LOG_CALL_MARKERS & {k.arg for k in node.keywords if k.arg}
+                ):
                     for piece in kw.value.values:
                         if (
                             isinstance(piece, ast.FormattedValue)
@@ -182,12 +193,14 @@ def test_the_scan_would_actually_catch_a_regression(tmp_path) -> None:
     """
     offending = ast.parse(
         'log(metadata={"email": user.email})\n'
-        'log(message=f"hello {user.email}")\n'
+        'log(action="x", category="AUTH", message=f"hello {user.email}")\n'
     )
     innocent = ast.parse(
         'format_response(data={"email": user.email})\n'
+        # A user-facing sentence on an admin screen. Names an address on purpose, never logged.
+        'format_response(success=True, message=f"Notice sent to {user.email}")\n'
         'log(metadata={"email": mask_email(user.email)})\n'
-        'log(message=f"hello {user.uuid}")\n'
+        'log(action="x", category="AUTH", message=f"hello {user.uuid}")\n'
     )
 
     def scan(tree):
@@ -200,7 +213,11 @@ def test_the_scan_would_actually_catch_a_regression(tmp_path) -> None:
                     for key, value in zip(kw.value.keys, kw.value.values):
                         if isinstance(key, ast.Constant) and key.value == "email" and not _is_masked(value):
                             found.append("metadata")
-                elif kw.arg == "message" and isinstance(kw.value, ast.JoinedStr):
+                elif (
+                    kw.arg == "message"
+                    and isinstance(kw.value, ast.JoinedStr)
+                    and LOG_CALL_MARKERS & {k.arg for k in node.keywords if k.arg}
+                ):
                     for piece in kw.value.values:
                         if isinstance(piece, ast.FormattedValue) and _mentions_email(piece.value) and not _is_masked(piece.value):
                             found.append("message")

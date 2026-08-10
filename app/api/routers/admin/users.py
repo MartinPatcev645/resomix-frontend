@@ -203,6 +203,25 @@ async def cancel_user_subscription(
     )
 
 
+@router.post("/{user_uuid}/deletion-delay-notice",
+             dependencies=[Depends(require_permission("user:message"))])
+async def notify_deletion_delay(
+    request: Request,
+    user_uuid: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_async_db),
+    current_admin: User = Depends(require_admin),
+):
+    """Tell a user their erasure request is running past the one-month mark.
+
+    Art. 12(3) permits extending to three months only if the person is told within the first month,
+    with reasons — so `reason` is required and is written by the admin.
+    """
+    return await user_controller.notify_deletion_delay(
+        db, request, user_uuid, current_admin, (payload or {}).get("reason", "")
+    )
+
+
 @router.delete("/{user_uuid}", dependencies=[Depends(require_permission("user:delete"))])
 async def purge_user(
     user_uuid: str,

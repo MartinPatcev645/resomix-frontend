@@ -1,0 +1,34 @@
+{# We need longer than a month.
+
+   Art. 12(3) allows extending an erasure request to three months, but ONLY if the person is told
+   within the first month, with reasons. Sending this is what keeps a slipped request from becoming
+   a procedural violation — "failed to respond in time / no proper process" is the category
+   regulators actually fine.
+
+   `reason` is written by the admin, not templated. The regulation asks for the actual reason, and
+   a canned sentence is not one.
+
+   Triggered from the red rows in the admin pending-deletions queue.
+
+   Copy source: docs/ACCOUNT_DELETION_GDPR_OPTIONS.md §6.7. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>An update on your deletion request</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>You asked us to delete your Resomix account on {{ requested_date }}. Your account is closed and
+   you can't sign in, but we haven't finished removing your personal details yet &mdash; and we
+   wanted to tell you rather than leave you wondering.</p>
+
+<div class="alert">
+    <p style="margin: 0;" class="text-muted">{{ reason }}</p>
+</div>
+
+<p>We'll complete it and email you to confirm.</p>
+
+<p class="text-muted" style="margin-top: 30px;">
+    If you'd rather have your account back instead, reply to this email and we'll restore it.
+</p>
+{% endblock %}

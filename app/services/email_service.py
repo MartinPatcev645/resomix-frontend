@@ -359,26 +359,62 @@ class EmailService:
         self,
         email: EmailStr,
         name: str,
-        purge_date: str,
         had_subscription: bool = False,
     ) -> bool:
-        """Confirm a deletion request and, more importantly, the way back out of it.
+        """Confirm a deletion request, and more importantly the way back out of it.
 
-        The only notice the user gets: deletion is carried out by an admin on or after the purge
-        date, and there is no automatic reminder before it. So the grace period and how to cancel
-        have to be unmissable here rather than implied.
+        NO PURGE DATE. It used to take one, and the template printed "everything will be
+        permanently deleted on <date>". Both parts became wrong: the scrub is run by an admin
+        rather than a timer, so a named day is a promise we might miss; and most of the account is
+        retained, so "everything" was a false statement about erasure.
 
-        No dedupe needed — unlike the billing mail this is user-initiated, not webhook-driven, so
-        there are no retries to collapse.
+        What replaces it is a window — "within 4 weeks", inside the month Art. 12(3) allows — plus
+        a completion email. The 30-day clock is an obligation on us, surfaced in the admin queue.
+
+        No dedupe needed: unlike the billing mail this is user-initiated rather than webhook-driven,
+        so there are no retries to collapse.
         """
         return await self.send_templated(
             email=email,
-            subject="Your Resomix account is scheduled for deletion",
+            subject="Your Resomix account has been closed",
             template_name="account_deletion_scheduled.html",
             context={
                 "name": name or "there",
-                "purge_date": purge_date,
                 "had_subscription": had_subscription,
+                "app_url": settings.app_url,
+            },
+        )
+
+    async def send_account_deletion_cancelled(self, email: EmailStr, name: str) -> bool:
+        """The account is back, and nothing was removed.
+
+        Previously silent: a user who changed their mind got their account restored and no word
+        about it. The same gap we already closed for subscription reactivation.
+        """
+        return await self.send_templated(
+            email=email,
+            subject="Your Resomix account is back",
+            template_name="account_deletion_cancelled.html",
+            context={"name": name or "there", "app_url": settings.app_url},
+        )
+
+    async def send_account_deletion_extended(
+        self, email: EmailStr, name: str, requested_date: str, reason: str
+    ) -> bool:
+        """We need longer than a month — sent before the month is up, with a real reason.
+
+        Art. 12(3) permits extending to three months provided the person is told inside the first
+        one, *with reasons*. `reason` is written by the admin rather than templated, because the
+        regulation asks for the actual reason and a canned sentence is not one.
+        """
+        return await self.send_templated(
+            email=email,
+            subject="An update on your Resomix deletion request",
+            template_name="account_deletion_extended.html",
+            context={
+                "name": name or "there",
+                "requested_date": requested_date,
+                "reason": reason,
                 "app_url": settings.app_url,
             },
         )

@@ -702,7 +702,11 @@ class UserController:
     async def _notify_deletion_scheduled(
         self, db: AsyncSession, user_id: int, purge_due_at, *, had_subscription: bool = False
     ) -> None:
-        """Tell the user their account is going, and how long they have to change their mind.
+        """Tell the user their account is closed, and how to get it back.
+
+        No date is passed any more. `purge_due_at` is an internal SLA marker that ages the admin
+        queue, not a day we promise the user — see docs/ACCOUNT_DELETION_GDPR_OPTIONS.md §1.4. The
+        parameter is kept in the signature because callers still pass it and it is worth logging.
 
         Best-effort: the deletion has already been recorded and committed, and a mail failure must
         not turn a completed request into an error the user might retry. Matches the convention in
@@ -722,7 +726,6 @@ class UserController:
             await self.email_service.send_account_deletion_scheduled(
                 email=user.email,
                 name=user.name or user.username or "there",
-                purge_date=purge_due_at.strftime("%-d %B %Y"),
                 had_subscription=had_subscription,
             )
         except Exception as exc:  # noqa: BLE001 — see the docstring
