@@ -355,6 +355,79 @@ class EmailService:
             )
             return False
 
+    async def send_pending_deletions_digest(
+        self, email: EmailStr, name: str, *, items: list, total: int,
+        overdue: int, approaching: int, sla_days: int, admin_url: str
+    ) -> bool:
+        """Nudge an admin that erasure requests are ageing.
+
+        The queue on the Users page is pull-only — it works if somebody opens it. This is the push
+        half, and it is what stops a request sitting past a month because nobody looked.
+
+        Sent ONLY when something is approaching or overdue. A daily "nothing to do" mail is one
+        people learn to ignore, and the day it says something different is the day it goes unread.
+        """
+        return await self.send_templated(
+            email=email,
+            subject=(
+                f"{overdue} overdue deletion request{'s' if overdue != 1 else ''}"
+                if overdue
+                else f"{total} deletion request{'s' if total != 1 else ''} need attention"
+            ),
+            template_name="admin_pending_deletions_digest.html",
+            context={
+                "name": name or "there",
+                "items": items,
+                "total": total,
+                "overdue": overdue,
+                "approaching": approaching,
+                "sla_days": sla_days,
+                "admin_url": admin_url,
+            },
+        )
+
+    async def send_grant_expiring_soon(
+        self, email: EmailStr, name: str, plan_name: str, days_left: int, ends_on: str
+    ) -> bool:
+        """A complimentary plan is about to run out.
+
+        Sent ahead of time rather than on the day. A comp that vanishes overnight reads as a fault
+        — the user has no idea why their features stopped working — and the person most likely to
+        subscribe is the one currently enjoying the plan.
+        """
+        return await self.send_templated(
+            email=email,
+            subject=f"Your complimentary {plan_name} ends soon",
+            template_name="grant_expiring_soon.html",
+            context={
+                "name": name or "there",
+                "plan_name": plan_name,
+                "days_left": days_left,
+                "ends_on": ends_on,
+                "app_url": settings.app_url,
+            },
+        )
+
+    async def send_grant_expired(
+        self, email: EmailStr, name: str, plan_name: str, ends_on: str
+    ) -> bool:
+        """The complimentary plan has ended and the account is back on free.
+
+        Expiry is read-time — `ends_at` is compared on every entitlement lookup, with no job behind
+        it — so without this the only signal a user gets is a feature quietly refusing to work.
+        """
+        return await self.send_templated(
+            email=email,
+            subject=f"Your complimentary {plan_name} has ended",
+            template_name="grant_expired.html",
+            context={
+                "name": name or "there",
+                "plan_name": plan_name,
+                "ends_on": ends_on,
+                "app_url": settings.app_url,
+            },
+        )
+
     async def send_account_deletion_scheduled(
         self,
         email: EmailStr,

@@ -98,6 +98,13 @@ class Settings(BaseModel):
     deletion_request_sla_days: int = Field(
         default=30, description="Days within which a deletion request must be actioned."
     )
+    # Where the admin panel lives. NOT derivable from `app_url`: the admin surface is
+    # `r-admin.resomix.com`, so the obvious string surgery (`https://x` -> `https://admin.x`)
+    # produces a dead link in an email nobody would think to check.
+    admin_url: str = Field(
+        default="https://r-admin.resomix.com",
+        description="Base URL of the admin panel, used in admin-facing emails.",
+    )
     # Cache TTL for the per-plan entitlement map (Phase 2).
     entitlement_cache_ttl_seconds: int = Field(default=300, description="Redis TTL for cached plan entitlements.")
 
@@ -779,6 +786,7 @@ class Settings(BaseModel):
             "SESSION_IP_RETENTION_DAYS": "session_ip_retention_days",
             "INVOICE_RETENTION_YEARS": "invoice_retention_years",
             "DELETION_REQUEST_SLA_DAYS": "deletion_request_sla_days",
+            "ADMIN_URL": "admin_url",
         }
 
         for env_key, config_key in direct_env_vars.items():

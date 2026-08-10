@@ -1,0 +1,63 @@
+{# Deletion requests need attention.
+
+   Sent to admins, and ONLY when something is approaching or past the SLA. A daily "nothing to do"
+   email is a daily email people learn to ignore, and the one day it says something different is
+   the day it gets deleted unread.
+
+   The queue at /users is where the work happens; this exists purely to make someone go and look.
+   Without it the queue is pull-only, and a request nobody opens the page for sits until it is a
+   breach.
+
+   Copy source: docs/ACCOUNT_DELETION_GDPR_OPTIONS.md §1.4. #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>{{ total }} deletion request{% if total != 1 %}s{% endif %} need{% if total == 1 %}s{% endif %} attention</h2>
+
+<p>Hi {{ name }},</p>
+
+{% if overdue %}
+<div class="alert alert-danger">
+    <p style="margin: 0;"><strong>{{ overdue }} past {{ sla_days }} days</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        We have one month to act on an erasure request. These are over it &mdash; either complete
+        them now, or send each person a notice explaining the delay.
+    </p>
+</div>
+{% endif %}
+
+{% if approaching %}
+<div class="alert">
+    <p style="margin: 0;"><strong>{{ approaching }} approaching the deadline</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        Still in time, but not for long.
+    </p>
+</div>
+{% endif %}
+
+<table role="presentation" width="100%" style="margin-top: 20px; border-collapse: collapse;">
+    <tr>
+        <th align="left" style="padding: 6px 8px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">Account</th>
+        <th align="left" style="padding: 6px 8px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">Requested</th>
+        <th align="left" style="padding: 6px 8px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">Waiting</th>
+    </tr>
+    {% for item in items %}
+    <tr>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #f3f4f6; font-size: 13px;">{{ item.email }}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #f3f4f6; font-size: 13px;">{{ item.requested_on }}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #f3f4f6; font-size: 13px;">
+            {% if item.overdue %}<strong>{{ item.waiting_days }} days — overdue</strong>
+            {% else %}{{ item.waiting_days }} days{% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<p style="margin-top: 24px;">
+    <a href="{{ admin_url }}/users" class="button">Open the queue</a>
+</p>
+
+<p class="text-muted" style="margin-top: 30px;">
+    You are only sent this when something needs doing. No email means nothing is waiting.
+</p>
+{% endblock %}

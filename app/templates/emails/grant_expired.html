@@ -1,0 +1,29 @@
+{# The complimentary plan has ended.
+
+   Deliberately not framed as a loss. Nothing was taken away — a gift ran its course, the account
+   went back to free, and everything they made is still there. Saying so plainly is both true and
+   the version most likely to bring someone back.
+
+   Copy source: docs/ACCOUNT_LIFECYCLE_AND_NOTIFICATIONS_PLAN.md (L1). #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your complimentary {{ plan_name }} has ended</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>Your complimentary {{ plan_name }} access ended on {{ ends_on }}, and your account is back on the
+   free plan. You weren't charged for any of it.</p>
+
+<p><strong>Everything you made is still here</strong> &mdash; your playlists, your uploads and their
+   analyses. Some {{ plan_name }} features are no longer available, but nothing has been deleted.</p>
+
+<p style="margin-top: 24px;">
+    <a href="{{ app_url }}/subscribe" class="button">Continue with {{ plan_name }}</a>
+</p>
+
+<p class="text-muted" style="margin-top: 30px;">
+    Thanks for trying it. If anything didn't work as you hoped, reply and tell us &mdash; we read
+    every one.
+</p>
+{% endblock %}

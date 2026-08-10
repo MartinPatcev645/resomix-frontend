@@ -1,0 +1,31 @@
+{# A complimentary plan is about to run out.
+
+   Sent a few days ahead, not on the day. The point is to give someone a chance to decide rather
+   than to inform them after the fact — a comp that vanishes overnight reads as a fault, and the
+   person most likely to subscribe is the one currently enjoying the plan.
+
+   Copy source: docs/ACCOUNT_LIFECYCLE_AND_NOTIFICATIONS_PLAN.md (L1). #}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Your complimentary {{ plan_name }} ends soon</h2>
+
+<p>Hi {{ name }},</p>
+
+<p>Your complimentary {{ plan_name }} access ends in <strong>{{ days_left }}
+   day{% if days_left != 1 %}s{% endif %}</strong>, on {{ ends_on }}.</p>
+
+<p>Nothing will be charged, and you don't need to do anything &mdash; your account simply returns to
+   the free plan. Your playlists and uploads stay exactly where they are.</p>
+
+<div class="alert">
+    <p style="margin: 0;"><strong>Want to keep {{ plan_name }}?</strong></p>
+    <p style="margin: 8px 0 0 0;" class="text-muted">
+        You can subscribe any time, and your library carries over untouched.
+    </p>
+</div>
+
+<p style="margin-top: 24px;">
+    <a href="{{ app_url }}/subscribe" class="button">See plans</a>
+</p>
+{% endblock %}

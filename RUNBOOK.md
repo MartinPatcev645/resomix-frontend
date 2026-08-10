@@ -108,6 +108,65 @@ is committed stays deleted and the next run continues.
 **Window:** `SYSTEM_LOG_RETENTION_DAYS`, default 90. Setting it to `0` disables pruning entirely
 (it is refused, not treated as "delete everything").
 
+## Lifecycle notification timers (one time)
+
+Two daily jobs. Both are best-effort mail senders — a failure delays a notice, it never corrupts
+anything — and both are safe to run repeatedly.
+
+| Job | Sends | When it stays silent |
+|---|---|---|
+| `notify_expiring_grants` | user: complimentary plan ending in 3 days / ended | no grants in either window |
+| `notify_pending_deletions` | admins: erasure requests approaching or past the SLA | nothing is due — **silence is the signal** |
+
+```bash
+for job in notify-expiring-grants:notify_expiring_grants notify-pending-deletions:notify_pending_deletions; do
+  unit="${job%%:*}"; script="${job##*:}"
+  sudo tee /etc/systemd/system/alwyzon-${unit}.service >/dev/null <<EOF
+[Unit]
+Description=Resomix daily job: ${script}
+After=mariadb.service
+
+[Service]
+Type=oneshot
+User=alwyzon
+WorkingDirectory=/home/alwyzon/usman/basic_fastapi_server_resomix
+Environment=PYTHONPATH=/home/alwyzon/usman/basic_fastapi_server_resomix
+ExecStart=/home/alwyzon/usman/basic_fastapi_server_resomix/.venv/bin/python scripts/${script}.py --quiet
+EOF
+  sudo tee /etc/systemd/system/alwyzon-${unit}.timer >/dev/null <<EOF
+[Unit]
+Description=Daily ${script}
+
+[Timer]
+OnCalendar=*-*-* 09:00:00
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target
+EOF
+done
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now alwyzon-notify-expiring-grants.timer alwyzon-notify-pending-deletions.timer
+```
+
+**09:00 rather than midnight** — these are read by people, and a grant-expiry warning timestamped
+03:00 lands at the bottom of an inbox. `Persistent=true` catches up after a reboot.
+
+**Check what they would do before enabling** — both have a dry run that sends nothing:
+
+```bash
+cd /home/alwyzon/usman/basic_fastapi_server_resomix && PYTHONPATH="$PWD" .venv/bin/python scripts/notify_expiring_grants.py --dry-run && PYTHONPATH="$PWD" .venv/bin/python scripts/notify_pending_deletions.py --dry-run
+```
+
+**Grant notices are sent once**, claimed through `billing_notifications.dedupe_key`
+(`grant_expiring:<id>` / `grant_expired:<id>`) — per grant, so a user comped twice is told twice.
+The deletion digest is a daily summary, not a claim-once notice, so re-running re-sends it.
+
+**`ADMIN_URL`** must point at the admin panel (`https://r-admin.resomix.com`) or the digest's
+button leads nowhere. It is not derived from `APP_URL`.
+
 ## Everyday commands
 ```bash
 sudo systemctl status alwyzon
