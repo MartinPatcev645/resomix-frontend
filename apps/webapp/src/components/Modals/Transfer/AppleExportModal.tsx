@@ -53,7 +53,11 @@ const AppleExportModal: React.FC<AppleExportModalProps> = ({
         transferLoading={s.transferLoading}
         ready={s.ready}
         notice={s.notice}
-        playlistUrl={(s.result?.tracks_added ?? 0) > 0 ? (s.result?.created_playlist_url ?? null) : null}
+        playlistUrl={
+          ((s.result?.verified_tracks ?? s.result?.tracks_added) ?? 0) > 0
+            ? (s.result?.created_playlist_url ?? null)
+            : null
+        }
         log={s.log}
         hasPlaylist={!!s.playlistId?.trim()}
         onConnect={s.connect}

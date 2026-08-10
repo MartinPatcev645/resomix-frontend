@@ -130,7 +130,8 @@ const AppleExportPanel: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Open the created playlist in Apple Music (new tab). Shown once the transfer produced a URL. */}
+      {/* Open the created playlist in Apple Music (new tab). Shown once the transfer produced a URL.
+          The caption below is not decoration — see the comment on it. */}
       {playlistUrl && (
         <a
           href={playlistUrl}
@@ -146,6 +147,26 @@ const AppleExportPanel: React.FC<Props> = ({
             <line x1="10" y1="14" x2="21" y2="3" />
           </svg>
         </a>
+      )}
+
+      {/* Why this caption exists.
+
+          The link Apple gives us for a newly created playlist is a LIBRARY url, not a public one.
+          Apple assigns the shareable id only when a playlist is made public, and their API cannot
+          set that — only the Music app can. So:
+
+          - on desktop it opens straight away, because music.apple.com reads the server-side library;
+          - on a phone it hands off to the Apple Music app, which resolves against the LOCALLY
+            synced library — and a playlist created seconds ago has not synced yet, so it reports
+            "playlist not available" for a few minutes.
+
+          Nothing is broken when that happens, and the export genuinely succeeded. Saying so up
+          front costs one line and stops it reading as a failure. */}
+      {playlistUrl && (
+        <p className="self-center max-w-[var(--px-320)] text-center font-fira text-[length:var(--px-10)] leading-[var(--px-15)] text-[var(--rx-color-text-muted)]">
+          Opens your own Apple Music library. On a phone it can take a few minutes to appear while
+          Apple syncs — the playlist is already saved. To share it, make it public in Apple Music.
+        </p>
       )}
 
       {/* Activity log — appended line by line, themed to match the system */}

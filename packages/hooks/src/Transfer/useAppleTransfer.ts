@@ -196,18 +196,38 @@ export function useAppleTransfer({ active, initialPlaylistId, onStatusChange }: 
       const added = d.tracks_added ?? 0;
       const total = d.total_tracks ?? 0;
       const unmatched = d.unmatched ?? 0;
-      if (added > 0) {
+      // What Apple CONFIRMS it holds, falling back to what it accepted when the check could not
+      // run. `verified_tracks` is null for "we couldn't read it back" — deliberately not folded
+      // into 0, which would report a healthy export as a failure.
+      const verified = d.verified_tracks ?? null;
+      const landed = verified ?? added;
+
+      if (landed > 0) {
         const text =
           unmatched > 0
-            ? `Added ${added} of ${total} tracks to your Apple Music library. ${unmatched} weren’t available on Apple Music.`
-            : `Added ${added} tracks to your Apple Music library.`;
+            ? `Added ${landed} of ${total} tracks to your Apple Music library. ${unmatched} weren’t available on Apple Music.`
+            : `Added ${landed} tracks to your Apple Music library.`;
         setNotice({ kind: 'success', text });
-        pushLog(`done — added ${added}/${total}, ${unmatched} unmatched`);
+        pushLog(
+          verified !== null && verified < added
+            ? // Apple accepted more than it kept — almost always a storefront mismatch, and the
+              // only place it is visible is here.
+              `done — Apple accepted ${added} but kept ${verified}/${total}, ${unmatched} unmatched`
+            : `done — added ${landed}/${total}, ${unmatched} unmatched`,
+        );
         onStatusChange?.('success', text, 'Apple Music');
       } else {
         const matched = d.matched ?? 0;
-        pushLog(`nothing added (matched ${matched})`);
-        setNotice({ kind: 'error', text: matched === 0 ? MSG.noMatches : MSG.transferFailed });
+        pushLog(`nothing added (matched ${matched}, verified ${verified ?? 'n/a'})`);
+        setNotice({
+          kind: 'error',
+          text:
+            matched === 0
+              ? MSG.noMatches
+              : // The playlist exists but is empty. "Transfer failed" sends people looking for a
+                // playlist that is right there, so say what actually happened.
+                `The playlist was created in Apple Music, but none of the ${matched} matched tracks could be added — they may not be available in your region's catalogue.`,
+        });
       }
       return;
     }

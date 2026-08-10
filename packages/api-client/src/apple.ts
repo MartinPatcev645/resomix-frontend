@@ -24,7 +24,13 @@ export interface AppleTransferResult {
   storefront?: string;
   total_tracks?: number;
   matched?: number;
+  /** How many tracks Apple ACCEPTED. Not proof they landed — the add returns 204 with no body. */
   tracks_added?: number;
+  /** How many Apple confirms it holds, read back after the write. `null` = we could not check,
+   *  which is deliberately distinct from 0. */
+  verified_tracks?: number | null;
+  /** `null` when unverified; `false` only when we checked and the playlist is genuinely empty. */
+  verified?: boolean | null;
   unmatched?: number;
   unmatched_examples?: { title: string; artist: string }[];
 }
