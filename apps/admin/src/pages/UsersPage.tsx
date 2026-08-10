@@ -386,7 +386,7 @@ function UsersPage() {
               onChange={setRoleFilter}
             >
               {systemRoles.map((role) => (
-                <Option key={role.name} value={role.name}>{role.name}</Option>
+                <Option key={role.id} value={role.id}>{role.name}</Option>
               ))}
             </Select>
           </div>

@@ -368,7 +368,7 @@ const buildUserOption = useCallback((user: AdminUserSearchItem) => {
     const requestQuery = trimmed
     userSearchTimeout.current = setTimeout(async () => {
       try {
-        const response = await listAdminUsers({ q: requestQuery, limit: 10 })
+        const response = await listAdminUsers({ search: requestQuery, page_size: 10 })
         if (!isMountedRef.current || currentUserSearchQuery.current !== requestQuery) return
 
         if (response.success && response.data) {

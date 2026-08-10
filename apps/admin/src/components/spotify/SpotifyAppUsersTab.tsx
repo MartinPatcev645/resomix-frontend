@@ -149,7 +149,7 @@ function SpotifyAppUsersTab({ onError, onSuccess }: SpotifyAppUsersTabProps) {
     setUserOptions([])
 
     try {
-      const response = await listAdminUsers({ q: trimmed, limit: 10 })
+      const response = await listAdminUsers({ search: trimmed, page_size: 10 })
       if (!isMountedRef.current || currentUserSearchQuery.current !== trimmed) return
 
       if (response.success && response.data) {

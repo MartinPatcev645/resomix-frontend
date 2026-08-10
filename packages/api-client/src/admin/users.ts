@@ -202,7 +202,26 @@ export interface AdminUserSearchResponse {
 /**
  * List/Search all users (Admin)
  */
-export const listAdminUsers = async (params: { q?: string; limit?: number; page?: number; page_size?: number } = {}) => {
+/**
+ * Parameters `GET /admin/users` actually accepts.
+ *
+ * Spelled out because the old signature declared only `q`/`limit`/`page`/`page_size` — none of
+ * which the endpoint reads for filtering. `q` was silently ignored (it wants `search`), and `role`
+ * was passed through untyped (it wants `role_id`), so both filters appeared to work and did
+ * nothing. Axios forwards whatever is in `params`, so an under-declared type is not a safety net;
+ * it just moves the failure from compile time to "why is the filter broken".
+ */
+export interface AdminUserListParams {
+  page?: number;
+  page_size?: number;
+  /** Matches email, username, name, uuid, or a numeric id. */
+  search?: string;
+  /** Role ID, not the role name. */
+  role_id?: number;
+  is_active?: boolean;
+}
+
+export const listAdminUsers = async (params: AdminUserListParams = {}) => {
   try {
     const response = await axiosWrapper<AdminUserSearchResponse>(
       authClient.get("/api/v1/admin/users", { params })

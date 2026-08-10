@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import type { AdminUserListParams } from '@resomix/api-client';
 import { 
   listAdminUsers,
   createAdminUser as apiCreateAdminUser,
@@ -34,7 +35,8 @@ export function useAdminUsers(options?: UseAdminUsersOptions) {
   // Filters
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debouncedQuery, setDebouncedQuery] = useState<string>('');
-  const [roleFilter, setRoleFilter] = useState<string | undefined>(undefined);
+  // Role ID, not name — see the params comment in fetchUsers.
+  const [roleFilter, setRoleFilter] = useState<number | undefined>(undefined);
   const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
 
   // Debounce search
@@ -58,11 +60,14 @@ export function useAdminUsers(options?: UseAdminUsersOptions) {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const params = {
+      // The endpoint reads `search` and `role_id`. This used to send `q` and `role`, which axios
+      // forwarded happily and FastAPI ignored — so the search box and the role filter both looked
+      // like they worked and filtered nothing. Only `is_active` ever did anything.
+      const params: AdminUserListParams = {
         page: pagination.current,
         page_size: pagination.pageSize,
-        q: debouncedQuery || undefined,
-        role: roleFilter,
+        search: debouncedQuery || undefined,
+        role_id: roleFilter,
         is_active: statusFilter,
       };
 
