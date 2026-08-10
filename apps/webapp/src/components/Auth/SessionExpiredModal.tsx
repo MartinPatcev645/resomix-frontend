@@ -32,10 +32,13 @@ export const SessionExpiredModal: React.FC = () => {
       <GateCtaModal
         reason="login_required"
         title="Account deactivated"
+        // No 30-day promise: deletion is carried out by a person, not a timer, so there is no
+        // date to quote — and correspondingly no deadline on getting the account back. "If it's
+        // still here, you can have it back" is both simpler and actually true.
         body={
           "This account has been deactivated, so you've been signed out. If you asked us to " +
-          "delete it, nothing is gone yet — your data is kept for 30 days. Contact support " +
-          "before then and we can restore everything exactly as you left it."
+          "delete it, nothing has been removed yet. Contact support and we can restore " +
+          "everything exactly as you left it."
         }
         onClose={() => setAccountDeactivated(false)}
       />

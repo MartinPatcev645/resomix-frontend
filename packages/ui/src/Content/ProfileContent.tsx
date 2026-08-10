@@ -40,7 +40,18 @@ interface ProfileContentProps {
  * - a **4-second countdown** on the confirm button, matching the delete-track dialog so the app
  *   has one destructive-action idiom rather than a different one per screen;
  * - the consequences spelled out as a list, including the part people most need to hear — the
- *   account is recoverable for 30 days, so this is not the cliff edge it feels like.
+ *   account is recoverable, so this is not the cliff edge it feels like.
+ *
+ * ACCURACY MATTERS MORE THAN TONE HERE. The previous version said the account would be
+ * "permanently deleted after 30 days" and listed playlists and track analyses under "You will
+ * lose". Neither is true: deletion removes the PERSON and keeps what the account did — playlists,
+ * activity, support history and invoices all survive, joined to an anonymous id. And there is no
+ * timer at all; the removal is carried out by a person, which is why the copy commits to a window
+ * ("within 4 weeks") rather than a date, and puts no deadline on changing your mind.
+ *
+ * Overstating erasure is not a harmless simplification — under the GDPR a false statement about
+ * what was deleted is a violation in itself. Copy source:
+ * `basic_fastapi_server_resomix/docs/ACCOUNT_DELETION_GDPR_OPTIONS.md` §6.3.
  *
  * The password field appears only for accounts that HAVE a password. A Google-only sign-up has
  * none, and asking for one made deletion impossible for those users.
@@ -52,6 +63,7 @@ function DeleteAccountDialog({
   hasPassword,
   password,
   onPasswordChange,
+  baseUrl,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -59,6 +71,7 @@ function DeleteAccountDialog({
   hasPassword: boolean;
   password: string;
   onPasswordChange: (value: string) => void;
+  baseUrl: string;
 }) {
   const [countdown, setCountdown] = useState(4);
 
@@ -81,12 +94,11 @@ function DeleteAccountDialog({
       onConfirm={onConfirm}
       tone="danger"
       title="Delete your account"
-      message="Your account will be deactivated immediately and permanently deleted after 30 days."
-      detailsTitle="You will lose:"
+      message="You'll be signed out everywhere straight away and won't be able to sign in."
+      detailsTitle="What we'll remove, within 4 weeks:"
       details={[
-        "Access to your account — you'll be signed out everywhere and won't be able to sign in",
-        "Every playlist you've created",
-        "Every track you've uploaded, and its analysis",
+        "Your name, email address, password and profile picture",
+        "Your Google, Apple Music and Spotify connections",
         "Any active subscription, cancelled with no refund for the remaining period",
       ]}
       confirmLabel={countdown > 0 ? `Delete account (${countdown}s)` : "Delete account"}
@@ -94,8 +106,16 @@ function DeleteAccountDialog({
       cancelLabel="Keep my account"
     >
       <p className="mb-[var(--px-12)] font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)]">
-        Nothing is deleted for 30 days. Contact us before then and we&rsquo;ll restore your account
-        exactly as you left it.
+        Your playlists and listening activity are kept without your personal details, and we&rsquo;re
+        required to keep payment records. Our{" "}
+        <a href={`${baseUrl}/privacy`} className="underline">
+          Privacy Policy
+        </a>{" "}
+        explains exactly what stays.
+      </p>
+      <p className="mb-[var(--px-12)] font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-20)] text-[var(--rx-color-text-secondary)]">
+        <strong>Changed your mind?</strong> Nothing is removed until we process it. Contact us before
+        then and we&rsquo;ll restore your account exactly as you left it.
       </p>
       {hasPassword && (
         <input
@@ -481,7 +501,9 @@ export default function ProfileContent({
                   Delete Account
                 </button>
                 <p className="font-helvetica text-[length:var(--px-12)] font-light leading-[var(--px-18)] text-[var(--rx-color-text-secondary)]">
-                  Your account is deactivated straight away and permanently deleted after 30 days.
+                  You&rsquo;re signed out straight away. We remove your personal details within 4
+                  weeks &mdash; your playlists and activity are kept without them. Contact us before
+                  then and we&rsquo;ll restore everything.
                   You can ask us to restore it any time before then.
                 </p>
               </div>
@@ -499,6 +521,7 @@ export default function ProfileContent({
         />
 
         <DeleteAccountDialog
+          baseUrl={baseUrl}
           isOpen={showDeleteConfirm}
           onClose={() => {
             setShowDeleteConfirm(false);
