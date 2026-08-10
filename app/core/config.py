@@ -83,6 +83,21 @@ class Settings(BaseModel):
     system_log_retention_days: int = Field(
         default=90, description="Days of system_logs history to keep. 0 disables pruning."
     )
+    # Security-log retention for session IPs and user agents. Same reasoning and same ceiling.
+    session_ip_retention_days: int = Field(
+        default=90, description="Days to keep ip_address/user_agent on expired sessions. 0 disables."
+    )
+    # How long financial records are kept. NOT our choice — set by tax and accounting law, which
+    # varies by member state (roughly 5-10 years; confirm locally). Config rather than a constant
+    # so the accountant's answer lands without a migration or a code change.
+    invoice_retention_years: int = Field(
+        default=7, description="Years to retain invoices and financial records (legal obligation)."
+    )
+    # Days after a deletion request by which an admin should have run the scrub. Art. 12(3) allows
+    # one month; this drives the ageing on the admin queue and is NOT an execution trigger.
+    deletion_request_sla_days: int = Field(
+        default=30, description="Days within which a deletion request must be actioned."
+    )
     # Cache TTL for the per-plan entitlement map (Phase 2).
     entitlement_cache_ttl_seconds: int = Field(default=300, description="Redis TTL for cached plan entitlements.")
 

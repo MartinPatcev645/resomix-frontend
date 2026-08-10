@@ -248,15 +248,26 @@ class User(Base):
     stripe_customer_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, unique=True)
 
     # Account lifecycle. `is_active` says WHETHER access is withdrawn; these say when, why, and —
-    # when the user asked to leave — the date after which an admin may destroy the data.
+    # when the user asked to leave — where the request has got to.
     #
-    # Deletion is never automatic. The 30-day window exists so a change of mind costs one flag
-    # flip instead of an unrecoverable loss, and `purge_due_at` is stored rather than derived so a
-    # single account can be held longer (a support case, an open dispute) without a code change.
+    # Deletion is a TWO-STEP process and the second step is manual. A request deactivates the
+    # account and nothing else; an admin later runs the scrub. There is no timer: the scrub is
+    # irreversible, and an irreversible operation firing unattended on a clock is one bad
+    # `purge_due_at` away from destroying an account nobody meant to touch.
     deactivated_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
     deactivation_reason: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
     deletion_requested_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+
+    # NOT an execution trigger — the date the request SHOULD have been actioned by, used to age the
+    # admin queue. Art. 12(3) gives us one month, and this is the only thing that surfaces it.
     purge_due_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True, index=True)
+
+    # When the scrub ran. The dividing line between "restorable" and "gone": before it, flipping
+    # `is_active` back returns the account intact; after it, there is nothing left to restore.
+    #
+    # Stored rather than inferred from the placeholder email format, because inferring identity
+    # state from a string pattern is how a re-registered address gets mistaken for a scrubbed one.
+    anonymized_at: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True, index=True)
 
     # Last authenticated activity. Nothing else in the schema can answer this: `system_logs` has no
     # user_id, and `user_sessions.created_at` records logins rather than use. Written by a
