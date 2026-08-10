@@ -170,9 +170,16 @@ async def test_the_digest_sends_when_something_is_overdue(monkeypatch) -> None:
     assert result["quiet"] is False
     assert result["sent"] == 1
     assert sent[0]["overdue"] == 1
-    # The admin URL is a real setting: `r-admin.resomix.com` is not derivable from `app_url`, and
-    # the obvious string surgery produced a dead link in an email nobody would think to check.
-    assert "admin" in sent[0]["admin_url"]
+    # Asserted against the SETTING, not a literal. The value differs per environment
+    # (`localhost:5175` in dev, `r-admin.resomix.com` in prod), so pinning a string would make this
+    # pass or fail depending on which .env was loaded.
+    #
+    # The property that matters is that the digest uses the setting at all: the first version
+    # derived the host from `app_url` by string surgery, which produced a dead link — the admin
+    # surface is `r-admin.`, not `admin.`.
+    from app.core.config import settings
+
+    assert sent[0]["admin_url"] == settings.admin_url
 
 
 class _ctx:
