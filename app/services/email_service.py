@@ -226,7 +226,10 @@ class EmailService:
         Returns:
             True if sent successfully
         """
-        reset_url = f"{settings.frontend_url}/auth/reset-password?token={reset_token}"
+        # Same reason as the verification link above: /auth/reset-password is a route in the web
+        # app only, so building this off `frontend_url` sent the user to the marketing host to be
+        # bounced. The landing `/auth/*` forwarder still covers links already in inboxes.
+        reset_url = f"{settings.frontend_beta_url.rstrip('/')}/auth/reset-password?token={reset_token}"
 
         # Render template
         template = jinja_env.get_template("password_reset.html")
