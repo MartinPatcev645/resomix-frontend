@@ -5,13 +5,13 @@
       "eyebrowLive": "Live",
       "eyebrowSuffix": " · Partner-scoped REST API · Powered by PYXIS-1",
       "title": "Put similarity and track intelligence [[inside your product.]]",
-      "sub": "Search your own catalogue by sound, analyse new audio and retrieve structured Track Intelligence analysis data through a partner-scoped REST API.",
+      "sub": "Search your own catalogue by sound and rank it by how the music actually sounds, through a partner-scoped REST API. Structured Track Intelligence analysis is enabled on request, against your own catalogue.",
       "ctaPrimary": "Request API Access",
       "ctaSecondary": "View Full API Reference",
       "trustline": "Partner-scoped · Versioned JSON · Private catalogue index",
       "routerLabel": "Request router · One request enters, sonic intelligence returns",
       "routerTruth": "Fictional data",
-      "routerAlt": "Request router diagram: a developer request with a bearer key enters from the left and passes through a single scoped gate into the partner's private catalogue boundary. Inside, three live routes for search, similarity and analysis process the request against the partner's own index, and structured JSON returns on the right. A playback route is drawn permission-gated, and there is no connection to any shared public catalogue. Fictional data.",
+      "routerAlt": "Request router diagram: a developer request with a bearer key enters from the left and passes through a single scoped gate into the partner's private catalogue boundary. Inside, live routes for search and similarity process the request against the partner's own index, and structured JSON returns on the right. An analysis route is drawn as available on request, a playback route is drawn permission-gated, and there is no connection to any shared public catalogue. Fictional data.",
       "routerFoot": "no shared public catalogue exists on this diagram or in the product",
       "routes": {
         "search": "Search",
@@ -23,8 +23,12 @@
       "label": "API at a glance",
       "items": [
         {
-          "text": "Search, similarity + analysis",
+          "text": "Search + similarity",
           "highlight": "LIVE"
+        },
+        {
+          "text": "Track analysis",
+          "highlight": "ON DEMAND"
         },
         {
           "text": "Partner-catalogue only"
@@ -96,11 +100,12 @@
               "path": "/api/v1/analysis/{id}/result"
             }
           ],
-          "status": "LIVE"
+          "status": "ON DEMAND",
+          "statusClass": "gate"
         }
       ],
       "footnote": "result depths: 10 · 20 · 50 · 100. Full parameters and schemas live at api-docs.resomix.com",
-      "partialFieldsNote": "Structured analysis endpoints are live. Returned fields are versioned and may be partial or optional."
+      "partialFieldsNote": "Search and similarity are enabled on every partner key. Track analysis is provisioned on request and runs against your own catalogue, so talk to us before building on it. Returned fields are versioned and may be partial or optional."
     },
     "isolation": {
       "eyebrow": "02 // The search space",
@@ -168,20 +173,20 @@
       "checks": [
         {
           "title": "missing audio file",
-          "body": "manifest row 214 references a file not present in the batch, so the batch is held and feedback returned"
+          "body": "manifest row 214 references a file not present in the batch, so the batch is rejected and the row is named in the report"
         },
         {
           "title": "duplicate isrc",
-          "body": "two rows share one ISRC, so de-duplication rules are applied and the review noted"
+          "body": "two rows share one ISRC, so the batch is rejected and both rows are named in the report"
         },
         {
           "title": "unsafe archive",
           "body": "zip failed safety checks, so it is rejected before processing and the partner notified"
         }
       ],
-      "formats": "accepted audio: .mp3 · .wav · .flac · .aiff; manifest fields: id · isrc · title · artist · bpm · duration · filename",
+      "formats": "accepted audio: .mp3 · .wav · .flac · .aiff; required manifest columns: isrc · title · display_artist · audio_filename; optional: bpm · duration_ms · genre · musical_key · release_date · upc_ean and more",
       "requirementsLink": "[ View Ingestion Requirements → ]",
-      "footnote": "a partial upload never starts processing · .done is sent last · one active batch per partner · new batches top up the catalogue and rebuild the private index"
+      "footnote": "a partial upload never starts processing · .done is sent last · one active batch per partner · validation is all-or-nothing, so a rejected batch is corrected and re-sent with a new .done · new batches top up the catalogue and rebuild the private index"
     },
     "schema": {
       "eyebrow": "05 // Analysis data",
@@ -200,7 +205,7 @@
         "tonality": {
           "num": "02",
           "title": "Tonality",
-          "desc": "key · scale · Camelot · key strength · tuning · chromagram · alternative-key hint"
+          "desc": "key · scale · Camelot · strength · tuning · chromagram · alternative key + ambiguity flag"
         },
         "loudness": {
           "num": "03",
@@ -210,17 +215,17 @@
         "mood": {
           "num": "04",
           "title": "Mood & semantics",
-          "desc": "mood · valence · arousal · energy · danceability · acoustic/electronic · instrumental · genre indicators"
+          "desc": "scored mood themes · valence · arousal · danceability · acoustic/electronic · voice vs instrumental · scored genre labels"
         },
         "structure": {
           "num": "05",
           "title": "Structure",
-          "desc": "intro · build · breakdown · drop · outro, with time ranges + confidence"
+          "desc": "intro · build · breakdown · drop · outro, with millisecond ranges + confidence"
         },
         "prov": {
           "num": "06",
           "title": "Provenance",
-          "desc": "service version · schema version · processing timings"
+          "desc": "service version · schema version · per-stage timings · per-stage errors"
         }
       }
     },
@@ -234,10 +239,10 @@
       "accessOpen": "Access, limits & playback ▾",
       "accessLabel": "Scoped access · Predictable responses",
       "authLabel": "authentication",
-      "authNote": "bearer header · never query-string keys",
+      "authNote": "send the key in the bearer header · do not put it in a query string",
       "envelopeLabel": "envelope",
       "envelopeNote": "check success before reading data",
-      "scopesNote": "versioned /api/v1 routes · scopes e.g. search:read · partner:read · keys begin rmx_",
+      "scopesNote": "versioned /api/v1 routes · scoped keys, e.g. search:read · keys begin rmx_",
       "modesLabel": "Service modes & limits",
       "limitsLabel": "rate limits & quotas",
       "limitsNote": "limits are provisioned per partner agreement",
@@ -247,7 +252,7 @@
           "title": "REST API",
           "status": "LIVE",
           "statusClass": "live",
-          "body": "Similarity, search and analysis inside your existing backend or application, using your interface and your customer journey. Requires an indexed partner catalogue."
+          "body": "Similarity and search inside your existing backend or application, using your interface and your customer journey. Requires an indexed partner catalogue. Track analysis can be added on request."
         },
         {
           "title": "Batch ingestion",
@@ -336,7 +341,7 @@
         },
         {
           "title": "Test privately",
-          "body": "Search, Similarity and Analysis against your own data."
+          "body": "Search and Similarity against your own data, plus Analysis if you asked for it."
         }
       ]
     },

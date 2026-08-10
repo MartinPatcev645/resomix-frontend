@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES, type RouteKey, drawCls, API_DOCS_URL } from './devEngine.ts';
+import { ROUTES, ROUTE_STATUS, type RouteKey, drawCls, API_DOCS_URL } from './devEngine.ts';
 import { SvgText } from './devSvgHelpers.tsx';
 import { HeroTitle } from '@/components/HeroTitle.tsx';
 
@@ -85,7 +85,7 @@ function DesktopRouter({ route }: { route: RouteKey }) {
               className={on ? 'dev-smicro dev-slbl-hot' : 'dev-smicro'}
               anchor="end"
             >
-              LIVE
+              {ROUTE_STATUS[key]}
             </SvgText>
             {on ? (
               <>
@@ -174,7 +174,7 @@ function MobileRouter({ route }: { route: RouteKey }) {
               {label}
             </SvgText>
             <SvgText x={316} y={y + 4} className={on ? 'dev-slbl dev-slbl-hot' : 'dev-slbl-dim'} anchor="end">
-              LIVE
+              {ROUTE_STATUS[key]}
             </SvgText>
           </g>
         );

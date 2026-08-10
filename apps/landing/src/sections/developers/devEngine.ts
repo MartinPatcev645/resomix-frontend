@@ -42,9 +42,18 @@ export const ROUTES: Record<
     frag: '"data": { "similar_tracks": [ … ] }',
   },
   ana: {
-    note: 'ROUTE: ANALYSIS · async job returns versioned JSON',
+    note: 'ROUTE: ANALYSIS · on demand · async job returns versioned JSON',
     frag: '"data": { "analysis_id": "ana_4c2d91" }',
   },
+};
+
+/** Per-route availability shown in the hero router diagram. Analysis is provisioned on
+ *  request against a partner's own catalogue rather than enabled on every key, so it is
+ *  labelled like the playback route instead of sharing the LIVE badge. */
+export const ROUTE_STATUS: Record<RouteKey, string> = {
+  search: 'LIVE',
+  sim: 'LIVE',
+  ana: 'ON DEMAND',
 };
 
 export type CodeToken = { type: 'k' | 's' | 'o' | 'c' | 'text'; text: string };
@@ -155,12 +164,15 @@ export const WF: Record<WfKey, Workflow> = {
     title: 'WORKFLOW · ASYNCHRONOUS ANALYSIS JOB',
     ep: 'POST /api/v1/analysis/upload → GET /api/v1/analysis/{id}/status → /result',
     req: [
+      [C('# provisioned on request against your own catalogue.')],
+      [C('# not enabled on a standard partner key by default.')],
+      [T('')],
       [K('POST'), T(' /api/v1/analysis/upload')],
       [K('Authorization'), T(': Bearer rmx_live_xxxxxxxxxxxxxxxxxxxxxxxx')],
       [T('')],
       [T('file: new_signing.flac')],
       [T('')],
-      [C('# poll until completed:')],
+      [C('# poll until the job succeeds:')],
       [K('GET'), T(' /api/v1/analysis/'), O('ana_4c2d91'), T('/status')],
     ],
     res: [
@@ -168,7 +180,9 @@ export const WF: Record<WfKey, Workflow> = {
       [T('  '), K('"success"'), T(': '), O('true'), T(',')],
       [T('  '), K('"data"'), T(': {')],
       [T('    '), K('"analysis_id"'), T(': '), O('"ana_4c2d91"'), T(',')],
-      [T('    '), K('"status"'), T(': '), O('"processing"')],
+      [T('    '), K('"state"'), T(': '), O('"running"'), T(',')],
+      [T('    '), K('"progress"'), T(': { '), K('"stage"'), T(': '), S('"rhythm"'), T(', '), K('"percent"'), T(': 40 },')],
+      [T('    '), K('"part1_ready"'), T(': '), O('false'), T(', '), K('"result_available"'), T(': '), O('false')],
       [T('  }')],
       [T('}')],
     ],
@@ -177,13 +191,16 @@ export const WF: Record<WfKey, Workflow> = {
       [T('  '), K('"success"'), T(': '), O('true'), T(',')],
       [T('  '), K('"data"'), T(': {')],
       [T('    '), K('"analysis_id"'), T(': '), O('"ana_4c2d91"'), T(',')],
-      [T('    '), K('"status"'), T(': '), O('"completed"'), T(',')],
-      [T('    '), K('"schema_version"'), T(': '), S('"1.4"'), T(',')],
-      [T('    '), K('"result"'), T(': { '), C('…versioned structured JSON, see section 05'), T(' }')],
+      [T('    '), K('"state"'), T(': '), O('"succeeded"'), T(',')],
+      [T('    '), K('"part1_ready"'), T(': '), O('true'), T(', '), K('"result_available"'), T(': '), O('true'), T(',')],
+      [T('    '), C('// then GET /result:')],
+      [T('    '), K('"schema_version"'), T(': '), S('"resomix-analysis-1.1"'), T(',')],
+      [T('    '), K('"status"'), T(': '), O('"complete"'), T(', '), C('// or "partial"')],
+      [T('    '), K('"rhythm"'), T(': { '), C('…'), T(' }, '), K('"tonality"'), T(': { '), C('…'), T(' }, '), C('see section 05')],
       [T('  }')],
       [T('}')],
     ],
-    expl: 'Upload returns an analysis ID immediately. Poll the status, then retrieve the versioned structured result; partial results return the fields that completed.',
+    expl: 'Upload returns an analysis ID immediately. Poll the job state, then retrieve the versioned structured result; part 1 (technical, rhythm, tonality, structure) is readable before the slower semantic sections finish.',
     async: true,
   },
   play: {
@@ -220,44 +237,46 @@ export type SgKey = 'rhythm' | 'tonality' | 'loudness' | 'mood' | 'structure' | 
 export const SG: Record<SgKey, CodeLine[]> = {
   rhythm: [
     [T('{')],
-    [T('  '), K('"bpm"'), T(': '), O('124.02'), T(', '), K('"bpm_confidence"'), T(': '), O('0.94'), T(',')],
-    [T('  '), K('"beats"'), T(': [ 0.482, 0.966, 1.450, '), C('…'), T(' ],')],
-    [T('  '), K('"downbeats"'), T(': [ 0.482, 2.418, '), C('…'), T(' ],')],
-    [T('  '), K('"bars"'), T(': 96,')],
-    [T('  '), K('"phrases"'), T(': [ { '), K('"start"'), T(': 0.0, '), K('"end"'), T(': 30.9 }, '), C('…'), T(' ]')],
+    [T('  '), K('"bpm"'), T(': '), O('124.02'), T(', '), K('"confidence"'), T(': '), O('0.94'), T(',')],
+    [T('  '), K('"beat_times_seconds"'), T(': [ 0.482, 0.966, 1.450, '), C('…'), T(' ],')],
+    [T('  '), K('"downbeats_seconds"'), T(': [ 0.482, 2.418, '), C('…'), T(' ],')],
+    [T('  '), K('"bar_count"'), T(': 96,')],
+    [T('  '), K('"phrase_boundaries_seconds"'), T(': [ 0.0, 30.9, 61.8, '), C('…'), T(' ]')],
     [T('}')],
   ],
   tonality: [
     [T('{')],
     [T('  '), K('"key"'), T(': '), S('"G"'), T(', '), K('"scale"'), T(': '), S('"minor"'), T(',')],
-    [T('  '), K('"camelot"'), T(': '), O('"6A"'), T(', '), K('"key_strength"'), T(': '), O('0.88'), T(',')],
+    [T('  '), K('"camelot"'), T(': '), O('"6A"'), T(', '), K('"strength"'), T(': '), O('0.88'), T(',')],
     [T('  '), K('"tuning_hz"'), T(': 440.1,')],
-    [T('  '), K('"alt_key_hint"'), T(': '), S('"B♭ major"'), T(' '), C('// where returned')],
+    [T('  '), K('"alt_key"'), T(': '), S('"B♭"'), T(', '), K('"alt_scale"'), T(': '), S('"major"'), T(', '), K('"alt_camelot"'), T(': '), O('"6B"'), T(',')],
+    [T('  '), K('"ambiguous"'), T(': '), O('false'), T(' '), C('// weak tonic or a close alternative')],
     [T('}')],
   ],
   loudness: [
     [T('{')],
-    [T('  '), K('"integrated_lufs"'), T(': '), O('-7.4'), T(', '), K('"loudness_range_lu"'), T(': 6.2,')],
-    [T('  '), K('"true_peak_dbtp"'), T(': -0.6,')],
+    [T('  '), K('"integrated_loudness_lufs"'), T(': '), O('-7.4'), T(',')],
+    [T('  '), K('"loudness_range_lu"'), T(': 6.2, '), K('"true_peak_dbtp"'), T(': -0.6,')],
     [T('  '), K('"dynamic_complexity"'), T(': 4.1, '), K('"crest_factor"'), T(': 5.8,')],
-    [T('  '), K('"curves"'), T(': { '), K('"loudness"'), T(': [ '), C('…'), T(' ], '), K('"rms"'), T(': [ '), C('…'), T(' ] }')],
+    [T('  '), K('"loudness_curve"'), T(': { '), K('"values"'), T(': [ '), C('…'), T(' ], '), K('"hop_ms"'), T(': 100.0 },')],
+    [T('  '), K('"rms_energy_curve"'), T(': { '), K('"values"'), T(': [ '), C('…'), T(' ], '), K('"hop_ms"'), T(': 100.0 }')],
     [T('}')],
   ],
   mood: [
     [T('{')],
-    [T('  '), K('"mood"'), T(': [ '), S('"dark"'), T(', '), S('"hypnotic"'), T(' ],')],
-    [T('  '), K('"valence"'), T(': '), O('0.31'), T(', '), K('"arousal"'), T(': '), O('0.72'), T(', '), K('"energy"'), T(': 0.78,')],
-    [T('  '), K('"danceability"'), T(': 0.81,')],
-    [T('  '), K('"electronic_likelihood"'), T(': 0.97,')],
-    [T('  '), K('"instrumental_likelihood"'), T(': 0.99,')],
-    [T('  '), K('"genre_indicators"'), T(': { '), K('"deep_house"'), T(': '), O('0.62'), T(', '), K('"tech_house"'), T(': 0.21 }')],
+    [T('  '), K('"genre_top"'), T(': [ { '), K('"label"'), T(': '), S('"deep house"'), T(', '), K('"score"'), T(': '), O('0.62'), T(' }, '), C('…'), T(' ],')],
+    [T('  '), K('"mood_theme_top"'), T(': [ { '), K('"label"'), T(': '), S('"dark"'), T(', '), K('"score"'), T(': '), O('0.71'), T(' }, '), C('…'), T(' ],')],
+    [T('  '), K('"mood_dimensions"'), T(': { '), K('"party"'), T(': '), O('0.66'), T(', '), K('"relaxed"'), T(': 0.40, '), C('…'), T(' },')],
+    [T('  '), K('"valence"'), T(': '), O('0.31'), T(', '), K('"arousal"'), T(': '), O('0.72'), T(', '), K('"danceability"'), T(': 0.81,')],
+    [T('  '), K('"mood_electronic"'), T(': 0.97, '), K('"mood_acoustic"'), T(': 0.03,')],
+    [T('  '), K('"voice_instrumental"'), T(': '), S('"instrumental"'), T(', '), K('"voice_score"'), T(': 0.99')],
     [T('}')],
   ],
   structure: [
     [T('{')],
-    [T('  '), K('"sections"'), T(': [')],
-    [T('    { '), K('"label"'), T(': '), O('"intro"'), T(', '), K('"start"'), T(': 0.0, '), K('"end"'), T(': 52.1, '), K('"confidence"'), T(': 0.90 },')],
-    [T('    { '), K('"label"'), T(': '), O('"drop"'), T(', '), K('"start"'), T(': 118.4, '), K('"end"'), T(': 184.0, '), K('"confidence"'), T(': 0.86 },')],
+    [T('  '), K('"structure_segments"'), T(': [')],
+    [T('    { '), K('"label"'), T(': '), O('"intro"'), T(', '), K('"start_ms"'), T(': 0.0, '), K('"end_ms"'), T(': 52100.0, '), K('"confidence"'), T(': 0.90 },')],
+    [T('    { '), K('"label"'), T(': '), O('"drop"'), T(', '), K('"start_ms"'), T(': 118400.0, '), K('"end_ms"'), T(': 184000.0, '), K('"confidence"'), T(': 0.86 },')],
     [T('    '), C('… build · breakdown · outro')],
     [T('  ]')],
     [T('}')],
@@ -265,17 +284,23 @@ export const SG: Record<SgKey, CodeLine[]> = {
   prov: [
     [T('{')],
     [T('  '), K('"service_version"'), T(': '), S('"analysis-2.x"'), T(',')],
-    [T('  '), K('"schema_version"'), T(': '), O('"1.4"'), T(',')],
-    [T('  '), K('"processing_ms"'), T(': 18342,')],
-    [T('  '), K('"status"'), T(': '), O('"completed"'), T(' '), C('// or partial')],
+    [T('  '), K('"schema_version"'), T(': '), O('"resomix-analysis-1.1"'), T(',')],
+    [T('  '), K('"elapsed_seconds"'), T(': 18.34,')],
+    [T('  '), K('"stage_timings_seconds"'), T(': { '), K('"rhythm"'), T(': 2.1, '), K('"tonality"'), T(': 1.4, '), C('…'), T(' },')],
+    [T('  '), K('"stage_errors"'), T(': { }  '), C('// populated on a partial result')],
     [T('}')],
   ],
 };
 
+/** The real JSON path each group lives at in the canonical result — shown next to the
+ *  fragment so a reader knows where to look in an actual payload, not just what it means.
+ *  Loudness lives under `technical` and structure under `energy`; the group headings are
+ *  human labels, these are the keys on the wire. */
 export function sgDisplayName(key: SgKey): string {
   if (key === 'prov') return 'provenance';
-  if (key === 'loudness') return 'loudness & dynamics';
-  if (key === 'mood') return 'mood & semantics';
+  if (key === 'loudness') return 'technical';
+  if (key === 'mood') return 'semantics';
+  if (key === 'structure') return 'energy.structure_segments';
   return key;
 }
 

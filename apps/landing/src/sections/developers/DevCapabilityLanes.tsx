@@ -10,6 +10,9 @@ export function DevCapabilityLanes() {
     ioOut: string;
     endpoints: { method: string; path: string }[];
     status: string;
+    /** Chip variant: live | avail | plan | gate. Defaults to `live` so a lane that
+     *  omits it keeps the badge it had before this field existed. */
+    statusClass?: string;
   }[];
 
   const headers = t('developers.capabilities.headers', { returnObjects: true }) as string[];
@@ -47,7 +50,9 @@ export function DevCapabilityLanes() {
                 </span>
               ))}
             </p>
-            <span className="dev-st dev-st-live uppercase">{lane.status}</span>
+            <span className={`dev-st dev-st-${lane.statusClass ?? 'live'} uppercase`}>
+              {lane.status}
+            </span>
           </div>
         ))}
       </div>
