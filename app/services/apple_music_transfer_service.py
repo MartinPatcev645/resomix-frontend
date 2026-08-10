@@ -50,16 +50,23 @@ ISRC_BATCH = 25
 
 
 def _http_request(method: str, url: str, *, headers, params=None, data=None,
-                  timeout: int = 30, max_retries: int = 3):
+                  timeout: int = 30, max_retries: int = 3, retry_5xx: bool = True):
     """Blocking HTTP call with simple 429/5xx back-off (honours Retry-After).
 
     Kept sync on purpose — callers dispatch it via run_in_executor. Returns the final
     Response (never raises for HTTP status); network errors propagate to the caller.
+
+    ``retry_5xx=False`` for requests that CREATE something. Apple's create-playlist endpoint is
+    known to return **504 while having created the playlist anyway**, so retrying a timeout can
+    leave two or three playlists in someone's library — and we then report failure, because the
+    last response we saw was the 504. A 429 is still retried either way: it means the request was
+    rejected outright, so replaying it is safe.
     """
     resp = None
     for attempt in range(max_retries):
         resp = requests.request(method, url, headers=headers, params=params, data=data, timeout=timeout)
-        if resp.status_code == 429 or 500 <= resp.status_code < 600:
+        retryable = resp.status_code == 429 or (retry_5xx and 500 <= resp.status_code < 600)
+        if retryable:
             if attempt == max_retries - 1:
                 break
             retry_after = resp.headers.get("Retry-After")
@@ -450,7 +457,7 @@ class AppleMusicTransferService:
         r = await loop.run_in_executor(
             None,
             lambda: _http_request("POST", url, headers=self._apple_headers(dev_token, user_token),
-                                  data=json.dumps(payload))
+                                  data=json.dumps(payload), retry_5xx=False)
         )
 
         if not r.ok:
@@ -465,6 +472,65 @@ class AppleMusicTransferService:
             raise ValueError(f"No playlist id returned: {js}")
         return playlist_id
     
+    async def _verify_playlist(self, dev_token: str, user_token: str,
+                               playlist_id: str, expected: int) -> Optional[int]:
+        """Read the playlist back and return how many tracks Apple actually holds.
+
+        WHY THIS EXISTS
+
+        ``_add_tracks_to_playlist`` counts a batch as added whenever the POST returns OK. Apple
+        answers that call with **204 No Content**, so there is nothing in the body to confirm and a
+        batch it accepted-then-dropped (a catalogue id that is not valid in the user's storefront
+        is the usual cause) still counted. We were reporting a number we had never checked.
+
+        Returns ``None`` when we genuinely could not read it — distinct from ``0``, which means
+        Apple says the playlist is empty. Reporting a failed read as zero would turn "we don't
+        know" into "it definitely failed".
+
+        RETRIES BECAUSE APPLE IS EVENTUALLY CONSISTENT
+
+        Reading a just-created playlist can return no tracks; they appear a few seconds later. A
+        single immediate read would therefore report 0 for a perfectly good export. Three attempts
+        over ~7s covers the observed lag without making the user wait on a slow path — and if it is
+        still 0 after that, `expected` is what we compare against so a partial add is still caught.
+        """
+        url = f"{APPLE_API}/v1/me/library/playlists/{playlist_id}/tracks"
+        loop = asyncio.get_event_loop()
+
+        for attempt, delay in enumerate((0, 2, 5)):
+            if delay:
+                await asyncio.sleep(delay)
+            try:
+                r = await loop.run_in_executor(
+                    None,
+                    lambda: _http_request(
+                        "GET", url, headers=self._apple_headers(dev_token, user_token),
+                        params={"limit": 1},
+                    ),
+                )
+            except Exception as e:  # noqa: BLE001 — verification must never fail the export
+                logger.warning("Could not verify Apple playlist %s: %s", playlist_id, e)
+                return None
+
+            # 404 on a playlist we just created is the propagation window, not an absence.
+            if r.status_code == 404:
+                continue
+            if not r.ok:
+                logger.warning("Verify read failed for %s: %s %s", playlist_id, r.status_code, r.text[:200])
+                return None
+
+            js = r.json()
+            total = (js.get("meta") or {}).get("total")
+            if total is None:
+                total = len(js.get("data") or [])
+            total = int(total)
+
+            # Good enough — stop early rather than burning the full back-off on a healthy export.
+            if total >= expected or attempt == 2:
+                return total
+
+        return None
+
     async def _get_created_playlist_url(self, dev_token: str, user_token: str,
                                         playlist_id: str, storefront: Optional[str]) -> Optional[str]:
         """Best-effort openable URL for the just-created library playlist.
@@ -779,6 +845,13 @@ class AppleMusicTransferService:
             else:
                 logger.warning("No tracks resolved on Apple Music to add to playlist")
 
+            # Read the playlist back before claiming anything. `tracks_added` above is only what
+            # Apple ACCEPTED; this is what it actually holds. `None` means we could not check —
+            # deliberately not folded into 0, which would report a healthy export as a failure.
+            verified_tracks = await self._verify_playlist(
+                dev_token, music_user_token, apple_playlist_id, tracks_added,
+            )
+
             # Best-effort openable URL for the created playlist (owner can jump straight to it in
             # Apple Music). Never fails the export — worst case it's None and the UI omits the link.
             apple_playlist_url = await self._get_created_playlist_url(
@@ -790,6 +863,11 @@ class AppleMusicTransferService:
                 "created_playlist_id": apple_playlist_id,
                 "created_playlist_name": playlist_name,
                 "created_playlist_url": apple_playlist_url,
+                # What Apple confirms it holds. None = we could not verify (not "zero").
+                "verified_tracks": verified_tracks,
+                # False only when we checked AND it is genuinely empty — the one case where
+                # "Successfully transferred" would be a lie.
+                "verified": None if verified_tracks is None else verified_tracks > 0,
                 "storefront": user_sf,
                 "total_tracks": len(ordered_track_ids),
                 "matched": len(matched_ids),

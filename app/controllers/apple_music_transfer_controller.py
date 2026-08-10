@@ -206,11 +206,39 @@ class AppleMusicTransferController:
                     db, FeatureKey.EXPORTS_PER_DAY, user=current_user
                 )
 
-            # Format success response
-            success_message = (
-                f"Successfully transferred playlist to Apple Music. "
-                f"{result['matched']} tracks matched, {result['unmatched']} tracks not found."
-            )
+            # Report what LANDED, not what matched.
+            #
+            # `matched` is how many Apple catalogue ids we resolved; `tracks_added` is how many
+            # Apple accepted; `verified_tracks` is how many it confirms it holds. The old message
+            # quoted `matched` alone, so an export where every add failed still read "Successfully
+            # transferred — 40 tracks matched". Those three numbers can legitimately differ, and
+            # the one the user cares about is the last.
+            added = result.get("tracks_added", 0)
+            verified = result.get("verified_tracks")
+            landed = verified if verified is not None else added
+
+            if landed == 0:
+                # The playlist exists but is empty. Saying "successfully transferred" here is what
+                # made a broken export look fine — and is why nobody knew to investigate.
+                success_message = (
+                    "The playlist was created in Apple Music but no tracks could be added. "
+                    f"{result['unmatched']} of {result['total_tracks']} tracks were not found in "
+                    "Apple's catalogue for your region."
+                )
+            else:
+                success_message = (
+                    f"Transferred {landed} of {result['total_tracks']} tracks to Apple Music."
+                )
+                if result.get("unmatched"):
+                    success_message += f" {result['unmatched']} not found in Apple's catalogue."
+                if verified is not None and verified < added:
+                    # Apple accepted more than it kept — worth saying rather than quietly rounding
+                    # down, because it usually means a storefront mismatch.
+                    success_message += (
+                        f" ({added} were accepted but Apple kept {verified}.)"
+                    )
+
+            result["message"] = success_message
 
             # Log success with comprehensive details
             duration_ms = (time.time() - start_time) * 1000
