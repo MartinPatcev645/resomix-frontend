@@ -772,6 +772,13 @@ class Settings(BaseModel):
             # CORS allowed origins (value may be a JSON array or comma-separated)
             "RESOMIX_ALLOWED_ORIGINS_PRODUCTION": "allowed_origins_production",
             "RESOMIX_ALLOWED_ORIGINS_DEVELOPMENT": "allowed_origins_development",
+            # Data retention. `Settings` is a plain BaseModel, not BaseSettings, so a field with a
+            # default is a CONSTANT until it is listed here — the whole point of these being config
+            # is that the accountant's and the DPO's answers land without a code change.
+            "SYSTEM_LOG_RETENTION_DAYS": "system_log_retention_days",
+            "SESSION_IP_RETENTION_DAYS": "session_ip_retention_days",
+            "INVOICE_RETENTION_YEARS": "invoice_retention_years",
+            "DELETION_REQUEST_SLA_DAYS": "deletion_request_sla_days",
         }
 
         for env_key, config_key in direct_env_vars.items():
@@ -803,6 +810,10 @@ class Settings(BaseModel):
                     "system_partner_id",
                     "login_max_failed_attempts",
                     "login_lockout_minutes",
+                    "system_log_retention_days",
+                    "session_ip_retention_days",
+                    "invoice_retention_years",
+                    "deletion_request_sla_days",
                 ]:
                     try:
                         env_overrides[config_key] = int(env_value)

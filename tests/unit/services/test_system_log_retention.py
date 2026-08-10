@@ -184,3 +184,44 @@ async def test_a_partial_final_batch_is_handled(session) -> None:
 
     assert result["deleted"] == 2_500
     assert stub.remaining == 0
+
+
+# --------------------------------------------------------------------------- #
+# The settings are actually settings
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.parametrize(
+    "env_key, attr, value",
+    [
+        ("SYSTEM_LOG_RETENTION_DAYS", "system_log_retention_days", 45),
+        ("SESSION_IP_RETENTION_DAYS", "session_ip_retention_days", 60),
+        ("INVOICE_RETENTION_YEARS", "invoice_retention_years", 10),
+        ("DELETION_REQUEST_SLA_DAYS", "deletion_request_sla_days", 21),
+    ],
+)
+def test_the_retention_settings_read_from_the_environment(monkeypatch, env_key, attr, value) -> None:
+    """These are only *called* settings if the environment can change them.
+
+    `Settings` is a plain `BaseModel`, not pydantic's `BaseSettings`, so a field with a default is
+    a CONSTANT until its name is added to the env-mapping table in `app/core/config.py`. All four
+    of these shipped without that mapping and silently ignored their environment variables.
+
+    That matters beyond tidiness: the retention figures answer to an accountant and a DPO, and the
+    whole reason they are config is so those answers land without a code change.
+    """
+    from app.core.config import Settings
+
+    monkeypatch.setenv(env_key, str(value))
+
+    assert getattr(Settings(), attr) == value
+
+
+def test_the_retention_defaults_are_the_documented_ones() -> None:
+    """The defaults are what runs in every environment that sets nothing, so they are the real
+    policy. 90 days for logs, 7 years for invoices, 30 days to action a request."""
+    from app.core.config import settings
+
+    assert settings.system_log_retention_days == 90
+    assert settings.session_ip_retention_days == 90
+    assert settings.invoice_retention_years == 7
+    assert settings.deletion_request_sla_days == 30
