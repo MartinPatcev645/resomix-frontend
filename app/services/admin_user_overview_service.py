@@ -385,7 +385,12 @@ class AdminUserOverviewService:
                 "deactivated_at": _iso(user.deactivated_at),
                 "deactivation_reason": user.deactivation_reason,
                 "deletion_requested_at": _iso(user.deletion_requested_at),
+                # A deadline on US, not a date anything acts on. Nothing scrubs automatically.
                 "purge_due_at": _iso(user.purge_due_at),
+                # The dividing line between restorable and gone — the admin screen has to be able
+                # to tell "asked to leave" from "already actioned", and the two look identical
+                # without this.
+                "anonymized_at": _iso(getattr(user, "anonymized_at", None)),
             },
             # The plan they ACTUALLY get, which is not always the subscription's: a chargeback
             # suspension or a cancelled subscription both make these two disagree, and that gap is
