@@ -74,6 +74,15 @@ class Settings(BaseModel):
     )
     guest_cookie_name: str = Field(default="rmx_guest", description="Name of the signed guest cookie.")
     guest_cookie_max_age_days: int = Field(default=30, description="Guest cookie lifetime in days.")
+    # How long `system_logs` rows are kept, enforced by scripts/prune_system_logs.py.
+    #
+    # 90 days is the common figure for security logs held on legitimate-interest grounds; 12 months
+    # is the ceiling most supervisory authorities accept without a specific argument. Storage
+    # limitation (Art. 5(1)(e)) means "forever" is not an option — see
+    # docs/ACCOUNT_DELETION_GDPR_OPTIONS.md §4.5.
+    system_log_retention_days: int = Field(
+        default=90, description="Days of system_logs history to keep. 0 disables pruning."
+    )
     # Cache TTL for the per-plan entitlement map (Phase 2).
     entitlement_cache_ttl_seconds: int = Field(default=300, description="Redis TTL for cached plan entitlements.")
 

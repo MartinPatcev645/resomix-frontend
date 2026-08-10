@@ -49,6 +49,65 @@ sudo systemctl status alwyzon
 `run_alwyzon.py` spawns and supervises the Celery worker itself (env `ALWYZON_EMBED_WORKER=1`,
 the default), so this one unit runs **both** the API and the worker.
 
+## Log retention timer (one time)
+
+`system_logs` has no retention of its own — without this it grows forever, and because the table
+has no `user_id` column nothing keyed on an account can ever reach its rows. Time is the only
+handle on it. Required by our retention policy; see
+`docs/ACCOUNT_DELETION_GDPR_OPTIONS.md` §4.5.
+
+```bash
+sudo tee /etc/systemd/system/alwyzon-prune-logs.service >/dev/null <<'EOF'
+[Unit]
+Description=Prune system_logs past the retention window
+After=mariadb.service
+
+[Service]
+Type=oneshot
+User=alwyzon
+WorkingDirectory=/home/alwyzon/usman/basic_fastapi_server_resomix
+Environment=PYTHONPATH=/home/alwyzon/usman/basic_fastapi_server_resomix
+ExecStart=/home/alwyzon/usman/basic_fastapi_server_resomix/.venv/bin/python scripts/prune_system_logs.py --quiet
+EOF
+
+sudo tee /etc/systemd/system/alwyzon-prune-logs.timer >/dev/null <<'EOF'
+[Unit]
+Description=Daily system_logs prune
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now alwyzon-prune-logs.timer
+```
+
+`Persistent=true` runs a missed occurrence after a reboot, so a box that was down overnight still
+prunes. Check it with:
+
+```bash
+systemctl list-timers alwyzon-prune-logs.timer
+journalctl -u alwyzon-prune-logs.service -n 20
+```
+
+**Before the first real run**, see what it would remove — this table has never been pruned, so the
+first pass will have a large backlog:
+
+```bash
+cd /home/alwyzon/usman/basic_fastapi_server_resomix && PYTHONPATH="$PWD" .venv/bin/python scripts/prune_system_logs.py --dry-run
+```
+
+It deletes in batches of 1,000 and commits each one, so the first run is safe to interrupt — what
+is committed stays deleted and the next run continues.
+
+**Window:** `SYSTEM_LOG_RETENTION_DAYS`, default 90. Setting it to `0` disables pruning entirely
+(it is refused, not treated as "delete everything").
+
 ## Everyday commands
 ```bash
 sudo systemctl status alwyzon

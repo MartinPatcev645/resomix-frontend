@@ -229,7 +229,7 @@ class BillingEmailService:
                 category="EMAIL",
                 action="billing_email_send_failed",
                 message=f"Failed to send {template}",
-                metadata={"email": user.email, "template": template, "dedupe_key": dedupe_key},
+                metadata={"user_uuid": user.uuid, "template": template, "dedupe_key": dedupe_key},
                 error=exc,
             )
             sent = False

@@ -21,6 +21,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 import time
 from app.services.waitlist_service import WaitlistService
+from app.utils.pii import mask_email
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 from app.services.admin_operation_log_service import AdminOperationLogService
@@ -82,7 +83,7 @@ class WaitlistController:
                     duration_ms=duration_ms,
                     context="Waitlist email submission",
                     metadata={
-                        "email": email,
+                        "email": mask_email(email),
                         "waitlist_result": result.get("data"),
                         "response": response_content,
                     },
@@ -116,7 +117,7 @@ class WaitlistController:
                     duration_ms=duration_ms,
                     context="Waitlist email submission validation",
                     metadata={
-                        "email": email,
+                        "email": mask_email(email),
                         "error": result.get("error"),
                         "validation_step": "email_processing",
                         "response": response_content,
@@ -158,7 +159,7 @@ class WaitlistController:
                 stack_trace=traceback.format_exc(),
                 context="Waitlist submission processing",
                 metadata={
-                    "email": email,
+                    "email": mask_email(email),
                     "error": "Internal server error occurred",
                     "exception_type": type(e).__name__,
                     "response": response_content,
@@ -214,7 +215,7 @@ class WaitlistController:
                     duration_ms=duration_ms,
                     context="Waitlist entry retrieval",
                     metadata={
-                        "email": email,
+                        "email": mask_email(email),
                         "waitlist_data": result.get("data"),
                         "response": response_content,
                     },
@@ -248,7 +249,7 @@ class WaitlistController:
                     duration_ms=duration_ms,
                     context="Waitlist entry lookup",
                     metadata={
-                        "email": email,
+                        "email": mask_email(email),
                         "error": result.get("error"),
                         "lookup_step": "email_search",
                         "response": response_content,
@@ -289,7 +290,7 @@ class WaitlistController:
                 stack_trace=traceback.format_exc(),
                 context="Waitlist entry retrieval processing",
                 metadata={
-                    "email": email,
+                    "email": mask_email(email),
                     "error": "Internal server error occurred",
                     "exception_type": type(e).__name__,
                     "response": response_content,

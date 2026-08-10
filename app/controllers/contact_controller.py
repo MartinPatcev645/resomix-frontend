@@ -24,6 +24,7 @@ import time
 import logging
 from app.services.contact_service import ContactService
 from app.utils.request_utils import client_ip, user_agent
+from app.utils.pii import mask_email
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 from app.services.admin_operation_log_service import AdminOperationLogService
@@ -192,7 +193,7 @@ class ContactController:
                     status_code=200,
                     duration_ms=duration_ms,
                     metadata={
-                        "email": contact_data.get("email"),
+                        "email": mask_email(contact_data.get("email")),
                         "name": contact_data.get("name"),
                         "subject": contact_data.get("subject"),
                         "phone": contact_data.get("phone"),
@@ -223,7 +224,7 @@ class ContactController:
                     status_code=422,
                     duration_ms=duration_ms,
                     metadata={
-                        "email": contact_data.get("email"),
+                        "email": mask_email(contact_data.get("email")),
                         "name": contact_data.get("name"),
                         "subject": contact_data.get("subject"),
                         "phone": contact_data.get("phone"),
@@ -257,7 +258,7 @@ class ContactController:
                 error=e,
                 context="submit_contact",
                 metadata={
-                    "email": contact_data.get("email"),
+                    "email": mask_email(contact_data.get("email")),
                     "name": contact_data.get("name"),
                     "subject": contact_data.get("subject"),
                     "phone": contact_data.get("phone"),
@@ -305,7 +306,7 @@ class ContactController:
                     metadata={
                         "contact_id": contact.id,
                         "user_id": contact.user_id,
-                        "email": contact.email,
+                        "email": mask_email(contact.email),
                         "name": contact.name,
                         "contact_status": contact.status,
                         "response": response_data,

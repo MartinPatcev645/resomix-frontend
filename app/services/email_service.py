@@ -19,6 +19,8 @@ from app.core.config import settings
 from app.services.logging_service import LoggingService
 
 # Setup Jinja2 template environment
+from app.utils.pii import mask_email
+
 TEMPLATE_DIR = Path(__file__).parent.parent / "templates" / "emails"
 jinja_env = Environment(loader=FileSystemLoader(str(TEMPLATE_DIR)))
 
@@ -93,7 +95,7 @@ class EmailService:
                 action="verification_email_send_failed",
                 message="Failed to send verification email",
                 metadata={
-                    "email": str(email),
+                    "email": mask_email(str(email)),
                     "username": username,
                 },
                 error=e,
@@ -123,7 +125,7 @@ class EmailService:
                 category="EMAIL",
                 action="template_render_failed",
                 message=f"Failed to render {template_name}",
-                metadata={"template": template_name, "email": str(email)},
+                metadata={"template": template_name, "email": mask_email(str(email))},
                 error=e,
             )
             return False
@@ -143,7 +145,7 @@ class EmailService:
                 category="EMAIL",
                 action="templated_send_failed",
                 message=f"Failed to send {template_name}",
-                metadata={"template": template_name, "email": str(email), "subject": subject},
+                metadata={"template": template_name, "email": mask_email(str(email)), "subject": subject},
                 error=e,
             )
             return False
@@ -168,7 +170,7 @@ class EmailService:
                 category="EMAIL",
                 action="html_send_failed",
                 message="Failed to send a pre-rendered email",
-                metadata={"email": str(email), "subject": subject},
+                metadata={"email": mask_email(str(email)), "subject": subject},
                 error=e,
             )
             return False
@@ -203,7 +205,7 @@ class EmailService:
                 category="EMAIL",
                 action="operation_notification_send_failed",
                 message="Failed to send operation notification email",
-                metadata={"email": str(email), "subject": subject,
+                metadata={"email": mask_email(str(email)), "subject": subject,
                           "event_type": context.get("event_type"),
                           "audience": context.get("audience")},
                 error=e,
@@ -251,7 +253,7 @@ class EmailService:
                 action="password_reset_email_send_failed",
                 message="Failed to send password reset email",
                 metadata={
-                    "email": str(email),
+                    "email": mask_email(str(email)),
                     "username": username,
                 },
                 error=e,
@@ -303,7 +305,7 @@ class EmailService:
                 action="two_factor_email_send_failed",
                 message="Failed to send 2FA code email",
                 metadata={
-                    "email": str(email),
+                    "email": mask_email(str(email)),
                     "username": username,
                     "purpose": purpose,
                 },
@@ -346,7 +348,7 @@ class EmailService:
                 action="welcome_email_send_failed",
                 message="Failed to send welcome email",
                 metadata={
-                    "email": str(email),
+                    "email": mask_email(str(email)),
                     "username": username,
                 },
                 error=e,
@@ -457,7 +459,7 @@ class EmailService:
                 action="contact_confirmation_send_failed",
                 message="Failed to send contact confirmation email",
                 metadata={
-                    "email": str(email),
+                    "email": mask_email(str(email)),
                     "contact_type": contact_type,
                 },
                 error=e,

@@ -18,6 +18,7 @@ import time
 
 from app.services.auth_service import AuthService
 from app.services.email_service import EmailService
+from app.utils.pii import mask_email
 from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 from app.services.guest_identity_service import GuestIdentityService
@@ -104,14 +105,13 @@ class AuthController:
                 level="INFO",
                 category="AUTH",
                 action="register_success",
-                message=f"User registered successfully: {user.email}",
+                message=f"User registered successfully: {user.uuid}",
                 correlation_id=correlation_id,
                 request=request,
                 status_code=201,
                 duration_ms=duration_ms,
                 metadata={
                     "user_uuid": user.uuid,
-                    "email": user.email,
                     "username": user.username,
                 },
             )
@@ -135,7 +135,7 @@ class AuthController:
                 request=request,
                 status_code=e.status_code,
                 duration_ms=duration_ms,
-                metadata={"email": registration_data.get("email"), "error": e.detail},
+                metadata={"email": mask_email(registration_data.get("email")), "error": e.detail},
             )
 
             return JSONResponse(status_code=e.status_code, content=response_data)
@@ -255,14 +255,13 @@ class AuthController:
                 level="INFO",
                 category="AUTH",
                 action="login_success",
-                message=f"User logged in successfully: {result['user']['email']}",
+                message=f"User logged in successfully: {result['user']['uuid']}",
                 correlation_id=correlation_id,
                 request=request,
                 status_code=200,
                 duration_ms=duration_ms,
                 metadata={
                     "user_uuid": result["user"]["uuid"],
-                    "email": result["user"]["email"],
                 },
             )
 
@@ -335,14 +334,13 @@ class AuthController:
                 level="INFO",
                 category="AUTH",
                 action="login_google_success",
-                message=f"User logged in via Google: {result['user']['email']}",
+                message=f"User logged in via Google: {result['user']['uuid']}",
                 correlation_id=correlation_id,
                 request=request,
                 status_code=200,
                 duration_ms=duration_ms,
                 metadata={
                     "user_uuid": result["user"]["uuid"],
-                    "email": result["user"]["email"],
                 },
             )
 
@@ -420,7 +418,7 @@ class AuthController:
                 level="INFO",
                 category="AUTH",
                 action="2fa_verify_success",
-                message=f"2FA verified successfully: {result['user']['email']}",
+                message=f"2FA verified successfully: {result['user']['uuid']}",
                 correlation_id=correlation_id,
                 request=request,
                 status_code=200,
@@ -513,12 +511,12 @@ class AuthController:
                 level="INFO",
                 category="AUTH",
                 action="email_verify_success",
-                message=f"Email verified successfully: {user.email}",
+                message=f"Email verified successfully: {user.uuid}",
                 correlation_id=correlation_id,
                 request=request,
                 status_code=200,
                 duration_ms=duration_ms,
-                metadata={"user_uuid": user.uuid, "email": user.email},
+                metadata={"user_uuid": user.uuid},
             )
 
             return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
@@ -582,12 +580,12 @@ class AuthController:
                 level="INFO",
                 category="AUTH",
                 action="resend_verification_success",
-                message=f"Verification email resent: {email}",
+                message=f"Verification email resent: {mask_email(email)}",
                 correlation_id=correlation_id,
                 request=request,
                 status_code=200,
                 duration_ms=duration_ms,
-                metadata={"email": email},
+                metadata={"email": mask_email(email)},
             )
 
             return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
@@ -606,7 +604,7 @@ class AuthController:
                 request=request,
                 status_code=e.status_code,
                 duration_ms=duration_ms,
-                metadata={"email": email, "error": e.detail},
+                metadata={"email": mask_email(email), "error": e.detail},
             )
 
             return JSONResponse(status_code=e.status_code, content=response_data)
@@ -653,12 +651,12 @@ class AuthController:
                 level="INFO",
                 category="AUTH",
                 action="password_reset_requested",
-                message=f"Password reset requested: {email}",
+                message=f"Password reset requested: {mask_email(email)}",
                 correlation_id=correlation_id,
                 request=request,
                 status_code=200,
                 duration_ms=duration_ms,
-                metadata={"email": email, "user_exists": user is not None},
+                metadata={"email": mask_email(email), "user_exists": user is not None},
             )
 
             return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
@@ -683,7 +681,7 @@ class AuthController:
                 request=request,
                 status_code=200,
                 duration_ms=duration_ms,
-                metadata={"email": email, "error": str(e)},
+                metadata={"email": mask_email(email), "error": str(e)},
             )
 
             return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
@@ -725,12 +723,12 @@ class AuthController:
                 level="INFO",
                 category="AUTH",
                 action="password_reset_success",
-                message=f"Password reset successfully: {user.email}",
+                message=f"Password reset successfully: {user.uuid}",
                 correlation_id=correlation_id,
                 request=request,
                 status_code=200,
                 duration_ms=duration_ms,
-                metadata={"user_uuid": user.uuid, "email": user.email},
+                metadata={"user_uuid": user.uuid},
             )
 
             return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
