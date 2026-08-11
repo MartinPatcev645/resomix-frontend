@@ -355,13 +355,6 @@ function UsersPage() {
         </Button>
       </div>
 
-      {/* ── Pending deletions ──
-          Above the table on purpose. Nothing scrubs on a timer and the user is told a window
-          rather than a date, so this is the only place the one-month clock is visible. */}
-      <div className="mb-8">
-        <PendingDeletionsPanel />
-      </div>
-
       {/* ── Filters ── */}
       <Card className="mb-8 bg-surface border-default shadow-sm rounded-xl overflow-hidden">
         <Space wrap size={24} className="w-full">
@@ -432,6 +425,14 @@ function UsersPage() {
           }}
           className="custom-table"
         />
+      </div>
+
+      {/* ── Pending deletions ──
+          Below the table: it is a small queue that is usually empty, and the user list is what
+          this page is for. It still renders its own empty state rather than disappearing, so
+          "nothing is waiting on us" stays a visible answer rather than an absence. */}
+      <div className="mt-8">
+        <PendingDeletionsPanel />
       </div>
 
 
