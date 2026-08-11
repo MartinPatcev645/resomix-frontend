@@ -184,7 +184,7 @@ describe('PpApplyForm', () => {
     await waitFor(() => {
       expect(screen.getByText(/inquiry received/i)).toBeInTheDocument();
       expect(
-        screen.getByText(/resomix reviews fit against the qualification principles above/i),
+        screen.getByText(/resomix checks fit against the principles above/i),
       ).toBeInTheDocument();
       expect(screen.getByText(/ingestion begins only after approval/i)).toBeInTheDocument();
     });

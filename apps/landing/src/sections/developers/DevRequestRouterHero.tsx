@@ -186,7 +186,7 @@ function MobileRouter({ route }: { route: RouteKey }) {
         playback: permission-gated
       </SvgText>
       <SvgText x={180} y={414} className="dev-slbl-dim" anchor="middle">
-        no shared public catalogue
+        no shared partner catalogue
       </SvgText>
     </svg>
   );

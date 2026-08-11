@@ -111,7 +111,7 @@
         },
         {
           "title": "CSV metadata",
-          "body": "Partner track ID, ISRC where available, title, artist and filename, with optional BPM and duration."
+          "body": "One row per track: ISRC, title, artist and filename, all required. BPM, duration and release details are optional."
         },
         {
           "title": "Current + older repertoire",

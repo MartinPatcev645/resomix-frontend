@@ -43,15 +43,15 @@
         "title": "API + CATALOGUE INGESTION",
         "panelTitle": "API + CATALOGUE INGESTION",
         "status": "LIVE",
-        "note": "Outcome: Search, Similarity and Track Analysis inside your product.",
+        "note": "Outcome: Search and Similarity inside your product, with Track Analysis on request.",
         "outcomeTitle": "API + catalogue ingestion.",
         "cta": "Explore the API",
-        "question": "\"How do we add Search, Similarity or Track Analysis to our product?\"",
+        "question": "\"How do we add Search or Similarity to our product?\"",
         "mobileDesc": "build it into your product",
         "items": [
           "Managed catalogue ingestion",
           "Partner-scoped REST API",
-          "Search, Similarity and Analysis",
+          "Search and Similarity, Analysis on request",
           "Versioned structured responses"
         ]
       },

@@ -17,7 +17,7 @@
       "dec": "DEC +41° 16′ 9″",
       "referenceTrack": "Reference track",
       "nightCircuit": "Night Circuit · Vela Nine",
-      "refMeta": "124 BPM · 8A",
+      "refMeta": "124 BPM · 6A",
       "oneSignal": "One signal · active route",
       "pyxis1": "PYXIS-1",
       "comparesIndex": "Compares the reference with the pre-analysed sonic index",
@@ -77,8 +77,8 @@
       "r5t": "Vapour Step",
       "r5a": "Nadir Club",
       "r5s": "85%",
-      "returnedLead": "Returned in approx. 15-20 sec",
-      "returnedRest": " · audition, save, export, or chain a result as your next reference."
+      "returnedLead": "Search ~5-6s · upload ~15-20s",
+      "returnedRest": " · observed, not a service-level commitment · audition, save, export, or chain a result as your next reference."
     },
     "dims": {
       "eyebrow": "02 // the four dimensions",
@@ -98,8 +98,8 @@
       "d3steer": "darker, brighter or related-texture results",
       "d4": "Structure",
       "d4q": "How does it unfold over time?",
-      "d4body": "Intro, build, drop, break and outro: the phrase-level architecture. Structure-aware matching means results that behave well in transitions, not just on paper.",
-      "d4steer": "results whose key moments arrive where you need them"
+      "d4body": "Intro, build, drop, break and outro: the phrase-level architecture that gives a track its shape. Track Intelligence reads it section by section.",
+      "d4steer": "how a track is built, section by section"
     },
     "shortlist": {
       "eyebrow": "03 // shortlist to playlist",
@@ -120,7 +120,7 @@
       "djCopy": "Start with one reference track and instantly discover a shortlist of compatible alternatives. Compare groove, energy and harmony before deciding what to play next.",
       "djA1": "Groove and tempo alignment for mixing",
       "djA2": "Energy comparison at a glance",
-      "djA3": "Harmonically compatible key matches",
+      "djA3": "Key and harmony, read in Track Intelligence",
       "djA4": "Hidden gems beyond the charts",
       "djCta": "Build a set shortlist",
       "prodHead": "For Producers",
@@ -144,14 +144,14 @@
       "lead": "Everything below is built around real product capabilities.",
       "s1t": "70+ characteristics",
       "s1": "Every ranking starts from measured properties of the sound itself.",
-      "s2t": "Structure-aware",
-      "s2": "Matches consider how tracks behave over time, not just averages.",
+      "s2t": "Whole-track analysis",
+      "s2": "The profile is built from the whole recording, not a short excerpt.",
       "s3t": "Deterministic",
-      "s3": "The same reference returns the same shortlist.",
+      "s3": "The same reference returns the same shortlist from the same index.",
       "s4t": "Ranked, not random",
       "s4": "Results ordered by similarity, ready to be analysed.",
       "s5t": "Explainable",
-      "s5": "Each result carries the dimensions that put it there.",
+      "s5": "Every result carries its similarity score, and Track Intelligence explains the track behind it.",
       "s6t": "Private by default",
       "s6": "Unreleased references are processed for you only.",
       "valHead": "How relevance is validated",

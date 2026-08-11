@@ -249,7 +249,7 @@
           "attrs": [
             "Structured descriptors per track",
             "Deterministic, repeatable output",
-            "Analysis retrieval by track",
+            "Analysis retrieval by track, on request",
             "Catalogue-scale processing",
             "Explainable, versioned results"
           ],
@@ -334,7 +334,7 @@
       "leftEyebrow": "FOR MUSIC PROFESSIONALS",
       "leftTitle": "See your track as data you can use.",
       "leftBtn": "Analyse a Track",
-      "leftNote": "beta · the dashboard currently shows sample data",
+      "leftNote": "beta · analyse your own track and read the full profile",
       "rightEyebrow": "FOR CATALOGUES & PLATFORMS",
       "rightTitle": "Need track intelligence across a catalogue?",
       "rightBtn": "Start a Catalogue Pilot",

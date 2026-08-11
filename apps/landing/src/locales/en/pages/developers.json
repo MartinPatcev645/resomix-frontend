@@ -12,7 +12,7 @@
       "routerLabel": "Request router · One request enters, sonic intelligence returns",
       "routerTruth": "Fictional data",
       "routerAlt": "Request router diagram: a developer request with a bearer key enters from the left and passes through a single scoped gate into the partner's private catalogue boundary. Inside, live routes for search and similarity process the request against the partner's own index, and structured JSON returns on the right. An analysis route is drawn as available on request, a playback route is drawn permission-gated, and there is no connection to any shared public catalogue. Fictional data.",
-      "routerFoot": "no shared public catalogue exists on this diagram, or in the product",
+      "routerFoot": "no shared partner catalogue exists on this diagram, or in the product",
       "routes": {
         "search": "Search",
         "sim": "Similarity",
