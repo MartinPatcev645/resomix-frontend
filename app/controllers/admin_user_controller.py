@@ -82,6 +82,7 @@ class AdminUserController:
         search: Optional[str] = None,
         role_id: Optional[int] = None,
         is_active: Optional[bool] = None,
+        plan: Optional[str] = None,
     ) -> JSONResponse:
         """Get paginated list of users with filters."""
         start_time = time.time()
@@ -89,7 +90,8 @@ class AdminUserController:
 
         try:
             users, total = await self.user_service.list_users_admin(
-                db, page=page, page_size=page_size, search=search, role_id=role_id, is_active=is_active
+                db, page=page, page_size=page_size, search=search, role_id=role_id,
+                is_active=is_active, plan=plan
             )
 
             # Plan for the whole page in three queries. Calling `get_effective_plan` per row would

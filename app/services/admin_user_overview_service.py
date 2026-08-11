@@ -290,14 +290,26 @@ class AdminUserOverviewService:
 
     @staticmethod
     async def resolve_plans(db: AsyncSession, users: list[User]) -> Dict[int, Dict[str, str]]:
-        """Effective plan for a whole PAGE of users, in three queries rather than 2N.
+        """Effective plan for a whole PAGE of users, in four queries rather than 2N.
 
         The users table shows a Plan column, and calling `get_effective_plan` per row would be a
-        hundred queries for a fifty-row page. This mirrors that function's precedence exactly —
-        active subscription → `users.plan_id` → default — but resolves the whole page at once.
+        hundred queries for a fifty-row page. This mirrors that function's precedence:
 
-        Kept deliberately close to the original: if the precedence there ever changes, this is the
-        other place that has to change with it.
+            active subscription → **live grant** → `users.plan_id` → default
+
+        The grant tier was missing here while `get_effective_plan` had it, so a user an admin had
+        comped to Pro showed as **Free** in the list and Pro everywhere else — the admin who granted
+        it could not see it had worked.
+
+        Grants carry `is_complimentary` so the column can say *Pro (complimentary)*. A comp and a
+        paid subscription are not the same fact, and a column that renders them identically hides
+        the one an admin is usually looking for.
+
+        Expiry is read-time in both places: `ends_at` is compared per lookup, so a lapsed grant
+        stops counting here the moment it lapses, with no sweep job to fall behind.
+
+        Kept deliberately close to the original: if the precedence there changes, this is the other
+        place that has to change with it.
         """
         from sqlalchemy import select
 
@@ -321,14 +333,48 @@ class AdminUserOverviewService:
         ).all()
         sub_plan = {uid: pid for uid, pid in subs}
 
+        # Live complimentary grants for the page. `ends_at > now` and `revoked_at IS NULL` are the
+        # same two conditions `PlanGrantService.active_grant` applies, and ordering by `ends_at`
+        # DESC matches its choice when someone somehow holds more than one.
+        grant_plan: Dict[int, int] = {}
+        try:
+            from datetime import datetime
+
+            from app.models.plan_grant import UserPlanGrant
+
+            rows = (
+                await db.execute(
+                    select(UserPlanGrant.user_id, UserPlanGrant.plan_id)
+                    .where(
+                        UserPlanGrant.user_id.in_(user_ids),
+                        UserPlanGrant.revoked_at.is_(None),
+                        UserPlanGrant.ends_at > datetime.utcnow(),
+                    )
+                    .order_by(UserPlanGrant.ends_at.desc())
+                )
+            ).all()
+            for uid, pid in rows:
+                grant_plan.setdefault(uid, pid)  # first wins — latest ends_at
+        except Exception as exc:  # noqa: BLE001 — a missing table must not blank the Plan column
+            logger.warning("OVERVIEW: could not resolve plan grants for the page: %s", exc)
+
         plans = {p.id: p for p in (await db.execute(select(Plan))).scalars().all()}
         default = next((p for p in plans.values() if p.is_default), None)
 
         out: Dict[int, Dict[str, str]] = {}
         for user in users:
-            plan = plans.get(sub_plan.get(user.id)) or plans.get(user.plan_id) or default
+            paid = plans.get(sub_plan.get(user.id))
+            granted = plans.get(grant_plan.get(user.id))
+            plan = paid or granted or plans.get(user.plan_id) or default
             if plan:
-                out[user.id] = {"code": plan.code, "name": plan.name}
+                out[user.id] = {
+                    "code": plan.code,
+                    "name": plan.name,
+                    # True only when the grant is what they are actually on. A comp sitting behind
+                    # a paid subscription is inert, and flagging it would misreport a paying
+                    # customer as comped.
+                    "is_complimentary": paid is None and granted is not None,
+                }
         return out
 
     async def _safe(self, label: str, user_id: int, coro_factory, fallback):

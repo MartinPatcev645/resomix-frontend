@@ -42,12 +42,17 @@ async def list_users(
     search: Optional[str] = Query(None, description="Search by email, username, or name"),
     role_id: Optional[int] = Query(None, description="Filter by role ID"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    plan: Optional[str] = Query(
+        None,
+        description="Filter by EFFECTIVE plan code (e.g. 'pro'), or 'complimentary' for users "
+                    "currently on an admin-granted plan",
+    ),
     db: AsyncSession = Depends(get_async_db),
     request: Request = None
 ):
     """List all users with pagination and filters."""
     return await user_controller.get_users_list(
-        db, request, page, page_size, search, role_id, is_active
+        db, request, page, page_size, search, role_id, is_active, plan
     )
 
 

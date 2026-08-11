@@ -520,10 +520,17 @@ class UserService:
         search: Optional[str] = None,
         role_id: Optional[int] = None,
         is_active: Optional[bool] = None,
+        plan: Optional[str] = None,
     ) -> Tuple[List[User], int]:
-        """List users with filters and RBAC details."""
+        """List users with filters and RBAC details.
+
+        `plan` filters on the EFFECTIVE plan, including the special value `complimentary`. Keyword
+        arguments from here down: this call had six positional parameters already, and adding a
+        seventh is how a filter silently lands in the wrong slot.
+        """
         return await self.user_repo.async_list_users_admin(
-            db, page, page_size, search, role_id, is_active
+            db, page=page, page_size=page_size, search=search, role_id=role_id,
+            is_active=is_active, plan=plan,
         )
 
     async def assign_role(self, db: AsyncSession, user_id: int, role_id: int) -> Dict[str, Any]:

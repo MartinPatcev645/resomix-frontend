@@ -315,6 +315,91 @@ class UserRepository(BaseRepository[User]):
 
     # === RBAC Operations ===
 
+    @staticmethod
+    def _apply_plan_filter(stmt, plan: str):
+        """Narrow a user query to an effective plan, mirroring `get_effective_plan`'s precedence.
+
+        Two correlated EXISTS clauses stand in for the two tiers above `users.plan_id`. They are
+        correlated rather than joined so a user with several grants or subscription rows still
+        yields one row — a join would duplicate them and inflate the count.
+        """
+        from datetime import datetime
+
+        from app.core.entitlement_keys import ACTIVE_SUBSCRIPTION_STATUSES
+        from app.models.plan import Plan
+        from app.models.plan_grant import UserPlanGrant
+        from app.models.purchase import UserSubscription
+
+        paid = (
+            select(UserSubscription.user_id)
+            .where(
+                UserSubscription.user_id == User.id,
+                UserSubscription.status.in_(ACTIVE_SUBSCRIPTION_STATUSES),
+                UserSubscription.plan_id.isnot(None),
+                UserSubscription.access_suspended_at.is_(None),
+            )
+            .exists()
+        )
+        # Read-time expiry, exactly as everywhere else: `ends_at` compared per query.
+        granted = (
+            select(UserPlanGrant.id)
+            .where(
+                UserPlanGrant.user_id == User.id,
+                UserPlanGrant.revoked_at.is_(None),
+                UserPlanGrant.ends_at > datetime.utcnow(),
+            )
+            .exists()
+        )
+
+        if plan == "complimentary":
+            # On a grant AND not paying. A comp behind a paid subscription is inert, so listing
+            # that user as complimentary would misreport a paying customer.
+            return stmt.where(granted, ~paid)
+
+        paid_plan = (
+            select(UserSubscription.user_id)
+            .join(Plan, Plan.id == UserSubscription.plan_id)
+            .where(
+                UserSubscription.user_id == User.id,
+                UserSubscription.status.in_(ACTIVE_SUBSCRIPTION_STATUSES),
+                UserSubscription.access_suspended_at.is_(None),
+                Plan.code == plan,
+            )
+            .exists()
+        )
+        grant_plan = (
+            select(UserPlanGrant.id)
+            .join(Plan, Plan.id == UserPlanGrant.plan_id)
+            .where(
+                UserPlanGrant.user_id == User.id,
+                UserPlanGrant.revoked_at.is_(None),
+                UserPlanGrant.ends_at > datetime.utcnow(),
+                Plan.code == plan,
+            )
+            .exists()
+        )
+        stored_plan = (
+            select(Plan.id).where(Plan.id == User.plan_id, Plan.code == plan).exists()
+        )
+        # The tier everyone actually falls through to. `users.plan_id` is NULL for the large
+        # majority — 121 of 128 rows locally — and `resolve_plans` resolves those to the DEFAULT
+        # plan. Without this branch, filtering by "free" returned only the handful with an explicit
+        # plan_id and silently hid everyone else.
+        falls_to_default = and_(
+            User.plan_id.is_(None),
+            select(Plan.id).where(Plan.code == plan, Plan.is_default.is_(True)).exists(),
+        )
+
+        # Each tier only applies when no higher tier claimed the user — the same precedence,
+        # written as mutually exclusive conditions so a row matches exactly once.
+        return stmt.where(
+            or_(
+                paid_plan,
+                and_(~paid, grant_plan),
+                and_(~paid, ~granted, or_(stored_plan, falls_to_default)),
+            )
+        )
+
     async def async_list_users_admin(
         self,
         db: AsyncSession,
@@ -323,10 +408,28 @@ class UserRepository(BaseRepository[User]):
         search: Optional[str] = None,
         role_id: Optional[int] = None,
         is_active: Optional[bool] = None,
+        plan: Optional[str] = None,
     ) -> Tuple[List[User], int]:
-        """List users with filters and roles."""
+        """List users with filters and roles.
+
+        ``plan`` filters on the **effective** plan — the one the user actually gets — which is
+        computed, not stored:
+
+            active subscription → live complimentary grant → ``users.plan_id`` → default
+
+        It is therefore expressed in SQL rather than applied to the fetched page. Filtering after
+        the fetch would make every count and page boundary wrong: page 1 of "pro" would show
+        however many of the first 50 rows happened to be pro, and the total would be the unfiltered
+        total.
+
+        The special value ``complimentary`` means "on a live grant" — the case an admin who just
+        comped someone is actually looking for.
+        """
         stmt = select(User).options(selectinload(User.roles).selectinload(UserRole.role))
-        
+
+        if plan:
+            stmt = self._apply_plan_filter(stmt, plan)
+
         if is_active is not None:
             stmt = stmt.where(User.is_active == is_active)
             
