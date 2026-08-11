@@ -199,7 +199,6 @@ export const FAQ = {
     billing: "Billing and payments",
     managing: "Managing your plan",
   },
-  tablistLabel: "Question categories",
 } as const;
 
 export const FAQ_ITEMS = {

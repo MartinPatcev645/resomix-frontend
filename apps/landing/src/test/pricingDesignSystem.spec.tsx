@@ -453,8 +453,18 @@ describe('no hardcoded prices or dates in Billing sources', () => {
   });
 });
 
-describe('FAQ tabs and accordion', () => {
-  it('exposes tablist / tab / tabpanel roles and arrow-key navigation', async () => {
+/**
+ * The FAQ is a two-level accordion, not a tab strip.
+ *
+ * It used to be tabs. A tab row hid two thirds of the content behind controls that read as
+ * filters, and on mobile the three labels wrapped into a stack that looked broken. Categories are
+ * now full-width disclosure rows: opening one expands its questions underneath it, in place.
+ *
+ * These assert that shape — including that the tab roles are gone, so the old pattern cannot be
+ * reintroduced without this failing and someone re-reading the paragraph above.
+ */
+describe('FAQ category accordion', () => {
+  const renderFaq = () =>
     render(
       <PricingFaq
         beta={{
@@ -468,18 +478,67 @@ describe('FAQ tabs and accordion', () => {
       />,
     );
 
-    const tablist = screen.getByRole('tablist');
-    expect(tablist).toBeInTheDocument();
-    const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(3);
-    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tabpanel')).toBeInTheDocument();
+  /** Re-queried on every call: React updates these buttons in place across re-renders. */
+  const categories = () =>
+    Array.from(document.querySelectorAll<HTMLButtonElement>('button[id^="rx-faq-cat-"]'));
 
-    fireEvent.keyDown(tablist, { key: 'ArrowRight' });
-    expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
+  it('renders three categories, the first one open', () => {
+    renderFaq();
 
-    expect(document.querySelectorAll('details').length).toBeGreaterThan(0);
-    expect(document.querySelector('details > summary')).toBeInTheDocument();
+    const cats = categories();
+    expect(cats).toHaveLength(3);
+    expect(cats[0]).toHaveAttribute('aria-expanded', 'true');
+    expect(cats[1]).toHaveAttribute('aria-expanded', 'false');
+    expect(cats[2]).toHaveAttribute('aria-expanded', 'false');
+
+    // Each row owns the panel it opens, both ways round.
+    cats.forEach((btn, i) => expect(btn).toHaveAttribute('aria-controls', `rx-faq-panel-${i}`));
+    expect(document.getElementById('rx-faq-panel-0')).toHaveAttribute(
+      'aria-labelledby',
+      'rx-faq-cat-0',
+    );
+  });
+
+  it('expands that category\'s questions in place', () => {
+    renderFaq();
+
+    const panel = document.getElementById('rx-faq-panel-0');
+    expect(panel).toBeInTheDocument();
+    expect(panel!.querySelectorAll('details').length).toBeGreaterThan(0);
+    expect(panel!.querySelector('details > summary')).toBeInTheDocument();
+
+    // Only the open category's questions are mounted — nothing loose in the section.
+    expect(document.querySelectorAll('details')).toHaveLength(
+      panel!.querySelectorAll('details').length,
+    );
+  });
+
+  it('opens the clicked category and closes the previous one', () => {
+    renderFaq();
+
+    fireEvent.click(categories()[1]);
+
+    expect(categories()[1]).toHaveAttribute('aria-expanded', 'true');
+    expect(categories()[0]).toHaveAttribute('aria-expanded', 'false');
+    expect(document.getElementById('rx-faq-panel-0')).not.toBeInTheDocument();
+    expect(document.getElementById('rx-faq-panel-1')).toBeInTheDocument();
+  });
+
+  it('collapses when the open category is clicked again', () => {
+    renderFaq();
+
+    fireEvent.click(categories()[0]);
+
+    expect(categories()[0]).toHaveAttribute('aria-expanded', 'false');
+    expect(document.querySelectorAll('details')).toHaveLength(0);
+  });
+
+  it('no longer exposes tab roles', () => {
+    renderFaq();
+
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
+    expect(screen.queryByRole('tabpanel')).not.toBeInTheDocument();
   });
 });
 
