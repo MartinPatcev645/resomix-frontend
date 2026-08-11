@@ -101,7 +101,7 @@ export function CiProduct() {
                     {t('catalogueIntelligence.figures.harmonic')}
                   </text>
                   <text x="104" y="124" fill="rgba(255,255,255,.85)">
-                    {t('catalogueIntelligence.figures.fMinor8a')}
+                    {t('catalogueIntelligence.figures.gMinor6a')}
                   </text>
                   <rect x="190" y="106" width="184" height="22" fill="none" stroke="rgba(255,255,255,.14)" />
                   <text x="196" y="115" fill="rgba(185,185,185,.5)">

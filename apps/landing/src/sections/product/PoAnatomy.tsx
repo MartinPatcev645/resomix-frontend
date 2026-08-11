@@ -75,7 +75,7 @@ export function PoAnatomy() {
                     <text x="76" y="346" fill="rgba(255,255,255,.94)">{f('bpmSteadyGrid')}</text>
                     <rect x="282" y="310" width="200" height="52" fill="none" stroke="rgba(255,255,255,.28)"/>
                     <text x="294" y="328" fill="rgba(185,185,185,.76)">{f('keyHarmony')}</text>
-                    <text x="294" y="346" fill="rgba(255,255,255,.94)">{f('fMinor8aStable')}</text>
+                    <text x="294" y="346" fill="rgba(255,255,255,.94)">{f('gMinor6aStable')}</text>
                     <rect x="500" y="310" width="200" height="52" fill="none" stroke="rgba(255,255,255,.28)"/>
                     <text x="512" y="328" fill="rgba(185,185,185,.76)">{f('timbreSpectral')}</text>
                     <text x="512" y="346" fill="rgba(255,255,255,.94)">{f('darkMidFocused')}</text>
@@ -124,7 +124,7 @@ export function PoAnatomy() {
                     <rect x="32" y="288" width="158" height="42" fill="none" stroke="rgba(255,255,255,.28)"/>
                     <text x="42" y="304" fill="rgba(185,185,185,.76)">{f('rhythmTempo')}</text><text x="42" y="318" fill="rgba(255,255,255,.94)">{f('bpmSteady')}</text>
                     <rect x="200" y="288" width="158" height="42" fill="none" stroke="rgba(255,255,255,.28)"/>
-                    <text x="210" y="304" fill="rgba(185,185,185,.76)">{f('keyHarmony')}</text><text x="210" y="318" fill="rgba(255,255,255,.94)">{f('fMinor8a')}</text>
+                    <text x="210" y="304" fill="rgba(185,185,185,.76)">{f('keyHarmony')}</text><text x="210" y="318" fill="rgba(255,255,255,.94)">{f('gMinor6a')}</text>
                     <rect x="32" y="338" width="158" height="42" fill="none" stroke="rgba(255,255,255,.28)"/>
                     <text x="42" y="354" fill="rgba(185,185,185,.76)">{f('timbreSpectral')}</text><text x="42" y="368" fill="rgba(255,255,255,.94)">{f('darkMidFocused')}</text>
                     <rect x="200" y="338" width="158" height="42" fill="none" stroke="rgba(255,255,255,.28)"/>

@@ -127,7 +127,6 @@ export function HmTrackIntelligence() {
           </div>
           <figcaption className="hm-ti-cap">
             <span>{t('home.trackIntelligence.capOne')}</span>
-            <span>{t('home.trackIntelligence.capConf')}</span>
           </figcaption>
         </figure>
         <div className="hm-ti-after">

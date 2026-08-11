@@ -92,7 +92,7 @@ export function CiTrackIntel() {
               <text x="72" y="114" fill="rgba(255,255,255,.85)">{t('catalogueIntelligence.figures.bpm124Steady')}</text>
               <rect x="64" y="122" width="118" height="24" fill="none" stroke="rgba(255,255,255,.14)" />
               <text x="72" y="132" fill="rgba(185,185,185,.5)">{t('catalogueIntelligence.figures.harmonic')}</text>
-              <text x="72" y="142" fill="rgba(255,255,255,.85)">{t('catalogueIntelligence.figures.fMinor8a')}</text>
+              <text x="72" y="142" fill="rgba(255,255,255,.85)">{t('catalogueIntelligence.figures.gMinor6a')}</text>
             </g>
 
             {/* timbre / spectral */}
@@ -161,7 +161,7 @@ export function CiTrackIntel() {
               <text x="40" y="278" fill="rgba(255,255,255,.85)">{t('catalogueIntelligence.figures.bpm124Steady')}</text>
               <rect x="192" y="256" width="166" height="26" fill="none" stroke="rgba(255,255,255,.14)" />
               <text x="200" y="267" fill="rgba(185,185,185,.5)">{t('catalogueIntelligence.figures.harmonic')}</text>
-              <text x="200" y="278" fill="rgba(255,255,255,.85)">{t('catalogueIntelligence.figures.fMinor8a')}</text>
+              <text x="200" y="278" fill="rgba(255,255,255,.85)">{t('catalogueIntelligence.figures.gMinor6a')}</text>
             </g>
             <text x="32" y="308" fontSize="6.5" letterSpacing="1" fill="rgba(185,185,185,.5)">
               {t('catalogueIntelligence.figures.timbreSpectral')}
