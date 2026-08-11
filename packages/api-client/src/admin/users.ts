@@ -5,6 +5,13 @@ import { API_CONFIG } from "../config";
 export interface AdminUserPlanRef {
   code: string;
   name: string;
+  /**
+   * True when this plan comes from a live admin grant rather than a paid subscription.
+   *
+   * A comp sitting behind a paid subscription is inert, so this is false there — flagging it
+   * would misreport a paying customer as comped.
+   */
+  is_complimentary?: boolean;
 }
 
 export interface AdminUserSearchItem {
@@ -219,6 +226,8 @@ export interface AdminUserListParams {
   /** Role ID, not the role name. */
   role_id?: number;
   is_active?: boolean;
+  /** EFFECTIVE plan code (e.g. "pro"), or "complimentary" for users on an admin-granted plan. */
+  plan?: string;
 }
 
 export const listAdminUsers = async (params: AdminUserListParams = {}) => {

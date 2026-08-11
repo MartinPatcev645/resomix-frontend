@@ -38,6 +38,9 @@ export function useAdminUsers(options?: UseAdminUsersOptions) {
   // Role ID, not name — see the params comment in fetchUsers.
   const [roleFilter, setRoleFilter] = useState<number | undefined>(undefined);
   const [statusFilter, setStatusFilter] = useState<boolean | undefined>(undefined);
+  // Effective plan code, or the literal "complimentary". Resolved server-side because the
+  // effective plan is computed, not stored — filtering the fetched page would break every count.
+  const [planFilter, setPlanFilter] = useState<string | undefined>(undefined);
 
   // Debounce search
   useEffect(() => {
@@ -50,7 +53,7 @@ export function useAdminUsers(options?: UseAdminUsersOptions) {
   // Reset to page 1 on filter changes
   useEffect(() => {
     setPagination(prev => ({ ...prev, current: 1 }));
-  }, [debouncedQuery, roleFilter, statusFilter]);
+  }, [debouncedQuery, roleFilter, statusFilter, planFilter]);
 
   // Roles/Permissions Cache
   const [systemRoles, setSystemRoles] = useState<any[]>([]);
@@ -69,6 +72,7 @@ export function useAdminUsers(options?: UseAdminUsersOptions) {
         search: debouncedQuery || undefined,
         role_id: roleFilter,
         is_active: statusFilter,
+        plan: planFilter,
       };
 
       const result = await listAdminUsers(params);
@@ -97,7 +101,7 @@ export function useAdminUsers(options?: UseAdminUsersOptions) {
     } finally {
       setLoading(false);
     }
-  }, [pagination.current, pagination.pageSize, debouncedQuery, roleFilter, statusFilter]);
+  }, [pagination.current, pagination.pageSize, debouncedQuery, roleFilter, statusFilter, planFilter]);
 
   const fetchMetadata = useCallback(async () => {
     setMetaLoading(true);
@@ -235,6 +239,8 @@ export function useAdminUsers(options?: UseAdminUsersOptions) {
     users,
     loading,
     pagination,
+    planFilter,
+    setPlanFilter,
     searchQuery,
     setSearchQuery,
     roleFilter,

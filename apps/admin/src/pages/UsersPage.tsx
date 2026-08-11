@@ -84,6 +84,8 @@ function UsersPage() {
     setRoleFilter,
     statusFilter,
     setStatusFilter,
+    planFilter,
+    setPlanFilter,
     systemRoles,
     systemPermissions,
     fetchUsers,
@@ -242,17 +244,30 @@ function UsersPage() {
     {
       title: 'Plan',
       key: 'plan',
-      render: (_: any, record: AdminUserSearchItem) =>
-        record.plan ? (
-          <Tag
-            color={record.plan.code === 'free' ? 'default' : 'gold'}
-            className="rounded-full px-3"
-          >
-            {record.plan.name}
-          </Tag>
-        ) : (
-          <Text className="text-secondary text-xs">—</Text>
-        ),
+      render: (_: any, record: AdminUserSearchItem) => {
+        if (!record.plan) return <Text className="text-secondary text-xs">—</Text>;
+        // A comp and a paid subscription are not the same fact. Rendering them identically hid
+        // the one an admin is usually looking for — someone they just granted Pro read as Free
+        // here while showing Pro everywhere else.
+        const comped = record.plan.is_complimentary;
+        return (
+          <Space size={4}>
+            <Tag
+              color={record.plan.code === 'free' ? 'default' : 'gold'}
+              className="rounded-full px-3"
+            >
+              {record.plan.name}
+            </Tag>
+            {comped && (
+              <Tooltip title="Complimentary — granted by an admin, reverts automatically when it ends">
+                <Tag color="purple" className="rounded-full px-2" bordered={false}>
+                  comp
+                </Tag>
+              </Tooltip>
+            )}
+          </Space>
+        );
+      },
     },
     {
       title: 'Last activity',
@@ -395,6 +410,24 @@ function UsersPage() {
             >
               <Option value={true}>Active</Option>
               <Option value={false}>Inactive</Option>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Text className="text-secondary text-xs font-medium uppercase tracking-wider">Plan</Text>
+            <Select
+              placeholder="All Plans"
+              allowClear
+              style={{ width: 180 }}
+              className="h-10"
+              value={planFilter}
+              onChange={setPlanFilter}
+            >
+              {/* Plan codes, not names — the API matches on `code`. */}
+              <Option value="free">Free</Option>
+              <Option value="pro">Pro</Option>
+              {/* Not a plan: "on a live admin grant, and not paying". Kept in the same control
+                  because from an admin's point of view it is the same question. */}
+              <Option value="complimentary">Complimentary</Option>
             </Select>
           </div>
           <div className="flex items-end h-full pt-6">
