@@ -20,6 +20,7 @@ import logging
 from datetime import datetime
 
 from app.services.user_service import UserService
+from app.services.admin_operation_log_service import AdminOperationLogService
 from app.services.logging_service import LoggingService
 from app.utils.response_utils import format_response
 from app.models.user import User
@@ -33,6 +34,12 @@ class AdminUserController:
     def __init__(self):
         self.user_service = UserService()
         self.logging_service = LoggingService()
+        # Every admin WRITE on this controller records an audit entry through this. It was
+        # referenced by five methods and never assigned, so each raised AttributeError at the log
+        # step — AFTER the work had committed, so a grant that reported 500 had actually applied.
+        # `tests/unit/controllers/test_controller_wiring.py` now walks every `self.<attr>` in the
+        # package for exactly this.
+        self.admin_log_service = AdminOperationLogService()
 
     def _log_error(
         self,
