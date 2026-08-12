@@ -37,6 +37,59 @@ Essential text (descriptions, explanations, statuses, truth labels, graph/diagra
 
 **PYXIS-1** is the single public engine name for all processing, analysis and similarity — never introduce other engine names, model language, training claims, or generative-AI terminology. Feature counts, if stated, are "**70+ characteristics**" (never 75+). Product names: Sonic Discovery, Track Intelligence, Catalogue Intelligence, Catalogue Pilot, Developers / API. **The API is the delivery/access layer for the three intelligences — never presented as a fourth equivalent product.** Status labels must reflect verified reality: live in beta / beta · sample data / private pilot / docs + guided pilot (no public sandbox exists; a self-serve trial is planned — never claim a sandbox). Never imply production readiness where only pilot access exists.
 
+## Brand vocabulary (reference)
+
+From the brand book (`AA_Resomix_Docs/Resomix/keywords, brand sentences, CTAs.xlsx — Brand Words`).
+Reach for these when writing new copy — they are the phrases the brand has already committed to, so
+reusing them keeps the site sounding like one voice instead of a set of separately-written pages.
+
+**Reference, not a checklist.** Nothing here overrides the binding rules above. Where the two
+disagree, the rules win — see the Tier 3 warning.
+
+**Tier 1 — core positioning.** The USP. Prefer these in heroes and section leads.
+
+> Sonic Discovery · Deep Sonic Analysis · Music Recommendation Based on Emotion · Hidden Connections
+> · Sound First · Sonic Match · Sonic DNA Mapping · Emotional Resonance · Hidden Gems · Vibe Matching
+> · Sound Similarity Engine · Granular Sound Match · A New Era of Music Discovery · Align with Your
+> Sound · Tune Into the Unknown · Dig Deeper · Crate Digging, Reimagined
+>
+> Sentences: *Resomix puts sound first* · *Tracks that connect by vibe, not by charts* · *Find the
+> track that makes your set unique* · *Beyond metadata, beyond trends* · *Discover the true DNA of
+> sound* · *Technology with a soul* · *Create unforgettable moments through sound*
+
+**Tier 2 — differentiators.** Support for the USP; good for card bodies and secondary leads.
+
+> Unbounded by Trends · Outside of the "Streaming Game" · Beyond Metadata · Quality Over Quantity ·
+> Mood-Driven Discovery · Crafted by Ears · True Sonic Connections · Crate Digging Reimagined · Soul
+> of Sound · Mood Spectrum Analysis · Spectral Flow Analysis · Built by DJs, for DJs · Harmonic
+> Tension Tracking · Use Any Track as a Starting Point · Less Manual Searching · Sound
+> characteristics over metadata
+
+⚠️ **"Prepare Sets/Playlists in Seconds" is a performance claim** and is therefore unusable on a
+public page under the no-unvalidated-numbers rule. *Less Manual Searching* says the same thing
+without asserting a duration.
+
+**Tier 3 — technology drivers. ⛔ NOT usable in public copy.**
+
+> ~~Cutting-Edge Machine Learning · Deep Learning Technology · Machine Listening · Granular Level ·
+> Technology with a Soul · Technology and Innovation~~
+
+Every ML/AI term here is explicitly forbidden by the Vocabulary rule directly above — **PYXIS-1** is
+the only public engine name, and model, training and generative language is banned outright. This
+tier predates that rule. It stays recorded because it is part of the brand book, but treat it as
+**brand-deck and investor-facing only**; it must not reach a landing page. *Granular Level*,
+*Technology with a Soul* and *Technology and Innovation* carry no ML claim and are fine.
+
+**Tier 4 — market and cultural context.** Tone and thematic hooks; CTAs and closing lines.
+
+> Music Finder · Music Recommendation Tool · Universe of Sounds · Untouched by Trends ·
+> Human-Centered Selection · The Art of DJing · Stop Digging. Start Listening / Stop Digging. Start
+> Mixing · Join the Resomix Universe · Dig Deeper · Discovery Through Sound, Connection Through
+> Emotion
+
+**Spelling note:** the brand book uses US spellings in a few entries (*Human-Centered*). Public copy
+is British — write *Human-Centred*, *catalogue*, *analyse*, *recognise*.
+
 ## Sizing discipline (fluid root)
 
 `apps/landing` has a fluid root font-size — all dimensions in `--px-*` tokens or rem (design-px ÷ 16). Never raw `px` (exceptions: 1px hairlines, SVG stroke-width, raster `background-size`). Never `vw`-based font clamps (the root already scales). Never add tokens to `pixels.css`.
