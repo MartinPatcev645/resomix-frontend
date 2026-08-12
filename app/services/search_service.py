@@ -21,6 +21,7 @@ import re
 import unicodedata
 import time
 from typing import Dict, Any, Optional, List, Literal
+from fastapi.concurrency import run_in_threadpool
 from app.core.config import settings
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -174,7 +175,24 @@ class SearchService:
 
         try:
             es_client = get_es_client()
-            es_resp = es_client.search(index=settings.es_index_alias, body=es_body)
+            # `elasticsearch.Elasticsearch` is the SYNCHRONOUS client, and this is
+            # an `async def` — calling it directly blocks the whole event loop for
+            # the duration of the round trip, stalling every other request on this
+            # worker (similarity, playlists, auth), not just this search.
+            #
+            # Measured on production 2026-08-12 (mixed_medium): the handler itself
+            # took 0.146s median, while clients saw 1.425s median / 3.717s p90.
+            # ~90% of search latency was requests queueing for a loop this call
+            # kept stalling. A burst of 12 searches all returned in ~3s — a flat
+            # plateau rather than a ramp, which is the signature of starved async
+            # continuations rather than a queue.
+            #
+            # The threadpool keeps the loop free. A fully async fix would be
+            # `AsyncElasticsearch`, but that changes the client construction shared
+            # with `es_health()`; this is the one-line version of the same win.
+            es_resp = await run_in_threadpool(
+                es_client.search, index=settings.es_index_alias, body=es_body
+            )
             hits = es_resp.get("hits", {}).get("hits", [])
             hit_items = [
                 {
