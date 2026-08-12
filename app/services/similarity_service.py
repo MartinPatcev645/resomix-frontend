@@ -14,6 +14,7 @@ Email: usman.naeem2212@gmail.com
 
 import os
 import logging
+import time
 import httpx
 import asyncio
 from typing import Dict, Any, Optional
@@ -38,6 +39,55 @@ from app.models.constants import PlaylistType
 logger = logging.getLogger(__name__)
 
 load_dotenv()
+
+
+# ===========================================================================
+# [PERF-TRACE] TEMPORARY INSTRUMENTATION — REMOVE AFTER THE ROOT CAUSE IS FIXED
+# ===========================================================================
+# Added 2026-08-12 for phase-4 capacity work. Under 9 concurrent users the
+# by-id endpoint measured 22.0s client-side and 19.6s in `system_logs`, while
+# the media call inside it took only ~4s and Alwyzon's CPU sat at 15.8%. That
+# leaves ~16s per request unaccounted for on an idle box. This breaks the
+# request into stages so the next load run says which one owns it, instead of
+# us guessing.
+#
+# TO REMOVE (one grep, no detective work):
+#     grep -rn "PERF-TRACE" app/
+# Delete every marked block and the `_trace` calls. Nothing else depends on it.
+#
+# Deliberately cheap and side-effect free: a perf_counter read per stage and
+# one log line per request, emitted only when the flag is on. It never changes
+# behaviour, never raises, and is off unless explicitly enabled.
+#     SIMILARITY_PERF_TRACE=true in Alwyzon's .env    (default: off)
+# ---------------------------------------------------------------------------
+_PERF_TRACE = os.getenv("SIMILARITY_PERF_TRACE", "").strip().lower() in ("1", "true", "yes")
+
+
+class _Trace:
+    """Stage timer. Inert unless SIMILARITY_PERF_TRACE is on. [PERF-TRACE]"""
+
+    __slots__ = ("t0", "last", "stages", "on")
+
+    def __init__(self):
+        self.on = _PERF_TRACE
+        self.t0 = self.last = time.perf_counter() if self.on else 0.0
+        self.stages = []
+
+    def mark(self, name: str) -> None:
+        if not self.on:
+            return
+        now = time.perf_counter()
+        self.stages.append((name, now - self.last))
+        self.last = now
+
+    def emit(self, label: str, **extra) -> None:
+        if not self.on or not self.stages:
+            return
+        total = time.perf_counter() - self.t0
+        parts = " ".join(f"{n}={d * 1000:.0f}ms" for n, d in self.stages)
+        bits = " ".join(f"{k}={v}" for k, v in extra.items())
+        logger.info("[PERF-TRACE] %s total=%.0fms %s %s", label, total * 1000, parts, bits)
+# ======================= end [PERF-TRACE] block ============================
 
 
 class SimilarityService:
@@ -434,11 +484,13 @@ class SimilarityService:
             Dictionary containing similarity results or error information
         """
         queried_track_data: Optional[Dict[str, Any]] = None
+        _tr = _Trace()  # [PERF-TRACE]
 
         try:
             queried_track_data = await self.similarity_repository.async_get_reference_track_details_by_path(
                 db, server_track_path, partner_id=partner_id
             )
+            _tr.mark("ref_lookup")  # [PERF-TRACE]
             if not queried_track_data:
                 print(
                     f"Warning: Details for queried path '{server_track_path}' not found in local DB."
@@ -468,6 +520,7 @@ class SimilarityService:
             similarity_response = await self._call_similarity_server(
                 "/similarity/query-by-uuid/", data=payload
             )
+            _tr.mark("media_call")  # [PERF-TRACE]
 
             if similarity_response.get("status") == "success":
                 raw_results = similarity_response.get("results", [])
@@ -481,6 +534,7 @@ class SimilarityService:
                         db, track_uuids, partner_id=partner_id
                     )
                 )
+                _tr.mark("track_details")  # [PERF-TRACE]
 
                 # Enrich similarity results with database details
                 enriched_similar_tracks = []
@@ -536,6 +590,7 @@ class SimilarityService:
                 if queried_track_data and queried_track_data.get("track_id") is not None:
                     _apple_dedup_ids.append(queried_track_data.get("track_id"))
                 apple_by_track_id = await fetch_apple_map(db, _apple_dedup_ids)
+                _tr.mark("apple_map")  # [PERF-TRACE]
 
                 deduplicated_enriched_tracks = deduplicate_tracks(
                     filtered_enriched_tracks,
@@ -544,6 +599,7 @@ class SimilarityService:
                     filter_title_func=filter_track_title,
                     apple_by_track_id=apple_by_track_id,
                 )
+                _tr.mark("dedup")  # [PERF-TRACE]
 
                 # Get corresponding track IDs and scores for deduplicated tracks
                 deduplicated_track_ids = []
@@ -594,6 +650,7 @@ class SimilarityService:
                     "similar_tracks": deduplicated_enriched_tracks,
                 }
 
+                _tr.mark("playlist_create")  # [PERF-TRACE]
                 # Add playlist info if created
                 if playlist_info:
                     # Enrich playlist with engagement data
@@ -624,8 +681,11 @@ class SimilarityService:
                         response_data["queried_track"] = filtered_queried_tracks[0]
 
                 # Join Apple Music preview/metadata onto the seed + members (playback layer).
+                _tr.mark("engagement")  # [PERF-TRACE]
                 from app.services.apple_music_enrichment import enrich_similarity_data_with_apple
                 await enrich_similarity_data_with_apple(db, response_data)
+                _tr.mark("apple_enrich")  # [PERF-TRACE]
+                _tr.emit("similarity_by_id", top_k=top_k, n=len(deduplicated_enriched_tracks))  # [PERF-TRACE]
 
                 # Record a successful playlist creation against the daily entitlement counter.
                 if user_id:
