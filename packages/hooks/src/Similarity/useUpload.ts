@@ -183,6 +183,12 @@ export function useUpload(options?: UseUploadOptions) {
 
         try {
             const uploadStart = Date.now();
+            // `getSimilarTracks` submits the upload and then POLLS for the playlist — it no longer
+            // holds one long request open (Cloudflare kills those at 100s, which is how large
+            // uploads were completing server-side and still failing). So this promise resolves
+            // well AFTER the progress callback reaches 100: the callback reports the file transfer
+            // only, and the server work follows it. That is what DiscoveryProcessingPanel already
+            // assumes — it starts its step cycle when progress hits 100.
             const result = await getSimilarTracks(file, topSk, (p) => {
                 // Ensure progress is properly bounded and rounded
                 const boundedProgress = Math.min(100, Math.max(0, p));

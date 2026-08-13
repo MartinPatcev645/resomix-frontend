@@ -34,6 +34,8 @@ export interface ApiConfig {
 
     // Beta endpoints
     SIMILARITY: string;
+    SIMILARITY_UPLOAD_ASYNC: string;
+    SIMILARITY_UPLOAD_JOB: string;
     SELECTION_SIMILARITY: string;
     ANALYSIS: string;
     SEARCH: string;
@@ -256,6 +258,12 @@ export const API_CONFIG: ApiConfig = {
     BILLING_PORTAL: "/api/v1/billing/portal",
     // Beta endpoints
     SIMILARITY: "/api/v1/similarity/upload",
+    // Poll-based upload: submit returns a job id, the result is collected from the job endpoint.
+    // The blocking SIMILARITY endpoint still exists, but a request held open for the whole
+    // pipeline is killed by Cloudflare at 100s — large uploads completed server-side and were
+    // then discarded as 524s. Full path of the job endpoint is `${...JOB}${job_id}/status`.
+    SIMILARITY_UPLOAD_ASYNC: "/api/v1/similarity/upload/async",
+    SIMILARITY_UPLOAD_JOB: "/api/v1/similarity/upload/",
     SELECTION_SIMILARITY: "/api/v1/similarity/search",
     // Analysis-as-an-artifact (return-visit retrieval via Alwyzon; base + {analysis_uuid})
     ANALYSIS: "/api/v1/analysis",
