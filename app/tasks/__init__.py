@@ -16,10 +16,14 @@ from .analysis_tasks import (
 # and dropped the message, leaving the upload's media assets (peaks/segments/embeddings/preview/
 # cover/raw) orphaned on the media server. Importing it here registers it.
 from .track_tasks import purge_uploaded_track_assets
+# The worker half of the poll-based similarity upload. Same rule as above: without this import
+# the job is enqueued, never runs, and the client polls `queued` until the record expires.
+from .similarity_tasks import run_similarity_upload
 
 __all__ = [
     "celery_app", "dispatch_webhook",
     "persist_and_finalize_ingestion", "finalize_processing_job",
     "generate_track_analysis", "persist_analysis_summary", "generate_similarity_sibling",
     "purge_uploaded_track_assets",
+    "run_similarity_upload",
 ]

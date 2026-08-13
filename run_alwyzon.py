@@ -147,38 +147,63 @@ def _sweep_stray_workers() -> None:
         print("[run_alwyzon] stray workers stopped (full escalation)", flush=True)
 
 
-def _start_worker() -> "subprocess.Popen | None":
-    """Spawn the Celery worker in its own process group (so we can stop the whole tree later)."""
+def _start_workers() -> "list[subprocess.Popen]":
+    """Spawn the Celery workers, each in its own process group (so we stop the whole tree later).
+
+    TWO workers, not one, because they serve different urgencies:
+
+      * ``similarity`` — foreground uploads. Someone is watching a spinner for these.
+      * ``celery``     — everything else: analysis siblings, ingestion, webhooks, purges.
+
+    They are kept apart because ``generate_track_analysis`` occupies a slot for up to 240s and
+    every similarity upload enqueues one. Sharing a pool would let background work starve the
+    foreground path under exactly the burst it is meant to survive.
+    """
     if not _truthy("ALWYZON_EMBED_WORKER", "1"):
-        return None
+        return []
     _sweep_stray_workers()
-    concurrency = os.getenv("ALWYZON_WORKER_CONCURRENCY", "2")
-    cmd = [
-        sys.executable, "-m", "celery",
-        "-A", "app.tasks.celery_app",
-        "worker", "--loglevel=INFO", f"--concurrency={concurrency}",
-    ]
+
     # macOS: the Objective-C runtime aborts a forked child unless this is set — harmless on Linux,
     # so we always set it to keep the prefork worker stable in local dev.
     env = {**os.environ, "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
-    print(f"[run_alwyzon] starting Celery worker: {' '.join(cmd)}", flush=True)
-    # start_new_session=True → the worker and celery's pool children get their own process group,
-    # which we signal as a unit on shutdown.
-    return subprocess.Popen(cmd, start_new_session=True, env=env)
+
+    specs = (
+        # (queue, node name, concurrency env var, default concurrency)
+        ("similarity", "foreground", "ALWYZON_SIMILARITY_CONCURRENCY", "2"),
+        ("celery", "background", "ALWYZON_WORKER_CONCURRENCY", "2"),
+    )
+    procs: "list[subprocess.Popen]" = []
+    for queue, node, env_var, default in specs:
+        cmd = [
+            sys.executable, "-m", "celery",
+            "-A", "app.tasks.celery_app",
+            "worker", "--loglevel=INFO",
+            f"--concurrency={os.getenv(env_var, default)}",
+            "-Q", queue,
+            # Distinct node names — two workers on one host otherwise collide and Celery reports
+            # it only as a DuplicateNodenameWarning (see RUNBOOK).
+            "-n", f"{node}@%h",
+        ]
+        print(f"[run_alwyzon] starting Celery worker: {' '.join(cmd)}", flush=True)
+        # start_new_session=True → the worker and celery's pool children get their own process
+        # group, which we signal as a unit on shutdown.
+        procs.append(subprocess.Popen(cmd, start_new_session=True, env=env))
+    return procs
 
 
-def _stop_worker(proc: "subprocess.Popen | None") -> None:
-    if proc is None or proc.poll() is not None:
-        return
-    print("[run_alwyzon] stopping Celery worker…", flush=True)
-    try:
-        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)   # graceful: let an in-flight task finish
-        proc.wait(timeout=20)
-    except Exception:
+def _stop_workers(procs: "list[subprocess.Popen]") -> None:
+    for proc in procs or []:
+        if proc is None or proc.poll() is not None:
+            continue
+        print("[run_alwyzon] stopping Celery worker…", flush=True)
         try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)  # graceful: let an in-flight task finish
+            proc.wait(timeout=20)
         except Exception:
-            pass
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except Exception:
+                pass
 
 
 def main() -> None:
@@ -187,13 +212,13 @@ def main() -> None:
     log_level = os.getenv("ALWYZON_LOG_LEVEL", "info").lower()
     reload = _truthy("ALWYZON_RELOAD", "1" if _is_development() else "0")
 
-    worker = _start_worker()
+    workers = _start_workers()
     try:
         # reload=False → uvicorn runs in-process and returns from run() on SIGINT/SIGTERM, so the
-        # `finally` below runs and the worker is stopped with us.
+        # `finally` below runs and the workers are stopped with us.
         uvicorn.run("app.main:app", host=host, port=port, log_level=log_level, reload=reload)
     finally:
-        _stop_worker(worker)
+        _stop_workers(workers)
 
 
 if __name__ == "__main__":

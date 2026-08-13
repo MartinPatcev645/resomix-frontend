@@ -119,6 +119,74 @@ async def get_similarity_upload_endpoint(
 
 
 @router.post(
+    "/similarity/upload/async",
+    status_code=202,
+    summary="Upload a track and queue its similarity search (poll for the result)",
+    description=(
+        "Accepts the upload, returns a job id immediately, and processes the similarity search "
+        "in the background. Poll `GET /similarity/upload/{job_id}/status` for the result.\n\n"
+        "Prefer this over `POST /similarity/upload` for anything but small files: the blocking "
+        "endpoint holds the request open for the whole pipeline, and Cloudflare closes an origin "
+        "request at 100 seconds — large concurrent uploads complete on the server and are then "
+        "discarded as 524s."
+    ),
+    responses={
+        202: {"description": "Upload accepted; poll the status endpoint with the returned job_id"},
+        415: {"model": SimilarityErrorResponse, "description": "Unsupported media type or invalid audio file"},
+        422: {"model": SimilarityErrorResponse, "description": "File too large, empty, or validation error"},
+        503: {"model": SimilarityErrorResponse, "description": "Job store unavailable — upload not accepted"},
+    },
+)
+async def submit_similarity_upload_endpoint(
+    request: Request,
+    file: UploadFile = File(..., description="Audio file to analyze for similarity (max 100MB)"),
+    top_sk: Optional[int] = Query(None, description="Number of similar tracks to return (10, 20, 50, or 100)"),
+    engine: Optional[str] = Query(None, description="Similarity engine (E1-E6)"),
+    db: AsyncSession = Depends(get_database_session),
+    partner: Partner = Depends(get_current_partner_scoped("search:read", allow_anonymous=True)),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+) -> JSONResponse:
+    """Submit an upload for background similarity processing.
+
+    Applies exactly the same gates as the blocking endpoint — entitlement, per-IP burst brake,
+    monthly upload allowance, antivirus, audio validity — so anything the caller needs to be told
+    immediately is still answered immediately. Only the GPU work moves off the request.
+    """
+    return await similarity_controller.submit_similarity_upload(
+        db=db,
+        request=request,
+        file=file,
+        current_user=current_user,
+        top_sk=top_sk,
+        engine="",  # Ignored, as on the blocking endpoint
+        partner_id=partner.id,
+    )
+
+
+@router.get(
+    "/similarity/upload/{job_id}/status",
+    summary="Poll a submitted similarity upload",
+    description=(
+        "Returns `{state}` — `queued`, `running`, `done` or `failed`. When `done`, `result` holds "
+        "the same payload the blocking upload endpoint returns in `data`."
+    ),
+    responses={
+        403: {"model": SimilarityErrorResponse, "description": "Not the owner of this upload"},
+        404: {"model": SimilarityErrorResponse, "description": "Unknown or expired job"},
+    },
+)
+async def similarity_upload_status_endpoint(
+    job_id: str,
+    db: AsyncSession = Depends(get_database_session),
+    partner: Partner = Depends(get_current_partner_scoped("search:read", allow_anonymous=True)),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+) -> JSONResponse:
+    return await similarity_controller.get_upload_job(
+        db=db, job_id=job_id, current_user=current_user, partner_id=partner.id
+    )
+
+
+@router.post(
     "/similarity/search",
     response_model=SimilarityByIdSuccessResponse,
     summary="Calculate Similarity by Track ID",

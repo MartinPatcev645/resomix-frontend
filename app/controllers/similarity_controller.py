@@ -38,6 +38,7 @@ from app.utils.response_utils import format_response
 from app.services.logging_service import LoggingService
 from app.services.entitlement_gate import EntitlementGate
 from app.services.guest_identity_service import GuestIdentityService
+from app.services.similarity_upload_job_service import SimilarityUploadJobService
 from app.core.entitlement_keys import FeatureKey
 import time
 from datetime import datetime, timedelta
@@ -59,6 +60,7 @@ class SimilarityController:
         self.operation_limit_evaluator = OperationLimitEvaluator()
         self.entitlement_gate = EntitlementGate()
         self.guest_identity = GuestIdentityService()
+        self.upload_jobs = SimilarityUploadJobService()
 
     def _clamp_top_sk(self, top_sk, cap: int):
         """Clamp the requested track count to the caller's dropdown cap (server-side guard)."""
@@ -173,6 +175,320 @@ class SimilarityController:
             )
         except Exception as exc:  # never let analysis wiring break the similarity response
             logger.error("SIMILARITY UPLOAD: failed to enqueue analysis sibling: %s", exc)
+
+    # ------------------------------------------------------------------ #
+    # Poll-based upload (accept → job id → poll). See app/tasks/similarity_tasks.py
+    # ------------------------------------------------------------------ #
+    async def submit_similarity_upload(
+        self,
+        db: AsyncSession,
+        request: Request,
+        file: UploadFile,
+        current_user: Optional[User] = None,
+        top_sk: Optional[int] = None,
+        engine: Optional[str] = None,
+        partner_id: Optional[int] = None,
+    ) -> JSONResponse:
+        """Accept an upload, hand the similarity work to a worker, and return a job id.
+
+        The blocking sibling of this method (``get_similarity_upload``) holds the request open
+        for the whole pipeline. Capacity testing found that Cloudflare closes an origin request
+        at 100 s, and 20 concurrent 40 MB uploads finished at 93 s — so completed results were
+        being discarded as 524s. This path never holds the request open, which removes that
+        failure at any file size and concurrency.
+
+        Everything the caller must be told *immediately* still happens here — entitlement, rate
+        brake, quota headroom, file validity, antivirus, and the track row. Only the serialised
+        GPU work moves to the worker. The upload is NOT charged here; the worker records it on
+        success, so a pipeline failure never bills a user for nothing.
+        """
+        correlation_id = self.logging_service.generate_correlation_id()
+
+        # --- gates, in the same order and with the same answers as the blocking path ---
+        if partner_id == settings.system_partner_id:
+            gate = await self.entitlement_gate.check_boolean(
+                db, FeatureKey.CAN_SIMILARITY_UPLOAD, user=current_user
+            )
+            if not gate.allowed:
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    content=format_response(
+                        success=False,
+                        error="Similarity by upload requires an account. Please log in.",
+                        reason=gate.reason,
+                    ),
+                )
+
+        if settings.similarity_auth_required and not current_user and not partner_id:
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content=format_response(
+                    success=False,
+                    error="Authentication required to access similarity features.",
+                ),
+            )
+
+        if partner_id == settings.system_partner_id:
+            if not await self._frontend_rate_ok(request):
+                return self._rate_limited_response()
+
+        user_id = current_user.id if current_user else None
+        if user_id:
+            limit_check = await self.operation_limit_evaluator.check(
+                db, user_id=user_id, operation_code="upload_create"
+            )
+            if not limit_check.allowed:
+                return operation_limit_response(limit_check)
+
+        if partner_id == settings.system_partner_id and current_user is not None:
+            upload_cap = await self.entitlement_gate.get_cap(
+                db, FeatureKey.DROPDOWN_MAX_TRACKS, user=current_user
+            )
+            top_sk = self._clamp_top_sk(top_sk, upload_cap)
+
+        validated_top_sk = settings.validate_and_get_top_sk(top_sk)
+        actual_top_k = settings.calculate_actual_top_k(validated_top_sk)
+        duplication_threshold = settings.get_duplication_threshold_for_top_sk(validated_top_sk)
+
+        # --- file validation ---
+        if file.size and file.size > settings.max_file_size:
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=format_response(
+                    success=False,
+                    error=f"File too large. Maximum size is {settings.max_file_size // (1024 * 1024)}MB.",
+                ),
+            )
+
+        audio_bytes = await file.read()
+        if not audio_bytes:
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=format_response(success=False, error="File is empty. Please upload a valid audio file."),
+            )
+        # Re-check against what actually arrived: `file.size` is client-declared and can be absent
+        # entirely, so the header check above is a fast path, not the guard.
+        if len(audio_bytes) > settings.max_file_size:
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=format_response(
+                    success=False,
+                    error=f"File too large. Maximum size is {settings.max_file_size // (1024 * 1024)}MB.",
+                ),
+            )
+
+        track_uuid = generate_track_uuid()
+        secure_filename = f"upload_{track_uuid}.tmp"
+        original_filename = file.filename if file.filename else "upload.mp3"
+
+        av_scan_result = self.antivirus_service.scan_bytes(audio_bytes, secure_filename)
+        if not av_scan_result.get("success"):
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal error occurred during antivirus scan"),
+            )
+        if not av_scan_result.get("clean"):
+            return JSONResponse(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                content=format_response(
+                    success=False, error="The uploaded file was rejected for security reasons."
+                ),
+            )
+
+        # Same conditional as the blocking path: without ffmpeg we cannot inspect the streams, so
+        # we accept and let the pipeline report a failure rather than reject a probably-fine file.
+        if self.audio_service.is_ffmpeg_available():
+            if not self.audio_service.validate_audio_format(audio_bytes, secure_filename):
+                return JSONResponse(
+                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                    content=format_response(
+                        success=False,
+                        error="The uploaded file does not contain valid audio streams according to our analysis.",
+                    ),
+                )
+
+        # --- persist the track, then hand off ---
+        await file.seek(0)
+        upload_result = await self.track_upload_service.upload_track_to_database(
+            db, file, audio_bytes, partner_id=partner_id, user_id=user_id
+        )
+        if not upload_result.get("success", False):
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal error occurred while uploading track"),
+            )
+        track_uuid = upload_result.get("uuid") or track_uuid
+        track_id = int(upload_result["track_id"]) if upload_result.get("track_id") else None
+
+        # Resolve the unlock cap now, while the session and the caller's plan are in hand — the
+        # worker has no request scope to derive a guest visitor id from.
+        visible_count = None
+        if partner_id == settings.system_partner_id:
+            visitor_id = None if current_user else self.guest_identity.derive_visitor_id(request)
+            visible_count = await self.entitlement_gate.get_cap(
+                db, FeatureKey.MAX_TRACKS_PER_PLAYLIST, user=current_user, visitor_id=visitor_id
+            )
+
+        job_id = self.upload_jobs.new_job_id()
+        _, ext = os.path.splitext(original_filename or "")
+        if not ext:
+            ext = ".mp3"
+        spool_path = os.path.join(settings.temp_dir, f"simupload_{job_id}{ext}")
+        try:
+            os.makedirs(settings.temp_dir, exist_ok=True)
+            with open(spool_path, "wb") as fh:
+                fh.write(audio_bytes)
+        except OSError as exc:
+            logger.error("SIMILARITY UPLOAD ASYNC: could not spool audio for %s: %s", job_id, exc)
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content=format_response(success=False, error="An internal error occurred while accepting the upload"),
+            )
+
+        # A job we cannot track is a job the client can never collect — refuse rather than accept
+        # work whose result has nowhere to be reported.
+        created = await self.upload_jobs.create(
+            job_id=job_id,
+            user_id=user_id,
+            partner_id=partner_id,
+            track_id=track_id,
+            track_uuid=track_uuid,
+            visible_count=visible_count,
+        )
+        if not created:
+            try:
+                os.remove(spool_path)
+            except OSError:
+                pass
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content=format_response(
+                    success=False,
+                    error="Uploads are temporarily unavailable. Please try again in a moment.",
+                    reason="service_unavailable",
+                ),
+            )
+
+        from app.tasks.similarity_tasks import run_similarity_upload
+
+        try:
+            run_similarity_upload.delay(
+                job_id=job_id,
+                audio_spool_path=spool_path,
+                track_uuid=track_uuid,
+                original_filename=original_filename,
+                top_k=actual_top_k,
+                duplication_threshold=duplication_threshold,
+                user_id=user_id,
+                partner_id=partner_id,
+                track_id=track_id,
+                visible_count=visible_count,
+            )
+        except Exception as exc:
+            # The broker refused the message, so nothing will ever run this job. Without this the
+            # record would sit on `queued` until it expired and the caller would poll a job that
+            # was never going to move — the exact silent wait this endpoint exists to remove.
+            logger.error("SIMILARITY UPLOAD ASYNC: could not enqueue job %s: %s", job_id, exc)
+            await self.upload_jobs.mark_failed(
+                job_id, "Uploads are temporarily unavailable. Please try again in a moment.",
+                reason="enqueue_failed",
+            )
+            try:
+                os.remove(spool_path)
+            except OSError:
+                pass
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content=format_response(
+                    success=False,
+                    error="Uploads are temporarily unavailable. Please try again in a moment.",
+                    reason="service_unavailable",
+                ),
+            )
+
+        self.logging_service.log(
+            async_db=db,
+            level="INFO",
+            category="SIMILARITY",
+            action="upload_accepted",
+            message="Similarity upload accepted for background processing",
+            correlation_id=correlation_id,
+            request=request,
+            method=request.method,
+            endpoint=str(request.url.path),
+            path=str(request.url),
+            client_ip=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+            status_code=202,
+            track_id=track_id,
+            context="Poll-based similarity upload submission",
+            metadata={"job_id": job_id, "track_uuid": track_uuid, "validated_top_sk": validated_top_sk},
+            filename=file.filename,
+            file_size=file.size,
+            operation="similarity_upload_async",
+        )
+
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED,
+            content=format_response(
+                success=True,
+                data={"job_id": job_id, "track_uuid": track_uuid, "track_id": track_id, "state": "queued"},
+            ),
+        )
+
+    async def get_upload_job(
+        self,
+        db: AsyncSession,
+        job_id: str,
+        current_user: Optional[User] = None,
+        partner_id: Optional[int] = None,
+    ) -> JSONResponse:
+        """Poll one submitted upload. Returns the similarity payload once ``state`` is ``done``.
+
+        The payload under ``result`` is byte-for-byte what the blocking endpoint returned in
+        ``data``, so a client migrating to this path keeps its existing success handling.
+        """
+        job = await self.upload_jobs.get(job_id)
+        if job is None:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content=format_response(
+                    success=False,
+                    error="This upload is no longer available. Please upload the track again.",
+                    reason="expired",
+                ),
+            )
+
+        # An owned job is readable only by its owner. An anonymous job has no owner to check
+        # against, so the unguessable job id is the capability — which is why it is a uuid4.
+        owner_id = job.get("user_id")
+        if owner_id is not None and (current_user is None or current_user.id != owner_id):
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content=format_response(
+                    success=False, error="You don't have access to this upload.", reason="forbidden"
+                ),
+            )
+        if job.get("partner_id") is not None and partner_id is not None and job["partner_id"] != partner_id:
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content=format_response(
+                    success=False, error="You don't have access to this upload.", reason="forbidden"
+                ),
+            )
+
+        data = {
+            "job_id": job_id,
+            "state": job["state"],
+            "track_uuid": job.get("track_uuid"),
+            "track_id": job.get("track_id"),
+        }
+        if job["state"] == "done":
+            data["result"] = job.get("result")
+        elif job["state"] == "failed":
+            data["error"] = job.get("error")
+            data["reason"] = job.get("reason")
+        return JSONResponse(status_code=status.HTTP_200_OK, content=format_response(success=True, data=data))
 
     async def get_similarity_upload(
         self,

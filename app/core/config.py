@@ -261,6 +261,13 @@ class Settings(BaseModel):
     temp_dir: str = Field(
         default="temp_audio", description="Temporary directory for uploaded files"
     )
+    # How long a poll-based similarity upload job record survives in Redis. The clock is reset
+    # when the job finishes, so this is really "how long the client has to collect its result",
+    # not a processing budget. One hour is generous against a pipeline measured in seconds and
+    # keeps a browser that was backgrounded mid-upload able to recover.
+    similarity_job_ttl_seconds: int = Field(
+        default=3600, description="TTL for similarity upload job records (seconds)"
+    )
 
     # Similarity search configuration
     allowed_top_sk_values: List[int] = Field(
@@ -684,6 +691,7 @@ class Settings(BaseModel):
             "PUBLIC_ALWYZON_URL": "public_alwyzon_url",
             "DEMO_MODE": "demo_mode",
             "SIMILARITY_AUTH_REQUIRED": "similarity_auth_required",
+            "SIMILARITY_JOB_TTL_SECONDS": "similarity_job_ttl_seconds",
             "SYSTEM_PARTNER_ID": "system_partner_id",
             "PREVIEW_FERNET_SECRET": "preview_fernet_secret",
             "TOKEN_ENCRYPTION_KEY": "token_encryption_key",
@@ -822,6 +830,7 @@ class Settings(BaseModel):
                     "session_ip_retention_days",
                     "invoice_retention_years",
                     "deletion_request_sla_days",
+                    "similarity_job_ttl_seconds",
                 ]:
                     try:
                         env_overrides[config_key] = int(env_value)
