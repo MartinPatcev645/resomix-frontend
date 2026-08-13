@@ -44,9 +44,11 @@ def _service(apple_match=None, track=None, contributors=None):
 
 
 def _resolve(svc, seed_id=1):
-    return asyncio.get_event_loop().run_until_complete(
-        svc._resolve_seed_reference(None, seed_id)
-    )
+    # `asyncio.run`, not `get_event_loop().run_until_complete`: the latter relies on an implicit
+    # loop that no longer exists once any earlier test in the session has used `asyncio.run`
+    # (which closes its loop and clears the current one). That made these tests pass alone and
+    # fail in a full run, purely on collection order.
+    return asyncio.run(svc._resolve_seed_reference(None, seed_id))
 
 
 def test_upload_seed_uses_contributors_when_display_artist_is_empty():

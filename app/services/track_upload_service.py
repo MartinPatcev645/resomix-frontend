@@ -21,6 +21,7 @@ import logging
 import uuid
 from typing import Dict, Tuple, List, Optional
 from fastapi import UploadFile
+from fastapi.concurrency import run_in_threadpool
 
 from sqlalchemy import text, select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -472,10 +473,13 @@ class TrackUploadService:
             # Generate secure temporary filename for processing (NEVER trust uploaded filename)
             secure_filename = f"upload_{track_uuid}.tmp"
 
-            # Extract metadata using the existing service
+            # Extract metadata using the existing service.
+            # Off the event loop: mutagen parses the file synchronously, and this runs inside the
+            # upload request on a SINGLE-process uvicorn — so a large file here stalls every other
+            # request on the box (see the 2026-08-13 mixed-load finding).
             file.file.seek(0)  # Reset file pointer
-            metadata = self.metadata_service.extract_metadata(
-                file.file, secure_filename, mode="limited"
+            metadata = await run_in_threadpool(
+                self.metadata_service.extract_metadata, file.file, secure_filename, "limited"
             )
 
             if "error" in metadata:

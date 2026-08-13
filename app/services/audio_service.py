@@ -19,6 +19,7 @@ import os
 import subprocess
 import tempfile
 import json
+from functools import lru_cache
 from typing import Optional
 
 
@@ -26,12 +27,19 @@ class AudioService:
     """
     Service for audio file validation and processing using FFmpeg.
     """
-    
+
     @staticmethod
+    @lru_cache(maxsize=1)
     def is_ffmpeg_installed() -> bool:
         """
         Check if FFmpeg is installed and available in the system path.
-        
+
+        Cached for the life of the process. This used to spawn ``ffmpeg -version`` on EVERY
+        upload, synchronously, on Alwyzon's single event loop — a subprocess fork per request to
+        answer a question whose answer cannot change while the process is running. Under the
+        2026-08-13 mixed load that was one of four blocking calls per upload, and the pile-up
+        showed up as a 1.56s median on an endpoint that only reads one key from Redis.
+
         Returns:
             bool: True if FFmpeg is installed, False otherwise
         """

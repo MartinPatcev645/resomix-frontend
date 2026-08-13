@@ -167,10 +167,18 @@ def _start_workers() -> "list[subprocess.Popen]":
     # so we always set it to keep the prefork worker stable in local dev.
     env = {**os.environ, "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
 
+    # Concurrency 1 each — TWO pool children in total, the same as the single concurrency-2
+    # worker this replaced, but now isolated by queue.
+    #
+    # Raising it is counter-productive here. These tasks are not IO-bound waits: they push large
+    # audio files around and the box also runs ClamAV, ffprobe and mutagen for every upload
+    # inside the API process. Four pool children took CPU away from uvicorn, and on 2026-08-13
+    # both upload endpoints degraded together as a result. The GPU serialises this work anyway
+    # (one inference per process), so extra Celery slots buy queue depth, not throughput.
     specs = (
         # (queue, node name, concurrency env var, default concurrency)
-        ("similarity", "foreground", "ALWYZON_SIMILARITY_CONCURRENCY", "2"),
-        ("celery", "background", "ALWYZON_WORKER_CONCURRENCY", "2"),
+        ("similarity", "foreground", "ALWYZON_SIMILARITY_CONCURRENCY", "1"),
+        ("celery", "background", "ALWYZON_WORKER_CONCURRENCY", "1"),
     )
     procs: "list[subprocess.Popen]" = []
     for queue, node, env_var, default in specs:

@@ -19,6 +19,7 @@ Email: usman.naeem2212@gmail.com
 import os
 from typing import Optional
 from fastapi import UploadFile, status, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
@@ -281,7 +282,15 @@ class SimilarityController:
         secure_filename = f"upload_{track_uuid}.tmp"
         original_filename = file.filename if file.filename else "upload.mp3"
 
-        av_scan_result = self.antivirus_service.scan_bytes(audio_bytes, secure_filename)
+        # ClamAV and ffprobe are synchronous and CPU/subprocess-bound. Alwyzon is a SINGLE uvicorn
+        # process, so calling them directly on the event loop stalls every other request on the
+        # box — search, polls, playlists, auth — for the duration of the scan. Measured under the
+        # 2026-08-13 mixed load: the upload-status endpoint, which does nothing but read one Redis
+        # key, went from 0.02s to a 1.56s median. Same fix, same reason as the Elasticsearch call
+        # in search_service.
+        av_scan_result = await run_in_threadpool(
+            self.antivirus_service.scan_bytes, audio_bytes, secure_filename
+        )
         if not av_scan_result.get("success"):
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -297,8 +306,12 @@ class SimilarityController:
 
         # Same conditional as the blocking path: without ffmpeg we cannot inspect the streams, so
         # we accept and let the pipeline report a failure rather than reject a probably-fine file.
+        # (`is_ffmpeg_available` is lru_cached, so it is a dict lookup, not a subprocess spawn.)
         if self.audio_service.is_ffmpeg_available():
-            if not self.audio_service.validate_audio_format(audio_bytes, secure_filename):
+            is_valid_audio = await run_in_threadpool(
+                self.audio_service.validate_audio_format, audio_bytes, secure_filename
+            )
+            if not is_valid_audio:
                 return JSONResponse(
                     status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
                     content=format_response(
@@ -699,8 +712,12 @@ class SimilarityController:
         track_uuid = generate_track_uuid()
         secure_filename = f"upload_{track_uuid}.tmp"
 
-        # SECURITY: Antivirus scan before any file operations
-        av_scan_result = self.antivirus_service.scan_bytes(audio_bytes, secure_filename)
+        # SECURITY: Antivirus scan before any file operations.
+        # Off the event loop — see the note in submit_similarity_upload. This path is legacy, but
+        # it runs in the same single process, so a blocking scan here stalls the new path too.
+        av_scan_result = await run_in_threadpool(
+            self.antivirus_service.scan_bytes, audio_bytes, secure_filename
+        )
 
         if not av_scan_result.get("success"):
             # Scan failed - log error
@@ -813,8 +830,9 @@ class SimilarityController:
         is_ffmpeg_available = self.audio_service.is_ffmpeg_available()
 
         if is_ffmpeg_available:
-            is_valid_audio = self.audio_service.validate_audio_format(
-                audio_bytes, secure_filename
+            # ffprobe writes a temp file and forks a subprocess — off the event loop.
+            is_valid_audio = await run_in_threadpool(
+                self.audio_service.validate_audio_format, audio_bytes, secure_filename
             )
             if not is_valid_audio:
                 duration_ms = (time.time() - start_time) * 1000

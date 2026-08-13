@@ -23,6 +23,7 @@ import os
 from typing import Optional
 
 from fastapi import Request, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -300,7 +301,13 @@ class AnalysisResultController:
 
         # 5) Antivirus scan (never trust the uploaded filename).
         track_uuid = generate_track_uuid()
-        scan = self.antivirus_service.scan_bytes(audio_bytes, f"upload_{track_uuid}.tmp")
+        # Off the event loop: ClamAV is synchronous and CPU-bound, and Alwyzon is a single uvicorn
+        # process — a blocking scan here stalls every other request on the box. Measured under the
+        # 2026-08-13 mixed load, this path and the similarity upload path degraded in lockstep
+        # (79.3s vs 75.1s medians) precisely because they share this call.
+        scan = await run_in_threadpool(
+            self.antivirus_service.scan_bytes, audio_bytes, f"upload_{track_uuid}.tmp"
+        )
         if not scan.get("success"):
             return self._reject(500, "An internal error occurred during antivirus scan.")
         if not scan.get("clean"):
