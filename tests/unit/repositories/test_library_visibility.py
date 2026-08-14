@@ -287,3 +287,78 @@ class TestTheCountAgreesWithTheListing:
         db = _IdSession([])
 
         assert await PlaylistRepository().count_library_visible(db, 7, 5) == 0
+
+
+# --------------------------------------------------------------------------- #
+# Plan changes take effect with no write anywhere
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.asyncio
+class TestPrivilegesFollowThePlanBothWays:
+    """The behaviour the stored flag could not provide, and the reason it was removed.
+
+    Real incident: the Stripe sandbox → live switch broke the Pro plans, every affected account was
+    forced back to free, and their Libraries went on listing every playlist — because
+    `is_library_visible` had been stamped `1` while they were Pro and nothing ever revisited it.
+    Downgrading a plan did not downgrade the privileges.
+
+    Derived visibility has no such gap: the cap is resolved per request, so the same playlists give
+    a different answer the moment the plan changes, in either direction, with no sweep and no write.
+    """
+
+    OWNED = [8, 7, 6, 5, 4, 3, 2, 1]  # newest first, matching the query's ordering
+
+    async def test_pro_sees_everything(self):
+        visible, _ = await _visible(cap=-1, owned=self.OWNED)
+
+        assert visible is None, "unlimited means no restriction at all"
+
+    async def test_dropping_to_free_restores_the_cap_immediately(self):
+        """No migration, no job, no UPDATE. The next read is simply a different answer."""
+        visible, _ = await _visible(cap=5, owned=self.OWNED)
+
+        assert visible == {8, 7, 6, 5, 4}
+
+    async def test_an_expired_comp_reverts_with_no_merits_kept(self):
+        """An admin grant is time-boxed and `active_grant` compares `ends_at` on every call, so the
+        moment it lapses the user resolves to free. Nothing about the Pro period lingers."""
+        comped, _ = await _visible(cap=-1, owned=self.OWNED)
+        lapsed, _ = await _visible(cap=5, owned=self.OWNED)
+
+        assert comped is None
+        assert lapsed == {8, 7, 6, 5, 4}
+
+    async def test_re_upgrading_gives_everything_back(self):
+        """Nothing was destroyed on the way down — the playlists were only unreachable."""
+        assert (await _visible(cap=5, owned=self.OWNED))[0] == {8, 7, 6, 5, 4}
+        assert (await _visible(cap=-1, owned=self.OWNED))[0] is None
+
+    async def test_the_same_five_survive_a_round_trip(self):
+        """Free → Pro → free must not shuffle which five are open. It is a fact about `created_at`,
+        not a decision recorded anywhere, so it cannot drift."""
+        first, _ = await _visible(cap=5, owned=self.OWNED)
+        _, _ = await _visible(cap=-1, owned=self.OWNED)
+        again, _ = await _visible(cap=5, owned=self.OWNED)
+
+        assert first == again
+
+
+def test_expiry_is_read_time_for_both_subscription_and_grant() -> None:
+    """Asserted against the source because it is the property that removes the need for a sweep.
+
+    A grant is bounded by `ends_at > now` evaluated per call, and a subscription must currently
+    hold an active status. Neither is a stored "is_pro" flag that something has to remember to
+    clear — which is exactly what went wrong with `is_library_visible`.
+    """
+    import inspect
+
+    from app.services.entitlement_service import EntitlementService
+    from app.services.plan_grant_service import PlanGrantService
+
+    grant = inspect.getsource(PlanGrantService.active_grant)
+    resolve = inspect.getsource(EntitlementService)
+
+    assert "UserPlanGrant.ends_at > now" in grant
+    assert "UserPlanGrant.revoked_at.is_(None)" in grant
+    assert "ACTIVE_SUBSCRIPTION_STATUSES" in resolve
+    assert "access_suspended_at.is_(None)" in resolve

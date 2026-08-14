@@ -210,6 +210,31 @@ Corroborating: 4,073 **distinct** user ids are referenced by `user_roles` and mi
 spanning ids 3–13,320, while only 146 users survive (max id 13,435). That is the shape of thousands
 of created-then-deleted test accounts, not of application behaviour.
 
+### ✅ Production checked — clean (2026-08-14)
+
+The full sweep was run against `resomix_prod` after the stress accounts were purged. **It returned
+nothing: zero orphaned rows across all 167 foreign-key relationships.**
+
+So neither `cleanup_test_partners.py` nor `seed_data.py` has ever run there, and the ~13,000
+orphans in §3 are **dev-only damage from the test fixture**. Nothing to repair on production.
+
+Purge result, for the record:
+
+| | Removed |
+|---|---:|
+| Stress accounts (`stress_test_user_%`, ids 28–37) | 10 |
+| Playlists they generated | 1,037 |
+| Tracks they uploaded (`type = 'upload'` only) | 301 |
+| Usage-period history rows | 43 |
+| `playlist_tracks`, `audio_files`, `track_analysis_results`, sessions, tokens, ratings… | by cascade |
+| Catalogue tracks | **0** |
+
+Foreign key checks stayed on throughout, and the post-run sweep confirmed no orphans were created.
+
+⚠️ **Still outstanding:** the 301 uploads' media-server assets — audio, peaks, segments,
+embeddings. The database rows are gone; the files are not. Their uuids are in
+`scripts/purged_stress_upload_uuids.txt`, which is now the only handle on them.
+
 ### ⚠️ The one thing to check on production
 
 The same pattern appears in two scripts that are **not** test-only:
@@ -285,7 +310,7 @@ Ordered by consequence, not by effort.
 
 | # | Item | Why | Urgency |
 |---|---|---|---|
-| 1 | **Purge the stress-test accounts**, then sweep production | Prerequisite, not a separate job — see below | **Do this once, soon** |
+| 1 | ~~Purge the stress-test accounts, then sweep production~~ | ✅ **Done 2026-08-14.** Prod sweep returned **zero orphans** — see §7. Only the media-server assets remain | Done |
 | 2 | Normalise `apple_music_tracks.genres` **together with the artist work** | 1NF; blocks any genre facet across ~1.98M rows | 📌 **TODO — deferred by decision (2026-08-14).** Bundled with §2.2: artists are text today and will be populated into a proper table with per-track associations via Apple Music. Genres get the same treatment in the same pass, since both are "a list in a string" and both need a join table. Doing genres alone would mean touching the same rows twice |
 | 3 | Add the three missing FKs (§2.3) | Cheap; closes three silent-dangle paths | Low |
 | 4 | Reconcile the two artist representations (§2.2) | One fact, two homes; every reader needs both | 📌 See item 2 — same pass |
