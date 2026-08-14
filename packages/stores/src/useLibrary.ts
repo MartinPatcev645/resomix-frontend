@@ -71,6 +71,33 @@ export interface LibraryTrack {
   created_at?: string | null;
 }
 
+/**
+ * A track the user thumbed up, as the Liked tab renders it.
+ *
+ * Deliberately a different shape from `LibraryTrack`: that one describes an UPLOAD the user owns
+ * (with its two sibling artifacts and their pipeline state), whereas this is any catalogue track
+ * they liked from a playlist. Merging them would give every liked row a set of artifact fields
+ * that can never apply to it.
+ */
+export interface LikedTrack {
+  /** Track uuid. */
+  id: string;
+  title: string;
+  artist: string | null;
+  album: string | null;
+  label: string | null;
+  genre: string | null;
+  /** Seconds (Apple's full length when matched, else the in-house value). */
+  duration: number | null;
+  /** Apple artwork, when the track has a match; null falls back to the bundled cover. */
+  artwork_url?: string | null;
+  /** "preview" (Apple) or "hls" (uploads / unmatched) — the same hint the playlist screen uses. */
+  playback?: string | null;
+  preview_url?: string | null;
+  /** ISO timestamp of the most recent time the user liked this track. Drives the ordering. */
+  liked_at: string | null;
+}
+
 export interface LibraryPlaylist {
   /**
    * Stable list key. For an unlocked playlist this is its uuid; for a locked one the backend
@@ -133,18 +160,23 @@ export const EMPTY_LIBRARY_FILTERS: LibraryFilters = {
   favoritesOnly: false,
 };
 
+/** The Library's three sections. Also the `?tab=` value, so these strings are user-visible. */
+export type LibraryTab = 'playlists' | 'tracks' | 'liked';
+
 export interface LibraryStore {
   // Two sections (playlists, tracks), each kept in the store so switching tabs is instant and each
   // tab's count stays visible. Favorites are surfaced inline on playlists (heart), not a tab.
   playlists: LibraryPlaylist[];
   tracks: LibraryTrack[];
+  liked: LikedTrack[];
 
   error: string | null;
-  activeTab: 'playlists' | 'tracks';
+  activeTab: LibraryTab;
 
   // Per-section loading so the active tab shows its own spinner while the other loads in background.
   playlistsLoading: boolean;
   tracksLoading: boolean;
+  likedLoading: boolean;
 
   // Pagination & counts (per section)
   playlistsPage: number;
@@ -163,21 +195,28 @@ export interface LibraryStore {
   tracksTotalPages: number;
   tracksTotal: number;
 
+  likedPage: number;
+  likedTotalPages: number;
+  likedTotal: number;
+
   // Applied filters (per section). Held here so pagination + Refresh re-apply the same query.
   playlistsFilters: LibraryFilters;
   tracksFilters: LibraryFilters;
 
   setPlaylists: (playlists: LibraryPlaylist[]) => void;
   setTracks: (tracks: LibraryTrack[]) => void;
+  setLiked: (liked: LikedTrack[]) => void;
 
   setPlaylistsLoading: (loading: boolean) => void;
   setTracksLoading: (loading: boolean) => void;
+  setLikedLoading: (loading: boolean) => void;
 
   setError: (error: string | null) => void;
-  setActiveTab: (tab: 'playlists' | 'tracks') => void;
+  setActiveTab: (tab: LibraryTab) => void;
 
   setPlaylistsPagination: (page: number, totalPages: number, total: number, libraryTotal?: number) => void;
   setTracksPagination: (page: number, totalPages: number, total: number) => void;
+  setLikedPagination: (page: number, totalPages: number, total: number) => void;
 
   setPlaylistsFilters: (filters: LibraryFilters) => void;
   setTracksFilters: (filters: LibraryFilters) => void;
@@ -188,6 +227,7 @@ export interface LibraryStore {
 export const useLibraryStore = create<LibraryStore>((set) => ({
   playlists: [],
   tracks: [],
+  liked: [],
   error: null,
   // Uploads is the landing tab — it reflects what the user most recently did
   // (analysed a track), and it now sits first in the tab strip.
@@ -195,6 +235,7 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
 
   playlistsLoading: false,
   tracksLoading: false,
+  likedLoading: false,
 
   playlistsPage: 1,
   playlistsTotalPages: 1,
@@ -205,12 +246,18 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
   tracksTotalPages: 1,
   tracksTotal: 0,
 
+  likedPage: 1,
+  likedTotalPages: 1,
+  likedTotal: 0,
+
   playlistsFilters: { ...EMPTY_LIBRARY_FILTERS },
   tracksFilters: { ...EMPTY_LIBRARY_FILTERS },
 
   setPlaylists: (playlists) => set({ playlists }),
   setTracks: (tracks) => set({ tracks }),
+  setLiked: (liked) => set({ liked }),
 
+  setLikedLoading: (likedLoading) => set({ likedLoading }),
   setPlaylistsLoading: (playlistsLoading) => set({ playlistsLoading }),
   setTracksLoading: (tracksLoading) => set({ tracksLoading }),
 
@@ -228,6 +275,8 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
     }),
   setTracksPagination: (tracksPage, tracksTotalPages, tracksTotal) =>
     set({ tracksPage, tracksTotalPages, tracksTotal }),
+  setLikedPagination: (likedPage, likedTotalPages, likedTotal) =>
+    set({ likedPage, likedTotalPages, likedTotal }),
 
   setPlaylistsFilters: (playlistsFilters) => set({ playlistsFilters }),
   setTracksFilters: (tracksFilters) => set({ tracksFilters }),
@@ -235,6 +284,7 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
   reset: () => set({
     playlists: [],
     tracks: [],
+    liked: [],
     error: null,
     activeTab: 'tracks',
     playlistsLoading: false,
@@ -246,6 +296,10 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
     tracksPage: 1,
     tracksTotalPages: 1,
     tracksTotal: 0,
+    likedLoading: false,
+    likedPage: 1,
+    likedTotalPages: 1,
+    likedTotal: 0,
     playlistsFilters: { ...EMPTY_LIBRARY_FILTERS },
     tracksFilters: { ...EMPTY_LIBRARY_FILTERS },
   }),

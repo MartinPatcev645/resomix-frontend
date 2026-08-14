@@ -10,7 +10,12 @@
  * Deliberately dependency-free (no React, no router, no store) so it stays that way.
  */
 
-export type LibraryTab = "playlists" | "tracks";
+// Re-exported from the store rather than redeclared. This module is otherwise dependency-free and
+// stays so — a type-only import is erased before anything runs, including under Node's own type
+// stripping, which is what the tests use. Three copies of this union is what caused the Liked tab
+// to typecheck in two places and fail in a third.
+export type { LibraryTab } from "@resomix/stores";
+import type { LibraryTab } from "@resomix/stores";
 
 /**
  * Highest page we will ask the server for.
@@ -24,7 +29,9 @@ export const MAX_REQUESTABLE_PAGE = 10_000;
 
 /** Uploads is the landing tab, so anything unrecognised resolves to it rather than to an error. */
 export function parseTab(raw: string | null): LibraryTab {
-  return raw === "playlists" ? "playlists" : "tracks";
+  if (raw === "playlists") return "playlists";
+  if (raw === "liked") return "liked";
+  return "tracks";
 }
 
 /**

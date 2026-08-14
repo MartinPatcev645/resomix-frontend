@@ -57,6 +57,13 @@ export default function LibraryPage() {
     playlistsFilters,
     tracksFilters,
     applyFilters,
+    liked,
+    likedLoading,
+    likedPage,
+    likedTotalPages,
+    likedTotal,
+    loadLiked,
+    removeLike,
   } = useLibrary();
 
   // The URL owns which tab and which page are shown; this hook reads it, keeps it canonical,
@@ -67,12 +74,15 @@ export default function LibraryPage() {
       isAuthenticated,
       loadPlaylists,
       loadTracks,
+      loadLiked,
       setActiveTab,
       applyFilters,
       playlistsTotalPages,
       tracksTotalPages,
+      likedTotalPages,
       playlistsPage,
       tracksPage,
+      likedPage,
     });
 
   // Filters applied to whichever tab is active (each tab keeps its own set).
@@ -96,11 +106,16 @@ export default function LibraryPage() {
 
   // Derived view of whichever tab is selected (each section has its own slice / paging / loading).
   const activePlaylists = playlists;
-  const activeLoading = activeTab === "tracks" ? tracksLoading : playlistsLoading;
+  const activeLoading =
+    urlTab === "liked" ? likedLoading : urlTab === "tracks" ? tracksLoading : playlistsLoading;
   // Read from the URL, not from the store: the URL is what changed, so the "Page 2 of 5" label
   // updates the instant the click lands rather than waiting for the response to write the store.
   const activePage = page;
-  const activeTotalPages = urlTab === "tracks" ? tracksTotalPages : playlistsTotalPages;
+  const activeTotalPages =
+    urlTab === "liked" ? likedTotalPages : urlTab === "tracks" ? tracksTotalPages : playlistsTotalPages;
+  // The Liked tab is a plain reverse-chronological list — no filter panel, no favourites toggle.
+  // Hiding the controls is simpler and more honest than showing ones that do nothing.
+  const showFilterControls = urlTab !== "liked";
 
   // Status Message states
   const [showStatus, setShowStatus] = useState(false);
@@ -177,6 +192,12 @@ export default function LibraryPage() {
       return;
     }
     run(e);
+  };
+
+  const handleRemoveLike = async (trackUuid: string, title: string) => {
+    const result = await removeLike(trackUuid);
+    if (result.success) handleStatusChange("success", `Removed "${title}" from your liked tracks.`, "Removed");
+    else handleStatusChange("error", result.error || "Failed to remove the like", "Error");
   };
 
   const handleExportApple = (uuid: string) => {
@@ -482,6 +503,17 @@ export default function LibraryPage() {
                   : playlistsTotal}
                 )
               </button>
+              <button
+                onClick={() => goToTab("liked")}
+                aria-current={activeTab === "liked" ? "page" : undefined}
+                className={`cursor-pointer whitespace-nowrap border-b-2 pb-[var(--px-6)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] transition-colors ${
+                  activeTab === "liked"
+                    ? "border-[var(--rx-color-accent)] text-[var(--rx-color-text-primary)]"
+                    : "border-transparent text-[var(--rx-color-text-muted)] opacity-60 hover:opacity-100"
+                }`}
+              >
+                Liked ({likedTotal})
+              </button>
             </div>
             <span aria-hidden="true" />
           </div>
@@ -512,6 +544,7 @@ export default function LibraryPage() {
                 </svg>
               </button>
             )}
+            {showFilterControls && (
             <button
               type="button"
               onClick={() => setShowFilters((v) => !v)}
@@ -528,6 +561,7 @@ export default function LibraryPage() {
               Filters
               {panelFiltersActive && <span aria-hidden="true" className="w-[var(--px-6)] h-[var(--px-6)] rounded-full bg-[var(--rx-color-accent)]" />}
             </button>
+            )}
             <button
               type="button"
               onClick={handleRefresh}
@@ -543,8 +577,10 @@ export default function LibraryPage() {
             </button>
           </div>
 
-          {/* Collapsible filter panel (search / date / min-tracks / favorites-only) + Apply / Clear. */}
-          {showFilters && (
+          {/* Collapsible filter panel (search / date / min-tracks / favorites-only) + Apply / Clear.
+              Never on the Liked tab: it is a plain reverse-chronological list, and offering filters
+              that do nothing is worse than offering none. */}
+          {showFilters && showFilterControls && (
             <LibraryFilters
               activeTab={activeTab}
               applied={activeFilters}
@@ -564,6 +600,76 @@ export default function LibraryPage() {
             <div className={`${PAGE_SUBLABEL} p-[var(--px-40)] text-center`}>
               Loading your library...
             </div>
+          ) : activeTab === "liked" ? (
+            liked.length === 0 ? (
+              <div className={`${PAGE_PANEL_PLAIN} !p-[var(--px-40)] text-center`}>
+                <p className="font-helvetica text-[length:var(--px-14)] font-light text-[var(--rx-color-text-secondary)] opacity-70">
+                  {/* Names the exact gesture. A new user's tab is empty by default, and "no liked
+                      tracks yet" alone would not tell them where the thumb even is. */}
+                  No liked tracks yet. Open any Sonic Discovery playlist and give a track a thumbs
+                  up — it will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-[var(--px-12)] w-full">
+                {liked.map((track) => (
+                  <div
+                    key={track.id}
+                    className="relative flex w-full flex-wrap items-center gap-y-[var(--px-10)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] p-[var(--px-12)] transition-colors hover:border-[var(--rx-color-border-strong)] md:flex-nowrap md:justify-between md:p-[var(--px-16)]"
+                  >
+                    <div className="basis-full md:basis-auto flex items-start gap-[var(--px-10)] md:gap-[var(--px-20)] flex-grow min-w-0 md:pr-[var(--px-15)]">
+                      <div className="flex-shrink-0 border border-[var(--rx-color-border-default)] bg-black/40 overflow-hidden w-[var(--px-32)] h-[var(--px-32)] md:w-[var(--px-52)] md:h-[var(--px-52)]">
+                        {/* Apple artwork when the track has a match; CoverThumbnail's own bundled
+                            default otherwise. Uploads and unmatched catalogue rows hit the latter. */}
+                        {track.artwork_url ? (
+                          <img src={track.artwork_url} alt="" draggable={false} className="w-full h-full object-cover" />
+                        ) : (
+                          <CoverThumbnail uuid={track.id} className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-[var(--px-4)] flex-grow min-w-0">
+                        <span
+                          title={track.title}
+                          className="min-w-0 grow truncate font-helvetica text-[length:var(--px-14)] font-medium uppercase leading-tight md:text-[length:var(--px-15)]"
+                        >
+                          {track.title}
+                        </span>
+                        <div className="font-fira text-[length:var(--px-10)] tracking-[var(--px-0-5)] text-[var(--rx-color-text-secondary)] opacity-70">
+                          <p>
+                            {[track.artist, track.album, track.genre].filter(Boolean).join(" | ") || "—"}
+                            {track.liked_at ? ` | Liked ${new Date(track.liked_at).toLocaleDateString()}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Exactly two controls: open the chain discovery, and un-like. No delete and
+                        no analysis — a liked track is somebody else's catalogue row, not the
+                        user's upload, so neither action is theirs to take. */}
+                    <div className="basis-full flex items-center justify-end gap-[var(--px-10)] md:basis-auto md:flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/?ref=${track.id}`, { state: { from: "library" } })}
+                        title="Find tracks similar to this one"
+                        className="inline-flex min-h-[var(--px-30)] items-center gap-[var(--px-6)] whitespace-nowrap rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-14)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] transition-colors hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)]"
+                      >
+                        ⇄ Chain discovery
+                      </button>
+                      <Tooltip message="Remove from liked tracks">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLike(track.id, track.title)}
+                          aria-label={`Remove ${track.title} from liked tracks`}
+                          className="flex cursor-pointer items-center justify-center border-0 bg-transparent p-[var(--px-4)] text-[var(--rx-color-accent)] outline-none transition-all hover:scale-110 active:scale-90"
+                        >
+                          <HeartFilledIcon customWidth="18" customHeight="18" className="cursor-pointer" disableHover />
+                        </button>
+                      </Tooltip>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           ) : activeTab === "playlists" ? (
             activePlaylists.length === 0 ? (
               <div className={`${PAGE_PANEL_PLAIN} !p-[var(--px-40)] text-center`}>

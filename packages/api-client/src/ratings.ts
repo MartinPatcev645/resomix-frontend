@@ -146,3 +146,42 @@ export const getPlaylistRatingStats = async (playlistId: string) => {
     return handleApiError(error as Error);
   }
 };
+
+
+export interface LikedTracksParams {
+  page?: number;
+  page_size?: number;
+}
+
+/**
+ * A page of the tracks the logged-in user has thumbed up, newest like first.
+ *
+ * One row per track however many playlists it was liked in, and Apple-enriched so a liked track
+ * carries the same artwork and title it had on the playlist screen where the user liked it.
+ */
+export const getLikedTracks = async (params: LikedTracksParams = {}) => {
+  try {
+    return await axiosWrapper<ApiResponse>(
+      authClient.get(API_CONFIG.ENDPOINTS.LIKED_TRACKS, { params })
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};
+
+/**
+ * Remove the user's like for one track, across every playlist they liked it in.
+ *
+ * Not per-playlist, unlike the thumbs on the playlist screen: the Liked tab shows one row per
+ * track, so clearing a single playlist's rating would leave the row on screen backed by the others
+ * and the click would appear to do nothing.
+ */
+export const unlikeTrack = async (trackUuid: string) => {
+  try {
+    return await axiosWrapper<ApiResponse>(
+      authClient.delete(`${API_CONFIG.ENDPOINTS.LIKED_TRACKS}/${trackUuid}`)
+    );
+  } catch (error) {
+    return handleApiError(error as Error);
+  }
+};

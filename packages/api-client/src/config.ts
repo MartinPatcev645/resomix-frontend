@@ -46,6 +46,7 @@ export interface ApiConfig {
     PLAYLIST_VISIBILITY: string;
     PLAYLIST_SIMILARITY: string;
     TRACK_RATING: string;
+    LIKED_TRACKS: string;
     PLAYLIST_RATING: string;
     PLAYLIST_SIMILARITY_HLS: string;
     PLAYLIST_FORK: string;
@@ -275,6 +276,9 @@ export const API_CONFIG: ApiConfig = {
     PLAYLIST_VISIBILITY: "/api/v1/playlists/visibility/",
     PLAYLIST_SIMILARITY: "/api/v1/playlists/similarity/",
     TRACK_RATING: "/api/v1/ratings/tracks/",
+    // The Liked tab. Static path, and it MUST stay ahead of `/tracks/{id}` on the
+    // server or FastAPI matches "mine" as a track id.
+    LIKED_TRACKS: "/api/v1/ratings/tracks/mine",
     PLAYLIST_RATING: "/api/v1/ratings/playlists/",
     PLAYLIST_SIMILARITY_HLS: "/api/v1/playlists/similarity-hls/",
     PLAYLIST_FORK: "/api/v1/playlists/fork/",

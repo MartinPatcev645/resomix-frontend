@@ -5,10 +5,14 @@ import {
   EMPTY_LIBRARY_FILTERS,
   type LibraryPlaylist,
   type LibraryFilters,
+  type LibraryTab,
+  type LikedTrack,
 } from '@resomix/stores';
 import {
   getAllPlaylists,
+  getLikedTracks,
   getMyTracks,
+  unlikeTrack,
   deleteMyTrack,
   deleteMyPlaylist,
   changePlaylistVisibility,
@@ -71,11 +75,13 @@ const formatPlaylist = (p: any, index = 0): LibraryPlaylist => {
 export function useLibrary() {
   const playlists = useLibraryStore(state => state.playlists);
   const tracks = useLibraryStore(state => state.tracks);
+  const liked = useLibraryStore(state => state.liked);
   const error = useLibraryStore(state => state.error);
   const activeTab = useLibraryStore(state => state.activeTab);
 
   const playlistsLoading = useLibraryStore(state => state.playlistsLoading);
   const tracksLoading = useLibraryStore(state => state.tracksLoading);
+  const likedLoading = useLibraryStore(state => state.likedLoading);
 
   const playlistsPage = useLibraryStore(state => state.playlistsPage);
   const playlistsTotalPages = useLibraryStore(state => state.playlistsTotalPages);
@@ -84,15 +90,21 @@ export function useLibrary() {
   const tracksPage = useLibraryStore(state => state.tracksPage);
   const tracksTotalPages = useLibraryStore(state => state.tracksTotalPages);
   const tracksTotal = useLibraryStore(state => state.tracksTotal);
+  const likedPage = useLibraryStore(state => state.likedPage);
+  const likedTotalPages = useLibraryStore(state => state.likedTotalPages);
+  const likedTotal = useLibraryStore(state => state.likedTotal);
 
   const setPlaylists = useLibraryStore(state => state.setPlaylists);
   const setTracks = useLibraryStore(state => state.setTracks);
+  const setLiked = useLibraryStore(state => state.setLiked);
   const setPlaylistsLoading = useLibraryStore(state => state.setPlaylistsLoading);
   const setTracksLoading = useLibraryStore(state => state.setTracksLoading);
+  const setLikedLoading = useLibraryStore(state => state.setLikedLoading);
   const setError = useLibraryStore(state => state.setError);
   const setActiveTab = useLibraryStore(state => state.setActiveTab);
   const setPlaylistsPagination = useLibraryStore(state => state.setPlaylistsPagination);
   const setTracksPagination = useLibraryStore(state => state.setTracksPagination);
+  const setLikedPagination = useLibraryStore(state => state.setLikedPagination);
 
   const playlistsFilters = useLibraryStore(state => state.playlistsFilters);
   const tracksFilters = useLibraryStore(state => state.tracksFilters);
@@ -167,6 +179,56 @@ export function useLibrary() {
       if (!opts?.silent) setTracksLoading(false);
     }
   }, [setTracksLoading, setError, setTracks, setTracksPagination]);
+
+  const loadLiked = useCallback(async (page = 1, pageSize = 20) => {
+    setLikedLoading(true);
+    setError(null);
+    try {
+      const resp = await getLikedTracks({ page, page_size: pageSize });
+      if (resp.success && resp.data && Array.isArray(resp.data)) {
+        // Straight passthrough — the backend already returns the playlist-screen track shape,
+        // Apple-enriched, so there is nothing to reformat and nothing to invent.
+        setLiked(resp.data as LikedTrack[]);
+        const total = (resp as any).total || 0;
+        const totalPages = (resp as any).total_pages || Math.max(1, Math.ceil(total / pageSize));
+        setLikedPagination(page, totalPages, total);
+      } else {
+        setError(resp.error || 'Failed to load liked tracks');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load liked tracks');
+    } finally {
+      setLikedLoading(false);
+    }
+  }, [setLikedLoading, setError, setLiked, setLikedPagination]);
+
+  /**
+   * Un-like one track and drop it from the list.
+   *
+   * Optimistic, and the count is decremented with it: the row is the user's own action being
+   * undone, so waiting on a round trip to remove something they just clicked away reads as lag.
+   * A failure puts it back by reloading the page rather than by restoring from memory, which would
+   * resurrect a stale row if something else had changed underneath.
+   */
+  const removeLike = useCallback(async (trackUuid: string) => {
+    const before = useLibraryStore.getState().liked;
+    const page = useLibraryStore.getState().likedPage;
+    const totalPages = useLibraryStore.getState().likedTotalPages;
+    const total = useLibraryStore.getState().likedTotal;
+    setLiked(before.filter(t => t.id !== trackUuid));
+    setLikedPagination(page, totalPages, Math.max(0, total - 1));
+    try {
+      const resp = await unlikeTrack(trackUuid);
+      if (!resp.success) {
+        await loadLiked(page);
+        return { success: false, error: resp.error || 'Failed to remove the like' };
+      }
+      return { success: true };
+    } catch (err: any) {
+      await loadLiked(page);
+      return { success: false, error: err.message || 'Failed to remove the like' };
+    }
+  }, [setLiked, setLikedPagination, loadLiked]);
 
   const removeTrack = useCallback(async (uuid: string) => {
     try {
@@ -320,11 +382,14 @@ export function useLibrary() {
   // and both doing it would fire two identical fetches back to back. The default stays `true`,
   // so any caller that is not managing its own loads behaves exactly as before.
   const applyFilters = useCallback((
-    tab: 'playlists' | 'tracks',
+    tab: LibraryTab,
     filters: LibraryFilters,
     opts?: { reload?: boolean },
   ) => {
     const reload = opts?.reload !== false;
+    // The Liked tab has no filter panel — it is a plain reverse-chronological list — so there is
+    // nothing to commit and nothing to reload.
+    if (tab === 'liked') return;
     if (tab === 'tracks') {
       setTracksFilters(filters);
       if (reload) loadTracks(1);
@@ -342,6 +407,13 @@ export function useLibrary() {
   return {
     playlists,
     tracks,
+    liked,
+    likedLoading,
+    likedPage,
+    likedTotalPages,
+    likedTotal,
+    loadLiked,
+    removeLike,
     error,
     activeTab,
     playlistsLoading,

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import type { LibraryFilters as LibraryFiltersValue } from "@resomix/stores";
 import { PAGE_BTN_PRIMARY, PAGE_BTN_SECONDARY, PAGE_FIELD, PAGE_FIELD_LABEL } from "@resomix/ui";
+import type { LibraryTab } from "@resomix/stores";
 
-type LibraryTab = "playlists" | "tracks";
+// Imported, not redeclared. A local copy of this type is what let the Liked tab exist in
+// the store and the URL while this component still believed there were only two.
 
 interface LibraryFiltersProps {
   activeTab: LibraryTab;

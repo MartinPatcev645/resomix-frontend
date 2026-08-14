@@ -36,25 +36,31 @@ interface Options {
   isAuthenticated: boolean;
   loadPlaylists: (page?: number, pageSize?: number) => unknown;
   loadTracks: (page?: number, pageSize?: number, opts?: { silent?: boolean }) => unknown;
+  loadLiked: (page?: number, pageSize?: number) => unknown;
   setActiveTab: (tab: LibraryTab) => void;
   applyFilters: (tab: LibraryTab, filters: LibraryFilters, opts?: { reload?: boolean }) => void;
   playlistsTotalPages: number;
   tracksTotalPages: number;
+  likedTotalPages: number;
   /** The page each loader last reported. Used to tell a fresh answer from a stale default. */
   playlistsPage: number;
   tracksPage: number;
+  likedPage: number;
 }
 
 export function useLibraryUrlState({
   isAuthenticated,
   loadPlaylists,
   loadTracks,
+  loadLiked,
   setActiveTab,
   applyFilters,
   playlistsTotalPages,
   tracksTotalPages,
+  likedTotalPages,
   playlistsPage,
   tracksPage,
+  likedPage,
 }: Options) {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -65,8 +71,15 @@ export function useLibraryUrlState({
   const tab = parseTab(rawTab);
   const page = parsePage(rawPage);
 
-  const totalPages = tab === "playlists" ? playlistsTotalPages : tracksTotalPages;
-  const loadedPage = tab === "playlists" ? playlistsPage : tracksPage;
+  // Three sections now, each with its own paging. A lookup rather than a ternary chain so adding a
+  // fourth cannot silently fall through to the Uploads tab's numbers.
+  const totalPages = { playlists: playlistsTotalPages, tracks: tracksTotalPages, liked: likedTotalPages }[tab];
+  const loadedPage = { playlists: playlistsPage, tracks: tracksPage, liked: likedPage }[tab];
+  const loadTab = (target: LibraryTab, atPage: number) => {
+    if (target === "playlists") loadPlaylists(atPage);
+    else if (target === "liked") loadLiked(atPage);
+    else loadTracks(atPage);
+  };
 
   // ------------------------------------------------------------------ #
   // Navigation
@@ -121,8 +134,9 @@ export function useLibraryUrlState({
   /** Re-fetch the active tab at the current page, without moving. */
   const refresh = useCallback(() => {
     if (tab === "playlists") loadPlaylists(page);
+    else if (tab === "liked") loadLiked(page);
     else loadTracks(page);
-  }, [tab, page, loadPlaylists, loadTracks]);
+  }, [tab, page, loadPlaylists, loadTracks, loadLiked]);
 
   // ------------------------------------------------------------------ #
   // Keeping the URL canonical
@@ -150,16 +164,17 @@ export function useLibraryUrlState({
   // being viewed, so a deep link, a Back press and a Next click all take the identical path.
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (tab === "playlists") loadPlaylists(page);
-    else loadTracks(page);
-  }, [isAuthenticated, tab, page, loadPlaylists, loadTracks]);
+    loadTab(tab, page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, tab, page, loadPlaylists, loadTracks, loadLiked]);
 
-  // The *other* tab, once, at page 1 — purely so its count in the tab label is populated. Without
-  // it a deep link to one tab shows "Playlists (0)" until you click it.
+  // The OTHER tabs, once, at page 1 — purely so their counts in the tab strip are populated.
+  // Without it a deep link to one tab shows "Playlists (0)" until you click it.
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (tab === "playlists") loadTracks(1);
-    else loadPlaylists(1);
+    for (const other of ["playlists", "tracks", "liked"] as LibraryTab[]) {
+      if (other !== tab) loadTab(other, 1);
+    }
     // Deliberately keyed on auth alone: switching tabs is already covered by the effect above, and
     // re-running this on every switch would refetch a tab the user just left.
     // eslint-disable-next-line react-hooks/exhaustive-deps
