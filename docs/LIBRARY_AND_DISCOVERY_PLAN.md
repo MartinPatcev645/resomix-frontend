@@ -488,17 +488,31 @@ just Analysis. Tasks 1a/2a and 9a–9c were added rather than done silently.
 
 Frontend only. Unblocks Phase 6's tab.
 
-- [ ] 13. URL is the single source of truth for `tab` **and** `page`
-- [ ] 14. Page changes **push** (not replace), so Back steps through pages
-- [ ] 15. Switching tabs resets `page` to 1
-- [ ] 16. Clamp out-of-range: `?page=999` lands on the last page, not an empty list
-- [ ] 17. Scroll to top **only when the page actually changed** — otherwise it fights the user on every re-render
-- [ ] 18. Applies to both the Playlists and Uploads tabs
+✅ **Done 2026-08-14.** All page state moved into `apps/webapp/src/hooks/useLibraryUrlState.ts`;
+the page no longer calls a loader or writes a search param directly (the one exception is the
+artifact poll's silent refetch, which deliberately does not navigate).
 
-**Tests**
-- [ ] 19. A deep link lands on the right page
-- [ ] 20. Back returns to the previous page
-- [ ] 21. `?page=999` clamps
+- [x] 13. URL is the single source of truth for `tab` **and** `page`
+- [x] 14. Page changes **push** (not replace), so Back steps through pages
+- [x] 15. Switching tabs resets `page` to 1
+- [x] 16. Clamp out-of-range: `?page=999` lands on the last page, not an empty list
+- [x] 17. Scroll to top **only when the page actually changed** — and not on first paint either
+- [x] 18. Applies to both the Playlists and Uploads tabs
+- [x] 18a. **New:** filters/clear reset the URL to page 1, with a `reload` flag on `applyFilters` so
+      the move and the filter do not both fire a fetch
+- [x] 18b. **New:** cap the requested page at 10,000. `page` becomes a SQL `OFFSET` and the endpoint
+      validates `ge=1` with **no upper bound**, so `?page=1e9` issued `OFFSET 19999999980`
+
+**Tests** — `pnpm --filter webapp test:pure` (Node's own type stripping; no vitest, no jsdom)
+- [x] 19. A deep link lands on the right page — and, crucially, is **not** clamped before the data arrives
+- [x] 20. Back returns to the previous page (page changes push; corrections replace, so the clamp cannot trap Back)
+- [x] 21. `?page=999` clamps — and the clamp terminates rather than ping-ponging
+- [x] 21a. **New:** junk input (`abc`, `0`, `-3`, `1.5`, `1e99`) resolves rather than breaking the list
+- [x] 21b. **New:** 18 tests, each verified to fail when its rule is reverted
+
+⚠️ **Left alone, pre-existing:** deleting the last row on the last page leaves you on an empty page.
+Not a regression — it behaved this way before — but the page number is now visible in the URL, so
+it reads as more of a bug than it used to. Worth a follow-up.
 
 ## Phase 3 — Search UX *(Item 3)*
 
