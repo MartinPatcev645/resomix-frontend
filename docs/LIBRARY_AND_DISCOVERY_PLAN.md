@@ -237,12 +237,105 @@ claims risk under the same rule that governs performance figures.
 | **C** | **Relative bar, no number** — longest bar = closest *in this result set* | Comparative, never absolute | Small |
 | **D** | **Star / dot rating** — 5 dots, filled by band | Familiar, coarse by design | Small |
 
-**Recommendation: A + C.** Keep the bar, drop the number, label the band. It preserves the ordering
-information users act on, removes a figure that implies precision we do not have, and needs no
-backend change — `score` keeps flowing, the client stops printing it.
+~~**Recommendation: A + C.**~~ Superseded by the research below.
 
-**Worth noting:** the tooltip at `:517` can then say something true and useful instead of
-apologising for the tight band.
+---
+
+## Item 5 — research findings (2026-08-14)
+
+Tasks 73–74. Measured against the dev database and checked against how comparable services present
+the same kind of score. **Awaiting a decision before anything is built.**
+
+### The measurement
+
+All 4,420 scored rows in `playlist_tracks`:
+
+| | |
+|---|---|
+| Range | 46.2% – 94.7% — **nothing below 46% ever appears** |
+| Mean / SD | 71.4% / 6.9 points |
+| Inside 60–85% | **91% of all scores** |
+| Above 90% | 5 rows (0.1%) |
+
+Two findings decide this item.
+
+**1. The bottom half of the scale is dead.** No result is ever below 46%, so the number is
+systematically misread: a user sees "62%" and reads *barely similar*, when 62% is an entirely
+ordinary result. The scale the user brings to a percentage does not match the scale the score
+actually occupies.
+
+**2. Two decimals are ~63× finer than the real signal.** The mean gap between adjacent ranks is
+**0.63 points**, and **2,531 of 4,250 adjacent pairs (60%) differ by less than half a point**. A
+real playlist, top of the list:
+
+| Rank | Today | Gap to next |
+|---|---|---|
+| 1 | 80.93% | 5.16 |
+| 2 | 75.77% | **0.09** |
+| 3 | 75.69% | 1.97 |
+| 4 | 73.71% | **0.11** |
+| 5 | 73.60% | 0.78 |
+
+The ordering of ranks 2 and 3 is noise. Two decimals present it as a fact.
+
+**But the ordering itself is real.** Average top-to-bottom spread within one playlist is **15.7
+points** (min 7.7, max 31.7). The information is in the *sequence*, not in the digits — which is
+exactly what the presentation should carry.
+
+### What the field says
+
+The clustering is a property of high-dimensional embeddings, not a flaw in our model — in high
+dimensions random vectors are near-orthogonal, so scores concentrate in a narrow band. The guidance
+is direct: *"Cosine similarity scores are not probabilities. They are not percentages"*, and a score
+of 0.80 does not mean 80% similar. The recommendation is to present **relative ranking and
+position** rather than an absolute figure.
+([Mixpeek — Embedding Space Geometry](https://mixpeek.com/guides/embedding-space-geometry))
+
+Our closest commercial comparator, **Cyanite**, does show percentages. Worth knowing, and not
+decisive: it is a B2B API surface where the number is machine-readable, rather than a claim made to
+a DJ choosing a record.
+
+### Options, re-scored against the data
+
+| | Approach | Rank 2 vs 3 (0.09 pts apart) becomes | Verdict |
+|---|---|---|---|
+| **A** | Named bands — *Very close · Close · Related · Loose* | Both "Close" — the false distinction disappears | ✅ |
+| **B** | Rank only — "#2", "#3" | Ordinal, no implied magnitude | ✅ |
+| **C** | Relative bar, normalised to the result set | — | ❌ **already tried and reverted** |
+| **D** | Dots — ●●●○○ | Coarse by design | viable |
+
+**Option C is struck out on evidence, not taste.** `PlaylistTable.tsx:182` records that it was
+built and reverted: *"Absolute fill: 0.8 → 80% of the rail. **NOT** normalised against the
+shortlist's own min/max, which is what the old band width did — that made the top row look like
+100%."* The original A + C recommendation was, in part, a proposal to redo something already
+rejected.
+
+### Recommendation: A + B
+
+Keep the bar exactly as it is (absolute fill), replace the percentage with a band name, and let the
+existing rank column carry the ordering. No backend change — `score` keeps flowing, the client stops
+printing it.
+
+Band cuts, tested against the real distribution so that no band is empty and the top one stays
+scarce enough to mean something:
+
+| Band | Cut | Share of real results |
+|---|---|---|
+| Very close | ≥ 82% | 3.2% |
+| Close | 75–82% | 31.2% |
+| Related | 65–75% | 44.9% |
+| Loose | < 65% | 20.7% |
+
+**Also fixed by this:** the tooltip at `:517` currently *apologises* for the tight band — *"scores
+sit in a tight band by design"* — and can say something useful instead. And a two-decimal figure we
+cannot defend carries the same claims risk as a published performance number.
+
+### Open — needed before tasks 75–77
+
+1. **Which option?** A + B, or another.
+2. **Band names.** *Very close / Close / Related / Loose*, or George's wording — these are
+   user-facing.
+3. **Band cuts.** The four above, or shifted.
 
 ---
 
@@ -636,22 +729,47 @@ rows on both plans** — free locks 9 with zero identifier leaks, Pro locks none
 
 Depends on Phase 2's pagination.
 
+✅ **Done 2026-08-14.** Verified against the dev database: a user with **6 like rows across 5
+distinct tracks** gets 5 rows, newest first, paginating without overlap.
+
 **Backend**
-- [ ] 62. `GET /ratings/tracks/mine` — paginated, `rating = 1`, newest first
-- [ ] 63. Apple metadata + artwork enrichment, via the same path the Library already uses
+- [x] 62. `GET /ratings/tracks/mine` — paginated, `rating = 1`, newest first
+- [x] 62a. **New:** `DELETE /ratings/tracks/mine/{uuid}` for un-liking. Both are registered **ahead
+      of** `/tracks/{track_id}` — FastAPI matches in order, so a static path declared after a
+      parameterised one is unreachable
+- [x] 62b. **New:** one row per TRACK, not per rating. Ratings are keyed on (user, track,
+      *playlist*), so liking the same track in three playlists is three rows
+- [x] 63. Apple metadata + artwork enrichment, via the same path the Library already uses
 
 **Frontend**
-- [ ] 64. Third tab, reusing Phase 2's pagination (`?tab=liked&page=2`)
-- [ ] 65. Single action — *View chain discovery*
-- [ ] 66. No delete, no analysis
-- [ ] 67. Un-liking allowed
-- [ ] 68. Empty state explaining how tracks get here
+- [x] 64. Third tab, reusing Phase 2's pagination (`?tab=liked&page=2`)
+- [x] 65. Single action — *Chain discovery*
+- [x] 66. No delete, no analysis
+- [x] 67. Un-liking allowed — and it clears the like in **every** playlist it was given in, or the
+      row would stay on screen backed by the others and the click would appear to do nothing
+- [x] 67a. **New:** an explicit thumbs-DOWN is left alone. It answers a different question, and
+      clearing it here would silently discard feedback the user never revisited
+- [x] 68. Empty state naming the gesture — *"open any Sonic Discovery playlist and give a track a
+      thumbs up"* — since a new user's tab is blank and "nothing here yet" would not say where
+- [x] 68a. **New:** the filter panel and Favorites toggle are hidden on this tab. It is a plain
+      reverse-chronological list, and offering filters that do nothing is worse than offering none
 
 **Tests**
-- [ ] 69. Only `rating = 1` rows appear
-- [ ] 70. Newest first
-- [ ] 71. Pagination
-- [ ] 72. A deleted track does not break the page
+- [x] 69. Only `rating = 1` rows appear
+- [x] 70. Newest first — with an `id DESC` tie-break, since several likes in one session share a
+      `rated_at` second
+- [x] 71. Pagination — bounded, tenant-scoped, and `total` counts distinct **tracks** so the page
+      count cannot disagree with the list under it
+- [x] 72. A deleted track does not break the page — asserted against the FK's `ON DELETE CASCADE`,
+      which is what makes the query safe without a filter
+- [x] 72a. ⚠️ **The trap, and it shipped in the first version.** `is_active` reads as a soft-delete
+      flag, so `is_active = 1` is the obvious filter — and it is wrong. **4,360 of the 4,420 tracks
+      currently sitting in playlists have `is_active = 0`**, and the playlist screens list them
+      happily. The blanket filter returned zero rows for a user with five liked tracks, and an empty
+      tab is indistinguishable from a user who has liked nothing. Corrected to uploads only
+- [x] 72b. **New:** 15 tests, sabotage-verified. Two needed fixing first: a `group by t.id`
+      substring check that `GROUP BY t.id, r.playlist_id` also satisfied, and — after anchoring it —
+      a regex that matched the duration lookup's *inner* `GROUP BY` instead of the outer one
 
 ✅ **No gating work.** Chain discovery *is* similarity-by-id — the same endpoint as search — and
 `get_similarity_by_id` already resolves `DROPDOWN_MAX_TRACKS` and calls `peek_allowed` for the daily
@@ -661,9 +779,12 @@ allowance (`similarity_controller.py:1545`). Verified.
 
 Deferred deliberately: it is a product decision, and building early means rebuilding.
 
-- [ ] 73. Research alternatives, including what comparable services do
-- [ ] 74. Come back with options and examples **before building anything**
-- [ ] 75. Implement the chosen approach
+- [x] 73. Research alternatives, including what comparable services do — **done 2026-08-14**, see
+      *Item 5 — research findings* above
+- [x] 74. Come back with options and examples **before building anything** — done; recommendation is
+      **A + B** (named bands + rank), with C struck out because it was already built and reverted
+- [ ] 75. Implement the chosen approach — ⏸️ **blocked on three decisions**: which option, the band
+      names (user-facing, so possibly George's call), and the band cuts
 - [ ] 76. Update the tooltip that currently apologises for the tight band
 
 **Tests**

@@ -383,6 +383,64 @@ class RatingService:
             }
 
     # Combined / admin retrieval
+    async def get_liked_tracks(
+        self,
+        db: AsyncSession,
+        user_id: int,
+        page: int = 1,
+        page_size: int = 20,
+        partner_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """A page of the user's liked tracks, Apple-enriched.
+
+        The enrichment is the same call the playlist screen makes, so a liked track renders with the
+        same artwork, title and preview it had where the user liked it. Without it the tab would
+        show in-house metadata for catalogue tracks — a different title and no cover for the same
+        row the user is looking at elsewhere.
+        """
+        try:
+            rows, total = await self.track_rating_repository.async_get_liked_tracks(
+                db, user_id, page=page, page_size=page_size, partner_id=partner_id
+            )
+            if rows:
+                from app.services.apple_music_enrichment import enrich_tracks_with_apple
+
+                # Mutates in place and swallows its own failures — a missing Apple row degrades the
+                # track to the HLS player rather than failing the page.
+                await enrich_tracks_with_apple(db, rows)
+            return {
+                "success": True,
+                "data": rows,
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": max(1, (total + page_size - 1) // page_size),
+            }
+        except Exception as exc:
+            print(f"Error getting liked tracks: {exc}")
+            return {
+                "success": False,
+                "error": "An error occurred while retrieving liked tracks",
+                "data": [],
+                "total": 0,
+            }
+
+    async def unlike_track(
+        self, db: AsyncSession, track_uuid: str, user_id: int
+    ) -> Dict[str, Any]:
+        """Remove the user's like for one track, everywhere it was given."""
+        try:
+            removed = await self.track_rating_repository.async_unlike_track(db, track_uuid, user_id)
+            if not removed:
+                # Idempotent by design: un-liking something already un-liked (a double click, or a
+                # stale tab) is not an error, and reporting one would make the UI show a failure for
+                # an action that reached the state the user wanted.
+                return {"success": True, "data": {"track_id": track_uuid, "removed": 0}}
+            return {"success": True, "data": {"track_id": track_uuid, "removed": removed}}
+        except Exception as exc:
+            print(f"Error un-liking track: {exc}")
+            return {"success": False, "error": "An error occurred while removing the like"}
+
     async def get_my_playlist_ratings(
         self, db: AsyncSession, playlist_uuid: str, user_id: Optional[int]
     ) -> Dict[str, Any]:

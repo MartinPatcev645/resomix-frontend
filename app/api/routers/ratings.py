@@ -17,7 +17,7 @@ Email: usman.naeem2212@gmail.com
 
 from typing import Optional
 
-from fastapi import APIRouter, Security, Depends, Path, Request
+from fastapi import APIRouter, Security, Depends, Path, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,6 +47,9 @@ router = APIRouter(
 
 # Initialize controller
 rating_controller = RatingController()
+
+# Cap on the liked-tracks page, matching the Library's own listings.
+MAX_LIKED_PAGE_SIZE = 20
 
 
 # Track Rating Endpoints
@@ -86,6 +89,52 @@ async def rate_track_endpoint(
     Note: If authenticated via JWT, the user_id from the token will be used automatically.
     """
     return await rating_controller.rate_track(db, request, request_data, current_user)
+
+
+@router.get(
+    "/tracks/mine",
+    summary="List My Liked Tracks",
+    description="A page of the tracks the authenticated user has thumbed up, newest like first. "
+    "One row per track however many playlists it was liked in, Apple-enriched, soft-deleted "
+    "tracks excluded.",
+    responses={
+        200: {"description": "The user's liked tracks"},
+        401: {"model": RatingErrorResponse, "description": "Authentication required"},
+        500: {"model": RatingErrorResponse, "description": "Internal server error"},
+    },
+)
+async def get_liked_tracks_endpoint(
+    request: Request,
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(20, ge=1, le=MAX_LIKED_PAGE_SIZE, description=f"Items per page (max {MAX_LIKED_PAGE_SIZE})"),
+    db: AsyncSession = Depends(get_database_session),
+    _partner: Partner = Depends(get_public_partner),
+    current_user: User = Security(get_current_user),
+) -> JSONResponse:
+    """List the authenticated user's liked tracks."""
+    return await rating_controller.get_liked_tracks(db, request, current_user, page, page_size)
+
+
+@router.delete(
+    "/tracks/mine/{track_uuid}",
+    summary="Un-like A Track",
+    description="Remove the user's like for one track across EVERY playlist they liked it in. "
+    "An explicit thumbs-down is left alone. Idempotent.",
+    responses={
+        200: {"description": "The like was removed (or was already absent)"},
+        401: {"model": RatingErrorResponse, "description": "Authentication required"},
+        500: {"model": RatingErrorResponse, "description": "Internal server error"},
+    },
+)
+async def unlike_track_endpoint(
+    request: Request,
+    track_uuid: str = Path(..., description="Track UUID"),
+    db: AsyncSession = Depends(get_database_session),
+    _partner: Partner = Depends(get_public_partner),
+    current_user: User = Security(get_current_user),
+) -> JSONResponse:
+    """Remove the user's like for one track."""
+    return await rating_controller.unlike_track(db, request, track_uuid, current_user)
 
 
 @router.get(

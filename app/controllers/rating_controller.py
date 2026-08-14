@@ -1287,6 +1287,34 @@ class RatingController:
                 content=response_content,
             )
 
+    async def get_liked_tracks(
+        self,
+        db: AsyncSession,
+        request: Request,
+        current_user: User,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> JSONResponse:
+        """List the authenticated user's liked tracks (paginated, newest like first)."""
+        partner_id = getattr(request.state, "partner_id", None)
+        result = await self.rating_service.get_liked_tracks(
+            db, current_user.id, page=page, page_size=page_size, partner_id=partner_id
+        )
+        code = status.HTTP_200_OK if result.get("success") else status.HTTP_500_INTERNAL_SERVER_ERROR
+        return JSONResponse(status_code=code, content=result)
+
+    async def unlike_track(
+        self,
+        db: AsyncSession,
+        request: Request,
+        track_uuid: str,
+        current_user: User,
+    ) -> JSONResponse:
+        """Remove the user's like for one track, across every playlist they gave it in."""
+        result = await self.rating_service.unlike_track(db, track_uuid, current_user.id)
+        code = status.HTTP_200_OK if result.get("success") else status.HTTP_500_INTERNAL_SERVER_ERROR
+        return JSONResponse(status_code=code, content=result)
+
     async def get_my_playlist_ratings(
         self,
         db: AsyncSession,

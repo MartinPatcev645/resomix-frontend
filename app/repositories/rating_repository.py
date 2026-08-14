@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional, Tuple, Union
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, delete, text, case, update
@@ -361,6 +361,143 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
                 "average_rating": None,
                 "rating_distribution": {"0": 0, "1": 0}
             }
+
+    async def async_get_liked_tracks(
+        self,
+        db: AsyncSession,
+        user_id: int,
+        page: int = 1,
+        page_size: int = 20,
+        partner_id: Optional[int] = None,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """A page of the tracks this user has thumbed up, newest like first.
+
+        Shape matches the playlist detail's track rows on purpose — same keys, same in-house
+        fallbacks for the Apple-first fields — so the Liked tab renders through the components the
+        playlist screen already uses and `enrich_tracks_with_apple` works on it unchanged.
+
+        Three things this has to get right, none of them obvious from the table:
+
+        * **One row per TRACK, not per rating.** Ratings are keyed on (user, track, *playlist*), so
+          liking the same track in three playlists is three rows. Grouping by `track_id` is what
+          stops it appearing three times in the tab.
+        * **Liked anywhere counts as liked.** A thumb is contextual feedback — "does this fit *this*
+          seed" — so liking a track under one playlist and not another is not a contradiction, and
+          the tab lists it. `rated_at` is the MAX across those rows, so the ordering reflects the
+          most recent time the user said yes.
+        * **Only soft-deleted UPLOADS are excluded — not every `is_active = 0` row.** This is the
+          trap. `is_active` is a soft-delete marker for uploads (`delete_user_track` flips it), but
+          on catalogue tracks it means something else entirely: 4,360 of the 4,420 tracks currently
+          sitting in playlists have `is_active = 0`, and the playlist screens list them happily. A
+          blanket `is_active = 1` filter here is the intuitive thing to write and it empties the tab
+          for every user. Hard deletes need no filter at all — the rating FK cascades.
+
+        Returns ``(rows, total)``; `total` counts distinct liked tracks, so it matches the page
+        count rather than the rating count.
+        """
+        if not user_id:
+            return [], 0
+
+        where = [
+            "r.user_id = :user_id",
+            "r.rating = 1",
+            # See the docstring: uploads only. `is_active = 0` on a catalogue track is normal.
+            "NOT (t.type = 'upload' AND t.is_active = 0)",
+        ]
+        params: Dict[str, Any] = {"user_id": user_id}
+        if partner_id is not None:
+            where.append("t.partner_id = :partner_id")
+            params["partner_id"] = partner_id
+        clause = " AND ".join(where)
+
+        total = await db.scalar(
+            text(f"SELECT COUNT(DISTINCT r.track_id) FROM track_ratings r "
+                 f"JOIN tracks t ON t.id = r.track_id WHERE {clause}"),
+            params,
+        ) or 0
+        if not total:
+            return [], 0
+
+        params["limit"] = page_size
+        params["offset"] = max(0, (page - 1) * page_size)
+        rows = (await db.execute(
+            text(
+                f"""
+                SELECT
+                    t.id                     AS track_id,
+                    t.uuid                   AS id,
+                    t.title                  AS title,
+                    t.isrc                   AS isrc,
+                    t.p_line_year            AS year,
+                    t.type                   AS type,
+                    (COALESCE(t.duration_ms, MAX(tad.dur)) / 1000.0) AS duration,
+                    COALESCE(l.label_name, '') AS label,
+                    -- In-house fallbacks for the Apple-first fields (see apple_music_enrichment).
+                    g.name                   AS genre,
+                    MIN(r2.title)            AS album,
+                    COALESCE(
+                        GROUP_CONCAT(DISTINCT c.full_name ORDER BY c.full_name SEPARATOR ', '),
+                        COALESCE(t.display_artist, '')
+                    )                        AS artist,
+                    MAX(r.rated_at)          AS liked_at
+                FROM track_ratings r
+                JOIN tracks t              ON t.id = r.track_id
+                LEFT JOIN release_tracks rt ON t.id = rt.track_id
+                LEFT JOIN releases r2       ON rt.release_id = r2.id
+                LEFT JOIN labels l          ON r2.label_id = l.id
+                LEFT JOIN genres g          ON t.genre_id = g.id
+                LEFT JOIN track_contributors tc ON t.id = tc.track_id
+                LEFT JOIN contributors c    ON tc.person_id = c.id
+                LEFT JOIN (
+                    SELECT track_id, MAX(duration_ms) AS dur
+                    FROM track_analysis_results GROUP BY track_id
+                ) tad ON tad.track_id = t.id
+                WHERE {clause}
+                GROUP BY t.id
+                -- `t.id DESC` breaks ties: several likes in one session share a rated_at second,
+                -- and without it the same track can land on two pages while another lands on none.
+                ORDER BY liked_at DESC, t.id DESC
+                LIMIT :limit OFFSET :offset
+                """
+            ),
+            params,
+        )).mappings().all()
+
+        out: List[Dict[str, Any]] = []
+        for row in rows:
+            d = dict(row)
+            d["duration"] = float(d["duration"]) if d.get("duration") is not None else None
+            d["liked_at"] = d["liked_at"].isoformat() if d.get("liked_at") else None
+            d["type"] = "upload" if d.get("type") == "upload" else "internal"
+            out.append(d)
+        return out, int(total)
+
+    async def async_unlike_track(
+        self, db: AsyncSession, track_uuid: str, user_id: int
+    ) -> int:
+        """Remove EVERY like this user has for one track, across all playlists.
+
+        Deliberately not per-playlist, unlike ``async_delete_track_rating``. The Liked tab shows one
+        row per track, so removing a single playlist's rating would leave the row on screen backed
+        by the others — the user would click un-like and watch nothing happen.
+
+        Only `rating = 1` rows are touched: an explicit thumbs-DOWN in some playlist is a separate
+        judgement, and clearing it here would silently discard feedback the user never revisited.
+        """
+        track_numeric_id = await db.scalar(select(Track.id).where(Track.uuid == track_uuid))
+        if not track_numeric_id:
+            return 0
+        result = await db.execute(
+            delete(TrackRating).where(
+                and_(
+                    TrackRating.user_id == user_id,
+                    TrackRating.track_id == track_numeric_id,
+                    TrackRating.rating == 1,
+                )
+            )
+        )
+        await db.commit()
+        return result.rowcount or 0
 
     async def async_get_user_ratings_for_playlist(
         self, db: AsyncSession, playlist_uuid: str, user_id: int
