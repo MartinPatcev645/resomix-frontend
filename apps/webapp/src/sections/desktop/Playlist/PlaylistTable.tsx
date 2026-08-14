@@ -27,6 +27,8 @@ import {
   WORKSPACE_BTN_SECONDARY,
   WORKSPACE_FOCUS_VISIBLE,
 } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
+import { ScoreDots } from "@/components/Playlist/ScoreDots.tsx";
+import { DOT_COUNT, dotsForScore } from "@/components/Playlist/scoreScale.ts";
 
 /**
  * One icon size across the row's three glyphs — play/pause, feedback thumbs and Chain Discover —
@@ -118,9 +120,12 @@ const PlaylistTable: React.FC = () => {
     const visibleLockedTracks = lockedTracks;
     const analysis = playlistId ? loadPlaylistAnalysis(playlistId) : null;
     const footerResultCount = analysis?.resultCount ?? tracks.length;
-    const footerTopMatch = analysis?.topMatchScore != null
-        ? `${(analysis.topMatchScore * 100).toFixed(2)}%`
-        : tracks.length > 0 ? `${(tracks[0].score * 100).toFixed(2)}%` : null;
+    // The footer's "top match" reads in dots too, for the same reason the rows do — quoting a
+    // percentage here while the rows show a meter would be two different claims about one number.
+    const footerTopMatchDots = analysis?.topMatchScore != null
+        ? dotsForScore(analysis.topMatchScore)
+        : tracks.length > 0 ? dotsForScore(tracks[0].score) : null;
+    const footerTopMatch = footerTopMatchDots != null ? `${footerTopMatchDots}/${DOT_COUNT}` : null;
     const footerAnalysisTime = analysis?.analysisSeconds != null
         ? `${analysis.analysisSeconds.toFixed(1)}s`
         : null;
@@ -178,10 +183,6 @@ const PlaylistTable: React.FC = () => {
         const isTrackPlaying = isSelected && isPlaying;
         const isUnavailable = isSelected && networkError;
         const isTopRank = track.rank === 1;
-        // Absolute fill: 0.8 → 80% of the rail. NOT normalised against the shortlist's own
-        // min/max, which is what the old band width did — that made the top row look like 100%.
-        const bandPct = Math.max(0, Math.min(100, (track.score ?? 0) * 100));
-        const scorePctLabel = `${(track.score * 100).toFixed(2)}%`;
         const isAlternate = rowIndex % 2 === 1;
         const playLabel = isTrackPlaying ? "Pause" : "Play";
         const isPaused = isSelected && !isTrackPlaying && !isUnavailable;
@@ -322,19 +323,11 @@ const PlaylistTable: React.FC = () => {
                         )}
                         <div className="opacity-90">{formatDuration(track.duration)}</div>
                     </div>
-                    <div className="pl-unavailable-dim flex min-w-0 flex-col gap-[var(--px-4)]" role="cell">
-                        <div className={`text-center font-fira text-[length:var(--px-11)] ${isTopRank || isTrackPlaying ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--rx-color-text-primary)]"}`}>
-                            {scorePctLabel}
-                            {isTopRank && (
-                                <span className="ml-[var(--px-6)] text-[length:var(--px-8)] uppercase tracking-[var(--px-1)] text-[var(--color-accent,#EE4A26)]">TOP</span>
-                            )}
-                        </div>
-                        <div className="pl-score-rail" aria-hidden="true">
-                            <div
-                                className={`pl-score-fill ${isTopRank || isTrackPlaying ? "bg-[var(--color-accent,#EE4A26)]" : "bg-[var(--rx-color-score-fill)]"}`}
-                                style={{ width: `${bandPct}%` }}
-                            />
-                        </div>
+                    <div className="pl-unavailable-dim flex min-w-0 flex-col items-center gap-[var(--px-4)]" role="cell">
+                        <ScoreDots score={track.score} />
+                        {isTopRank && (
+                            <span className="font-fira text-[length:var(--px-8)] uppercase tracking-[var(--px-1)] text-[var(--color-accent,#EE4A26)]">TOP</span>
+                        )}
                     </div>
                     {!isRestricted && (
                         <div className="pl-unavailable-dim flex min-w-0 items-center justify-center gap-[var(--px-2)]" role="cell">
@@ -514,7 +507,7 @@ const PlaylistTable: React.FC = () => {
             <div className="mt-[var(--px-12)] flex flex-wrap gap-x-[var(--px-16)] gap-y-[var(--px-6)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] text-[var(--color-primary)] opacity-50">
                 <span>▶ Authorised preview / playback</span>
                 <span>⇄ Chain Discover · use as new reference</span>
-                <span>Score bars show the match outright; scores sit in a tight band by design</span>
+                <span>Ten dots · how close each track is to your reference</span>
             </div>
 
             <p className="mt-[var(--px-12)] font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] text-[var(--color-primary)] opacity-60">

@@ -4,7 +4,7 @@ import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import { PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
-import { formatDuration, formatPercentage, useGlobalAudioController, useAccess } from "@resomix/hooks";
+import { formatDuration, useGlobalAudioController, useAccess} from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { rateTrack, deleteTrackRating, getMyPlaylistRatings } from "@resomix/api-client";
 import { HoverFlow } from "@resomix/ui";
@@ -22,6 +22,8 @@ import {
 } from "@/utils/playlistChrome.ts";
 import { useVisibleResultWindow } from "@/hooks/useVisibleResultWindow.ts";
 import { WORKSPACE_BTN_SECONDARY, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
+import { ScoreDots } from "@/components/Playlist/ScoreDots.tsx";
+import { DOT_COUNT, dotsForScore } from "@/components/Playlist/scoreScale.ts";
 
 interface PlaylistTableProps {
     onMoreClick?: (trackId: string, name: string, label: string, duration: number, score: number, isInput?: boolean) => void;
@@ -83,8 +85,8 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
     const analysis = playlistId ? loadPlaylistAnalysis(playlistId) : null;
     const footerResultCount = analysis?.resultCount ?? tracks.length;
     const footerTopMatch = analysis?.topMatchScore != null
-        ? `${(analysis.topMatchScore * 100).toFixed(2)}%`
-        : tracks.length > 0 ? `${(tracks[0].score * 100).toFixed(2)}%` : null;
+        ? `${dotsForScore(analysis.topMatchScore)}/${DOT_COUNT}`
+        : tracks.length > 0 ? `${dotsForScore(tracks[0].score)}/${DOT_COUNT}` : null;
     const footerAnalysisTime = analysis?.analysisSeconds != null
         ? `${analysis.analysisSeconds.toFixed(1)}s`
         : null;
@@ -184,8 +186,6 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
         const isUnavailable = isSelected && networkError;
         const isTopRank = track.rank === 1;
         // Score is a 0–1 similarity — the meter fills to the true value (clamped for safety).
-        const scorePct = Math.max(0, Math.min(100, (track.score ?? 0) * 100));
-        const scoreAccent = isTopRank || isThisPlaying;
         const labelText = resolveLabel(track.label);
         const genreText = firstGenre(track.genre);
         const isPaused = isSelected && !isThisPlaying && !isUnavailable;
@@ -313,24 +313,10 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         <img src={MoreSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-14)] w-[var(--px-19)]" />
                                     </button>
                                 )}
-                                <div className="pl-unavailable-dim mt-auto flex w-[var(--px-44)] shrink-0 flex-col items-center gap-[var(--px-3)]">
-                                    <span
-                                        className={`font-fira text-[length:var(--px-9)] leading-none tracking-[var(--px-0-5)] ${scoreAccent ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--rx-color-text-muted)]"}`}
-                                        title={`Match ${formatPercentage(track.score, 2)}`}
-                                    >
-                                        {formatPercentage(track.score, 2)}
-                                    </span>
-                                    {/* Absolute meter: the fill is the raw score, not a value
-                                        normalised across the shortlist, so it reads true. */}
-                                    <div
-                                        aria-hidden="true"
-                                        className="h-[var(--px-4)] w-full overflow-hidden rounded-[var(--px-2)] border border-[var(--rx-color-border-default)]"
-                                    >
-                                        <div
-                                            className={`h-full ${scoreAccent ? "bg-[var(--color-accent,#EE4A26)]" : "bg-[var(--rx-color-score-fill)]"}`}
-                                            style={{ width: `${scorePct}%` }}
-                                        />
-                                    </div>
+                                <div className="pl-unavailable-dim mt-auto flex shrink-0 flex-col items-center gap-[var(--px-3)]">
+                                    {/* Compact dots — the row is narrow, and ten full-size ones
+                                        would push the title column. */}
+                                    <ScoreDots score={track.score} compact />
                                 </div>
                             </div>
                         </div>
@@ -463,7 +449,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                 <span>▶ Authorised preview / playback</span>
                 <span>Play a track to rate it, open it in Apple Music or Chain Discover from it</span>
                 <span>⋯ Track details and the same actions</span>
-                <span>Match scores sit in a tight band by design</span>
+                <span>Ten dots · how close each track is to your reference</span>
             </div>
             <p className="mt-[var(--px-8)] font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] text-[var(--color-primary)] opacity-60">
                 {access.isGuestForCopy
