@@ -139,6 +139,10 @@ export function useLibrary() {
           playlist_uuid: t.playlist_uuid || null,
           analysis_uuid: t.analysis_uuid || null,
           analysis: t.analysis || null,
+          // Passed through as-is. Deliberately NOT defaulted to a `pending` shape: an older
+          // backend that omits this must read as "no record", and a default of pending would put
+          // every row into a poll for artifacts nothing is building.
+          artifacts: t.artifacts || null,
           created_at: t.created_at || null,
         }));
         setTracks(formattedTracks);

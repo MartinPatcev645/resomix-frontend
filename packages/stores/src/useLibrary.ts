@@ -9,6 +9,35 @@ export interface LibraryTrackAnalysis {
   camelot: string | null;
 }
 
+/**
+ * What is happening to one sibling artifact, straight from `track_artifact_status`.
+ *
+ * `pending` queued · `processing` running now · `ready` it exists · `unavailable` it ran and
+ * produced nothing · `failed` it broke · `unknown` no record (an upload from before the backend
+ * tracked this).
+ *
+ * `unavailable` and `failed` are deliberately separate. "No close enough matches in the catalogue"
+ * is a normal outcome and should not be shown as an error; "we could not analyse this" should.
+ */
+export type ArtifactState =
+  | 'pending'
+  | 'processing'
+  | 'ready'
+  | 'unavailable'
+  | 'failed'
+  | 'unknown';
+
+export interface LibraryTrackArtifact {
+  state: ArtifactState;
+  /** Display text, backend-authored. Only ever set on `failed` / `unavailable`. */
+  error?: string | null;
+}
+
+export interface LibraryTrackArtifacts {
+  playlist: LibraryTrackArtifact;
+  analysis: LibraryTrackArtifact;
+}
+
 export interface LibraryTrack {
   id: string;
   title: string;
@@ -23,8 +52,13 @@ export interface LibraryTrack {
   playlist_uuid?: string | null;
   analysis_uuid?: string | null;
   analysis?: LibraryTrackAnalysis | null;
-  // Upload timestamp (ISO). Used by the Library to decide whether a still-missing sibling
-  // artifact (analysis / playlist) is likely still generating and should be polled for.
+  /**
+   * What the absence of one of those uuids MEANS. Optional because a cached response from before
+   * this shipped will not carry it; `TrackArtifactChips` treats an absent block as `unknown`.
+   */
+  artifacts?: LibraryTrackArtifacts | null;
+  // Upload timestamp (ISO). Shown on the row; no longer used to guess at artifact state — that
+  // guess ("younger than 15 minutes ⇒ still generating") is what `artifacts` replaced.
   created_at?: string | null;
 }
 

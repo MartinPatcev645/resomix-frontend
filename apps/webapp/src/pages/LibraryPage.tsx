@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon, HeartStrokeIcon } from "@resomix/ui";
 import { useAuthStore } from "@resomix/stores";
@@ -17,6 +17,14 @@ import {
   PAGE_PANEL_PLAIN,
   PAGE_SUBLABEL,
 } from "@resomix/ui";
+
+// 5s, down from 10s: the poll now terminates on the artifact's real state rather than on a
+// 15-minute window, so a faster interval costs nothing on a healthy upload (it stops the moment
+// the artifact lands) and halves the wait before the capsule goes live.
+const ARTIFACT_POLL_INTERVAL_MS = 5_000;
+// …and a ceiling, because a worker that dies without recording a terminal state would otherwise
+// leave the row `pending` and the page polling for the rest of the session.
+const ARTIFACT_POLL_CEILING_MS = 10 * 60 * 1000;
 
 export default function LibraryPage() {
   const navigate = useNavigate();
@@ -110,6 +118,11 @@ export default function LibraryPage() {
   const [exportGate, setExportGate] = useState<{ reason: string; title: string; body: string } | null>(null);
   // Embed (iframe) — open for everyone; the modal guards on public/private itself.
   const [embedFor, setEmbedFor] = useState<{ uuid: string; isPublic: boolean } | null>(null);
+
+  // Artifact poll budget. A ref, not state: incrementing it must not itself re-run the effect that
+  // reads it, which is how a 5s poll turns into a render loop.
+  const pollElapsedRef = useRef(0);
+  const [pollExhausted, setPollExhausted] = useState(false);
 
   const handleExportApple = (uuid: string) => {
     setActiveMenuId(null);
@@ -235,23 +248,48 @@ export default function LibraryPage() {
   }, [isAuthenticated]);
 
   // Every upload spawns BOTH a similarity playlist and an analysis; the sibling runs in the
-  // background and lands a minute or two later. While the Tracks tab shows a just-uploaded row whose
-  // sibling artifact hasn't arrived yet, silently re-poll my-tracks every 10s so its capsule flips
-  // from "generating" to a live link the moment it's ready — no manual refresh, both directions.
-  // Self-terminating: re-arms only while something is still pending (see trackHasPendingArtifact).
+  // background and lands a minute or two later. While the Tracks tab shows a row whose sibling
+  // artifact hasn't arrived yet, silently re-poll my-tracks so its capsule flips to a live link the
+  // moment it's ready — no manual refresh, both directions.
+  //
+  // Self-terminating on the BACKEND's state (see trackHasPendingArtifact), not on a clock. The
+  // previous version re-armed only while the row was under 15 minutes old, so it stopped polling
+  // exactly when a slow analysis most needed it — and the capsule then fell through to a
+  // "coming soon" message about the feature it was in the middle of running.
   useEffect(() => {
     if (activeTab !== "tracks") return;
     if (!tracks.some(trackHasPendingArtifact)) return;
+    // A ceiling is still needed: a worker that dies without writing a terminal state would leave
+    // `pending` on the row forever, and a poll keyed purely on it would never stop. After this the
+    // page goes quiet and Refresh is the way forward — see `pollExhausted`.
+    if (pollElapsedRef.current >= ARTIFACT_POLL_CEILING_MS) {
+      if (!pollExhausted) setPollExhausted(true);
+      return;
+    }
     const timer = setTimeout(() => {
+      pollElapsedRef.current += ARTIFACT_POLL_INTERVAL_MS;
       loadTracks(tracksPage, 20, { silent: true });
-    }, 10000);
+    }, ARTIFACT_POLL_INTERVAL_MS);
     return () => clearTimeout(timer);
-  }, [activeTab, tracks, tracksPage, loadTracks]);
+  }, [activeTab, tracks, tracksPage, loadTracks, pollExhausted]);
+
+  // A new page, a new filter or a manual Refresh is a fresh question — give it a fresh budget,
+  // otherwise one long-running upload would permanently silence polling for the whole tab.
+  useEffect(() => {
+    pollElapsedRef.current = 0;
+    setPollExhausted(false);
+  }, [tracksPage, activeTab]);
 
   // Refresh only the currently-selected tab (keeps the other as-is).
   const handleRefresh = () => {
     if (activeTab === "playlists") loadPlaylists(playlistsPage);
-    else loadTracks(tracksPage);
+    else {
+      // Refresh is the documented way out of the exhausted state, so it has to actually restore
+      // polling — otherwise the notice tells the user to press a button that changes nothing.
+      pollElapsedRef.current = 0;
+      setPollExhausted(false);
+      loadTracks(tracksPage);
+    }
   };
 
   const handleDeletePlaylist = (uuid: string, e: React.MouseEvent) => {
@@ -736,6 +774,17 @@ export default function LibraryPage() {
               </div>
             ) : (
               <div className="flex flex-col gap-[var(--px-12)] w-full">
+                {/* The poll gave up while something was still marked as running. Almost always a
+                    worker that died without recording an outcome — so say the honest thing (we
+                    stopped checking) rather than leaving a spinner turning indefinitely. */}
+                {pollExhausted && (
+                  <div className={`${PAGE_PANEL_PLAIN} !py-[var(--px-12)] !px-[var(--px-16)]`}>
+                    <p className="font-helvetica text-[length:var(--px-13)] font-light text-[var(--rx-color-text-secondary)] opacity-80">
+                      This is taking longer than usual. We've stopped checking for now — use Refresh
+                      to look again.
+                    </p>
+                  </div>
+                )}
                 {tracks.map((track) => {
                   // Sonic Discovery + Analysis are surfaced as capsules on the row (see
                   // <TrackArtifactChips/> below); the 3-dot menu keeps just the destructive action.
@@ -834,6 +883,7 @@ export default function LibraryPage() {
                           onOpenPlaylist={(uuid) => navigate(`/sonic-discovery?id=${uuid}`, { state: { from: "library" } })}
                           onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`, { state: { from: "library" } })}
                           onComingSoon={() => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon")}
+                          onArtifactNotice={(message) => handleStatusChange("error", message, "Not available")}
                         />
                       </div>
 
@@ -846,6 +896,7 @@ export default function LibraryPage() {
                           onOpenPlaylist={(uuid) => navigate(`/sonic-discovery?id=${uuid}`, { state: { from: "library" } })}
                           onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`, { state: { from: "library" } })}
                           onComingSoon={() => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon")}
+                          onArtifactNotice={(message) => handleStatusChange("error", message, "Not available")}
                         />
                       </div>
                     </div>

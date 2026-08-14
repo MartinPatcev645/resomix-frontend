@@ -1,27 +1,37 @@
-import type { LibraryTrack } from "@resomix/stores";
+import type { ArtifactState, LibraryTrack } from "@resomix/stores";
 import { shouldOpenInNewTab } from "@resomix/hooks";
 
-// A sibling artifact (analysis or similarity playlist) is generated in the background right after
-// upload and usually lands within a couple of minutes. While a just-uploaded track is still inside
-// this window and the artifact is missing, we show a "generating" capsule and poll for it. Past the
-// window we stop treating a missing artifact as pending (avoids spinning forever on old/failed rows).
-const RECENT_WINDOW_MS = 15 * 60 * 1000;
-
-export const isTrackRecent = (t: LibraryTrack): boolean => {
-  if (!t.created_at) return false;
-  const ts = new Date(t.created_at).getTime();
-  if (Number.isNaN(ts)) return false;
-  return Date.now() - ts < RECENT_WINDOW_MS;
+/**
+ * Sibling-artifact state now comes from the backend (`track_artifact_status`), not from the row's
+ * age.
+ *
+ * What it replaced: a track younger than 15 minutes with a missing artifact was called
+ * "generating"; anything older was called "Analysis coming soon". So an analysis that took longer
+ * than 15 minutes was reported to the user as an unbuilt feature while it was actively running,
+ * and a failed one was indistinguishable from a healthy one. The window could not be widened out
+ * of the problem either — it is a guess in both directions.
+ */
+const stateOf = (t: LibraryTrack, side: "playlist" | "analysis"): ArtifactState => {
+  // The uuid still wins. If the artifact is there it is openable, whatever the bookkeeping says —
+  // a status write can be lost (worker killed between building the artifact and recording it) and
+  // that must never hide a playlist the user can actually open.
+  if (side === "playlist" ? !!t.playlist_uuid : !!t.analysis_uuid) return "ready";
+  return t.artifacts?.[side]?.state ?? "unknown";
 };
 
-const playlistReady = (t: LibraryTrack) => !!t.playlist_uuid;
-const analysisReady = (t: LibraryTrack) => !!t.analysis_uuid; // the uuid IS the exists signal
+const errorOf = (t: LibraryTrack, side: "playlist" | "analysis"): string | null =>
+  t.artifacts?.[side]?.error ?? null;
 
-// True while at least one sibling is still expected to arrive — drives the Library's 10s poll.
+/** Still working. Anything else is terminal — this is what stops the Library polling forever. */
+const IN_FLIGHT: ArtifactState[] = ["pending", "processing"];
+
+// True while at least one sibling is still expected to arrive — drives the Library's poll. It is
+// now the real state that terminates the poll, so a slow analysis keeps polling for as long as it
+// genuinely takes, and a finished or failed one stops immediately rather than at a fixed deadline.
 export const trackHasPendingArtifact = (t: LibraryTrack): boolean =>
-  isTrackRecent(t) && (!playlistReady(t) || !analysisReady(t));
+  IN_FLIGHT.includes(stateOf(t, "playlist")) || IN_FLIGHT.includes(stateOf(t, "analysis"));
 
-type CapsuleState = "ready" | "pending" | "muted";
+type CapsuleState = "ready" | "pending" | "muted" | "failed";
 
 const Spinner = () => (
   <svg className="w-[var(--px-12)] h-[var(--px-12)] animate-spin" viewBox="0 0 24 24" fill="none">
@@ -81,6 +91,11 @@ function Capsule({
       "border-[var(--rx-color-border-subtle)] text-[var(--rx-color-disabled)] cursor-default animate-pulse",
     muted:
       "border-[var(--rx-color-border-subtle)] text-[var(--rx-color-text-muted)] opacity-60 hover:opacity-100 cursor-pointer",
+    // Muted rather than red: this is a per-track outcome the user can do nothing about from here,
+    // and a row of alarm-coloured capsules across a Library page reads as "the product is broken"
+    // when the truth is "one of these tracks did not analyse".
+    failed:
+      "border-[var(--rx-color-border-subtle)] text-[var(--rx-color-text-muted)] opacity-60 hover:opacity-100 cursor-pointer",
   };
   const inner = (
     <>
@@ -125,19 +140,34 @@ function Capsule({
   );
 }
 
+// Shown when the pipeline gave no reason of its own. The backend writes a display string for most
+// terminal outcomes; these cover the rest, including rows that predate the status table.
+const FALLBACK_TEXT: Record<"playlist" | "analysis", string> = {
+  playlist: "We could not find close enough matches for this track.",
+  analysis: "Analysis is not available for this track.",
+};
+
+// The one message the reported bug was about. Kept for tracks with genuinely no pipeline — never
+// reachable from `processing` any more, which is the fix.
+const COMING_SOON_TITLE = "Analysis coming soon";
+
 /**
  * The two artifact capsules shown on every Library track row. Each track gets a Sonic Discovery
  * (similarity playlist) capsule and an Analysis capsule, so both artifacts are reachable straight
- * from the Library. A capsule is:
- *   - ready   → active, navigates to the artifact
- *   - pending → "…generating" (recent upload, sibling still running; the page polls for it)
- *   - muted   → nothing yet and not recent (analysis: "Analyze" coming-soon; playlist: hidden)
+ * from the Library.
+ *
+ * A capsule now renders from the backend's state rather than from the row's age:
+ *   - ready                   → active, navigates to the artifact
+ *   - pending / processing    → spinner; the page polls until it becomes terminal
+ *   - failed / unavailable    → muted and clickable, explaining what happened
+ *   - unknown                 → the old "Analyze — coming soon" affordance
  */
 export function TrackArtifactChips({
   track,
   onOpenPlaylist,
   onOpenAnalysis,
   onComingSoon,
+  onArtifactNotice,
   layout = "inline",
 }: {
   track: LibraryTrack;
@@ -145,14 +175,23 @@ export function TrackArtifactChips({
   onOpenAnalysis: (uuid: string) => void;
   onComingSoon: () => void;
   /**
+   * Explains a terminal non-ready state when the capsule is clicked. Optional so existing callers
+   * keep compiling; without it a failed capsule simply falls back to the coming-soon notice.
+   */
+  onArtifactNotice?: (message: string) => void;
+  /**
    * "inline"  — capsules sit side-by-side in the row's action cluster (desktop).
    * "stacked" — each capsule is a full-width row of its own (mobile bottom-of-card,
    *             like the MoreMenu button rows), so long labels can never overflow.
    */
   layout?: "inline" | "stacked";
 }) {
-  const recent = isTrackRecent(track);
   const stacked = layout === "stacked";
+  const playlistState = stateOf(track, "playlist");
+  const analysisState = stateOf(track, "analysis");
+
+  const notice = (side: "playlist" | "analysis") => () =>
+    (onArtifactNotice ?? onComingSoon)(errorOf(track, side) || FALLBACK_TEXT[side]);
 
   return (
     <div
@@ -163,7 +202,7 @@ export function TrackArtifactChips({
       }
     >
       {/* Sonic Discovery (similarity playlist) */}
-      {playlistReady(track) ? (
+      {playlistState === "ready" ? (
         <Capsule
           state="ready"
           label="Sonic Discovery"
@@ -173,12 +212,24 @@ export function TrackArtifactChips({
           onClick={() => onOpenPlaylist(track.playlist_uuid as string)}
           fullWidth={stacked}
         />
-      ) : recent ? (
+      ) : IN_FLIGHT.includes(playlistState) ? (
         <Capsule state="pending" label="Finding matches…" icon={<Spinner />} title="Building your Sonic Discovery playlist" fullWidth={stacked} />
-      ) : null}
+      ) : playlistState === "unknown" ? (
+        // No record either way. Same as before: say nothing rather than invent an outcome.
+        null
+      ) : (
+        <Capsule
+          state="failed"
+          label="No matches"
+          icon={<PlaylistIcon />}
+          title={errorOf(track, "playlist") || FALLBACK_TEXT.playlist}
+          onClick={notice("playlist")}
+          fullWidth={stacked}
+        />
+      )}
 
       {/* Analysis */}
-      {analysisReady(track) ? (
+      {analysisState === "ready" ? (
         <Capsule
           state="ready"
           label="Analysis"
@@ -188,10 +239,19 @@ export function TrackArtifactChips({
           onClick={() => onOpenAnalysis(track.analysis_uuid as string)}
           fullWidth={stacked}
         />
-      ) : recent ? (
+      ) : IN_FLIGHT.includes(analysisState) ? (
         <Capsule state="pending" label="Analyzing…" icon={<Spinner />} title="Analyzing your track" fullWidth={stacked} />
+      ) : analysisState === "unknown" ? (
+        <Capsule state="muted" label="Analyze" icon={<AnalysisIcon />} title={COMING_SOON_TITLE} onClick={onComingSoon} fullWidth={stacked} />
       ) : (
-        <Capsule state="muted" label="Analyze" icon={<AnalysisIcon />} title="Analysis coming soon" onClick={onComingSoon} fullWidth={stacked} />
+        <Capsule
+          state="failed"
+          label="Not analysed"
+          icon={<AnalysisIcon />}
+          title={errorOf(track, "analysis") || FALLBACK_TEXT.analysis}
+          onClick={notice("analysis")}
+          fullWidth={stacked}
+        />
       )}
     </div>
   );
