@@ -285,11 +285,46 @@ Ordered by consequence, not by effort.
 
 | # | Item | Why | Urgency |
 |---|---|---|---|
-| 1 | Verify the orphan sweep on **production** | If a cleanup/seed script ever ran there, prod carries §3's damage | **Do this once, soon** |
-| 2 | Normalise `apple_music_tracks.genres` | 1NF; blocks any genre facet across ~1.98M rows | Before genre filtering is wanted |
+| 1 | **Purge the stress-test accounts**, then sweep production | Prerequisite, not a separate job — see below | **Do this once, soon** |
+| 2 | Normalise `apple_music_tracks.genres` **together with the artist work** | 1NF; blocks any genre facet across ~1.98M rows | 📌 **TODO — deferred by decision (2026-08-14).** Bundled with §2.2: artists are text today and will be populated into a proper table with per-track associations via Apple Music. Genres get the same treatment in the same pass, since both are "a list in a string" and both need a join table. Doing genres alone would mean touching the same rows twice |
 | 3 | Add the three missing FKs (§2.3) | Cheap; closes three silent-dangle paths | Low |
-| 4 | Reconcile the two artist representations (§2.2) | One fact, two homes; every reader needs both | Low — works today |
+| 4 | Reconcile the two artist representations (§2.2) | One fact, two homes; every reader needs both | 📌 See item 2 — same pass |
 | 5 | `tracks.deal_terms` vs the `deals` tables (§2.6) | Structure in text where proper tables exist | Revisit with deals |
+
+## 7. The stress-account purge — why it comes first
+
+Running the orphan sweep on production before removing the stress-test accounts would measure a
+mess that is about to change. `scripts/purge_stress_accounts.py` removes them properly; the sweep
+is then a check on what remains.
+
+**Deleting the users is not enough, and the schema is why.** Of the 39 foreign keys pointing at
+`users`:
+
+| Delete rule | Count | Consequence |
+|---|---:|---|
+| `CASCADE` | 17 | Handled by the database. No work needed |
+| `SET NULL` | **20** | **The rows SURVIVE** — including `playlists.user_id` and `tracks.user_id` |
+| `RESTRICT` | 3 | **Blocks the delete** until dealt with |
+
+So `DELETE FROM users` either fails outright (the three RESTRICT rows) or succeeds and leaves the
+accounts' playlists and uploaded tracks in the live catalogue as **ownerless rows** — worse than
+before, because nothing now identifies them as test data.
+
+The script therefore removes blocking rows, then polymorphic references (no FK, so nothing would
+ever complain), then owned content, then the accounts — and **never disables foreign key checks**.
+That is what created the ~13,000 orphans in §3 in the first place; a cleanup that leaves orphans is
+not a cleanup. A refused delete is treated as information, not an obstacle.
+
+```bash
+python scripts/purge_stress_accounts.py            # dry run — inventory only
+python scripts/purge_stress_accounts.py --apply    # delete, then self-verify
+python scripts/purge_stress_accounts.py --verify   # orphan check, deletes nothing
+```
+
+Exercised end to end against dev with seeded accounts carrying a playlist, an upload, a
+`playlist_tracks` row, artifact status, a session, a rating and a blocking admin-log row. All
+removed, cascades included, and the orphan count was **unchanged at 3,560** — the pre-existing
+test-fixture damage — confirming the purge introduced none of its own.
 
 Nothing here blocks the Library/discovery work in
 [`LIBRARY_AND_DISCOVERY_PLAN.md`](LIBRARY_AND_DISCOVERY_PLAN.md).
