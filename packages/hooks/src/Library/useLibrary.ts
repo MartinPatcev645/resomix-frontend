@@ -47,18 +47,26 @@ const formatDuration = (playTime?: number): string => {
     : `${Math.floor(playTime / 60)}m`;
 };
 
-const formatPlaylist = (p: any): LibraryPlaylist => ({
-  id: String(p.id || p.uuid),
-  uuid: p.uuid || p.id,
-  name: p.name,
-  is_public: p.is_public,
-  is_favorite: !!p.is_favorite,
-  trackCount: p.num_tracks || 0,
-  duration: formatDuration(p.play_time),
-  createdAt: p.created_at || new Date().toISOString(),
-  seedTrackUuid: p.seed_track_uuid ?? null,
-  hasCustomCover: !!p.has_custom_cover,
-});
+const formatPlaylist = (p: any, index = 0): LibraryPlaylist => {
+  // `is_visible` is absent on responses from before the cap was derived; treat that as unlocked
+  // so an older backend cannot grey out someone's whole Library.
+  const isVisible = p.is_visible !== false;
+  return {
+    // A locked playlist has no identifier, so React needs a key from somewhere. Positional, and
+    // deliberately prefixed: it must never be mistaken for a uuid and passed to a route.
+    id: isVisible ? String(p.id || p.uuid) : `locked-${index}`,
+    uuid: isVisible ? (p.uuid || p.id) : null,
+    name: p.name,
+    is_public: p.is_public,
+    is_favorite: !!p.is_favorite,
+    trackCount: p.num_tracks || 0,
+    duration: formatDuration(p.play_time),
+    createdAt: p.created_at || new Date().toISOString(),
+    seedTrackUuid: p.seed_track_uuid ?? null,
+    hasCustomCover: !!p.has_custom_cover,
+    isVisible,
+  };
+};
 
 export function useLibrary() {
   const playlists = useLibraryStore(state => state.playlists);
@@ -101,7 +109,7 @@ export function useLibrary() {
       const filters = useLibraryStore.getState().playlistsFilters;
       const resp = await getAllPlaylists({ page, page_size: pageSize, ...toPlaylistParams(filters) });
       if (resp.success && resp.data && Array.isArray(resp.data)) {
-        setPlaylists(resp.data.map(formatPlaylist));
+        setPlaylists(resp.data.map((p: any, i: number) => formatPlaylist(p, i)));
         const total = (resp as any).total || 0;
         // Everything the user owns, hidden ones included — the denominator in "5 of 18 shown".
         const libraryTotal = (resp as any).library_total;
@@ -137,6 +145,7 @@ export function useLibrary() {
           genre: t.genre || null,
           duration_ms: t.duration_ms ?? null,
           playlist_uuid: t.playlist_uuid || null,
+          playlist_locked: !!t.playlist_locked,
           analysis_uuid: t.analysis_uuid || null,
           analysis: t.analysis || null,
           // Passed through as-is. Deliberately NOT defaulted to a `pending` shape: an older

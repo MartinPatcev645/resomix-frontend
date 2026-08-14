@@ -50,6 +50,15 @@ export interface LibraryTrack {
   duration_ms: number | null;
   // A non-null artifact uuid IS the "exists" signal (the old has_* booleans are gone).
   playlist_uuid?: string | null;
+  /**
+   * True → this track HAS a Sonic Discovery playlist, but it is beyond the plan's Library cap and
+   * its uuid was withheld.
+   *
+   * Needed because `playlist_uuid: null` now covers two different situations — never built, and
+   * built but out of reach — which want opposite messages ("we're still finding matches" vs
+   * "upgrade to open this").
+   */
+  playlist_locked?: boolean;
   analysis_uuid?: string | null;
   analysis?: LibraryTrackAnalysis | null;
   /**
@@ -63,8 +72,20 @@ export interface LibraryTrack {
 }
 
 export interface LibraryPlaylist {
+  /**
+   * Stable list key. For an unlocked playlist this is its uuid; for a locked one the backend
+   * sends no identifier at all, so the hook synthesises a positional key. Never route on it —
+   * check `uuid` (which is null when locked) instead.
+   */
   id: string;
-  uuid: string;
+  /**
+   * The real identifier, or **null** when this playlist is beyond the plan's Library cap.
+   *
+   * Its absence is the gate, not a rendering hint: with no uuid the client cannot build a route,
+   * call the detail endpoint or fetch the cover. Greying the row explains that; it does not cause
+   * it. Anything that navigates must therefore check for null rather than trusting `isVisible`.
+   */
+  uuid: string | null;
   name: string;
   is_public: boolean;
   // Favorite state is surfaced inline (heart toggle) on the Playlists tab — there's no separate
@@ -82,6 +103,13 @@ export interface LibraryPlaylist {
   // Cache-buster, bumped after the cover is replaced from the library so the thumbnail re-fetches
   // the same URL instead of showing the previous image.
   coverBust?: number;
+  /**
+   * False → beyond the plan's Library cap: listed, described, but not reachable.
+   *
+   * The row is NOT missing and NOT deleted — it still shows its name, track count, duration and
+   * date, so the user can see what they have. Only the ways to reach it are withheld.
+   */
+  isVisible: boolean;
 }
 
 /** Applied filters for a library section. `numTracks` + `favoritesOnly` are playlists-only. */

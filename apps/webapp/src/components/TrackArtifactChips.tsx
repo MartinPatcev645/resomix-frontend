@@ -151,6 +151,12 @@ const FALLBACK_TEXT: Record<"playlist" | "analysis", string> = {
 // reachable from `processing` any more, which is the fix.
 const COMING_SOON_TITLE = "Analysis coming soon";
 
+// Names the reason rather than saying "upgrade". A user who has been shown their five most recent
+// playlists needs to know the sixth still exists and why it is not open, or the Library looks like
+// it lost their work.
+const LOCKED_PLAYLIST_MESSAGE =
+  "This playlist is outside your most recent 5. Upgrade to keep every playlist open.";
+
 /**
  * The two artifact capsules shown on every Library track row. Each track gets a Sonic Discovery
  * (similarity playlist) capsule and an Analysis capsule, so both artifacts are reachable straight
@@ -202,7 +208,20 @@ export function TrackArtifactChips({
       }
     >
       {/* Sonic Discovery (similarity playlist) */}
-      {playlistState === "ready" ? (
+      {playlistState === "ready" && track.playlist_locked ? (
+        // Built, and out of reach: beyond the plan's Library cap. Not an error and not a failure —
+        // the playlist is fine, the plan is the limit — so it gets the upgrade prompt rather than
+        // the "no matches" copy. Rendered as a button with no `href`, because the uuid needed to
+        // build one was withheld by the backend; that withholding is the actual gate.
+        <Capsule
+          state="failed"
+          label="Sonic Discovery"
+          icon={<PlaylistIcon />}
+          title={LOCKED_PLAYLIST_MESSAGE}
+          onClick={() => (onArtifactNotice ?? onComingSoon)(LOCKED_PLAYLIST_MESSAGE)}
+          fullWidth={stacked}
+        />
+      ) : playlistState === "ready" ? (
         <Capsule
           state="ready"
           label="Sonic Discovery"

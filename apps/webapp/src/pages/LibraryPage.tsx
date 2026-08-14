@@ -141,6 +141,44 @@ export default function LibraryPage() {
   const pollElapsedRef = useRef(0);
   const [pollExhausted, setPollExhausted] = useState(false);
 
+  /**
+   * Every action on a locked playlist lands here instead of doing its job.
+   *
+   * Names the reason rather than saying "upgrade": a user looking at a row they created, that is
+   * plainly still there, needs to be told what changed about it. "Upgrade required" on its own
+   * reads like the playlist was taken away.
+   */
+  const showLockedNotice = () => {
+    setActiveMenuId(null);
+    setExportGate({
+      reason: "upgrade_required",
+      title: "Outside your most recent 5",
+      // Broken at sentence boundaries on purpose: a literal split mid-phrase renders fine but is
+      // invisible to grep and to any test asserting on the copy.
+      body:
+        "Your plan keeps the 5 most recent playlists open. " +
+        "This one is still here and nothing has been deleted. " +
+        "Upgrade to open every playlist in your Library again.",
+    });
+  };
+
+  /**
+   * Wraps a row action so a locked row can never perform it.
+   *
+   * Guards on the ABSENT uuid rather than on a display flag, so it cannot drift from what the API
+   * actually withheld — and `preventDefault` matters because most of these are anchors whose
+   * default is a real navigation.
+   */
+  const guardLocked = (locked: boolean, run: (e: React.MouseEvent) => void) => (e: React.MouseEvent) => {
+    if (locked) {
+      e.preventDefault();
+      e.stopPropagation();
+      showLockedNotice();
+      return;
+    }
+    run(e);
+  };
+
   const handleExportApple = (uuid: string) => {
     setActiveMenuId(null);
     const v = access.verdict("exportApple");
@@ -539,10 +577,23 @@ export default function LibraryPage() {
               <div className="flex flex-col gap-[var(--px-12)] w-full">
                 {activePlaylists.map((playlist) => {
                   const metaLine = `${playlist.trackCount} tracks | ${playlist.duration} | Created ${new Date(playlist.createdAt).toLocaleDateString()}`;
+                  // Locked = beyond the plan's Library cap. Keyed off the ABSENT uuid, not off
+                  // `isVisible`: the missing identifier is what actually makes the row unreachable,
+                  // so deriving from it means the UI cannot disagree with what the API enforced.
+                  const locked = !playlist.uuid;
+                  const uuid = playlist.uuid ?? "";
                   return (
                   <div
-                    key={playlist.uuid}
-                    className="relative flex w-full flex-wrap items-center gap-y-[var(--px-10)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] p-[var(--px-12)] transition-colors hover:border-[var(--rx-color-border-strong)] md:flex-nowrap md:justify-between md:p-[var(--px-16)]"
+                    key={playlist.id}
+                    className={[
+                      "relative flex w-full flex-wrap items-center gap-y-[var(--px-10)] border p-[var(--px-12)] transition-colors md:flex-nowrap md:justify-between md:p-[var(--px-16)]",
+                      locked
+                        // Dimmed but fully legible: the row still has to read as "your playlist,
+                        // still here" rather than as an error or a broken tile. No hover lift,
+                        // because nothing on it opens.
+                        ? "border-[var(--rx-color-border-subtle)] bg-[var(--rx-color-surface)] opacity-55"
+                        : "border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] hover:border-[var(--rx-color-border-strong)]",
+                    ].join(" ")}
                   >
                     {/* Aligned top content layout. min-w-0 is REQUIRED: this column is flex-grow, and
                         without it a flex item won't shrink below its content's intrinsic width, so the
@@ -551,18 +602,25 @@ export default function LibraryPage() {
                       {/* Playlist link (image). Real <a> so right-click / ⌘-click open a new tab;
                           a plain click is intercepted for SPA navigation. */}
                       <a
-                        href={`/sonic-discovery?id=${playlist.uuid}`}
-                        onClick={(e) => {
+                        // No href at all when locked. Leaving `?id=` in place would let a
+                        // right-click or ⌘-click bypass the onClick guard entirely and open a
+                        // broken route — the identifier was withheld precisely so no such link
+                        // can be built.
+                        href={locked ? undefined : `/sonic-discovery?id=${uuid}`}
+                        onClick={guardLocked(locked, (e) => {
                           if (shouldOpenInNewTab(e)) return;
                           e.preventDefault();
-                          navigate(`/sonic-discovery?id=${playlist.uuid}`, { state: { from: "library" } });
-                        }}
-                        className="flex-shrink-0 cursor-pointer"
+                          navigate(`/sonic-discovery?id=${uuid}`, { state: { from: "library" } });
+                        })}
+                        className={locked ? "flex-shrink-0 cursor-pointer" : "flex-shrink-0 cursor-pointer"}
                       >
                         {/* Playlist cover precedence: custom playlist cover (by playlist uuid) →
                             seed track cover (by uuid + token) → bundled Resomix default. */}
                         <div className="border border-[var(--rx-color-border-default)] bg-black/40 hover:border-[var(--rx-color-accent)] transition-colors overflow-hidden w-[var(--px-32)] h-[var(--px-32)] md:w-[var(--px-52)] md:h-[var(--px-52)]">
-                          <CoverThumbnail playlistUuid={playlist.uuid} hasCustomCover={playlist.hasCustomCover} bust={playlist.coverBust} className="w-full h-full object-cover" />
+                          {/* Locked rows get the bundled default. Not a styling choice: with the uuid withheld
+                              there is no cover URL to build, so asking for one would fire a request
+                              for `?id=` and fall back anyway — this just skips the round trip. */}
+                          <CoverThumbnail playlistUuid={uuid} hasCustomCover={!locked && playlist.hasCustomCover} bust={playlist.coverBust} className="w-full h-full object-cover" />
                         </div>
                       </a>
 
@@ -573,13 +631,13 @@ export default function LibraryPage() {
                         <div className="flex items-center gap-[var(--px-8)] min-w-0">
                           {/* Playlist title link — same open-in-new-tab / SPA behaviour. */}
                           <a
-                            href={`/sonic-discovery?id=${playlist.uuid}`}
-                            title={playlist.name}
-                            onClick={(e) => {
+                            href={locked ? undefined : `/sonic-discovery?id=${uuid}`}
+                            title={locked ? "Outside your most recent 5 — upgrade to open it" : playlist.name}
+                            onClick={guardLocked(locked, (e) => {
                               if (shouldOpenInNewTab(e)) return;
                               e.preventDefault();
-                              navigate(`/sonic-discovery?id=${playlist.uuid}`, { state: { from: "library" } });
-                            }}
+                              navigate(`/sonic-discovery?id=${uuid}`, { state: { from: "library" } });
+                            })}
                             className="min-w-0 grow truncate font-helvetica text-[length:var(--px-14)] font-medium uppercase leading-tight transition-colors cursor-pointer hover:text-[var(--rx-color-accent)] md:grow-0 md:text-[length:var(--px-15)]"
                           >
                             {playlist.name}
@@ -587,11 +645,11 @@ export default function LibraryPage() {
                           <Tooltip message="Rename playlist">
                             <button
                               type="button"
-                              onClick={(e) => {
+                              onClick={guardLocked(locked, (e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                setRenameFor({ uuid: playlist.uuid, name: playlist.name, hasCustomCover: !!playlist.hasCustomCover });
-                              }}
+                                setRenameFor({ uuid: uuid, name: playlist.name, hasCustomCover: !!playlist.hasCustomCover });
+                              })}
                               aria-label="Rename playlist"
                               className="flex-shrink-0 text-[var(--rx-color-text-muted)] hover:text-[var(--rx-color-accent)] cursor-pointer flex items-center justify-center p-[var(--px-2)] hover:scale-110 active:scale-90 transition-all bg-transparent border-0 outline-none"
                             >
@@ -635,7 +693,9 @@ export default function LibraryPage() {
                       <Tooltip message={playlist.is_favorite ? "Remove from Favorites" : "Add to Favorites"}>
                         <button
                           type="button"
-                          onClick={(e) => handleToggleFavorite(playlist.uuid, playlist.is_favorite, e)}
+                          // No favourite exemption, in either direction: a locked playlist cannot be
+                          // favourited to unlock it, which is exactly why the exemption was rejected.
+                          onClick={guardLocked(locked, (e) => handleToggleFavorite(uuid, playlist.is_favorite, e))}
                           aria-label={playlist.is_favorite ? "Remove from Favorites" : "Add to Favorites"}
                           aria-pressed={playlist.is_favorite}
                           className="flex cursor-pointer items-center justify-center border-0 bg-transparent p-[var(--px-4)] text-[var(--rx-color-text-muted)] outline-none transition-all hover:text-[var(--rx-color-text-primary)] hover:scale-110 active:scale-90"
@@ -652,10 +712,10 @@ export default function LibraryPage() {
                       <Tooltip message={playlist.is_public ? "Public, click to make private" : "Private, click to make public"}>
                         <button
                           type="button"
-                          onClick={(e) => {
+                          onClick={guardLocked(locked, (e) => {
                             e.stopPropagation();
-                            setVisibilityFor({ uuid: playlist.uuid, isPublic: playlist.is_public });
-                          }}
+                            setVisibilityFor({ uuid: uuid, isPublic: playlist.is_public });
+                          })}
                           aria-label={playlist.is_public ? "Make playlist private" : "Make playlist public"}
                           className="flex cursor-pointer items-center justify-center border-0 bg-transparent p-[var(--px-4)] text-[var(--rx-color-text-muted)] outline-none transition-all hover:text-[var(--rx-color-text-primary)] hover:scale-110 active:scale-90"
                         >
@@ -670,7 +730,7 @@ export default function LibraryPage() {
                       {/* Dropdown Actions */}
                       <div className="relative" onClick={e => e.stopPropagation()}>
                         <button
-                          onClick={() => setActiveMenuId(activeMenuId === playlist.uuid ? null : playlist.uuid)}
+                          onClick={guardLocked(locked, () => setActiveMenuId(activeMenuId === uuid ? null : uuid))}
                           className="p-[var(--px-6)] md:p-[var(--px-8)] text-[var(--rx-color-text-muted)] hover:text-[var(--rx-color-text-primary)] transition-colors cursor-pointer flex items-center justify-center"
                           aria-label="Actions"
                         >
@@ -679,28 +739,28 @@ export default function LibraryPage() {
                           </svg>
                         </button>
                         
-                        {activeMenuId === playlist.uuid && (
+                        {!locked && activeMenuId === uuid && (
                           <div className="absolute right-0 mt-[var(--px-4)] w-[var(--px-180)] bg-[var(--rx-color-surface-raised,#171717)] border border-[var(--rx-color-border-default)] rounded-[var(--rx-radius-control)] shadow-2xl z-20 py-[var(--px-4)] text-[length:var(--px-11)] font-light font-helvetica">
                             {[
                               {
-                                id: `playlist-open-${playlist.uuid}`,
+                                id: `playlist-open-${uuid}`,
                                 label: "Open in New Tab",
                                 icon: (
                                   <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" />
                                   </svg>
                                 ),
-                                onClick: () => window.open(`/sonic-discovery?id=${playlist.uuid}`, "_blank"),
+                                onClick: () => window.open(`/sonic-discovery?id=${uuid}`, "_blank"),
                               },
                               {
-                                id: `playlist-share-${playlist.uuid}`,
+                                id: `playlist-share-${uuid}`,
                                 label: "Share",
                                 icon: (
                                   <svg className="w-[var(--px-14)] h-[var(--px-14)] fill-none stroke-current" strokeWidth="1.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" />
                                   </svg>
                                 ),
-                                onClick: (e: React.MouseEvent) => handleSharePlaylist(playlist.uuid, playlist.is_public, playlist.name, e),
+                                onClick: (e: React.MouseEvent) => handleSharePlaylist(uuid, playlist.is_public, playlist.name, e),
                               },
                             ].map((item, index) => (
                               <div key={item.id}>
@@ -727,7 +787,7 @@ export default function LibraryPage() {
 
                             {/* Export → secondary flyout of targets (Apple Music for now). */}
                             <div className="border-t border-[var(--rx-color-border-subtle)] mx-[var(--px-12)] my-[var(--px-4)]" />
-                            <ExportSubmenu onExportApple={() => handleExportApple(playlist.uuid)} onEmbed={() => handleExportEmbed(playlist.uuid, playlist.is_public)} />
+                            <ExportSubmenu onExportApple={() => handleExportApple(uuid)} onEmbed={() => handleExportEmbed(uuid, playlist.is_public)} />
 
                             {/* Delete (separated, destructive). */}
                             <div className="border-t border-[var(--rx-color-border-default)] mx-[var(--px-12)] my-[var(--px-4)]" />
@@ -735,7 +795,7 @@ export default function LibraryPage() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setActiveMenuId(null);
-                                handleDeletePlaylist(playlist.uuid, e);
+                                handleDeletePlaylist(uuid, e);
                               }}
                               className="w-full flex items-center gap-[var(--px-12)] px-[var(--px-16)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-error)] transition-colors duration-150 cursor-pointer hover:bg-[rgba(255,118,96,0.12)]"
                             >
