@@ -25,7 +25,7 @@ import {
 const ARTIFACT_POLL_INTERVAL_MS = 5_000;
 // …and a ceiling, because a worker that dies without recording a terminal state would otherwise
 // leave the row `pending` and the page polling for the rest of the session.
-const ARTIFACT_POLL_CEILING_MS = 10 * 60 * 1000;
+const ARTIFACT_POLL_CEILING_MS = 6 * 60 * 1000;
 
 export default function LibraryPage() {
   const navigate = useNavigate();
@@ -649,7 +649,10 @@ export default function LibraryPage() {
                     <div className="basis-full flex items-center justify-end gap-[var(--px-10)] md:basis-auto md:flex-shrink-0">
                       <button
                         type="button"
-                        onClick={() => navigate(`/?ref=${track.id}`, { state: { from: "library" } })}
+                        // `/sonic-discovery?discover=<track-uuid>` — NOT `?id=`. Catalogue track
+                        // uuids and playlist uuids are the same shape, so `?id=` means "open this
+                        // playlist" and `?discover=` means "build a new one from this track".
+                        onClick={() => navigate(`/sonic-discovery?discover=${track.id}`, { state: { from: "library" } })}
                         title="Find tracks similar to this one"
                         className="inline-flex min-h-[var(--px-30)] items-center gap-[var(--px-6)] whitespace-nowrap rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] px-[var(--px-14)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] transition-colors hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)]"
                       >
