@@ -66,6 +66,7 @@ from .track_processing_status import TrackProcessingStatus
 from .partner_processing_job import PartnerProcessingJob
 from .partner_notification import PartnerNotification
 from .track_analysis_result import TrackAnalysisResult
+from .track_artifact_status import TrackArtifactStatus
 from .apple_music import AppleMusicTrack
 from .user_service_connection import UserServiceConnection
 
@@ -140,6 +141,7 @@ __all__ = [
     "PartnerProcessingJob",
     "PartnerNotification",
     "TrackAnalysisResult",
+    "TrackArtifactStatus",
     "AppleMusicTrack",
     "UserServiceConnection",
     # Consumer billing / subscriptions

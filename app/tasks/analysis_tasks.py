@@ -31,12 +31,36 @@ from app.models.track_analysis_result import (
     SIBLING_READY,
     SIBLING_UNAVAILABLE,
 )
+from app.models.track_artifact_status import (
+    ARTIFACT_FAILED,
+    ARTIFACT_PROCESSING,
+    ARTIFACT_READY,
+    ARTIFACT_UNAVAILABLE,
+)
+from app.repositories.track_artifact_status_repository import TrackArtifactStatusRepository
 from app.services.analysis_service import AnalysisService
 from database.connection import AsyncSessionLocal
 from .async_runner import run_async_task
 from .celery_app import celery_app
 
 logger = logging.getLogger(__name__)
+
+# Capsule text for the Library. Deliberately about what the user can do next, not about which
+# internal stage broke — the specific cause is always in the log, keyed by analysis id.
+_ANALYSIS_UNAVAILABLE_TEXT = "Analysis is not available for this track."
+_ANALYSIS_FAILED_TEXT = "We could not analyse this track."
+
+# `sibling_playlist_state` (on the analysis row) and `playlist_state` (on the artifact row) are the
+# same fact recorded for two different screens. Mapped in one place so they cannot drift.
+_SIBLING_TO_ARTIFACT = {
+    SIBLING_READY: ARTIFACT_READY,
+    SIBLING_UNAVAILABLE: ARTIFACT_UNAVAILABLE,
+    SIBLING_FAILED: ARTIFACT_FAILED,
+}
+_PLAYLIST_SIBLING_TEXT = {
+    SIBLING_UNAVAILABLE: "We could not find close enough matches for this track.",
+    SIBLING_FAILED: "We could not build a Sonic Discovery playlist for this track.",
+}
 
 # Foreground-generation budget for the sibling. Generous: a full analysis (local DSP + GPU
 # semantics) can take a couple of minutes. The task just needs the result cached; it does not
@@ -54,13 +78,22 @@ async def _async_generate_track_analysis(
     partner_id: Optional[int],
 ) -> None:
     client = AnalysisService()
+    # Assume the worst until a branch proves otherwise. Every `return` below used to leave the
+    # Library with no state at all, which it rendered as "Analysis coming soon" — a message about
+    # an unbuilt feature, for an analysis that had just failed. The state is now always written.
+    state, state_error = ARTIFACT_FAILED, _ANALYSIS_FAILED_TEXT
     try:
         if not client.is_configured:
             logger.info(
                 "ANALYSIS SIBLING: analysis service not configured — skipping analysis %s (track %s)",
                 analysis_id, track_id,
             )
+            # Nothing broke — the feature is simply not running here. Distinct from `failed` so the
+            # user is not shown an error for a service that was never asked to do anything.
+            state, state_error = ARTIFACT_UNAVAILABLE, _ANALYSIS_UNAVAILABLE_TEXT
             return
+
+        await TrackArtifactStatusRepository.set_analysis_state(track_id, ARTIFACT_PROCESSING)
 
         try:
             with open(audio_spool_path, "rb") as fh:
@@ -107,8 +140,12 @@ async def _async_generate_track_analysis(
             user_id=user_id,
             partner_id=partner_id,
         )
+        state, state_error = ARTIFACT_READY, None
         logger.info("ANALYSIS SIBLING: completed analysis %s for track %s", analysis_id, track_id)
     finally:
+        # `ready` is only reached after the summary row is committed, so the state can never claim
+        # an analysis the Library would then fail to open.
+        await TrackArtifactStatusRepository.set_analysis_state(track_id, state, error=state_error)
         # Always drop the spooled audio — the analysis service now owns its own copy.
         try:
             if audio_spool_path and os.path.exists(audio_spool_path):
@@ -192,12 +229,21 @@ async def _async_persist_analysis_summary(
     client = AnalysisService()
     if not client.is_configured:
         logger.info("ANALYSIS PERSIST: analysis service not configured — skipping %s", analysis_id)
+        await TrackArtifactStatusRepository.set_analysis_state(
+            track_id, ARTIFACT_UNAVAILABLE, error=_ANALYSIS_UNAVAILABLE_TEXT
+        )
         return
+
+    await TrackArtifactStatusRepository.set_analysis_state(track_id, ARTIFACT_PROCESSING)
+
     outcome = await client.wait_for_result(analysis_id, timeout=_ANALYSIS_TIMEOUT_S)
     if outcome.get("status") != "success":
         logger.warning(
             "ANALYSIS PERSIST: %s did not complete: %s (%s)",
             analysis_id, outcome.get("status"), outcome.get("message"),
+        )
+        await TrackArtifactStatusRepository.set_analysis_state(
+            track_id, ARTIFACT_FAILED, error=_ANALYSIS_FAILED_TEXT
         )
         return
     if partner_id is not None:
@@ -212,6 +258,9 @@ async def _async_persist_analysis_summary(
         user_id=user_id,
         partner_id=partner_id,
     )
+    # After the summary is committed, never before — the state is a promise the Library will be
+    # able to open the analysis, and a promise made too early is a 404.
+    await TrackArtifactStatusRepository.set_analysis_state(track_id, ARTIFACT_READY)
 
     # Count the upload only now that a result exists — record-on-success, matching the
     # similarity-upload path. Every early return above (service unconfigured, timed out, upstream
@@ -255,13 +304,25 @@ def persist_analysis_summary(
 # The similarity sibling for the analysis-upload path: generate the similarity playlist for a
 # just-uploaded track in the background (best-effort; needs the similarity server configured).
 # --------------------------------------------------------------------------- #
-async def _record_sibling_state(analysis_id: Optional[str], state: str) -> None:
-    """Persist the sibling's outcome on the analysis row.
+async def _record_sibling_state(
+    analysis_id: Optional[str], state: str, track_id: Optional[int] = None
+) -> None:
+    """Persist the sibling's outcome for both screens that ask about it.
 
     The client cannot infer this from the playlist's absence alone, so a missing write would leave
-    the analysis screen waiting forever. Best-effort and self-contained (its own session): failing to
-    record the outcome must never turn a generated playlist into a failed task.
+    the analysis screen waiting forever. Two rows carry the same fact — ``sibling_playlist_state``
+    for the analysis screen, ``playlist_state`` for the Library — and they are written here,
+    together, so there is no path that updates one and not the other.
+
+    Best-effort and self-contained (its own session): failing to record the outcome must never turn
+    a generated playlist into a failed task.
     """
+    if track_id:
+        await TrackArtifactStatusRepository.set_playlist_state(
+            track_id,
+            _SIBLING_TO_ARTIFACT.get(state, ARTIFACT_FAILED),
+            error=None if state == SIBLING_READY else _PLAYLIST_SIBLING_TEXT.get(state),
+        )
     if not analysis_id:
         return
     try:
@@ -288,11 +349,13 @@ async def _async_generate_similarity_sibling(
     user_id: Optional[int],
     partner_id: Optional[int],
     analysis_id: Optional[str] = None,
+    track_id: Optional[int] = None,
     top_k: int = 20,
 ) -> None:
     # Assume the worst until a branch below proves otherwise, so an early return can never leave the
     # row stuck on 'pending' (which the client reads as "keep waiting").
     outcome = SIBLING_FAILED
+    await TrackArtifactStatusRepository.set_playlist_state(track_id, ARTIFACT_PROCESSING)
     try:
         try:
             with open(audio_spool_path, "rb") as fh:
@@ -351,7 +414,7 @@ async def _async_generate_similarity_sibling(
                 track_uuid,
             )
     finally:
-        await _record_sibling_state(analysis_id, outcome)
+        await _record_sibling_state(analysis_id, outcome, track_id)
         try:
             if audio_spool_path and os.path.exists(audio_spool_path):
                 os.remove(audio_spool_path)
@@ -368,8 +431,13 @@ def generate_similarity_sibling(
     user_id: Optional[int] = None,
     partner_id: Optional[int] = None,
     analysis_id: Optional[str] = None,
+    track_id: Optional[int] = None,
 ) -> None:
-    """Generate the similarity playlist for an analysis-uploaded track (best-effort sibling)."""
+    """Generate the similarity playlist for an analysis-uploaded track (best-effort sibling).
+
+    ``track_id`` defaults to None so messages already on the broker when this deploys still
+    execute — they simply skip the Library-side state write, which the next upload restores.
+    """
     try:
         run_async_task(
             _async_generate_similarity_sibling(
@@ -379,6 +447,7 @@ def generate_similarity_sibling(
                 user_id=user_id,
                 partner_id=partner_id,
                 analysis_id=analysis_id,
+                track_id=track_id,
             )
         )
     except Exception as exc:

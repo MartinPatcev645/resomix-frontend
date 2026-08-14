@@ -24,9 +24,21 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.track import Track
+from app.models.track_artifact_status import (
+    ARTIFACT_READY,
+    ARTIFACT_STATES,
+    ARTIFACT_UNAVAILABLE,
+)
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_analysis_result_repository import TrackAnalysisResultRepository
+from app.repositories.track_artifact_status_repository import TrackArtifactStatusRepository
 from app.repositories.track_repository import TrackRepository
+
+# Reported for a track with no ``track_artifact_status`` row. Not a state the pipeline can write —
+# it means "we have no record", which is true of uploads that predate the table. `unknown` rather
+# than `pending` on purpose: pending is an instruction to keep polling, and polling for an artifact
+# nothing is building is exactly the forever-spinner this work exists to remove.
+ARTIFACT_UNKNOWN = "unknown"
 
 
 class TrackService:
@@ -36,17 +48,45 @@ class TrackService:
         self.track_repository = TrackRepository()
         self.playlist_repository = PlaylistRepository()
         self.analysis_repository = TrackAnalysisResultRepository()
+        self.artifact_status_repository = TrackArtifactStatusRepository()
 
     # ------------------------------------------------------------------ #
     # Serialization helpers
     # ------------------------------------------------------------------ #
 
     @staticmethod
+    def _resolve_artifact_state(
+        recorded: Optional[str], *, artifact_exists: bool
+    ) -> str:
+        """Reconcile the recorded state with what is actually there.
+
+        The artifact itself is the higher authority, in both directions:
+
+        * a uuid present while the state says otherwise means a status write was lost (Redis blip,
+          worker killed between the artifact and the bookkeeping) — the artifact is openable, so
+          report ``ready``;
+        * a state of ``ready`` with no uuid means the artifact was deleted afterwards, and
+          promising the client something it will 404 on is worse than saying it is gone.
+
+        Anything unrecognised — an older row, a value from a future deploy — degrades to
+        ``unknown``, which renders as "no artifact" rather than as an error or a spinner.
+        """
+        if artifact_exists:
+            return ARTIFACT_READY
+        if recorded == ARTIFACT_READY:
+            return ARTIFACT_UNAVAILABLE
+        if recorded in ARTIFACT_STATES:
+            return recorded
+        return ARTIFACT_UNKNOWN
+
+    @classmethod
     def _serialize_track_summary(
+        cls,
         track: Track,
         playlist_uuid: Optional[str] = None,
         analysis_meta: Optional[Dict[str, Any]] = None,
         display_meta: Optional[Dict[str, Any]] = None,
+        artifact_status: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Lightweight representation for the library list view (reshaped 2026-07-22).
 
@@ -58,6 +98,11 @@ class TrackService:
         Shape notes:
           * ``playlist_uuid`` / ``analysis_uuid`` themselves signal existence — the old
             ``has_similarity`` / ``has_analysis`` booleans were redundant and are gone.
+          * ``artifacts`` says what is *happening* to each of those two, which a uuid cannot: its
+            absence covers queued, running, produced-nothing and failed at once. Without this the
+            client was inferring the difference from ``created_at`` (anything under 15 minutes old
+            was called "generating"), so a slow analysis was reported to the user as an unbuilt
+            feature and a failed one looked identical to a healthy one.
           * Track-level ``bpm`` / ``musical_key`` / ``sub_genre`` are never populated for uploads
             — the analysis-derived values live in the ``analysis`` block instead.
           * ``duration_ms`` falls back to the analysis-measured duration (upload meta rarely
@@ -66,9 +111,16 @@ class TrackService:
         """
         a = analysis_meta or {}
         d = display_meta or {}
+        s = artifact_status or {}
         duration_ms = track.duration_ms
         if duration_ms is None and a.get("duration_ms"):
             duration_ms = int(a["duration_ms"])
+        playlist_state = cls._resolve_artifact_state(
+            s.get("playlist_state"), artifact_exists=bool(playlist_uuid)
+        )
+        analysis_state = cls._resolve_artifact_state(
+            s.get("analysis_state"), artifact_exists=bool(a.get("analysis_uuid"))
+        )
         return {
             "uuid": track.uuid,
             "title": track.title,
@@ -86,6 +138,19 @@ class TrackService:
             # Sibling artifacts — a non-null uuid IS the "exists" signal.
             "playlist_uuid": playlist_uuid,
             "analysis_uuid": a.get("analysis_uuid"),
+            # …and this is what the absence of one MEANS. The error text is only ever populated on
+            # `failed`/`unavailable`, and is written by the workers for display — it never carries
+            # an internal reason (those stay in the logs, keyed by job/analysis id).
+            "artifacts": {
+                "playlist": {
+                    "state": playlist_state,
+                    "error": s.get("playlist_error") if playlist_state != ARTIFACT_READY else None,
+                },
+                "analysis": {
+                    "state": analysis_state,
+                    "error": s.get("analysis_error") if analysis_state != ARTIFACT_READY else None,
+                },
+            },
             # Analysis-derived display metrics (null until the analysis lands).
             "analysis": (
                 {
@@ -107,6 +172,7 @@ class TrackService:
         playlist_uuid: Optional[str] = None,
         analysis_meta: Optional[Dict[str, Any]] = None,
         display_meta: Optional[Dict[str, Any]] = None,
+        artifact_status: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Full metadata for the single-track view.
 
@@ -114,7 +180,9 @@ class TrackService:
         to be eager-loaded. Internal-only fields such as the storage ``stored_path`` and
         file checksums are deliberately not exposed to the client.
         """
-        detail = cls._serialize_track_summary(track, playlist_uuid, analysis_meta, display_meta)
+        detail = cls._serialize_track_summary(
+            track, playlist_uuid, analysis_meta, display_meta, artifact_status
+        )
         detail.update(
             {
                 # Detail keeps is_active (the delete flow returns the flipped row).
@@ -195,9 +263,16 @@ class TrackService:
             display_map = await self.track_repository.async_get_track_display_meta_map(
                 db, track_ids
             )
+            # One more batch query alongside the three above — never one per row. A 20-row page
+            # costs four queries total, and adding a per-track lookup here would put twenty on the
+            # Library's 5-second poll.
+            status_map = await self.artifact_status_repository.async_get_artifact_status_map(
+                db, track_ids, partner_id=partner_id
+            )
             data: List[Dict[str, Any]] = [
                 self._serialize_track_summary(
-                    t, playlist_map.get(t.id), analysis_map.get(t.id), display_map.get(t.id)
+                    t, playlist_map.get(t.id), analysis_map.get(t.id), display_map.get(t.id),
+                    status_map.get(t.id),
                 )
                 for t in tracks
             ]
@@ -238,11 +313,14 @@ class TrackService:
             display_map = await self.track_repository.async_get_track_display_meta_map(
                 db, [track.id]
             )
+            status_map = await self.artifact_status_repository.async_get_artifact_status_map(
+                db, [track.id], partner_id=partner_id
+            )
             return {
                 "success": True,
                 "data": self._serialize_track_detail(
                     track, playlist_map.get(track.id), analysis_map.get(track.id),
-                    display_map.get(track.id)
+                    display_map.get(track.id), status_map.get(track.id)
                 ),
             }
         except Exception as e:

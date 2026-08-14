@@ -25,6 +25,13 @@ import os
 from typing import Optional
 
 from app.core.context import set_admin_context, set_current_partner_id
+from app.models.track_artifact_status import (
+    ARTIFACT_FAILED,
+    ARTIFACT_PROCESSING,
+    ARTIFACT_READY,
+    ARTIFACT_UNAVAILABLE,
+)
+from app.repositories.track_artifact_status_repository import TrackArtifactStatusRepository
 from app.services.similarity_upload_job_service import SimilarityUploadJobService
 from database.connection import AsyncSessionLocal
 from .async_runner import run_async_task
@@ -35,6 +42,12 @@ logger = logging.getLogger(__name__)
 # Client-safe failure text. The real cause is always in the log with the job id — never
 # surfaced to the caller, since these strings render in the UI.
 _GENERIC_FAILURE = "We could not build a playlist for this track. Please try again."
+
+# Shown on the Library capsule when the playlist could not be built. The Redis job record that
+# carries `_GENERIC_FAILURE` expires; the Library is read days later, so it needs its own copy.
+_PLAYLIST_FAILED_TEXT = "We could not build a Sonic Discovery playlist for this track."
+_ANALYSIS_SKIPPED_TEXT = "The analysis was not started because the upload did not complete."
+_ANALYSIS_UNAVAILABLE_TEXT = "Analysis is not available for this track."
 
 
 async def _async_run_similarity_upload(
@@ -55,6 +68,7 @@ async def _async_run_similarity_upload(
 
     jobs = SimilarityUploadJobService()
     await jobs.mark_running(job_id)
+    await TrackArtifactStatusRepository.set_playlist_state(track_id, ARTIFACT_PROCESSING)
 
     # Assume failure until a branch proves otherwise, so no early return can leave a client
     # polling a job that is stuck on `running` forever.
@@ -120,22 +134,45 @@ async def _async_run_similarity_upload(
         succeeded = True
         logger.info("SIMILARITY UPLOAD JOB %s: done (track %s)", job_id, track_uuid)
 
+        # The Redis job record answers "did the upload I am waiting on finish?" and then expires.
+        # The Library asks the same question days later, so the outcome is recorded durably here
+        # too. `success` without a playlist row is a real outcome, not a failure: it means nothing
+        # in the catalogue was close enough, and it needs different copy.
+        await TrackArtifactStatusRepository.set_playlist_state(
+            track_id,
+            ARTIFACT_READY if (result or {}).get("playlist") else ARTIFACT_UNAVAILABLE,
+        )
+
         # The upload also yields an analysis (the sibling artifact) — enqueue it before the audio
         # is discarded. Fire-and-forget: it must never affect the playlist the user is waiting on,
         # which is why it runs after the job is already marked done.
-        _enqueue_analysis_sibling(
+        if not _enqueue_analysis_sibling(
             audio_bytes=audio_bytes,
             original_filename=original_filename,
             track_id=track_id,
             user_id=user_id,
             partner_id=partner_id,
-        )
+        ):
+            # Nothing was enqueued (service unconfigured, or the spool/broker refused), so no task
+            # will ever move this off `pending`.
+            await TrackArtifactStatusRepository.set_analysis_state(
+                track_id, ARTIFACT_UNAVAILABLE, error=_ANALYSIS_UNAVAILABLE_TEXT
+            )
     except Exception as exc:
         logger.error("SIMILARITY UPLOAD JOB %s: unhandled failure: %s", job_id, exc, exc_info=True)
         failed_reason = "processing_failed"
     finally:
         if not succeeded:
             await jobs.mark_failed(job_id, _GENERIC_FAILURE, reason=failed_reason)
+            await TrackArtifactStatusRepository.set_playlist_state(
+                track_id, ARTIFACT_FAILED, error=_PLAYLIST_FAILED_TEXT
+            )
+            # The analysis is enqueued only on the success path above, so a failed upload means it
+            # will never run. Without this the analysis capsule would sit on `pending` and spin
+            # forever, waiting for a task nobody is ever going to send.
+            await TrackArtifactStatusRepository.set_analysis_state(
+                track_id, ARTIFACT_UNAVAILABLE, error=_ANALYSIS_SKIPPED_TEXT
+            )
         try:
             if audio_spool_path and os.path.exists(audio_spool_path):
                 os.remove(audio_spool_path)
@@ -151,24 +188,47 @@ def _enqueue_analysis_sibling(
     track_id: Optional[int],
     user_id: Optional[int],
     partner_id: Optional[int],
-) -> None:
+) -> bool:
     """Reuse the controller's sibling wiring so both upload paths enqueue identically.
 
     Imported lazily — the controller pulls in most of the service layer, and this module is
     loaded by the Celery worker at startup.
+
+    Returns whether a task was actually enqueued, so the caller can close out the analysis state
+    when one was not. An import failure counts as "not enqueued" for the same reason.
     """
     try:
         from app.controllers.similarity_controller import SimilarityController
 
-        SimilarityController()._maybe_enqueue_analysis_sibling(
-            audio_bytes=audio_bytes,
-            original_filename=original_filename,
-            track_id=track_id,
-            user_id=user_id,
-            partner_id=partner_id,
+        return bool(
+            SimilarityController()._maybe_enqueue_analysis_sibling(
+                audio_bytes=audio_bytes,
+                original_filename=original_filename,
+                track_id=track_id,
+                user_id=user_id,
+                partner_id=partner_id,
+            )
         )
     except Exception as exc:  # never let analysis wiring affect a completed similarity job
         logger.error("SIMILARITY UPLOAD JOB: failed to enqueue analysis sibling: %s", exc)
+        return False
+
+
+async def _mark_crashed(job_id: str, track_id: Optional[int]) -> None:
+    """Record a worker-level crash on both the job record and the track.
+
+    One coroutine so a single ``run_async_task`` covers both — the crash path runs outside the
+    inner handler's event loop, and starting two of them is how one of the writes gets lost.
+    """
+    await SimilarityUploadJobService().mark_failed(
+        job_id, _GENERIC_FAILURE, reason="worker_error"
+    )
+    await TrackArtifactStatusRepository.set_playlist_state(
+        track_id, ARTIFACT_FAILED, error=_PLAYLIST_FAILED_TEXT
+    )
+    await TrackArtifactStatusRepository.set_analysis_state(
+        track_id, ARTIFACT_UNAVAILABLE, error=_ANALYSIS_SKIPPED_TEXT
+    )
 
 
 @celery_app.task(bind=True, max_retries=0)
@@ -210,12 +270,9 @@ def run_similarity_upload(
     except Exception as exc:
         logger.error("SIMILARITY UPLOAD JOB %s: task crashed: %s", job_id, exc, exc_info=True)
         # The inner handler could not run, so the job is still `queued`/`running`. Mark it
-        # failed in its own loop, or the client polls a job that will never move.
+        # failed in its own loop, or the client polls a job that will never move — and record the
+        # same outcome on the track, or the Library capsules spin forever for the same reason.
         try:
-            run_async_task(
-                SimilarityUploadJobService().mark_failed(
-                    job_id, _GENERIC_FAILURE, reason="worker_error"
-                )
-            )
+            run_async_task(_mark_crashed(job_id, track_id))
         except Exception:  # pragma: no cover — nothing further we can do
             logger.error("SIMILARITY UPLOAD JOB %s: could not mark failed after crash", job_id)

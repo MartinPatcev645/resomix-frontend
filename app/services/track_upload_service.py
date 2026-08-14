@@ -630,6 +630,22 @@ class TrackUploadService:
                 )
                 await db.execute(rt_insert)
 
+            # Sibling-artifact state, seeded here rather than at either enqueue site so that BOTH
+            # upload paths (similarity-first and analysis-first) get a row without either having to
+            # remember to create one. Same transaction as the track: an upload that commits is
+            # never missing its status row, and a rolled-back one leaves no orphan.
+            #
+            # Consumer uploads only. Partner/catalogue tracks have no siblings, and a row for them
+            # would sit on `pending` for the life of the catalogue.
+            if track_type == TrackType.UPLOAD and user_id is not None:
+                from app.repositories.track_artifact_status_repository import (
+                    TrackArtifactStatusRepository,
+                )
+
+                await TrackArtifactStatusRepository.seed(
+                    db, track_id=track_id, partner_id=partner_id, user_id=user_id
+                )
+
             # Commit the transaction
             await db.commit()
 

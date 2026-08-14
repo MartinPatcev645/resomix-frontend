@@ -25,6 +25,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 import traceback
 from app.models.user import User
+from app.models.track_artifact_status import ARTIFACT_READY, ARTIFACT_UNAVAILABLE
+from app.repositories.track_artifact_status_repository import TrackArtifactStatusRepository
 from app.services.playlist_service import PlaylistService
 from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.core.config import settings
@@ -130,7 +132,7 @@ class SimilarityController:
         track_id: Optional[int],
         user_id: Optional[int],
         partner_id: Optional[int],
-    ) -> None:
+    ) -> bool:
         """Enqueue the analysis sibling for a successful consumer upload (fire-and-forget).
 
         Every upload yields BOTH a similarity playlist (foregrounded above) and an analysis
@@ -141,12 +143,18 @@ class SimilarityController:
           * the analysis service URL must be configured.
         Never raises — analysis is best-effort and must not affect the similarity response. The
         sibling does NOT re-count against ``uploads_per_month`` (the endpoint already recorded it).
+
+        Returns True only if a task was actually enqueued. The callers need that answer to record
+        the Library's analysis state: every ``False`` here means no task will ever run, and a
+        capsule left on ``pending`` would spin forever waiting for one. Reported rather than
+        written here because this method is synchronous and both callers are async — writing from
+        inside a sync frame on a live event loop is how a fire-and-forget write gets dropped.
         """
         try:
             if not user_id or partner_id != settings.system_partner_id:
-                return
+                return False
             if not self.analysis_service.is_configured:
-                return
+                return False
 
             analysis_id = self.analysis_service.new_analysis_id()
 
@@ -174,8 +182,10 @@ class SimilarityController:
                 "SIMILARITY UPLOAD: enqueued analysis sibling %s for track_id=%s user_id=%s",
                 analysis_id, track_id, user_id,
             )
+            return True
         except Exception as exc:  # never let analysis wiring break the similarity response
             logger.error("SIMILARITY UPLOAD: failed to enqueue analysis sibling: %s", exc)
+            return False
 
     # ------------------------------------------------------------------ #
     # Poll-based upload (accept → job id → poll). See app/tasks/similarity_tasks.py
@@ -1017,13 +1027,30 @@ class SimilarityController:
                 # The upload also produces an analysis result (the sibling artifact). Generate it
                 # in the background before the audio is discarded; no re-count (self-guarded/inert
                 # until the analysis service is configured).
-                self._maybe_enqueue_analysis_sibling(
+                uploaded_track_id = (
+                    int(upload_result["track_id"]) if upload_result.get("track_id") else None
+                )
+                enqueued = self._maybe_enqueue_analysis_sibling(
                     audio_bytes=audio_bytes,
                     original_filename=original_filename,
-                    track_id=int(upload_result["track_id"]) if upload_result.get("track_id") else None,
+                    track_id=uploaded_track_id,
                     user_id=user_id,
                     partner_id=partner_id,
                 )
+                # Close out the Library's capsules for this upload. The blocking path returns the
+                # playlist inline, so by here its outcome is already known — recording it means a
+                # user who leaves this screen and opens the Library sees the same answer rather
+                # than a capsule still claiming to be working.
+                await TrackArtifactStatusRepository.set_playlist_state(
+                    uploaded_track_id,
+                    ARTIFACT_READY if playlist_data else ARTIFACT_UNAVAILABLE,
+                )
+                if not enqueued:
+                    await TrackArtifactStatusRepository.set_analysis_state(
+                        uploaded_track_id,
+                        ARTIFACT_UNAVAILABLE,
+                        error="Analysis is not available for this track.",
+                    )
 
                 # STEP 3: Return response in same format as similarity by ID
                 duration_ms = (time.time() - start_time) * 1000

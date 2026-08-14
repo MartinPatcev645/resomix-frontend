@@ -493,6 +493,7 @@ class AnalysisResultController:
                 audio_spool_path=spool_path,
                 analysis_id=analysis_id,
                 track_uuid=track_uuid,
+                track_id=track_id,
                 original_filename=original_filename,
                 user_id=user_id,
                 partner_id=partner_id,
