@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useLibraryUrlState } from "@/hooks/useLibraryUrlState.ts";
 import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon, HeartStrokeIcon } from "@resomix/ui";
 import { useAuthStore } from "@resomix/stores";
 import { useLibrary, shouldOpenInNewTab, useAccess } from "@resomix/hooks";
@@ -28,7 +29,6 @@ const ARTIFACT_POLL_CEILING_MS = 10 * 60 * 1000;
 
 export default function LibraryPage() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated } = useAuthStore();
   const {
     playlists,
@@ -57,8 +57,23 @@ export default function LibraryPage() {
     playlistsFilters,
     tracksFilters,
     applyFilters,
-    clearFilters,
   } = useLibrary();
+
+  // The URL owns which tab and which page are shown; this hook reads it, keeps it canonical,
+  // issues every load, clamps out-of-range pages and handles the scroll. Nothing on this page
+  // sets a page number directly any more.
+  const { tab: urlTab, page, goToPage, goToTab, applyFiltersAt, clearFiltersAt, refresh } =
+    useLibraryUrlState({
+      isAuthenticated,
+      loadPlaylists,
+      loadTracks,
+      setActiveTab,
+      applyFilters,
+      playlistsTotalPages,
+      tracksTotalPages,
+      playlistsPage,
+      tracksPage,
+    });
 
   // Filters applied to whichever tab is active (each tab keeps its own set).
   const activeFilters = activeTab === "tracks" ? tracksFilters : playlistsFilters;
@@ -74,7 +89,7 @@ export default function LibraryPage() {
   // preserves any other applied filters.
   const favoritesOnly = activeTab === "playlists" && playlistsFilters.favoritesOnly;
   const toggleFavoritesOnly = () =>
-    applyFilters("playlists", { ...playlistsFilters, favoritesOnly: !playlistsFilters.favoritesOnly });
+    applyFiltersAt("playlists", { ...playlistsFilters, favoritesOnly: !playlistsFilters.favoritesOnly });
 
   // Whether the collapsible filter panel is shown (hidden by default to keep the view clean).
   const [showFilters, setShowFilters] = useState(false);
@@ -82,8 +97,10 @@ export default function LibraryPage() {
   // Derived view of whichever tab is selected (each section has its own slice / paging / loading).
   const activePlaylists = playlists;
   const activeLoading = activeTab === "tracks" ? tracksLoading : playlistsLoading;
-  const activePage = activeTab === "tracks" ? tracksPage : playlistsPage;
-  const activeTotalPages = activeTab === "tracks" ? tracksTotalPages : playlistsTotalPages;
+  // Read from the URL, not from the store: the URL is what changed, so the "Page 2 of 5" label
+  // updates the instant the click lands rather than waiting for the response to write the store.
+  const activePage = page;
+  const activeTotalPages = urlTab === "tracks" ? tracksTotalPages : playlistsTotalPages;
 
   // Status Message states
   const [showStatus, setShowStatus] = useState(false);
@@ -214,20 +231,6 @@ export default function LibraryPage() {
     setShowStatus(true);
   };
 
-  // Sync activeTab with URL query parameter on mount and when URL parameter changes
-  const tabParam = searchParams.get("tab");
-  useEffect(() => {
-    if (tabParam === "playlists" || tabParam === "tracks") {
-      setActiveTab(tabParam);
-    } else if (tabParam === "favorites") {
-      // Favorites is no longer a tab — favorites live inline on Playlists. Redirect legacy links.
-      setSearchParams({ tab: "playlists" }, { replace: true });
-    } else {
-      // If no tab in URL, sync activeTab back to URL parameter
-      setSearchParams({ tab: activeTab }, { replace: true });
-    }
-  }, [tabParam, activeTab, setActiveTab, setSearchParams]);
-
   // Click outside to close the three-dots dropdown menu
   useEffect(() => {
     const handleOutsideClick = () => {
@@ -237,15 +240,8 @@ export default function LibraryPage() {
     return () => window.removeEventListener("click", handleOutsideClick);
   }, []);
 
-  // On arrival (and on login) load both sections, so every tab's count is populated and switching
-  // tabs is instant (data lives in the store). A full page reload or the Refresh button refetches —
-  // deliberately NOT re-run when the user merely switches tabs.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    loadPlaylists(1);
-    loadTracks(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  // (Loading both sections on arrival now lives in useLibraryUrlState — the active tab loads at
+  // the URL's page, the other at page 1 so its count in the tab label is populated.)
 
   // Every upload spawns BOTH a similarity playlist and an analysis; the sibling runs in the
   // background and lands a minute or two later. While the Tracks tab shows a row whose sibling
@@ -268,28 +264,25 @@ export default function LibraryPage() {
     }
     const timer = setTimeout(() => {
       pollElapsedRef.current += ARTIFACT_POLL_INTERVAL_MS;
-      loadTracks(tracksPage, 20, { silent: true });
+      loadTracks(page, 20, { silent: true });
     }, ARTIFACT_POLL_INTERVAL_MS);
     return () => clearTimeout(timer);
-  }, [activeTab, tracks, tracksPage, loadTracks, pollExhausted]);
+  }, [activeTab, tracks, page, loadTracks, pollExhausted]);
 
   // A new page, a new filter or a manual Refresh is a fresh question — give it a fresh budget,
   // otherwise one long-running upload would permanently silence polling for the whole tab.
   useEffect(() => {
     pollElapsedRef.current = 0;
     setPollExhausted(false);
-  }, [tracksPage, activeTab]);
+  }, [page, activeTab]);
 
   // Refresh only the currently-selected tab (keeps the other as-is).
   const handleRefresh = () => {
-    if (activeTab === "playlists") loadPlaylists(playlistsPage);
-    else {
-      // Refresh is the documented way out of the exhausted state, so it has to actually restore
-      // polling — otherwise the notice tells the user to press a button that changes nothing.
-      pollElapsedRef.current = 0;
-      setPollExhausted(false);
-      loadTracks(tracksPage);
-    }
+    // Refresh is the documented way out of the exhausted poll state, so it has to actually restore
+    // polling — otherwise the notice tells the user to press a button that changes nothing.
+    pollElapsedRef.current = 0;
+    setPollExhausted(false);
+    refresh();
   };
 
   const handleDeletePlaylist = (uuid: string, e: React.MouseEvent) => {
@@ -374,14 +367,14 @@ export default function LibraryPage() {
     }
   };
 
+  // Both write the URL; the load follows from that. Neither calls a loader directly, which is what
+  // keeps the address bar and the list from ever disagreeing.
   const handlePrevPage = () => {
-    if (activeTab === "playlists" && playlistsPage > 1) loadPlaylists(playlistsPage - 1);
-    else if (activeTab === "tracks" && tracksPage > 1) loadTracks(tracksPage - 1);
+    if (activePage > 1) goToPage(activePage - 1);
   };
 
   const handleNextPage = () => {
-    if (activeTab === "playlists" && playlistsPage < playlistsTotalPages) loadPlaylists(playlistsPage + 1);
-    else if (activeTab === "tracks" && tracksPage < tracksTotalPages) loadTracks(tracksPage + 1);
+    if (activePage < activeTotalPages) goToPage(activePage + 1);
   };
 
   return (
@@ -422,7 +415,7 @@ export default function LibraryPage() {
                 workspace's task cues rather than the old bold-helvetica links. */}
             <div className="flex justify-center gap-[var(--px-24)]">
               <button
-                onClick={() => setSearchParams({ tab: "tracks" }, { replace: true })}
+                onClick={() => goToTab("tracks")}
                 aria-current={activeTab === "tracks" ? "page" : undefined}
                 className={`cursor-pointer whitespace-nowrap border-b-2 pb-[var(--px-6)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] transition-colors ${
                   activeTab === "tracks"
@@ -433,7 +426,7 @@ export default function LibraryPage() {
                 Uploads ({tracksTotal})
               </button>
               <button
-                onClick={() => setSearchParams({ tab: "playlists" }, { replace: true })}
+                onClick={() => goToTab("playlists")}
                 aria-current={activeTab === "playlists" ? "page" : undefined}
                 className={`cursor-pointer whitespace-nowrap border-b-2 pb-[var(--px-6)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] transition-colors ${
                   activeTab === "playlists"
@@ -518,8 +511,8 @@ export default function LibraryPage() {
               activeTab={activeTab}
               applied={activeFilters}
               loading={activeLoading}
-              onApply={(f) => applyFilters(activeTab, f)}
-              onClear={() => clearFilters(activeTab)}
+              onApply={(f) => applyFiltersAt(activeTab, f)}
+              onClear={() => clearFiltersAt(activeTab)}
             />
           )}
 

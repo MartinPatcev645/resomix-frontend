@@ -305,13 +305,23 @@ export function useLibrary() {
 
   // Commit a tab's filters and reload from page 1. Store `set` is synchronous, so the
   // load* call below reads the just-set filters via getState().
-  const applyFilters = useCallback((tab: 'playlists' | 'tracks', filters: LibraryFilters) => {
+  //
+  // `reload: false` commits the filters without fetching. The Library's URL now drives its own
+  // loads, so when filtering also moves the URL back to page 1 that move issues the request —
+  // and both doing it would fire two identical fetches back to back. The default stays `true`,
+  // so any caller that is not managing its own loads behaves exactly as before.
+  const applyFilters = useCallback((
+    tab: 'playlists' | 'tracks',
+    filters: LibraryFilters,
+    opts?: { reload?: boolean },
+  ) => {
+    const reload = opts?.reload !== false;
     if (tab === 'tracks') {
       setTracksFilters(filters);
-      loadTracks(1);
+      if (reload) loadTracks(1);
     } else {
       setPlaylistsFilters(filters);
-      loadPlaylists(1);
+      if (reload) loadPlaylists(1);
     }
   }, [setTracksFilters, setPlaylistsFilters, loadTracks, loadPlaylists]);
 
