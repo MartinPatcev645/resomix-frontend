@@ -114,12 +114,32 @@ export function useWorkspaceSearch() {
     patchDiscoveryCache({ searchQuery: next, searchResults: [] });
   }, []);
 
+  /**
+   * Empty the search — the clear (×) button.
+   *
+   * Does the work synchronously rather than leaving it to the debounced effect. Going through
+   * `setQuery("")` alone would leave the old results on screen for the ~500 ms until the effect
+   * fires, so the panel would sit there listing matches for a query the user just deleted.
+   *
+   * The request id is bumped for the same reason in the other direction: a search already in
+   * flight must not land afterwards and repopulate a field the user has emptied.
+   */
+  const clearQuery = useCallback(() => {
+    reqIdRef.current += 1;
+    setQuery("");
+    setResults([]);
+    setError(null);
+    setIsLoading(false);
+    patchDiscoveryCache({ searchQuery: "", searchResults: [] });
+  }, []);
+
   return {
     query,
     results,
     isLoading,
     error,
     handleQueryChange,
+    clearQuery,
     setQuery,
   } as const;
 }

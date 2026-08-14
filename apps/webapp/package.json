@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:unit": "vitest run",
-    "test:pure": "node --experimental-strip-types --test src/**/*.test.ts",
+    "test:pure": "node --experimental-strip-types --test 'src/**/*.test.ts'",
     "test:e2e": "playwright test",
     "test:a11y": "playwright test e2e/a11y.spec.ts",
     "lighthouse:mobile": "FORM_FACTOR=mobile lhci autorun",
