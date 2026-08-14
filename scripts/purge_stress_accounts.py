@@ -43,6 +43,17 @@ Safety
   refuses to run if the pattern would match an implausible number of accounts.
 * Every phase re-verifies. The final step is an orphan sweep over the tables it touched; a
   non-zero result fails the run loudly instead of reporting success.
+* **Catalogue tracks are never deleted.** Only rows with ``type = 'upload'`` — what the stress run
+  itself pushed through the upload endpoint. A catalogue row carrying a stress account's
+  ``user_id`` (which happens) is reported and left alone.
+
+WHAT IT DOES NOT DO
+
+Media-server assets. Deleting the ``tracks`` row leaves the audio, peaks, segments and embeddings
+on the box; the app's own delete path dispatches ``purge_uploaded_track_assets`` for that, and raw
+SQL cannot. The uuids are written to ``scripts/purged_stress_upload_uuids.txt`` before the delete
+so that can be done separately — after the row is gone, the uuid needed to find the file is gone
+too.
 """
 
 import argparse
@@ -70,9 +81,20 @@ MAX_EXPECTED_ACCOUNTS = 50
 #
 # Order matters: playlists reference tracks as `seed_track_id` (SET NULL), so removing playlists
 # first keeps that column from being nulled on a track that is about to be deleted anyway.
+# The `extra` clause on tracks is a HARD SAFETY GUARD, not a refinement.
+#
+# `user_id` alone does not mean "this account uploaded it". Catalogue rows are inserted by
+# `ingestion_persist`, which never sets `user_id` — but the dev database still contains one
+# `electrobuzz` row that has one, so the invariant does NOT hold in practice. Without
+# `type = 'upload'` this script would delete a catalogue track the moment any such row pointed at a
+# stress account, and a catalogue track is not something a stress run created.
+#
+# Deleting only what the stress run itself produced is the whole requirement. Anything ambiguous
+# stays.
 OWNED_CONTENT: Sequence[tuple] = (
-    ("playlists", "user_id", "playlists (cascades playlist_tracks, ratings, engagements)"),
-    ("tracks", "user_id", "uploaded tracks (cascades audio_files, ratings, artifact status, analysis)"),
+    ("playlists", "user_id", "", "playlists (cascades playlist_tracks, ratings, engagements)"),
+    ("tracks", "user_id", "AND type = 'upload'",
+     "tracks THEY UPLOADED (cascades audio_files, ratings, artifact status, analysis)"),
 )
 
 # Rows that BLOCK the delete (RESTRICT). Audit trails, so they are removed rather than reassigned —
@@ -130,20 +152,23 @@ async def inventory(db, ids: List[int]) -> Dict[str, int]:
     p = {"ids": tuple(ids)}
     found: Dict[str, int] = {}
 
-    for table, column, label in OWNED_CONTENT:
-        found[label] = await _count(db, f"SELECT COUNT(*) FROM {table} WHERE {column} IN :ids", p)
+    for table, column, extra, label in OWNED_CONTENT:
+        found[label] = await _count(
+            db, f"SELECT COUNT(*) FROM {table} WHERE {column} IN :ids {extra}", p)
 
     # Second-level rows, counted so the report shows the real blast radius rather than just the
     # two parent numbers. They are removed by CASCADE, not by this script.
-    found["  ↳ playlist_tracks"] = await _count(
+    # Membership rows — "track X is in playlist Y". Removing one does NOT remove the track; the
+    # cascade runs from playlists to playlist_tracks and stops there.
+    found["  ↳ playlist_tracks (membership rows, NOT tracks)"] = await _count(
         db, "SELECT COUNT(*) FROM playlist_tracks pt JOIN playlists pl ON pl.id = pt.playlist_id "
             "WHERE pl.user_id IN :ids", p)
     found["  ↳ audio_files"] = await _count(
         db, "SELECT COUNT(*) FROM audio_files a JOIN tracks t ON t.id = a.track_id "
-            "WHERE t.user_id IN :ids", p)
+            "WHERE t.user_id IN :ids AND t.type = 'upload'", p)
     found["  ↳ track_analysis_results"] = await _count(
         db, "SELECT COUNT(*) FROM track_analysis_results r JOIN tracks t ON t.id = r.track_id "
-            "WHERE t.user_id IN :ids", p)
+            "WHERE t.user_id IN :ids AND t.type = 'upload'", p)
 
     for table, column, label in BLOCKING:
         found[label] = await _count(db, f"SELECT COUNT(*) FROM {table} WHERE {column} IN :ids", p)
@@ -155,6 +180,38 @@ async def inventory(db, ids: List[int]) -> Dict[str, int]:
 
     found["the accounts themselves"] = len(ids)
     return found
+
+
+async def catalogue_check(db, ids: List[int]) -> List[str]:
+    """Anything pointing at these accounts that is NOT theirs to delete.
+
+    Catalogue tracks are the product. If one carries a stress account's `user_id` — which happens;
+    see OWNED_CONTENT — it is reported here and deliberately left alone. The report exists so that
+    is a visible decision rather than a silent one.
+    """
+    p = {"ids": tuple(ids)}
+    rows = await db.execute(text(
+        "SELECT type, COUNT(*) FROM tracks WHERE user_id IN :ids AND type <> 'upload' "
+        "GROUP BY type"), p)
+    return [f"{n} '{ttype}' catalogue track(s) reference a stress account — NOT deleted, left as-is"
+            for ttype, n in rows.fetchall()]
+
+
+async def upload_uuids(db, ids: List[int]) -> List[str]:
+    """The uuids of the uploads about to be deleted, captured BEFORE the delete.
+
+    Deleting the `tracks` row does not remove the audio from the media server. The app's own delete
+    path dispatches `purge_uploaded_track_assets` for that; this script writes raw SQL, so it does
+    not — and once the row is gone the uuid needed to find the file is gone with it.
+
+    Written to a file so the assets can be cleaned separately, at a time of your choosing. Firing
+    a few hundred Celery tasks from a cleanup script is not something that should happen as a side
+    effect of a database tidy-up.
+    """
+    rows = await db.execute(text(
+        "SELECT uuid FROM tracks WHERE user_id IN :ids AND type = 'upload' ORDER BY id"),
+        {"ids": tuple(ids)})
+    return [r[0] for r in rows.fetchall()]
 
 
 async def purge(db, ids: List[int]) -> Dict[str, int]:
@@ -182,8 +239,8 @@ async def purge(db, ids: List[int]) -> Dict[str, int]:
             f"DELETE FROM {table} WHERE {type_col} = 'user' AND {id_col} IN :ids", label)
 
     # 3. Owned content — the SET NULL trap. Without this the rows survive as ownerless.
-    for table, column, label in OWNED_CONTENT:
-        await _delete(f"DELETE FROM {table} WHERE {column} IN :ids", label)
+    for table, column, extra, label in OWNED_CONTENT:
+        await _delete(f"DELETE FROM {table} WHERE {column} IN :ids {extra}", label)
 
     # 4. The accounts. The 17 CASCADE relationships are the database's job, not ours.
     await _delete("DELETE FROM users WHERE id IN :ids", "the accounts themselves")
@@ -254,15 +311,30 @@ async def main() -> int:
             return 1 if problems else 0
 
         counts = await inventory(db, ids)
+        skipped = await catalogue_check(db, ids)
         width = max(len(k) for k in counts)
         print("Owned by these accounts:")
         for label, n in counts.items():
             print(f"  {label.ljust(width)}  {n}")
+        if skipped:
+            print("\nSKIPPED — not created by the stress run, so not this script's to remove:")
+            for line in skipped:
+                print(f"  ! {line}")
         print()
 
         if not args.apply:
             print("DRY RUN — nothing deleted. Re-run with --apply to remove the above.")
             return 0
+
+        uuids = await upload_uuids(db, ids)
+        if uuids:
+            out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "purged_stress_upload_uuids.txt")
+            with open(out, "w") as fh:
+                fh.write("\n".join(uuids) + "\n")
+            print(f"Wrote {len(uuids)} upload uuid(s) to {out}")
+            print("  Their MEDIA-SERVER assets are NOT removed by this script — the audio, peaks,")
+            print("  segments and embeddings stay until purged separately using these uuids.\n")
 
         print("Deleting (foreign key checks stay ON — a refusal here is information, not an "
               "obstacle)...\n")
