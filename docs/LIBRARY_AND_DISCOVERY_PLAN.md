@@ -654,18 +654,65 @@ only mounts are `UploadPage`/`UploadMobile`, which `App.tsx` never routes.)
 
 Small backend change, but it touches a public endpoint.
 
+✅ **Done 2026-08-14.** Built to a **different design than planned**, on the user's call, and the
+difference is the point of the phase.
+
+> **The plan's approach would have taxed every search.** It said to add `get_current_user_optional`
+> and resolve entitlements per request — a token decode, a user read and a plan resolution in front
+> of *every* search, including every guest's, on the hottest endpoint in the product, to answer a
+> question with the same answer for all of them.
+>
+> Instead the cap keys off the **presence of a bearer token**:
+>
+> | Caller | Cost | Rows |
+> |---|---|---|
+> | Frontend, no `Authorization` header | **nothing at all** — no decode, no query | 30 |
+> | Frontend, bearer from a paid plan | one user read + a cached entitlement map | 100 |
+> | Frontend, bearer from a free plan | same lookup | 30 |
+> | B2B partner | nothing | 100 (unchanged) |
+>
+> The client sends a token only when its plan earns more, which it learns from
+> `limits.search_results_max` on `/entitlements/me`. Guests and free users search **exactly** as
+> they do today, one number apart.
+
 **Backend**
-- [ ] 36. New entitlement key `search_results_max`
-- [ ] 37. Seed values — free 30, pro 100, guest 30
-- [ ] 38. Add `get_current_user_optional` to the search route (**it has no user today**)
-- [ ] 39. Resolve the cap per request: `min(entitlement, ES_SEARCH_LIMIT)`
-- [ ] 40. `ES_SEARCH_LIMIT` becomes a ceiling, not the value
+- [x] 36. New entitlement key `search_results_max`
+- [x] 37. Seed values — guest 30, free 30, basic 100, pro 100, max 100
+- [x] 38. ~~Add `get_current_user_optional` to the search route~~ → a purpose-built dependency that
+      returns immediately when there is no bearer and **never raises**
+- [x] 39. Resolve the cap per request: `min(entitlement, ES_SEARCH_LIMIT)`
+- [x] 40. `ES_SEARCH_LIMIT` becomes a ceiling, not the value
+- [x] 40a. **New:** `SEARCH_RESULTS_DEFAULT` (30) as a plain setting for the no-lookup path —
+      resolving the guest plan's entitlement would mean a database round trip to learn a constant.
+      Registered in config.py's env mapping, since `Settings` is a `BaseModel`: a field is a
+      hard-coded constant until its env var is added there
+- [x] 40b. **New:** B2B partners keep the ceiling. They hit the same route, and cutting them to the
+      consumer default would be a silent regression in an API other companies integrate against
+- [x] 40c. **New:** `search_results_max` published on `/entitlements/me`, so *which* plans earn the
+      larger set stays a data question the admin can change without a frontend deploy
+
+**Frontend**
+- [x] 40d. **New:** `searchTracks(query, mode, { authenticated })`. Anonymous by default; the
+      workspace hook opts in only when `search_results_max` beats the default. Read through a ref,
+      not the closure — `performSearch` is a `useCallback([])` the debounce effect depends on, and
+      adding the flag to its deps would re-arm the debounce and fire a second search the moment
+      entitlements resolved
 
 **Tests**
-- [ ] 41. free 30 / pro 100 / guest 30
-- [ ] 42. A plan claiming 500 is still capped at the operational limit
+- [x] 41. guest/free 30 · basic/pro/max 100 · B2B unchanged
+- [x] 42. A plan claiming 500 is still capped at the operational limit
+- [x] 42a. **New:** the anonymous path is asserted to touch **nothing** — the guard against someone
+      later putting a lookup back in front of every guest search
+- [x] 42b. **New:** 19 tests, sabotage-verified. Three initially passed with their rule deleted: the
+      dependency catches everything by design, so an exception raised from a mock is swallowed
+      exactly like a real one and "never reached" is indistinguishable from "reached and failed".
+      Rewritten to assert on call counts, plus one test proving the authenticated path resolves at
+      all — without it every "returns None" assertion would also pass against a dependency that had
+      stopped working entirely
 
-⚠️ Accepted side effect: deactivated accounts begin getting 403 from search.
+✅ **The flagged side effect did not happen.** Deactivated accounts do **not** get 403 from search:
+every failure in the dependency — expired token, refresh token, missing user, deactivated account —
+degrades to the default result count. Decision 8 needs no answer.
 
 ## Phase 5 — Library visibility *(Item 1)*
 

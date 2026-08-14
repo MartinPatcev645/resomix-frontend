@@ -65,15 +65,19 @@ class SearchService:
                 if row.get("artist"):
                     item["artist"] = row["artist"]
     
-    async def search_tracks(self, db: AsyncSession, query: str, mode: Optional[Literal["artist", "title", "auto"]] = "auto", partner_id: Optional[int] = None) -> Dict[str, Any]:
+    async def search_tracks(self, db: AsyncSession, query: str, mode: Optional[Literal["artist", "title", "auto"]] = "auto", partner_id: Optional[int] = None, limit: Optional[int] = None) -> Dict[str, Any]:
         """
         Search for tracks via Elasticsearch first, then fetch full details from MariaDB.
         If DEMO_MODE is enabled, search only OPEN tracks directly from MariaDB.
         
         Now includes partner_id scoping for tenant isolation.
+
+        ``limit`` is the caller's resolved row cap. ``None`` keeps the operational ceiling, which is
+        what B2B partners get — they are not on a consumer plan and this endpoint is their API.
         """
-        # Set default limits
-        limit = settings.es_search_limit
+        # `es_search_limit` is the CEILING now, not the value. A plan row claiming 500 cannot make
+        # the box serve 500: whatever the entitlement says, the operational limit still applies.
+        limit = settings.es_search_limit if limit is None else max(1, min(limit, settings.es_search_limit))
 
         if not query or not query.strip():
             return {"tracks": []}

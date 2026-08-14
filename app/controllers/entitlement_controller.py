@@ -124,6 +124,12 @@ class EntitlementController:
             # unlocked), so folding it into top_sk_max would make the chip and the dropdown disagree.
             "dropdown_max_tracks": _cap(entitlements, FeatureKey.DROPDOWN_MAX_TRACKS),
             "library_playlists_max": _cap(entitlements, FeatureKey.LIBRARY_PLAYLISTS_MAX),
+            # Reported so the client can decide whether attaching its token to /search is worth
+            # anything. Search is anonymous by default — no bearer, no lookup, no cost — and the
+            # client only sends one when this number beats the unauthenticated default. Publishing
+            # it keeps that decision data-driven: change which plans get the bigger number and the
+            # frontend follows without a deploy.
+            "search_results_max": _cap(entitlements, FeatureKey.SEARCH_RESULTS_MAX),
             "exports_per_day": _cap(entitlements, FeatureKey.EXPORTS_PER_DAY),
             "export_track_limit": _cap(entitlements, FeatureKey.EXPORT_TRACK_LIMIT),
         }

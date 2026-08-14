@@ -23,6 +23,7 @@ from typing import Optional, Literal
 
 from app.controllers.search_controller import SearchController
 from app.api.dependencies.partner import get_public_partner
+from app.api.dependencies.search_cap import resolve_authenticated_search_limit
 from app.models.partner import Partner
 from app.api.dependencies.database import get_database_session
 from app.schemas.search import (
@@ -62,7 +63,11 @@ async def search_tracks_endpoint(
     query: str = Query(..., description="The search term to find matching tracks", min_length=1, max_length=200),
     mode: Optional[Literal["artist", "title", "auto"]] = Query("auto", description="Search mode: 'artist' (search only artists), 'title' (search only titles), 'auto' (search both)"),
     db: AsyncSession = Depends(get_database_session),
-    partner: Partner = Depends(get_public_partner)
+    partner: Partner = Depends(get_public_partner),
+    # Returns None — doing no work at all — when the request carries no bearer token, which is the
+    # path every guest and free-plan search takes. Only a client that chose to send a token pays
+    # for the lookup. See app/api/dependencies/search_cap.py.
+    authenticated_limit: Optional[int] = Depends(resolve_authenticated_search_limit),
 ) -> JSONResponse:
     """
     Search for tracks based on a query string.
@@ -70,7 +75,9 @@ async def search_tracks_endpoint(
     - **query**: Search term to find matching tracks across titles, artists, albums, and other metadata
     - **mode**: Search mode - 'artist' for artist-only search, 'title' for title-only search, 'auto' for both (default)
     """
-    return await search_controller.search_tracks(db, query, mode, partner_id=partner.id)
+    return await search_controller.search_tracks(
+        db, query, mode, partner_id=partner.id, authenticated_limit=authenticated_limit
+    )
 
 
 @router.get(

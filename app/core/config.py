@@ -408,6 +408,12 @@ class Settings(BaseModel):
         default=20, description="Timeout in seconds for ES requests"
     )
     es_search_limit: int = Field(default=20, description="Default limit for ES search")
+    # What /search returns when the caller sends no bearer token — guests and free users, i.e.
+    # almost every search. A plain setting rather than an entitlement ON PURPOSE: resolving the
+    # guest plan's entitlement would mean a database round trip on the hot path to learn a number
+    # that is the same for everyone who takes it. The paid value IS an entitlement
+    # (`search_results_max`); this is only the no-lookup default, and a test pins the two together.
+    search_results_default: int = Field(default=30, description="Rows /search returns for an unauthenticated caller")
     es_index_alias: str = Field(
         default="tracks_search",
         description="Stable alias the app searches; concrete indices are tracks_search_v<stamp>",
@@ -722,6 +728,7 @@ class Settings(BaseModel):
             "ES_CA_CERTS": "es_ca_certs",
             "ES_REQUEST_TIMEOUT": "es_request_timeout",
             "ES_SEARCH_LIMIT": "es_search_limit",
+            "SEARCH_RESULTS_DEFAULT": "search_results_default",
             "ES_INDEX_ALIAS": "es_index_alias",
             # JWT & Auth
             "JWT_SECRET_KEY": "jwt_secret_key",
@@ -814,6 +821,7 @@ class Settings(BaseModel):
                     "hls_url_expires_seconds",
                     "es_request_timeout",
                     "es_search_limit",
+                    "search_results_default",
                     "jwt_access_token_expire_minutes",
                     "jwt_refresh_token_expire_days",
                     "smtp_port",

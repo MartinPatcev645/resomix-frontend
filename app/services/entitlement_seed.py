@@ -47,6 +47,7 @@ FEATURE_CATALOG = [
     ("library_playlists_max",      "Playlists visible in Library",        "int",  "none",  "0",       "How many playlists are LISTED in the Library. Does not cap creation — beyond this they are created hidden and stay reachable by link. -1 = unlimited."),
     ("exports_per_day",            "Exports per day",                     "int",  "daily", "0",       "Playlist exports per UTC day (txt / apple_music / embed all count). -1 = unlimited."),
     ("can_view_full_analysis",     "Can open full Track Intelligence",    "bool", "none",  "false",   "The analysis SUMMARY card is available to anyone who can upload; this gates the full Track Intelligence page."),
+    ("search_results_max",         "Search results returned",             "int",  "none",  "30",      "Rows returned by /search. Always bounded by the operational ceiling ES_SEARCH_LIMIT, so raising it here alone cannot make search slower than the box can serve."),
 ]
 
 # code, name, price_cents, billing_interval, is_active, is_default, is_assignable, sort_order
@@ -67,6 +68,7 @@ PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
         "uploads_per_month": 0, "analysis_feature_count": 0, "can_similarity_upload": False,
         "default_playlist_visibility": "public", "signup_bonus_playlists": 0,
         "library_playlists_max": 0, "exports_per_day": 0, "can_view_full_analysis": False,
+        "search_results_max": 30,
     },
     "free": {
         "search_playlists_per_month": 3, "max_tracks_per_playlist": 20, "dropdown_max_tracks": 50,
@@ -75,6 +77,7 @@ PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
         "uploads_per_month": 5, "analysis_feature_count": 5, "can_similarity_upload": True,
         "default_playlist_visibility": "private", "signup_bonus_playlists": 2,
         "library_playlists_max": 5, "exports_per_day": 1, "can_view_full_analysis": False,
+        "search_results_max": 30,
     },
     "basic": {
         "search_playlists_per_month": 30, "max_tracks_per_playlist": 50, "dropdown_max_tracks": 100,
@@ -83,6 +86,7 @@ PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
         "uploads_per_month": 30, "analysis_feature_count": 10, "can_similarity_upload": True,
         "default_playlist_visibility": "private", "signup_bonus_playlists": 2,
         "library_playlists_max": 25, "exports_per_day": 5, "can_view_full_analysis": True,
+        "search_results_max": 100,
     },
     "pro": {
         "search_playlists_per_month": -1, "max_tracks_per_playlist": 100, "dropdown_max_tracks": 100,
@@ -91,6 +95,7 @@ PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
         "uploads_per_month": 50, "analysis_feature_count": 20, "can_similarity_upload": True,
         "default_playlist_visibility": "private", "signup_bonus_playlists": 2,
         "library_playlists_max": -1, "exports_per_day": -1, "can_view_full_analysis": True,
+        "search_results_max": 100,
     },
     "max": {
         "search_playlists_per_month": -1, "max_tracks_per_playlist": 100, "dropdown_max_tracks": 100,
@@ -100,6 +105,7 @@ PLAN_ENTITLEMENTS: Dict[str, Dict[str, Any]] = {
         "uploads_per_month": 300, "analysis_feature_count": 20, "can_similarity_upload": True,
         "default_playlist_visibility": "private", "signup_bonus_playlists": 2,
         "library_playlists_max": -1, "exports_per_day": -1, "can_view_full_analysis": True,
+        "search_results_max": 100,
     },
 }
 
