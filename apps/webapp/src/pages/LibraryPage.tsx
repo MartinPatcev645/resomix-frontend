@@ -27,6 +27,13 @@ const ARTIFACT_POLL_INTERVAL_MS = 5_000;
 // leave the row `pending` and the page polling for the rest of the session.
 const ARTIFACT_POLL_CEILING_MS = 6 * 60 * 1000;
 
+// Explains the dimmed rows, next to Refresh and Filters. Says "still here" explicitly: a user who
+// previously saw five playlists and now sees six — one of them greyed — needs to know nothing was
+// taken away before they are told what to buy.
+const LOCKED_TIP =
+  "Your plan keeps your 5 most recent playlists open. The dimmed ones are still here and nothing " +
+  "has been deleted — links you have already shared keep working. Upgrade to open them all again.";
+
 export default function LibraryPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
@@ -116,6 +123,12 @@ export default function LibraryPage() {
   // The Liked tab is a plain reverse-chronological list — no filter panel, no favourites toggle.
   // Hiding the controls is simpler and more honest than showing ones that do nothing.
   const showFilterControls = urlTab !== "liked";
+
+  // How many playlists on this page are beyond the plan's cap. Counted from the ABSENT uuid, the
+  // same signal the rows themselves use, so the tip cannot claim a different number from the
+  // dimming. Shown only when there is at least one — a Pro user never sees it.
+  const lockedCount = urlTab === "playlists" ? activePlaylists.filter((p) => !p.uuid).length : 0;
+  const showLockedTip = lockedCount > 0;
 
   // Status Message states
   const [showStatus, setShowStatus] = useState(false);
@@ -575,6 +588,25 @@ export default function LibraryPage() {
               </svg>
               Refresh
             </button>
+            {/* Why some rows are dimmed. Sits with Refresh/Filters rather than firing once on
+                arrival: the set of open playlists changes every time the user creates one, so a
+                single dismissible notice would explain it on the one day they did not need it and
+                never again. A tooltip is there whenever they wonder. */}
+            {showLockedTip && (
+              <Tooltip message={LOCKED_TIP}>
+                <button
+                  type="button"
+                  aria-label="Why are some playlists dimmed?"
+                  className={`${PAGE_BTN_SECONDARY} gap-[var(--px-8)]`}
+                >
+                  <svg className="w-[var(--px-14)] h-[var(--px-14)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 16v-4M12 8h.01" />
+                  </svg>
+                  {lockedCount} dimmed
+                </button>
+              </Tooltip>
+            )}
           </div>
 
           {/* Collapsible filter panel (search / date / min-tracks / favorites-only) + Apply / Clear.
