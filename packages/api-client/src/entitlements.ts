@@ -58,6 +58,14 @@ export interface EntitlementLimits {
   /** Tracks SELECTABLE in the depth dropdown — larger than top_sk_max on free. */
   dropdown_max_tracks: number | null;
   library_playlists_max: number | null;
+  /**
+   * Rows `/search` returns for this plan.
+   *
+   * Search is anonymous by default and stays that way for everyone this number does not help —
+   * the client attaches its token only when this beats `SEARCH_DEFAULT_RESULTS`. `null` means
+   * unlimited, which also warrants the token.
+   */
+  search_results_max: number | null;
   exports_per_day: number | null;
   export_track_limit: number | null;
 }

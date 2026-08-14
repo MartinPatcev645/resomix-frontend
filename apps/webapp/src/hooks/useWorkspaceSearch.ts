@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { searchTracks } from "@resomix/api-client";
+import { SEARCH_DEFAULT_RESULTS, searchTracks } from "@resomix/api-client";
 import { usePlayerStore } from "@resomix/stores";
+import { useEntitlements } from "@resomix/hooks";
 import type { SearchResult } from "@resomix/hooks";
 import {
   getDiscoveryCache,
@@ -25,11 +26,31 @@ export function useWorkspaceSearch() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { searchMode } = usePlayerStore();
+  const { limits } = useEntitlements();
+
+  /**
+   * Whether to send the bearer token with the search.
+   *
+   * Search is anonymous by default and the backend does **no** work to resolve a caller who sends
+   * no token — no decode, no user read, no plan lookup. So a guest or a free user searches exactly
+   * as fast as before, and sending a token that changes nothing would only buy them a round trip.
+   *
+   * `null` means unlimited, which is worth the token. A missing `limits` (still loading, or the
+   * call failed) means no token — the honest default is the fast path, and the worst case is a
+   * Pro user getting the smaller result set for a few seconds after load.
+   */
+  const authenticated =
+    limits !== null &&
+    (limits.search_results_max === null || (limits.search_results_max ?? 0) > SEARCH_DEFAULT_RESULTS);
   const skipNextFetch = useRef(
     cached.searchQuery.length > 0 && cached.searchResults.length > 0 && cached.searchMode === searchMode,
   );
   // Monotonic id so a slow response for an older query/mode can't clobber a newer one.
   const reqIdRef = useRef(0);
+  // Read through a ref, not the closure: `performSearch` is a `useCallback([])` and the debounce
+  // effect depends on its identity. Putting the flag in the dependency array would rebuild the
+  // callback the moment entitlements resolve, re-arming the debounce and firing a second search.
+  const authenticatedRef = useRef(false);
 
   const performSearch = useCallback(
     async (searchQuery: string, mode: typeof searchMode) => {
@@ -61,7 +82,7 @@ export function useWorkspaceSearch() {
       setError(null);
 
       try {
-        const response = await searchTracks(searchQuery, mode);
+        const response = await searchTracks(searchQuery, mode, { authenticated: authenticatedRef.current });
         if (reqId !== reqIdRef.current) return; // superseded by a newer search
         if (response.success && response.data?.tracks) {
           const mappedResults = response.data.tracks.map((track: Record<string, unknown>) => ({
@@ -92,6 +113,10 @@ export function useWorkspaceSearch() {
     },
     [],
   );
+
+  useEffect(() => {
+    authenticatedRef.current = authenticated;
+  }, [authenticated]);
 
   useEffect(() => {
     if (skipNextFetch.current) {
