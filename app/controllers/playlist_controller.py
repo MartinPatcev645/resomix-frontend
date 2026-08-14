@@ -1908,8 +1908,16 @@ class PlaylistController:
         try:
             # Extract partner_id from request state
             partner_id = getattr(request.state, "partner_id", None)
+            # The Library cap, resolved per request from the caller's plan rather than read from a
+            # column. It decides which rows come back with an identifier — see
+            # `async_visible_playlist_ids`. Resolved here, at the edge, because this is the layer
+            # that knows the user; the repository is given a number, not a plan.
+            library_cap = await self.entitlement_gate.get_cap(
+                db, FeatureKey.LIBRARY_PLAYLISTS_MAX, user=current_user
+            )
             result = await self.playlist_service.get_all_user_playlists(
-                db, current_user.id, page, page_size, filters, partner_id=partner_id
+                db, current_user.id, page, page_size, filters,
+                partner_id=partner_id, library_cap=library_cap,
             )
             duration_ms = (time.time() - start_time) * 1000
 

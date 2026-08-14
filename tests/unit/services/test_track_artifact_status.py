@@ -71,9 +71,14 @@ def _track(**kw):
     return SimpleNamespace(**base)
 
 
+def _serialize(**kw):
+    """Serialize one track. `playlist_meta` is the `{uuid, locked}` block the repository returns."""
+    return TrackService._serialize_track_summary(_track(), **kw)
+
+
 def _artifacts(**kw):
-    """Serialize one track and return just the `artifacts` block."""
-    return TrackService._serialize_track_summary(_track(), **kw)["artifacts"]
+    """Just the `artifacts` block."""
+    return _serialize(**kw)["artifacts"]
 
 
 # --------------------------------------------------------------------------- #
@@ -117,7 +122,7 @@ def test_an_existing_artifact_outranks_a_stale_state() -> None:
     artifact is openable either way, and hiding it because bookkeeping was lost is the worse
     error."""
     blocks = _artifacts(
-        playlist_uuid="pl-1",
+        playlist_meta={"uuid": "pl-1", "locked": False},
         analysis_meta={"analysis_uuid": "an-1"},
         artifact_status={"analysis_state": ARTIFACT_FAILED, "playlist_state": ARTIFACT_PENDING},
     )
@@ -160,7 +165,7 @@ def test_the_two_siblings_are_reported_independently() -> None:
     """The common real case: the playlist landed, the analysis is still running. Collapsing them
     into one status is what the old `isTrackRecent` did to both at once."""
     blocks = _artifacts(
-        playlist_uuid="pl-1",
+        playlist_meta={"uuid": "pl-1", "locked": False},
         artifact_status={"playlist_state": ARTIFACT_READY, "analysis_state": ARTIFACT_PROCESSING},
     )
 
@@ -415,3 +420,42 @@ def test_the_backfill_filters_playlists_exactly_as_the_library_does() -> None:
 
     assert "type IN ('similarity', 'waiting_segments')" in sql
     assert "deleted_at IS NULL" in sql
+
+
+# --------------------------------------------------------------------------- #
+# Interaction with the Library cap (Phase 5)
+# --------------------------------------------------------------------------- #
+
+def test_a_locked_playlist_still_reports_as_ready() -> None:
+    """The interaction that is easy to get backwards.
+
+    A playlist beyond the Library cap has its uuid withheld. If the artifact state were resolved
+    from the uuid, that withholding would report a perfectly good playlist as `unavailable` — so
+    the capsule would say "no matches" about a playlist that was built and is sitting there.
+
+    Existence and reachability are different questions, and only the second one the cap answers.
+    """
+    blocks = _artifacts(
+        playlist_meta={"uuid": None, "locked": True},
+        artifact_status={"playlist_state": ARTIFACT_READY},
+    )
+
+    assert blocks["playlist"]["state"] == ARTIFACT_READY
+
+
+def test_a_locked_playlist_is_flagged_and_its_uuid_withheld() -> None:
+    """Both halves of the gate, on the row the Uploads tab renders."""
+    row = _serialize(playlist_meta={"uuid": None, "locked": True})
+
+    assert row["playlist_uuid"] is None
+    assert row["playlist_locked"] is True
+
+
+def test_no_playlist_at_all_is_not_reported_as_locked() -> None:
+    """The distinction `playlist_locked` exists for. Both cases have no uuid; one is "still
+    generating / never built", the other is "upgrade to open this". Same absence, different copy."""
+    row = _serialize(playlist_meta=None)
+
+    assert row["playlist_uuid"] is None
+    assert row["playlist_locked"] is False
+    assert row["artifacts"]["playlist"]["state"] != ARTIFACT_READY

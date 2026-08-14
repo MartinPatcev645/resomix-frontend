@@ -15,7 +15,7 @@ Author: Muhammad Usman Naeem
 Email: usman.naeem2212@gmail.com
 """
 
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Set, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
@@ -63,39 +63,72 @@ class PlaylistRepository(BaseRepository[Playlist]):
         """Initialize PlaylistRepository with Playlist model."""
         super().__init__(Playlist)
 
-    async def _resolve_library_visibility(
-        self, db: AsyncSession, *, user_id: Optional[int], cap: Optional[int]
-    ) -> bool:
-        """Whether a playlist created right now should be listed in the owner's Library.
+    @staticmethod
+    def _is_unlimited(cap: Optional[int]) -> bool:
+        """``None`` (unresolvable — guest, partner, or a path that predates the cap) or a negative
+        cap both mean "list everything". Failing open is deliberate: hiding someone's playlist by
+        accident is far worse than listing one too many."""
+        return cap is None or cap < 0
 
-        Visible when the owner is below their cap. ``cap is None`` means the caller did not resolve
-        one (a guest, a partner, or a path that predates this) — default to visible, because
-        hiding someone's playlist by accident is far worse than showing one too many.
-        ``cap < 0`` is unlimited.
+    async def async_visible_playlist_ids(
+        self, db: AsyncSession, user_id: int, cap: Optional[int]
+    ) -> Optional[Set[int]]:
+        """The ids of the owner's ``cap`` MOST RECENT playlists, or ``None`` for unlimited.
+
+        This replaces the stored ``is_library_visible`` flag, and the difference is the whole point
+        of the change. That flag was written once at creation and never revisited, so the first five
+        playlists a free user made were stamped visible *forever* and the sixth was stamped hidden
+        *forever*. The Library therefore showed the five **oldest** — the opposite of what anyone
+        expects, and it could not self-correct, because after the fact the stored flag was the only
+        record of the decision.
+
+        Derived at read time, "which five" is simply a fact about the data: create a sixth and the
+        first drops out on the next read, with no write anywhere.
+
+        Three details that are not incidental:
+
+        * **``id DESC`` is a tie-break, not decoration.** ``created_at`` is a DATETIME with
+          one-second resolution and playlists are created in bursts, so ties are ordinary. Without
+          a deterministic second key the "visible five" would differ between two identical requests,
+          and rows would flicker between locked and unlocked as the user paged.
+        * **Owned playlists only.** A favourited playlist belonging to someone else is not part of
+          your library allowance and is never locked by it.
+        * **No favourite exemption.** Favouriting is a flag the user controls; exempting favourites
+          would let anyone opt out of the cap by hearting everything.
+
+        Returns ``None`` — meaning "no restriction" — rather than a set of every id, so callers
+        cannot accidentally treat unlimited as "nothing is visible".
         """
-        if user_id is None or cap is None or cap < 0:
-            return True
+        if self._is_unlimited(cap):
+            return None
         if cap == 0:
-            return False
-        return await self.count_library_visible(db, user_id) < cap
-
-    async def count_library_visible(self, db: AsyncSession, user_id: int) -> int:
-        """How many playlists the owner currently has LISTED in their Library.
-
-        One definition, two callers: the visibility decision at creation and the ``usage`` block on
-        ``/entitlements/me``. If they counted differently the chip would say "4/5" while the sixth
-        playlist came back hidden, and nobody would be able to tell which was lying.
-        """
-        current = await db.execute(
-            select(func.count())
-            .select_from(Playlist)
-            .where(
-                Playlist.user_id == user_id,
-                Playlist.is_library_visible.is_(True),
-                Playlist.deleted_at.is_(None),
-            )
+            return set()
+        rows = await db.execute(
+            select(Playlist.id)
+            .where(Playlist.user_id == user_id, Playlist.deleted_at.is_(None))
+            .order_by(Playlist.created_at.desc(), Playlist.id.desc())
+            .limit(cap)
         )
-        return current.scalar() or 0
+        return {row[0] for row in rows.all()}
+
+    async def count_library_visible(
+        self, db: AsyncSession, user_id: int, cap: Optional[int] = None
+    ) -> int:
+        """How many of the owner's playlists are currently UNLOCKED in their Library.
+
+        Now ``min(owned, cap)`` by definition, because visibility is derived from recency rather
+        than stored. It cannot count ``is_library_visible`` any more — that column is no longer
+        written, so the stored values are a record of what the cap used to be, not what it is.
+
+        The docstring's original warning still applies and is the reason this stayed a shared
+        helper: the usage chip on ``/entitlements/me`` and the Library must never disagree. If they
+        did, the chip would say "4/5" while the sixth playlist came back locked, and nobody could
+        tell which was lying.
+        """
+        owned = await self.count_owned(db, user_id)
+        if self._is_unlimited(cap):
+            return owned
+        return min(owned, max(0, cap))
 
     async def count_owned(self, db: AsyncSession, user_id: int) -> int:
         """Every playlist the user owns, listed or not (soft-deleted excluded).
@@ -177,7 +210,6 @@ class PlaylistRepository(BaseRepository[Playlist]):
         user_id: Optional[int] = None,
         partner_id: Optional[int] = None,
         is_public: bool = False,
-        library_visible_max: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Create a similarity playlist with tracks.
@@ -227,16 +259,18 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 # Convert to seconds for play_time
                 play_time = play_time_ms // 1000
 
-            # Library visibility is decided ONCE, here, and then left alone.
+            # Library visibility is NOT decided here any more, and nothing is written for it.
             #
-            # Beyond the plan's cap a playlist is created HIDDEN — it still exists and is fully
-            # usable by link; it is simply not listed in the Library. Deleting a visible one frees
-            # a slot, but hidden playlists are never promoted, so the next NEW playlist takes it.
-            # That is why this is a stored flag and not a "first N by created_at" query: after the
-            # fact the ordering cannot tell you which ones the user actually saw.
-            is_library_visible = await self._resolve_library_visibility(
-                db, user_id=user_id, cap=library_visible_max
-            )
+            # It used to be: a playlist beyond the plan's cap was stamped hidden at creation and
+            # never revisited. That made "which five are listed" a decision frozen at write time,
+            # so a free user's Library showed their five OLDEST playlists for good — creating a
+            # sixth could not demote the first, because nothing ever looked again.
+            #
+            # Visibility is now derived on read from recency (`async_visible_playlist_ids`), so the
+            # answer follows the data instead of a stale flag. `playlists.is_library_visible` is
+            # left in the schema, defaulting to 1, purely so this change needs no migration and can
+            # be rolled back; it is written by nothing and read by nothing. Drop it once that
+            # rollback window has passed.
 
             # Create the playlist record (UUID is auto-generated in __init__)
             playlist = Playlist(
@@ -247,7 +281,6 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 seed_track_id=seed_track_id,
                 num_tracks=num_tracks,
                 play_time=play_time,
-                is_library_visible=is_library_visible,
             )
 
             db.add(playlist)
@@ -813,19 +846,35 @@ class PlaylistRepository(BaseRepository[Playlist]):
         return len(playlists)
 
     async def async_get_similarity_playlist_map(
-        self, db: AsyncSession, track_ids: List[int], partner_id: Optional[int] = None
-    ) -> Dict[int, str]:
-        """Map each seed track id -> the UUID of the (latest) similarity playlist generated
-        from it. Used to tell the library which uploaded tracks already have a generated
-        playlist. Tracks with no similarity playlist are simply absent from the map.
+        self,
+        db: AsyncSession,
+        track_ids: List[int],
+        partner_id: Optional[int] = None,
+        visible_playlist_ids: Optional[Set[int]] = None,
+    ) -> Dict[int, Dict[str, Any]]:
+        """Map each seed track id -> its similarity playlist's uuid and whether it is unlocked.
+
+        Used by the Uploads tab, whose Sonic Discovery capsule is driven by `playlist_uuid` alone —
+        the track serializer's comment is explicit that "the uuid IS the exists signal". That makes
+        withholding the uuid enough to gate the capsule, and it is the same gate the Library uses:
+        no identifier, no route.
+
+        It is NOT enough on its own to draw the right thing, though. Once the uuid can be absent for
+        two different reasons — no playlist was ever built, or one exists but is beyond the cap —
+        the client can no longer tell them apart, and those need different messages. Hence
+        `locked`, returned alongside.
+
+        `visible_playlist_ids=None` means unlimited (or no cap resolved) and nothing is locked.
 
         Args:
             db: Async database session
             track_ids: Track primary keys to look up
             partner_id: Optional partner ID for tenant scoping
+            visible_playlist_ids: Ids of the owner's unlocked playlists, or None for unlimited
 
         Returns:
-            ``{seed_track_id: playlist_uuid}`` for the most recent similarity playlist per track.
+            ``{seed_track_id: {"uuid": str | None, "locked": bool}}`` for the most recent
+            similarity playlist per track. Tracks with no playlist are absent entirely.
         """
         if not track_ids:
             return {}
@@ -839,17 +888,24 @@ class PlaylistRepository(BaseRepository[Playlist]):
             conditions.append(Playlist.partner_id == partner_id)
 
         stmt = (
-            select(Playlist.seed_track_id, Playlist.uuid)
+            select(Playlist.id, Playlist.seed_track_id, Playlist.uuid)
             .where(and_(*conditions))
             .order_by(Playlist.created_at.desc(), Playlist.id.desc())
         )
         result = await db.execute(stmt)
 
-        mapping: Dict[int, str] = {}
-        for seed_track_id, playlist_uuid in result.all():
+        mapping: Dict[int, Dict[str, Any]] = {}
+        for playlist_id, seed_track_id, playlist_uuid in result.all():
             # Rows are newest-first; keep the first (latest) per seed track.
-            if seed_track_id not in mapping:
-                mapping[seed_track_id] = playlist_uuid
+            if seed_track_id in mapping:
+                continue
+            locked = visible_playlist_ids is not None and playlist_id not in visible_playlist_ids
+            mapping[seed_track_id] = {
+                # Withheld when locked, exactly as in the Library listing. The client cannot open
+                # what it has no uuid for, which is the enforcement; `locked` only explains it.
+                "uuid": None if locked else playlist_uuid,
+                "locked": locked,
+            }
         return mapping
 
     async def async_get_playlist_similarity_data(
@@ -1964,6 +2020,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
         page_size: int = 20,
         filters=None,
         partner_id: Optional[int] = None,
+        library_cap: Optional[int] = None,
     ) -> Tuple[List[Dict[str, Any]], int]:
         """
         Get all playlists owned by a user with all required information and optional filters.
@@ -1991,10 +2048,15 @@ class PlaylistRepository(BaseRepository[Playlist]):
                 conditions.append(Playlist.partner_id == partner_id)
             # Never surface soft-deleted playlists to the user.
             conditions.append(Playlist.deleted_at.is_(None))
-            # Beyond the plan's library cap a playlist is created hidden. It is NOT deleted and not
-            # restricted — the owner can still open, play, rename, export, share and fork it by
-            # link. It is only absent from this listing, which is the whole surface the cap governs.
-            conditions.append(Playlist.is_library_visible.is_(True))
+            #
+            # NOTE: there is deliberately NO visibility condition here any more.
+            #
+            # The cap governs which rows carry an IDENTIFIER, not which rows exist. Every playlist
+            # the user owns is listed; the ones beyond the cap come back without `id`, `uuid` or
+            # `seed_track_uuid`, which is what makes them un-openable — a client cannot construct a
+            # route to something it has no id for. Filtering them out of the query instead would
+            # make `total`, the page count and every filter operate on a different set for free
+            # users than for Pro, which is exactly the behaviour being removed.
             needs_engagement_join = False
 
             # Handle all_favorites filter - if true, include playlists user favorited but doesn't own
@@ -2138,10 +2200,18 @@ class PlaylistRepository(BaseRepository[Playlist]):
             total_result = await db.execute(count_query)
             total = total_result.scalar() or 0
 
-            # Get page of playlists
+            # Get page of playlists.
+            #
+            # `id DESC` is a tie-break, and it matters more than it looks. `created_at` has
+            # one-second resolution and playlists are created in bursts, so ties are ordinary —
+            # without a deterministic second key, MySQL may order tied rows differently between two
+            # identical requests, and a row could appear on both page 1 and page 2 while another
+            # appeared on neither. The same ordering decides the visible set in
+            # `async_visible_playlist_ids`, so the two must agree exactly or a row could be listed
+            # in a position its lock state contradicts.
             offset = max(0, (page - 1) * page_size)
             stmt = (
-                base_query.order_by(Playlist.created_at.desc())
+                base_query.order_by(Playlist.created_at.desc(), Playlist.id.desc())
                 .offset(offset)
                 .limit(page_size)
             )
@@ -2209,9 +2279,21 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         "upload" if row.type == "upload" else "internal"
                     )
 
+            # Which of the OWNER's playlists are unlocked, derived from recency. `None` means the
+            # plan is unlimited (or no cap could be resolved) and nothing is locked.
+            visible_ids = await self.async_visible_playlist_ids(db, user_id, library_cap)
+
             # Build response
             playlist_list = []
             for playlist in playlists:
+                # A playlist someone else owns is not part of this user's allowance — the
+                # `all_favorites` filter can surface those, and locking them would apply the
+                # owner's cap to a library that isn't theirs.
+                is_visible = (
+                    visible_ids is None
+                    or playlist.user_id != user_id
+                    or playlist.id in visible_ids
+                )
                 # Get fork_id only if user owns this playlist
                 fork_id_value = ""
                 if playlist.user_id == user_id:
@@ -2248,7 +2330,25 @@ class PlaylistRepository(BaseRepository[Playlist]):
                     ),
                     "is_favorite": engagement["is_favorite"],
                     "is_following": engagement["is_following"],
+                    # The row still describes the playlist — name, counts, date, favourite state —
+                    # so the user can see it exists and what it is. What it loses is every way to
+                    # reach it.
+                    "is_visible": is_visible,
                 }
+
+                if not is_visible:
+                    # THE GATE. Withholding the identifier is the enforcement; greying the row in
+                    # the UI is only the explanation. A client with no uuid cannot build a route,
+                    # cannot call the detail endpoint, and cannot fetch the cover — none of which
+                    # depends on the frontend behaving.
+                    #
+                    # `fork_id` goes too: it is a playlist uuid by another name, and leaving it
+                    # would hand back the identifier the other three lines just removed.
+                    playlist_dict["id"] = None
+                    playlist_dict["uuid"] = None
+                    playlist_dict["seed_track_uuid"] = None
+                    playlist_dict["fork_id"] = ""
+
                 playlist_list.append(playlist_dict)
 
             return playlist_list, total

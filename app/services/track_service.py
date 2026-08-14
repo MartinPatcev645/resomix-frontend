@@ -83,7 +83,7 @@ class TrackService:
     def _serialize_track_summary(
         cls,
         track: Track,
-        playlist_uuid: Optional[str] = None,
+        playlist_meta: Optional[Dict[str, Any]] = None,
         analysis_meta: Optional[Dict[str, Any]] = None,
         display_meta: Optional[Dict[str, Any]] = None,
         artifact_status: Optional[Dict[str, Any]] = None,
@@ -112,11 +112,20 @@ class TrackService:
         a = analysis_meta or {}
         d = display_meta or {}
         s = artifact_status or {}
+        pl = playlist_meta or {}
+        # Withheld by the repository when the playlist is beyond the owner's Library cap, so this
+        # is already None for a locked row — the gate is upstream, not here.
+        playlist_uuid = pl.get("uuid")
         duration_ms = track.duration_ms
         if duration_ms is None and a.get("duration_ms"):
             duration_ms = int(a["duration_ms"])
         playlist_state = cls._resolve_artifact_state(
-            s.get("playlist_state"), artifact_exists=bool(playlist_uuid)
+            # `pl` is present iff a playlist row exists — NOT `playlist_uuid`, which is withheld
+            # for a locked one. Testing the uuid here would report a perfectly good playlist as
+            # `unavailable` the moment it fell outside the Library cap, so the capsule would say
+            # "no matches" about a playlist that was built and is sitting there. Existence and
+            # reachability are different questions; only the second one the cap answers.
+            s.get("playlist_state"), artifact_exists=bool(pl)
         )
         analysis_state = cls._resolve_artifact_state(
             s.get("analysis_state"), artifact_exists=bool(a.get("analysis_uuid"))
@@ -137,6 +146,10 @@ class TrackService:
             "updated_at": track.updated_at.isoformat() if track.updated_at else None,
             # Sibling artifacts — a non-null uuid IS the "exists" signal.
             "playlist_uuid": playlist_uuid,
+            # …which is why this exists. Once the uuid can be absent for two reasons — never built,
+            # or built but beyond the Library cap — its absence stops being self-explanatory, and
+            # the two cases need different copy ("generating" vs "upgrade to open this").
+            "playlist_locked": bool(pl.get("locked")),
             "analysis_uuid": a.get("analysis_uuid"),
             # …and this is what the absence of one MEANS. The error text is only ever populated on
             # `failed`/`unavailable`, and is written by the workers for display — it never carries
@@ -169,7 +182,7 @@ class TrackService:
     def _serialize_track_detail(
         cls,
         track: Track,
-        playlist_uuid: Optional[str] = None,
+        playlist_meta: Optional[Dict[str, Any]] = None,
         analysis_meta: Optional[Dict[str, Any]] = None,
         display_meta: Optional[Dict[str, Any]] = None,
         artifact_status: Optional[Dict[str, Any]] = None,
@@ -181,7 +194,7 @@ class TrackService:
         file checksums are deliberately not exposed to the client.
         """
         detail = cls._serialize_track_summary(
-            track, playlist_uuid, analysis_meta, display_meta, artifact_status
+            track, playlist_meta, analysis_meta, display_meta, artifact_status
         )
         detail.update(
             {
@@ -245,8 +258,14 @@ class TrackService:
         search: Optional[str] = None,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
+        library_cap: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """List the user's own uploaded tracks (paginated, newest first, filterable)."""
+        """List the user's own uploaded tracks (paginated, newest first, filterable).
+
+        ``library_cap`` is the owner's ``library_playlists_max``. It gates the Sonic Discovery
+        capsule the same way it gates the Library: a playlist beyond the cap comes back with no
+        uuid and ``playlist_locked``. ``None`` means unlimited / unresolved and nothing is locked.
+        """
         try:
             tracks, total = await self.track_repository.async_get_user_uploaded_tracks(
                 db, user_id, page, page_size, partner_id=partner_id,
@@ -254,8 +273,13 @@ class TrackService:
             )
             # One batch query each to tell which tracks already have a similarity playlist / analysis.
             track_ids = [t.id for t in tracks]
+            # Resolved once for the page, not per row — the same set the Library listing uses, so
+            # a playlist cannot read as locked on one screen and open on the other.
+            visible_ids = await self.playlist_repository.async_visible_playlist_ids(
+                db, user_id, library_cap
+            )
             playlist_map = await self.playlist_repository.async_get_similarity_playlist_map(
-                db, track_ids, partner_id=partner_id
+                db, track_ids, partner_id=partner_id, visible_playlist_ids=visible_ids
             )
             analysis_map = await self.analysis_repository.async_get_analysis_meta_map(
                 db, track_ids, partner_id=partner_id
@@ -292,6 +316,7 @@ class TrackService:
         uuid: str,
         user_id: int,
         partner_id: Optional[int] = None,
+        library_cap: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Get full metadata for one of the user's own uploaded tracks."""
         try:
@@ -304,8 +329,11 @@ class TrackService:
                     "error": "Track not found",
                     "not_found": True,
                 }
+            visible_ids = await self.playlist_repository.async_visible_playlist_ids(
+                db, user_id, library_cap
+            )
             playlist_map = await self.playlist_repository.async_get_similarity_playlist_map(
-                db, [track.id], partner_id=partner_id
+                db, [track.id], partner_id=partner_id, visible_playlist_ids=visible_ids
             )
             analysis_map = await self.analysis_repository.async_get_analysis_meta_map(
                 db, [track.id], partner_id=partner_id

@@ -166,16 +166,22 @@ class EntitlementController:
                 logger.warning("ENTITLEMENTS: usage snapshot failed for %s: %s", feature_key, exc)
 
         # The Library figure is not a Redis counter — it is how many playlists are currently
-        # LISTED, so it is counted in the database, through the same helper the visibility decision
+        # UNLOCKED, so it is counted in the database, through the same helper the Library listing
         # uses. It never resets: deleting a playlist frees a slot immediately, which is why there is
         # no `library_at` in `resets`.
+        #
+        # The cap is passed in because visibility is derived from recency rather than stored, so the
+        # answer is `min(owned, cap)` and is meaningless without it. Reusing the already-resolved
+        # `entitlements` map rather than re-resolving is not just cheaper — it guarantees the chip's
+        # numerator and the `limits` denominator describe the same plan. Resolving twice is how you
+        # get "6/5".
         #
         # Counted for Pro too. An unlimited plan is not an unmeasured one — "how many playlists do
         # our paying users actually keep" is exactly the number the fair-use position rests on.
         if current_user is not None:
             try:
                 usage["library_playlists_used"] = await self.playlist_repository.count_library_visible(
-                    db, current_user.id
+                    db, current_user.id, _cap(entitlements, FeatureKey.LIBRARY_PLAYLISTS_MAX)
                 )
             except Exception as exc:  # pragma: no cover
                 logger.warning("ENTITLEMENTS: library count failed: %s", exc)

@@ -844,6 +844,7 @@ class PlaylistService:
         page_size: int = 20,
         filters=None,
         partner_id: Optional[int] = None,
+        library_cap: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Get all playlists owned by a user with optional filters and partner scoping.
@@ -862,12 +863,18 @@ class PlaylistService:
         try:
             playlists, total = (
                 await self.playlist_repository.async_get_all_user_playlists(
-                    db, user_id, page, page_size, filters, partner_id=partner_id
+                    db, user_id, page, page_size, filters,
+                    partner_id=partner_id, library_cap=library_cap,
                 )
             )
             # `total` counts what this filtered listing matched. `library_total` counts everything
-            # the user owns, hidden included — the two together are what lets the Library say
-            # "5 of 18 shown" instead of silently dropping the 13 beyond the cap.
+            # the user owns.
+            #
+            # These two used to differ for a free user, because the listing filtered out anything
+            # beyond the cap — which is what produced the Library's "5 of 6" label. The listing no
+            # longer filters, so for an unfiltered page they are now equal and the label collapses
+            # to a plain count on its own. They still diverge under a search or filter, which is
+            # the only thing that label was ever meant to describe.
             library_total = await self.playlist_repository.count_owned(db, user_id)
             return {
                 "success": True,

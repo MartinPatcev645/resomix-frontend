@@ -670,7 +670,12 @@ class BillingService:
         try:
             from app.repositories.playlist_repository import PlaylistRepository
 
-            library_used = await PlaylistRepository().count_library_visible(db, user.id)
+            # The cap is passed in: visibility is derived from recency now, so "how many are
+            # unlocked" is `min(owned, cap)` and cannot be answered without it. `library_max`
+            # is already resolved two lines up, so this costs nothing.
+            library_used = await PlaylistRepository().count_library_visible(
+                db, user.id, library_max
+            )
         except Exception:  # pragma: no cover — a meter must never break the billing screen
             library_used = None
         usage.append({

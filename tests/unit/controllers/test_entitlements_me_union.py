@@ -76,13 +76,23 @@ class _Gate:
 
 
 class _Playlists:
+    """Stands in for PlaylistRepository.
+
+    The signature is part of the contract being tested. It gained `cap` when visibility stopped
+    being a stored flag: "how many are unlocked" became `min(owned, cap)` and is unanswerable
+    without it. A stub that kept the old two-argument shape did not fail loudly — the controller
+    catches, logs and reports `None`, so the chip silently went blank. Hence `seen_caps`.
+    """
+
     def __init__(self, count=0, raises=False):
         self.count = count
         self.raises = raises
         self.calls = 0
+        self.seen_caps = []
 
-    async def count_library_visible(self, db, user_id):
+    async def count_library_visible(self, db, user_id, cap=None):
         self.calls += 1
+        self.seen_caps.append(cap)
         if self.raises:
             raise RuntimeError("db exploded")
         return self.count
@@ -232,6 +242,20 @@ class TestUsage:
         c = _controller(mapping=PRO_MAP, library=137)
         assert (await _get(c))["usage"]["library_playlists_used"] == 137
         assert c.playlist_repository.calls == 1
+
+    async def test_the_chip_counts_against_the_same_plan_it_displays(self):
+        """The numerator and the denominator must come from ONE resolution of the plan.
+
+        `usage.library_playlists_used` is the numerator; `limits.library_playlists_max` is the
+        denominator. Resolving the plan twice — once for each — is how a chip ends up reading
+        "6/5": a grant expiring, a subscription webhook landing, or a cache entry rolling between
+        the two calls is enough. Asserting the cap handed to the counter IS the displayed limit is
+        what pins them together.
+        """
+        c = _controller(library=4)
+        payload = await _get(c)
+
+        assert c.playlist_repository.seen_caps == [payload["limits"]["library_playlists_max"]]
 
     async def test_a_guest_has_no_library_count(self):
         """Guests have no Library at all, and no user id to count against."""

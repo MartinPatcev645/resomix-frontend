@@ -518,22 +518,44 @@ it reads as more of a bug than it used to. Worth a follow-up.
 
 Frontend only.
 
-- [ ] 22. Explicit `isOpen` state, separated from `results.length`
-- [ ] 23. Changing the search mode keeps the panel open
-- [ ] 24. Render *"Searching…"* rather than emptying the list
-- [ ] 25. Close **only** when the input is cleared — not on outside click
-- [ ] 26. Escape also closes (keyboard escape hatch — without it the panel is a trap)
-- [ ] 27. Clear `×` button inside the input's right edge
-- [ ] 28. `padding-right` on the input so text never runs under the button
-- [ ] 29. Hover state on the button
-- [ ] 30. Tooltip — *"Clear search"*
-- [ ] 31. `aria-label`
-- [ ] 32. 44×44 touch target on mobile (the glyph itself can stay small)
-- [ ] 33. Clearing empties the query, closes the panel, and returns focus to the input
+✅ **Done 2026-08-14.** All in `WorkspaceSearchField.tsx`, which is the only live search field —
+desktop and mobile both render it. (`SearchComponent`'s `variant="legacy"` path is dead code: its
+only mounts are `UploadPage`/`UploadMobile`, which `App.tsx` never routes.)
 
-**Tests**
-- [ ] 34. Mode change keeps the panel open
-- [ ] 35. Clear closes it and refocuses
+> **The plan's diagnosis of this item was wrong.** It said the panel collapsed because the results
+> array emptied while the new request was in flight. It does not — `performSearch` leaves the
+> previous results in state and the panel renders "Searching…" over them. The actual cause was a
+> document-level `pointerdown` listener that closed the panel on any click outside the field, and
+> the Search Mode `<select>` is a **sibling** of the field, not a child. Clicking it read as
+> clicking away. So tasks 23 and 25 turned out to be the same one-line change.
+
+- [x] 22. Explicit `isOpen` state, separated from `results.length`
+- [x] 23. Changing the search mode keeps the panel open
+- [x] 24. Render *"Searching…"* rather than emptying the list — `isLoading` outranks a non-empty
+      array too, so a mode change cannot show the old mode's matches as if they were current
+- [x] 25. Close **only** when the input is cleared — not on outside click
+- [x] 26. Escape also closes; with the panel already closed it clears the field instead, and on an
+      empty field it is passed through rather than swallowed (or it would break Escape for any
+      modal containing this component)
+- [x] 27. Clear `×` button inside the input's right edge, shown only when there is something to clear
+- [x] 28. `padding-right` on the input so text never runs under the button
+- [x] 29. Hover state on the button
+- [x] 30. Tooltip — *"Clear search"*
+- [x] 31. `aria-label`
+- [x] 32. 44×44 touch target (WCAG 2.5.5) — the field is exactly 44px tall, so it costs no layout
+- [x] 33. Clearing empties the query, closes the panel, and returns focus to the input
+- [x] 33a. **New:** `clearQuery` bumps the request id and empties synchronously — otherwise an
+      in-flight search lands afterwards and repopulates a field the user just emptied
+- [x] 33b. **New:** `onMouseDown` preventDefault on the button, so the input never blurs and
+      refocuses — a visible flicker of the focus ring on a control the user never left
+
+**Tests** — `pnpm --filter webapp test:pure`
+- [x] 34. Mode change keeps the panel open — plus a source guard that the outside-click listener
+      stays removed, since re-adding it looks like a fix and silently restores the reported bug
+- [x] 35. Clear closes it and refocuses
+- [x] 35a. **New:** 19 tests, each verified to fail when its rule is reverted. One did not: the
+      tooltip assertion used a substring, so `data-title="…"` (which renders no tooltip) passed it.
+      Tightened to a boundary match and re-verified.
 
 ## Phase 4 — Search result cap *(Item 4)*
 
@@ -556,30 +578,59 @@ Small backend change, but it touches a public endpoint.
 
 The biggest, and the only one that changes what every existing free user sees.
 
+✅ **Done 2026-08-14.** Verified against the dev database: a user owning 14 playlists gets **14
+rows on both plans** — free locks 9 with zero identifier leaks, Pro locks none.
+
 **Backend**
-- [ ] 43. Derive visibility by rank — `ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC)`, cap from the entitlement
-- [ ] 44. **Stop filtering the list** — always return every playlist the user owns
-- [ ] 45. Withhold `id`, `uuid` and `seed_track_uuid` on non-visible rows
-- [ ] 46. Filters, search, sort and pagination keep operating over the **full** set
-- [ ] 47. **No favourite exemption**
-- [ ] 48. Reconcile `count_library_visible` so the usage chip agrees with what is visible
-- [ ] 49. Stop writing `is_library_visible` at creation
-- [ ] 50. Withhold `playlist_uuid` on tracks whose playlist is not visible
-- [ ] 51. Add `playlist_locked` so the client can tell "no playlist" from "locked playlist"
+- [x] 43. Derive visibility by recency — a `LIMIT cap` query over the owner's playlists ordered
+      `created_at DESC, id DESC`, rather than a window function. Same answer, one cheap query, and
+      it composes with the existing filter/join logic instead of being embedded in it
+- [x] 44. **Stop filtering the list** — always return every playlist the user owns
+- [x] 45. Withhold `id`, `uuid` and `seed_track_uuid` on non-visible rows
+- [x] 45a. **New:** `fork_id` too — it is a playlist uuid by another name, and leaving it would hand
+      back the identifier the other three lines just removed
+- [x] 46. Filters, search, sort and pagination keep operating over the **full** set
+- [x] 47. **No favourite exemption**
+- [x] 47a. **New:** playlists owned by *someone else* (reachable via `all_favorites`) are never
+      locked — the allowance is over what you own
+- [x] 48. Reconcile `count_library_visible` → `min(owned, cap)`; the cap is now a parameter, since
+      the answer is meaningless without it
+- [x] 49. Stop writing `is_library_visible` at creation. Column left in the schema (default 1) so
+      this needs no migration and can be rolled back; written by nothing, read by nothing
+- [x] 49a. **New:** removed the now-dead creation-time plumbing — `_resolve_library_visibility`,
+      the `library_visible_max` kwarg, and `SimilarityService._library_cap`
+- [x] 50. Withhold `playlist_uuid` on tracks whose playlist is not visible
+- [x] 51. Add `playlist_locked` so the client can tell "no playlist" from "locked playlist"
+- [x] 51a. **New:** `id DESC` tie-break on **both** the visible-set and the listing queries.
+      `created_at` has one-second resolution and playlists are created in bursts, so ties are
+      ordinary — without it the "visible five" differ between identical requests and a row can
+      appear on two pages at once. Newly load-bearing because Phase 2 made pages shareable URLs
 
 **Frontend**
-- [ ] 52. Locked playlists rendered greyed but present
-- [ ] 53. Every action on a locked row opens the upgrade modal instead of navigating
-- [ ] 54. Uploads tab: Sonic Discovery capsule greyed when `playlist_locked`
-- [ ] 55. Modal copy naming the reason — *"outside your most recent 5"*
-- [ ] 56. Filters, sort and pagination still work across everything
+- [x] 52. Locked playlists rendered dimmed but present, with name, counts, duration and date intact
+- [x] 53. Every action on a locked row opens the upgrade modal instead of navigating
+- [x] 53a. **New:** the `href` is dropped entirely on a locked row. An onClick guard does not run on
+      a right-click or ⌘-click, so leaving `?id=` would let either bypass the gate
+- [x] 53b. **New:** the dropdown menu is structurally unrenderable on a locked row, rather than
+      merely unreachable via the guarded kebab
+- [x] 54. Uploads tab: Sonic Discovery capsule locked when `playlist_locked`
+- [x] 55. Modal copy naming the reason — *"outside your most recent 5"*, and saying explicitly that
+      nothing has been deleted
+- [x] 56. Filters, sort and pagination still work across everything
 
-**Tests**
-- [ ] 57. Creating a 6th playlist hides the 1st
-- [ ] 58. An unlimited plan marks everything visible
-- [ ] 59. Locked rows carry no `id` / `uuid` / `seed_track_uuid`
-- [ ] 60. The usage chip agrees with the visible count
-- [ ] 61. Favourites get no exemption
+**Tests** — `pytest tests/unit` (backend) + `pnpm --filter webapp test:pure` (frontend)
+- [x] 57. Creating a 6th playlist pushes the 1st out
+- [x] 58. An unlimited plan locks nothing — and pays no query for it
+- [x] 59. Locked rows carry no `id` / `uuid` / `seed_track_uuid` / `fork_id`
+- [x] 60. The usage chip agrees with the visible count — and is asserted to use the **same**
+      resolution of the plan as the limit it is displayed against, since resolving twice is how a
+      chip ends up reading "6/5"
+- [x] 61. Favourites get no exemption
+- [x] 61a. **New:** a locked playlist still reports `ready`, not `unavailable` — existence and
+      reachability are different questions, and only the second one the cap answers
+- [x] 61b. **New:** every rule sabotage-verified. One did not fail: the pagination tie-break
+      assertion was matching the *visible-set* query's identical `order_by`, so the listing's could
+      be deleted unnoticed. Anchored to `base_query` and re-verified
 
 ## Phase 6 — Liked tracks tab *(Item 6)*
 

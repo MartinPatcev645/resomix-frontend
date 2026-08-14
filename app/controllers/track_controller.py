@@ -25,6 +25,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.services.logging_service import LoggingService
+from app.core.entitlement_keys import FeatureKey
+from app.services.entitlement_gate import EntitlementGate
 from app.services.track_service import TrackService
 from app.utils.response_utils import format_response
 
@@ -35,6 +37,7 @@ class TrackController:
     def __init__(self):
         self.track_service = TrackService()
         self.logging_service = LoggingService()
+        self.entitlement_gate = EntitlementGate()
 
     async def get_user_tracks(
         self,
@@ -52,9 +55,16 @@ class TrackController:
         correlation_id = self.logging_service.generate_correlation_id()
         partner_id = getattr(request.state, "partner_id", None)
 
+        # Same cap the Library listing resolves, for the same reason: the Sonic Discovery capsule
+        # on a track row links to a playlist, so it has to be gated identically or a playlist would
+        # be locked on one screen and openable from the other.
+        library_cap = await self.entitlement_gate.get_cap(
+            db, FeatureKey.LIBRARY_PLAYLISTS_MAX, user=current_user
+        )
         result = await self.track_service.get_user_tracks(
             db, current_user.id, page, page_size, partner_id=partner_id,
             search=search, start_date=start_date, end_date=end_date,
+            library_cap=library_cap,
         )
         duration_ms = (time.time() - start_time) * 1000
 
@@ -128,8 +138,11 @@ class TrackController:
         correlation_id = self.logging_service.generate_correlation_id()
         partner_id = getattr(request.state, "partner_id", None)
 
+        library_cap = await self.entitlement_gate.get_cap(
+            db, FeatureKey.LIBRARY_PLAYLISTS_MAX, user=current_user
+        )
         result = await self.track_service.get_user_track_detail(
-            db, track_uuid, current_user.id, partner_id=partner_id
+            db, track_uuid, current_user.id, partner_id=partner_id, library_cap=library_cap
         )
         duration_ms = (time.time() - start_time) * 1000
 
