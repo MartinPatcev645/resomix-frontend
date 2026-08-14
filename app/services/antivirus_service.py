@@ -19,25 +19,45 @@ import io
 import subprocess
 import tempfile
 import os
+import threading
 from typing import Dict, Any
+
+# Cap on simultaneous clamd scans.
+#
+# Scans now run in a threadpool rather than one-at-a-time on the event loop, so nothing else
+# bounds how many hit clamd at once. clamd's own `MaxThreads` defaults to 12 and its connection
+# queue to 15; blowing past those turns into refused connections, which surface as failed scans
+# and a 500 on the upload. 8 keeps a safety margin under the default while still letting scans
+# run properly in parallel.
+_MAX_CONCURRENT_SCANS = int(os.getenv("ANTIVIRUS_MAX_CONCURRENT_SCANS", "8"))
+_scan_limiter = threading.BoundedSemaphore(_MAX_CONCURRENT_SCANS)
 
 
 class AntivirusService:
     """
     Service for scanning uploaded files for malware using ClamAV.
     Prefers clamd streaming for speed, falls back to clamscan if needed.
+
+    Thread safety
+    -------------
+    Scans are called from a threadpool (they are CPU/IO-bound and must not block the event loop),
+    so several can be in flight at once. A clamd client instance is therefore NEVER shared: the
+    `clamd` library keeps the live socket on the instance and closes it at the end of a command,
+    so two threads sharing one client clobber each other's socket. A fresh client per scan is the
+    fix — connecting to a Unix socket costs microseconds.
     """
-    
+
     def __init__(self, socket_path: str = '/var/run/clamav/clamd.ctl'):
         """
         Initialize the antivirus service.
-        
+
         Args:
             socket_path: Path to clamd Unix socket (default: /var/run/clamav/clamd.ctl)
         """
         self.socket_path = socket_path
+        # Availability is a process-lifetime fact and safe to cache. The CLIENT is not — see the
+        # class docstring.
         self._clamd_available = None
-        self._clamd_client = None
         
     def is_clamd_available(self) -> bool:
         """
@@ -55,7 +75,7 @@ class AntivirusService:
             response = cd.ping()
             self._clamd_available = (response == 'PONG')
             if self._clamd_available:
-                self._clamd_client = cd
+                # Deliberately NOT retained — this probe's client must not be reused by scans.
                 print(f"[AntiVirus] clamd daemon available at {self.socket_path}")
             return self._clamd_available
         except Exception as e:
@@ -154,16 +174,20 @@ class AntivirusService:
         """
         try:
             import clamd
-            
-            # Use existing client or create new one
-            if self._clamd_client is None:
-                cd = clamd.ClamdUnixSocket(path=self.socket_path)
-            else:
-                cd = self._clamd_client
-            
-            # Stream scan (efficient, no disk writes)
-            result = cd.instream(io.BytesIO(file_bytes))
-            
+
+            # A FRESH client per scan, never a shared one. The clamd library stores the live
+            # socket on the instance and closes it when the command finishes, so a shared client
+            # under concurrency has one thread closing the socket another is still writing to.
+            # That surfaced on 2026-08-13 as 15 x 500 on the uploads the moment scans stopped
+            # being serialised on the event loop — the bug was always there, the serialisation
+            # was hiding it.
+            cd = clamd.ClamdUnixSocket(path=self.socket_path)
+
+            # Bounded so a burst of uploads cannot exhaust clamd's own thread/queue limits.
+            with _scan_limiter:
+                # Stream scan (efficient, no disk writes)
+                result = cd.instream(io.BytesIO(file_bytes))
+
             # Parse result: {'stream': ('FOUND', 'ThreatName')} or {'stream': ('OK', None)}
             stream_result = result.get('stream', ('ERROR', 'Unknown'))
             status, threat_name = stream_result
