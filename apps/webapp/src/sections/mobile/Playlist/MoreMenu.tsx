@@ -4,7 +4,8 @@ import { ThumbIcon } from "@/components/index.ts";
 import { rateTrack, deleteTrackRating } from "@resomix/api-client";
 import { usePlaylistStore } from "@resomix/stores";
 import { BASE_BETA_URL } from "@resomix/config";
-import { formatDuration, formatPercentage, usePlaylistExport, useAccess, type AccessAction } from "@resomix/hooks";
+import { formatDuration, usePlaylistExport, useAccess, type AccessAction } from "@resomix/hooks";
+import { scoreOutOfTen } from "@/components/Playlist/matchBarScale.ts";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
 
 interface MoreMenuProps {
@@ -165,7 +166,11 @@ const MoreMenu: React.FC<MoreMenuProps> = ({ onClose, trackId, isInput = false, 
                             {!isInput && (
                                 <div className="flex w-full justify-between">
                                     <dt className="text-left font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">Score:</dt>
-                                    <dd className="max-w-[var(--px-220)] truncate text-right font-fira text-[length:var(--px-11)] text-[var(--rx-color-text-primary)]">{score !== null && score !== undefined ? formatPercentage(score, 2) : '—'}</dd>
+                                    {/* Out of ten, matching the bar on the row this sheet was opened
+                                        from. A percentage here would be the same number in a second
+                                        unit, one tap apart — and the only percentage left in the
+                                        playlist UI. */}
+                                    <dd className="max-w-[var(--px-220)] truncate text-right font-fira text-[length:var(--px-11)] text-[var(--rx-color-text-primary)]">{scoreOutOfTen(score)}</dd>
                                 </div>
                             )}
 

@@ -15,7 +15,7 @@ import {
  * Three requested departures from the spec:
  *
  *   * the **Δ readout** (`−3.00`) is not built;
- *   * the **ABS figure** (`90.01`) is replaced by a score out of ten, one decimal (`9.2`);
+ *   * the **ABS figure** (`90.01`) is replaced by a score out of ten (`9.87`);
  *   * the layout is **stacked** — anchor word above, bar, figure below — rather than the spec's
  *     single row. Inline, the word overflowed into the rating thumbs on desktop and shifted the
  *     bar on mobile.
@@ -83,7 +83,7 @@ export function MatchBar({
         />
       </div>
 
-      {/* Out of ten, one decimal — not the spec's two-decimal absolute. */}
+      {/* Out of ten, two decimals — one collapsed too many rows onto the same value. */}
       <span className="match-score" aria-hidden="true">{scoreOutOfTen(score)}</span>
     </div>
   );

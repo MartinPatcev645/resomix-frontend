@@ -110,19 +110,27 @@ export function anchorLabel(hot: boolean): string {
 }
 
 /**
- * The figure shown under the bar: the score out of ten, one decimal.
+ * The figure shown under the bar: the score out of ten, **two** decimals.
  *
- * `92.71 → "9.2"`. **Truncated, not rounded** — rounding gives 9.3 and contradicts the worked
- * example this was specified with. It is a reading off a ten-point scale, not an arithmetic result,
- * and a value that never rounds up cannot overstate a match.
+ * `0.9871 → "9.87"`. One decimal was tried first and rejected on sight — with scores clustered as
+ * tightly as they are, five or six rows in a playlist all render "9.8" and the column stops
+ * distinguishing anything. Two decimals is the resolution at which adjacent ranks separate.
  *
- * Replaces the spec's ABS readout (`92.71`, two decimals): two decimals implied a resolution the
- * engine does not have — 60% of adjacent ranks differ by under half a point.
+ * **Truncated, not rounded.** A reading off a ten-point scale, not an arithmetic result: a value
+ * that never rounds up cannot overstate a match.
+ *
+ * THE EPSILON IS NOT DECORATION
+ *
+ * `Math.floor(score * 1000)` alone is wrong for **88 of the 6,001** four-decimal scores in the
+ * plausible range, because the intermediate lands a hair below the integer — `0.41` renders as
+ * "4.09" instead of "4.10". Truncation has no rounding to absorb that error the way `toFixed` does.
+ * `1e-6` is far larger than the float noise and far smaller than the 1e-4 resolution of the source
+ * values, so it corrects every case and can never promote a genuine boundary.
  */
 export function scoreOutOfTen(score: number | null | undefined): string {
   if (typeof score !== "number" || !Number.isFinite(score)) return "—";
-  const clamped = clamp(score * 10, 0, 10);
-  return (Math.floor(clamped * 10) / 10).toFixed(1);
+  const outOfTen = clamp(score * 10, 0, 10);
+  return (Math.floor(outOfTen * 100 + 1e-6) / 100).toFixed(2);
 }
 
 /** Spec rule 10. The bar is `role="img"`; this is what it announces. */

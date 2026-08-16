@@ -14,7 +14,7 @@
  * THREE REQUESTED DEPARTURES FROM THE SPEC
  *
  *   * the Δ readout (`−3.00`, §02 [5]) is not built;
- *   * the ABS figure (`90.01`, §02 [6]) becomes a score out of ten, one decimal (`9.2`);
+ *   * the ABS figure (`90.01`, §02 [6]) becomes a score out of ten, two decimals (`9.87`);
  *   * the cell is stacked — word above, bar, figure below — rather than the spec's single row.
  *     Inline, the anchor's word overflowed into the rating thumbs on desktop and shifted the bar
  *     on mobile, and it appears on one row in twenty so the column never lined up.
@@ -218,18 +218,45 @@ const VIEW = read("./MatchBar.tsx");
 const DESKTOP = read("../../sections/desktop/Playlist/PlaylistTable.tsx");
 const MOBILE = read("../../sections/mobile/Playlist/PlaylistTable.tsx");
 
-test("the score reads out of ten, one decimal", () => {
-  assert.equal(scoreOutOfTen(0.9271), "9.2");
-  assert.equal(scoreOutOfTen(0.8076), "8.0");
-  assert.equal(scoreOutOfTen(0.5), "5.0");
+test("the score reads out of ten, two decimals", () => {
+  assert.equal(scoreOutOfTen(0.9871), "9.87");
+  assert.equal(scoreOutOfTen(0.9271), "9.27");
+  assert.equal(scoreOutOfTen(0.8076), "8.07");
+  assert.equal(scoreOutOfTen(1), "10.00");
+});
+
+test("one decimal would collapse a whole playlist onto one value", () => {
+  // Why two. These are five consecutive ranks from a real playlist: at one decimal every one of
+  // them reads "9.2" and the column distinguishes nothing.
+  const REAL = [0.9270, 0.9262, 0.9253, 0.9204, 0.9229];
+  // Truncated to one decimal — the same rule, one digit shorter. Compared like for like: `toFixed(1)`
+  // would ROUND, which splits these into two values and understates the problem being fixed.
+  const oneDecimal = (s: number) => (Math.floor(s * 100 + 1e-6) / 10).toFixed(1);
+
+  assert.equal(new Set(REAL.map(scoreOutOfTen)).size, REAL.length, "two decimals still collapse rows");
+  assert.equal(new Set(REAL.map(oneDecimal)).size, 1, "…and one decimal collapses all five onto 9.2");
 });
 
 test("the figure truncates rather than rounds", () => {
-  // 92.71 → 9.2, the worked example this was specified with. Rounding gives 9.3 and contradicts it.
-  // A reading that never rounds up also cannot overstate a match.
-  assert.equal(scoreOutOfTen(0.9271), "9.2");
-  assert.equal(scoreOutOfTen(0.9299), "9.2");
-  assert.equal(scoreOutOfTen(0.99999), "9.9");
+  // A reading off a ten-point scale, not an arithmetic result. Never rounding up means the figure
+  // cannot overstate a match.
+  assert.equal(scoreOutOfTen(0.92719), "9.27");
+  assert.equal(scoreOutOfTen(0.99999), "9.99");
+});
+
+test("truncation stays correct despite floating-point error", () => {
+  // `Math.floor(score * 1000)` without the epsilon is wrong for 88 of these — `0.41` renders as
+  // "4.09" rather than "4.10", because the intermediate lands a hair under the integer and
+  // truncation has no rounding to absorb it. Exhaustive rather than sampled: the failures are
+  // scattered with no pattern to pick representatives from.
+  let mismatches = 0;
+  for (let i = 0; i <= 10000; i++) {
+    const expected = (Math.floor(i / 10) / 100).toFixed(2);
+    if (scoreOutOfTen(i / 10000) !== expected) mismatches++;
+  }
+
+  assert.equal(mismatches, 0, "truncation is losing a hundredth to float error");
+  assert.equal(scoreOutOfTen(0.41), "4.10");
 });
 
 test("a missing score shows a dash, not a zero", () => {
