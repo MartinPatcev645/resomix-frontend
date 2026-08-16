@@ -27,8 +27,8 @@ import {
   WORKSPACE_BTN_SECONDARY,
   WORKSPACE_FOCUS_VISIBLE,
 } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
-import { ScoreDots } from "@/components/Playlist/ScoreDots.tsx";
-import { DOT_COUNT, dotsForScore } from "@/components/Playlist/scoreScale.ts";
+import { MatchBar, MatchBarLegend } from "@/components/Playlist/MatchBar.tsx";
+import { anchorLabel, isHot } from "@/components/Playlist/matchBarScale.ts";
 
 /**
  * One icon size across the row's three glyphs — play/pause, feedback thumbs and Chain Discover —
@@ -120,12 +120,12 @@ const PlaylistTable: React.FC = () => {
     const visibleLockedTracks = lockedTracks;
     const analysis = playlistId ? loadPlaylistAnalysis(playlistId) : null;
     const footerResultCount = analysis?.resultCount ?? tracks.length;
-    // The footer's "top match" reads in dots too, for the same reason the rows do — quoting a
-    // percentage here while the rows show a meter would be two different claims about one number.
-    const footerTopMatchDots = analysis?.topMatchScore != null
-        ? dotsForScore(analysis.topMatchScore)
-        : tracks.length > 0 ? dotsForScore(tracks[0].score) : null;
-    const footerTopMatch = footerTopMatchDots != null ? `${footerTopMatchDots}/${DOT_COUNT}` : null;
+    // The playlist's best score. Drives the TIER GATE only (spec rule 05) — never the fill, which
+    // is on a fixed global ruler.
+    const topScore = analysis?.topMatchScore ?? (tracks.length > 0 ? tracks[0].score : null);
+    // The footer echoes the anchor's word rather than a figure — the rows carry no number, so
+    // quoting one here would be the only percentage left on the screen.
+    const footerTopMatch = topScore != null ? anchorLabel(isHot(topScore)) : null;
     const footerAnalysisTime = analysis?.analysisSeconds != null
         ? `${analysis.analysisSeconds.toFixed(1)}s`
         : null;
@@ -323,11 +323,14 @@ const PlaylistTable: React.FC = () => {
                         )}
                         <div className="opacity-90">{formatDuration(track.duration)}</div>
                     </div>
-                    <div className="pl-unavailable-dim flex min-w-0 flex-col items-center gap-[var(--px-4)]" role="cell">
-                        <ScoreDots score={track.score} />
-                        {isTopRank && (
-                            <span className="font-fira text-[length:var(--px-8)] uppercase tracking-[var(--px-1)] text-[var(--color-accent,#EE4A26)]">TOP</span>
-                        )}
+                    <div className="pl-unavailable-dim flex min-w-0 items-center" role="cell">
+                        {/* `track.rank` is 1-based; the spec's anchor is rank 0. */}
+                        <MatchBar
+                            score={track.score}
+                            rank={track.rank - 1}
+                            count={tracks.length}
+                            topScore={topScore}
+                        />
                     </div>
                     {!isRestricted && (
                         <div className="pl-unavailable-dim flex min-w-0 items-center justify-center gap-[var(--px-2)]" role="cell">
@@ -455,7 +458,12 @@ const PlaylistTable: React.FC = () => {
                     <div>Genre</div>
                     <div>Length</div>
                 </div>
-                <div role="columnheader" className="text-center">Match</div>
+                <div role="columnheader" className="flex flex-col items-center gap-[var(--px-2)]">
+                    <span>Match</span>
+                    {/* Spec rule 03 — the ruler teaches itself. The 85 / 95 marks sit here, once,
+                        rather than on every row where they would be noise. */}
+                    <MatchBarLegend />
+                </div>
                 <div role="columnheader" className="text-center">Feedback</div>
                 <div role="columnheader" className="text-center">Chain</div>
             </div>

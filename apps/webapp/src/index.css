@@ -529,3 +529,86 @@ html #stcm-modal footer a.stcm-credit-link {
     transition-duration: 0ms !important;
   }
 }
+
+/* ── Match bar ─────────────────────────────────────────────────────────────────
+   RESOMIX // MATCH BAR — IMPLEMENTATION SPEC, Round 5 v1.0, §02 + §06.
+   Values are the spec's own: the band stops, the tick colour, the fill gradient and the 150ms
+   transition are all reproduced verbatim rather than mapped onto product tokens, so the rendering
+   can be diffed against the spec sheet. The two numeric readouts (Δ and ABS) are not built.       */
+.match-bar {
+  position: relative;
+  width: 120px;
+  height: 8px;
+  border-radius: 1px;
+  overflow: hidden;
+  flex-shrink: 0;
+  /* Banded track: each band is the stretch of bar a score band maps onto, so the ruler is legible
+     even before the fill lands on it. */
+  background: linear-gradient(90deg,
+    #1A0D07 0, #1A0D07 7%,
+    #20100A 7%, #20100A 27%,
+    #241109 27%, #241109 97%,
+    #2A150C 97%, #2A150C 100%);
+}
+
+/* Rule 08: the bar never goes below 96px. It is the last thing to give way, not the first. */
+.match-bar--compact { width: 96px; }
+
+.match-bar i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #3A1B0D;
+}
+
+.match-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, rgba(255, 69, 25, .12), var(--rank));
+  transition: width .15s ease;
+}
+
+.match-caret {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--caret, #FFF);
+  /* Sits ON the fill's edge rather than after it, so it marks the exact value at any width. */
+  transform: translateX(-100%);
+  transition: left .15s ease;
+}
+
+/* The anchor's word — the only text on the row. Δ and ABS are deliberately absent. */
+.match-anchor {
+  font-size: 11px;
+  letter-spacing: .06em;
+  line-height: 1;
+}
+.match-anchor--hot { color: #FF4519; }
+.match-anchor--dim { color: #D8722F; }
+
+/* Rule 03: the numeric tick labels appear once, above the column. */
+.match-legend {
+  position: relative;
+  width: 120px;
+  height: 9px;
+  flex-shrink: 0;
+}
+.match-legend span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 7px;
+  line-height: 1;
+  color: #4E4E4E;
+}
+
+/* Rule 06. */
+@media (prefers-reduced-motion: reduce) {
+  .match-fill,
+  .match-caret { transition: none; }
+}

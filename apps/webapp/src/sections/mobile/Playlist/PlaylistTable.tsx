@@ -22,8 +22,10 @@ import {
 } from "@/utils/playlistChrome.ts";
 import { useVisibleResultWindow } from "@/hooks/useVisibleResultWindow.ts";
 import { WORKSPACE_BTN_SECONDARY, WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
-import { ScoreDots } from "@/components/Playlist/ScoreDots.tsx";
-import { DOT_COUNT, dotsForScore } from "@/components/Playlist/scoreScale.ts";
+// No legend on mobile: the card layout has no column header to hang it on, and
+// repeating the 85 / 95 marks per row is exactly what rule 03 says not to do.
+import { MatchBar } from "@/components/Playlist/MatchBar.tsx";
+import { anchorLabel, isHot } from "@/components/Playlist/matchBarScale.ts";
 
 interface PlaylistTableProps {
     onMoreClick?: (trackId: string, name: string, label: string, duration: number, score: number, isInput?: boolean) => void;
@@ -84,9 +86,10 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
 
     const analysis = playlistId ? loadPlaylistAnalysis(playlistId) : null;
     const footerResultCount = analysis?.resultCount ?? tracks.length;
+    const topScore = analysis?.topMatchScore ?? (tracks.length > 0 ? tracks[0].score : null);
     const footerTopMatch = analysis?.topMatchScore != null
-        ? `${dotsForScore(analysis.topMatchScore)}/${DOT_COUNT}`
-        : tracks.length > 0 ? `${dotsForScore(tracks[0].score)}/${DOT_COUNT}` : null;
+        ? anchorLabel(isHot(analysis.topMatchScore))
+        : tracks.length > 0 ? anchorLabel(isHot(tracks[0].score)) : null;
     const footerAnalysisTime = analysis?.analysisSeconds != null
         ? `${analysis.analysisSeconds.toFixed(1)}s`
         : null;
@@ -313,10 +316,16 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                         <img src={MoreSvg} draggable={false} alt="" aria-hidden="true" className="h-[var(--px-14)] w-[var(--px-19)]" />
                                     </button>
                                 )}
-                                <div className="pl-unavailable-dim mt-auto flex shrink-0 flex-col items-center gap-[var(--px-3)]">
-                                    {/* Compact dots — the row is narrow, and ten full-size ones
-                                        would push the title column. */}
-                                    <ScoreDots score={track.score} compact />
+                                <div className="pl-unavailable-dim mt-auto flex shrink-0 items-center">
+                                    {/* 96px track — spec rule 08's floor. The bar is the last thing
+                                        to give way on a narrow layout, never the first. */}
+                                    <MatchBar
+                                        score={track.score}
+                                        rank={track.rank - 1}
+                                        count={tracks.length}
+                                        topScore={topScore}
+                                        compact
+                                    />
                                 </div>
                             </div>
                         </div>
