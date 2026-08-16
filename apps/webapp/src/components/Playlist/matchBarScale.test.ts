@@ -205,9 +205,21 @@ test("a rank beyond the count cannot escape the ramp", () => {
 // Rule 10 — accessibility
 // --------------------------------------------------------------------------- //
 
-test("the bar announces its value and its gap", () => {
-  assert.equal(matchAriaLabel(0.9001, 0, 0.9001), "Match 90.01, top match");
-  assert.equal(matchAriaLabel(0.8701, 3, 0.9001), "Match 87.01, 3.00 behind top");
+test("the bar announces its value and its gap, in the unit shown on screen", () => {
+  // Out of ten, matching the figure under the bar. Announcing "90.01" beside a visible "9.00"
+  // would describe a different measurement to anyone who cannot see the bar.
+  assert.equal(matchAriaLabel(0.9001, 0, 0.9001), "Match 9.00 out of 10, top match");
+  assert.equal(matchAriaLabel(0.8701, 3, 0.9001), "Match 8.70 out of 10, 0.30 behind top");
+});
+
+test("the more menu shows the same figure as the row it opened from", () => {
+  // It used to read `formatPercentage(score, 2)` — after this change it would have been the only
+  // percentage left anywhere in the playlist UI, one tap from a bar showing the same number in a
+  // different unit.
+  const menu = read("../../sections/mobile/Playlist/MoreMenu.tsx");
+
+  assert.ok(menu.includes("scoreOutOfTen(score)"));
+  assert.ok(!/formatPercentage/.test(menu), "the more menu still formats a percentage");
 });
 
 // --------------------------------------------------------------------------- //

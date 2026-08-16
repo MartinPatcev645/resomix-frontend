@@ -133,16 +133,25 @@ export function scoreOutOfTen(score: number | null | undefined): string {
   return (Math.floor(outOfTen * 100 + 1e-6) / 100).toFixed(2);
 }
 
-/** Spec rule 10. The bar is `role="img"`; this is what it announces. */
+/**
+ * Spec rule 10. The bar is `role="img"`; this is what it announces.
+ *
+ * Reported **out of ten**, not on the spec's 0–100 scale — a screen reader hearing "Match 90.01"
+ * while the figure beside it reads "9.00" is being told about a different measurement.
+ *
+ * The gap to the top IS announced here even though the visible Δ readout was dropped: the bar
+ * itself carries that comparison visually, and this label is the only form of it a screen-reader
+ * user gets.
+ */
 export function matchAriaLabel(
   score: number | null | undefined,
   rank: number,
   topScore: number | null | undefined,
 ): string {
-  const s = typeof score === "number" && Number.isFinite(score) ? score * 100 : 0;
-  if (rank === 0) return `Match ${s.toFixed(2)}, top match`;
-  const top = typeof topScore === "number" && Number.isFinite(topScore) ? topScore * 100 : s;
-  return `Match ${s.toFixed(2)}, ${Math.max(0, top - s).toFixed(2)} behind top`;
+  const s = typeof score === "number" && Number.isFinite(score) ? clamp(score * 10, 0, 10) : 0;
+  if (rank === 0) return `Match ${s.toFixed(2)} out of 10, top match`;
+  const top = typeof topScore === "number" && Number.isFinite(topScore) ? clamp(topScore * 10, 0, 10) : s;
+  return `Match ${s.toFixed(2)} out of 10, ${Math.max(0, top - s).toFixed(2)} behind top`;
 }
 
 function clamp(n: number, lo: number, hi: number): number {
