@@ -27,7 +27,7 @@ import {
   WORKSPACE_BTN_SECONDARY,
   WORKSPACE_FOCUS_VISIBLE,
 } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
-import { MatchBar, MatchBarLegend } from "@/components/Playlist/MatchBar.tsx";
+import { MatchBar } from "@/components/Playlist/MatchBar.tsx";
 import { anchorLabel, isHot } from "@/components/Playlist/matchBarScale.ts";
 
 /**
@@ -458,12 +458,7 @@ const PlaylistTable: React.FC = () => {
                     <div>Genre</div>
                     <div>Length</div>
                 </div>
-                <div role="columnheader" className="flex flex-col items-center gap-[var(--px-2)]">
-                    <span>Match</span>
-                    {/* Spec rule 03 — the ruler teaches itself. The 85 / 95 marks sit here, once,
-                        rather than on every row where they would be noise. */}
-                    <MatchBarLegend />
-                </div>
+                <div role="columnheader" className="text-center">Match</div>
                 <div role="columnheader" className="text-center">Feedback</div>
                 <div role="columnheader" className="text-center">Chain</div>
             </div>

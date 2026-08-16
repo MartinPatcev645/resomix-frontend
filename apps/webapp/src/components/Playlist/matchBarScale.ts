@@ -104,12 +104,25 @@ export function caretColor(hot: boolean): string {
   return hot ? "#FFFFFF" : "#D8D8D8";
 }
 
-/**
- * The anchor row's word. Deliberately the ONLY text on the bar — this deployment drops the spec's
- * Δ readout and ABS figure, so no number reaches the row.
- */
+/** The anchor row's word, shown ABOVE the bar. */
 export function anchorLabel(hot: boolean): string {
   return hot ? "TOP" : "BEST";
+}
+
+/**
+ * The figure shown under the bar: the score out of ten, one decimal.
+ *
+ * `92.71 → "9.2"`. **Truncated, not rounded** — rounding gives 9.3 and contradicts the worked
+ * example this was specified with. It is a reading off a ten-point scale, not an arithmetic result,
+ * and a value that never rounds up cannot overstate a match.
+ *
+ * Replaces the spec's ABS readout (`92.71`, two decimals): two decimals implied a resolution the
+ * engine does not have — 60% of adjacent ranks differ by under half a point.
+ */
+export function scoreOutOfTen(score: number | null | undefined): string {
+  if (typeof score !== "number" || !Number.isFinite(score)) return "—";
+  const clamped = clamp(score * 10, 0, 10);
+  return (Math.floor(clamped * 10) / 10).toFixed(1);
 }
 
 /** Spec rule 10. The bar is `role="img"`; this is what it announces. */

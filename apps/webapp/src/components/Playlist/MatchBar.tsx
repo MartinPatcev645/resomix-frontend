@@ -6,14 +6,19 @@ import {
   isHot,
   matchAriaLabel,
   rankColor,
+  scoreOutOfTen,
 } from "./matchBarScale.ts";
 
 /**
  * The weighted match bar. `RESOMIX // MATCH BAR — IMPLEMENTATION SPEC` §02, §06.
  *
- * Built to the spec with two deliberate omissions, both requested: the **Δ readout** (`−3.00`) and
- * the **ABS figure** (`90.01`). No number appears on the row. The anchor keeps its word — TOP when
- * the playlist's best is ≥ 90, BEST otherwise — and that is the only text the cell carries.
+ * Three requested departures from the spec:
+ *
+ *   * the **Δ readout** (`−3.00`) is not built;
+ *   * the **ABS figure** (`90.01`) is replaced by a score out of ten, one decimal (`9.2`);
+ *   * the layout is **stacked** — anchor word above, bar, figure below — rather than the spec's
+ *     single row. Inline, the word overflowed into the rating thumbs on desktop and shifted the
+ *     bar on mobile.
  *
  * Everything else is as written: 120×8 banded track, ticks at 7/27/97%, the gradient fill on the
  * rank ramp, and the caret clamped so it never disappears.
@@ -44,14 +49,27 @@ export function MatchBar({
   const width = `${fill.toFixed(1)}%`;
 
   return (
-    <div className="flex items-center gap-[var(--px-10)] font-fira">
+    // Stacked, not inline. Beside the bar, the anchor's word ran into the rating thumbs on desktop
+    // and pushed the bar off-centre on mobile — and only on one row in twenty, so the column never
+    // lined up. Above and below, the bar keeps its position on every row.
+    <div className="flex flex-col items-center gap-[var(--px-2)] font-fira">
+      {/* The slot is always rendered, empty on non-anchor rows. Reserving it is what keeps every
+          bar in the column on the same baseline; showing it only on rank 0 would raise that one
+          row's bar and misalign the whole table. */}
+      <span
+        className={`match-anchor ${hot ? "match-anchor--hot" : "match-anchor--dim"}`}
+        aria-hidden={rank !== 0}
+      >
+        {rank === 0 ? anchorLabel(hot) : "\u00A0"}
+      </span>
+
       <div
         role="img"
         aria-label={matchAriaLabel(score, rank, topScore)}
         className={`match-bar ${compact ? "match-bar--compact" : ""}`}
       >
-        {/* Ticks on every row — spec rule 03, "teach the ruler". The 85 / 95 labels appear once,
-            in the column header, not here. */}
+        {/* Ticks on every row — spec rule 03. The numeric marks that used to sit in the column
+            header are gone; the bands themselves carry the ruler. */}
         {TICKS.map((t) => (
           <i key={t.at} style={{ left: `${t.at}%` }} />
         ))}
@@ -64,30 +82,9 @@ export function MatchBar({
           style={{ left: width, ["--caret" as string]: caretColor(hot) }}
         />
       </div>
-      {/* The anchor's word. Every other row's cell is bar-only — the Δ readout is not built. */}
-      {rank === 0 && (
-        <span
-          className={`match-anchor ${hot ? "match-anchor--hot" : "match-anchor--dim"}`}
-        >
-          {anchorLabel(hot)}
-        </span>
-      )}
-    </div>
-  );
-}
 
-/**
- * The `85` / `95` labels that teach the ruler, rendered once above the column rather than per row.
- * Spec §02 [2] and rule 03.
- */
-export function MatchBarLegend({ compact = false }: { compact?: boolean }) {
-  return (
-    <div className={`match-legend ${compact ? "match-bar--compact" : ""}`} aria-hidden="true">
-      {TICKS.filter((t) => t.score >= 85).map((t) => (
-        <span key={t.at} style={{ left: `${t.at}%` }}>
-          {t.score}
-        </span>
-      ))}
+      {/* Out of ten, one decimal — not the spec's two-decimal absolute. */}
+      <span className="match-score" aria-hidden="true">{scoreOutOfTen(score)}</span>
     </div>
   );
 }

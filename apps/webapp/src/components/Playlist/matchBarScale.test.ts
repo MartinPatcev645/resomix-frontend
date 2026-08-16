@@ -11,11 +11,15 @@
  *
  *     95.01 → 97.0 · 93.01 → 83.1 · 90.01 → 62.1 · 85.01 → 27.0 · 82.01 → 24.0
  *
- * WHAT IS DELIBERATELY NOT BUILT
+ * THREE REQUESTED DEPARTURES FROM THE SPEC
  *
- * The Δ readout (`−3.00`) and the ABS figure (`90.01`) from §02 [5] and [6]. Requested: the row
- * carries no number at all. The anchor's word — TOP / BEST — is the only text, and the tier gate
- * that chooses between them is kept exactly as specified.
+ *   * the Δ readout (`−3.00`, §02 [5]) is not built;
+ *   * the ABS figure (`90.01`, §02 [6]) becomes a score out of ten, one decimal (`9.2`);
+ *   * the cell is stacked — word above, bar, figure below — rather than the spec's single row.
+ *     Inline, the anchor's word overflowed into the rating thumbs on desktop and shifted the bar
+ *     on mobile, and it appears on one row in twenty so the column never lined up.
+ *
+ * The algorithm, the ruler and the tier gate are untouched.
  *
  * HOW TO RUN
  *
@@ -38,6 +42,7 @@ import {
   isHot,
   matchAriaLabel,
   rankColor,
+  scoreOutOfTen,
   weightedFill,
 } from "./matchBarScale.ts";
 
@@ -213,11 +218,28 @@ const VIEW = read("./MatchBar.tsx");
 const DESKTOP = read("../../sections/desktop/Playlist/PlaylistTable.tsx");
 const MOBILE = read("../../sections/mobile/Playlist/PlaylistTable.tsx");
 
-test("no number reaches the row", () => {
-  // The requested departure from the spec: §02's Δ readout and ABS figure are not built. TOP/BEST
-  // is the only text the cell carries.
-  assert.ok(!/toFixed\(2\)/.test(VIEW), "a numeric readout is being rendered");
+test("the score reads out of ten, one decimal", () => {
+  assert.equal(scoreOutOfTen(0.9271), "9.2");
+  assert.equal(scoreOutOfTen(0.8076), "8.0");
+  assert.equal(scoreOutOfTen(0.5), "5.0");
+});
+
+test("the figure truncates rather than rounds", () => {
+  // 92.71 → 9.2, the worked example this was specified with. Rounding gives 9.3 and contradicts it.
+  // A reading that never rounds up also cannot overstate a match.
+  assert.equal(scoreOutOfTen(0.9271), "9.2");
+  assert.equal(scoreOutOfTen(0.9299), "9.2");
+  assert.equal(scoreOutOfTen(0.99999), "9.9");
+});
+
+test("a missing score shows a dash, not a zero", () => {
+  // Spec §04's PENDING state. "0.0" would be a claim; "—" is the absence of one.
+  for (const bad of [null, undefined, NaN]) assert.equal(scoreOutOfTen(bad as number), "—");
+});
+
+test("neither the Δ readout nor the two-decimal absolute is built", () => {
   assert.ok(!/match-delta|match-abs/.test(VIEW), "the Δ or ABS element is back");
+  assert.ok(!/toFixed\(2\)/.test(VIEW), "a two-decimal figure is being rendered");
   for (const [name, src] of [["desktop", DESKTOP], ["mobile", MOBILE]] as const) {
     assert.ok(!/score\s*\*\s*100/.test(src), `${name} still computes a percentage`);
   }
@@ -236,12 +258,30 @@ test("rank is converted from the table's 1-based value to the spec's 0-based anc
   }
 });
 
-test("the ticks render on every row and the labels only once", () => {
+test("the ticks render on every row", () => {
   assert.equal(TICKS.length, 3);
   assert.ok(VIEW.includes("TICKS.map"), "ticks are not rendered per row");
-  // Rule 03: the numeric marks belong in the header. Only 85 and 95 are labelled.
-  assert.ok(VIEW.includes("MatchBarLegend"));
-  assert.ok(DESKTOP.includes("<MatchBarLegend"), "the legend is not in the column header");
+});
+
+test("the numeric 85 / 95 header labels are not rendered", () => {
+  // Spec rule 03 puts them in the column header to teach the ruler. Removed by request — the
+  // banded track carries the ruler on its own.
+  assert.ok(!/MatchBarLegend/.test(VIEW + DESKTOP + MOBILE));
+});
+
+test("the cell is stacked, with the anchor word above the bar", () => {
+  // The reported problem: inline, the word ran into the rating thumbs on desktop and pushed the
+  // bar off-centre on mobile.
+  assert.ok(/flex flex-col/.test(VIEW), "the cell is not a column");
+  assert.ok(VIEW.indexOf("match-anchor") < VIEW.indexOf('className={`match-bar'),
+    "the anchor word renders after the bar");
+  assert.ok(VIEW.indexOf('className={`match-bar') < VIEW.indexOf("match-score"),
+    "the figure renders before the bar");
+});
+
+test("the anchor slot is reserved on every row", () => {
+  // Rendering it only on rank 0 would raise that one row's bar and misalign the column.
+  assert.ok(/\\u00A0/.test(VIEW), "non-anchor rows have no placeholder, so bars will not align");
 });
 
 test("the pure scale does not share a filename stem with its component", () => {

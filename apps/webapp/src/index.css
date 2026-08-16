@@ -591,20 +591,14 @@ html #stcm-modal footer a.stcm-credit-link {
 .match-anchor--hot { color: #FF4519; }
 .match-anchor--dim { color: #D8722F; }
 
-/* Rule 03: the numeric tick labels appear once, above the column. */
-.match-legend {
-  position: relative;
-  width: 120px;
-  height: 9px;
-  flex-shrink: 0;
-}
-.match-legend span {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  font-size: 7px;
+/* The figure under the bar — score out of ten, one decimal. Replaces the spec's two-decimal
+   absolute, which implied a resolution the engine does not have. */
+.match-score {
+  font-size: 9px;
   line-height: 1;
-  color: #4E4E4E;
+  letter-spacing: .04em;
+  color: #5A5A5A;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Rule 06. */
