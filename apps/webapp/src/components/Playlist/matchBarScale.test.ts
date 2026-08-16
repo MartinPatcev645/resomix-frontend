@@ -48,6 +48,13 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const read = (p: string) => readFileSync(join(HERE, p), "utf8");
 
+/** A CSS rule's declarations, with comments removed — see the note in the track-colour test. */
+const declarationsOf = (selector: string): string =>
+  read("../../index.css")
+    .split(selector)[1]
+    .split("}")[0]
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+
 // --------------------------------------------------------------------------- //
 // §01 — the ruler, against the spec's own numbers
 // --------------------------------------------------------------------------- //
@@ -300,8 +307,10 @@ test("the track is a flat neutral that separates from the page and the fill", ()
   // #2F2F2F on a #1E1E1E page. The spec's four brown bands (#1A0D07 … #2A150C) were near-black on
   // a near-black background: the empty extent never read, so a short fill looked like a floating
   // stub rather than a low value.
-  const css = read("../../index.css");
-  const bar = css.split(".match-bar {")[1].split("}")[0];
+  // Comments stripped first: the rule documents which colours it REPLACED, and matching on the
+  // raw text fails the test for explaining itself. Second time this exact trap has bitten in this
+  // codebase — the migration's `track_type` note was the first.
+  const bar = declarationsOf(".match-bar {");
 
   assert.ok(/background:\s*#2F2F2F/i.test(bar), "the track is not the lifted neutral");
   assert.ok(!/#1A0D07|#20100A|#241109|#2A150C/i.test(bar), "the banded track is back");
@@ -310,8 +319,7 @@ test("the track is a flat neutral that separates from the page and the fill", ()
 test("the fill's gradient floor clears the track's own lightness", () => {
   // .25, not the spec's .12. On the old near-black track a 12% start read as filled; on a #2F2F2F
   // track it sits below the track itself, so the fill appears to begin part-way along its length.
-  const css = read("../../index.css");
-  const fill = css.split(".match-fill {")[1].split("}")[0];
+  const fill = declarationsOf(".match-fill {");
 
   assert.ok(/rgba\(255,\s*69,\s*25,\s*\.25\)/.test(fill), "the fill floor is too dark for the neutral track");
 });
