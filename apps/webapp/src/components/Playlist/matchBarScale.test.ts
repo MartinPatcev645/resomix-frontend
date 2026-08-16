@@ -35,7 +35,6 @@ import test from "node:test";
 import {
   HOT_THRESHOLD,
   MIN_FILL,
-  TICKS,
   anchorLabel,
   barFill,
   caretColor,
@@ -297,15 +296,25 @@ test("rank is converted from the table's 1-based value to the spec's 0-based anc
   }
 });
 
-test("the ticks render on every row", () => {
-  assert.equal(TICKS.length, 3);
-  assert.ok(VIEW.includes("TICKS.map"), "ticks are not rendered per row");
+test("no tick rules are drawn inside the bar", () => {
+  // Spec §02 [2] puts 1px rules at 7/27/97% to teach the ruler. They sit exactly on the band
+  // boundaries, so they read as borders slicing the bar into four rather than as gradations — the
+  // reported "faint white line between the sections". The bands mark those positions already.
+  assert.ok(!/TICKS/.test(VIEW), "tick elements are back inside the bar");
+  assert.ok(!/MatchBarLegend/.test(VIEW + DESKTOP + MOBILE), "the header labels are back");
 });
 
-test("the numeric 85 / 95 header labels are not rendered", () => {
-  // Spec rule 03 puts them in the column header to teach the ruler. Removed by request — the
-  // banded track carries the ruler on its own.
-  assert.ok(!/MatchBarLegend/.test(VIEW + DESKTOP + MOBILE));
+test("the figure is anchored to the fill edge, not centred", () => {
+  // Right edge under the caret, so value and position read as one unit and near-ties visibly
+  // stack instead of lining up in a column that hides how close they are.
+  assert.ok(/left: `max\(/.test(VIEW), "the figure is not positioned against the fill");
+  assert.ok(/translateX\(-100%\)/.test(read("../../index.css").split(".match-score")[1].split("}")[0]),
+    "the figure is not right-aligned to its anchor point");
+});
+
+test("a very short fill cannot push the figure off the bar", () => {
+  // At the 1.5% floor, right-aligning to the fill would place the number left of the bar's start.
+  assert.ok(/MIN_LABEL_OFFSET_PX/.test(VIEW));
 });
 
 test("the cell is stacked, with the anchor word above the bar", () => {

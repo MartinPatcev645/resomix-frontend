@@ -1,5 +1,4 @@
 import {
-  TICKS,
   anchorLabel,
   barFill,
   caretColor,
@@ -20,12 +19,21 @@ import {
  *     single row. Inline, the word overflowed into the rating thumbs on desktop and shifted the
  *     bar on mobile.
  *
- * Everything else is as written: 120×8 banded track, ticks at 7/27/97%, the gradient fill on the
- * rank ramp, and the caret clamped so it never disappears.
+ * The tick marks (§02 [2]) are also dropped: sitting on the band boundaries they read as borders
+ * cutting the bar into four, and the bands' own colours already mark those positions.
+ *
+ * Everything else is as written: the 120×8 banded track, the gradient fill on the rank ramp, and
+ * the caret clamped so it never disappears.
  *
  * Typeface is Fira rather than the spec's IBM Plex Mono — the product's own mono, and with both
  * numeric readouts gone it only reaches the header labels.
  */
+/**
+ * Room for the widest figure ("10.00") at 9px mono, so right-aligning it to a very short fill
+ * cannot push it off the left end of the bar.
+ */
+const MIN_LABEL_OFFSET_PX = 32;
+
 export function MatchBar({
   score,
   rank,
@@ -49,9 +57,8 @@ export function MatchBar({
   const width = `${fill.toFixed(1)}%`;
 
   return (
-    // Stacked, not inline. Beside the bar, the anchor's word ran into the rating thumbs on desktop
-    // and pushed the bar off-centre on mobile — and only on one row in twenty, so the column never
-    // lined up. Above and below, the bar keeps its position on every row.
+    // Stacked, not inline: beside the bar the anchor's word ran into the rating thumbs on desktop
+    // and pushed the bar off-centre on mobile.
     <div className="flex flex-col items-center gap-[var(--px-2)] font-fira">
       {/* The slot is always rendered, empty on non-anchor rows. Reserving it is what keeps every
           bar in the column on the same baseline; showing it only on rank 0 would raise that one
@@ -63,16 +70,19 @@ export function MatchBar({
         {rank === 0 ? anchorLabel(hot) : "\u00A0"}
       </span>
 
+      {/* The bar's own positioning context. The figure below is placed as a percentage of THIS
+          element, so it must be exactly the bar's width — and it sits outside `.match-bar`, whose
+          `overflow: hidden` would otherwise clip it. Its padding reserves the figure's height so
+          the row does not collapse onto the one beneath. */}
+      <div className={`match-bar-wrap ${compact ? "match-bar--compact" : ""}`}>
       <div
         role="img"
         aria-label={matchAriaLabel(score, rank, topScore)}
         className={`match-bar ${compact ? "match-bar--compact" : ""}`}
       >
-        {/* Ticks on every row — spec rule 03. The numeric marks that used to sit in the column
-            header are gone; the bands themselves carry the ruler. */}
-        {TICKS.map((t) => (
-          <i key={t.at} style={{ left: `${t.at}%` }} />
-        ))}
+        {/* No tick marks. The spec puts 1px #3A1B0D rules at 7/27/97% to teach the ruler, but they
+            land exactly on the band boundaries and read as borders dividing the bar into four
+            pieces. The bands' own colours mark the same positions without the seam. */}
         <span
           className="match-fill"
           style={{ width, ["--rank" as string]: rankColor(rank, count, hot) }}
@@ -83,8 +93,20 @@ export function MatchBar({
         />
       </div>
 
-      {/* Out of ten, two decimals — one collapsed too many rows onto the same value. */}
-      <span className="match-score" aria-hidden="true">{scoreOutOfTen(score)}</span>
+      {/* Caret-anchored: the figure's right edge sits under the fill edge, so value and position
+          read as one thing and near-ties stack at almost the same x rather than lining up in a
+          column that hides how close they are.
+
+          `max()` is the guard — right-aligning to a 1.5% fill would push the number off the left
+          end of the bar, so below roughly a fifth of the width it pins instead. */}
+      <span
+        className="match-score"
+        aria-hidden="true"
+        style={{ left: `max(${MIN_LABEL_OFFSET_PX}px, ${width})` }}
+      >
+        {scoreOutOfTen(score)}
+      </span>
+      </div>
     </div>
   );
 }

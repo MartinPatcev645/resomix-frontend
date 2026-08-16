@@ -553,13 +553,16 @@ html #stcm-modal footer a.stcm-credit-link {
 
 /* Rule 08: the bar never goes below 96px. It is the last thing to give way, not the first. */
 .match-bar--compact { width: 96px; }
+.match-bar-wrap.match-bar--compact { width: 96px; }
 
-.match-bar i {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: #3A1B0D;
+/* The bar's positioning context. Same width as the bar, so the figure's `left` percentage lands on
+   the same scale the fill does; `padding-bottom` reserves the figure's line so the row keeps its
+   height even though the figure is absolutely positioned. */
+.match-bar-wrap {
+  position: relative;
+  width: 120px;
+  padding-bottom: 13px;
+  flex-shrink: 0;
 }
 
 .match-fill {
@@ -594,15 +597,26 @@ html #stcm-modal footer a.stcm-credit-link {
 /* The figure under the bar — score out of ten, one decimal. Replaces the spec's two-decimal
    absolute, which implied a resolution the engine does not have. */
 .match-score {
+  /* Anchored to the fill edge rather than centred under the bar: the number's right edge sits
+     under the caret, so value and position read as one unit and near-ties visibly stack. */
+  position: absolute;
+  top: 11px;
+  /* Right edge under the caret. */
+  transform: translateX(-100%);
+  text-align: right;
+  white-space: nowrap;
   font-size: 9px;
   line-height: 1;
   letter-spacing: .04em;
-  color: #5A5A5A;
+  color: #EAEAEA;
+  /* Tabular so the digits under adjacent carets line up on their decimal point. */
   font-variant-numeric: tabular-nums;
+  transition: left .15s ease;
 }
 
 /* Rule 06. */
 @media (prefers-reduced-motion: reduce) {
   .match-fill,
-  .match-caret { transition: none; }
+  .match-caret,
+  .match-score { transition: none; }
 }

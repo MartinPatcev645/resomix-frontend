@@ -45,12 +45,11 @@ export const MIN_FILL = 1.5;
 /** Spec rule 05 — the tier gate. TOP only when the playlist's best is genuinely strong. */
 export const HOT_THRESHOLD = 90;
 
-/** Where the ticks sit, and what score each one marks. Spec §02 [2]. */
-export const TICKS: ReadonlyArray<{ at: number; score: number }> = [
-  { at: 7, score: 65 },
-  { at: 27, score: 85 },
-  { at: 97, score: 95 },
-];
+/*
+ * The spec's tick marks (§02 [2]) are deliberately NOT implemented. 1px #3A1B0D rules at 7/27/97%
+ * land exactly on the band boundaries, so instead of teaching the ruler they read as borders
+ * cutting the bar into four pieces. The bands' own colours already mark those positions.
+ */
 
 /**
  * Score (0–100) → bar percentage (0–100).
