@@ -19,11 +19,13 @@ import {
  *     single row. Inline, the word overflowed into the rating thumbs on desktop and shifted the
  *     bar on mobile.
  *
- * The tick marks (§02 [2]) are also dropped: sitting on the band boundaries they read as borders
- * cutting the bar into four, and the bands' own colours already mark those positions.
+ * The tick marks and the banded track (§02 [1], [2]) are also dropped in favour of the spec sheet's
+ * "lifted neutral": a flat #2F2F2F one step above the #1E1E1E page. The brown bands were
+ * near-black on a near-black background, so the bar's empty extent never read, and the tick rules
+ * sat on the band boundaries and looked like borders.
  *
- * Everything else is as written: the 120×8 banded track, the gradient fill on the rank ramp, and
- * the caret clamped so it never disappears.
+ * Everything else is as written: the 120×8 track, the gradient fill on the rank ramp, and the caret
+ * clamped so it never disappears.
  *
  * Typeface is Fira rather than the spec's IBM Plex Mono — the product's own mono, and with both
  * numeric readouts gone it only reaches the header labels.
@@ -80,9 +82,10 @@ export function MatchBar({
         aria-label={matchAriaLabel(score, rank, topScore)}
         className={`match-bar ${compact ? "match-bar--compact" : ""}`}
       >
-        {/* No tick marks. The spec puts 1px #3A1B0D rules at 7/27/97% to teach the ruler, but they
-            land exactly on the band boundaries and read as borders dividing the bar into four
-            pieces. The bands' own colours mark the same positions without the seam. */}
+        {/* No tick marks, and no bands. The track is one flat neutral: the four brown bands were
+            near-black on a near-black page, and the 1px rules at 7/27/97% sat on their boundaries
+            and read as borders slicing the bar into pieces. The ruler is still non-linear — it is
+            simply not drawn. */}
         <span
           className="match-fill"
           style={{ width, ["--rank" as string]: rankColor(rank, count, hot) }}

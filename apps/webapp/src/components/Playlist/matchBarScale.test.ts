@@ -296,6 +296,26 @@ test("rank is converted from the table's 1-based value to the spec's 0-based anc
   }
 });
 
+test("the track is a flat neutral that separates from the page and the fill", () => {
+  // #2F2F2F on a #1E1E1E page. The spec's four brown bands (#1A0D07 … #2A150C) were near-black on
+  // a near-black background: the empty extent never read, so a short fill looked like a floating
+  // stub rather than a low value.
+  const css = read("../../index.css");
+  const bar = css.split(".match-bar {")[1].split("}")[0];
+
+  assert.ok(/background:\s*#2F2F2F/i.test(bar), "the track is not the lifted neutral");
+  assert.ok(!/#1A0D07|#20100A|#241109|#2A150C/i.test(bar), "the banded track is back");
+});
+
+test("the fill's gradient floor clears the track's own lightness", () => {
+  // .25, not the spec's .12. On the old near-black track a 12% start read as filled; on a #2F2F2F
+  // track it sits below the track itself, so the fill appears to begin part-way along its length.
+  const css = read("../../index.css");
+  const fill = css.split(".match-fill {")[1].split("}")[0];
+
+  assert.ok(/rgba\(255,\s*69,\s*25,\s*\.25\)/.test(fill), "the fill floor is too dark for the neutral track");
+});
+
 test("no tick rules are drawn inside the bar", () => {
   // Spec §02 [2] puts 1px rules at 7/27/97% to teach the ruler. They sit exactly on the band
   // boundaries, so they read as borders slicing the bar into four rather than as gradations — the

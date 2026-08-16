@@ -542,13 +542,14 @@ html #stcm-modal footer a.stcm-credit-link {
   border-radius: 1px;
   overflow: hidden;
   flex-shrink: 0;
-  /* Banded track: each band is the stretch of bar a score band maps onto, so the ruler is legible
-     even before the fill lands on it. */
-  background: linear-gradient(90deg,
-    #1A0D07 0, #1A0D07 7%,
-    #20100A 7%, #20100A 27%,
-    #241109 27%, #241109 97%,
-    #2A150C 97%, #2A150C 100%);
+  /* Flat neutral, one step lighter than the page (#2F2F2F on #1E1E1E) — the spec sheet's "lifted
+     neutral" track.
+     
+     Replaces the four dark-brown bands (#1A0D07 … #2A150C). Those were nearly black on a near-black
+     page, so the bar's empty extent was invisible and a short fill read as a floating stub rather
+     than as a low value. A neutral track also separates from the fill by HUE as well as lightness,
+     which the brown bands could not — they were the same family as the orange sitting on them. */
+  background: #2F2F2F;
 }
 
 /* Rule 08: the bar never goes below 96px. It is the last thing to give way, not the first. */
@@ -570,7 +571,11 @@ html #stcm-modal footer a.stcm-credit-link {
   top: 0;
   bottom: 0;
   left: 0;
-  background: linear-gradient(90deg, rgba(255, 69, 25, .12), var(--rank));
+  /* .25, not the spec's .12: against the old near-black track a 12% start was already dark enough
+     to read as filled, but on the lifted neutral it sits BELOW the track's own lightness, so the
+     fill appears to begin part-way along its own length. Raising the floor is what keeps the fill
+     starting where it starts. Paired with the track colour on the same spec card. */
+  background: linear-gradient(90deg, rgba(255, 69, 25, .25), var(--rank));
   transition: width .15s ease;
 }
 
