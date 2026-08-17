@@ -132,9 +132,25 @@ export const useAuthInit = () => {
               if (refreshResult.success && refreshResult.data?.access_token) {
                 store.setAccessToken(refreshResult.data.access_token);
               } else {
-                // Refresh failed - token may be invalid, but don't logout yet
-                // Let the interceptor handle it on the next API call
-                console.warn('[useAuthInit] Background token refresh failed');
+                // Refresh failed → the session is genuinely over. End it here and raise the
+                // "log in again" modal.
+                //
+                // This used to defer to the authClient interceptor on the next 401. That worked
+                // only while EVERY endpoint 401'd on a dead token. Public reads no longer do:
+                // a shared playlist now serves a guest view rather than refusing (see
+                // `get_current_user_or_anonymous` on the backend), so the interceptor may never
+                // fire — leaving the UI showing someone as logged in while the server treats
+                // them as a guest. A Pro user then sees a 10-track redacted playlist with no
+                // explanation and concludes the product is broken.
+                //
+                // `reason: 'expired'` is what distinguishes this from a user-initiated logout:
+                // it clears the stale token and shows SessionExpiredModal.
+                console.warn('[useAuthInit] Background token refresh failed — ending the session');
+                // `broadcast: false` matches the verifySession path below: this is boot-time
+                // discovery, and every other tab reaches the same conclusion on its own boot —
+                // broadcasting would just make N tabs emit N logout events for one dead cookie.
+                store.logout({ broadcast: false, reason: 'expired' });
+                return;
               }
               // The (possibly refreshed) token may belong to a different user than the one we
               // hydrated from this origin's storage — verify and correct (cross-subdomain guard).
