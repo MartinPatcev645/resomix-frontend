@@ -234,6 +234,25 @@ on — the mechanism was fine; putting `$binary_remote_addr` into a *response he
 
 ### Step 5 — move application limits off IP and onto identity
 
+> **Verified 2026-08-17: the industry-standard control is ALREADY implemented.**
+>
+> ```python
+> # Account Lockout (brute-force protection, per-account, complements the IP rate limiter)
+> login_max_failed_attempts: int = 10
+> login_lockout_minutes:     int = 15
+> ```
+>
+> `_register_login_failure` keys on **`user_id`**, increments only on a **wrong password**, and is
+> enforced in both `auth_service.py` and `admin_auth_controller.py`. That is exactly what OWASP
+> prescribes: per-account, failure-counted, time-boxed.
+>
+> **Therefore the per-IP `5/minute` login cap is the redundant layer, not the primary one**, and
+> loosening it does not weaken security. It is also weak against the real threat: credential
+> stuffing arrives from botnets — thousands of IPs trying a few accounts each — so a per-IP cap
+> never fires, while reliably locking out an office or a carrier NAT. Raise it to ~60/min as a
+> "single host hammering" net and leave the account lockout untouched. The next standard step
+> after that is a challenge/CAPTCHA on repeated failure, **not** a tighter IP cap.
+
 * **Login:** keep a per-**account** limit (that is what stops credential stuffing on one account)
   and raise the per-IP limit to something a shared NAT survives. 5/min per IP is why the stress
   setup had to sleep 60 seconds between logins.
@@ -269,11 +288,17 @@ makes it worse.
 
 ### Step 7 — reduce the request count
 
-Highest leverage, lowest risk:
+> **Correction 2026-08-17: search-as-you-type is ALREADY debounced** and this was recommended in
+> error. `apps/webapp/src/hooks/useWorkspaceSearch.ts:127` waits 500 ms after the last keystroke
+> and cancels the pending timer on each change. Correct implementation, sensible delay, nothing
+> to do.
 
-* **Debounce search-as-you-type** — one request per pause, not per keystroke. Each keystroke is
-  currently 2 requests and its own preflight-cache entry.
-* Collapse the six bootstrap calls (auth refresh, entitlements, telemetry, …) into fewer.
+What remains:
+
+* Collapse the bootstrap calls (auth refresh, entitlements, telemetry, …) into fewer.
+* The `X-Device-Hash` header makes every request non-simple, so each logical call costs **two**
+  HTTP requests. Moving the guest device signal to a cookie would halve API request volume
+  outright — the largest remaining multiplier, now that debouncing is ruled out.
 
 ### Step 8 — later: IP policy at the edge
 
@@ -317,6 +342,53 @@ CORS error.
 Verified after applying: a successful response carries **exactly one**
 `Access-Control-Allow-Origin` (the duplication failure mode would have broken every request), and
 preflights return 200.
+
+---
+
+## 5b. Security posture — what we have vs. what the standard asks for
+
+Assessed 2026-08-17, after the day's changes.
+
+### In place and correct
+
+| Control | Status |
+|---|---|
+| Cloudflare in front (WAF, DDoS, TLS) | yes |
+| Real client IP restored, CF ranges current | yes — verified 22/22 |
+| Per-IP request + connection limits, sanely tuned | yes — 25 r/s with `delay=`, conn 100 |
+| Preflights excluded from limits | yes |
+| Errors readable cross-origin | yes |
+| Security headers: XCTO, XFO, Referrer-Policy, HSTS | yes — restored when the stress headers were removed |
+| **Per-account login lockout** (10 failures / 15 min) | yes — the control that actually stops brute force |
+| fail2ban on **SSH** | yes — catching real brute force daily |
+| RBAC, JWT, admin auth isolated from the main site | yes |
+| Antivirus scan on every upload | yes |
+| Per-user quotas and entitlements | yes |
+
+### Gaps, ranked by impact
+
+1. **Origin reachable on the public IP.** On 2026-08-17 the decommissioned sandbox answered `200`
+   on `http://<origin-ip>:8004`, bypassing Cloudflare and nginx entirely, and had done so since
+   May. **Verify port 8001 is not similarly exposed.** If the origin is directly reachable, every
+   control above is optional from an attacker's point of view. Standard fix: `ufw` allow 80/443
+   **only from Cloudflare's ranges**, or Cloudflare Tunnel, plus Authenticated Origin Pulls.
+   *This is the highest-value security item outstanding.*
+2. **No Content-Security-Policy** (and no `Permissions-Policy`). The other OWASP headers are set;
+   CSP is the significant absent one for a browser app.
+3. **Login rate limit still per IP** (§Step 5) — a reliability problem, not a security one, now
+   that the per-account lockout is confirmed.
+4. **fail2ban's nginx jails are inert behind Cloudflare** — iptables cannot see client addresses.
+   Either use fail2ban's `cloudflare` action or accept them as decorative. (SSH jail is unaffected
+   and valuable.)
+5. **The client does not honour `Retry-After`.** nginx now sends it; the frontend should back off
+   exponentially rather than retry blindly.
+6. **`/health` returns 403 to UptimeRobot** — carried from the phase-4 backlog §6. Uptime
+   monitoring has been failing continuously on both media and Alwyzon, so an outage like the
+   2026-08-17 one is discovered by a human rather than a monitor.
+7. **Alwyzon still runs one uvicorn process** on 6 cores. Any synchronous call stalls every
+   request on the box — the cause of the 2026-08-14 latency collapse, and the reason the next one
+   will be equally expensive.
+8. **No alerting on 429 / 5xx rate.** Both are now measurable; nothing watches them.
 
 ---
 

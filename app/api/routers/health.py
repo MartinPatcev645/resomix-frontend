@@ -27,9 +27,18 @@ from app.schemas.common import HealthCheckResponse
 
 router = APIRouter(tags=["health"])
 
+# Both liveness routes answer GET *and* HEAD.
+#
+# FastAPI's APIRoute — unlike Starlette's Route — does NOT add HEAD automatically when a route
+# declares GET, so `@router.get` alone answers `HEAD /health` with **405 Method Not Allowed**.
+# UptimeRobot (and most uptime monitors) send HEAD by default, which is why monitoring has been
+# failing continuously against a service that was perfectly healthy: measured 2026-08-17,
+# `GET /health` -> 200 and `HEAD /health` -> 405 on the same URL.
 
-@router.get(
+
+@router.api_route(
     "/",
+    methods=["GET", "HEAD"],
     response_model=HealthCheckResponse,
     summary="API Information",
     description="Get basic API information including name, version, and status."
@@ -44,8 +53,9 @@ async def root() -> HealthCheckResponse:
     )
 
 
-@router.get(
+@router.api_route(
     "/health",
+    methods=["GET", "HEAD"],
     summary="Health Check",
     description="Simple health check endpoint to verify service availability."
 )
