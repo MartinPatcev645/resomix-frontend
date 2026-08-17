@@ -113,14 +113,21 @@ export function usePlaylistLoader() {
             s.setPlaylistResponse(resp as any);
           }
         } else {
-          s.setError(resp.error || 'Failed to load playlist');
+          // Carry WHY it failed, not just that it did. Only a real 403 means "private"; a 429,
+          // a 5xx or a dropped connection are faults, and showing them as a permissions message
+          // sent us hunting a privacy bug that did not exist.
+          const status = (resp as { status?: number }).status;
+          const reason =
+            status === 403 ? 'forbidden' : status === 404 ? 'not_found' : 'failed';
+          s.setError(resp.error || 'Failed to load playlist', reason);
         }
       })
       .catch(() => {
         if (cancelled) return;
         const s = usePlaylistStore.getState();
         s.setLoading(false);
-        s.setError('Failed to load playlist');
+        // A thrown request never reached a verdict — it is a fault, never "private".
+        s.setError('Failed to load playlist', 'failed');
       });
 
     return () => {

@@ -11,7 +11,7 @@ import { scrollToPlaylistHero } from "@/utils/scrollToPlaylistHero.ts";
 export const WorkspaceDiscoveryResults: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { playlistData, isLoading, error } = usePlaylistStore();
+  const { playlistData, isLoading, error, errorReason } = usePlaylistStore();
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,9 +59,13 @@ export const WorkspaceDiscoveryResults: React.FC = () => {
         <Error404
           baseUrl={BASE_BETA_URL}
           loading={isResolving}
-          eyebrow="Access"
-          title="Playlist is Private"
-          description="This playlist is private. Make it public or share it to view, or go back to safety."
+          eyebrow={errorReason === "forbidden" ? "Access" : "Error"}
+          title={errorReason === "forbidden" ? "Playlist is Private" : "Something went wrong"}
+          description={
+            errorReason === "forbidden"
+              ? "This playlist is private. Make it public or share it to view, or go back to safety."
+              : "We could not load this playlist. This is usually temporary \u2014 please try again."
+          }
           buttonText="Go Back to Safety"
         />
       )}

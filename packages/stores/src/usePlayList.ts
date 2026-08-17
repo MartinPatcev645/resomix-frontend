@@ -102,6 +102,11 @@ interface PlaylistStore {
   playlistData: PlaylistData | null
   isLoading: boolean
   error: string | null
+  /** WHY the load failed, so the view can tell 'private' from 'something broke'.
+   *  'forbidden' = the server refused this playlist (403). Anything else is a fault:
+   *  network, rate limit, 5xx. Rendering them all as "Playlist is Private" is what made a
+   *  stale-token 401 look like a permissions problem for days. */
+  errorReason: 'forbidden' | 'not_found' | 'failed' | null
   trackRatings: Record<string, number>
   // Bookkeeping for usePlaylistLoader's fresh-handoff fast-path (NOT for rendering): which playlist
   // id was last written by an authoritative setter, and when. A load that arrives right after a
@@ -120,7 +125,7 @@ interface PlaylistStore {
   removeTrackRating: (trackId: string) => void
   clearPlaylistData: () => void
   setLoading: (loading: boolean) => void
-  setError: (error: string | null) => void
+  setError: (error: string | null, reason?: 'forbidden' | 'not_found' | 'failed' | null) => void
   reset: () => void
   // Cache actions
   saveResponseToCache: (response: PlaylistResponse) => void
@@ -142,6 +147,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   playlistData: null,
   isLoading: false,
   error: null,
+  errorReason: null,
   trackRatings: {},
   lastResolvedId: null,
   lastResolvedAt: 0,
@@ -183,13 +189,13 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     return { trackRatings: next };
   }),
 
-  clearPlaylistData: () => set({ playlistData: null, error: null, lastResolvedId: null }),
+  clearPlaylistData: () => set({ playlistData: null, error: null, errorReason: null, lastResolvedId: null }),
 
   setLoading: (loading) => set({ isLoading: loading }),
 
-  setError: (error) => set({ error }),
+  setError: (error, reason = null) => set({ error, errorReason: error ? reason : null }),
 
-  reset: () => set({ playlistData: null, isLoading: false, error: null, trackRatings: {}, lastResolvedId: null, lastResolvedAt: 0 }),
+  reset: () => set({ playlistData: null, isLoading: false, error: null, errorReason: null, trackRatings: {}, lastResolvedId: null, lastResolvedAt: 0 }),
 
   // Cache actions
   saveResponseToCache,

@@ -15,7 +15,7 @@ export function PlaylistPage() {
     window.scrollTo(0, 0);
   }, []);
 
-  const { playlistData, isLoading, error } = usePlaylistStore();
+  const { playlistData, isLoading, error, errorReason } = usePlaylistStore();
 
   // Load from ?id= if store empty
   usePlaylistLoader();
@@ -61,9 +61,13 @@ export function PlaylistPage() {
         <Error404
           baseUrl={BASE_BETA_URL}
           loading={isResolving}
-          eyebrow="Access"
-          title="Playlist is Private"
-          description="This playlist is private. Make it public or share it to view, or go back to safety."
+          eyebrow={errorReason === "forbidden" ? "Access" : "Error"}
+          title={errorReason === "forbidden" ? "Playlist is Private" : "Something went wrong"}
+          description={
+            errorReason === "forbidden"
+              ? "This playlist is private. Make it public or share it to view, or go back to safety."
+              : "We could not load this playlist. This is usually temporary \u2014 please try again."
+          }
           buttonText="Go Back to Safety"
         />
       )}
