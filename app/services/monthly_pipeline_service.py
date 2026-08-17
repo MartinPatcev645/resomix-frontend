@@ -21,6 +21,9 @@ from typing import Dict, Any, Optional
 
 from sqlalchemy import text
 from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class MonthlyPipelineService:
@@ -74,7 +77,7 @@ class MonthlyPipelineService:
                 return {"success": False, "error": f"Failed to generate embedding preview: {error_message}"}
                 
         except Exception as e:
-            print(f"Error generating embedding preview: {e}")
+            logger.error(f"Error generating embedding preview: {e}")
             return {"success": False, "error": f"An unexpected error occurred while generating embedding preview: {e}"}
 
     # -------------------------------------------------------------------------
@@ -113,7 +116,7 @@ class MonthlyPipelineService:
             result = await db.execute(stmt)
             rows = result.all()
         except Exception as e:
-            print(f"Error querying tracks for update_embeddings: {e}")
+            logger.error(f"Error querying tracks for update_embeddings: {e}")
             return {"success": False, "error": f"Database query failed: {e}"}
 
         # Short-circuit if nothing returned
@@ -133,7 +136,7 @@ class MonthlyPipelineService:
                     tmp_file.write(json.dumps(record) + "\n")
                 tmp_file_path = tmp_file.name
         except Exception as e:
-            print(f"Error writing NDJSON file for update_embeddings: {e}")
+            logger.error(f"Error writing NDJSON file for update_embeddings: {e}")
             return {"success": False, "error": f"Failed to write NDJSON file: {e}"}
 
         # Step 3: Log file size before sending
@@ -143,7 +146,7 @@ class MonthlyPipelineService:
             print(f"[UPDATE_EMBEDDINGS] File size: {file_size:,} bytes ({file_size / 1024 / 1024:.2f} MB)")
             print(f"[UPDATE_EMBEDDINGS] Number of entries: {len(rows)}")
         except Exception as e:
-            print(f"Error getting file size: {e}")
+            logger.error(f"Error getting file size: {e}")
 
         # Step 4: Transfer file via SCP
         filename = os.path.basename(tmp_file_path)
@@ -168,7 +171,7 @@ class MonthlyPipelineService:
             print("SCP transfer timed out")
             return {"success": False, "error": "SCP transfer timed out"}
         except Exception as e:
-            print(f"Error during SCP transfer: {e}")
+            logger.error(f"Error during SCP transfer: {e}")
             return {"success": False, "error": f"SCP transfer failed: {e}"}
 
         # Step 5: Send request to similarity server with file path
@@ -177,7 +180,7 @@ class MonthlyPipelineService:
             request_data = {"file_path": remote_path}
             response = await self._call_similarity_server("/monthly-pipeline/update_embeddings", data=request_data)
         except Exception as e:
-            print(f"Error sending file path to similarity server: {e}")
+            logger.error(f"Error sending file path to similarity server: {e}")
             return {"success": False, "error": f"Failed to send file path to similarity server: {e}"}
 
         # Clean up local temp file
@@ -214,7 +217,7 @@ class MonthlyPipelineService:
                 response.raise_for_status()
                 return response.json()
             except httpx.HTTPStatusError as e:
-                print(f"HTTP error calling similarity server {target_url}: {e.response.status_code} - {e.response.text}")
+                logger.error(f"HTTP error calling similarity server {target_url}: {e.response.status_code} - {e.response.text}")
                 try:
                     error_data = e.response.json()
                     if "detail" in error_data:
@@ -227,8 +230,8 @@ class MonthlyPipelineService:
                 except ValueError:
                     return {"status": "error", "message": f"Similarity service HTTP error: {e.response.status_code}. Non-JSON response: {e.response.text[:200]}", "results": []}
             except httpx.RequestError as e:
-                print(f"Request error calling similarity server {target_url}: {e}")
+                logger.error(f"Request error calling similarity server {target_url}: {e}")
                 return {"status": "error", "message": f"Could not connect to similarity service: {e}", "results": []}
             except Exception as e:
-                print(f"Generic error calling similarity server {target_url}: {e}")
+                logger.error(f"Generic error calling similarity server {target_url}: {e}")
                 return {"status": "error", "message": f"An unexpected error occurred: {e}", "results": []}

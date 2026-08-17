@@ -19,6 +19,9 @@ from typing import Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.playlist_engagement_repository import PlaylistEngagementRepository
 from app.repositories.playlist_repository import PlaylistRepository
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PlaylistEngagementService:
@@ -62,7 +65,7 @@ class PlaylistEngagementService:
                         playlist_dict["is_favorite"] = engagement.is_favorite
             except Exception as e:
                 # If engagement lookup fails, just use defaults (False)
-                print(f"Error enriching playlist with engagement: {e}")
+                logger.error(f"Error enriching playlist with engagement: {e}")
         
         return playlist_dict
     
@@ -153,7 +156,7 @@ class PlaylistEngagementService:
             }
             
         except Exception as e:
-            print(f"Error in playlist engagement service add_favorite: {e}")
+            logger.error(f"Error in playlist engagement service add_favorite: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while adding favorite"
@@ -223,7 +226,7 @@ class PlaylistEngagementService:
             }
             
         except Exception as e:
-            print(f"Error in playlist engagement service remove_favorite: {e}")
+            logger.error(f"Error in playlist engagement service remove_favorite: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while removing favorite"
@@ -293,7 +296,7 @@ class PlaylistEngagementService:
             }
             
         except Exception as e:
-            print(f"Error in playlist engagement service follow: {e}")
+            logger.error(f"Error in playlist engagement service follow: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while following playlist"
@@ -363,7 +366,7 @@ class PlaylistEngagementService:
             }
             
         except Exception as e:
-            print(f"Error in playlist engagement service unfollow: {e}")
+            logger.error(f"Error in playlist engagement service unfollow: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while unfollowing playlist"

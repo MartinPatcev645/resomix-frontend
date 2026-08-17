@@ -34,6 +34,9 @@ from app.repositories.playlist_repository import (
 )
 from app.schemas.playlist import normalize_playlist_name
 from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PlaylistService:
@@ -107,7 +110,7 @@ class PlaylistService:
 
         except Exception as e:
             await db.rollback()
-            print(f"Error in playlist service rename: {e}")
+            logger.error(f"Error in playlist service rename: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while renaming the playlist",
@@ -154,7 +157,7 @@ class PlaylistService:
 
         except Exception as e:
             await db.rollback()
-            print(f"Error in playlist service visibility change: {e}")
+            logger.error(f"Error in playlist service visibility change: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while changing playlist visibility",
@@ -212,7 +215,7 @@ class PlaylistService:
             return {"success": True, "message": "Playlist deleted successfully"}
         except Exception as e:
             await db.rollback()
-            print(f"Error in playlist service delete: {e}")
+            logger.error(f"Error in playlist service delete: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while deleting the playlist",
@@ -302,10 +305,10 @@ class PlaylistService:
                 )
                 raise ValueError(f"Media server HTTP error: {e.response.status_code}")
             except httpx.RequestError as e:
-                print(f"Request error calling media server {signed_url}: {e}")
+                logger.error(f"Request error calling media server {signed_url}: {e}")
                 raise ValueError(f"Could not connect to media server: {e}")
             except Exception as e:
-                print(f"Generic error calling media server {signed_url}: {e}")
+                logger.error(f"Generic error calling media server {signed_url}: {e}")
                 raise ValueError(f"An unexpected error occurred: {e}")
 
     async def get_playlist_similarity_data(
@@ -354,7 +357,7 @@ class PlaylistService:
                 return {"success": True, "data": filtered_data}
 
         except Exception as e:
-            print(f"Error in playlist service get similarity data: {e}")
+            logger.error(f"Error in playlist service get similarity data: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving playlist data",
@@ -400,7 +403,7 @@ class PlaylistService:
                 return {"success": True, "data": filtered_data}
 
         except Exception as e:
-            print(f"Error in playlist service fork playlist: {e}")
+            logger.error(f"Error in playlist service fork playlist: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while forking the playlist",
@@ -495,7 +498,7 @@ class PlaylistService:
             }
 
         except Exception as e:
-            print(f"Error in playlist service get HLS data: {e}")
+            logger.error(f"Error in playlist service get HLS data: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while generating HLS playlist",
@@ -525,7 +528,7 @@ class PlaylistService:
             )
             return {"success": True, **result}
         except Exception as e:
-            print(f"Error getting playlist list for admin: {e}")
+            logger.error(f"Error getting playlist list for admin: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving playlists",
@@ -553,7 +556,7 @@ class PlaylistService:
                 return {"success": True, "data": playlist}
             return {"success": False, "error": "Playlist not found"}
         except Exception as e:
-            print(f"Error getting playlist by id for admin: {e}")
+            logger.error(f"Error getting playlist by id for admin: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving the playlist",
@@ -584,7 +587,7 @@ class PlaylistService:
                 return {"success": False, "error": "Playlist not found"}
 
         except Exception as e:
-            print(f"Error deleting playlist: {e}")
+            logger.error(f"Error deleting playlist: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while deleting the playlist",
@@ -618,7 +621,7 @@ class PlaylistService:
             return {"success": True, "deleted_count": deleted_count, "message": message}
 
         except Exception as e:
-            print(f"Error batch deleting playlists: {e}")
+            logger.error(f"Error batch deleting playlists: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while batch deleting playlists",
@@ -655,7 +658,7 @@ class PlaylistService:
                 return {"success": False, "error": "Playlist not found"}
 
         except Exception as e:
-            print(f"Error changing playlist visibility: {e}")
+            logger.error(f"Error changing playlist visibility: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while changing playlist visibility",
@@ -696,7 +699,7 @@ class PlaylistService:
             return {"success": True, "updated_count": updated_count, "message": message}
 
         except Exception as e:
-            print(f"Error batch changing playlist visibility: {e}")
+            logger.error(f"Error batch changing playlist visibility: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while batch changing playlist visibility",
@@ -789,7 +792,7 @@ class PlaylistService:
             }
 
         except Exception as e:
-            print(f"Error exporting playlists to CSV: {e}")
+            logger.error(f"Error exporting playlists to CSV: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while exporting playlists",
@@ -830,7 +833,7 @@ class PlaylistService:
                 return {"success": False, "error": "Playlist not found"}
 
         except Exception as e:
-            print(f"Error getting playlist detail by UUID: {e}")
+            logger.error(f"Error getting playlist detail by UUID: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving playlist details",
@@ -883,7 +886,7 @@ class PlaylistService:
                 "library_total": library_total,
             }
         except Exception as e:
-            print(f"Error getting all user playlists: {e}")
+            logger.error(f"Error getting all user playlists: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving playlists",

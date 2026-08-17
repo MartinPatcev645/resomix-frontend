@@ -20,6 +20,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.rating_repository import TrackRatingRepository, PlaylistRatingRepository
 from app.schemas.rating import RatingResponse
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class RatingService:
@@ -106,7 +109,7 @@ class RatingService:
                 }
                 
         except Exception as e:
-            print(f"Error in rating service rate_track: {e}")
+            logger.error(f"Error in rating service rate_track: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while rating the track"
@@ -148,7 +151,7 @@ class RatingService:
                 }
                 
         except Exception as e:
-            print(f"Error in rating service get_track_rating: {e}")
+            logger.error(f"Error in rating service get_track_rating: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving the rating"
@@ -190,7 +193,7 @@ class RatingService:
                 }
                 
         except Exception as e:
-            print(f"Error in rating service delete_track_rating: {e}")
+            logger.error(f"Error in rating service delete_track_rating: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while deleting the rating"
@@ -216,7 +219,7 @@ class RatingService:
             }
                 
         except Exception as e:
-            print(f"Error in rating service get_track_rating_stats: {e}")
+            logger.error(f"Error in rating service get_track_rating_stats: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving rating statistics"
@@ -270,7 +273,7 @@ class RatingService:
                 }
                 
         except Exception as e:
-            print(f"Error in rating service rate_playlist: {e}")
+            logger.error(f"Error in rating service rate_playlist: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while rating the playlist"
@@ -310,7 +313,7 @@ class RatingService:
                 }
                 
         except Exception as e:
-            print(f"Error in rating service get_playlist_rating: {e}")
+            logger.error(f"Error in rating service get_playlist_rating: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving the rating"
@@ -350,7 +353,7 @@ class RatingService:
                 }
                 
         except Exception as e:
-            print(f"Error in rating service delete_playlist_rating: {e}")
+            logger.error(f"Error in rating service delete_playlist_rating: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while deleting the rating"
@@ -376,7 +379,7 @@ class RatingService:
             }
                 
         except Exception as e:
-            print(f"Error in rating service get_playlist_rating_stats: {e}")
+            logger.error(f"Error in rating service get_playlist_rating_stats: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving rating statistics"
@@ -417,7 +420,7 @@ class RatingService:
                 "total_pages": max(1, (total + page_size - 1) // page_size),
             }
         except Exception as exc:
-            print(f"Error getting liked tracks: {exc}")
+            logger.error(f"Error getting liked tracks: {exc}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving liked tracks",
@@ -438,7 +441,7 @@ class RatingService:
                 return {"success": True, "data": {"track_id": track_uuid, "removed": 0}}
             return {"success": True, "data": {"track_id": track_uuid, "removed": removed}}
         except Exception as exc:
-            print(f"Error un-liking track: {exc}")
+            logger.error(f"Error un-liking track: {exc}")
             return {"success": False, "error": "An error occurred while removing the like"}
 
     async def get_my_playlist_ratings(
@@ -467,7 +470,7 @@ class RatingService:
                 },
             }
         except Exception as e:
-            print(f"Error in rating service get_my_playlist_ratings: {e}")
+            logger.error(f"Error in rating service get_my_playlist_ratings: {e}")
             return {"success": False, "error": "An error occurred while retrieving your ratings"}
 
     async def get_playlist_ratings_detail(self, db: AsyncSession, playlist_uuid: str) -> Dict[str, Any]:
@@ -478,5 +481,5 @@ class RatingService:
                 return {"success": False, "error": "Playlist not found"}
             return {"success": True, "data": data}
         except Exception as e:
-            print(f"Error in rating service get_playlist_ratings_detail: {e}")
+            logger.error(f"Error in rating service get_playlist_ratings_detail: {e}")
             return {"success": False, "error": "An error occurred while retrieving playlist ratings"}

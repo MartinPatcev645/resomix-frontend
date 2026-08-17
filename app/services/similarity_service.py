@@ -393,7 +393,7 @@ class SimilarityService:
                         # If enrichment fails, ensure defaults are set (is_following intentionally
                         # omitted — unused by the frontend, see docs/PLAYBACK_APPLE_MUSIC_PLAN.md).
                         playlist_info.setdefault("is_favorite", False)
-                        print(f"Error enriching playlist with engagement: {e}")
+                        logger.error(f"Error enriching playlist with engagement: {e}")
                     response_data["playlist"] = playlist_info
 
                 # Apply filtering to queried track as well
@@ -423,7 +423,7 @@ class SimilarityService:
                 return response_data
             except Exception as e:
                 await db.rollback()
-                print(f"Error in similarity upload database processing: {e}")
+                logger.error(f"Error in similarity upload database processing: {e}")
                 return {"success": False, "error": f"Database processing error: {e}"}
         else:
             # Error reported by the similarity server or connection issue handled by _call_similarity_server
@@ -643,7 +643,7 @@ class SimilarityService:
                         # If enrichment fails, ensure defaults are set (is_following intentionally
                         # omitted — unused by the frontend, see docs/PLAYBACK_APPLE_MUSIC_PLAN.md).
                         playlist_info.setdefault("is_favorite", False)
-                        print(f"Error enriching playlist with engagement: {e}")
+                        logger.error(f"Error enriching playlist with engagement: {e}")
                     response_data["playlist"] = playlist_info
 
                 # Apply filtering to queried track as well
@@ -697,7 +697,7 @@ class SimilarityService:
 
         except Exception as e:
             await db.rollback()
-            print(f"Error in similarity by path service: {e}")
+            logger.error(f"Error in similarity by path service: {e}")
             return {"success": False, "error": f"Database error or server error: {str(e)}"}
 
     async def _call_similarity_server(
@@ -753,14 +753,14 @@ class SimilarityService:
                         "results": [],
                     }
             except httpx.RequestError as e:
-                print(f"Request error calling similarity server {target_url}: {e}")
+                logger.error(f"Request error calling similarity server {target_url}: {e}")
                 return {
                     "status": "error",
                     "message": f"Could not connect to similarity service: {e}",
                     "results": [],
                 }
             except Exception as e:
-                print(f"Generic error calling similarity server {target_url}: {e}")
+                logger.error(f"Generic error calling similarity server {target_url}: {e}")
                 return {
                     "status": "error",
                     "message": f"An unexpected error occurred: {e}",
@@ -873,7 +873,7 @@ class SimilarityService:
             return similarity_result
 
         except Exception as e:
-            print(f"Error getting similarity for track UUID {track_uuid}: {e}")
+            logger.error(f"Error getting similarity for track UUID {track_uuid}: {e}")
             return {
                 "success": False,
                 "error": f"Error processing similarity request: {e}",

@@ -27,6 +27,9 @@ import uuid
 from datetime import datetime, timedelta
 from app.core.config import settings
 from app.utils.sanitization import csv_safe
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ContactService:
@@ -159,7 +162,7 @@ class ContactService:
             }
             
         except Exception as e:
-            print(f"Error processing contact submission: {e}")
+            logger.error(f"Error processing contact submission: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while processing your contact submission"
@@ -254,7 +257,7 @@ class ContactService:
                 }
                 
         except Exception as e:
-            print(f"Error updating contact status: {e}")
+            logger.error(f"Error updating contact status: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while updating contact status"

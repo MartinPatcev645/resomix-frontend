@@ -25,6 +25,9 @@ from ..models.track import Track
 from ..models.playlist import Playlist, PlaylistTrack
 from ..models.user import User
 from ..repositories.base_repository import BaseRepository
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TrackRatingRepository(BaseRepository[TrackRating]):
@@ -220,7 +223,7 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
             
             return await self._async_find_existing(db, user_id=user_id, track_id=track_numeric_id, playlist_id=playlist_numeric_id)
         except Exception as e:
-            print(f"Error getting track rating: {e}")
+            logger.error(f"Error getting track rating: {e}")
             raise e
     
     async def async_delete_track_rating(
@@ -288,7 +291,7 @@ class TrackRatingRepository(BaseRepository[TrackRating]):
             return result.rowcount > 0
         except Exception as e:
             await db.rollback()
-            print(f"Error deleting track rating: {e}")
+            logger.error(f"Error deleting track rating: {e}")
             raise e
     
     async def async_get_track_rating_stats(self, db: AsyncSession, track_id: str) -> Dict[str, Any]:
@@ -650,7 +653,7 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
 
         except Exception as e:
             await db.rollback()
-            print(f"Error rating playlist: {e}")
+            logger.error(f"Error rating playlist: {e}")
             raise e
     
     async def async_get_playlist_rating(
@@ -673,7 +676,7 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
         try:
             return await self._async_find_existing(db, user_id=user_id, playlist_id=playlist_id)
         except Exception as e:
-            print(f"Error getting playlist rating: {e}")
+            logger.error(f"Error getting playlist rating: {e}")
             raise e
     
     async def async_delete_playlist_rating(
@@ -705,7 +708,7 @@ class PlaylistRatingRepository(BaseRepository[PlaylistRating]):
             return result.rowcount > 0
         except Exception as e:
             await db.rollback()
-            print(f"Error deleting playlist rating: {e}")
+            logger.error(f"Error deleting playlist rating: {e}")
             raise e
     
     async def async_get_playlist_rating_stats(self, db: AsyncSession, playlist_id: Union[int, str]) -> Dict[str, Any]:

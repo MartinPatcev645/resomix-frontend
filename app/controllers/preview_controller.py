@@ -22,6 +22,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.preview_service import PreviewService
 from app.utils.response_utils import format_response
 from app.utils.logging_utils import log_request
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PreviewController:
@@ -86,7 +89,7 @@ class PreviewController:
             
         except Exception as e:
             # Log the exception for debugging
-            print(f"An error occurred in get_preview_download_url: {e}")
+            logger.error(f"An error occurred in get_preview_download_url: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred.")

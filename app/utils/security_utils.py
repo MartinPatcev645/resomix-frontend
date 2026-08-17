@@ -25,6 +25,9 @@ from typing import Optional
 from cryptography.fernet import Fernet, InvalidToken
 
 from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @lru_cache()
@@ -138,7 +141,7 @@ class URLSigner:
             return True
             
         except Exception as e:
-            print(f"Error verifying signed URL: {e}")
+            logger.error(f"Error verifying signed URL: {e}")
             return False
     
     def get_url_expiry(self, xpi: str) -> Optional[int]:

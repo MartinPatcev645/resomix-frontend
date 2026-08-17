@@ -22,6 +22,9 @@ from sqlalchemy import select, and_
 from datetime import datetime
 from app.models.playlist_engagement import UserPlaylistEngagement
 from app.repositories.base_repository import BaseRepository
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PlaylistEngagementRepository(BaseRepository[UserPlaylistEngagement]):
@@ -51,7 +54,7 @@ class PlaylistEngagementRepository(BaseRepository[UserPlaylistEngagement]):
             )
             return engagement
         except Exception as e:
-            print(f"Error getting engagement: {e}")
+            logger.error(f"Error getting engagement: {e}")
             return None
 
     async def async_toggle_favorite(
@@ -98,7 +101,7 @@ class PlaylistEngagementRepository(BaseRepository[UserPlaylistEngagement]):
             }
         except Exception as e:
             await db.rollback()
-            print(f"Error toggling favorite: {e}")
+            logger.error(f"Error toggling favorite: {e}")
             return None
 
     async def async_toggle_follow(
@@ -145,7 +148,7 @@ class PlaylistEngagementRepository(BaseRepository[UserPlaylistEngagement]):
             }
         except Exception as e:
             await db.rollback()
-            print(f"Error toggling follow: {e}")
+            logger.error(f"Error toggling follow: {e}")
             return None
 
     async def async_get_user_favorites(
@@ -170,7 +173,7 @@ class PlaylistEngagementRepository(BaseRepository[UserPlaylistEngagement]):
             result = await db.execute(stmt)
             return list(result.scalars().all())
         except Exception as e:
-            print(f"Error getting user favorites: {e}")
+            logger.error(f"Error getting user favorites: {e}")
             return []
 
     async def async_get_user_following(
@@ -195,7 +198,7 @@ class PlaylistEngagementRepository(BaseRepository[UserPlaylistEngagement]):
             result = await db.execute(stmt)
             return list(result.scalars().all())
         except Exception as e:
-            print(f"Error getting user following: {e}")
+            logger.error(f"Error getting user following: {e}")
             return []
 
     def _find_existing(self, db: Session, **kwargs) -> Optional[UserPlaylistEngagement]:

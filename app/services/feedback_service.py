@@ -28,6 +28,9 @@ import uuid
 from datetime import datetime, timedelta
 from app.core.config import settings
 from app.utils.sanitization import csv_safe
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class FeedbackService:
@@ -99,7 +102,7 @@ class FeedbackService:
             
         except Exception as e:
             await db.rollback()
-            print(f"Error processing feedback submission: {e}")
+            logger.error(f"Error processing feedback submission: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while processing your feedback"
@@ -225,7 +228,7 @@ class FeedbackService:
                 
         except Exception as e:
             await db.rollback()
-            print(f"Error updating feedback status: {e}")
+            logger.error(f"Error updating feedback status: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while updating feedback status"
@@ -311,7 +314,7 @@ class FeedbackService:
             }
             
         except Exception as e:
-            print(f"Error getting feedback list: {e}")
+            logger.error(f"Error getting feedback list: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving feedback list",
@@ -386,7 +389,7 @@ class FeedbackService:
                 
         except Exception as e:
             await db.rollback()
-            print(f"Error deleting feedback: {e}")
+            logger.error(f"Error deleting feedback: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while deleting feedback"
@@ -437,7 +440,7 @@ class FeedbackService:
             
         except Exception as e:
             await db.rollback()
-            print(f"Error batch deleting feedback: {e}")
+            logger.error(f"Error batch deleting feedback: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while deleting feedback entries",
@@ -504,7 +507,7 @@ class FeedbackService:
                 
         except Exception as e:
             await db.rollback()
-            print(f"Error marking feedback status: {e}")
+            logger.error(f"Error marking feedback status: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while updating feedback status"
@@ -552,7 +555,7 @@ class FeedbackService:
                 
         except Exception as e:
             await db.rollback()
-            print(f"Error updating feedback: {e}")
+            logger.error(f"Error updating feedback: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while updating feedback"
@@ -581,7 +584,7 @@ class FeedbackService:
             }
             
         except Exception as e:
-            print(f"Error getting feedback statistics: {e}")
+            logger.error(f"Error getting feedback statistics: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving statistics",
@@ -684,7 +687,7 @@ class FeedbackService:
             
         except Exception as e:
             await db.rollback()
-            print(f"Error exporting feedback: {e}")
+            logger.error(f"Error exporting feedback: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while exporting feedback"

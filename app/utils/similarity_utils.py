@@ -15,6 +15,9 @@ import httpx
 import asyncio
 from typing import Dict, List, Any, Optional
 from mutagen import File as MutagenFile, MutagenError
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_duration_from_bytes_sync(audio_bytes: bytes) -> Optional[float]:
@@ -33,9 +36,9 @@ def get_duration_from_bytes_sync(audio_bytes: bytes) -> Optional[float]:
         if audio and audio.info and hasattr(audio.info, 'length') and audio.info.length is not None:
             return round(float(audio.info.length), 3)
     except MutagenError:
-        print("MutagenError: Could not load audio from bytes to get duration.")
+        logger.error("MutagenError: Could not load audio from bytes to get duration.")
     except Exception as e:
-        print(f"Error getting duration from bytes: {e}")
+        logger.error(f"Error getting duration from bytes: {e}")
     return None  # Return None if duration can't be determined
 
 
@@ -268,11 +271,11 @@ async def execute_playlist_peaks_request(target_url: str, payload: Dict[str, Any
             response = await client.post(target_url, json=payload)
             print(f"Playlist peaks request completed with status: {response.status_code}")
         except httpx.HTTPStatusError as e:
-            print(f"HTTP error in playlist peaks request: {e.response.status_code} - {e.response.text}")
+            logger.error(f"HTTP error in playlist peaks request: {e.response.status_code} - {e.response.text}")
         except httpx.RequestError as e:
-            print(f"Request error in playlist peaks request: {e}")
+            logger.error(f"Request error in playlist peaks request: {e}")
         except Exception as e:
-            print(f"Unexpected error in playlist peaks request: {e}")
+            logger.error(f"Unexpected error in playlist peaks request: {e}")
 
 
 async def send_playlist_peaks_request(similarity_server_url: str, reference_track_uuid: str, similar_tracks: List[Dict[str, Any]]) -> None:
@@ -312,7 +315,7 @@ async def send_playlist_peaks_request(similarity_server_url: str, reference_trac
         asyncio.create_task(execute_playlist_peaks_request(target_url, payload))
         
     except Exception as e:
-        print(f"Error preparing playlist peaks request: {e}")
+        logger.error(f"Error preparing playlist peaks request: {e}")
         # Don't fail the main request if this background task fails
 
 def generate_playlist_name_from_seed_track(seed_track_data: Dict[str, Any]) -> str:

@@ -25,6 +25,9 @@ from typing import Optional, Literal
 from app.services.search_service import SearchService
 from app.utils.response_utils import format_response
 from app.utils.logging_utils import log_request
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SearchController:
@@ -81,7 +84,7 @@ class SearchController:
             
         except Exception as e:
             # Log the exception for debugging
-            print(f"An error occurred in search_tracks: {e}")
+            logger.error(f"An error occurred in search_tracks: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=format_response(success=False, error="An internal server error occurred.")

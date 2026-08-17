@@ -27,6 +27,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.track_repository import TrackRepository
 from app.utils.elasticsearch_utils import get_es_client
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SearchService:
@@ -555,7 +558,7 @@ class SearchService:
                 print(f"Track with ID '{track_id}' not found.")
                 return None
         except Exception as e:
-            print(f"Error fetching track path for ID {track_id}: {e}")
+            logger.error(f"Error fetching track path for ID {track_id}: {e}")
             return None
 
     def validate_search_query(self, query: str) -> bool:

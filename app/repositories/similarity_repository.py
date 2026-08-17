@@ -22,6 +22,9 @@ from sqlalchemy import select, text, bindparam
 
 from ..models.track import Track
 from ..repositories.base_repository import BaseRepository
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SimilarityRepository(BaseRepository[Track]):
@@ -114,7 +117,7 @@ class SimilarityRepository(BaseRepository[Track]):
                 }
             return None
         except Exception as e:
-            print(f"Error fetching reference track details by path: {e}")
+            logger.error(f"Error fetching reference track details by path: {e}")
             raise e
 
     async def async_get_reference_track_details_by_uuid(
@@ -196,7 +199,7 @@ class SimilarityRepository(BaseRepository[Track]):
                 }
             return None
         except Exception as e:
-            print(f"Error fetching reference track details by UUID: {e}")
+            logger.error(f"Error fetching reference track details by UUID: {e}")
             raise e
 
     async def async_get_track_details_by_paths(
@@ -277,7 +280,7 @@ class SimilarityRepository(BaseRepository[Track]):
             )
 
         except Exception as e:
-            print(f"Error during MariaDB fetch for track details: {e}")
+            logger.error(f"Error during MariaDB fetch for track details: {e}")
             raise e
 
         return details_map
@@ -386,7 +389,7 @@ class SimilarityRepository(BaseRepository[Track]):
             )
 
         except Exception as e:
-            print(f"Error during MariaDB fetch for track details by UUIDs: {e}")
+            logger.error(f"Error during MariaDB fetch for track details by UUIDs: {e}")
             raise e
 
         return details_map
@@ -426,5 +429,5 @@ class SimilarityRepository(BaseRepository[Track]):
             return result.rowcount > 0
         except Exception as e:
             await db.rollback()
-            print(f"Error updating track duration: {e}")
+            logger.error(f"Error updating track duration: {e}")
             raise e

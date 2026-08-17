@@ -25,6 +25,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.track_repository import TrackRepository
 from app.utils.security_utils import sign_secure_url
 from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PreviewService:
@@ -179,7 +182,7 @@ class PreviewService:
             }
             
         except Exception as e:
-            print(f"Error in generate_download_url: {e}")
+            logger.error(f"Error in generate_download_url: {e}")
             return {"success": False, "error": "Internal server error"}
 
     async def _validate_track_exists(self, db: AsyncSession, track_id: str, partner_id: Optional[int] = None) -> bool:
@@ -198,7 +201,7 @@ class PreviewService:
             track = await self.track_repository.async_get_by_uuid(db, track_id, partner_id=partner_id)
             return track is not None
         except Exception as e:
-            print(f"Error validating track existence: {e}")
+            logger.error(f"Error validating track existence: {e}")
             return False
 
     # Future audio processing methods can be added below

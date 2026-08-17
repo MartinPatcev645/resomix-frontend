@@ -33,6 +33,9 @@ from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_analysis_result_repository import TrackAnalysisResultRepository
 from app.repositories.track_artifact_status_repository import TrackArtifactStatusRepository
 from app.repositories.track_repository import TrackRepository
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Reported for a track with no ``track_artifact_status`` row. Not a state the pipeline can write —
 # it means "we have no record", which is true of uploads that predate the table. `unknown` rather
@@ -302,7 +305,7 @@ class TrackService:
             ]
             return {"success": True, "data": data, "total": total}
         except Exception as e:
-            print(f"Error getting user tracks: {e}")
+            logger.error(f"Error getting user tracks: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving tracks",
@@ -352,7 +355,7 @@ class TrackService:
                 ),
             }
         except Exception as e:
-            print(f"Error getting user track detail: {e}")
+            logger.error(f"Error getting user track detail: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while retrieving the track",
@@ -406,7 +409,7 @@ class TrackService:
 
                 purge_uploaded_track_assets.delay(partner_id, uuid)
             except Exception as dispatch_exc:
-                print(f"Failed to enqueue asset purge for track {uuid}: {dispatch_exc}")
+                logger.error(f"Failed to enqueue asset purge for track {uuid}: {dispatch_exc}")
 
             return {
                 "success": True,
@@ -419,7 +422,7 @@ class TrackService:
             }
         except Exception as e:
             await db.rollback()
-            print(f"Error deleting user track: {e}")
+            logger.error(f"Error deleting user track: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while deleting the track",

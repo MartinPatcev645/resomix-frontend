@@ -30,6 +30,9 @@ from app.core.config import settings
 from app.utils.sanitization import csv_safe
 from app.services.admin_operation_log_service import AdminOperationLogService
 from app.models.user import User
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class WaitlistService:
@@ -103,7 +106,7 @@ class WaitlistService:
             }
         except Exception as e:
             await db.rollback()
-            print(f"Error adding email to waitlist: {e}")
+            logger.error(f"Error adding email to waitlist: {e}")
             return {"success": False, "error": "Failed to add email to waitlist"}
 
     async def get_waitlist_entry(self, db: AsyncSession, email: str) -> Dict[str, Any]:
@@ -153,7 +156,7 @@ class WaitlistService:
             }
 
         except Exception as e:
-            print(f"Error retrieving waitlist entry: {e}")
+            logger.error(f"Error retrieving waitlist entry: {e}")
             return {"success": False, "error": "Failed to retrieve waitlist entry"}
 
     async def update_waitlist_status(
@@ -219,7 +222,7 @@ class WaitlistService:
 
         except Exception as e:
             await db.rollback()
-            print(f"Error updating waitlist status: {e}")
+            logger.error(f"Error updating waitlist status: {e}")
             return {"success": False, "error": "Failed to update waitlist status"}
 
     async def get_all_waitlist_entries(
@@ -263,7 +266,7 @@ class WaitlistService:
             }
 
         except Exception as e:
-            print(f"Error retrieving waitlist entries: {e}")
+            logger.error(f"Error retrieving waitlist entries: {e}")
             return {"success": False, "error": "Failed to retrieve waitlist entries"}
 
     def _is_valid_email(self, email: str) -> bool:
@@ -331,7 +334,7 @@ class WaitlistService:
                 return {"success": False, "error": "Waitlist entry not found"}
             return {"success": True, "data": entry}
         except Exception as e:
-            print(f"Error getting waitlist entry by ID: {e}")
+            logger.error(f"Error getting waitlist entry by ID: {e}")
             return {"success": False, "error": "Internal server error"}
 
     async def delete_waitlist_admin(
@@ -380,7 +383,7 @@ class WaitlistService:
                 }
         except Exception as e:
             await db.rollback()
-            print(f"Error deleting waitlist entry: {e}")
+            logger.error(f"Error deleting waitlist entry: {e}")
             return {"success": False, "error": "Internal server error during deletion"}
 
     async def batch_delete_waitlist_admin(
@@ -414,7 +417,7 @@ class WaitlistService:
             }
         except Exception as e:
             await db.rollback()
-            print(f"Error batch deleting waitlist entries: {e}")
+            logger.error(f"Error batch deleting waitlist entries: {e}")
             return {
                 "success": False,
                 "error": "Internal server error during batch deletion",
@@ -470,7 +473,7 @@ class WaitlistService:
                 }
         except Exception as e:
             await db.rollback()
-            print(f"Error updating waitlist status admin: {e}")
+            logger.error(f"Error updating waitlist status admin: {e}")
             return {"success": False, "error": "Internal server error during status update"}
 
     async def export_waitlist_csv_admin(
@@ -535,5 +538,5 @@ class WaitlistService:
             }
         except Exception as e:
             await db.rollback()
-            print(f"Error exporting waitlist CSV: {e}")
+            logger.error(f"Error exporting waitlist CSV: {e}")
             return {"success": False, "error": "Internal server error during CSV export"}

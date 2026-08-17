@@ -24,6 +24,9 @@ import uuid
 from datetime import datetime
 from enum import Enum
 from app.models.playlist import Playlist, PlaylistTrack
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PlaylistWriteDenial(str, Enum):
@@ -319,7 +322,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             }
 
         except Exception as e:
-            print(f"Error creating similarity playlist: {e}")
+            logger.error(f"Error creating similarity playlist: {e}")
             raise e
 
     async def async_fork_playlist(
@@ -443,7 +446,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             )
 
         except Exception as e:
-            print(f"Error forking playlist: {e}")
+            logger.error(f"Error forking playlist: {e}")
             return None
 
     async def async_get_playlist_with_tracks(
@@ -577,7 +580,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             }
 
         except Exception as e:
-            print(f"Error creating similarity playlist: {e}")
+            logger.error(f"Error creating similarity playlist: {e}")
             raise e
 
     def _find_existing(self, db: Session, **kwargs) -> Optional[Playlist]:
@@ -767,7 +770,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             return {"success": True, "old_name": old_name, "denial": None}
 
         except Exception as e:
-            print(f"Error renaming playlist: {e}")
+            logger.error(f"Error renaming playlist: {e}")
             raise e
 
     async def async_make_playlist_public(
@@ -800,7 +803,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             return True, None
 
         except Exception as e:
-            print(f"Error updating playlist visibility: {e}")
+            logger.error(f"Error updating playlist visibility: {e}")
             raise e
 
     async def async_soft_delete_user_playlist(
@@ -1127,7 +1130,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
                         playlist_dict["is_favorite"] = engagement.is_favorite
                 except Exception as e:
                     # If engagement lookup fails, just use defaults (False)
-                    print(f"Error enriching playlist with engagement: {e}")
+                    logger.error(f"Error enriching playlist with engagement: {e}")
 
             response_data = {
                 "queried_track": queried_track,
@@ -1138,7 +1141,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             return response_data
 
         except Exception as e:
-            print(f"Error getting playlist similarity data: {e}")
+            logger.error(f"Error getting playlist similarity data: {e}")
             raise e
 
     async def async_update_type(
@@ -1167,7 +1170,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             return True
 
         except Exception as e:
-            print(f"Error updating playlist type: {e}")
+            logger.error(f"Error updating playlist type: {e}")
             raise e
 
     async def async_get_playlist_hls_data(
@@ -1283,7 +1286,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             return {"playlist_name": playlist.name, "tracks": tracks}
 
         except Exception as e:
-            print(f"Error getting playlist HLS data: {e}")
+            logger.error(f"Error getting playlist HLS data: {e}")
             raise e
 
     # ============================================================================
@@ -1471,7 +1474,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             }
 
         except Exception as e:
-            print(f"Error getting admin playlist list: {e}")
+            logger.error(f"Error getting admin playlist list: {e}")
             raise e
 
     async def async_delete_playlist_admin(
@@ -1507,7 +1510,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
 
         except Exception as e:
             await db.rollback()
-            print(f"Error deleting playlist: {e}")
+            logger.error(f"Error deleting playlist: {e}")
             raise e
 
     async def async_batch_delete_playlists_admin(
@@ -1535,7 +1538,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
 
         except Exception as e:
             await db.rollback()
-            print(f"Error batch deleting playlists: {e}")
+            logger.error(f"Error batch deleting playlists: {e}")
             raise e
 
     async def async_change_playlist_visibility_by_id(
@@ -1568,7 +1571,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
 
         except Exception as e:
             await db.rollback()
-            print(f"Error updating playlist visibility: {e}")
+            logger.error(f"Error updating playlist visibility: {e}")
             raise e
 
     async def async_batch_change_playlist_visibility(
@@ -1600,7 +1603,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
 
         except Exception as e:
             await db.rollback()
-            print(f"Error batch updating playlist visibility: {e}")
+            logger.error(f"Error batch updating playlist visibility: {e}")
             raise e
 
     async def async_get_all_playlists_for_export(
@@ -1740,7 +1743,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             return playlist_list
 
         except Exception as e:
-            print(f"Error getting playlists for export: {e}")
+            logger.error(f"Error getting playlists for export: {e}")
             raise e
 
     async def async_get_playlist_detail_by_uuid_admin(
@@ -2009,7 +2012,7 @@ class PlaylistRepository(BaseRepository[Playlist]):
             }
 
         except Exception as e:
-            print(f"Error getting playlist detail by UUID: {e}")
+            logger.error(f"Error getting playlist detail by UUID: {e}")
             raise e
 
     async def async_get_all_user_playlists(
@@ -2354,5 +2357,5 @@ class PlaylistRepository(BaseRepository[Playlist]):
             return playlist_list, total
 
         except Exception as e:
-            print(f"Error getting all user playlists: {e}")
+            logger.error(f"Error getting all user playlists: {e}")
             raise e

@@ -24,6 +24,9 @@ from typing import Dict, List, Any
 from app.core.config import settings
 from app.repositories.playlist_repository import PlaylistRepository
 from app.api.dependencies.database import get_database_session
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SimilaritySegmentService:
@@ -94,7 +97,7 @@ class SimilaritySegmentService:
                     await self._mark_playlist_ready(playlist_id)
                 
         except Exception as e:
-            print(f"[SEGMENT] Error calling segment preview endpoint for playlist {playlist_id}: {e}")
+            logger.error(f"[SEGMENT] Error calling segment preview endpoint for playlist {playlist_id}: {e}")
             # Save error log
             error_data = {
                 "status": "error",
@@ -130,7 +133,7 @@ class SimilaritySegmentService:
             print(f"[SEGMENT] Response saved to {log_file}")
             
         except Exception as e:
-            print(f"[SEGMENT] Error saving response for playlist {playlist_id}: {e}")
+            logger.error(f"[SEGMENT] Error saving response for playlist {playlist_id}: {e}")
 
     async def handle_segment_preview_workflow(
         self, 
@@ -155,7 +158,7 @@ class SimilaritySegmentService:
             # Wait for segment preview response (main blocking operation)
             await self.call_segment_preview_endpoint(uuids, playlist_id)
         except Exception as e:
-            print(f"[SEGMENT] Error in segment preview workflow: {e}")
+            logger.error(f"[SEGMENT] Error in segment preview workflow: {e}")
 
     async def _mark_playlist_ready(self, playlist_uuid: str) -> None:
         """Update playlist type to similarity once segment processing done."""
@@ -169,7 +172,7 @@ class SimilaritySegmentService:
                     await db.commit()
                 break
         except Exception as e:
-            print(f"[SEGMENT] Error marking playlist ready: {e}")
+            logger.error(f"[SEGMENT] Error marking playlist ready: {e}")
 
     async def _delayed_mark_ready(self, playlist_id: str, delay: float):
         """Sleep for delay seconds then mark playlist ready."""
