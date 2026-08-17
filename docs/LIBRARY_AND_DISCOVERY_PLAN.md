@@ -830,12 +830,35 @@ Deferred deliberately: it is a product decision, and building early means rebuil
       *Item 5 — research findings* above
 - [x] 74. Come back with options and examples **before building anything** — done; recommendation is
       **A + B** (named bands + rank), with C struck out because it was already built and reverted
-- [ ] 75. Implement the chosen approach — ⏸️ **blocked on three decisions**: which option, the band
-      names (user-facing, so possibly George's call), and the band cuts
-- [ ] 76. Update the tooltip that currently apologises for the tight band
+- [x] 75. Implement the chosen approach — ✅ **DECIDED (George, 2026-08-14): ten round dots.**
+      Options A/B/C were set aside; the brand review offered square segments, a level meter and a
+      notched rail as more literal fits for a radius-0 system, and round dots were chosen anyway.
+      **Every filled dot is the accent on every row**, not just rank 1 — the count already says
+      which is best, so tinting one row said it twice and made the rest look inactive
+- [x] 75a. **The mapping**, also approved: `≥0.95 → 10` · `0.46–0.95 → 3–10` · `<0.46 → 1–3`.
+      Stretched rather than linear because `score × 10` would only ever use dots 5–9 — ten dots
+      doing the work of five — and floored at 3 because nothing in the catalogue is genuinely a 1/10
+- [x] 75b. **New:** applied on mobile as well, in a compact variant. The mobile table had its own
+      copy of the percentage and would otherwise have kept it
+- [x] 76. Update the tooltip that currently apologises for the tight band → *"Ten dots · how close
+      each track is to your reference"*. There is nothing left to excuse
 
-**Tests**
-- [ ] 77. No percentage string reaches the DOM
+**Tests** — `pnpm --filter webapp test:pure`
+- [x] 77. No percentage string reaches the DOM — asserted on both tables, matching the `* 100` /
+      `formatPercentage` calls that actually built the string rather than the word "percent"
+- [x] 77a. **New:** the scale is monotonic and every one of the ten values is reachable. A boundary
+      edited in isolation silently costs the meter resolution — ten dots rendering six values
+- [x] 77b. **New:** junk input (`null`, `NaN`, `Infinity`, negative, `42`) still renders a valid
+      meter. `score` is optional on the track type and comes from the API
+- [x] 77c. **New:** 14 tests, sabotage-verified. Two guards survived their own sabotage — a
+      redundant `>= CEILING` early return and a redundant low-band clamp. Both were **removed**
+      rather than papered over with a test: a branch no test can distinguish from its absence is
+      code that cannot be verified, and an invitation to "simplify" it into something different
+
+⚠️ **Out of scope, deliberately.** The analysis page's genre-confidence percentages
+(`charts.tsx`, `AnalysisPage.tsx`) and the admin tables are untouched — different model output, and
+in admin's case an internal surface where precision is appropriate. The same critique may apply to
+the genre scores; that is its own decision.
 
 
 ---
