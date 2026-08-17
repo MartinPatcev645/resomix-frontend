@@ -84,7 +84,15 @@ async def test_admin_feedback_secondary():
     mock_controller.delete_feedback_admin = AsyncMock(return_value={"success": True, "message": "ok"})
     mock_controller.batch_delete_feedback_admin = AsyncMock(return_value={"success": True, "deleted_count": 2, "message": "ok"})
 
-    with patch("app.api.routers.admin.feedback.feedback_controller", mock_controller):
+    # GET /{id} no longer goes through the controller: it was rewritten to call
+    # SubmissionDetailService directly (it joins the submitter, which the controller never did).
+    # The mock below was therefore inert — the real service ran, found no feedback with id 1 in
+    # the test DB, and returned 404. Patch what the route ACTUALLY calls.
+    with patch("app.api.routers.admin.feedback.feedback_controller", mock_controller), \
+         patch(
+             "app.services.submission_detail_service.SubmissionDetailService.feedback",
+             AsyncMock(return_value=feedback_data),
+         ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
             headers = dict(ADMIN)

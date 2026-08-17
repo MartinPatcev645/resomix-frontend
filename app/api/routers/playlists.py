@@ -25,7 +25,11 @@ from app.controllers.playlist_controller import PlaylistController
 from app.controllers.playlist_export_controller import PlaylistExportController
 from app.controllers.playlist_embed_controller import PlaylistEmbedController
 from app.repositories.playlist_repository import DENIAL_MESSAGES, DENIAL_STATUS
-from app.api.dependencies.auth import get_current_user_optional, get_current_user
+from app.api.dependencies.auth import (
+    get_current_user,
+    get_current_user_optional,
+    get_current_user_or_anonymous,
+)
 from app.api.dependencies.partner import get_current_partner, get_public_partner
 from app.api.dependencies.database import get_database_session
 from app.models.user import User
@@ -285,16 +289,21 @@ async def get_playlist_similarity_endpoint(
     playlist_id: str,
     db: AsyncSession = Depends(get_database_session),
     partner: Partner = Depends(get_public_partner),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    # `_or_anonymous`, NOT `_optional`. This is the SHARED-LINK endpoint: a public playlist must
+    # open for anyone holding the URL, so a stale token in the visitor's browser cannot be allowed
+    # to turn into a 401. It used to, and the frontend rendered that as "Playlist is Private" —
+    # a public playlist, refused to a visitor who needed no account. Identity here only decides
+    # whether a PRIVATE playlist is visible to its owner and how much detail a guest is shown.
+    current_user: Optional[User] = Depends(get_current_user_or_anonymous)
 ) -> JSONResponse:
     """
     Get playlist with similarity data formatted like similarity endpoints.
-    
+
     Returns the same format as similarity endpoints including queried track,
     similar tracks with scores, and playlist information.
-    
+
     - **playlist_id**: The UUID of the playlist to retrieve
-    
+
     Note: JWT authenticated users can access their own private playlists.
     """
     return await playlist_controller.get_playlist_similarity_data(db, request, playlist_id, current_user)

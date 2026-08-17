@@ -1,4 +1,5 @@
 import time
+import uuid
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -27,6 +28,16 @@ class TimingMiddleware(BaseHTTPMiddleware):
         from app.core.error_context import reset_error
 
         reset_error()
+
+        # One id per request, generated in the OUTERMOST middleware so everything downstream —
+        # controllers, exception handlers, the 5xx safety net — can stamp the same value. Before
+        # this, rows written by the exception handlers had an empty Correlation ID, so a user
+        # reporting "it failed at 16:34" could not be tied to a specific row, and a single failed
+        # request that logged from two places looked like two unrelated events.
+        correlation_id = request.headers.get("X-Correlation-ID") or uuid.uuid4().hex
+        request.state.correlation_id = correlation_id
+        request.state.started_at = time.perf_counter()
+
         start = time.perf_counter()
         try:
             response = await call_next(request)
@@ -34,12 +45,27 @@ class TimingMiddleware(BaseHTTPMiddleware):
             # If an unhandled exception bubbles up, log it and re-raise so existing exception
             # handlers can take over.
             dur = time.perf_counter() - start
-            file_logger.error(f"{request.method} {request.url.path} ERROR {dur:.3f}s {exc}")
+            file_logger.error(
+                f"{request.method} {request.url.path} ERROR {dur:.3f}s cid={correlation_id} {exc}"
+            )
             raise
 
         dur = time.perf_counter() - start
         # Add header for clients / upstream services
         response.headers["X-Process-Time"] = f"{dur:.3f}s"
+        # Echo the id so a user can quote it in a report and support can find the exact row.
+        response.headers["X-Correlation-ID"] = correlation_id
+
+        # Feed the watchdog. Counting happens for every 4xx/5xx; the watchdog decides what is a
+        # spike. Deliberately fire-and-forget and exception-proof — telemetry must never be able
+        # to change the outcome of a request.
+        if response.status_code >= 400:
+            try:
+                from app.services.watchdog_service import record_error_status
+
+                await record_error_status(response.status_code)
+            except Exception:  # pragma: no cover - never let counting break a response
+                pass
 
         # Decide log level based on duration and status
         metrics = snapshot()

@@ -52,6 +52,7 @@ from app.db.redis import init_redis_pool, close_redis_pool
 from app.services.cleanup_worker import start_session_cleanup_worker
 from app.services.telemetry_worker import start_telemetry_flush_worker
 from app.services.quota_worker import start_quota_sync_worker
+from app.services.watchdog_service import start_watchdog_worker
 import asyncio
 
 # Import FFmpeg check utility
@@ -83,6 +84,21 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             success=False, error="Validation failed", data={"details": details}
         ),
     )
+
+
+def _elapsed_ms(request: Request) -> float | None:
+    """Milliseconds since TimingMiddleware saw the request, or None if it never did.
+
+    The admin Logs page showed "Duration —" on every exception-handler row because the handlers
+    never passed one; the value was available on request.state the whole time.
+    """
+    started = getattr(request.state, "started_at", None)
+    if started is None:
+        return None
+    try:
+        return round((time.perf_counter() - started) * 1000, 2)
+    except Exception:  # pragma: no cover
+        return None
 
 
 def _classify_http_exception(request: Request, status_code: int) -> tuple[str, str]:
@@ -117,6 +133,24 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     # unauthenticated hits) is filterable and doesn't drown out real errors on the Logs page.
     is_server_error = exc.status_code >= 500
     category, action = _classify_http_exception(request, exc.status_code)
+
+    # A trace for 4xx as well, EXCEPT scanner noise.
+    #
+    # These used to be logged with no trace on the grounds that a 4xx is "expected". In practice
+    # that produced rows like `HTTP 401: Could not validate credentials` with no way to tell WHY
+    # the token failed or where it was rejected — unactionable, and it hid a real bug for days
+    # (an expired token 401ing a PUBLIC playlist, which the frontend then showed as "Playlist is
+    # Private"). `raise ... from exc` at the raise sites means __cause__ carries the underlying
+    # error, so the trace names the actual failure. Probes are excluded: a vulnerability scanner
+    # hitting /wp-login is noise, and a stack trace per probe is just cost.
+    want_trace = category != "NOISE"
+    stack = None
+    if want_trace:
+        try:
+            stack = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+        except Exception:  # pragma: no cover — logging must never break the response
+            stack = None
+
     logging_service.log(
         level="ERROR" if is_server_error else "WARNING",
         category=category,
@@ -124,9 +158,12 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         message=f"HTTP {exc.status_code}: {exc.detail}",
         request=request,
         status_code=exc.status_code,
-        # Only attach an exception/stack trace for genuine server errors — expected 4xx
-        # (probes, auth failures) don't need one.
-        error=exc if is_server_error else None,
+        # Set by TimingMiddleware, so the row can be matched to the X-Correlation-ID header the
+        # client received — which is how a user report becomes a specific row.
+        correlation_id=getattr(request.state, "correlation_id", None),
+        duration_ms=_elapsed_ms(request),
+        error=exc,
+        stack_trace=stack,
     )
 
     # For 500 internal server errors, never expose the detail to the client
@@ -167,6 +204,8 @@ async def general_exception_handler(request: Request, exc: Exception):
             message=f"Unhandled {exc.__class__.__name__}: {str(exc)}",
             request=request,
             status_code=500,
+            correlation_id=getattr(request.state, "correlation_id", None),
+            duration_ms=_elapsed_ms(request),
             error=exc,
             # Build the trace from the exception itself (robust regardless of exc_info state).
             stack_trace="".join(
@@ -251,6 +290,14 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
 
     # Start the Quota Sync background worker task
     print("Application startup: Starting Quota Sync Worker...")
+    # Watchdog: notices failure SPIKES. Everything needed to investigate an incident already
+    # existed; nothing noticed one. Safe to run alongside multiple uvicorn workers — it takes a
+    # Redis lock per tick, so only one instance evaluates and only one email is sent.
+    print("Application startup: Starting Watchdog Worker...")
+    app_instance.state.watchdog_worker_task = asyncio.create_task(
+        start_watchdog_worker()
+    )
+
     app_instance.state.quota_sync_worker_task = asyncio.create_task(
         start_quota_sync_worker()
     )
@@ -290,6 +337,14 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
             await app_instance.state.quota_sync_worker_task
         except asyncio.CancelledError:
             pass
+
+    if hasattr(app_instance.state, "watchdog_worker_task"):
+        app_instance.state.watchdog_worker_task.cancel()
+        try:
+            await app_instance.state.watchdog_worker_task
+        except asyncio.CancelledError:
+            pass
+        print("Watchdog Worker stopped.")
         print("Quota Sync Worker stopped.")
 
     # Close Redis connection pool

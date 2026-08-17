@@ -173,6 +173,15 @@ async def _async_run_similarity_upload(
             await TrackArtifactStatusRepository.set_analysis_state(
                 track_id, ARTIFACT_UNAVAILABLE, error=_ANALYSIS_SKIPPED_TEXT
             )
+            # Telemetry LAST, after everything the user can see has been recorded. A background
+            # job failing is otherwise invisible — no status code, no user-facing error, nothing
+            # in the access log — so a run of them would go unnoticed exactly as the 524s did.
+            try:
+                from app.services.watchdog_service import record_job_failure
+
+                await record_job_failure("similarity_upload")
+            except Exception:  # pragma: no cover — counting must not affect the job
+                pass
         try:
             if audio_spool_path and os.path.exists(audio_spool_path):
                 os.remove(audio_spool_path)

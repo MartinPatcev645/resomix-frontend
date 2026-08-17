@@ -144,14 +144,18 @@ async def test_check_export_by_plan():
         g = await gate.check_export(db, "spotify", visitor_id="vid_" + uuid.uuid4().hex)
         assert g.allowed is False and g.reason == "login_required"
 
-        # free user: can_export true but export_targets empty → external target denied (upgrade)
+        # free user: targets are "txt,apple" (pricing v2.1) → apple allowed, spotify denied.
+        # Spotify was deliberately removed from EVERY plan in e7b8c9d0f1a2: the transfer is not
+        # live, and advertising a capability that does not work is worse than not offering it.
         f = await gate.check_export(db, "spotify", user=free_user)
         assert f.allowed is False and f.reason == "upgrade_required"
+        assert (await gate.check_export(db, "apple", user=free_user)).allowed is True
 
-        # basic-tier user: targets = spotify,apple → spotify + apple allowed, tidal denied
+        # basic-tier user: targets = "txt,apple" → txt + apple allowed, spotify/tidal denied.
         u = await _reload_user(db, basic_user.id)  # now carries plan_id
-        assert (await gate.check_export(db, "spotify", user=u)).allowed is True
+        assert (await gate.check_export(db, "txt", user=u)).allowed is True
         assert (await gate.check_export(db, "apple", user=u)).allowed is True
+        assert (await gate.check_export(db, "spotify", user=u)).allowed is False
         assert (await gate.check_export(db, "tidal", user=u)).allowed is False
 
 
@@ -172,8 +176,17 @@ async def test_spotify_transfer_denied_for_free_user_endpoint():
 
 
 @pytest.mark.asyncio
-async def test_apple_transfer_denied_for_free_user_endpoint():
-    """A free user hitting the Apple Music transfer endpoint is denied (before any Apple call)."""
+async def test_apple_transfer_ALLOWED_for_free_user_endpoint():
+    """A free user reaches the Apple Music transfer endpoint — the plan gate does NOT stop them.
+
+    This test previously asserted a 403. Pricing v2.1 (migration e7b8c9d0f1a2) gave free
+    `export_targets = "txt,apple"`, deliberately: "free gains TXT and Apple Music export". The
+    denial it was pinning is now the wrong behaviour, so the assertion is inverted rather than
+    deleted — what matters is that the ENTITLEMENT gate lets them through.
+
+    A random playlist id then 404s, which is the proof: the request got past the gate and failed
+    on the resource, not on the plan.
+    """
     from app.main import app
     user = await create_user()
     transport = ASGITransport(app=app)
@@ -183,8 +196,8 @@ async def test_apple_transfer_denied_for_free_user_endpoint():
             headers={**auth_headers(user), "X-API-KEY": settings.api_key},
             json={"playlist_id": str(uuid.uuid4()), "music_user_token": "dummy-token-123"},
         )
-    assert res.status_code == 403
-    assert res.json().get("reason") == "upgrade_required"
+    assert res.status_code != 403, "free plan now includes apple export — it must not be gated"
+    assert res.json().get("reason") != "upgrade_required"
 
 
 # --------------------------------------------------------------------------- #

@@ -119,10 +119,19 @@ def test_delete_account(auth_headers, test_user_data):
     response = requests.delete(f"{BASE_URL}/users/me", json=delete_payload, headers=auth_headers)
     assert response.status_code == 200
     
-    # Verify login fails
+    # Verify login fails.
+    #
+    # 403, not 401. Deleting an account no longer hard-deletes the row — the account-lifecycle
+    # work made it a DEACTIVATION followed by a scheduled scrub, so the user still exists and the
+    # password still matches. Login therefore gets past credential checking and is refused on
+    # `is_active` instead, which is a 403 carrying a reason the frontend can act on. Asserting
+    # 401 here was asserting that the row had vanished.
+    #
+    # What matters is unchanged and still pinned: the deleted account CANNOT log in.
     login_payload = {
         "email_or_username": test_user_data["email"],
         "password": test_user_data["password"]
     }
     login_res = requests.post(f"{BASE_URL}/auth/login", json=login_payload)
-    assert login_res.status_code == 401
+    assert login_res.status_code == 403
+    assert "access_token" not in login_res.text

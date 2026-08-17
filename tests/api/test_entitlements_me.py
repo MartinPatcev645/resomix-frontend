@@ -37,7 +37,7 @@ async def test_guest_entitlements():
     data = res.json()["data"]
     assert data["is_frontend"] is True and data["is_guest"] is True
     assert data["plan"]["code"] == "guest"
-    assert data["entitlements"][FeatureKey.SEARCH_PLAYLISTS_PER_MONTH] == 5   # guest seed (monthly)
+    assert data["entitlements"][FeatureKey.SEARCH_PLAYLISTS_PER_MONTH] == 3   # guest seed (pricing v2.1: DAILY)
     assert data["entitlements"][FeatureKey.DROPDOWN_MAX_TRACKS] == 20
     # Never leak the server-derived identity.
     assert "visitor_id" not in data
@@ -52,7 +52,7 @@ async def test_logged_in_free_user_entitlements():
     data = res.json()["data"]
     assert data["is_guest"] is False
     assert data["plan"]["code"] == "free"
-    assert data["entitlements"][FeatureKey.SEARCH_PLAYLISTS_PER_MONTH] == 15   # free seed (monthly)
+    assert data["entitlements"][FeatureKey.SEARCH_PLAYLISTS_PER_MONTH] == 3   # free seed (pricing v2.1: DAILY)
 
 
 @pytest.mark.asyncio

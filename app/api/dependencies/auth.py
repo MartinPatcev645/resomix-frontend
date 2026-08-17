@@ -308,6 +308,41 @@ async def get_current_user_optional(
         )
 
 
+async def get_current_user_or_anonymous(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_database_session),
+) -> Optional[User]:
+    """Identify the caller if possible; otherwise treat them as a guest. Never 401s.
+
+    For endpoints serving a PUBLICLY READABLE resource, where "who are you" only decides how much
+    detail to show — not whether access is allowed at all.
+
+    Why this exists
+    ---------------
+    ``get_current_user_optional`` returns 401 when a token is present but invalid or expired. That
+    is right for an endpoint where identity changes what you may do. It is wrong for a public one,
+    and it produced a real, user-visible bug:
+
+      A user opens a SHARED, PUBLIC playlist. Their browser still holds an expired access token,
+      so it is sent. The endpoint 401s instead of serving the public playlist to a guest. The
+      frontend's auth client cannot refresh (the refresh cookie is dead too), rejects the request,
+      and the page renders "Playlist is Private" — for a playlist that is public, to a visitor who
+      needed no account at all.
+
+      Observed 2026-08-16 on `/api/v1/playlists/similarity/ac779c6b-…`: two devices, one IP,
+      twenty minutes apart, both `401 Could not validate credentials`.
+
+    A 403 from ``assert_active`` (deactivated account) is deliberately NOT swallowed — that is a
+    decision about the account, not a failure to identify it, and it must keep propagating.
+    """
+    try:
+        return await get_current_user_optional(token=token, db=db)
+    except HTTPException as exc:
+        if exc.status_code == HTTP_401_UNAUTHORIZED:
+            return None
+        raise
+
+
 # ============================================================================
 # RBAC & Permission Enforcement (New - Part 1)
 # ============================================================================

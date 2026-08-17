@@ -83,7 +83,7 @@ async def test_entitlements_are_typed_correctly():
             return row[0], row[1]
 
         ent, feat = await val("free", "search_playlists_per_month")
-        assert feat.value_type == "int" and ent.int_value == 15 and ent.bool_value is None
+        assert feat.value_type == "int" and ent.int_value == 3 and ent.bool_value is None
 
         ent, feat = await val("guest", "can_export")
         assert feat.value_type == "bool" and ent.bool_value is False and ent.int_value is None

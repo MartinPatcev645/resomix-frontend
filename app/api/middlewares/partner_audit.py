@@ -18,8 +18,15 @@ class PartnerAuditMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         start = time.perf_counter()
 
-        # Assign a correlation_id early so it can be read by route handlers
-        correlation_id = str(uuid.uuid4())
+        # ADOPT the request's correlation id; only mint one if nothing upstream did.
+        #
+        # TimingMiddleware is the outermost middleware and sets this on the way in, so under
+        # normal operation that value is already here. Generating a second one unconditionally
+        # gave the request TWO ids: this one went into partner_usage_logs, while the OUTER
+        # middleware overwrote the X-Correlation-ID response header with its own — so the id a
+        # partner quoted from a response matched no row we could find. Same id everywhere, or
+        # the id is worthless.
+        correlation_id = getattr(request.state, "correlation_id", None) or str(uuid.uuid4())
         request.state.correlation_id = correlation_id
 
         response = await call_next(request)

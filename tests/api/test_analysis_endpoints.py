@@ -128,8 +128,34 @@ async def test_status_upstream_fault_still_502() -> None:
 
 
 # --- token mint ------------------------------------------------------------- #
+async def _make_pro(user) -> None:
+    """Put `user` on the Pro plan.
+
+    Minting a retrieval token is deliberately gated on `can_view_full_analysis` — the token buys
+    the RAW cached JSON straight from the analysis service, with Alwyzon not in the request at
+    all, so it is the bypass path for that entitlement. A free owner is correctly refused; this
+    test is about the OWNER check, so it needs a plan that is allowed through the gate.
+    """
+    from sqlalchemy import select
+
+    from app.core.entitlement_keys import PlanCode
+    from app.models.plan import Plan
+    from app.models.user import User as UserModel
+
+    token = admin_context.set(True)
+    try:
+        async with AsyncSessionLocal() as db:
+            plan = (await db.execute(select(Plan).where(Plan.code == PlanCode.PRO))).scalar_one()
+            row = await db.get(UserModel, user.id)
+            row.plan_id = plan.id
+            await db.commit()
+    finally:
+        admin_context.reset(token)
+
+
 async def test_mint_token_owner_ok() -> None:
     user = await create_user()
+    await _make_pro(user)
     track = await create_track(user_id=user.id, partner_id=1)
     aid = await _seed_analysis(user_id=user.id, track_id=track.id)
     async with await _client() as ac:
@@ -152,6 +178,23 @@ async def test_mint_token_forbidden_for_other_user() -> None:
     async with await _client() as ac:
         res = await ac.post(f"/api/v1/analysis/{aid}/token", headers={**auth_headers(other), "X-API-KEY": settings.api_key})
     assert res.status_code == 403, res.text
+
+
+async def test_mint_token_denied_for_free_owner() -> None:
+    """A FREE owner is refused — the mint is the bypass path for `can_view_full_analysis`.
+
+    This was untested. Only the happy path existed, and when the entitlement gate was added the
+    happy-path test started failing while the behaviour the gate exists FOR had no coverage at
+    all. Gating `get_result` but leaving the mint open would put the full dashboard one extra
+    call away for everyone, so this is the assertion that matters.
+    """
+    user = await create_user()  # free plan, deliberately not upgraded
+    track = await create_track(user_id=user.id, partner_id=1)
+    aid = await _seed_analysis(user_id=user.id, track_id=track.id)
+    async with await _client() as ac:
+        res = await ac.post(f"/api/v1/analysis/{aid}/token", headers={**auth_headers(user), "X-API-KEY": settings.api_key})
+    assert res.status_code == 402, res.text
+    assert res.json().get("reason") == "upgrade_required"
 
 
 # --- upload front-door + poll proxy ----------------------------------------- #

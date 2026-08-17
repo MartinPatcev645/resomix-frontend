@@ -158,7 +158,12 @@ async def test_waitlist_status_not_found(client):
 async def test_waitlist_public_access(client):
     """POST /api/v1/waitlist/ is public: guests join anonymously (→ System Partner 1). The
     retired static API key is no longer required (or accepted) for this frontend surface."""
-    payload = {"email": "nokey@test.com"}
+    # Unique per run, like WAITLIST_EMAIL above. A hardcoded address only passed because the
+    # session cleanup fixture deleted the row afterwards: run the suite once with
+    # RESOMIX_SKIP_TEST_CLEANUP=1 (which is the documented way to run pure unit tests without
+    # touching a developer's data) and the address is already taken, so this returns 422 and the
+    # test fails for a reason that has nothing to do with public access.
+    payload = {"email": f"nokey_{uuid.uuid4().hex[:8]}@resomix-test.com"}
     response = await client.post("/api/v1/waitlist/", json=payload)
     assert response.status_code in (200, 201)
 

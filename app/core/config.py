@@ -516,6 +516,29 @@ class Settings(BaseModel):
         default=15, description="How long an account stays locked after too many failed logins"
     )
 
+    # Watchdog — threshold alerting on failure spikes (app/services/watchdog_service.py).
+    # Defaults are deliberately loose: an alert that fires on ordinary traffic gets muted, and a
+    # muted alert is worse than none. Tighten once real baselines are known.
+    watchdog_enabled: bool = Field(default=True, description="Enable the failure-spike watchdog")
+    watchdog_interval_seconds: int = Field(
+        default=300, description="How often the watchdog evaluates its counters"
+    )
+    watchdog_window_minutes: int = Field(
+        default=5, description="Rolling window the watchdog sums over"
+    )
+    watchdog_5xx_threshold: int = Field(
+        default=25, description="5xx responses in the window before an incident is raised"
+    )
+    watchdog_4xx_threshold: int = Field(
+        default=200, description="4xx responses in the window before an incident is raised"
+    )
+    watchdog_job_failure_threshold: int = Field(
+        default=5, description="Background-job failures in the window before an incident"
+    )
+    watchdog_cooldown_minutes: int = Field(
+        default=30, description="Silence for an ONGOING incident; cleared as soon as it recovers"
+    )
+
     # Rate Limiting
     rate_limit_enabled: bool = Field(
         default=True, description="Enable rate limiting for auth endpoints"
@@ -791,6 +814,13 @@ class Settings(BaseModel):
             "PASSWORD_RESET_RATE_LIMIT": "password_reset_rate_limit",
             "LOGIN_MAX_FAILED_ATTEMPTS": "login_max_failed_attempts",
             "LOGIN_LOCKOUT_MINUTES": "login_lockout_minutes",
+            "WATCHDOG_ENABLED": "watchdog_enabled",
+            "WATCHDOG_INTERVAL_SECONDS": "watchdog_interval_seconds",
+            "WATCHDOG_WINDOW_MINUTES": "watchdog_window_minutes",
+            "WATCHDOG_5XX_THRESHOLD": "watchdog_5xx_threshold",
+            "WATCHDOG_4XX_THRESHOLD": "watchdog_4xx_threshold",
+            "WATCHDOG_JOB_FAILURE_THRESHOLD": "watchdog_job_failure_threshold",
+            "WATCHDOG_COOLDOWN_MINUTES": "watchdog_cooldown_minutes",
             # CORS allowed origins (value may be a JSON array or comma-separated)
             "RESOMIX_ALLOWED_ORIGINS_PRODUCTION": "allowed_origins_production",
             "RESOMIX_ALLOWED_ORIGINS_DEVELOPMENT": "allowed_origins_development",
@@ -808,7 +838,7 @@ class Settings(BaseModel):
             env_value = os.getenv(env_key)
             if env_value is not None:
                 # Handle boolean conversion
-                if config_key in ["demo_mode", "similarity_auth_required", "rate_limit_enabled", "stripe_automatic_tax_enabled", "elasticsearch_enabled", "es_verify_certs", "cf_access_enabled"]:
+                if config_key in ["demo_mode", "similarity_auth_required", "rate_limit_enabled", "stripe_automatic_tax_enabled", "elasticsearch_enabled", "es_verify_certs", "cf_access_enabled", "watchdog_enabled"]:
                     env_overrides[config_key] = env_value.lower() in (
                         "true",
                         "1",
@@ -834,6 +864,12 @@ class Settings(BaseModel):
                     "system_partner_id",
                     "login_max_failed_attempts",
                     "login_lockout_minutes",
+                    "watchdog_interval_seconds",
+                    "watchdog_window_minutes",
+                    "watchdog_5xx_threshold",
+                    "watchdog_4xx_threshold",
+                    "watchdog_job_failure_threshold",
+                    "watchdog_cooldown_minutes",
                     "system_log_retention_days",
                     "session_ip_retention_days",
                     "invoice_retention_years",

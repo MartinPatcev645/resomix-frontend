@@ -15,7 +15,9 @@ from typing import Optional, Dict, Any
 import secrets
 import re
 from passlib.context import CryptContext
-from jose import JWTError, jwt
+from jose import ExpiredSignatureError, JWTError, jwt
+# JWTClaimsError is exported from jose.exceptions, not the package root, in this version.
+from jose.exceptions import JWTClaimsError
 from fastapi import HTTPException, status
 
 from app.core.config import settings
@@ -153,12 +155,32 @@ def decode_token(token: str) -> Dict[str, Any]:
             algorithms=[settings.jwt_algorithm]
         )
         return payload
-    except JWTError:
+    # One `except JWTError` for all three cases produced a single, useless log line: an admin
+    # looking at "HTTP 401: Could not validate credentials" could not tell an ordinary expired
+    # session from a wrong signing key or a malformed token — three problems with completely
+    # different responses. `raise ... from exc` keeps the original error as __cause__, so the
+    # stack trace recorded by the exception handler names the real failure.
+    except ExpiredSignatureError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            # Safe to disclose and useful: it tells the client to refresh rather than re-login.
+            detail="Access token has expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+    except JWTClaimsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token claims are invalid",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+    except JWTError as exc:
+        # Bad signature or malformed token. Deliberately vague to the CLIENT (revealing which
+        # would help someone forge one) but the cause is preserved for the log.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from exc
 
 
 # ============================================================================

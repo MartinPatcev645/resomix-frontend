@@ -102,7 +102,11 @@ async def test_logged_in_daily_gate_peek_and_record():
         res = await ev.check(db, user_id=user.id, operation_code="playlist_create")
 
     assert res.allowed is False
-    assert res.status_code == 403
+    # 402, not 403. A spent allowance is not "you may never do this" — the request is well-formed
+    # and the caller is authenticated, they have simply used up something that comes back. The
+    # evaluator was changed to 402 so the frontend can show a quota/upgrade prompt instead of a
+    # permission error; this expectation was left behind at 403.
+    assert res.status_code == 402
     assert res.reason == "upgrade_required"
 
 
