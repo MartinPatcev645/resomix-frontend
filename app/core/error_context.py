@@ -41,8 +41,18 @@ import traceback
 from contextvars import ContextVar
 from typing import Any, Dict, Optional
 
-# Set by the filter below; read and cleared by the middleware when it writes the 5xx row.
-_last_error: ContextVar[Optional[Dict[str, Any]]] = ContextVar("_last_error", default=None)
+# A MUTABLE BOX, not the value itself — and that distinction is the whole mechanism.
+#
+# `TimingMiddleware` is a `BaseHTTPMiddleware`, which runs the downstream app in a CHILD TASK with
+# a COPIED context. Rebinding a ContextVar inside that task (`_last_error.set(...)`) is invisible
+# to the middleware that reads it afterwards, so `take_error()` returned None on every request and
+# every "returned 500" row was written with no detail attached — for the entire life of this
+# module. Verified directly: set a ContextVar inside the route, read it in the middleware, get None.
+#
+# Copying a context copies the REFERENCE. So the middleware puts a fresh dict in the box at the
+# start of the request, the child task inherits that same dict, and MUTATING it is visible to both.
+# Never rebind this from inside the app — mutate what is already there.
+_error_box: ContextVar[Optional[Dict[str, Any]]] = ContextVar("_error_box", default=None)
 
 
 def record_current_exception() -> None:
@@ -57,25 +67,28 @@ def record_current_exception() -> None:
     exc_type, exc_value, _tb = sys.exc_info()
     if exc_type is None:
         return
-    if _last_error.get() is not None:
+    box = _error_box.get()
+    if box is None:
+        # No request in flight (a background task, a worker, a test) — nothing is going to read
+        # this, and creating a box here would rebind in a context nobody else can see.
         return
+    if box:
+        return  # first exception wins
     try:
-        _last_error.set(
-            {
-                "type": exc_type.__name__,
-                "message": str(exc_value)[:2000],
-                "traceback": traceback.format_exc()[:12000],
-            }
-        )
+        box["type"] = exc_type.__name__
+        box["message"] = str(exc_value)[:2000]
+        box["traceback"] = traceback.format_exc()[:12000]
     except Exception:  # noqa: BLE001 — capturing diagnostics must never itself fail a request
         pass
 
 
 def take_error() -> Optional[Dict[str, Any]]:
     """Read and clear the captured exception."""
-    value = _last_error.get()
-    if value is not None:
-        _last_error.set(None)
+    box = _error_box.get()
+    if not box:
+        return None
+    value = dict(box)
+    box.clear()   # clear IN PLACE — rebinding would not be seen by the other task
     return value
 
 
@@ -85,7 +98,9 @@ def reset_error() -> None:
     Worker threads and tasks can inherit a context, so without this a later request could report a
     traceback belonging to an earlier one — a misleading log is worse than a missing one.
     """
-    _last_error.set(None)
+    # A NEW dict each request, bound in the middleware's own context, so the child task inherits
+    # this exact object. Reusing one global dict would leak one request's traceback into the next.
+    _error_box.set({})
 
 
 class ExceptionCaptureHandler(logging.Handler):
