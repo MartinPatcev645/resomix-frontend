@@ -36,7 +36,10 @@ export const PlaylistCoverEditor: React.FC<PlaylistCoverEditorProps> = ({
   onUpdated,
   onError,
 }) => {
-  const { coverUrl, isUploading, validateOriginal, upload } = usePlaylistCover(playlistUuid, hasCustomCover);
+  const { coverUrl, isUploading, isPreparing, prepare, upload } = usePlaylistCover(playlistUuid, hasCustomCover);
+  // One busy flag for the two stages the user experiences as "working": downscaling the picked photo
+  // and uploading the crop.
+  const isBusy = isUploading || isPreparing;
   const inputRef = React.useRef<HTMLInputElement | null>(null);
   // Object URL of the picked (pre-crop) image; non-null opens the crop modal.
   const [cropSrc, setCropSrc] = React.useState<string | null>(null);
@@ -49,7 +52,7 @@ export const PlaylistCoverEditor: React.FC<PlaylistCoverEditorProps> = ({
   };
 
   const handlePick = () => {
-    if (isUploading) return;
+    if (isBusy) return;
     inputRef.current?.click();
   };
 
@@ -57,12 +60,14 @@ export const PlaylistCoverEditor: React.FC<PlaylistCoverEditorProps> = ({
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-picking the same file after an error
     if (!file) return;
-    const valid = await validateOriginal(file);
-    if (!valid.ok) {
-      onError(valid.error || "That image can’t be used.");
+    // `prepare` downscales the original before the cropper ever sees it, so a 48 MP photo is a
+    // bounded working image by the time it reaches the modal.
+    const prepared = await prepare(file);
+    if (!prepared.ok || !prepared.blob) {
+      onError(prepared.error || "That image can’t be used.");
       return;
     }
-    setCropSrc(URL.createObjectURL(file));
+    setCropSrc(URL.createObjectURL(prepared.blob));
   };
 
   const handleCropConfirm = async (blob: Blob) => {
@@ -84,12 +89,12 @@ export const PlaylistCoverEditor: React.FC<PlaylistCoverEditorProps> = ({
           className="block w-full h-full object-cover"
         />
 
-        {/* Uploading loader over the existing cover */}
-        {isUploading && (
+        {/* Busy loader over the existing cover — covers both the downscale and the upload. */}
+        {isBusy && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60">
             <span
               className="w-[var(--px-24)] h-[var(--px-24)] border-2 border-white/40 border-t-white rounded-full animate-spin"
-              aria-label="Uploading cover"
+              aria-label={isPreparing ? "Preparing image" : "Uploading cover"}
             />
           </div>
         )}
@@ -98,7 +103,7 @@ export const PlaylistCoverEditor: React.FC<PlaylistCoverEditorProps> = ({
         <button
           type="button"
           onClick={handlePick}
-          disabled={isUploading}
+          disabled={isBusy}
           aria-label="Change cover image"
           title="Change cover image"
           // HERO_TOOLBAR_BTN so the hover matches Rename / Export / Share / heart / visibility
@@ -116,7 +121,10 @@ export const PlaylistCoverEditor: React.FC<PlaylistCoverEditorProps> = ({
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          // Any image. Deliberately NOT listing image/heic: Safari 17+ has a bug where naming HEIC
+          // in `accept` makes it convert your JPEGs and PNGs *to* HEIC on the way out. Left off, iOS
+          // does the helpful thing and hands us a JPEG.
+          accept="image/*"
           className="hidden"
           onChange={handleSelected}
           aria-hidden="true"

@@ -3,30 +3,39 @@
  * ================
  *
  * Single source for the owner-only custom playlist cover: it BUILDS the cover URL (fetched from the
- * media server by playlist uuid + playback token, mirroring peaks / track covers) and OWNS the upload
- * action. Keeping both here means the desktop and mobile `PlaylistHero` stay in sync and the pages
- * stay thin.
+ * media server by playlist uuid + playback token, mirroring peaks / track covers) and OWNS both
+ * halves of the change action. Keeping them here means the desktop hero, the mobile hero and the
+ * library's rename modal stay in sync and the pages stay thin.
  *
- * Flow: pick a file → `validateOriginal` (type / ≤ 3 MB / 100–4000 px per side, NON-square allowed) →
- * the caller opens the crop modal (react-easy-crop) → the user crops to a square → `upload(blob)`
- * sends the cropped square. So the backend/media server always receives a proper square.
+ * Flow: pick a file → `prepare` (accept any image ≤ 15 MB, then downscale it to a working image) →
+ * the caller opens the crop modal (react-easy-crop) on the PREPARED blob → the user crops → `upload`
+ * sends the 500×500 square.
  *
- * The alwyzon backend re-checks size/type + owner and the media server re-checks square/resolution
- * with Pillow — the client checks are UX only, never the security boundary.
+ * `prepare` normalises rather than rejects. The old version validated instead: it required ≤ 3 MB and
+ * each side within 100–4000 px, which rejected a plain 12 MP iPhone photo (4032×3024) by 32 pixels —
+ * so every default iPhone shot bounced, and the user was told to go shrink it themselves. Size and
+ * resolution are now something we fix, not something we ask the user to fix. The only things that can
+ * still fail here are "that isn't an image", "that is over 15 MB", and "this browser cannot decode
+ * that format" — all of which name a real problem the user can act on.
+ *
+ * Alwyzon re-checks size, format and resolution and owns the owner check; the client is UX only,
+ * never the security boundary.
  */
 
 import { useCallback, useState } from "react";
 import { usePlaylistStore } from "@resomix/stores";
 import { uploadPlaylistCover } from "@resomix/api-client";
 import { usePlaylistCoverUrl } from "./usePlaylistCoverUrl";
-
-const MAX_COVER_BYTES = 3 * 1024 * 1024; // 3 MB — kept in sync with the backend limit.
-const MIN_DIM = 100; // kept in sync with the media server's _PLAYLIST_COVER_MIN_DIM
-const MAX_DIM = 4000; // kept in sync with the media server's _PLAYLIST_COVER_MAX_DIM
+import { MAX_COVER_BYTES, prepareForCrop } from "./coverImage";
 
 export interface CoverActionResult {
   ok: boolean;
   error?: string;
+}
+
+export interface PreparedCover extends CoverActionResult {
+  /** The downscaled working image to hand to the cropper. Present only when `ok`. */
+  blob?: Blob;
 }
 
 export interface UsePlaylistCoverResult {
@@ -34,55 +43,12 @@ export interface UsePlaylistCoverResult {
   coverUrl: string | null;
   /** True while an upload request is in flight. */
   isUploading: boolean;
-  /** Validate a freshly-picked file BEFORE cropping (type / size / bounds; non-square is allowed). */
-  validateOriginal: (file: File) => Promise<CoverActionResult>;
+  /** True while a picked file is being downscaled — can be a second or two on an older phone. */
+  isPreparing: boolean;
+  /** Accept + downscale a freshly picked file. Resolves with the blob to open the cropper on. */
+  prepare: (file: File) => Promise<PreparedCover>;
   /** Upload the cropped square (a Blob produced by the crop modal). */
   upload: (blob: Blob) => Promise<CoverActionResult>;
-}
-
-/** Read an image file's pixel dimensions in the browser. Rejects on a non-decodable file. */
-function readImageDimensions(file: Blob): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const dims = { width: img.naturalWidth, height: img.naturalHeight };
-      URL.revokeObjectURL(url);
-      resolve(dims);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("decode-failed"));
-    };
-    img.src = url;
-  });
-}
-
-/**
- * Pre-flight validation of the ORIGINAL picked file (UX only — the server re-validates). Non-square is
- * allowed here: the user crops to a square in the modal afterwards. We just gate type, size, and that
- * each side is within [MIN_DIM, MAX_DIM] so the eventual square crop stays in range.
- */
-async function validateOriginalFile(file: File): Promise<CoverActionResult> {
-  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
-    return { ok: false, error: "Please choose a JPEG, PNG, or WebP image." };
-  }
-  if (file.size > MAX_COVER_BYTES) {
-    return { ok: false, error: "Image must be 3 MB or smaller." };
-  }
-  let dims: { width: number; height: number };
-  try {
-    dims = await readImageDimensions(file);
-  } catch {
-    return { ok: false, error: "That file doesn’t look like a valid image." };
-  }
-  if (dims.width < MIN_DIM || dims.height < MIN_DIM) {
-    return { ok: false, error: `Image must be at least ${MIN_DIM}×${MIN_DIM} px.` };
-  }
-  if (dims.width > MAX_DIM || dims.height > MAX_DIM) {
-    return { ok: false, error: `Image must be at most ${MAX_DIM}×${MAX_DIM} px.` };
-  }
-  return { ok: true };
 }
 
 export function usePlaylistCover(
@@ -92,15 +58,37 @@ export function usePlaylistCover(
   const updateCustomCover = usePlaylistStore((s) => s.updatePlaylistCustomCover);
 
   const [isUploading, setIsUploading] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(false);
   // Bumped after a successful upload so the (same-URL) replaced image is re-fetched, not cached.
   const [bust, setBust] = useState(0);
 
   const coverUrl = usePlaylistCoverUrl(playlistUuid, hasCustomCover, bust);
 
-  const validateOriginal = useCallback(
-    (file: File): Promise<CoverActionResult> => validateOriginalFile(file),
-    [],
-  );
+  const prepare = useCallback(async (file: File): Promise<PreparedCover> => {
+    // Any image format the browser can read is welcome — a camera or phone should never be told its
+    // own output is "not allowed".
+    if (!file.type.startsWith("image/")) {
+      return { ok: false, error: "Please choose an image file." };
+    }
+    if (file.size > MAX_COVER_BYTES) {
+      return { ok: false, error: "Image must be 15 MB or smaller." };
+    }
+
+    setIsPreparing(true);
+    try {
+      const blob = await prepareForCrop(file);
+      return { ok: true, blob };
+    } catch {
+      // Almost always an undecodable format rather than a broken file — HEIC has no decoder outside
+      // Safari, so an Android pick from a HEIC gallery lands here. Name the way out.
+      return {
+        ok: false,
+        error: "This browser can’t read that image format. Try a JPEG, PNG, or WebP.",
+      };
+    } finally {
+      setIsPreparing(false);
+    }
+  }, []);
 
   const upload = useCallback(
     async (blob: Blob): Promise<CoverActionResult> => {
@@ -129,5 +117,5 @@ export function usePlaylistCover(
     [playlistUuid, updateCustomCover],
   );
 
-  return { coverUrl, isUploading, validateOriginal, upload };
+  return { coverUrl, isUploading, isPreparing, prepare, upload };
 }

@@ -2,61 +2,32 @@ import React from "react";
 import Cropper, { type Area, type Point } from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
 import { Dialog, PAGE_FIELD_LABEL } from "@resomix/ui";
+import { renderSquareCover } from "@resomix/hooks";
 
 /**
  * CoverCropModal
  * ==============
  *
- * Owner-only playlist-cover cropper, built on the shared `Dialog` shell. The user
- * picks any (non-square) image; here they pan + zoom and confirm a SQUARE crop. On confirm we render
- * the selected region to a canvas and hand back a square JPEG `Blob`, so the backend + media server
- * always receive a proper square.
+ * Owner-only playlist-cover cropper, built on the shared `Dialog` shell. The user picks any
+ * (non-square) image; here they pan + zoom and confirm a SQUARE crop. On confirm the selected region
+ * is rendered to the exact square we store and handed back as a JPEG `Blob`.
  *
- * Uses `react-easy-crop` (lightweight, stable, aspect-locked crop with zoom/pan). The source is an
- * object URL (same-origin `blob:`), so drawing it to a canvas does NOT taint it and `toBlob` works.
+ * `imageSrc` is the object URL of the PREPARED image — `usePlaylistCover.prepare` has already
+ * downscaled the camera original to a bounded working size. That matters: this modal renders the
+ * source in a live cropper, and pointing it at a 48 MP original is what makes an older phone stutter
+ * or hand back a blank canvas. Everything here works on the bounded copy.
+ *
+ * Uses `react-easy-crop` (lightweight, stable, aspect-locked crop with zoom/pan). The source is a
+ * same-origin `blob:` URL, so drawing it to a canvas does NOT taint it and `toBlob` works.
  */
-
-// Output square is clamped so the file stays small and inside the media server's 100–4000 px window.
-const OUTPUT_MIN = 200;
-const OUTPUT_MAX = 1500;
-const JPEG_QUALITY = 0.9;
 
 export interface CoverCropModalProps {
   isOpen: boolean;
-  /** Object URL of the picked image (blob:). */
+  /** Object URL of the prepared image (blob:). */
   imageSrc: string | null;
   onCancel: () => void;
   /** Called with the cropped square JPEG blob when the user confirms. */
   onConfirm: (blob: Blob) => void;
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("decode-failed"));
-    img.src = src;
-  });
-}
-
-/** Draw the chosen crop region onto a square canvas and export a JPEG blob. */
-async function getCroppedSquareBlob(imageSrc: string, area: Area): Promise<Blob> {
-  const image = await loadImage(imageSrc);
-  const outSize = Math.max(OUTPUT_MIN, Math.min(Math.round(area.width), OUTPUT_MAX));
-  const canvas = document.createElement("canvas");
-  canvas.width = outSize;
-  canvas.height = outSize;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("canvas-unavailable");
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(image, area.x, area.y, area.width, area.height, 0, 0, outSize, outSize);
-  return await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("encode-failed"))),
-      "image/jpeg",
-      JPEG_QUALITY,
-    );
-  });
 }
 
 export const CoverCropModal: React.FC<CoverCropModalProps> = ({ isOpen, imageSrc, onCancel, onConfirm }) => {
@@ -79,7 +50,7 @@ export const CoverCropModal: React.FC<CoverCropModalProps> = ({ isOpen, imageSrc
     if (!imageSrc || !areaRef.current || processing) return;
     setProcessing(true);
     try {
-      const blob = await getCroppedSquareBlob(imageSrc, areaRef.current);
+      const blob = await renderSquareCover(imageSrc, areaRef.current);
       onConfirm(blob);
     } catch {
       setProcessing(false);

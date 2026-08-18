@@ -34,8 +34,11 @@ const PlaylistHero: React.FC = () => {
   const { playlistData } = usePlaylistStore();
   const isOwner = !!playlistData?.playlist?.is_owner;
   const hasCustomCover = !!playlistData?.playlist?.has_custom_cover;
-  const { coverUrl: customCoverUrl, isUploading: coverUploading, validateOriginal: validateCover, upload: uploadCover } =
+  const { coverUrl: customCoverUrl, isUploading, isPreparing: coverPreparing, prepare: prepareCover, upload: uploadCover } =
     usePlaylistCover(playlistData?.playlist?.id, hasCustomCover);
+  // One busy flag for the two stages the user experiences as "working": downscaling the picked photo
+  // and uploading the crop.
+  const coverUploading = isUploading || coverPreparing;
   const coverInputRef = React.useRef<HTMLInputElement | null>(null);
   const [cropSrc, setCropSrc] = React.useState<string | null>(null);
   const [coverLoaded, setCoverLoaded] = React.useState(false);
@@ -84,12 +87,14 @@ const PlaylistHero: React.FC = () => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    const valid = await validateCover(file);
-    if (!valid.ok) {
-      handleStatusChange("error", valid.error || "That image can’t be used.", "Cover Update Failed");
+    // `prepareCover` downscales the original before the cropper ever sees it, so a 48 MP photo is a
+    // bounded working image by the time it reaches the modal.
+    const prepared = await prepareCover(file);
+    if (!prepared.ok || !prepared.blob) {
+      handleStatusChange("error", prepared.error || "That image can’t be used.", "Cover Update Failed");
       return;
     }
-    setCropSrc(URL.createObjectURL(file));
+    setCropSrc(URL.createObjectURL(prepared.blob));
   };
 
   const closeCrop = () => {
@@ -370,7 +375,9 @@ const PlaylistHero: React.FC = () => {
             <input
               ref={coverInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              // Any image. Deliberately NOT listing image/heic: Safari 17+ has a bug where naming
+              // HEIC in `accept` makes it convert your JPEGs and PNGs *to* HEIC on the way out.
+              accept="image/*"
               className="hidden"
               onChange={handleCoverSelected}
               aria-hidden="true"

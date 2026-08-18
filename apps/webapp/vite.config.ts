@@ -126,6 +126,12 @@ export default defineConfig({
         manualChunks(id) {
           // Third-party libraries
           if (id.includes('node_modules')) {
+            // Image resizing for playlist covers. It is `import()`ed on demand, but the catch-all
+            // 'vendor' rule below would pull it into a chunk every visitor downloads on first paint.
+            // Naming it here keeps the lazy boundary real: only someone who actually picks a cover
+            // pays for it.
+            if (id.includes('/pica/') || id.includes('/image-blob-reduce/') ||
+                id.includes('/multimath/') || id.includes('/glur/')) return 'image-resize'
             if (id.includes('react-router')) return 'router'
             if (id.includes('/three')) return 'three'
             if (id.includes('@react-three/fiber')) return 'r3f'
