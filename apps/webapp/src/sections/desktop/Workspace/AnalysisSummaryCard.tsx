@@ -227,7 +227,7 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
       </div>
 
       <div className="grid grid-cols-1 gap-[var(--px-20)] lg:[grid-template-columns:minmax(0,7fr)_minmax(0,5fr)]">
-        <div className="space-y-[var(--px-18)]">
+        <div className="flex min-w-0 flex-col gap-[var(--px-18)] lg:h-full">
           {showEnergy && (
             <figure className="m-0">
               <div
@@ -265,7 +265,9 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
             </figure>
           )}
 
-          {hasStructure && <StructureList segments={mergedStructure} />}
+          {/* `lg:flex-1` is the left column's half of the bottom-alignment: when the right column
+              is the taller one, this panel takes the slack instead of leaving a gap under it. */}
+          {hasStructure && <StructureList segments={mergedStructure} className="lg:flex-1" />}
 
           {/* Mobile only. On desktop the characteristics live in the right column, under the
               reading panel — the left column's structure list is tall and the right panel is
@@ -275,7 +277,12 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
           )}
         </div>
 
-        <div className="min-w-0 space-y-[var(--px-18)]">
+        {/* Both columns run to the full height of the grid row (`lg:h-full`) and the LAST panel in
+            each takes the slack, so the two bottom edges line up whichever column happens to be
+            taller. Which one that is genuinely varies: an 8-section track makes the left taller,
+            a 2-section one makes the right taller. Height-matching only one direction would look
+            deliberate on most tracks and broken on the rest. */}
+        <div className="flex min-w-0 flex-col gap-[var(--px-18)] lg:h-full">
         <div className="border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] p-[var(--px-16)]">
           <div className="mb-[var(--px-12)] flex flex-wrap gap-[var(--px-4)]" role="tablist" aria-label="Reading">
             {readings.map((r) => (
@@ -315,7 +322,7 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
             one per row: the right column is the narrow one (5fr), and four tiles across it would
             crush the definitions. */}
         {characteristics.length > 0 && (
-          <CharacteristicsPanel tiles={characteristics} stacked className="hidden lg:block" />
+          <CharacteristicsPanel tiles={characteristics} stacked className="hidden lg:flex lg:flex-1" />
         )}
         </div>
       </div>
@@ -435,16 +442,19 @@ const CharacteristicsPanel: React.FC<{
   stacked?: boolean;
   className?: string;
 }> = ({ tiles, stacked = false, className = "" }) => (
-  <div className={`border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] ${className}`}>
+  <div className={`flex flex-col border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] ${className}`}>
     <div className="border-b border-[var(--rx-color-border-subtle)] px-[var(--px-14)] py-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)]">
       Track characteristics
     </div>
-    <div className={stacked ? "grid grid-cols-1" : "grid grid-cols-2"}>
+    {/* Stacked absorbs the column's leftover height (see `flex-1` on the tiles), which is what
+        squares this panel's bottom edge with the structure list opposite it. */}
+    <div className={stacked ? "flex flex-1 flex-col" : "grid grid-cols-2"}>
       {tiles.map((tile, i) => (
         <div
           key={tile.key}
           className={[
             "px-[var(--px-14)] py-[var(--px-12)]",
+            stacked ? "flex flex-1 flex-col justify-center" : "",
             // Dividers drawn per position so neither arrangement gets doubled or dangling lines:
             // stacked rows separate with border-t; the 2×2 grid adds border-l on the right cell.
             stacked
@@ -460,12 +470,29 @@ const CharacteristicsPanel: React.FC<{
           <div className="font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-muted)]">
             {tile.label}
           </div>
-          <div className="mt-[var(--px-4)] font-fira text-[length:var(--px-22)] leading-[1.1] tabular-nums text-[var(--rx-color-text-primary)]">
-            {tile.value}
-          </div>
-          <div className="mt-[var(--px-2)] font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-18)] text-[var(--rx-color-text-muted)]">
-            {tile.definition}
-          </div>
+          {stacked ? (
+            /* Value and definition on ONE line, the value in a fixed column so every definition
+               starts at the same x down the panel. A fixed width rather than `auto`: tabular
+               figures make "0.58" and "1.00" equal, but the "—" fallback is far narrower and would
+               pull its definition left, out of line with the three above it. */
+            <div className="mt-[var(--px-4)] grid grid-cols-[var(--px-64)_minmax(0,1fr)] items-baseline gap-[var(--px-10)]">
+              <span className="font-fira text-[length:var(--px-22)] leading-[1.1] tabular-nums text-[var(--rx-color-text-primary)]">
+                {tile.value}
+              </span>
+              <span className="font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-18)] text-[var(--rx-color-text-muted)]">
+                {tile.definition}
+              </span>
+            </div>
+          ) : (
+            <>
+              <div className="mt-[var(--px-4)] font-fira text-[length:var(--px-22)] leading-[1.1] tabular-nums text-[var(--rx-color-text-primary)]">
+                {tile.value}
+              </div>
+              <div className="mt-[var(--px-2)] font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-18)] text-[var(--rx-color-text-muted)]">
+                {tile.definition}
+              </div>
+            </>
+          )}
         </div>
       ))}
     </div>
@@ -491,12 +518,15 @@ const STRUCTURE_VISIBLE_MOBILE = 6;
  * stays numbered, so the emphasis survives greyscale and colour-blindness rather than being the
  * only signal.
  */
-const StructureList: React.FC<{ segments: MergedStructureSegment[] }> = ({ segments }) => {
+const StructureList: React.FC<{ segments: MergedStructureSegment[]; className?: string }> = ({
+  segments,
+  className = "",
+}) => {
   const [expanded, setExpanded] = useState(false);
   const collapsible = segments.length > STRUCTURE_VISIBLE_MOBILE;
 
   return (
-    <div className="border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)]">
+    <div className={`border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] ${className}`}>
       <div className="flex items-center justify-between gap-[var(--px-12)] border-b border-[var(--rx-color-border-subtle)] px-[var(--px-14)] py-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)]">
         <span>Track structure</span>
         {/* Two forms of the same fact: the full wording does not fit beside the title at 320px. */}
