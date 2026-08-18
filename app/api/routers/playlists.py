@@ -191,25 +191,67 @@ async def delete_playlist_endpoint(
     return await playlist_controller.delete_playlist(db, request, playlist_id, current_user)
 
 
-# Max cover upload size (bytes) — kept in sync with the frontend's 3 MB limit. The frontend crops to
-# a square before sending, so the received file is typically much smaller; this is the hard ceiling.
-_MAX_COVER_BYTES = 3 * 1024 * 1024
+# ---------------------------------------------------------------------------------------------- #
+# Playlist cover upload limits
+# ---------------------------------------------------------------------------------------------- #
+# THIS IS THE ONLY SERVER-SIDE VALIDATION OF A COVER. The browser checks the same things for UX and
+# the media server just stores what it is given, so anything not enforced here is not enforced.
+#
+# Both limits are deliberately generous. The browser downscales every pick to a 500x500 JPEG (~80 KB)
+# before it gets here, so a real upload uses about half a percent of the byte ceiling. These bounds
+# exist for direct API callers and for the day the client changes — not to tell a phone that its own
+# photo is too big, which was the bug this replaced.
+_MAX_COVER_BYTES = 15 * 1024 * 1024
+_MAX_COVER_DIM = 3000
+
+# Pillow's own decompression-bomb guard. Set explicitly rather than inherited: a deliberate number is
+# easier to reason about than a default nobody chose, and it is well above _MAX_COVER_DIM squared so
+# a legitimate cover can never trip it.
+_MAX_DECODED_PIXELS = 40_000_000
 
 
-def _sniff_image_type(data: bytes) -> Optional[str]:
-    """Magic-byte content-type sniff (don't trust the client-declared type). JPEG or PNG only —
-    the media server does the deeper image validation (square / resolution) with Pillow."""
-    if data[:3] == b"\xff\xd8\xff":
-        return "image/jpeg"
-    if data[:8] == b"\x89PNG\r\n\x1a\n":
-        return "image/png"
-    return None
+def _inspect_image(data: bytes) -> tuple[Optional[str], Optional[str]]:
+    """Identify an uploaded cover from its CONTENT, never the client-declared type.
+
+    Returns ``(content_type, None)`` for an acceptable image, or ``(None, message)`` with a
+    user-facing reason. Any format Pillow can read is welcome — a camera or phone should never be
+    told its own output is disallowed.
+
+    Only the header is parsed: ``Image.open`` is lazy, so ``.format`` and ``.size`` are available
+    without decoding a single pixel. A 15 MB upload therefore costs microseconds and no bitmap
+    memory, which is what makes it safe to do this inline on the API box.
+    """
+    import io
+
+    from PIL import Image
+
+    original_limit = Image.MAX_IMAGE_PIXELS
+    Image.MAX_IMAGE_PIXELS = _MAX_DECODED_PIXELS
+    try:
+        with Image.open(io.BytesIO(data)) as img:
+            fmt = (img.format or "").upper()
+            width, height = img.size
+    except Exception:
+        return None, "That file doesn't look like an image."
+    finally:
+        Image.MAX_IMAGE_PIXELS = original_limit
+
+    if width > _MAX_COVER_DIM or height > _MAX_COVER_DIM:
+        return None, f"Image must be {_MAX_COVER_DIM}x{_MAX_COVER_DIM} pixels or smaller."
+
+    # Pillow's format name -> the MIME type the media server stores the file under. Anything Pillow
+    # recognised but that has no entry here still passes; it is a real image, which is the question
+    # being asked.
+    return Image.MIME.get(fmt, "application/octet-stream"), None
 
 
 @router.post(
     "/{playlist_uuid}/cover",
     summary="Upload a custom playlist cover",
-    description="Owner-only. Upload a square JPEG/PNG (≤ 3 MB) to use as the playlist's cover.",
+    description=(
+        "Owner-only. Upload any image (≤ 15 MB, ≤ 3000x3000) to use as the playlist's cover. "
+        "The web client crops it to a 500x500 square before sending."
+    ),
 )
 async def upload_playlist_cover_endpoint(
     playlist_uuid: str,
@@ -219,8 +261,9 @@ async def upload_playlist_cover_endpoint(
     partner: Partner = Depends(get_current_partner),  # establishes the partner context (tenancy failsafe)
     current_user: User = Depends(get_current_user),  # REQUIRED auth
 ) -> JSONResponse:
-    """Basic gate here (size + magic-byte type + optional ClamAV, and the owner check in the
-    service); the media server enforces the image dimensions and stores it by playlist uuid."""
+    """The single server-side gate: size, "is this actually an image", resolution, optional ClamAV,
+    and the owner check in the service. The media server stores what it is given and does not
+    re-validate."""
     # AUTHORISE FIRST — before reading a single byte. Rejecting someone's image for being the wrong
     # type, when they were never allowed to set this playlist's cover, answers the wrong question
     # (and needlessly buffers and scans a file we are going to discard).
@@ -239,11 +282,11 @@ async def upload_playlist_cover_endpoint(
     if not data:
         return JSONResponse(status_code=400, content=format_response(success=False, error="The uploaded file is empty."))
     if len(data) > _MAX_COVER_BYTES:
-        return JSONResponse(status_code=413, content=format_response(success=False, error="Image must be 3 MB or smaller."))
+        return JSONResponse(status_code=413, content=format_response(success=False, error="Image must be 15 MB or smaller."))
 
-    content_type = _sniff_image_type(data)
+    content_type, reject_reason = _inspect_image(data)
     if content_type is None:
-        return JSONResponse(status_code=400, content=format_response(success=False, error="Only JPEG or PNG images are allowed."))
+        return JSONResponse(status_code=400, content=format_response(success=False, error=reject_reason))
 
     result = await playlist_controller.playlist_service.upload_custom_cover(
         db, playlist_uuid, current_user.id, data, content_type

@@ -32,3 +32,7 @@ stripe==15.1.0
 alembic==1.13.1
 greenlet==3.2.4
 celery==5.3.6
+# Used only by the playlist-cover gate in app/api/routers/playlists.py: identify an upload from its
+# content and read its dimensions from the header. Pinned to the version already present in the
+# working venv (it was installed there but never declared) so adding it here is not a downgrade.
+Pillow==12.3.0

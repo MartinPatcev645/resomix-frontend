@@ -900,8 +900,8 @@ class PlaylistService:
         """Owner-checked custom playlist cover upload.
 
         Ownership is enforced HERE (mirrors rename): a playlist not owned by ``user_id`` is treated
-        as not found. Then: optional ClamAV scan → forward to the media server (which does the
-        authoritative image validation with Pillow and stores it by playlist uuid) → flip
+        as not found. Then: optional ClamAV scan → forward to the media server (which normalises the
+        image to JPEG and stores it by playlist uuid; the router already validated it) → flip
         ``has_custom_cover``. Returns ``{success, error?, status?}``.
         """
         from app.utils.clamav import scan_bytes

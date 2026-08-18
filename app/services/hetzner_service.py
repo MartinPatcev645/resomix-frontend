@@ -20,9 +20,10 @@ class HetznerService:
     async def store_playlist_cover(
         self, partner_id: int, playlist_uuid: str, image_bytes: bytes, content_type: str = "application/octet-stream"
     ) -> Dict[str, Any]:
-        """Forward a validated cover image to the media server, which does the authoritative image
-        validation (square + resolution, Pillow) and stores it by playlist uuid. Returns
-        ``{success, error?, status?}`` — a non-200 surfaces the media server's rejection message."""
+        """Forward an already-validated cover image to the media server, which normalises it to JPEG
+        and stores it by playlist uuid. The router is the single validation point, so a non-200 here
+        means a transport or storage fault rather than a rejected image. Returns
+        ``{success, error?, status?}``."""
         if not self.hetzner_url or not self.internal_api_key:
             return {"success": False, "error": "Media server not configured"}
         endpoint = f"{self.hetzner_url.rstrip('/')}/internal/playlist-cover"
