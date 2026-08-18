@@ -1,8 +1,13 @@
 # Open TODOs — consolidated
 
-**Written 2026-08-17**, at the end of the outage/hardening session. This is the single index of
-everything known-and-not-done across all four repos. Each item says what it is, **why it matters**
-(so a future reader can judge whether to skip it), where the detail lives, and rough effort.
+**Written 2026-08-17**, at the end of the outage/hardening session. **Updated 2026-08-18** (items 22–23,
+from the Apple Music mobile-export investigation). This is the single index of everything
+known-and-not-done across all four repos. Each item says what it is, **why it matters** (so a future
+reader can judge whether to skip it), where the detail lives, and rough effort.
+
+> **Item numbers are stable IDs, not a ranking.** Priority is the **section** (P1/P2/P3). New items
+> are appended to their section keeping the next free number, so nothing has to be renumbered and a
+> reference to "item 14" stays valid.
 
 Detailed write-ups referenced below:
 
@@ -11,6 +16,7 @@ Detailed write-ups referenced below:
 | `docs/CORS_OUTAGE_AUG2026.md` | alwyzon | the 520 outage, root cause, nginx cleanup |
 | `docs/RATE_LIMITING_ALIGNMENT.md` | alwyzon | nginx / fail2ban / app limits, CGNAT, security posture |
 | `docs/SHARED_PLAYLIST_PRIVATE_ERROR.md` | alwyzon | the "Playlist is Private" investigation |
+| `docs/APPLE_EXPORT_MOBILE_LINK.md` | alwyzon | Apple export on mobile: the link bug, and items 22–23 |
 | `phase4_capacity_aug2026/docs/OPTIMISATION_BACKLOG.md` | stress-testing | everything phase 4 found and deliberately did not fix |
 | `phase4_capacity_aug2026/docs/QUEUE_DESIGN.md` | stress-testing | the global queue design (deferred until real users) |
 | `phase4_capacity_aug2026/docs/PHASE4_SUMMARY.md` | stress-testing | plain-language summary for George |
@@ -162,6 +168,57 @@ them on every `/api/` response). **CSP is absent.**
 an XSS gets in; without it, one XSS anywhere can read tokens and call the API as the user. Actual
 XSS exposure looks low (React escapes by default), so this is hardening — and it is the fiddliest
 header to add without breaking things, so do it deliberately rather than in a rush.
+
+### 22. Apple export: a cross-storefront track with no ISRC uses the US ID verbatim
+**What:** in `transfer_playlist_to_apple_music`, the branch
+`if same_storefront or not m.get("isrc")` sends a track that has a stored `apple_song_id` but **no
+ISRC** down the "use the stored ID directly" path — even when the user is on a different storefront.
+Apple catalog IDs are storefront-specific, so that ID is not valid in their store. Apple answers the
+add with `204 No Content` and silently drops the track.
+
+**Why it matters:** it fails **silently and per-track**. `tracks_added` counts it as added (204,
+nothing in the body to check); only `verified_tracks` catches it, and then only as a number that
+does not match. The user gets a playlist quietly missing songs. The comment calls it "best-effort
+direct id", which is fair same-storefront but is closer to a guaranteed miss across storefronts.
+
+**Fix (certain, one line):** route these tracks to the existing `need_search` list instead of
+`direct`. That path already searches **in the user's storefront** and is already tested — so the
+track gets a valid ID or is honestly reported as unmatched, instead of vanishing.
+**Fix (better, more work):** Apple's **Get Equivalent Catalog Songs by ID** endpoint is built for
+exactly this — it takes a source ID and a target storefront and is batched, so it would mirror
+`_resolve_songs_by_isrc` closely. *Confirm the exact path and query-parameter shape against Apple's
+docs first — they are JS-rendered and could not be verified during this investigation.* Keep the
+search as the fallback for misses.
+
+**Effort:** one line for the safe fix; ~half a day for the equivalents resolver plus tests.
+**Where:** `docs/APPLE_EXPORT_MOBILE_LINK.md`.
+
+### 23. Apple export: a failed storefront lookup silently becomes `us`
+**What:** `user_sf = (await self._get_user_storefront(dev_token, music_user_token)) or catalogue_sf`.
+When Apple's `/v1/me/storefront` call fails, we assume the catalogue storefront (`us`), which makes
+`same_storefront` true and sends **every** track down the use-IDs-directly path.
+
+**Why it matters:** for a non-US user, one transient failure drops the **entire** playlist — every
+ID is wrong for their store, all silently discarded. The only trace is a `logger.warning`, so a
+network blip and a genuine US user produce identical logs. This is the single value that decides
+between *use IDs directly* and *translate every ID*, and it currently fails in the unsafe direction.
+
+**Fix:** keep "unknown" distinct from "same". Detect once, and treat `None` as **not** the same
+storefront so the ISRC path runs — that path is correct for US users too (an ISRC lookup in `us`
+returns the US IDs), so the only cost of being wrong is a few extra batched calls instead of a
+silently empty playlist:
+
+```python
+detected  = await self._get_user_storefront(dev_token, music_user_token)
+user_sf   = detected or catalogue_sf          # still fine for building URLs
+same_storefront = detected is not None and detected == catalogue_sf
+```
+
+Also raise that `logger.warning` to `logger.error` so the watchdog sees it — right now the one event
+that can void an export is logged more quietly than a routine 4xx.
+
+**Effort:** ~1 hour including a test that a `None` storefront takes the ISRC path.
+**Where:** `docs/APPLE_EXPORT_MOBILE_LINK.md`.
 
 ---
 
