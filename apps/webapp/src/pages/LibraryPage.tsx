@@ -34,6 +34,15 @@ const LOCKED_TIP =
   "Your plan keeps your 5 most recent playlists open. The dimmed ones are still here and nothing " +
   "has been deleted — links you have already shared keep working. Upgrade to open them all again.";
 
+// Applied to the count on an INACTIVE tab. Three tab labels each carrying a count — and the
+// Playlists one can read "5 of 18" — overflow a phone's width, pushing "Liked" off the right edge.
+// The counts are `whitespace-nowrap` so they cannot wrap; something has to give.
+//
+// Hiding the inactive counts rather than shrinking the type keeps every tab legible and readable at
+// the same size, and the count you are actually looking at is the one for the tab you are on. On
+// md+ there is room for all three, so nothing changes on desktop.
+const INACTIVE_TAB_COUNT = "hidden md:inline";
+
 export default function LibraryPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
@@ -495,7 +504,10 @@ export default function LibraryPage() {
                     : "border-transparent text-[var(--rx-color-text-muted)] opacity-60 hover:opacity-100"
                 }`}
               >
-                Uploads ({tracksTotal})
+                Uploads
+                <span className={activeTab === "tracks" ? undefined : INACTIVE_TAB_COUNT}>
+                  {" "}({tracksTotal})
+                </span>
               </button>
               <button
                 onClick={() => goToTab("playlists")}
@@ -510,11 +522,14 @@ export default function LibraryPage() {
                     `library_playlists_max`. The rest are NOT deleted and still work by link, so
                     the count has to acknowledge them rather than let the Library look like it
                     lost them. Falls back to the plain count when nothing is hidden. */}
-                Playlists (
-                {playlistsLibraryTotal > playlistsTotal
-                  ? `${playlistsTotal} of ${playlistsLibraryTotal}`
-                  : playlistsTotal}
-                )
+                Playlists
+                <span className={activeTab === "playlists" ? undefined : INACTIVE_TAB_COUNT}>
+                  {" "}(
+                  {playlistsLibraryTotal > playlistsTotal
+                    ? `${playlistsTotal} of ${playlistsLibraryTotal}`
+                    : playlistsTotal}
+                  )
+                </span>
               </button>
               <button
                 onClick={() => goToTab("liked")}
@@ -525,7 +540,10 @@ export default function LibraryPage() {
                     : "border-transparent text-[var(--rx-color-text-muted)] opacity-60 hover:opacity-100"
                 }`}
               >
-                Liked ({likedTotal})
+                Liked
+                <span className={activeTab === "liked" ? undefined : INACTIVE_TAB_COUNT}>
+                  {" "}({likedTotal})
+                </span>
               </button>
             </div>
             <span aria-hidden="true" />
