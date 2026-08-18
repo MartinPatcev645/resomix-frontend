@@ -19,7 +19,7 @@ import PlaylistShare from "./Modals/PlaylistShare.tsx";
 import PlaylistRename from "./Modals/PlaylistRename.tsx";
 import PlaylistRenameModal from "./Modals/PlaylistRenameModal.tsx";
 import PlaylistExport from "./Modals/PlaylistExport.tsx";
-import StatusMessage from "../../../../packages/ui/src/Elements/StatusMessage.tsx";
+import { StatusMessage } from "@resomix/ui";
 import UploadLoader from "./upload/UploadLoader.tsx";
 import { ThumbIcon } from "./icons/ThumbIcon.tsx";
 import { ProtectedRoute } from "./ProtectedRoute.tsx";
