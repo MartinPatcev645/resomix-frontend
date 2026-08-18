@@ -531,35 +531,31 @@ class AppleMusicTransferService:
 
         return None
 
-    async def _get_created_playlist_url(self, dev_token: str, user_token: str,
-                                        playlist_id: str, storefront: Optional[str]) -> Optional[str]:
-        """Best-effort openable URL for the just-created library playlist.
+    @staticmethod
+    def _library_playlist_url(playlist_id: str, storefront: Optional[str]) -> str:
+        """The openable URL for the playlist we just created in the user's library.
 
-        Preference: a public catalog URL (once Apple has synced a ``globalId``), else an explicit
-        ``attributes.url`` if returned, else the owner-openable **library** URL — which always works
-        for the person who just authorised, since it's their own library. Purely for display; we
-        never fail the export over it, so any error just yields the library-URL fallback.
+        THE STOREFRONT IS NOT OPTIONAL. Without it Apple resolves the link against the **US**
+        storefront, and a Greek user opening their own playlist is told it is "not currently
+        available in your country or region" — a playlist sitting in their library, reported as
+        missing. That was the whole of the reported bug.
+
+        This is always a LIBRARY url, never a public one, and that is worth stating plainly so
+        nobody tries to "improve" it again. A public link needs Apple's ``globalId``, and Apple
+        mints one only when a person taps Share (or enables "Show on My Profile and in Search")
+        **inside the Music app**. There is no API for it. We previously spent an extra Apple request
+        per export reading ``playParams.globalId`` back; on a playlist created seconds earlier it is
+        never populated, so that call could do nothing but fall through to this same url. Polling it
+        for longer does not help either — the value does not appear on its own, ever.
+
+        On a computer this opens the web player and works. On a phone iOS claims music.apple.com as
+        a universal link and hands it to the Music app, which has no route for a library playlist
+        and just opens at its root — Apple's documented ceiling is ``/library``, nothing deeper. We
+        cannot code around that, so the UI tells the user where the playlist is rather than implying
+        the link will land on it.
         """
-        # Owner-openable fallback (the user is signed in — it's their library).
-        fallback = f"https://music.apple.com/library/playlist/{playlist_id}"
-        try:
-            url = f"{APPLE_API}/v1/me/library/playlists/{playlist_id}"
-            loop = asyncio.get_event_loop()
-            r = await loop.run_in_executor(
-                None,
-                lambda: _http_request("GET", url, headers=self._apple_headers(dev_token, user_token))
-            )
-            if not r.ok:
-                return fallback
-            attrs = ((r.json().get("data") or [{}])[0] or {}).get("attributes", {}) or {}
-            global_id = (attrs.get("playParams") or {}).get("globalId")
-            if global_id and storefront:
-                return f"https://music.apple.com/{storefront}/playlist/{global_id}"
-            if attrs.get("url"):
-                return attrs["url"]
-        except Exception as e:
-            logger.warning("Could not resolve Apple playlist URL: %s", str(e))
-        return fallback
+        sf = (storefront or settings.apple_storefront or "us").lower()
+        return f"https://music.apple.com/{sf}/library/playlist/{playlist_id}"
 
     async def _add_tracks_to_playlist(self, dev_token: str, user_token: str,
                                      playlist_id: str, catalog_song_ids: List[str]) -> int:
@@ -852,11 +848,9 @@ class AppleMusicTransferService:
                 dev_token, music_user_token, apple_playlist_id, tracks_added,
             )
 
-            # Best-effort openable URL for the created playlist (owner can jump straight to it in
-            # Apple Music). Never fails the export — worst case it's None and the UI omits the link.
-            apple_playlist_url = await self._get_created_playlist_url(
-                dev_token, music_user_token, apple_playlist_id, user_sf,
-            )
+            # Openable URL for the created playlist. Built from the ids we already hold — no Apple
+            # call, so it cannot fail or slow the export down.
+            apple_playlist_url = self._library_playlist_url(apple_playlist_id, user_sf)
 
             total_time = time.time() - transfer_start_time
             result = {

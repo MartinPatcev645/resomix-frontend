@@ -225,3 +225,55 @@ def test_a_429_is_still_retried_even_on_a_create() -> None:
         _http_request("POST", "https://x", headers={}, retry_5xx=False)
 
     assert len(calls) == 3
+
+
+# --------------------------------------------------------------------------------------------- #
+# The link we hand back after a successful export
+# --------------------------------------------------------------------------------------------- #
+#
+# The export itself was never broken here: a Greek user's transfer reported verified_tracks=100,
+# storefront="gr", unmatched=0 — Apple, read back, confirmed it held all 100. What failed was the
+# URL. We returned `https://music.apple.com/library/playlist/{id}` with NO storefront, so Apple
+# resolved it against the US storefront and told the owner their own playlist was "not currently
+# available in your country or region".
+#
+# These pin the storefront, because the failure is invisible from our side — the export succeeds,
+# the logs are clean, and only the person tapping the link ever sees it.
+
+def test_the_url_carries_the_users_storefront() -> None:
+    """The bug, exactly: no storefront meant Apple defaulted to the US and disowned the playlist."""
+    url = AppleMusicTransferService._library_playlist_url("p.PkxVLAYH2X6JZXG", "gr")
+
+    assert url == "https://music.apple.com/gr/library/playlist/p.PkxVLAYH2X6JZXG"
+    assert "/gr/" in url, "a storefront-less url resolves against the US storefront"
+
+
+def test_a_missing_storefront_falls_back_to_the_catalogue_one_not_to_nothing() -> None:
+    """`_get_user_storefront` can return None. Emitting a url with an empty segment would rebuild
+    the original bug in a harder-to-spot form (a doubled slash still resolves as US)."""
+    url = AppleMusicTransferService._library_playlist_url("p.1", None)
+
+    assert "//library" not in url.replace("https://", "")
+    assert url.startswith("https://music.apple.com/")
+    assert url.endswith("/library/playlist/p.1")
+
+
+def test_the_storefront_is_lowercased() -> None:
+    """Apple's storefront ids are lowercase; `GR` in a path is not guaranteed to resolve."""
+    assert AppleMusicTransferService._library_playlist_url("p.1", "GR").startswith(
+        "https://music.apple.com/gr/"
+    )
+
+
+def test_building_the_url_costs_no_apple_request() -> None:
+    """It is pure string work now.
+
+    It used to spend a request reading `playParams.globalId` in the hope of a public catalog url.
+    Apple mints that id only when a person taps Share inside the Music app — never via the API — so
+    on a playlist created seconds earlier the call could not do anything except fall through to the
+    library url. If this ever starts making a request again, that reasoning has been forgotten.
+    """
+    with patch("app.services.apple_music_transfer_service.requests.request") as req:
+        AppleMusicTransferService._library_playlist_url("p.1", "gr")
+
+    req.assert_not_called()
