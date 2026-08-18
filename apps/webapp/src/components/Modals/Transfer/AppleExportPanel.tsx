@@ -151,21 +151,24 @@ const AppleExportPanel: React.FC<Props> = ({
 
       {/* Why this caption exists.
 
-          The link Apple gives us for a newly created playlist is a LIBRARY url, not a public one.
-          Apple assigns the shareable id only when a playlist is made public, and their API cannot
-          set that — only the Music app can. So:
+          The url is a LIBRARY link — the playlist is private to the person who just exported.
 
-          - on desktop it opens straight away, because music.apple.com reads the server-side library;
-          - on a phone it hands off to the Apple Music app, which resolves against the LOCALLY
-            synced library — and a playlist created seconds ago has not synced yet, so it reports
-            "playlist not available" for a few minutes.
+          On a computer that opens the web player and lands on the playlist. On a phone iOS claims
+          music.apple.com as a universal link and hands it to the Apple Music app, which has no
+          route for a library playlist: Apple's ceiling is /library, nothing deeper. The app opens
+          at its root and the playlist is simply not shown.
 
-          Nothing is broken when that happens, and the export genuinely succeeded. Saying so up
-          front costs one line and stops it reading as a failure. */}
+          That is a limit on Apple's side, not a delay and not a failure — the export has already
+          finished and the playlist is saved. An earlier version of this caption blamed a sync lag
+          and told people to wait a few minutes, which sent at least one person round in circles;
+          waiting does nothing. So say where the playlist actually is instead.
+
+          A public link would deep-link fine, but Apple mints the id for one only when a person taps
+          Share inside the Music app — there is no API for it. Hence the last line. */}
       {playlistUrl && (
         <p className="self-center max-w-[var(--px-320)] text-center font-fira text-[length:var(--px-10)] leading-[var(--px-15)] text-[var(--rx-color-text-muted)]">
-          Opens your own Apple Music library. On a phone it can take a few minutes to appear while
-          Apple syncs — the playlist is already saved. To share it, make it public in Apple Music.
+          Opens your Apple Music library. On a phone, Apple can only open the app itself. Your
+          playlist is saved under Library › Playlists. To share it, use Share in Apple Music.
         </p>
       )}
 
