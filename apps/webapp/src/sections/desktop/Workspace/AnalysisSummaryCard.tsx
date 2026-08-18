@@ -8,6 +8,7 @@ import { keyFromCamelot } from "@/pages/analysis/heatviz.tsx";
 import { displayOrNA } from "@/utils/trackUtils.ts";
 import { formatConfidence, withConfidenceSuffix } from "@/utils/analysisConfidence.ts";
 import { resolveAnalysisReadings } from "@/utils/analysisReadings.ts";
+import { buildCharacteristics } from "@/utils/analysisCharacteristics.ts";
 import {
   downsampleSeries,
   energySeriesCoversTrack,
@@ -16,9 +17,7 @@ import {
 } from "@/utils/energyCurve.ts";
 import {
   mergeStructureSegments,
-  segmentInlineLabel,
-  segmentShowsLabel,
-  structureStripCaption,
+  structureListMeta,
   type MergedStructureSegment,
 } from "@/utils/structureStrip.ts";
 import { SubmitPendingGlyph } from "./WorkspaceStage.tsx";
@@ -59,13 +58,22 @@ const SECTION_HOT: Record<string, boolean> = {
   chorus: true,
 };
 
-function energyCaption(segments: StructureSegment[], durationMs: number, peakMs: number): string {
-  if (!durationMs) return "Energy journey";
+/**
+ * The sentence under the energy graph.
+ *
+ * Was a 10px all-caps caption reading "ENERGY JOURNEY: PEAK AROUND 0:33, RELEASES AFTER 0:46" —
+ * a heading and a finding welded together in the one type size that is hardest to read. The
+ * heading is now drawn separately, so this is just the finding, in a normal sentence.
+ */
+function energySentence(segments: StructureSegment[], durationMs: number, peakMs: number): string {
+  if (!durationMs) return "Energy across the track.";
   const drop = segments.find((s) => s.label === "drop" || s.label === "chorus");
   if (drop) {
-    return `Energy journey: peak around ${fmtClock(drop.startMs)}${drop.endMs < durationMs ? `, releases after ${fmtClock(drop.endMs)}` : ""}`;
+    return drop.endMs < durationMs
+      ? `Peak detected around ${fmtClock(drop.startMs)}, with release after ${fmtClock(drop.endMs)}.`
+      : `Peak detected around ${fmtClock(drop.startMs)}.`;
   }
-  return `Energy journey: peak around ${fmtClock(peakMs)}`;
+  return `Peak detected around ${fmtClock(peakMs)}.`;
 }
 
 function energyDesc(
@@ -140,21 +148,14 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
       ? "BPM"
       : withConfidenceSuffix("BPM", data.rhythm.confidence);
 
-  const moodChips = useMemo(() => {
-    const chips: { label: string; value: string }[] = [];
-    if (data.semantics.arousal) chips.push({ label: "Arousal", value: data.semantics.arousal.toFixed(2) });
-    if (data.semantics.valence) chips.push({ label: "Valence", value: data.semantics.valence.toFixed(2) });
-    const energy = data.semantics.moodDimensions?.energy ?? data.semantics.moodDimensions?.Energy;
-    if (typeof energy === "number") chips.push({ label: "Energy", value: energy.toFixed(2) });
-    if (data.semantics.danceability) chips.push({ label: "Danceability", value: data.semantics.danceability.toFixed(2) });
-    if (data.semantics.voiceInstrumental) {
-      chips.push({
-        label: data.semantics.voiceInstrumental === "instrumental" ? "Instrumental" : "Vocal",
-        value: data.semantics.voiceScore ? data.semantics.voiceScore.toFixed(2) : "—",
-      });
-    }
-    return chips;
-  }, [data.semantics]);
+  /**
+   * The four tiles under the structure list.
+   *
+   * ENERGY IS DELIBERATELY ABSENT. A fifth chip used to render it from `moodDimensions`; the
+   * energy graph sits directly above and shows the same thing over time, which is strictly more
+   * information than one averaged number.
+   */
+  const characteristics = useMemo(() => buildCharacteristics(data.semantics), [data.semantics]);
 
   const energySeries = data.energy.energyCurve;
   const showEnergy =
@@ -246,32 +247,59 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
                   )}
                 </span>
                 <EnergyPolyline values={downsampledEnergy} height={120} color={ACCENT} />
+                {/* Endpoints, so the curve is readable as a timeline rather than an abstract
+                    shape — until now nothing on the graph said where it started or ended. */}
+                <div className="flex justify-between px-[var(--px-12)] pb-[var(--px-8)] font-fira text-[length:var(--px-11)] tabular-nums text-[var(--rx-color-text-muted)]">
+                  <span>0:00</span>
+                  <span>{fmtDuration(data.identity.durationMs)}</span>
+                </div>
               </div>
-              <figcaption className="mt-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-60">
-                {energyCaption(data.energy.structureSegments, data.identity.durationMs, peakMs)}
+              <figcaption className="mt-[var(--px-10)]">
+                <div className="font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)]">
+                  Energy journey
+                </div>
+                <div className="mt-[var(--px-4)] font-helvetica text-[length:var(--px-15)] font-light leading-[var(--px-22)] text-[var(--rx-color-text-secondary)]">
+                  {energySentence(data.energy.structureSegments, data.identity.durationMs, peakMs)}
+                </div>
               </figcaption>
             </figure>
           )}
 
-          {hasStructure && (
-            <figure className="m-0">
-              <StructureStrip segments={mergedStructure} durationMs={data.identity.durationMs} />
-              <figcaption className="mt-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] opacity-60">
-                {structureStripCaption(data.energy.structureSegments)}
-              </figcaption>
-            </figure>
-          )}
+          {hasStructure && <StructureList segments={mergedStructure} />}
 
-          {moodChips.length > 0 && (
-            <div className="flex flex-wrap gap-[var(--px-8)]" aria-label="Mood indicators">
-              {moodChips.map((chip) => (
-                <span
-                  key={chip.label}
-                  className={WORKSPACE_BADGE}
-                >
-                  {chip.label} {chip.value}
-                </span>
-              ))}
+          {characteristics.length > 0 && (
+            <div className="border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)]">
+              <div className="border-b border-[var(--rx-color-border-subtle)] px-[var(--px-14)] py-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)]">
+                Track characteristics
+              </div>
+              {/* 2×2 on a phone, one row of four from lg — the same breakpoint the page's own
+                  two-column grid uses, so the tiles reflow with the layout around them. */}
+              <div className="grid grid-cols-2 lg:grid-cols-4">
+                {characteristics.map((tile, i) => (
+                  <div
+                    key={tile.key}
+                    className={[
+                      "px-[var(--px-14)] py-[var(--px-12)]",
+                      // Dividers drawn per position rather than with a wrapper border, so the 2×2
+                      // and 1×4 arrangements both come out with no doubled or dangling lines.
+                      i % 2 === 1 ? "border-l border-[var(--rx-color-border-subtle)]" : "",
+                      i >= 2 ? "border-t border-[var(--rx-color-border-subtle)]" : "",
+                      "lg:border-t-0",
+                      i > 0 ? "lg:border-l lg:border-[var(--rx-color-border-subtle)]" : "lg:border-l-0",
+                    ].join(" ")}
+                  >
+                    <div className="font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-muted)]">
+                      {tile.label}
+                    </div>
+                    <div className="mt-[var(--px-4)] font-fira text-[length:var(--px-22)] leading-[1.1] tabular-nums text-[var(--rx-color-text-primary)]">
+                      {tile.value}
+                    </div>
+                    <div className="mt-[var(--px-2)] font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-18)] text-[var(--rx-color-text-muted)]">
+                      {tile.definition}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -411,45 +439,91 @@ const EnergyPolyline: React.FC<{ values: number[]; height: number; color: string
   );
 };
 
-const STRUCTURE_CAP = 10;
+/** Rows shown on a phone before the rest go behind the toggle. Desktop always lists every row. */
+const STRUCTURE_VISIBLE_MOBILE = 6;
 
-const StructureStrip: React.FC<{ segments: MergedStructureSegment[]; durationMs: number }> = ({
-  segments,
-  durationMs,
-}) => {
-  const label = segments
-    .map((s) => `${s.label} ${fmtClock(s.startMs)} to ${fmtClock(s.endMs)}`)
-    .join(", ");
-  const scrollable = segments.length > STRUCTURE_CAP;
+/**
+ * The track's arrangement, as a numbered chronological list.
+ *
+ * REPLACES THE PROPORTIONAL STRIP, which encoded each section's duration as its width. That is the
+ * one property a reader cannot measure by eye, and it cost the two things they can read: any
+ * section shorter than 4% of the track had its name suppressed entirely (`segmentShowsLabel`), so
+ * the strip showed unlabelled gaps between labels, and no timings appeared anywhere. Past ten
+ * sections it also became a horizontally-scrolling element inside a vertically-scrolling page.
+ *
+ * A list gives every section a name and a time regardless of how brief it is, and it costs nothing
+ * on a narrow screen — names wrap, times do not.
+ *
+ * Drops carry an accent left border AND an accent name, but the timing stays white and the row
+ * stays numbered, so the emphasis survives greyscale and colour-blindness rather than being the
+ * only signal.
+ */
+const StructureList: React.FC<{ segments: MergedStructureSegment[] }> = ({ segments }) => {
+  const [expanded, setExpanded] = useState(false);
+  const collapsible = segments.length > STRUCTURE_VISIBLE_MOBILE;
 
   return (
-    <div className={scrollable ? "overflow-x-auto overscroll-contain" : undefined}>
-      <div
-        className={[
-          "flex h-[var(--px-28)] overflow-hidden border border-[var(--rx-color-border-default)]",
-          scrollable ? "min-w-[140%]" : "",
-        ].join(" ")}
-        role="img"
-        aria-label={`Structure: ${label}`}
-      >
+    <div className="border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)]">
+      <div className="flex items-center justify-between gap-[var(--px-12)] border-b border-[var(--rx-color-border-subtle)] px-[var(--px-14)] py-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)]">
+        <span>Track structure</span>
+        {/* Two forms of the same fact: the full wording does not fit beside the title at 320px. */}
+        <span className="text-right tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">
+          <span className="lg:hidden">{structureListMeta(segments, { short: true })}</span>
+          <span className="hidden lg:inline">{structureListMeta(segments)}</span>
+        </span>
+      </div>
+
+      <ul className="m-0 list-none p-0">
         {segments.map((s, i) => {
-          const flex = Math.max(1, s.endMs - s.startMs);
           const hot = SECTION_HOT[s.label.toLowerCase()] ?? false;
-          const showLabel = segmentShowsLabel(durationMs, flex);
+          // Hidden on a phone only; desktop has the height for the full arrangement.
+          const overflow = collapsible && !expanded && i >= STRUCTURE_VISIBLE_MOBILE;
           return (
-            <span
-              key={`${s.label}-${i}`}
+            <li
+              key={`${s.label}-${s.startMs}`}
               className={[
-                "flex min-w-0 items-center justify-center border-l border-[var(--rx-color-border-subtle)] font-fira text-[length:var(--px-9)] uppercase tracking-[var(--px-1)] first:border-l-0",
-                hot ? "bg-[rgba(238,74,38,.14)] text-[var(--color-primary)]" : "bg-[rgba(255,255,255,.02)] text-[var(--color-primary)] opacity-70",
+                overflow ? "hidden lg:grid" : "grid",
+                "grid-cols-[var(--px-28)_minmax(0,1fr)_auto] lg:grid-cols-[var(--px-32)_minmax(0,1fr)_auto]",
+                "min-h-[var(--px-44)] items-center gap-[var(--px-10)]",
+                "border-t border-[var(--rx-color-border-subtle)] first:border-t-0",
+                "py-[var(--px-8)] pl-[var(--px-12)] pr-[var(--px-14)] border-l-2",
+                hot ? "border-l-[var(--color-accent,#EE4A26)] bg-[rgba(238,74,38,.05)]" : "border-l-transparent",
               ].join(" ")}
-              style={{ flex: `${flex} 0 0` }}
             >
-              {showLabel ? segmentInlineLabel(s.label) : ""}
-            </span>
+              <span
+                className={`font-fira text-[length:var(--px-11)] tabular-nums ${
+                  hot ? "text-[rgba(238,74,38,.8)]" : "text-[var(--rx-color-text-muted)]"
+                }`}
+              >
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span
+                className={`font-fira text-[length:var(--px-12)] uppercase tracking-[var(--px-1)] [overflow-wrap:anywhere] ${
+                  hot ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--rx-color-text-secondary)]"
+                }`}
+              >
+                {s.label}
+              </span>
+              {/* Tabular and nowrap: times are the column a reader scans, so they must line up and
+                  must never be the thing that wraps. The name wraps instead. */}
+              <span className="whitespace-nowrap text-right font-fira text-[length:var(--px-12)] tabular-nums text-[var(--rx-color-text-primary)]">
+                {fmtClock(s.startMs)}–{fmtClock(s.endMs)}
+              </span>
+            </li>
           );
         })}
-      </div>
+      </ul>
+
+      {collapsible && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className={`block w-full min-h-[var(--px-44)] cursor-pointer border-0 border-t border-[var(--rx-color-border-subtle)] bg-[rgba(255,255,255,.02)] p-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,.05)] hover:text-[var(--rx-color-text-primary)] lg:hidden ${WORKSPACE_FOCUS_VISIBLE}`}
+        >
+          {expanded ? "Show fewer sections" : `Show all ${segments.length} sections`}
+        </button>
+      )}
     </div>
   );
 };
