@@ -289,3 +289,69 @@ describe('next reset', () => {
     expect((await given({}, { pending: true })).nextResetAt).toBeNull();
   });
 });
+
+/* ─────────────────────────────────────────────────────────────────────────────────────────────
+   Explain-this-number copy.
+
+   The strip renders the fraction and nothing else — no "today", no "this month". That is only
+   defensible because every metric carries an explanation the user can open. A metric added to the
+   hook WITHOUT that copy would render as a bare number with a dialog that says nothing, and no
+   type error: `title`/`description` are plain strings, so an empty one compiles fine.
+   ───────────────────────────────────────────────────────────────────────────────────────────── */
+describe('every metric can explain itself', () => {
+  it('gives all four a title and a description', async () => {
+    const result = await given();
+    expect(result.metrics.map((m) => m.key)).toEqual([
+      'searches',
+      'uploads',
+      'exports',
+      'library',
+    ]);
+
+    for (const m of result.metrics) {
+      expect(m.title.trim(), `${m.key} needs a title`).not.toBe('');
+      expect(m.description.trim(), `${m.key} needs a description`).not.toBe('');
+      // A description that merely repeats the title tells the user nothing they did not just read.
+      expect(m.description.length, `${m.key}'s description is too thin`).toBeGreaterThan(60);
+      expect(m.description.toLowerCase()).not.toBe(m.title.toLowerCase());
+    }
+  });
+
+  it('says when the timed allowances come back', async () => {
+    // The period wording left the strip, so the dialog is now the ONLY place a user can find out
+    // when a spent allowance returns. Losing this would make the redesign a net loss of information.
+    const result = await given();
+    expect(metric(result, 'searches')!.description).toMatch(/resets at midnight utc/i);
+    expect(metric(result, 'exports')!.description).toMatch(/resets at midnight utc/i);
+    expect(metric(result, 'uploads')!.description).toMatch(/renewal date/i);
+  });
+
+  it('does not promise the library cap resets, because it does not', async () => {
+    // It is a standing cap, not a window: passing it hides playlists from the list rather than
+    // spending anything, and deleting one frees a slot immediately. Describing it as a reset would
+    // tell the user to wait for something that never happens.
+    const library = metric(await given(), 'library')!;
+    expect(library.period).toBe('');
+    expect(library.description).not.toMatch(/resets at/i);
+    expect(library.description).toMatch(/link/i);
+  });
+
+  it('carries the copy through for a pro account, which sees uploads alone', async () => {
+    // Pro has every other limit unlimited (null), so uploads is the only metric on screen — and the
+    // one that used to read "0/50 THIS MONTH" and be mistaken for a countdown.
+    const result = await given({
+      limits: {
+        ...FREE_LIMITS,
+        searches_per_day: null,
+        exports_per_day: null,
+        library_playlists_max: null,
+        uploads_per_month: 50,
+      },
+    });
+
+    expect(result.metrics).toHaveLength(1);
+    expect(result.metrics[0].key).toBe('uploads');
+    expect(result.metrics[0].title.trim()).not.toBe('');
+    expect(result.metrics[0].description.trim()).not.toBe('');
+  });
+});
