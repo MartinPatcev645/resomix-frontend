@@ -267,43 +267,15 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
 
           {hasStructure && <StructureList segments={mergedStructure} />}
 
+          {/* Mobile only. On desktop the characteristics live in the right column, under the
+              reading panel — the left column's structure list is tall and the right panel is
+              short, so leaving them here stranded them below the fold beside empty space. */}
           {characteristics.length > 0 && (
-            <div className="border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)]">
-              <div className="border-b border-[var(--rx-color-border-subtle)] px-[var(--px-14)] py-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)]">
-                Track characteristics
-              </div>
-              {/* 2×2 on a phone, one row of four from lg — the same breakpoint the page's own
-                  two-column grid uses, so the tiles reflow with the layout around them. */}
-              <div className="grid grid-cols-2 lg:grid-cols-4">
-                {characteristics.map((tile, i) => (
-                  <div
-                    key={tile.key}
-                    className={[
-                      "px-[var(--px-14)] py-[var(--px-12)]",
-                      // Dividers drawn per position rather than with a wrapper border, so the 2×2
-                      // and 1×4 arrangements both come out with no doubled or dangling lines.
-                      i % 2 === 1 ? "border-l border-[var(--rx-color-border-subtle)]" : "",
-                      i >= 2 ? "border-t border-[var(--rx-color-border-subtle)]" : "",
-                      "lg:border-t-0",
-                      i > 0 ? "lg:border-l lg:border-[var(--rx-color-border-subtle)]" : "lg:border-l-0",
-                    ].join(" ")}
-                  >
-                    <div className="font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-muted)]">
-                      {tile.label}
-                    </div>
-                    <div className="mt-[var(--px-4)] font-fira text-[length:var(--px-22)] leading-[1.1] tabular-nums text-[var(--rx-color-text-primary)]">
-                      {tile.value}
-                    </div>
-                    <div className="mt-[var(--px-2)] font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-18)] text-[var(--rx-color-text-muted)]">
-                      {tile.definition}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <CharacteristicsPanel tiles={characteristics} className="lg:hidden" />
           )}
         </div>
 
+        <div className="min-w-0 space-y-[var(--px-18)]">
         <div className="border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] p-[var(--px-16)]">
           <div className="mb-[var(--px-12)] flex flex-wrap gap-[var(--px-4)]" role="tablist" aria-label="Reading">
             {readings.map((r) => (
@@ -337,6 +309,14 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
               </div>
             ) : null,
           )}
+        </div>
+
+        {/* Desktop only — the counterpart of the lg:hidden instance in the left column. Stacked
+            one per row: the right column is the narrow one (5fr), and four tiles across it would
+            crush the definitions. */}
+        {characteristics.length > 0 && (
+          <CharacteristicsPanel tiles={characteristics} stacked className="hidden lg:block" />
+        )}
         </div>
       </div>
 
@@ -438,6 +418,59 @@ const EnergyPolyline: React.FC<{ values: number[]; height: number; color: string
     </svg>
   );
 };
+
+/**
+ * The "Track characteristics" panel — rendered TWICE, split by breakpoint.
+ *
+ * On a phone it sits in the single column under the structure list, tiles 2×2. On desktop it moved
+ * to the right column beneath the reading panel (`stacked`, one tile per row): the structure list
+ * makes the left column tall while the reading panel is a few lines, so keeping the tiles on the
+ * left stranded them below the fold with a stretch of empty right column beside them.
+ *
+ * Two instances (`lg:hidden` / `hidden lg:block`) rather than CSS reordering, because the two
+ * positions are in different grid cells — no `order` trick can move a node across cells.
+ */
+const CharacteristicsPanel: React.FC<{
+  tiles: { key: string; label: string; value: string; definition: string }[];
+  stacked?: boolean;
+  className?: string;
+}> = ({ tiles, stacked = false, className = "" }) => (
+  <div className={`border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] ${className}`}>
+    <div className="border-b border-[var(--rx-color-border-subtle)] px-[var(--px-14)] py-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)]">
+      Track characteristics
+    </div>
+    <div className={stacked ? "grid grid-cols-1" : "grid grid-cols-2"}>
+      {tiles.map((tile, i) => (
+        <div
+          key={tile.key}
+          className={[
+            "px-[var(--px-14)] py-[var(--px-12)]",
+            // Dividers drawn per position so neither arrangement gets doubled or dangling lines:
+            // stacked rows separate with border-t; the 2×2 grid adds border-l on the right cell.
+            stacked
+              ? i > 0
+                ? "border-t border-[var(--rx-color-border-subtle)]"
+                : ""
+              : [
+                  i % 2 === 1 ? "border-l border-[var(--rx-color-border-subtle)]" : "",
+                  i >= 2 ? "border-t border-[var(--rx-color-border-subtle)]" : "",
+                ].join(" "),
+          ].join(" ")}
+        >
+          <div className="font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-muted)]">
+            {tile.label}
+          </div>
+          <div className="mt-[var(--px-4)] font-fira text-[length:var(--px-22)] leading-[1.1] tabular-nums text-[var(--rx-color-text-primary)]">
+            {tile.value}
+          </div>
+          <div className="mt-[var(--px-2)] font-helvetica text-[length:var(--px-13)] font-light leading-[var(--px-18)] text-[var(--rx-color-text-muted)]">
+            {tile.definition}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 /** Rows shown on a phone before the rest go behind the toggle. Desktop always lists every row. */
 const STRUCTURE_VISIBLE_MOBILE = 6;
