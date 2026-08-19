@@ -22,6 +22,21 @@ const PLAY_FALLBACK_AFTER_MS = 3000;
 // buffering hiccups — the badge only appears for a real, sustained failure the user can perceive.
 const NET_ERROR_GRACE_MS = 12000;
 
+// How long BEFORE the playback token's `exp` we mint a replacement.
+//
+// The edge token is minted by /play-session with a 4h TTL (EDGE_TOKEN_TTL_SECONDS=14400) and is
+// baked into every segment URL of the manifest. A tab left open past that window has a dead token,
+// and the next segment request 403s.
+//
+// That is a real, observed production failure: a tab open 5.5 hours produced ten 403s in 37 seconds,
+// every one carrying the same expired token, because the 403 recovery below never re-minted the
+// session. Refreshing ahead of expiry removes the failure entirely rather than relying on detecting
+// it after the fact — the recovery path stays as the backstop it was always meant to be.
+//
+// 10 minutes is comfortably longer than a stalled re-mint would take to retry, and short enough that
+// a clock skewed by a few minutes still refreshes before the server considers the token dead.
+const TOKEN_REFRESH_MARGIN_MS = 10 * 60 * 1000;
+
 // ================== Helpers ==================
 function setNetworkErrorFlag(on: boolean, reason?: string) {
   if (DEMO_MODE) return;
@@ -59,6 +74,8 @@ class HlsPlaylistController implements AudioController {
   private retryTimer: number | null = null;
   private coldRetryTimer: number | null = null;
   private netErrTimer: number | null = null;
+  // Armed whenever a playback session is minted; re-mints the edge token before it expires.
+  private tokenRefreshTimer: number | null = null;
 
   private wantPlaying = false;
   private playAfterLoad = false;
@@ -346,6 +363,7 @@ class HlsPlaylistController implements AudioController {
     this.wantPlaying = false;
     this.clearRetry();
     this.clearColdRetry();
+    this.clearTokenRefresh();
     this.clearNetworkError();
     try { this.hlsAudio.pause(); } catch { /* noop */ }
     try { this.previewAudio.pause(); } catch { /* noop */ }
@@ -819,6 +837,8 @@ class HlsPlaylistController implements AudioController {
       // newer playlist's URL.
       if (this.playlistId === requestedFor) {
         this.playlistUrl = this.updatePlaylistUrlWithAuth(response.playback_url);
+        // Re-arm off the token we just received, so each mint schedules its own replacement.
+        this.scheduleTokenRefresh();
       }
       return response;
     } catch (e) {
@@ -836,6 +856,121 @@ class HlsPlaylistController implements AudioController {
     // Playback auth is carried by the `token` (edge JWT) already present in the play-session URL.
     // The retired static api_key is no longer appended.
     return rawUrl;
+  }
+
+  // =============== Private: playback-token lifetime ===============
+
+  /**
+   * `exp` (ms) of the edge token carried by `url`, or null if it cannot be read.
+   *
+   * Read-only inspection of a claim we already hold. The token is still verified server-side on
+   * every request; nothing here grants access, it only tells us when to ask for a new one.
+   */
+  private tokenExpiryMs(url: string): number | null {
+    try {
+      const token = new URL(url).searchParams.get('token');
+      if (!token) return null;
+      const payload = token.split('.')[1];
+      if (!payload) return null;
+      // Base64URL → base64 before decoding; the JWT alphabet uses - and _.
+      const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      const exp = JSON.parse(json)?.exp;
+      return typeof exp === 'number' ? exp * 1000 : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Arm a one-shot re-mint for the CURRENT playlist's token, TOKEN_REFRESH_MARGIN_MS before it
+   * expires. Called wherever a session is minted, so it re-arms itself off each new token.
+   *
+   * Deliberately a no-op when the token cannot be read: an unparseable token is not a reason to
+   * start re-minting on a guessed schedule, and the 403 recovery still covers that case.
+   */
+  private scheduleTokenRefresh() {
+    this.clearTokenRefresh();
+    if (DEMO_MODE) return;
+
+    const expiresAt = this.tokenExpiryMs(this.playlistUrl);
+    if (expiresAt === null) return;
+
+    const remaining = expiresAt - Date.now();
+
+    // A token the CLIENT thinks is already dead means one of two things, and re-minting helps
+    // neither. Either it genuinely expired, in which case the 403 recovery is the right handler and
+    // will run on the next request; or the device clock is skewed, in which case every replacement
+    // will look equally dead and we would sit in a re-mint loop hammering /play-session. Phone
+    // clocks do drift, so this is not hypothetical. Stand down and let the server be the judge.
+    if (remaining <= 0) return;
+
+    // Inside the margin already (a long-lived tab picking up a session it minted earlier): refresh
+    // at the halfway point of what is left rather than immediately, so this can never fire faster
+    // than once per half-life however short the token is.
+    const delay = remaining > TOKEN_REFRESH_MARGIN_MS
+      ? remaining - TOKEN_REFRESH_MARGIN_MS
+      : Math.max(1000, Math.floor(remaining / 2));
+
+    const armedFor = this.playlistId;
+    this.tokenRefreshTimer = window.setTimeout(() => {
+      this.tokenRefreshTimer = null;
+      // The playlist can change (or unload) while the timer is pending; a late fire must not mint
+      // against, or restart, whatever is playing now.
+      if (this.playlistId !== armedFor || !armedFor) return;
+      if (this.mode !== 'hls') return;   // previews are a plain <audio>, no edge token involved
+      void this.refreshPlaybackToken();
+    }, delay);
+  }
+
+  private clearTokenRefresh() {
+    if (this.tokenRefreshTimer !== null) {
+      clearTimeout(this.tokenRefreshTimer);
+      this.tokenRefreshTimer = null;
+    }
+  }
+
+  /**
+   * Replace the about-to-expire token.
+   *
+   * With no engine attached there is nothing to interrupt, so we only refresh the URL and the next
+   * attach uses it. With an engine attached the manifest already holds the OLD token in every
+   * segment URL, so it has to be reloaded — same save-position, restart, restore-position, resume
+   * sequence the 403 handler performs, reused rather than reinvented.
+   */
+  private async refreshPlaybackToken() {
+    try {
+      if (!this.hls) {
+        await this.fetchPlaybackSession();
+        this.scheduleTokenRefresh();
+        return;
+      }
+
+      const savedTime = this.hlsAudio.currentTime;
+      const wasPlaying = this.wantPlaying;
+
+      await this.restartHls();   // re-mints via fetchPlaybackSession() internally
+
+      if (savedTime > 0) {
+        try { this.hlsAudio.currentTime = savedTime; } catch { /* noop */ }
+      }
+      if (wasPlaying && this.mode === 'hls') {
+        this.hlsAudio.play().catch(() => { /* the retry timer / hiccup handler are the backstop */ });
+      }
+      this.scheduleTokenRefresh();
+    } catch {
+      // A failed pre-emptive refresh is not a user-visible failure: the CURRENT token is still
+      // valid for another TOKEN_REFRESH_MARGIN_MS. Deliberately no `flagNetworkError` here — that
+      // would put a badge on a session that is still playing perfectly well. Try again shortly,
+      // and if every attempt fails the 403 recovery still runs at actual expiry.
+      this.clearTokenRefresh();
+      const armedFor = this.playlistId;
+      this.tokenRefreshTimer = window.setTimeout(() => {
+        this.tokenRefreshTimer = null;
+        if (this.playlistId !== armedFor || !armedFor) return;
+        if (this.mode !== 'hls') return;
+        void this.refreshPlaybackToken();
+      }, RETRY_EVERY);
+    }
   }
 
   private wireHlsErrorHandlers() {
