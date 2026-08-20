@@ -737,13 +737,36 @@ export function WaveTimeline({
 /* ------------------------------------------------------ StructureTimeline */
 type Segment = { startMs: number; endMs: number; label: string; confidence: number };
 
+// Warmth tracks energy: the more of the brand orange a block carries, the more is
+// going on in it. Cool blue is reserved for the two "the drums stopped" labels.
+//
+// The three vocabularies structure_v2 can emit are all covered. Which one a track
+// gets depends on its `profile`, so no single track shows a mix of them:
+//   dance      intro / build / drop / breakdown / main / section / outro
+//   downtempo  intro / build / peak / break / groove / outro
+//   beatless   intro / rise / peak / sustain / release / fade
 const SECTION_COLOR: Record<string, string> = {
+  // shared
   intro: "rgba(238,74,38,0.22)",
+  outro: "rgba(238,74,38,0.18)",
   build: "rgba(238,74,38,0.5)",
+  // dance
   drop: "#EE4A26",
   breakdown: "rgba(127,176,255,0.45)",
-  outro: "rgba(238,74,38,0.18)",
+  // `main` had no entry and fell through to the neutral grey, so the longest
+  // section of most tracks rendered as "unclassified". It is the sustained
+  // groove: full energy, but not the arrival that a drop is.
+  main: "rgba(238,74,38,0.72)",
   section: "rgba(255,255,255,0.15)",
+  // downtempo
+  peak: "#EE4A26",
+  break: "rgba(127,176,255,0.45)",
+  groove: "rgba(238,74,38,0.72)",
+  // beatless — an energy trajectory, so these read as a ramp
+  rise: "rgba(238,74,38,0.5)",
+  sustain: "rgba(238,74,38,0.35)",
+  release: "rgba(238,74,38,0.26)",
+  fade: "rgba(238,74,38,0.18)",
 };
 
 const fmtTime = (ms: number) => {

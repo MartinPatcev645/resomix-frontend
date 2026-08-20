@@ -44,7 +44,14 @@ const regions = (list: any): VoiceRegion[] =>
   arr<any>(list).map((r) => ({ startMs: num(r?.start_ms), endMs: num(r?.end_ms), meanScore: num(r?.mean_score) }));
 
 const segments = (list: any): StructureSegment[] =>
-  arr<any>(list).map((s) => ({ startMs: num(s?.start_ms), endMs: num(s?.end_ms), label: str(s?.label), confidence: num(s?.confidence) }));
+  arr<any>(list).map((s) => ({
+    startMs: num(s?.start_ms),
+    endMs: num(s?.end_ms),
+    label: str(s?.label),
+    confidence: num(s?.confidence),
+    bars: typeof s?.bars === "number" ? s.bars : null,
+    flags: arr<string>(s?.flags),
+  }));
 
 const numberRecord = (obj: any): Record<string, number> => {
   const out: Record<string, number> = {};
@@ -70,6 +77,10 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
   const spec = raw?.spectral ?? {};
   const en = raw?.energy ?? {};
   const sem = raw?.semantics ?? {};
+  // Only treat structure_v2 as usable when it actually carries sections: the
+  // stage records its own failures in this block rather than failing the run, so
+  // an empty one means "fall back to v1", not "this track has no structure".
+  const v2 = raw?.structure_v2?.segments?.length ? raw.structure_v2 : null;
   const tl = raw?.timeline ?? {};
   const comp = raw?.composition ?? {};
   const rd = raw?.readings ?? {};
@@ -134,9 +145,33 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
     energy: {
       energyCurve: series(en.energy_curve),
       onsetTimesSeconds: arr<number>(en.onset_times_seconds),
-      structureSegments: segments(en.structure_segments),
+      // structure_v2 when the service produced it, else the original v1 map.
+      // Feeding it in here rather than at each call site means the timeline
+      // strip, the summary card and the readings all move over together, and
+      // results that predate v2 keep rendering exactly as they do today.
+      structureSegments: segments(v2?.segments ?? en.structure_segments),
       bassEntryMs: num(en.bass_entry_ms),
     },
+    structureV2: v2
+      ? {
+          version: num(v2.version) || 2,
+          profile: str(v2.profile, "beatless"),
+          grid: {
+            bpm: typeof v2.grid?.bpm === "number" ? v2.grid.bpm : null,
+            lsqBpm: typeof v2.grid?.lsq_bpm === "number" ? v2.grid.lsq_bpm : null,
+            downbeatPhase: typeof v2.grid?.downbeat_phase === "number" ? v2.grid.downbeat_phase : null,
+            residualMs: typeof v2.grid?.residual_ms === "number" ? v2.grid.residual_ms : null,
+            irregular: typeof v2.grid?.irregular === "boolean" ? v2.grid.irregular : null,
+          },
+          bpmDisplay: {
+            show: v2.bpm_display?.show !== false,
+            text: str(v2.bpm_display?.text),
+            value: typeof v2.bpm_display?.value === "number" ? v2.bpm_display.value : null,
+            reliable: v2.bpm_display?.reliable === true,
+          },
+          flags: arr<string>(v2.flags),
+        }
+      : null,
     semantics: {
       genreTop: scored(sem.genre_top),
       styleMaestTop: scored(sem.style_maest_top),

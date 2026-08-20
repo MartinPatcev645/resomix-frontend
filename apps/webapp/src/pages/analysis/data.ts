@@ -5,7 +5,36 @@
 export type Series = { values: number[]; hopMs: number; unit?: string | null };
 export type Matrix = { data: number[][]; rowLabels?: string[] | null; hopMs: number };
 export type ScoredLabel = { label: string; score: number };
-export type StructureSegment = { startMs: number; endMs: number; label: string; confidence: number };
+export type StructureSegment = {
+  startMs: number;
+  endMs: number;
+  label: string;
+  confidence: number;
+  /** Whole bars spanned. Only present on structure_v2, and null on its wall-clock fallback. */
+  bars?: number | null;
+  /** structure_v2 provenance, e.g. "review", "snapped_far". */
+  flags?: string[];
+};
+
+/**
+ * The beat-aware structure result. `energy.structureSegments` is already fed from
+ * this when it exists, so nothing has to read `segments` here — what this block
+ * adds is the two decisions the sections alone cannot express:
+ *
+ *   `profile`     which vocabulary the labels are drawn from, so copy can avoid
+ *                 saying "drop" about a track that has no beat;
+ *   `bpmDisplay`  whether a tempo may be shown at all. Essentia returns a BPM for
+ *                 everything, including ambient, which is how a beatless track
+ *                 ended up captioned "steady 154.8 BPM".
+ */
+export type StructureV2 = {
+  version: number;
+  /** "dance" | "downtempo" | "beatless" */
+  profile: string;
+  grid: { bpm: number | null; lsqBpm: number | null; downbeatPhase: number | null; residualMs: number | null; irregular: boolean | null };
+  bpmDisplay: { show: boolean; text: string; value: number | null; reliable: boolean };
+  flags: string[];
+};
 export type LabelSeries = { label: string; values: number[] };
 export type TimelineTrack = { series: LabelSeries[]; hopMs: number };
 export type VoiceRegion = { startMs: number; endMs: number; meanScore: number };
@@ -20,6 +49,8 @@ export interface AnalysisData {
   tonality: { key: string | null; scale: string | null; strength: number; camelot: string | null; chromagram: Matrix; altCamelot: string | null; ambiguous: boolean | null; keyMargin: number | null; tonicInTopChroma: boolean | null; tuningHz: number | null; tuningCents: number | null; meanChroma: number[] };
   spectral: { centroidCurve: Series; rolloffCurve: Series; flatnessCurve: Series; bandwidthCurve: Series; zcrCurve: Series; melSpectrogram: Matrix; linearSpectrogram: Matrix | null };
   energy: { energyCurve: Series; onsetTimesSeconds: number[]; structureSegments: StructureSegment[]; bassEntryMs: number };
+  /** Null on results produced before structure_v2 existed, or where its stage degraded. */
+  structureV2: StructureV2 | null;
   semantics: { genreTop: ScoredLabel[]; styleMaestTop: ScoredLabel[]; moodThemeTop: ScoredLabel[]; instrumentTop: ScoredLabel[]; moodDimensions: Record<string, number>; danceability: number; approachability: number; voiceInstrumental: string; voiceScore: number; timbreBright: number; timbreDark: number; moodAcoustic: number; moodElectronic: number; valence: number; arousal: number };
   timeline: { genreOverTime: TimelineTrack; moodOverTime: TimelineTrack; instrumentOverTime: TimelineTrack; voiceRegions: VoiceRegion[] };
   composition: { stems: Record<string, StemMetrics>; vocalRegions: VoiceRegion[] };
