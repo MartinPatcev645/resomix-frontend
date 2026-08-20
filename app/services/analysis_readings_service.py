@@ -50,6 +50,13 @@ _FORMATTER = Formatter()
 
 # Section labels the structure detector emits (see resomix-analysis-service/app/utils/structure.py):
 # intro, build, drop, main, breakdown, section, outro.
+#
+# structure_v2 keeps that vocabulary for tracks with a supported beat, and swaps
+# it for a rhythm-free one when there isn't one: intro / rise / peak / sustain /
+# release / fade (beatless), or peak / break / groove (downtempo). Nothing here
+# needs to know about those — a template asking for {drop_start} is simply never
+# eligible when no section is labelled "drop", which is exactly the intent: an
+# ambient track must not be told where its drop is.
 _DROP_LABELS = ("drop",)
 
 
@@ -132,14 +139,45 @@ def _mood_top(semantics: Dict[str, Any]) -> Optional[str]:
     return max(scored, key=lambda kv: kv[1])[0]
 
 
-def _structure_facts(energy: Dict[str, Any]) -> Dict[str, str]:
+def _tempo_is_showable(result: Dict[str, Any]) -> bool:
+    """May the copy quote a BPM for this track?
+
+    ``structure_v2.bpm_display.show`` is the answer when v2 ran. Results without
+    it predate v2 and keep the old behaviour of always quoting the tempo.
+    """
+    v2 = result.get("structure_v2")
+    if not isinstance(v2, dict):
+        return True
+    display = v2.get("bpm_display")
+    if not isinstance(display, dict) or "show" not in display:
+        return True
+    return bool(display["show"])
+
+
+def _structure_segments(result: Dict[str, Any]) -> Any:
+    """Prefer structure_v2's sections; fall back to v1 for older results.
+
+    v2 snaps its boundaries to the downbeat grid, so the timestamps a template
+    quotes ("the drop enters at 2:08") land on the bar rather than a quarter-bar
+    off it. Results produced before v2 existed, or where its stage degraded,
+    still have v1 and still read fine.
+    """
+    v2 = result.get("structure_v2")
+    if isinstance(v2, dict):
+        segments = v2.get("segments")
+        if isinstance(segments, list) and segments:
+            return segments
+    return _section(result, "energy").get("structure_segments")
+
+
+def _structure_facts(result: Dict[str, Any]) -> Dict[str, str]:
     """Timestamps for the sections this track actually has.
 
     Only the *first* occurrence of each label is offered. A template says "the drop enters at X",
     and with several drops the first one is the honest answer to that sentence.
     """
     facts: Dict[str, str] = {}
-    segments = energy.get("structure_segments")
+    segments = _structure_segments(result)
     if not isinstance(segments, list) or not segments:
         return facts
 
@@ -202,9 +240,15 @@ def extract_facts(result: Dict[str, Any]) -> Dict[str, str]:
     energy = _section(result, "energy")
     semantics = _section(result, "semantics")
 
+    # structure_v2 decides whether a tempo may be quoted at all. Essentia always
+    # returns a BPM, even for a beatless ambient track where it means nothing —
+    # that is how "steady 154.8 BPM" ended up under a track with no beat. When
+    # v2 says not to show it, drop the fact and every tempo template with it.
+    tempo_ok = _tempo_is_showable(result)
+
     candidates: Dict[str, Optional[str]] = {
-        "bpm": _tempo(rhythm.get("bpm")),
-        "bpm_confidence_pct": _pct(rhythm.get("confidence")),
+        "bpm": _tempo(rhythm.get("bpm")) if tempo_ok else None,
+        "bpm_confidence_pct": _pct(rhythm.get("confidence")) if tempo_ok else None,
         "key_name": _key_name(tonality),
         "camelot": tonality.get("camelot") if isinstance(tonality.get("camelot"), str) else None,
         "key_strength_pct": _pct(tonality.get("strength")),
@@ -222,7 +266,7 @@ def extract_facts(result: Dict[str, Any]) -> Dict[str, str]:
     }
 
     facts = {k: v for k, v in candidates.items() if v}
-    facts.update(_structure_facts(energy))
+    facts.update(_structure_facts(result))
     return facts
 
 

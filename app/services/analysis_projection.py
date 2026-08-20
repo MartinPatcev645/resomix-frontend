@@ -26,9 +26,11 @@ Read off ``AnalysisSummaryCard.tsx``, field by field — not guessed:
     technical  integrated LUFS + loudness range — the two the card prints
     rhythm     bpm + confidence
     tonality   key / scale / camelot / strength
-    energy     the energy-journey curve + the section map
+    energy     the energy-journey curve + the v1 section map
     semantics  genre, style, mood dimensions, danceability, valence, arousal, voice
     readings   the DJ / producer / curator blurbs
+    structure_v2  the beat-aware section map the card now draws, plus the tempo
+                  display decision (a beatless track must not be shown a BPM)
 
 WHAT IT DOES NOT GET
 --------------------
@@ -77,6 +79,13 @@ SUMMARY_FIELDS: Dict[str, frozenset] = {
     "readings": frozenset(
         {"for_dj", "dj", "for_djs", "for_producers", "producers", "for_producer",
          "for_curators", "curators", "for_curator"}
+    ),
+    # structure_v2 is the section map the card now renders (it supersedes
+    # energy.structure_segments, which stays in the payload for older results).
+    # `beat_support` is deliberately absent: it is the rhythm-gate scorecard kept
+    # for threshold calibration, not something the card draws.
+    "structure_v2": frozenset(
+        {"version", "profile", "grid", "bpm_display", "flags", "segments", "error"}
     ),
 }
 
