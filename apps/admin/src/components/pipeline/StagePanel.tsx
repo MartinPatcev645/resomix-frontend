@@ -23,7 +23,7 @@ import {
   Zap,
 } from 'lucide-react';
 import type { PipelineStage, StageInfo } from './pipelineUtils.js';
-import { getStatusStyle, getStatusTagColor, estimateEta, formatDuration } from './pipelineUtils.js';
+import { getStatusStyle, getStatusTagColor, estimateEta, formatDuration, formatServerDateTime, parseServerDate } from './pipelineUtils.js';
 import type { ProcessingJob, IngestLog } from '@resomix/api-client';
 
 const { Text } = Typography;
@@ -146,7 +146,7 @@ function StageHeader({ stage }: { stage: StageInfo }) {
         {job && (
           <div className="flex items-center gap-4 text-xs text-secondary">
             {job.started_at && (
-              <span>Started: {new Date(job.started_at).toLocaleString()}</span>
+              <span>Started: {formatServerDateTime(job.started_at)}</span>
             )}
             {job.completed_at && job.started_at && (
               <span className="text-indigo-500 font-medium">
@@ -316,7 +316,7 @@ function IngestionPanel(props: StagePanelProps) {
       title: 'Started',
       dataIndex: 'started_at',
       key: 'started_at',
-      render: (date: string) => date ? new Date(date).toLocaleString() : 'N/A',
+      render: (date: string) => formatServerDateTime(date),
     },
     {
       title: 'Actions',
@@ -415,7 +415,7 @@ function IngestionPanel(props: StagePanelProps) {
                   <span className="macro-timeline-label">{stageName}</span>
                   {stepTime && (
                     <span className="macro-timeline-time">
-                      {new Date(stepTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      {parseServerDate(stepTime)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) ?? '--:--:--'}
                     </span>
                   )}
                 </div>
@@ -599,7 +599,7 @@ function ProcessingPanel(props: StagePanelProps) {
       title: 'Started',
       dataIndex: 'started_at',
       key: 'started_at',
-      render: (date: string) => date ? new Date(date).toLocaleString() : 'N/A',
+      render: (date: string) => formatServerDateTime(date),
     },
     {
       title: 'Actions',

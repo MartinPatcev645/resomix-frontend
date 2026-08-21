@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 import { usePipeline, usePartners } from '@resomix/hooks';
-import { PipelineStepper, StagePanel, buildStageInfosForLog, type PipelineStage } from '../components/pipeline/index.js';
+import { PipelineStepper, StagePanel, buildStageInfosForLog, formatServerDateTime, serverTime, type PipelineStage } from '../components/pipeline/index.js';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -655,25 +655,25 @@ function PipelinePage() {
                 <div className="border border-default p-4 rounded-xl bg-surface flex flex-col gap-3">
                   <div className="flex justify-between text-sm">
                     <Text className="text-secondary">Created At:</Text>
-                    <Text className="text-primary font-medium">{new Date(selectedJob.created_at).toLocaleString()}</Text>
+                    <Text className="text-primary font-medium">{formatServerDateTime(selectedJob.created_at)}</Text>
                   </div>
                   <div className="flex justify-between text-sm">
                     <Text className="text-secondary">Started At:</Text>
                     <Text className="text-primary font-medium">
-                      {selectedJob.started_at ? new Date(selectedJob.started_at).toLocaleString() : 'Pending start...'}
+                      {formatServerDateTime(selectedJob.started_at, 'Pending start...')}
                     </Text>
                   </div>
                   <div className="flex justify-between text-sm">
                     <Text className="text-secondary">Completed At:</Text>
                     <Text className="text-primary font-medium">
-                      {selectedJob.completed_at ? new Date(selectedJob.completed_at).toLocaleString() : 'In progress/incomplete'}
+                      {formatServerDateTime(selectedJob.completed_at, 'In progress/incomplete')}
                     </Text>
                   </div>
                   {selectedJob.finalizing_at && (
                     <div className="flex justify-between text-sm">
                       <Text className="text-secondary">Finalizing At:</Text>
                       <Text className="text-primary font-medium">
-                        {new Date(selectedJob.finalizing_at).toLocaleString()}
+                        {formatServerDateTime(selectedJob.finalizing_at)}
                       </Text>
                     </div>
                   )}
@@ -682,8 +682,8 @@ function PipelinePage() {
                       <Text strong className="text-secondary">Total Duration:</Text>
                       <Text strong className="text-indigo-500">
                         {(() => {
-                          const start = new Date(selectedJob.started_at).getTime();
-                          const end = new Date(selectedJob.completed_at).getTime();
+                          const start = serverTime(selectedJob.started_at);
+                          const end = serverTime(selectedJob.completed_at);
                           const diffSecs = Math.floor((end - start) / 1000);
                           if (diffSecs < 60) return `${diffSecs}s`;
                           const mins = Math.floor(diffSecs / 60);

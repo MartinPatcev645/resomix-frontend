@@ -106,7 +106,7 @@ export function deriveStageStatus(
 
   // Sort by created_at descending to get the latest job
   const sorted = [...stageJobs].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    (a, b) => serverTime(b.created_at) - serverTime(a.created_at),
   );
   const latest = sorted[0];
 
@@ -253,7 +253,7 @@ export function getLatestJobForStage(jobs: ProcessingJob[], stage: PipelineStage
   const stageJobs = getJobsForStage(jobs, stage);
   if (stageJobs.length === 0) return null;
   return [...stageJobs].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    (a, b) => serverTime(b.created_at) - serverTime(a.created_at),
   )[0];
 }
 
@@ -267,11 +267,53 @@ export function getStageCounts(jobs: ProcessingJob[], stage: PipelineStage): Sta
   };
 }
 
+// ─── Server timestamps ───────────────────────────────────────
+
+/**
+ * Parse a timestamp as the API actually emits it.
+ *
+ * The backend builds these with `datetime.utcnow().isoformat()`, which yields
+ * `2026-08-21T13:40:52` with NO timezone designator. JavaScript parses a date-time form
+ * without an offset as LOCAL time, so on a UTC+5 machine that instant lands five hours
+ * early.
+ *
+ * That hid for a long time because a difference between two such values is still
+ * correct: both shift by the same amount, so job durations were always right. Only two
+ * things broke, and both were wrong by exactly the viewer's UTC offset:
+ *   • anything compared against `Date.now()`, i.e. the ETA, which read ~2.2h for a job
+ *     that took six minutes;
+ *   • every displayed clock time, which showed the UTC value labelled as local.
+ *
+ * Appending the missing `Z` reads the value as the UTC it already is. Strings that
+ * already carry an offset, and date-only strings (which JS treats as UTC anyway), are
+ * left alone.
+ */
+export function parseServerDate(value?: string | null): Date | null {
+  if (!value) return null;
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
+  const iso = value.includes('T') && !hasZone ? `${value}Z` : value;
+  const parsed = new Date(iso);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/** Milliseconds since epoch for a server timestamp, or NaN when unparseable. */
+export function serverTime(value?: string | null): number {
+  const d = parseServerDate(value);
+  return d ? d.getTime() : NaN;
+}
+
+/** Locale-formatted date+time for a server timestamp. */
+export function formatServerDateTime(value?: string | null, fallback = 'N/A'): string {
+  const d = parseServerDate(value);
+  return d ? d.toLocaleString() : fallback;
+}
+
 // ─── Duration formatting ─────────────────────────────────────
 
 export function formatDuration(startIso: string, endIso: string): string {
-  const start = new Date(startIso).getTime();
-  const end = new Date(endIso).getTime();
+  const start = serverTime(startIso);
+  const end = serverTime(endIso);
+  if (Number.isNaN(start) || Number.isNaN(end)) return '—';
   const diffSecs = Math.floor((end - start) / 1000);
   if (diffSecs < 0) return '—';
   if (diffSecs < 60) return `${diffSecs}s`;
@@ -292,7 +334,10 @@ export function estimateEta(job: ProcessingJob): string | null {
   const total = job.total_tracks || 0;
   if (processed === 0 || total === 0) return null;
 
-  const elapsedMs = Date.now() - new Date(job.started_at).getTime();
+  const startedMs = serverTime(job.started_at);
+  if (Number.isNaN(startedMs)) return null;
+  const elapsedMs = Date.now() - startedMs;
+  if (elapsedMs <= 0) return null;
   const msPerTrack = elapsedMs / processed;
   const remaining = total - processed;
   const etaMs = msPerTrack * remaining;
@@ -408,7 +453,7 @@ export function buildStageInfosForLog(
     // For transcode, embeddings, peaks, segments
     const stageJobs = jobs.filter(j => j.ingest_log_id === log.id && jobTypeToStage(j.job_type) === id);
     const latestJob = stageJobs.sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      (a, b) => serverTime(b.created_at) - serverTime(a.created_at),
     )[0] || null;
 
     let status: StageStatus = 'queued';
