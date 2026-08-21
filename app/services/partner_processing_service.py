@@ -285,12 +285,15 @@ async def start_transcode_job(
     if job is None:
         raise ValueError(f"Processing job {job_id} not found")
     job.status = "running"
-    # A retry re-uses this row, so clear the previous attempt's failure: otherwise the UI
-    # shows a stale error and a completed_at that predates the run currently in flight.
-    # (Mirrors resume_embeddings_job.) No-op on the auto-spawn path, where both are None.
+    # A retry re-uses this row, so clear the previous attempt entirely: a stale error or a
+    # completed_at predating the run in flight both misreport what is happening. started_at
+    # restarts too, because this call always re-collects and re-hands the outstanding work,
+    # so it is a fresh attempt rather than a continuation. Carrying the first attempt's
+    # start forward would report the gap between attempts as job duration, which is how a
+    # two-minute transcode came out as "46m 28s".
     job.completed_at = None
     job.error_details = None
-    job.started_at = job.started_at or datetime.utcnow()
+    job.started_at = datetime.utcnow()
     await db.commit()
 
     # The transcode job needs the snapshot dir holding the moved uploads.

@@ -12,9 +12,9 @@
 
 *Last updated 2026-08-21, after the first live run (29 tracks).*
 
-The test found **four faults that no dry run could have found**. Three blocked partner onboarding
-outright, the fourth is a security gap. All four are fixed. Detail for every item is in section 3;
-this table is the summary.
+The test found **five faults that no dry run could have found**. Three blocked partner onboarding
+outright, one is a security gap, and one meant the transcode stage could never have worked. All five
+are fixed. Detail for every item is in section 3; this table is the summary.
 
 ### Fixed during the test
 
@@ -22,15 +22,23 @@ this table is the summary.
 |---|---|---|---|
 | **F8** | Provisioning chowned partner folders to uid 1000, but SFTPGo runs as `sftpgo` (999) | No partner could upload a single byte | Fixed, deployed, backfilled |
 | **F9** | The media status endpoint never returned `processing_dir` | Every live batch dead-ends at INGESTED: no transcode, no embeddings, no index | Fixed, deployed |
-| **F10** | No endpoint could start a transcode job, and the admin button offered for it re-ran ingestion instead | Any transcode failure is unrecoverable from the UI | Fixed, backend deployed, frontend pending |
-| **F11** | clamAV could not read a single partner file, and ingestion treated every failed scan as clean | Uploads were never virus-scanned, and nothing anywhere said so | Fixed in code; **host fix must be applied first** |
+| **F10** | No endpoint could start a transcode job, and the admin button offered for it re-ran ingestion instead | Any transcode failure is unrecoverable from the UI | Fixed and deployed; used successfully to resume run #11 |
+| **F11** | clamAV could not read a single partner file, and ingestion treated every failed scan as clean | Uploads were never virus-scanned, and nothing anywhere said so | Host fixed and verified; code fixed |
+| **F12** | ffmpeg was handed a `.tmp` output path and could not infer a container, so every transcode aborted. The error was then truncated to the ffmpeg banner | No track could ever be transcoded, and the reason was unreadable | Fixed, deployed, transcode now 29/29 |
 
-F9 and F10 are the heart of it. Both are invisible to a `test/` dry run by construction, which is
-why the pipeline looked healthy for months. Only a real live batch could surface them. F11 was
-invisible to any run at all, because it announced itself only in the journal.
+These stack rather than compete. F9 stopped the batch before transcode, so F12 could not be
+discovered until F9 was fixed, and F10 meant there was no way to retry once it had been. Each fix
+exposed the next fault. All of them are invisible to a `test/` dry run by construction, which is why
+the pipeline looked healthy for months. F11 was invisible to any run at all, because it announced
+itself only in the journal.
 
 **One ordering constraint.** The F11 code change is fail-closed: an unscannable file now fails the
 batch. Apply the clamd host fix and verify it before deploying, or every batch will be rejected.
+Done and verified on the media box on 2026-08-21.
+
+**Where the test stands.** With all five deployed, run #11 went the whole way: 29/29 transcoded,
+29/29 embedded, no failures. That is the first partner batch in the project's history to get past
+INGESTED. What remains is Phase 2's verification half, section 4.
 
 ### Needs a decision
 
@@ -86,7 +94,8 @@ no DB. Media never writes to the database; Alwyzon never touches the files.
 - **Validation.** Manifest header and ISRC-format checks, real-audio probe via ffprobe, a maximum
   source duration, `.wav` / `.flac` / `.mp3` / `.aiff` accepted, zip handling with a strict
   allowlist, and clamAV scanning. All-or-nothing: one bad row fails the whole batch. *The clamAV
-  half is wired up but does not currently work, and fails open without reporting it, see F11.*
+  half had never actually scanned anything and passed every file regardless, see F11. Fixed, but
+  the host fix has to be applied before the code change is deployed.*
 - **Dry-run mode.** Uploading to `test/` instead of `live/` validates and reports counts without
   persisting anything.
 - **Atomic move.** On successful validation, every file is moved `live/ → processing/<UTC-dt>/` one
@@ -97,7 +106,8 @@ no DB. Media never writes to the database; Alwyzon never touches the files.
 - **Persistence.** Track and audio-file rows written to the Alwyzon DB, guarded against
   double-persist by a lock and a staleness check.
 - **Transcode.** A separate job converts each track to `internal/raw/<uuid>.mp3` at 128 kbps, read
-  from `processing/<dt>/`. Auto-spawned after persist and runs concurrently with embedding.
+  from `processing/<dt>/`. Auto-spawned after persist and runs concurrently with embedding. *Had
+  never once run to completion before 2026-08-21, see F12.*
 - **Embeddings and index.** Auto-spawned, then FAISS index and catalog build.
 - **Stage timeline.** `ingest_logs.stage` and `stage_timeline` (UTC) record `RECEIVED`,
   `VALIDATING`, `PERSISTING`, `INGESTED`, `EMBEDDING`, `INDEXED`, `FINALIZING`, `READY`, plus the
@@ -110,9 +120,9 @@ no DB. Media never writes to the database; Alwyzon never touches the files.
 
 ## 3. Findings
 
-Eleven, in the order they were found. **F1 to F5** came from reading the code before the run: none
+Twelve, in the order they were found. **F1 to F5** came from reading the code before the run: none
 is a fault, four are behaviours to work with, and F1 is a small reporting improvement awaiting
-approval. **F6 to F11** came from actually running it, and four of those are real faults that no
+approval. **F6 to F12** came from actually running it, and five of those are real faults that no
 amount of code reading had caught.
 
 **F6 and F7 came out of the first real upload attempt and are different in kind.** F6 is a genuine
@@ -493,6 +503,50 @@ posture for content we redistribute, but it means the clamd host fix is a hard p
 tracks. Once clamd works, sweep what is already on disk:
 `sudo clamdscan -r /srv/sftp/partners/ | tail -5`.
 
+### F12. Transcode could never have worked: ffmpeg was asked to write a file it could not name
+
+**Found 2026-08-21, on the first transcode that ever ran. Fixed in code, needs deploy.**
+
+With F9 and F10 fixed, the transcode job finally started for real, and failed **29 of 29**.
+
+**The cause.** `transcode_one_track` writes to a temp sibling and atomically renames it into place,
+so a concurrent reader never sees a half-written file. Sensible, and the overlapped embedding job
+depends on it. But the temp name is `<uuid>.mp3.tmp`, and `_transcode_to_mp3` passed that straight to
+ffmpeg as the output path. ffmpeg picks its output container from the file extension, `.tmp` means
+nothing to it, and it aborts before encoding a single frame:
+
+```
+[NULL @ 0x…] Unable to find a suitable output format for '…/<uuid>.mp3.tmp'
+…/<uuid>.mp3.tmp: Invalid argument
+```
+
+Nothing to do with the files, the codec, or permissions. Every source format, every file, instantly.
+
+**Why it survived this long.** Transcode had never actually run: `INGEST_INLINE_TRANSCODE` is off by
+default, and the standalone job was unreachable because of F9. On top of that, the D4 fast path
+copies an mp3 already at or below ~133 kbps with `shutil.copy2` instead of invoking ffmpeg, so a
+batch of low-bitrate mp3s would have appeared to work. This batch is 320 kbps mp3s and flacs, so
+every single file took the ffmpeg branch.
+
+**The second fault, which is why the cause was invisible.** The error was captured as
+`r.stderr[:300]`. ffmpeg opens with about a kilobyte of version banner and build configuration and
+puts the actual failure at the *end*, so all 29 admin entries contained nothing but the ffmpeg
+version string and half the `configure` line. The failure was being reported in full and truncated
+down to exactly the part that carries no information.
+
+**Fix (done in code):**
+- `-f mp3` added to the ffmpeg invocation, so the container is stated explicitly and the output
+  filename no longer matters. This keeps the atomic-rename design rather than working around it.
+- New `_ffmpeg_error()` takes the *tail* of stderr, strips the banner and `lib*` version lines, and
+  returns the last few meaningful lines capped at 500 chars. Applies to every future ffmpeg failure,
+  not just this one.
+
+File: `resomix-similarity-open/app/services/ingestion_runner.py`. 64 tests pass.
+
+**Retrying after the deploy picks the failed tracks back up.** `_collect_targets` filters on
+`transcode_status != "completed"`, so all 29 are collected again; it does not filter for `pending`
+specifically. No cleanup needed before hitting retry.
+
 ### Also noted
 
 `INGEST_SKIP_VALIDATION=true` exists as an env flag to skip all per-file checks, commented "for our
@@ -615,19 +669,32 @@ ingest-log table keeps its own retry, which is where re-ingesting genuinely belo
 Files: `app/api/routers/admin/processing.py`, `app/services/partner_processing_service.py`,
 `resomix-web/apps/admin/src/components/pipeline/StagePanel.tsx`. `pnpm --filter admin build` passes.
 
-**One manual step remains, for run #11 only.** Its `processing_dir` cannot self-heal, because
-`_refresh_log_from_hetzner` returns early for terminal logs and so never asks the fixed endpoint:
-`UPDATE ingest_logs SET processing_dir = '20260821T073130Z' WHERE id = 11;`
+**F11, the virus scan accepted everything unscanned.** Two host causes, both real at once: `clamav`
+was not in the `sftpgo` group, and AppArmor denies `clamd` any read under `/srv/sftp/`. Fixed on the
+host with a group add plus a profile rule. In code, a scan that cannot complete is no longer treated
+as clean: it produces a per-row `AV_SCAN_FAILED` naming the file and the reason, through the same
+error path every other validation failure already uses, so no new status field or surface was added.
+The zip path had the mirror-image bug and now shares the two codes. *Code written, host fix required
+before deploying.*
+Files: `resomix-similarity-open/app/services/ingestion_runner.py`,
+`app/services/ingestion_service.py`, `tests/test_ingestion_runner.py`. 64 tests pass.
+
+**F12, transcode had never worked.** ffmpeg was given a `<uuid>.mp3.tmp` output path and cannot
+infer a container from `.tmp`, so it aborted on every file before encoding anything. Fixed with an
+explicit `-f mp3`. The reason was unreadable because the error was captured as `stderr[:300]`, which
+is pure ffmpeg banner; a new `_ffmpeg_error()` now takes the informative tail instead, for every
+ffmpeg failure and not just this one. *Code written, needs deploy.*
+File: `resomix-similarity-open/app/services/ingestion_runner.py`. 64 tests pass.
+
+**Two manual steps remain.**
+
+1. Run #11's `processing_dir` cannot self-heal, because `_refresh_log_from_hetzner` returns early
+   for terminal logs and so never asks the fixed endpoint:
+   `UPDATE ingest_logs SET processing_dir = '20260821T073130Z' WHERE id = 11;`
+2. Everything ingested before today was accepted unscanned. Once clamd works, sweep the existing
+   files: `sudo clamdscan -r /srv/sftp/partners/ | tail -5`.
 
 ### Awaiting approval
-
-**F11, the virus scan does not work and hides it. Decision needed.** The host-side half is
-minutes: give `clamav` read access to the partner tree, by group membership or an AppArmor rule,
-whichever the diagnostic in F11 points at. The half that needs a decision is what ingestion should
-do when a scan cannot complete. Today it passes silently. The proposal is to keep the per-file
-fail-open but carry an AV summary into the job state and the ingest log, so "0 of 29 scanned"
-is visible in admin and a whole-batch failure needs a human. **2 to 3 hours.** Not implemented
-yet on purpose: making ingestion stricter mid-test could block the 5,000-track run.
 
 **F6, SFTP hostname. ~half a day.** A small TCP proxy VPS, `sftp.resomix.com` pointed at it,
 PROXY protocol enabled both ends, and the media box's public 2022 closed. Without it no partner can
@@ -690,7 +757,7 @@ run and are written up above.
 the per-track slope is the number that matters for the 5,000-track run, so **measure it on the
 50-track live pass** and extrapolate before committing to the full batch.
 
-### Phase 2: live run into `live/`, 2026-08-21. STALLED AT INGESTED (F9)
+### Phase 2: live run into `live/`, 2026-08-21. PIPELINE COMPLETED after five fixes
 
 Run **#11**, partner 6, 29 tracks. The first half is clean and everything it proves is real.
 
@@ -731,26 +798,52 @@ reason the second was enough. Take the "audio probe passed" claim below as verif
 virus scan as never having run.
 
 **Timing so far:** 23s for 29 tracks through validate + move + persist, against 72s for 3 tracks
-in the dry run. The dry run was almost entirely fixed overhead, so there is still no usable
-per-track slope for the 5,000-track estimate. Take it from the re-run, and take it from
-transcode and embeddings rather than from ingestion, since those are the parts that scale
-with audio length.
+in the dry run. The dry run was almost entirely fixed overhead, so ingestion itself gives no usable
+per-track slope. The parts that scale with audio length are transcode and embeddings.
 
-**To resume**, in this order. The 29 tracks are already persisted, so this picks up where it
-stopped rather than re-ingesting. Do **not** use "Retry Ingestion Batch": it starts a new run
-against an empty `live/` and leaves this one where it is (F10).
+**Measured on the successful run:**
 
-1. Deploy the media service (F9) and Alwyzon (F10 backend), and rebuild admin (F10 frontend).
-2. Backfill run #11's `processing_dir`. It cannot self-heal: `_refresh_log_from_hetzner` returns
-   early for terminal logs, so the fixed endpoint is never asked about this one.
-   ```sql
-   -- folder name from: ls /srv/sftp/partners/b3a56a4e427d/processing/
-   UPDATE ingest_logs SET processing_dir = '20260821T073130Z' WHERE id = 11;
-   ```
-3. Hit **Retry Transcode** on job #3 in admin. Embeddings then auto-spawn from the post-transcode
-   safety net, so the rest of the chain runs unattended.
+| Stage | 29 tracks | Naive 5,000 projection |
+|---|---|---|
+| Ingestion (validate + move + persist) | 23 s | mostly fixed overhead, does not scale with audio |
+| Transcode | not measured, see the `started_at` note above | ~30 min, from ffmpeg at 75x across ~12 workers |
+| Embeddings | **1 m 40 s** | **~4.8 hours** |
 
-Only step 2 is specific to this run. Later batches need none of it.
+**Embeddings dominate, by a wide margin.** 100 s for 29 tracks is about 3.4 s each, and nothing in
+that path is obviously batched, so 5,000 extrapolates to the best part of a working day. Before
+committing to Phase 4, that is the number worth attacking or at least planning around: whether the
+GPU embed-server batches requests, whether the overlap mode (embeddings consuming mp3s as transcode
+produces them, rather than the single-pass `auto:post-transcode` path this run took) recovers the
+transcode time, and whether the FAISS build at the end is linear. Treat the transcode projection as
+an order of magnitude from one file rather than a measurement.
+
+**How it was resumed** (all five fixes deployed, then one manual step):
+
+1. Media and Alwyzon deployed, admin rebuilt.
+2. clamd given read access to the partner tree, verified with `clamdscan` before deploying the
+   fail-closed F11 change.
+3. Run #11's `processing_dir` backfilled by hand, the only step specific to this run:
+   `UPDATE ingest_logs SET processing_dir = '20260821T073130Z' WHERE id = 11;`
+4. **Retry Transcode** on job #3.
+
+**Result: the whole chain ran.**
+
+| Stage | Job | Result |
+|---|---|---|
+| Transcode | #3 | **29/29, 0 failed** |
+| Embeddings | #4, `auto:post-transcode` | **29/29, 0 failed, 1m 40s** |
+
+The post-transcode safety-net spawn fired on its own, exactly as designed, so embeddings needed no
+intervention. This is the first time in the project's history that a partner batch has gone from
+SFTP upload through to embeddings.
+
+**Note the transcode duration shown in admin, "46m 28s", is wrong and now fixed.** It came from the
+F10 change preserving `started_at` across a retry, so the figure spans the original 07:31:54 failure
+through every fix and deploy in between rather than the run itself. `start_transcode_job` now resets
+`started_at` on each attempt, since it always re-collects and re-hands the outstanding work and is
+therefore a fresh attempt, not a continuation. Real transcode duration for this batch has to come
+from the journal:
+`journalctl -u resomix-media --since "2026-08-21 10:00" --no-pager | grep TranscodeRunner`
 
 | # | Phase | What happened | Stage reported | Root cause | Fixed? |
 |---|---|---|---|---|---|
@@ -758,7 +851,9 @@ Only step 2 is specific to this run. Later batches need none of it.
 | 2 | 1 | Upload failed `EACCES` on first byte | n/a, never started | F8 folders chowned to uid 1000, SFTPGo is 999 | yes, in code + backfilled |
 | 3 | 2 | Transcode failed instantly, `0/0` in `0s`; embeddings never spawned | INGESTED, halted | F9 status endpoint dropped `processing_dir` | deployed; run #11 needs the SQL backfill |
 | 4 | 2 | No way to restart the failed transcode; its retry button re-ran ingestion instead | INGESTED, halted | F10 no transcode start endpoint + mis-wired button | backend deployed, frontend pending |
-| 5 | 2 | clamAV returned `ERROR` on all 29 files; batch passed anyway, nothing reported | none, silent | F11 clamd cannot read the partner tree + fail-open by design | not fixed, awaiting decision |
+| 5 | 2 | clamAV returned `ERROR` on all 29 files; batch passed anyway, nothing reported | none, silent | F11 clamd blocked by BOTH group perms and AppArmor + fail-open by design | host fixed + verified, code fixed |
+| 6 | 2 | Transcode failed 29/29; every error message was just the ffmpeg version banner | INGESTED, halted | F12 ffmpeg cannot infer a container from a `.tmp` output path; stderr truncated head-first | deployed, transcode then 29/29 |
+| 7 | 2 | Transcode reported a duration of "46m 28s" for a run of a few minutes | cosmetic | F10 fix preserved `started_at` across a retry, so the figure spanned the gap between attempts | yes, `started_at` resets per attempt |
 
 ---
 
