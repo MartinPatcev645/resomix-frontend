@@ -48,13 +48,24 @@ Done and verified on the media box on 2026-08-21.
 recorded, all jobs completed, `--verify` fully green. That is the first partner batch in the
 project's history to complete the pipeline end to end.
 
-The partner API was then exercised with a real key (`scripts/partner_api_smoke.py`). Auth, tenant
-isolation and input validation all behave. Search and similarity both failed, which is F14 and F15;
-both are fixed and awaiting deploy.
+**The partner API is green.** `scripts/partner_api_smoke.py` against the live key, 2026-08-21:
+**11 passed, 0 failed, 0 warnings.** Auth, tenant isolation, unauthenticated refusal, search,
+similarity, `top_sk` validation, unknown-id handling and the per-key rate limit all behave. Sample
+similarity output for a 29-track catalogue:
 
-Remaining before Phase 4 (5,000 tracks): re-run the API smoke test green, review `logs.json` in the
-batch folder, and answer the embeddings throughput question, since that stage projects to roughly
-4.8 h at 5,000.
+```
+seed: Regis - Clean Air
+  0.6750  Tim Paris, Sex Judas - Version B Original Mix
+  0.6642  Ignacio Tardieu - Arapaima
+  0.6588  Luca Agnelli - 7 O' Clock (Luca Agnelli Remix)
+```
+
+Rate limiting confirmed live: 30 concurrent requests against a 10 rps key returned 27 x 200 and
+3 x 429. Note the limiter is a token bucket of capacity `rps * 2` that refills during the burst, so
+"more than 20 got through" is expected rather than a fault, and the script's ceiling accounts for it.
+
+Remaining before Phase 4 (5,000 tracks): review `logs.json` in the batch folder, and answer the
+embeddings throughput question, since that stage projects to roughly 4.8 h at 5,000.
 
 ### Needs a decision
 
@@ -772,6 +783,52 @@ stays false for the whole batch.
 Harmless functionally, but it means admin reports a batch as unindexed when it is indexed, which is
 exactly the kind of thing that sends someone chasing a non-existent bug later. Either set the flag
 for the whole batch when a rebuild reports success, or drop the column in favour of asking the index.
+
+### F17. A legitimate filename was rejected as path traversal, costing a real track
+
+**Found 2026-08-21, batch A of the repeat-ingestion test. Fixed in code, needs deploy.**
+
+Batch A embedded **99 of 100**. The one failure:
+
+```json
+{"track_uuid": "a18d5180-4a91-4277-a258-07d849241848",
+ "message": "Path traversal detected in uuid/filename"}
+```
+
+`_embed_one` rejected the track because `_has_path_traversal` returns true for any value
+containing `..`, `/` or `\`. A filename cannot contain `/` and still exist on disk, and the batch
+had already passed validation (which resolves `audio_dir / audio_filename` and requires the file to
+exist), so the trigger is the `..` substring: an Electrobuzz title with an ellipsis, something along
+the lines of `Sometimes i feel like....mp3`.
+
+**Two things are wrong with that check as applied to a filename.**
+
+1. `..` is only traversal when it forms a whole path *segment*. `a..b.mp3` is a perfectly ordinary
+   filename. The substring test rejects safe names.
+2. In this code path the filename **never touches the filesystem**. `_find_raw_audio` locates the
+   audio by **uuid** (`raw_dir.glob(f"{track_uuid}.*")`); `filename` is passed on only to
+   `_get_content_type_for_filename` for a MIME type and as the multipart field name in the HTTP
+   call to the GPU embed server. So it was guarding a hazard that does not exist here, and the
+   guard that does matter, on the uuid, is untouched by this.
+
+**Fix (done in code).** Split the two, because they are genuinely different questions:
+
+- `_has_path_traversal` stays exactly as it was and still guards `track_uuid`, which really is used
+  to build a path. The other two call sites (both uuids) are unchanged.
+- New `_is_unsafe_basename` guards the filename: rejects a path separator or a bare `.` / `..`,
+  permits `..` inside a name, and treats empty as fine since the caller falls back to the on-disk
+  name.
+- The error message now names the offending filename instead of saying "uuid/filename", so the next
+  person does not have to work out which of the two it meant.
+
+Covered by a predicate test over both safe titles and hostile inputs.
+
+File: `resomix-similarity-open/app/api/internal.py`.
+
+**The affected track recovers on its own.** An embedding failure deactivates the track
+(`_DEACTIVATE_ON_FAIL`), so it is currently inactive and out of the catalogue. Re-running embeddings
+for the batch after the deploy will succeed and, thanks to F15, reactivate it automatically. This is
+the first time the F15 recovery path gets exercised by a real failure rather than a contrived one.
 
 ### Also noted
 

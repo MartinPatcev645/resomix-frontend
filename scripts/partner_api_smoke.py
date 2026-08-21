@@ -317,6 +317,63 @@ def check_top_sk(base: str, key: str, r: Result, seed: Dict[str, Any]) -> None:
         r.warn(f"top_sk=7 returned HTTP {status}")
 
 
+def check_rate_limit(base: str, key: str, r: Result, rps: int) -> None:
+    """Fire a burst and confirm the key's requests-per-second limit actually bites.
+
+    The limiter is a token bucket whose capacity is ``rps * 2`` (a two-second burst
+    window), so a 10 rps key legitimately lets ~20 requests through at once. To see a
+    429 at all we have to exceed that, hence 3x. Requests go out concurrently, because
+    sequential ones refill the bucket as they go and would never trip it.
+
+    Opt-in: this deliberately provokes a 429, which is rude to do on every run.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    burst = rps * 3
+    print(f"\n7. Rate limit (key configured for {rps} rps, bucket capacity ~{rps * 2})")
+    url = f"{base.rstrip('/')}/api/v1/partner/me"
+    headers = {"Authorization": f"Bearer {key}"}
+
+    def one(_: int) -> int:
+        try:
+            return requests.get(url, headers=headers, timeout=30).status_code
+        except Exception:  # noqa: BLE001
+            return 0
+
+    started = time.monotonic()
+    with ThreadPoolExecutor(max_workers=burst) as pool:
+        codes = list(pool.map(one, range(burst)))
+    elapsed = time.monotonic() - started
+
+    ok_n = sum(1 for c in codes if c == 200)
+    limited = sum(1 for c in codes if c == 429)
+    other = [c for c in codes if c not in (200, 429)]
+
+    r.info(f"{burst} concurrent requests in {elapsed:.2f}s: {ok_n} x 200, {limited} x 429")
+    if other:
+        r.warn(f"unexpected status codes: {sorted(set(other))}")
+
+    if limited:
+        r.ok(f"limit enforced, {limited} request(s) refused with 429")
+        # The bucket refills while the burst is still landing, so the ceiling is not the
+        # capacity but capacity + rps * (however long the burst actually took). Comparing
+        # against the bare capacity produces a false alarm on any slow network: a 4s burst
+        # against a 10 rps key legitimately lets ~26 through, not ~20.
+        ceiling = rps * 2 + rps * elapsed
+        if ok_n > ceiling + 2:
+            r.warn(
+                f"{ok_n} got through, above the {ceiling:.0f} that capacity plus "
+                f"{elapsed:.1f}s of refill allows"
+            )
+    else:
+        # Not proof the key is wrong: the limiter no-ops entirely when its Redis pool
+        # is unavailable, which fails OPEN and is worth knowing about on its own.
+        r.fail(
+            f"all {burst} succeeded, no 429. Either the key's rps limit is not applied, "
+            f"or Redis is unreachable and the limiter is failing open"
+        )
+
+
 def check_bad_track_id(base: str, key: str, r: Result) -> None:
     """A made-up id must 404, not 500 and not silently return someone else's tracks."""
     print("\n6. Unknown track id")
@@ -347,6 +404,9 @@ def main() -> int:
     ap.add_argument("--top-sk", type=int, default=20, choices=(10, 20, 50, 100))
     ap.add_argument("--query", action="append", default=[],
                     help="Search term. Repeatable. Defaults to a broad sweep.")
+    ap.add_argument("--check-rate-limit", type=int, metavar="RPS", default=None,
+                    help="Burst-test the key's requests-per-second limit. Pass the RPS the "
+                         "key is configured for. Opt-in: it deliberately provokes 429s.")
     ap.add_argument("--track-uuid", action="append", default=[],
                     help="Seed similarity from these track UUIDs instead of relying on "
                          "search. Repeatable. Needed while search is ES-backed and a "
@@ -392,6 +452,9 @@ def main() -> int:
         print("     Search returned nothing and no --track-uuid was given.")
 
     check_bad_track_id(args.base, args.key, r)
+
+    if args.check_rate_limit:
+        check_rate_limit(args.base, args.key, r, args.check_rate_limit)
 
     print(f"\n{'-' * 62}")
     print(f"{r.passed} passed, {r.failed} failed, {r.warned} warning(s)")
