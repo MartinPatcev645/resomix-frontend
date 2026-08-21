@@ -1,10 +1,55 @@
-# Partner Ingestion — End-to-End Test Plan (Electrobuzz)
+# Partner Ingestion: End-to-End Test Plan (Electrobuzz)
 
 > **Created 2026-08-19.** Goal: prove the reworked partner ingestion pipeline handles a real
 > catalogue batch end to end, from SFTP upload through to tracks being queryable via the API and
 > visible in admin. Dry run at **50 tracks** first, then the full **5,000**.
 >
 > Test partner: **`test_electrobuzz_5000`**, created solely for this and deleted afterwards.
+
+---
+
+## 0. Status at a glance
+
+*Last updated 2026-08-21, after the first live run (29 tracks).*
+
+The test found **four faults that no dry run could have found**. Three blocked partner onboarding
+outright, the fourth is a security gap. All four are fixed. Detail for every item is in section 3;
+this table is the summary.
+
+### Fixed during the test
+
+| # | What was wrong | Impact if left | State |
+|---|---|---|---|
+| **F8** | Provisioning chowned partner folders to uid 1000, but SFTPGo runs as `sftpgo` (999) | No partner could upload a single byte | Fixed, deployed, backfilled |
+| **F9** | The media status endpoint never returned `processing_dir` | Every live batch dead-ends at INGESTED: no transcode, no embeddings, no index | Fixed, deployed |
+| **F10** | No endpoint could start a transcode job, and the admin button offered for it re-ran ingestion instead | Any transcode failure is unrecoverable from the UI | Fixed, backend deployed, frontend pending |
+| **F11** | clamAV could not read a single partner file, and ingestion treated every failed scan as clean | Uploads were never virus-scanned, and nothing anywhere said so | Fixed in code; **host fix must be applied first** |
+
+F9 and F10 are the heart of it. Both are invisible to a `test/` dry run by construction, which is
+why the pipeline looked healthy for months. Only a real live batch could surface them. F11 was
+invisible to any run at all, because it announced itself only in the journal.
+
+**One ordering constraint.** The F11 code change is fail-closed: an unscannable file now fails the
+batch. Apply the clamd host fix and verify it before deploying, or every batch will be rejected.
+
+### Needs a decision
+
+| # | What | Why it needs you | Estimate |
+|---|---|---|---|
+| **F6** | The SFTP hostname we hand partners is Cloudflare-proxied, which does not carry SFTP | No partner can connect. The test works around it with the origin IP, which we do not want to give out | ~half a day |
+| **F7** | Only ~30% of Electrobuzz files carry an ISRC, which ingestion requires | A real catalogue onboards a third of itself. Product call: keep ISRC mandatory, or accept a partner-supplied id for similarity-only partners | Decision only |
+| **F1** | `MOVED` reaches the partner's log but not the admin timeline | Cosmetic accuracy in the admin view. Was already awaiting approval before this run | 1.5 h |
+
+### Behaviours to work with, not faults
+
+**F2** `.done` must arrive over SFTP, not be written on the box. **F3** the built-in dry run is
+shallower than it looks. **F4** one active batch per partner, by design. **F5** take the backup
+before `.done`, because the move empties `live/`.
+
+### Also open, pre-existing
+
+The media box answers `:80` and `:443` publicly, so Cloudflare on `media.resomix.com` is bypassable
+by IP. Same shape as the admin CF Access gap closed earlier. Separate from this test.
 
 ---
 
@@ -40,7 +85,8 @@ no DB. Media never writes to the database; Alwyzon never touches the files.
   a per-partner Redis lock to close the two-marker race.
 - **Validation.** Manifest header and ISRC-format checks, real-audio probe via ffprobe, a maximum
   source duration, `.wav` / `.flac` / `.mp3` / `.aiff` accepted, zip handling with a strict
-  allowlist, and clamAV scanning. All-or-nothing: one bad row fails the whole batch.
+  allowlist, and clamAV scanning. All-or-nothing: one bad row fails the whole batch. *The clamAV
+  half is wired up but does not currently work, and fails open without reporting it, see F11.*
 - **Dry-run mode.** Uploading to `test/` instead of `live/` validates and reports counts without
   persisting anything.
 - **Atomic move.** On successful validation, every file is moved `live/ → processing/<UTC-dt>/` one
@@ -64,9 +110,10 @@ no DB. Media never writes to the database; Alwyzon never touches the files.
 
 ## 3. Findings
 
-Seven things worth knowing. F1 to F5 came from reading the code before the run: none is a fault in
-the pipeline, four are behaviours to work with, and F1 is a small reporting improvement **awaiting
-approval**.
+Eleven, in the order they were found. **F1 to F5** came from reading the code before the run: none
+is a fault, four are behaviours to work with, and F1 is a small reporting improvement awaiting
+approval. **F6 to F11** came from actually running it, and four of those are real faults that no
+amount of code reading had caught.
 
 **F6 and F7 came out of the first real upload attempt and are different in kind.** F6 is a genuine
 blocker for partner onboarding, found because this is the first end-to-end partner upload anyone has
@@ -174,7 +221,7 @@ without reissuing anyone's credentials.
 
 **One detail that is not optional.** The auth hook supports a per-partner `filters.allowed_ip`.
 Behind a plain TCP proxy every connection appears to come *from the proxy*, which silently
-breaks that allowlist — and it fails **open**, letting any address through for a partner who has
+breaks that allowlist, and it fails **open**, letting any address through for a partner who has
 one configured. It also flattens all connection logging to a single IP. Enable **PROXY protocol
 v2** on HAProxy and SFTPGo's matching `proxy_protocol` setting, and verify a real client IP
 reaches the log rather than assuming it does.
@@ -326,7 +373,7 @@ manifest found" while the original batch stays stuck exactly where it was. The r
 ingest-log table and the one on the transcode row were the same action.
 
 Worth noting `retry_ingestion` calls `start_ingestion_job`, which does **not** check
-`has_active_batch` — only the SFTP hook does. So the admin path can open a second run for a partner
+`has_active_batch`; only the SFTP hook does. So the admin path can open a second run for a partner
 that already has an active batch, bypassing the F4 concurrency guard.
 
 **Why it matters beyond F9:** any transcode failure has this shape. A genuinely corrupt file, an
@@ -348,10 +395,111 @@ pipeline simply has no way forward, because embeddings only spawn once transcode
 **Not changed:** `start_ingestion_job` still skips the concurrency guard. Left alone deliberately,
 since admin sometimes needs to force a run, but it is worth a look separately.
 
+### F11. The virus scan has never scanned anything, and it fails open silently
+
+**Found 2026-08-21, from the run #11 journal. Fixed in code; needs the host fix applied first.**
+
+The good news first: validation is real. The journal confirms `skip_validation=False` and
+`probe+AV on 29 file(s) with 12 worker(s) (av=True)`, so `INGEST_SKIP_VALIDATION` is off and the
+expensive tier did run. The speed was ffprobe being header-only across 12 workers, not a skip.
+
+But every one of the 29 files produced:
+
+```
+AV scan did not complete for <file> (treating as clean): unexpected status ERROR
+```
+
+**29 of 29.** Not a hiccup on a few files, a total failure that ingestion then waved through.
+
+**Why it passes anyway.** `_validate_one_file` in `ingestion_runner.py` deliberately fails open: a
+scan that errors is treated as a scanner problem rather than a virus, so the file is marked clean
+and a warning is logged. Per file that is a defensible choice. What is not defensible is that a
+batch where **100% of scans failed** looks identical to a batch that was scanned and came back
+clean. Nothing reaches the ingest log, the admin view, the partner, or `logs.json`. Only the
+journal knows, and only if someone greps it.
+
+So `ANTIVIRUS_ENABLED=true` currently buys nothing but a false sense of coverage. Note the config
+default is `False`, so this is enabled deliberately on the media box, which makes the silence worse.
+
+**Why clamd returns ERROR.** `clamd.scan(path)` asks the daemon to open the file itself. clamd runs
+as its own user (`clamav`), and `ERROR` is what it returns when it cannot read the path. There were
+two candidate causes, and **both turned out to be true at once**, which is why neither fix alone
+would have worked:
+
+1. **Permissions.** Partner directories are mode `2770` owned by `sftpgo` (gid 988, whose only
+   member was `ubuntu`). `clamav` is uid 110 / gid 111 with no supplementary groups, so it landed in
+   "other" with no access. Confirmed by `sudo -u clamav test -r` failing on a partner file. Not a
+   side effect of the F8 fix: `2770` excluded "other" under the old `1000:1000` ownership too, so
+   the scan has been failing since long before this test.
+2. **AppArmor.** The `/usr/sbin/clamd` profile does not cover `/srv/sftp/`. `dmesg` carries explicit
+   denials, some from an earlier partner, so this has been happening across partners and not just
+   this batch:
+   ```
+   apparmor="DENIED" operation="open" profile="/usr/sbin/clamd"
+     name="/srv/sftp/partners/000000000000/live/…mp3" requested_mask="r" denied_mask="r"
+   ```
+
+**Host fix (both are required).**
+
+```bash
+sudo usermod -aG sftpgo clamav                                    # 1. DAC
+grep -q 'local/usr.sbin.clamd' /etc/apparmor.d/usr.sbin.clamd     # 2. MAC: confirm the include
+echo '/srv/sftp/partners/** r,' | sudo tee -a /etc/apparmor.d/local/usr.sbin.clamd
+sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.clamd
+sudo systemctl restart clamav-daemon                              # picks up the new group too
+```
+
+Supplementary groups are read at process start, so the restart is what makes the group change take
+effect, not just the `usermod`.
+
+**Verify before deploying the code**, because the code change below is fail-closed and a still-broken
+scanner would then reject every batch:
+
+```bash
+clamdscan /srv/sftp/partners/<slug>/processing/<dt>/manifest.csv   # expect "OK", not "ERROR"
+sudo dmesg | grep -i apparmor | grep -i clam | tail -3             # expect nothing new
+```
+
+**Code fix (done).** The per-file fail-open is gone. `_validate_one_file` now returns three
+distinguishable outcomes rather than two: scanned and clean, scanned and infected, and **could not
+be scanned**. The third feeds the existing per-row error list, so it rejects the batch and names the
+offending file and manifest row exactly like `NOT_AUDIO` or `MISSING_ISRC` already do. No new status
+field, no new surface to maintain.
+
+- New code `AV_SCAN_FAILED`, distinct from `AV_INFECTED`, because a missing verdict is not a
+  detection and must not be reported to a partner as one.
+- Message names the file and carries the scanner's own reason, e.g. *"File 'x.mp3' could not be
+  virus-scanned (unexpected status ERROR). It cannot be accepted without a completed scan."*
+- `AV_INFECTED`'s message changed from "Antivirus scan failed for 'x'" to "Antivirus scan found a
+  threat in 'x'", which is what it always meant.
+- The **zip** path had the mirror-image bug: it tested `clean` without checking `success`, so a scan
+  that merely failed was reported to the partner as an infected archive. It now uses the same two
+  codes.
+- `AV_SCAN_FAILED` added to Alwyzon's critical-severity list alongside `AV_INFECTED`.
+- With `ANTIVIRUS_ENABLED=false` nothing is scanned and nothing is rejected, unchanged.
+
+Files: `resomix-similarity-open/app/services/ingestion_runner.py`,
+`basic_fastapi_server_resomix/app/services/ingestion_service.py`. Tests updated in
+`tests/test_ingestion_runner.py`: the old `..._fails_open` test asserted the behaviour we just
+removed, so it now asserts the file is rejected, named, and **not** labelled an infection. A new
+test covers AV disabled. 64 pass.
+
+**Consequence worth stating plainly.** Ingestion is now stricter than it was this morning: a batch
+containing one unscannable file fails whole, like any other validation error. That is the correct
+posture for content we redistribute, but it means the clamd host fix is a hard prerequisite for the
+5,000-track run, not a nice-to-have.
+
+**Still to do:** everything ingested before today was accepted unscanned, including run #11's 29
+tracks. Once clamd works, sweep what is already on disk:
+`sudo clamdscan -r /srv/sftp/partners/ | tail -5`.
+
 ### Also noted
 
 `INGEST_SKIP_VALIDATION=true` exists as an env flag to skip all per-file checks, commented "for our
-own bulk loads only". **Leave it off for this test.** Validation is part of what is being proved.
+own bulk loads only". It is **off** on the media box, confirmed in the run #11 journal.
+
+The move log reads `moved 31 file(s)` for a 29-track batch. That is correct: 29 audio files plus
+`manifest.csv` plus the `.done` marker.
 
 The transcode failure banner reads "Pipeline halted, N/A failure rate exceeds 5% threshold" because
 it divides 0 by 0 when the job dies before collecting any targets. Cosmetic, but it misdescribes
@@ -363,7 +511,7 @@ the failure to whoever reads it next.
 
 Run in order. Do not proceed to the next phase until the current one is green end to end.
 
-### Phase 0 — Setup
+### Phase 0: Setup
 - [ ] Create partner `test_electrobuzz_5000` and provision its SFTP user.
 - [ ] Record the partner id and the UUID slug (its on-disk folder name).
 - [ ] Confirm `live/`, `test/` and `processing/` exist under the slug, and that `internal/` is hidden
@@ -371,14 +519,14 @@ Run in order. Do not proceed to the next phase until the current one is green en
 - [ ] Confirm `live/` and `processing/` are on the **same filesystem** (the move hard-fails otherwise,
       per D1).
 
-### Phase 1 — Dry run, 50 tracks into `test/`
+### Phase 1: Dry run, 50 tracks into `test/`
 - [ ] Script 1 uploads 50 tracks plus the generated `manifest.csv` into **`test/`**.
 - [ ] Script 2 validates the upload (count and filename reconciliation) and takes the backup.
 - [ ] Script 1 sends `.done`.
 - [ ] Expect: VALIDATING then READY, `dry_run: true`, zero rows persisted.
 - [ ] Any manifest or file-format problem surfaces here, before a live batch is burned.
 
-### Phase 2 — Live run, 50 tracks into `live/`
+### Phase 2: Live run, 50 tracks into `live/`
 - [ ] Same upload, into **`live/`**.
 - [ ] Monitor the stage timeline through to READY.
 - [ ] Verify at each step:
@@ -392,18 +540,18 @@ Run in order. Do not proceed to the next phase until the current one is green en
   - [ ] Admin: partner detail, ingestion logs, stage timeline, track list all correct
   - [ ] `logs.json` in `processing/<dt>/` matches the DB timeline and leaks no host paths
 
-### Phase 3 — Fix and re-prove
+### Phase 3: Fix and re-prove
 - [ ] Log every failure in §7 rather than fixing inline.
 - [ ] For each fix, run a **localised** test of that specific step first.
 - [ ] Then re-run **Phase 2 from scratch** on a clean batch. A partial resume does not count.
 
-### Phase 4 — Full run, 5,000 tracks
+### Phase 4: Full run, 5,000 tracks
 - [ ] After Phase 2 has passed end to end with no outstanding findings.
 - [ ] Same sequence, 5,000 tracks.
 - [ ] Watch for scale-only failures: timeouts, memory on the transcode and embedding steps, FAISS
       build time, and any per-file work that is linear where it should be batched.
 
-### Phase 5 — Teardown
+### Phase 5: Teardown
 - [ ] Delete partner `test_electrobuzz_5000` and confirm its folder, DB rows, embeddings and index
       are all removed.
 
@@ -411,7 +559,7 @@ Run in order. Do not proceed to the next phase until the current one is green en
 
 ## 5. The two scripts
 
-### Script 1 — uploader (runs locally, talks SFTP)
+### Script 1: uploader (runs locally, talks SFTP)
 
 Reads a text file of local audio paths, one per line.
 
@@ -426,39 +574,69 @@ Reads a text file of local audio paths, one per line.
 5. Separate `--send-done` flag, run only after script 2 reports clean, which uploads the `.done`
    marker over SFTP (see F2).
 
-### Script 2 — validator and backup (runs on the media box)
+### Script 2: validator and backup (runs on the media box)
 
 Flag-driven, each check invocable on its own.
 
-- `--validate-ingestion` — light checks only. Count the files in the env folder, parse
+- `--validate-ingestion`: light checks only. Count the files in the env folder, parse
   `manifest.csv`, and reconcile the two by filename in both directions. Report extras and missing.
   No audio decoding.
-- `--backup` — copy the env folder to a backup location on the same box, so a failed batch does not
+- `--backup`: copy the env folder to a backup location on the same box, so a failed batch does not
   need re-uploading. Must run **before** `.done` (F5).
-- `--status` — read the current batch stage via the proper ingestion routes, for periodic polling.
-- `--verify-ready` — once READY, exercise the end-to-end checks in Phase 2: API returns the tracks,
+- `--status`: read the current batch stage via the proper ingestion routes, for periodic polling.
+- `--verify-ready`: once READY, exercise the end-to-end checks in Phase 2: API returns the tracks,
   search and similarity find them, admin endpoints are correct.
 
 ---
 
 ## 6. Fixes and improvements
 
-### Blocking partner onboarding (found by this test, not by the review)
+### Done: code written, in the repos
 
-**F9 — `processing_dir` never returned.** Fixed in code. Needs the media service deployed. Without
-it every live batch stops dead at INGESTED: no transcode, no embeddings, no index. This is the one
-the test was built to find, and only a live run could have found it.
+Every one of these was found by running the pipeline, not by reading it.
 
-**F10 — no way to restart a failed transcode.** Fixed in code. Needs Alwyzon deployed and admin
-rebuilt. Without it any transcode failure, from any cause, is unrecoverable from the UI.
+**F8, folder ownership.** Provisioning now reads ownership off the partners root with `os.stat`
+instead of a hardcoded `1000:1000`, so a new partner folder always matches the tree it lives in.
+*Deployed 2026-08-21, and the existing partner backfilled by hand.*
 
-**F8 — folder ownership.** Fixed in code. Needs the media service deployed, plus a one-line
-backfill for partners provisioned before the fix. Without it no partner can upload at all.
+**F9, `processing_dir` never returned.** Added `processing_dir` and `report_path` to
+`IngestionStatusResponse` and passed both through in `internal.py`. Returned even on light
+`include_records=false` polls, because Alwyzon persists the value from whichever poll first sees
+the job completed, and that is normally a light one. *Deployed 2026-08-21.*
+Files: `resomix-similarity-open/app/schemas/internal.py`, `.../app/api/internal.py`.
 
-**F6 — SFTP hostname.** Needs a decision, then roughly half a day: a small TCP proxy VPS,
-`sftp.resomix.com` pointed at it, PROXY protocol enabled both ends, and the media box's public
-2022 closed. Without it no partner can reach the server. The test itself is unblocked by using
-the origin IP directly.
+**F10, no way to restart a failed transcode.** Three changes:
+`/processing/jobs/{job_id}/resume` now accepts transcode as well as embeddings and routes it to
+`start_transcode_job`; `start_transcode_job` clears `completed_at` and `error_details` on entry so
+a retried job stops showing the previous failure; and the admin button on paused or failed
+transcode rows now calls resume rather than the ingestion retry, labelled "Retry Transcode". The
+ingest-log table keeps its own retry, which is where re-ingesting genuinely belongs.
+*Backend deployed 2026-08-21, frontend pending.*
+Files: `app/api/routers/admin/processing.py`, `app/services/partner_processing_service.py`,
+`resomix-web/apps/admin/src/components/pipeline/StagePanel.tsx`. `pnpm --filter admin build` passes.
+
+**One manual step remains, for run #11 only.** Its `processing_dir` cannot self-heal, because
+`_refresh_log_from_hetzner` returns early for terminal logs and so never asks the fixed endpoint:
+`UPDATE ingest_logs SET processing_dir = '20260821T073130Z' WHERE id = 11;`
+
+### Awaiting approval
+
+**F11, the virus scan does not work and hides it. Decision needed.** The host-side half is
+minutes: give `clamav` read access to the partner tree, by group membership or an AppArmor rule,
+whichever the diagnostic in F11 points at. The half that needs a decision is what ingestion should
+do when a scan cannot complete. Today it passes silently. The proposal is to keep the per-file
+fail-open but carry an AV summary into the job state and the ingest log, so "0 of 29 scanned"
+is visible in admin and a whole-batch failure needs a human. **2 to 3 hours.** Not implemented
+yet on purpose: making ingestion stricter mid-test could block the 5,000-track run.
+
+**F6, SFTP hostname. ~half a day.** A small TCP proxy VPS, `sftp.resomix.com` pointed at it,
+PROXY protocol enabled both ends, and the media box's public 2022 closed. Without it no partner can
+reach the server. The test itself is unblocked by using the origin IP directly.
+
+**F7, ISRC. Decision only, no code.** ISRC is a distribution identifier and this partner is
+similarity-only, which never uses it. Requiring it means a real catalogue onboards 30% of itself.
+Either keep it mandatory and accept that, or allow a partner-supplied unique id in its place when
+ISRC is absent.
 
 **Media origin exposure.** Pre-existing and separate: the box answers `:80` and `:443` publicly,
 so Cloudflare on `media.resomix.com` is bypassable by IP today. Same shape as the admin CF Access
@@ -466,7 +644,7 @@ gap closed earlier with ufw. Restrict 80/443 to Cloudflare ranges, leave 2022 to
 
 ### From the code review
 
-**F1 — report `MOVED` in the admin view. Awaiting approval. ~1 - 2 hours.**
+**F1, report `MOVED` in the admin view. Awaiting approval. ~1 - 2 hours.**
 
 Stamp `MOVED` into the DB timeline and drop `TRANSCODING` from the ingest stage list. Touches three
 files: `ingestion_runner.py` on media (write an intermediate job state at the move),
@@ -487,10 +665,10 @@ Worth refreshing before either is used as a status reference.
 
 ## 7. Run log
 
-**Partner `test_electrobuzz_5000`** — uuid `bad9def3-99ad-478f-a875-b3a56a4e427d`,
+**Partner `test_electrobuzz_5000`**: uuid `bad9def3-99ad-478f-a875-b3a56a4e427d`,
 slug `b3a56a4e427d`, **partner id 6**, plan Enterprise, similarity-only.
 
-### Phase 1 — dry run into `test/`, 2026-08-21 — PASSED
+### Phase 1: dry run into `test/`, 2026-08-21. PASSED
 
 10 paths in, 3 uploaded (7 skipped for no ISRC, see F7). Ingest run **#10**, status COMPLETED,
 stage READY, 3/3 done, 0 failed.
@@ -512,7 +690,7 @@ run and are written up above.
 the per-track slope is the number that matters for the 5,000-track run, so **measure it on the
 50-track live pass** and extrapolate before committing to the full batch.
 
-### Phase 2 — live run into `live/`, 2026-08-21 — STALLED AT INGESTED (F9)
+### Phase 2: live run into `live/`, 2026-08-21. STALLED AT INGESTED (F9)
 
 Run **#11**, partner 6, 29 tracks. The first half is clean and everything it proves is real.
 
@@ -527,29 +705,30 @@ transcode  07:31:54     FAILED, 0/0, 0s
 Backed up first, per F5: 30 files / 573.4 MB to
 `/srv/resomix/ingest_backups/partnerb3a56a4e427d_live_20260821T073112Z`.
 
-**Passed:** the concurrency guard, the manifest contract, the audio probe, the virus scan, the
-atomic move out of `live/`, and the DB persist. 23 seconds from `.done` to 29 tracks committed.
-MOVED and TRANSCODING stayed greyed as predicted, confirming F1.
+**Passed:** the concurrency guard, the manifest contract, the audio probe, the atomic move out of
+`live/`, and the DB persist. 23 seconds from `.done` to 29 tracks committed. MOVED and TRANSCODING
+stayed greyed as predicted, confirming F1.
 
 **Failed:** transcode, immediately, on F9. Embeddings never spawned, which is downstream of the
-same cause and not a second fault.
+same cause and not a second fault. The virus scan also failed, on all 29 files, but ingestion
+treated that as a pass and reported nothing (F11).
 
-**One thing to confirm before Phase 4.** The processing folder is named `20260821T073130Z` and it
-is stamped after validation returns, yet `VALIDATING` was stamped at `07:31:30` too. That puts
-ffprobe plus a clamd scan of 573 MB inside the same second, which is not obviously believable.
-Either the expensive tier is faster than expected across the worker pool, or it did not run.
-One grep settles it, and it matters because Phase 2's pass only means something if the checks
-actually happened:
+**Validation was checked, not assumed.** The whole expensive tier finished inside one second for
+573 MB, which did not look believable, so the journal was read rather than trusted:
 
-```bash
-journalctl -u resomix-media --since "2026-08-21 09:25" --no-pager | grep IngestionRunner
+```
+validating .../live/manifest.csv (skip_validation=False)
+probe+AV on 29 file(s) with 12 worker(s) (av=True)
+AV scan did not complete for <file> (treating as clean): unexpected status ERROR    ×29
+moved 31 file(s) live/ → .../processing/20260821T073130Z
+partner=6 job=11 done status=completed valid=29 errors=0
 ```
 
-Expect `validating … (skip_validation=False)` followed by `probe+AV on 29 file(s) with N
-worker(s) (av=True)`. If instead it says `SKIP_VALIDATION on`, then `INGEST_SKIP_VALIDATION` is
-set in the media environment, the audio probe and virus scan were both skipped, and the manifest
-was taken on trust. Note the media box is Europe/Berlin, so 07:31 UTC is 09:31 in the journal and
-`--since` parses in local time.
+Half reassuring, half not. `INGEST_SKIP_VALIDATION` is off and the manifest, format, ISRC and
+ffprobe checks all genuinely ran: the speed was ffprobe being header-only across 12 workers. But
+**the clamAV scan failed on all 29 files and ingestion passed them anyway**, which is F11 and the
+reason the second was enough. Take the "audio probe passed" claim below as verified, and treat the
+virus scan as never having run.
 
 **Timing so far:** 23s for 29 tracks through validate + move + persist, against 72s for 3 tracks
 in the dry run. The dry run was almost entirely fixed overhead, so there is still no usable
@@ -577,8 +756,9 @@ Only step 2 is specific to this run. Later batches need none of it.
 |---|---|---|---|---|---|
 | 1 | 1 | SFTP connect hung with no output | n/a, never started | F6 hostname is Cloudflare-proxied | workaround: origin IP |
 | 2 | 1 | Upload failed `EACCES` on first byte | n/a, never started | F8 folders chowned to uid 1000, SFTPGo is 999 | yes, in code + backfilled |
-| 3 | 2 | Transcode failed instantly, `0/0` in `0s`; embeddings never spawned | INGESTED, halted | F9 status endpoint dropped `processing_dir` | in code, needs deploy + backfill |
-| 4 | 2 | No way to restart the failed transcode; its retry button re-ran ingestion instead | INGESTED, halted | F10 no transcode start endpoint + mis-wired button | in code, needs deploy |
+| 3 | 2 | Transcode failed instantly, `0/0` in `0s`; embeddings never spawned | INGESTED, halted | F9 status endpoint dropped `processing_dir` | deployed; run #11 needs the SQL backfill |
+| 4 | 2 | No way to restart the failed transcode; its retry button re-ran ingestion instead | INGESTED, halted | F10 no transcode start endpoint + mis-wired button | backend deployed, frontend pending |
+| 5 | 2 | clamAV returned `ERROR` on all 29 files; batch passed anyway, nothing reported | none, silent | F11 clamd cannot read the partner tree + fail-open by design | not fixed, awaiting decision |
 
 ---
 

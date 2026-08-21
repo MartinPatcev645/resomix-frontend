@@ -403,7 +403,7 @@ async def apply_ingestion_result(
                 "MISSING_AUDIO_FILENAME", "MISSING_AUDIO_FILE",
                 "DUPLICATE_ISRC_IN_BATCH",
                 "DISALLOWED_ZIP_ENTRY", "ZIP_CONTAINS_FOLDER",
-                "ZIP_SYMLINK", "ZIP_BOMB", "AV_INFECTED",
+                "ZIP_SYMLINK", "ZIP_BOMB", "AV_INFECTED", "AV_SCAN_FAILED",
                 "NOT_AUDIO", "EXTRA_FILE_NOT_IN_MANIFEST"
             ] else "warning"
             db.add(IngestionError(
