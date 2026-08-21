@@ -1021,8 +1021,17 @@ async def apply_embeddings_result(
         from app.services.ingestion_stages import advance_stage, Stage
         from app.tasks.webhooks import dispatch_webhook
         
+        from app.services.ingestion_stages import TERMINAL_STAGES
+
         log = await db.get(IngestLog, job.ingest_log_id)
-        if log and log.status != "COMPLETED":
+        # Guard on the STAGE, not the status. Under v2, ingestion is the gate:
+        # ``finalize_successful_ingestion`` already sets status=COMPLETED when it stamps
+        # INGESTED, so the old ``status != "COMPLETED"`` test was never true and this whole
+        # block was unreachable. Batches therefore sat at INGESTED forever, which also left
+        # them in ACTIVE_STAGES and permanently blocked the partner's next upload.
+        # TERMINAL_STAGES keeps it idempotent: a re-run of an already-READY batch re-stamps
+        # nothing.
+        if log and log.stage not in TERMINAL_STAGES:
             advance_stage(log, Stage.EMBEDDING)
             advance_stage(log, Stage.INDEXED)
             advance_stage(log, Stage.FINALIZING)

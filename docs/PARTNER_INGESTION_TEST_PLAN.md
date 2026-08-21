@@ -12,9 +12,10 @@
 
 *Last updated 2026-08-21, after the first live run (29 tracks).*
 
-The test found **five faults that no dry run could have found**. Three blocked partner onboarding
-outright, one is a security gap, and one meant the transcode stage could never have worked. All five
-are fixed. Detail for every item is in section 3; this table is the summary.
+The test found **six faults that no dry run could have found**, and every one of them would have
+hit the first real partner. Four blocked onboarding outright, one is a security gap, and one meant
+the transcode stage could never have worked. All six are fixed. Detail for every item is in
+section 3; this table is the summary.
 
 ### Fixed during the test
 
@@ -25,6 +26,7 @@ are fixed. Detail for every item is in section 3; this table is the summary.
 | **F10** | No endpoint could start a transcode job, and the admin button offered for it re-ran ingestion instead | Any transcode failure is unrecoverable from the UI | Fixed and deployed; used successfully to resume run #11 |
 | **F11** | clamAV could not read a single partner file, and ingestion treated every failed scan as clean | Uploads were never virus-scanned, and nothing anywhere said so | Host fixed and verified; code fixed |
 | **F12** | ffmpeg was handed a `.tmp` output path and could not infer a container, so every transcode aborted. The error was then truncated to the ffmpeg banner | No track could ever be transcoded, and the reason was unreadable | Fixed, deployed, transcode now 29/29 |
+| **F13** | The code that advances a batch to READY was behind a condition that is never true, so batches stopped at INGESTED | INGESTED counts as active, so **a partner who ingests one batch can never upload another** | Fixed in code, needs deploy |
 
 These stack rather than compete. F9 stopped the batch before transcode, so F12 could not be
 discovered until F9 was fixed, and F10 meant there was no way to retry once it had been. Each fix
@@ -36,9 +38,11 @@ itself only in the journal.
 batch. Apply the clamd host fix and verify it before deploying, or every batch will be rejected.
 Done and verified on the media box on 2026-08-21.
 
-**Where the test stands.** With all five deployed, run #11 went the whole way: 29/29 transcoded,
-29/29 embedded, no failures. That is the first partner batch in the project's history to get past
-INGESTED. What remains is Phase 2's verification half, section 4.
+**Where the test stands.** Run #11 transcoded 29/29 and embedded 29/29 with no failures, the first
+partner batch in the project's history to get that far. Verification then caught F13: the batch is
+stuck one step short of READY, which is what a run log alone would never have shown. Deploy the F13
+fix, re-trigger embeddings for the batch, and the rest of Phase 2 (search, similarity, `logs.json`)
+can proceed.
 
 ### Needs a decision
 
@@ -112,7 +116,8 @@ no DB. Media never writes to the database; Alwyzon never touches the files.
 - **Stage timeline.** `ingest_logs.stage` and `stage_timeline` (UTC) record `RECEIVED`,
   `VALIDATING`, `PERSISTING`, `INGESTED`, `EMBEDDING`, `INDEXED`, `FINALIZING`, `READY`, plus the
   failure states. Surfaced to admin and mirrored into the partner's `logs.json`.
-- **Admin controls.** Ingestion trigger, batch retry, pause and resume on the processing jobs.
+- **Admin controls.** Ingestion trigger, batch retry, pause and resume on the processing jobs, and
+  (since 2026-08-21) retry on a failed transcode, see F10.
 - **Failure reporting.** Per-row `IngestionError` records with stable codes, an `errors.txt` in the
   batch folder, and partner webhook notification.
 
@@ -120,10 +125,11 @@ no DB. Media never writes to the database; Alwyzon never touches the files.
 
 ## 3. Findings
 
-Twelve, in the order they were found. **F1 to F5** came from reading the code before the run: none
-is a fault, four are behaviours to work with, and F1 is a small reporting improvement awaiting
-approval. **F6 to F12** came from actually running it, and five of those are real faults that no
-amount of code reading had caught.
+Thirteen, in the order they were found. **F1 to F5** came from reading the code before the run:
+none is a fault, four are behaviours to work with, and F1 is a small reporting improvement awaiting
+approval. **F6 to F13** came from actually running it, and six of those are real faults that no
+amount of code reading had caught. F13 in particular was only found by *verifying* the run rather
+than watching it, since every job reported success.
 
 **F6 and F7 came out of the first real upload attempt and are different in kind.** F6 is a genuine
 blocker for partner onboarding, found because this is the first end-to-end partner upload anyone has
@@ -547,6 +553,79 @@ File: `resomix-similarity-open/app/services/ingestion_runner.py`. 64 tests pass.
 `transcode_status != "completed"`, so all 29 are collected again; it does not filter for `pending`
 specifically. No cleanup needed before hitting retry.
 
+### F13. The batch could never reach READY, so one successful upload blocked the partner forever
+
+**Found 2026-08-21, by `--verify` after the first fully successful run. Fixed in code, needs deploy.**
+
+Everything worked and the batch still did not finish:
+
+```
+Admin: ingestion logs
+ FAIL  stage is 'INGESTED', expected READY
+Admin: tracks              29 track(s) recorded          OK
+Admin: processing jobs     embeddings: completed         OK
+                           transcode:  completed         OK
+On-disk artefacts          internal/raw: 29 mp3
+```
+
+**The cause is a guard that can never be true.** When the embeddings job finalizes,
+`apply_embeddings_result` advances the ingest log through the last four stages:
+
+```python
+log = await db.get(IngestLog, job.ingest_log_id)
+if log and log.status != "COMPLETED":          # <- never true
+    advance_stage(log, Stage.EMBEDDING)
+    advance_stage(log, Stage.INDEXED)
+    advance_stage(log, Stage.FINALIZING)
+    advance_stage(log, Stage.READY)
+```
+
+But under v2 ingestion is the gate, and `finalize_successful_ingestion` sets
+`log_entry.status = "COMPLETED"` at the moment it stamps `INGESTED`. So by the time embeddings
+finish, the status is *always* already `COMPLETED`, the condition is *always* false, and the block
+is unreachable. The guard was written for the older semantics, where `COMPLETED` meant the whole
+pipeline was done, and was never revisited when INGESTED became the gate.
+
+**Why this is the most serious of the lot.** `INGESTED` is in `ACTIVE_STAGES`, and
+`has_active_batch` is what the `.done` hook checks. A batch parked at INGESTED counts as active
+forever, so **a partner who successfully ingests one batch can never upload another one**. Their
+second `.done` is hard-rejected by the concurrency guard, with no way to clear it short of editing
+the database. Nothing times it out: the staleness check only covers `PERSISTING`.
+
+It also means the `ingestion.completed` webhook carrying `stage: READY` never fires, so a partner
+integrating against our webhooks never learns their batch finished.
+
+**Fix (done in code).** Guard on the stage rather than the status:
+
+```python
+if log and log.stage not in TERMINAL_STAGES:
+```
+
+`TERMINAL_STAGES` is `{READY, FAILED_VALIDATION, FAILED}`, which keeps the block idempotent, so
+re-running embeddings for an already-READY batch re-stamps nothing. `log.status = "COMPLETED"`
+stays for legacy rows; it is simply redundant now.
+
+File: `basic_fastapi_server_resomix/app/services/partner_processing_service.py`.
+
+**Recovering run #11 after the deploy.** Job #4 is terminal and terminal jobs are never re-polled,
+so the fixed code will not run for it on its own. Re-trigger embeddings for the batch, which is
+cheap because the media runner skips any track whose `.npy` already exists:
+
+Admin, Embedding stage, **Trigger Embeddings Job**:
+- Partner `test_electrobuzz_5000`, Run Mode **Live**, Ingest Log ID **11**
+- Index into FAISS: **on**
+- Skip tracks that already have embeddings: **off**
+
+That last switch matters. Left on, `_collect_targets` filters out all 29 as already completed, the
+job short-circuits to "nothing to do" without ever calling `apply_embeddings_result`, and the stage
+stays at INGESTED. Off, the 29 are re-handed to media, media skips the existing files, the job
+finalizes normally, and the now-reachable block advances the batch to READY.
+
+**Cosmetic, not fixed:** the four stages are stamped in immediate succession at the end, so
+EMBEDDING, INDEXED and FINALIZING all carry the same timestamp as READY rather than the moment each
+actually happened. The timeline is therefore accurate about order but not about duration. Same
+family as F1 and worth folding into that work if it is approved.
+
 ### Also noted
 
 `INGEST_SKIP_VALIDATION=true` exists as an env flag to skip all per-file checks, commented "for our
@@ -685,6 +764,21 @@ explicit `-f mp3`. The reason was unreadable because the error was captured as `
 is pure ffmpeg banner; a new `_ffmpeg_error()` now takes the informative tail instead, for every
 ffmpeg failure and not just this one. *Code written, needs deploy.*
 File: `resomix-similarity-open/app/services/ingestion_runner.py`. 64 tests pass.
+
+**F13, batches could never reach READY.** The block that advances a batch through EMBEDDING,
+INDEXED, FINALIZING and READY was guarded by `log.status != "COMPLETED"`, but v2 sets that status at
+INGESTED, so the guard was never true and the block never ran. Batches parked at INGESTED, which is
+in `ACTIVE_STAGES`, so the concurrency guard would have blocked the partner's every subsequent
+upload. Now guarded on `log.stage not in TERMINAL_STAGES`, which is both correct and idempotent.
+*Code written, needs deploy.*
+File: `basic_fastapi_server_resomix/app/services/partner_processing_service.py`.
+
+**Tooling fix.** `ingest_validate.py` was reading a `data.items` envelope the admin API does not
+use, so `--verify` reported every admin check as `None` and silently skipped the jobs check
+entirely by iterating an empty list. It now reads the real
+`{"pagination": {...}, "<resource>": [...]}` shape, tolerates four alternatives, fails loudly on an
+empty job list, and prints where to get an admin token on a 401 or 403.
+File: `resomix-similarity-open/scripts/ingest_validate.py`.
 
 **Two manual steps remain.**
 
@@ -863,6 +957,8 @@ from the journal:
 | 5 | 2 | clamAV returned `ERROR` on all 29 files; batch passed anyway, nothing reported | none, silent | F11 clamd blocked by BOTH group perms and AppArmor + fail-open by design | host fixed + verified, code fixed |
 | 6 | 2 | Transcode failed 29/29; every error message was just the ffmpeg version banner | INGESTED, halted | F12 ffmpeg cannot infer a container from a `.tmp` output path; stderr truncated head-first | deployed, transcode then 29/29 |
 | 7 | 2 | Transcode reported a duration of "46m 28s" for a run of a few minutes | cosmetic | F10 fix preserved `started_at` across a retry, so the figure spanned the gap between attempts | yes, `started_at` resets per attempt |
+| 8 | 2 | `--verify` reported every admin check as `None` | n/a, tooling | `ingest_validate.py` assumed a `data.items` envelope; the admin API returns `{"pagination": {...}, "<resource>": [...]}` | yes, plus fallbacks and a loud fail on an empty job list |
+| 9 | 2 | Everything succeeded but the batch stayed at INGESTED | INGESTED, never READY | F13 the stage advance sits behind `status != "COMPLETED"`, which is set at INGESTED and so is never true | in code, needs deploy |
 
 ---
 
