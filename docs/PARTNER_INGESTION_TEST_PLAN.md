@@ -806,16 +806,25 @@ per-track slope. The parts that scale with audio length are transcode and embedd
 | Stage | 29 tracks | Naive 5,000 projection |
 |---|---|---|
 | Ingestion (validate + move + persist) | 23 s | mostly fixed overhead, does not scale with audio |
-| Transcode | not measured, see the `started_at` note above | ~30 min, from ffmpeg at 75x across ~12 workers |
-| Embeddings | **1 m 40 s** | **~4.8 hours** |
+| Transcode | **22 s**, 12 workers | **~1 h** |
+| Embeddings | **1 m 40 s** | **~4.8 h** |
 
-**Embeddings dominate, by a wide margin.** 100 s for 29 tracks is about 3.4 s each, and nothing in
+Transcode timings come from the journal, not the admin duration field, which was wrong for this run:
+`10:17:54 → 10:18:16`, `succeeded=29 failed=0`, `workers=12`. The failed F12 attempt at `10:11:33`
+started and finished in the same second, which is ffmpeg aborting before encoding anything.
+
+**Embeddings dominate, by roughly 5 to 1.** 100 s for 29 tracks is about 3.4 s each, and nothing in
 that path is obviously batched, so 5,000 extrapolates to the best part of a working day. Before
-committing to Phase 4, that is the number worth attacking or at least planning around: whether the
-GPU embed-server batches requests, whether the overlap mode (embeddings consuming mp3s as transcode
-produces them, rather than the single-pass `auto:post-transcode` path this run took) recovers the
-transcode time, and whether the FAISS build at the end is linear. Treat the transcode projection as
-an order of magnitude from one file rather than a measurement.
+committing to Phase 4, that is the number worth attacking or at least planning around:
+
+- Does the GPU embed-server batch requests, or is it one track per call?
+- Would overlap mode help? This run took the single-pass `auto:post-transcode` path because
+  embeddings were spawned by the safety net. A normal run overlaps the two, which hides the ~1 h of
+  transcode inside the ~4.8 h of embedding but does not shrink the embedding itself.
+- Is the FAISS build at the end linear in catalogue size, or does it rebuild from scratch?
+
+Both projections are linear extrapolations from 29 tracks. They are the right order of magnitude for
+planning, not commitments.
 
 **How it was resumed** (all five fixes deployed, then one manual step):
 
@@ -865,3 +874,7 @@ from the journal:
 - Batches are serialised per partner. If one wedges, the next `.done` is rejected outright, so clear
   the stuck row before retrying (F4).
 - The backup is the only recovery route once a batch has moved out of `live/` (F5).
+- `--status` and `--verify` need an admin JWT in `ALWYZON_ADMIN_TOKEN`. Read
+  `resomix-admin-access-token` from localStorage while logged in to admin. Without it the admin
+  checks all return 403 while the on-disk checks still pass, which looks like a pipeline failure
+  and is not one.
