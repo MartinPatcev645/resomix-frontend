@@ -12,10 +12,9 @@
 
 *Last updated 2026-08-21, after the first live run (29 tracks).*
 
-The test found **six faults that no dry run could have found**, and every one of them would have
-hit the first real partner. Four blocked onboarding outright, one is a security gap, and one meant
-the transcode stage could never have worked. All six are fixed. Detail for every item is in
-section 3; this table is the summary.
+The test found **eight faults that no dry run could have found**, and every one of them would have
+hit the first real partner. All eight are fixed. Detail for every item is in section 3; this table
+is the summary.
 
 ### Fixed during the test
 
@@ -26,23 +25,36 @@ section 3; this table is the summary.
 | **F10** | No endpoint could start a transcode job, and the admin button offered for it re-ran ingestion instead | Any transcode failure is unrecoverable from the UI | Fixed and deployed; used successfully to resume run #11 |
 | **F11** | clamAV could not read a single partner file, and ingestion treated every failed scan as clean | Uploads were never virus-scanned, and nothing anywhere said so | Host fixed and verified; code fixed |
 | **F12** | ffmpeg was handed a `.tmp` output path and could not infer a container, so every transcode aborted. The error was then truncated to the ffmpeg banner | No track could ever be transcoded, and the reason was unreadable | Fixed, deployed, transcode now 29/29 |
-| **F13** | The code that advances a batch to READY was behind a condition that is never true, so batches stopped at INGESTED | INGESTED counts as active, so **a partner who ingests one batch can never upload another** | Fixed in code, needs deploy |
+| **F13** | The code that advances a batch to READY was behind a condition that is never true, so batches stopped at INGESTED | INGESTED counts as active, so **a partner who ingests one batch can never upload another** | Fixed, deployed, batch now READY |
+| **F15** | A track deactivated by a failed stage is never reactivated when the retry succeeds | All 29 tracks sat at `is_active=false`, so **similarity 404'd for the whole catalogue**. Any transient failure drops tracks permanently | Fixed in code; needs deploy + one SQL for run #11 |
+| **F14** | A partner's ingested catalogue was invisible to `/search_tracks/` | Search is ES-backed and ingestion never writes to ES, so the documented route to a `track_id` returned nothing for a partner's own catalogue | Fixed in code: partner-scoped search now goes to the DB |
 
-These stack rather than compete. F9 stopped the batch before transcode, so F12 could not be
-discovered until F9 was fixed, and F10 meant there was no way to retry once it had been. Each fix
-exposed the next fault. All of them are invisible to a `test/` dry run by construction, which is why
-the pipeline looked healthy for months. F11 was invisible to any run at all, because it announced
-itself only in the journal.
+These stack rather than compete. F9 stopped the batch before transcode, so F12 could not be found
+until F9 was fixed, F10 meant there was no way to retry once it had been, and F15 only became
+visible after F12's failure had already deactivated everything. Each fix exposed the next fault.
+All of them are invisible to a `test/` dry run by construction, which is why the pipeline looked
+healthy for months. F11 and F16 were invisible to any run at all: one announced itself only in the
+journal, the other only in a field nobody reads.
+
+**Note the last three took a different kind of looking.** F13, F14 and F15 all sat behind jobs that
+reported success. Watching the pipeline run would never have surfaced them; only querying the result
+as a partner would.
 
 **One ordering constraint.** The F11 code change is fail-closed: an unscannable file now fails the
 batch. Apply the clamd host fix and verify it before deploying, or every batch will be rejected.
 Done and verified on the media box on 2026-08-21.
 
-**Where the test stands.** Run #11 transcoded 29/29 and embedded 29/29 with no failures, the first
-partner batch in the project's history to get that far. Verification then caught F13: the batch is
-stuck one step short of READY, which is what a run log alone would never have shown. Deploy the F13
-fix, re-trigger embeddings for the batch, and the rest of Phase 2 (search, similarity, `logs.json`)
-can proceed.
+**Where the test stands.** Run #11 is **READY**: 29/29 transcoded, 29/29 embedded, 29 tracks
+recorded, all jobs completed, `--verify` fully green. That is the first partner batch in the
+project's history to complete the pipeline end to end.
+
+The partner API was then exercised with a real key (`scripts/partner_api_smoke.py`). Auth, tenant
+isolation and input validation all behave. Search and similarity both failed, which is F14 and F15;
+both are fixed and awaiting deploy.
+
+Remaining before Phase 4 (5,000 tracks): re-run the API smoke test green, review `logs.json` in the
+batch folder, and answer the embeddings throughput question, since that stage projects to roughly
+4.8 h at 5,000.
 
 ### Needs a decision
 
@@ -626,6 +638,117 @@ EMBEDDING, INDEXED and FINALIZING all carry the same timestamp as READY rather t
 actually happened. The timeline is therefore accurate about order but not about duration. Same
 family as F1 and worth folding into that work if it is approved.
 
+### F14. A partner's ingested catalogue is invisible to search
+
+**Found 2026-08-21, by the partner API smoke test. Not fixed, needs a decision.**
+
+`/api/v1/search_tracks/` returns `{"tracks": []}` for every query against a partner catalogue that
+has just been ingested and is READY. Tried `original mix`, `remix`, `mix`, `a`: all empty, HTTP 200.
+
+**Why.** Search is Elasticsearch-backed. `search_service.py` treats a zero-hit ES response as
+authoritative and deliberately does *not* fall back to the database:
+
+```python
+# ES succeeded with zero hits is a real answer — don't fall back.
+if not uuids:
+    return {"tracks": []}
+```
+
+And nothing in the application ever writes to that index. The only writer is `app/utils/es_index.py`,
+driven by an external rebuild that sources the Electrobuzz catalogue and stamps every document
+`type: "electrobuzz"`. Partner ingestion has no ES step at any stage. So a partner's tracks are in
+MariaDB and in FAISS, but never in Elasticsearch, and search will keep returning nothing for them
+until the next full rebuild happens to include them, which for a partner catalogue it never does.
+
+**Why it matters.** Search is one of the three documented core partner endpoints, and the partner
+docs specify it as the way to obtain a `track_id`: *"`track_id` | yes | Track UUID (from search)"*.
+So the documented path to similarity begins with an endpoint that cannot see the caller's own
+catalogue. There is also no partner-facing "list my tracks" endpoint (`/my-tracks/` requires a
+logged-in user, not an API key), so a partner has no supported way to discover their own track ids
+at all.
+
+**Options, for a decision:**
+1. **Index on ingest.** Add an ES upsert to the ingestion pipeline, most naturally at the same
+   point that already stamps `INDEXED`. Correct and permanent, but it is new pipeline work and the
+   index currently assumes a single `electrobuzz` document type.
+2. **Fall back to the database when ES has no hits for a partner-scoped query.** Small and quick,
+   and the DB search path already exists and already takes `partner_id`. Weakens the "zero hits is
+   a real answer" guarantee, though only for partner queries.
+3. **Add a partner-facing catalogue listing endpoint.** Solves track-id discovery regardless of
+   search, and is arguably missing anyway.
+
+Worth noting the three are not exclusive, and 3 is the one a partner will ask for first.
+
+### F15. A track deactivated by a failed stage is never reactivated when the retry succeeds
+
+**Found 2026-08-21, chasing a similarity 404 on every track. Fixed in code, needs deploy.**
+
+Every partner API call to `/similarity/search` returned
+`Track with ID '…' not found or path is missing`, for all 29 tracks. The tracks exist, the mp3s
+exist, the vectors exist, the FAISS index was rebuilt with 29 vectors. Admin shows why:
+
+```
+"is_active": false,          <- on all 29
+"transcode_status": "completed",
+"embedding_status": "completed",
+"updated_at": "2026-08-21T08:11:34"
+```
+
+`async_get_track_path_by_uuid` filters `Track.is_active.isnot(False)`, so an inactive track 404s
+before similarity is ever reached.
+
+**Why they are inactive.** `_apply_track_results_bulk` deactivates any track whose transcode or
+embedding **failed**, which is correct: no mp3 or no vector means the track is unusable and must
+leave the catalogue. The F12 transcode failure at 10:11:33 did exactly that to all 29. But there is
+**no counterpart on success**. The retry at 10:17:54 set every status column back to `completed`
+and left `is_active = false` untouched. `08:11:34` in the admin dump is that deactivation, and
+nothing has written to those rows since.
+
+So a retry recovers the *reporting* and not the *track*. Any transient failure, one bad ffmpeg run,
+a media restart mid-job, permanently removes tracks from the catalogue even after a clean retry, and
+the only route back is the per-track admin "set live" button. There is no batch equivalent.
+
+**Fix (done in code).** Reactivate the tracks that just recovered, scoped precisely: only rows whose
+current status for *this* stage is literally `"failed"`. A track an admin deliberately stopped has
+`is_active=false` with a *completed* status, so it is never resurrected by an unrelated re-run.
+
+```python
+recovered = select(TrackProcessingStatus.track_id).where(
+    TrackProcessingStatus.id.in_(ok_tps),
+    getattr(TrackProcessingStatus, status_col) == "failed",
+)
+```
+
+File: `basic_fastapi_server_resomix/app/services/partner_processing_service.py`.
+
+**Recovering run #11.** The fix cannot help retroactively, because the statuses already read
+`completed`, so nothing is left for it to recognise as recovered. The vectors are already in the
+index (`rebuilt maest index (29 vectors)`, same for discogs), so only the flag needs correcting:
+
+```sql
+UPDATE tracks SET is_active = 1 WHERE partner_id = 6 AND is_active = 0;
+```
+
+Using admin "set live" per track would also work and would additionally re-add each vector, but
+that is 29 clicks to redo work already done.
+
+### F16. `faiss_indexed` stays false even though the vectors are indexed
+
+**Found 2026-08-21. Not fixed, reporting only.**
+
+All 29 tracks show `"faiss_indexed": false, "faiss_indexed_at": null`, while the media journal
+shows `rebuilt maest index (29 vectors)` and `rebuilt discogs index (29 vectors)`. The vectors are
+genuinely in the index; the flag is simply not being set.
+
+`_apply_track_results_bulk` only sets `faiss_indexed=True` for tracks whose per-track result carries
+`maest_indexed` or `discogs_indexed`. The embeddings runner does a **bulk index rebuild** at the end
+of the job rather than per-track adds, so those per-track flags are never present and the column
+stays false for the whole batch.
+
+Harmless functionally, but it means admin reports a batch as unindexed when it is indexed, which is
+exactly the kind of thing that sends someone chasing a non-existent bug later. Either set the flag
+for the whole batch when a rebuild reports success, or drop the column in favour of asking the index.
+
 ### Also noted
 
 `INGEST_SKIP_VALIDATION=true` exists as an env flag to skip all per-file checks, commented "for our
@@ -851,7 +974,7 @@ run and are written up above.
 the per-track slope is the number that matters for the 5,000-track run, so **measure it on the
 50-track live pass** and extrapolate before committing to the full batch.
 
-### Phase 2: live run into `live/`, 2026-08-21. PIPELINE COMPLETED after five fixes
+### Phase 2: live run into `live/`, 2026-08-21. PASSED after six fixes
 
 Run **#11**, partner 6, 29 tracks. The first half is clean and everything it proves is real.
 
@@ -958,7 +1081,7 @@ from the journal:
 | 6 | 2 | Transcode failed 29/29; every error message was just the ffmpeg version banner | INGESTED, halted | F12 ffmpeg cannot infer a container from a `.tmp` output path; stderr truncated head-first | deployed, transcode then 29/29 |
 | 7 | 2 | Transcode reported a duration of "46m 28s" for a run of a few minutes | cosmetic | F10 fix preserved `started_at` across a retry, so the figure spanned the gap between attempts | yes, `started_at` resets per attempt |
 | 8 | 2 | `--verify` reported every admin check as `None` | n/a, tooling | `ingest_validate.py` assumed a `data.items` envelope; the admin API returns `{"pagination": {...}, "<resource>": [...]}` | yes, plus fallbacks and a loud fail on an empty job list |
-| 9 | 2 | Everything succeeded but the batch stayed at INGESTED | INGESTED, never READY | F13 the stage advance sits behind `status != "COMPLETED"`, which is set at INGESTED and so is never true | in code, needs deploy |
+| 9 | 2 | Everything succeeded but the batch stayed at INGESTED | INGESTED, never READY | F13 the stage advance sits behind `status != "COMPLETED"`, which is set at INGESTED and so is never true | deployed; batch re-triggered and now READY |
 
 ---
 

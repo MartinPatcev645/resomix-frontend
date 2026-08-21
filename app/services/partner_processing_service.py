@@ -673,10 +673,33 @@ async def _apply_track_results_bulk(
 
             # OK: bulk status update + bulk faiss_indexed for the indexed subset (embeddings).
             ok_tps = [by_uuid[r["track_uuid"]][0] for r in ok if r.get("track_uuid") in by_uuid]
+            # A previous failure of THIS stage deactivated the track (see the deactivate
+            # block below). Now that it has succeeded, undo that, or a retry silently
+            # recovers every status column while leaving the track invisible to similarity
+            # and the catalogue for good. Scoped to rows whose current status is literally
+            # "failed", so a track an admin deliberately stopped (is_active=False with a
+            # completed status) is never resurrected by an unrelated re-run.
+            recovered_track_ids: List[int] = []
+            if ok_tps and job_type in _DEACTIVATE_ON_FAIL:
+                recovered_track_ids = list((await db.execute(
+                    select(TrackProcessingStatus.track_id).where(
+                        TrackProcessingStatus.id.in_(ok_tps),
+                        getattr(TrackProcessingStatus, status_col) == "failed",
+                    )
+                )).scalars().all())
             if ok_tps:
                 await db.execute(
                     sa_update(TrackProcessingStatus).where(TrackProcessingStatus.id.in_(ok_tps))
                     .values(**{status_col: "completed", error_col: None, completed_col: now})
+                )
+            if recovered_track_ids:
+                await db.execute(
+                    sa_update(Track).where(Track.id.in_(recovered_track_ids))
+                    .values(is_active=True)
+                )
+                logger.info(
+                    "[ProcessingService] partner=%s %s: reactivated %s track(s) that recovered "
+                    "from a previous failure.", partner_id, job_type, len(recovered_track_ids),
                 )
             if job_type == "embeddings":
                 idx_tps = [

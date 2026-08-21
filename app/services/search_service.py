@@ -162,6 +162,18 @@ class SearchService:
         if not settings.elasticsearch_enabled:
             return await self._db_search(db, query_clean, limit, partner_id)
 
+        # B2B partners never appear in Elasticsearch. The index is built by an external
+        # rebuild that sources the Electrobuzz catalogue and stamps every document
+        # type="electrobuzz"; no ingestion path writes to it. So an ES query on behalf of a
+        # real partner can only ever return zero hits, and because a zero-hit ES response is
+        # treated as authoritative below, that turned into "your catalogue is not
+        # searchable" for every partner who ingested one. Route them at the database, which
+        # is already partner-scoped and is comfortably fast at partner catalogue sizes.
+        # The system partner (the webapp, logged-in or anonymous) IS the ES catalogue and
+        # keeps using ES — that is the whole point of the index.
+        if partner_id is not None and partner_id != settings.system_partner_id:
+            return await self._db_search(db, query_clean, limit, partner_id)
+
         overall_start = time.perf_counter()
 
         # Keyword tokens are folded/lowercased the same way the `artists` field's
