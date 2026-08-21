@@ -503,7 +503,6 @@ function ProcessingPanel(props: StagePanelProps) {
     onViewJobDetails,
     onRefreshJobs,
     onReTriggerJob,
-    onRetryIngest,
     onTriggerEmbeddings,
     onTriggerPeaksSegments,
     getPartnerName,
@@ -628,10 +627,11 @@ function ProcessingPanel(props: StagePanelProps) {
             </Tooltip>
           )}
           {record.status === 'paused' && record.job_type === 'transcode' && record.ingest_log_id && (
-            <Tooltip title="Retry Ingestion Batch">
+            <Tooltip title="Resume Transcode">
               <Button
-                icon={<RotateCw size={14} />}
-                onClick={() => record.ingest_log_id && onRetryIngest(record.ingest_log_id)}
+                icon={<Play size={14} />}
+                type="primary"
+                onClick={() => onResumeJob(record.id)}
                 className="flex items-center"
               />
             </Tooltip>
@@ -646,11 +646,14 @@ function ProcessingPanel(props: StagePanelProps) {
               />
             </Tooltip>
           )}
+          {/* Retries the transcode itself, not the ingestion. Re-ingesting would read
+              live/, which is empty once the batch has moved to processing/, and would
+              start a second run rather than resuming this one. */}
           {record.status === 'failed' && record.job_type === 'transcode' && record.ingest_log_id && (
-            <Tooltip title="Retry Ingestion Batch">
+            <Tooltip title="Retry Transcode">
               <Button
                 icon={<RotateCw size={14} />}
-                onClick={() => record.ingest_log_id && onRetryIngest(record.ingest_log_id)}
+                onClick={() => onResumeJob(record.id)}
                 className="flex items-center"
               />
             </Tooltip>
