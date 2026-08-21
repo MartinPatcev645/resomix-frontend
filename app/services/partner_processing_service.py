@@ -1061,6 +1061,41 @@ async def apply_embeddings_result(
             advance_stage(log, Stage.READY)
             log.status = "COMPLETED"
             log.completed_at = datetime.utcnow()
+
+            # PUBLISH THE BATCH. Reaching READY is what makes a partner's tracks usable, so
+            # say so explicitly rather than relying on is_active having defaulted True at
+            # insert and nothing having knocked it over since. Anything that failed on the
+            # way (which deactivates the track) must have recovered to be eligible here, so
+            # this is gated on the track's OWN stages having completed: a track that really
+            # did fail transcode or embedding stays inactive and out of the catalogue.
+            #
+            # peaks/segments are deliberately not required. They only affect playback, their
+            # failure never deactivates a track, and for a similarity-only partner they do
+            # not run at all.
+            #
+            # Runs exactly once per batch, since the enclosing guard is TERMINAL_STAGES, so
+            # this cannot fight an admin who later stops a track.
+            published = await db.execute(
+                sa_update(Track)
+                .where(
+                    Track.id.in_(
+                        select(TrackProcessingStatus.track_id).where(
+                            TrackProcessingStatus.ingest_log_id == log.id,
+                            TrackProcessingStatus.partner_id == partner_id,
+                            TrackProcessingStatus.transcode_status == "completed",
+                            TrackProcessingStatus.embedding_status == "completed",
+                        )
+                    ),
+                    Track.is_active.is_not(True),
+                )
+                .values(is_active=True)
+            )
+            if published.rowcount:
+                logger.info(
+                    "[ProcessingService] partner=%s batch %s READY: activated %s track(s).",
+                    partner_id, log.id, published.rowcount,
+                )
+
             await db.commit()
             
             dispatch_webhook.delay(

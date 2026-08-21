@@ -719,6 +719,30 @@ recovered = select(TrackProcessingStatus.track_id).where(
 )
 ```
 
+**Second, stronger guarantee: the batch is now explicitly published at READY.** Relying on
+`is_active` having defaulted `True` at insert and nothing having knocked it over since is a weak
+promise, and F12 is proof of how easily it breaks. So the block that advances a batch to READY now
+also activates that batch's tracks:
+
+```sql
+UPDATE tracks SET is_active = 1
+ WHERE id IN (SELECT track_id FROM track_processing_status
+               WHERE ingest_log_id = ? AND partner_id = ?
+                 AND transcode_status = 'completed'
+                 AND embedding_status = 'completed')
+   AND is_active IS NOT true
+```
+
+Gated on the track's **own** stages having completed, so a track that genuinely failed transcode or
+embedding stays inactive and out of the catalogue, and a partial batch publishes only its good
+tracks. `peaks`/`segments` are deliberately not required: they affect playback only, their failure
+never deactivates a track, and for a similarity-only partner they never run. It executes exactly
+once per batch, because the enclosing guard is `TERMINAL_STAGES`, so it can never fight an admin who
+stops a track later.
+
+Between the two, a successful ingestion now ends with its tracks live by construction rather than by
+luck.
+
 File: `basic_fastapi_server_resomix/app/services/partner_processing_service.py`.
 
 **Recovering run #11.** The fix cannot help retroactively, because the statuses already read
