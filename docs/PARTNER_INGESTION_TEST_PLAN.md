@@ -259,10 +259,103 @@ numbering is. If the parent cannot be stat'd it skips the chown and logs, rather
       has to move to `processing/`: `getent group 988 && id ubuntu`. On this box `ubuntu` is
       already a member of `sftpgo(988)`, so this is satisfied.
 
+### F9. The media server never returned `processing_dir`, so every live batch stalled at INGESTED
+
+**Found 2026-08-21, on the first live run (run #11). Blocked every live ingestion. Fixed in code,
+needs deploy.**
+
+This is the one the test was built to catch. Nothing before it had ever run a live batch, so
+nothing had ever needed this field.
+
+The media runner moves a validated live batch into `processing/<dt>/` and writes that folder name
+into the job's result JSON as `processing_dir`. Alwyzon reads it back on the next poll, stores it
+on the ingest log, and the transcode job uses it to locate the moved files. That is the only
+record of where the batch went.
+
+The `/internal/ingestion/status/{partner_id}/{job_id}` endpoint built its response from an
+explicit field list that **did not include `processing_dir`**. The runner wrote it, the JSON on
+disk had it, and the API dropped it. Alwyzon's `state.get("processing_dir")` was therefore always
+`None`, the column stayed `NULL`, and the auto-spawned transcode job aborted on its first line:
+
+```
+{"error": "no processing_dir on ingest log; cannot locate sources"}
+```
+
+The same response was also dropping `report_path`, the partner-visible validation report link that
+Alwyzon puts in the failure notification. Silent, and lower stakes, but the same omission.
+
+**What it looks like when it happens.** The batch reaches INGESTED and stops. Tracks are in the
+database and files are safely in `processing/<dt>/`, so nothing is lost, but transcode shows FAILED
+with `0/0` in `0s`, the pipeline banner reads "halted, needs review", and embeddings never spawn at
+all: they are only spawned when the transcode hand-off is accepted. So one missing string takes out
+the entire second half of the pipeline.
+
+**Why it went unnoticed:** the field is only ever populated on a live run, `test/` runs skip the
+move by design and correctly report `processing_dir: null`, and Phase 1 passed cleanly for exactly
+that reason. Every dry run in the project's history looked healthy.
+
+**Fix (done in code):** `processing_dir` and `report_path` are now on `IngestionStatusResponse` and
+passed through in `internal.py`. Both are cheap scalars and are returned even on light
+`include_records=false` polls, since Alwyzon persists `processing_dir` from whichever poll first
+sees the job completed, and that is normally a light one.
+
+**Still to do:**
+- [ ] Deploy the media service.
+- [ ] Backfill run #11, which cannot self-heal: `_refresh_log_from_hetzner` returns early for
+      logs in `COMPLETED`/`FAILED`, so a terminal log is never polled again and the fixed
+      endpoint will never be asked. One row, by hand (see Phase 2 in the run log).
+
+### F10. A failed transcode had no way back, and the admin button for it did the wrong thing
+
+**Found 2026-08-21, while working out how to recover from F9. Fixed in code, needs deploy.**
+
+Two separate problems that only show up together, and only once a transcode has actually failed,
+which before run #11 had never happened.
+
+**There was no endpoint to start a transcode job.** Admin has
+`/processing/jobs/{job_id}/resume` (embeddings only, rejects anything else with a 400) and
+`/processing/jobs/{stage}` (peaks and segments only, 404 for anything else). Transcode was only
+ever spawned automatically from `finalize_successful_ingestion`. That runs exactly once per batch,
+so once transcode failed, nothing could start it again.
+
+**The button offered for it called the ingestion retry.** On a failed transcode row the admin UI
+shows a circular-arrow tooltipped "Retry Ingestion Batch", wired to
+`POST /ingestion/logs/{log_id}/retry`. That does not resume anything: it creates a **new** ingest
+log pointed at `live/`. After a successful move `live/` is empty, so the new run fails on "No CSV
+manifest found" while the original batch stays stuck exactly where it was. The retry button on the
+ingest-log table and the one on the transcode row were the same action.
+
+Worth noting `retry_ingestion` calls `start_ingestion_job`, which does **not** check
+`has_active_batch` — only the SFTP hook does. So the admin path can open a second run for a partner
+that already has an active batch, bypassing the F4 concurrency guard.
+
+**Why it matters beyond F9:** any transcode failure has this shape. A genuinely corrupt file, an
+ffmpeg OOM, a media server restart mid-job. The batch is persisted, the audio is on disk, and the
+pipeline simply has no way forward, because embeddings only spawn once transcode reports
+`completed` or `partial`.
+
+**Fix (done in code):**
+- `/processing/jobs/{job_id}/resume` now accepts transcode as well as embeddings and routes it to
+  `start_transcode_job`. Safe to re-run: `only_pending` filters on `transcode_status`, so files
+  that already produced an mp3 are not redone, and the existing job row is reused rather than
+  duplicated.
+- `start_transcode_job` clears `completed_at` and `error_details` on entry, so a retried job stops
+  displaying the previous failure. Mirrors what `resume_embeddings_job` already did.
+- The admin button on paused/failed transcode rows now calls resume instead of the ingestion
+  retry, and is labelled "Retry Transcode". The ingest-log table keeps its own retry, which is
+  where re-ingesting genuinely belongs.
+
+**Not changed:** `start_ingestion_job` still skips the concurrency guard. Left alone deliberately,
+since admin sometimes needs to force a run, but it is worth a look separately.
+
 ### Also noted
 
 `INGEST_SKIP_VALIDATION=true` exists as an env flag to skip all per-file checks, commented "for our
 own bulk loads only". **Leave it off for this test.** Validation is part of what is being proved.
+
+The transcode failure banner reads "Pipeline halted, N/A failure rate exceeds 5% threshold" because
+it divides 0 by 0 when the job dies before collecting any targets. Cosmetic, but it misdescribes
+the failure to whoever reads it next.
 
 ---
 
@@ -352,6 +445,13 @@ Flag-driven, each check invocable on its own.
 
 ### Blocking partner onboarding (found by this test, not by the review)
 
+**F9 — `processing_dir` never returned.** Fixed in code. Needs the media service deployed. Without
+it every live batch stops dead at INGESTED: no transcode, no embeddings, no index. This is the one
+the test was built to find, and only a live run could have found it.
+
+**F10 — no way to restart a failed transcode.** Fixed in code. Needs Alwyzon deployed and admin
+rebuilt. Without it any transcode failure, from any cause, is unrecoverable from the UI.
+
 **F8 — folder ownership.** Fixed in code. Needs the media service deployed, plus a one-line
 backfill for partners provisioned before the fix. Without it no partner can upload at all.
 
@@ -412,15 +512,73 @@ run and are written up above.
 the per-track slope is the number that matters for the 5,000-track run, so **measure it on the
 50-track live pass** and extrapolate before committing to the full batch.
 
-### Phase 2 — live run into `live/` — not yet run
+### Phase 2 — live run into `live/`, 2026-08-21 — STALLED AT INGESTED (F9)
 
-Expect MOVED and TRANSCODING to stay greyed even though both happen. That is F1, not a failure.
-Watching for it is the cheapest confirmation of that finding.
+Run **#11**, partner 6, 29 tracks. The first half is clean and everything it proves is real.
+
+```
+RECEIVED   07:31:30 UTC
+VALIDATING 07:31:30
+PERSISTING 07:31:52     29 rows validated, moved to processing/<dt>/
+INGESTED   07:31:53     29/29 tracks in the database, 0 failed
+transcode  07:31:54     FAILED, 0/0, 0s
+```
+
+Backed up first, per F5: 30 files / 573.4 MB to
+`/srv/resomix/ingest_backups/partnerb3a56a4e427d_live_20260821T073112Z`.
+
+**Passed:** the concurrency guard, the manifest contract, the audio probe, the virus scan, the
+atomic move out of `live/`, and the DB persist. 23 seconds from `.done` to 29 tracks committed.
+MOVED and TRANSCODING stayed greyed as predicted, confirming F1.
+
+**Failed:** transcode, immediately, on F9. Embeddings never spawned, which is downstream of the
+same cause and not a second fault.
+
+**One thing to confirm before Phase 4.** The processing folder is named `20260821T073130Z` and it
+is stamped after validation returns, yet `VALIDATING` was stamped at `07:31:30` too. That puts
+ffprobe plus a clamd scan of 573 MB inside the same second, which is not obviously believable.
+Either the expensive tier is faster than expected across the worker pool, or it did not run.
+One grep settles it, and it matters because Phase 2's pass only means something if the checks
+actually happened:
+
+```bash
+journalctl -u resomix-media --since "2026-08-21 09:25" --no-pager | grep IngestionRunner
+```
+
+Expect `validating … (skip_validation=False)` followed by `probe+AV on 29 file(s) with N
+worker(s) (av=True)`. If instead it says `SKIP_VALIDATION on`, then `INGEST_SKIP_VALIDATION` is
+set in the media environment, the audio probe and virus scan were both skipped, and the manifest
+was taken on trust. Note the media box is Europe/Berlin, so 07:31 UTC is 09:31 in the journal and
+`--since` parses in local time.
+
+**Timing so far:** 23s for 29 tracks through validate + move + persist, against 72s for 3 tracks
+in the dry run. The dry run was almost entirely fixed overhead, so there is still no usable
+per-track slope for the 5,000-track estimate. Take it from the re-run, and take it from
+transcode and embeddings rather than from ingestion, since those are the parts that scale
+with audio length.
+
+**To resume**, in this order. The 29 tracks are already persisted, so this picks up where it
+stopped rather than re-ingesting. Do **not** use "Retry Ingestion Batch": it starts a new run
+against an empty `live/` and leaves this one where it is (F10).
+
+1. Deploy the media service (F9) and Alwyzon (F10 backend), and rebuild admin (F10 frontend).
+2. Backfill run #11's `processing_dir`. It cannot self-heal: `_refresh_log_from_hetzner` returns
+   early for terminal logs, so the fixed endpoint is never asked about this one.
+   ```sql
+   -- folder name from: ls /srv/sftp/partners/b3a56a4e427d/processing/
+   UPDATE ingest_logs SET processing_dir = '20260821T073130Z' WHERE id = 11;
+   ```
+3. Hit **Retry Transcode** on job #3 in admin. Embeddings then auto-spawn from the post-transcode
+   safety net, so the rest of the chain runs unattended.
+
+Only step 2 is specific to this run. Later batches need none of it.
 
 | # | Phase | What happened | Stage reported | Root cause | Fixed? |
 |---|---|---|---|---|---|
 | 1 | 1 | SFTP connect hung with no output | n/a, never started | F6 hostname is Cloudflare-proxied | workaround: origin IP |
 | 2 | 1 | Upload failed `EACCES` on first byte | n/a, never started | F8 folders chowned to uid 1000, SFTPGo is 999 | yes, in code + backfilled |
+| 3 | 2 | Transcode failed instantly, `0/0` in `0s`; embeddings never spawned | INGESTED, halted | F9 status endpoint dropped `processing_dir` | in code, needs deploy + backfill |
+| 4 | 2 | No way to restart the failed transcode; its retry button re-ran ingestion instead | INGESTED, halted | F10 no transcode start endpoint + mis-wired button | in code, needs deploy |
 
 ---
 

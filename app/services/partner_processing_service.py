@@ -285,7 +285,12 @@ async def start_transcode_job(
     if job is None:
         raise ValueError(f"Processing job {job_id} not found")
     job.status = "running"
-    job.started_at = datetime.utcnow()
+    # A retry re-uses this row, so clear the previous attempt's failure: otherwise the UI
+    # shows a stale error and a completed_at that predates the run currently in flight.
+    # (Mirrors resume_embeddings_job.) No-op on the auto-spawn path, where both are None.
+    job.completed_at = None
+    job.error_details = None
+    job.started_at = job.started_at or datetime.utcnow()
     await db.commit()
 
     # The transcode job needs the snapshot dir holding the moved uploads.

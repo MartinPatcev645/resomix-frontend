@@ -277,7 +277,7 @@ async def pause_processing_job(
 @router.post(
     "/processing/jobs/{job_id}/resume",
     status_code=202,
-    summary="Resume a paused/interrupted embeddings job",
+    summary="Resume a paused/interrupted embeddings or transcode job",
 )
 async def resume_processing_job(
     job_id: int,
@@ -287,15 +287,35 @@ async def resume_processing_job(
     current_admin: User = Depends(require_admin),
     _: User = Depends(require_permission("partners:manage")),
 ) -> JSONResponse:
-    """Re-hand the job's full track list to the media server; already-embedded tracks are skipped."""
+    """Re-hand the job's track list to the media server; already-done tracks are skipped.
+
+    Transcode is included because a failed transcode is otherwise a dead end: it is only
+    ever spawned automatically at ingestion success, so with no resume path a batch that
+    fails here can never reach embeddings. Re-running is safe — ``only_pending`` filters
+    on ``transcode_status``, so tracks that already produced an mp3 are not redone, and
+    the same job row is reused rather than spawning a duplicate.
+    """
     set_admin_context(True)
     job = await db.get(PartnerProcessingJob, job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Processing job not found")
-    if job.job_type != "embeddings":
-        raise HTTPException(status_code=400, detail="Only embeddings jobs support resume")
+    if job.job_type not in ("embeddings", "transcode"):
+        raise HTTPException(
+            status_code=400, detail="Only embeddings and transcode jobs support resume"
+        )
 
-    job = await partner_processing_service.resume_embeddings_job(db, job, env=env, index_after=index_after)
+    if job.job_type == "transcode":
+        # Reads processing_dir off the ingest log to locate the moved sources, so the
+        # log must carry it; without one the service fails the job with a clear reason.
+        job = await partner_processing_service.start_transcode_job(
+            db, job_id=job.id, partner_id=job.partner_id, env=env,
+            ingest_log_id=job.ingest_log_id, only_pending=True,
+        )
+    else:
+        job = await partner_processing_service.resume_embeddings_job(
+            db, job, env=env, index_after=index_after
+        )
+
     if job.status == "failed":
         return JSONResponse(
             status_code=502,
@@ -304,7 +324,8 @@ async def resume_processing_job(
         )
     return JSONResponse(
         status_code=202,
-        content={"status": "accepted", "message": "Embeddings job resumed",
+        content={"status": "accepted",
+                 "message": f"{job.job_type.capitalize()} job resumed",
                  "job_id": job.id, "job_status": job.status, "total_tracks": job.total_tracks},
     )
 
