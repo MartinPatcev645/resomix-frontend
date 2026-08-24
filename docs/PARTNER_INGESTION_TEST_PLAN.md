@@ -10,11 +10,11 @@
 
 ## 0. Status at a glance
 
-*Last updated 2026-08-21, after the first live run (29 tracks).*
+*Last updated 2026-08-21, after 229 tracks across three batches, with a ~4,700-track run in flight.*
 
-The test found **eight faults that no dry run could have found**, and every one of them would have
-hit the first real partner. All eight are fixed. Detail for every item is in section 3; this table
-is the summary.
+The test found **ten faults that no dry run could have found**, plus one product blocker resolved by
+decision. Every one of them would have hit the first real partner. All are fixed. Detail for every
+item is in section 3; this table is the summary.
 
 ### Fixed during the test
 
@@ -27,7 +27,11 @@ is the summary.
 | **F12** | ffmpeg was handed a `.tmp` output path and could not infer a container, so every transcode aborted. The error was then truncated to the ffmpeg banner | No track could ever be transcoded, and the reason was unreadable | Fixed, deployed, transcode now 29/29 |
 | **F13** | The code that advances a batch to READY was behind a condition that is never true, so batches stopped at INGESTED | INGESTED counts as active, so **a partner who ingests one batch can never upload another** | Fixed, deployed, batch now READY |
 | **F15** | A track deactivated by a failed stage is never reactivated when the retry succeeds | All 29 tracks sat at `is_active=false`, so **similarity 404'd for the whole catalogue**. Any transient failure drops tracks permanently | Fixed in code; needs deploy + one SQL for run #11 |
-| **F14** | A partner's ingested catalogue was invisible to `/search_tracks/` | Search is ES-backed and ingestion never writes to ES, so the documented route to a `track_id` returned nothing for a partner's own catalogue | Fixed in code: partner-scoped search now goes to the DB |
+| **F14** | A partner's ingested catalogue was invisible to `/search_tracks/` | Search is ES-backed and ingestion never writes to ES, so the documented route to a `track_id` returned nothing for a partner's own catalogue | Fixed: partner-scoped search now goes to the DB |
+| **F17** | A filename containing `..` was rejected as path traversal | Cost a real track per batch, on a check guarding a filename that never touches the filesystem | Fixed, deployed |
+| **F18** | Admin's ETA was wrong by the viewer's UTC offset | Read "~2.2h" for a job that took 6m 22s. Every displayed timestamp was off by the same amount | Fixed, needs an admin rebuild |
+| **F19** | SFTPGo grants `upload` but not `overwrite`, so re-writing an existing file is refused | **An interrupted upload could never be retried by any partner**, failing with a bare EACCES on the first file | Fixed both sides; client fix needs no deploy |
+| **F7** | ISRC was mandatory, and ~70% of a real catalogue has none | A partner could onboard less than a third of their music over an id nothing reads | **Decided: ISRC is now optional.** Format and in-batch uniqueness still enforced when present |
 
 These stack rather than compete. F9 stopped the batch before transcode, so F12 could not be found
 until F9 was fixed, F10 meant there was no way to retry once it had been, and F15 only became
@@ -36,9 +40,10 @@ All of them are invisible to a `test/` dry run by construction, which is why the
 healthy for months. F11 and F16 were invisible to any run at all: one announced itself only in the
 journal, the other only in a field nobody reads.
 
-**Note the last three took a different kind of looking.** F13, F14 and F15 all sat behind jobs that
+**Three of them took a different kind of looking.** F13, F14 and F15 all sat behind jobs that
 reported success. Watching the pipeline run would never have surfaced them; only querying the result
-as a partner would.
+as a partner would. And **F19 only appeared at the second attempt at something** rather than the
+first, which is the class of fault a single clean run can never find.
 
 **One ordering constraint.** The F11 code change is fail-closed: an unscannable file now fails the
 batch. Apply the clamd host fix and verify it before deploying, or every batch will be rejected.
@@ -64,16 +69,41 @@ Rate limiting confirmed live: 30 concurrent requests against a 10 rps key return
 3 x 429. Note the limiter is a token bucket of capacity `rps * 2` that refills during the burst, so
 "more than 20 got through" is expected rather than a fault, and the script's ceiling accounts for it.
 
-Remaining before Phase 4 (5,000 tracks): review `logs.json` in the batch folder, and answer the
-embeddings throughput question, since that stage projects to roughly 4.8 h at 5,000.
+**Repeat ingestion works.** Three batches (29 + 100 + 100 = 229 tracks) on one partner. The FAISS
+index accumulates rather than replacing: 29 -> 128 -> 129 -> 229 vectors, and similarity returns
+neighbours from across batches. Re-verified at 229 tracks: **11 passed, 0 failed, 0 warnings.**
+
+**Measured throughput**, which is what Phase 4 hangs on:
+
+| Stage | Rate | Projected at 5,000 |
+|---|---|---|
+| Ingestion (validate + move + persist) | mostly fixed overhead | minutes |
+| Transcode | 22 s / 100 tracks, 12 workers | ~1 h |
+| Embeddings | **3.8 s / track** | **~5.3 h** |
+
+Embeddings dominate roughly 5 to 1, and the FAISS rebuild is O(entire catalogue) per batch rather
+than O(batch), which matters for partners who top up monthly.
+
+**Remaining before Phase 4 is signed off:** review `logs.json` in the batch folder, and answer the
+embeddings throughput question. A ~4,700-track run is in flight as of this update.
 
 ### Needs a decision
 
 | # | What | Why it needs you | Estimate |
 |---|---|---|---|
 | **F6** | The SFTP hostname we hand partners is Cloudflare-proxied, which does not carry SFTP | No partner can connect. The test works around it with the origin IP, which we do not want to give out | ~half a day |
-| **F7** | Only ~30% of Electrobuzz files carry an ISRC, which ingestion requires | A real catalogue onboards a third of itself. Product call: keep ISRC mandatory, or accept a partner-supplied id for similarity-only partners | Decision only |
+| **Duplicates** | Re-ingesting a track already in a partner's catalogue silently inserts it twice | No unique constraint on ISRC, and the validator only rejects duplicates *within* one batch. A partner who retries a completed batch pollutes their own similarity results, and ISRC being optional now removes even that partial guard | Needs a rule before it bites |
 | **F1** | `MOVED` reaches the partner's log but not the admin timeline | Cosmetic accuracy in the admin view. Was already awaiting approval before this run | 1.5 h |
+| **F16** | `faiss_indexed` reads false while the vectors are genuinely indexed | Reporting only, but it will send someone chasing a bug that does not exist | ~1 h |
+
+### Partner-facing gaps
+
+Not code faults, but a partner hits them and has nowhere to look:
+
+| What | Why it matters |
+|---|---|
+| Nothing documents what to do when an upload is interrupted | Answered in full under F19, including proposed copy for the partner docs. Ready to lift. |
+| No partner-facing way to list your own catalogue | `/my-tracks/` needs a logged-in user, not an API key. A partner cannot discover their own `track_id`s except through search. |
 
 ### Behaviours to work with, not faults
 
@@ -277,7 +307,7 @@ this worse, but it does make the origin easier to find.
 
 **For this test:** use the IP directly. Nothing is blocked.
 
-### F7. Most Electrobuzz files carry no ISRC
+### F7. Most Electrobuzz files carry no ISRC (RESOLVED: ISRC is now optional)
 
 **Found 2026-08-21. 7 of the first 10 tracks had no ISRC in their tags.**
 
@@ -307,6 +337,25 @@ product call, not a bug, and it does not block this test.
 
 **For the test:** the ~30% that do carry an ISRC are plenty. The test is about ingestion
 mechanics, not catalogue size.
+
+**RESOLVED 2026-08-21. ISRC is optional.** The decision came down on the side of ingesting the
+music: it is a distribution identifier, nothing in the similarity path reads it, tracks are keyed by
+uuid everywhere, and search matches title and artist. Requiring it meant refusing roughly 70% of a
+real catalogue over a field we never look at.
+
+What is kept: a **present** ISRC must still be well formed and unique within its batch, so a
+malformed or copy-pasted one is still caught. Absent ISRCs do not collide with each other. Changed in
+the media validator and in `ingest_upload.py`, which was doing the bulk of the dropping before
+anything reached the server. Two tests updated, one added.
+
+Measured effect: yield went from ~30% to **99.4%** (4,740 usable rows from 4,770 paths). The 30 that
+still fail are genuinely bad data, not missing data: `ISRC 'UNDEFINED'`, `'ELECTROBUZZ.NET'`,
+`'N/A'`, `'NONE'` written into the tag, plus a few files with no title at all and two duplicate
+filenames.
+
+**Open, small:** those junk sentinel values could be treated as *absent* rather than *invalid*,
+which would recover ~20 more tracks per 4,700. Two lines. Not done because it is a guess about what a
+sentinel means, and the current behaviour at least tells the partner their tags are wrong.
 
 ### F8. Provisioned partner folders were owned by the wrong user, so no upload could ever succeed
 
@@ -649,7 +698,7 @@ EMBEDDING, INDEXED and FINALIZING all carry the same timestamp as READY rather t
 actually happened. The timeline is therefore accurate about order but not about duration. Same
 family as F1 and worth folding into that work if it is approved.
 
-### F14. A partner's ingested catalogue is invisible to search
+### F14. A partner's ingested catalogue was invisible to search (FIXED)
 
 **Found 2026-08-21, by the partner API smoke test. Not fixed, needs a decision.**
 
@@ -830,6 +879,131 @@ File: `resomix-similarity-open/app/api/internal.py`.
 for the batch after the deploy will succeed and, thanks to F15, reactivate it automatically. This is
 the first time the F15 recovery path gets exercised by a real failure rather than a contrived one.
 
+### F18. Admin's ETA was wrong by the viewer's UTC offset
+
+**Found 2026-08-21, watching batch B. Fixed in code, needs an admin rebuild.**
+
+The Embedding stage showed **ETA ~2.2h** at 70/100 for a job that finished in **6m 22s**.
+
+The estimate itself is sound throughput extrapolation. The input was wrong. The backend builds
+timestamps with `datetime.utcnow().isoformat()`, which produces `2026-08-21T13:40:52` with **no
+timezone designator**, and JavaScript parses a date-time form without an offset as **local time**:
+
+```
+new Date('2026-08-21T13:40:52')       -> 2026-08-21T08:40:52Z   (on a UTC+5 machine)
+new Date('2026-08-21T13:40:52' + 'Z') -> 2026-08-21T13:40:52Z
+```
+
+So `started_at` reads five hours early, `Date.now() - started` is inflated by five hours, and the
+arithmetic reproduces the screenshot exactly: perceived elapsed 5h04m over 70 tracks is 261s each,
+times 30 remaining is 2.17h, displayed as `~2.2h`.
+
+**Why it went unnoticed.** A *difference between two* server timestamps is still correct, because
+both shift by the same amount. Job durations were always right, which is why "6m 22s" looked
+trustworthy on the very same screen. Only two things were wrong, and both by exactly the viewer's
+UTC offset: anything compared against `Date.now()` (the ETA), and every displayed clock time, which
+showed a UTC value labelled as local. A viewer in UTC would never see either.
+
+**Fix (done in code).** One shared helper in `pipelineUtils.ts`, `parseServerDate()`, appends the
+missing `Z` so the value is read as the UTC it already is, leaving alone strings that carry an
+offset and date-only strings (which JS already treats as UTC). `serverTime()` and
+`formatServerDateTime()` wrap it. Every timestamp read in the pipeline admin now goes through them:
+the ETA, the stage header, both job tables, the stage timeline, and the job-detail modal. `estimateEta`
+also now returns null rather than a number when the parse fails or elapsed is not positive.
+
+Files: `resomix-web/apps/admin/src/components/pipeline/pipelineUtils.ts`, `.../StagePanel.tsx`,
+`apps/admin/src/pages/PipelinePage.tsx`. `pnpm --filter admin build` passes.
+
+**The deeper fix, not taken.** The API should emit timezone-aware ISO-8601 rather than naive UTC,
+which would fix this for every consumer instead of one screen. That means changing serialization
+across many endpoints and the webapp reads the same fields, so it is a separate, deliberate change
+rather than something to slip in mid-test. Logged here so it is not lost.
+
+### F19. An interrupted upload could never be retried
+
+**Found 2026-08-21, resuming a 4,740-file upload. Fixed in code, needs deploy.**
+
+A 4,740-file upload was interrupted after ~603 files. Restarting it failed on the **first** file:
+
+```
+PermissionError: [Errno 13] permission denied
+  sftp.put(...) -> open(remotepath, "wb")
+```
+
+**SFTPGo treats `overwrite` as a permission distinct from `upload`.** Provisioning grants
+`["list", "download", "upload", "delete"]`, so a partner can create a file that does not exist and
+cannot write to one that does. The first 603 landed because `live/` was empty. The retry tried the
+same first filename, it was now present, and the write was refused.
+
+This was never specific to this batch. **Any partner whose upload dropped part-way could not restart
+it**, and the failure arrives as a bare `EACCES` on the first file, which reads like a broken account
+rather than "this file already exists".
+
+**Fix (done in code), on both sides:**
+
+- **Server:** `overwrite` added to the granted permissions. Withholding it bought no safety, since
+  partners already hold `delete`; it only converted a resumable transfer into a dead end. Applies to
+  newly provisioned partners, so existing ones need their SFTPGo user patched.
+- **Client:** `ingest_upload.py` now lists the target directory first and skips any file already
+  present **at the same size**. A file present at a *different* size is a partial write from the
+  interruption, so it is deleted and re-sent, which works with `delete` alone and therefore does not
+  wait on the server fix. Re-uploading 4 GB to recover a dropped connection was never acceptable
+  anyway.
+
+Also replaced the per-row `next(p for p in paths ...)` lookup with a dict: it was O(rows x paths),
+about 22M comparisons on this batch.
+
+### Discovery: what actually happens when a partner's upload is interrupted
+
+Worth writing down properly, because the answer turned out to be reassuring and none of it is
+currently documented for partners.
+
+**Nothing is ingested until `.done` arrives.** That is the commit point. A partial `live/` is inert:
+no DB rows, no jobs, no partner-visible state change. The batch simply does not exist yet.
+
+**The manifest is uploaded last, deliberately.** So an interrupted upload has no manifest at all, and
+even if `.done` did arrive the run fails immediately with "No CSV manifest found" rather than
+ingesting a truncated batch as though it were complete.
+
+**And if `.done` arrives with files missing**, validation is all-or-nothing: every absent file is
+reported as `MISSING_AUDIO_FILE` against its manifest row, the batch is rejected, and the partner
+gets a per-row `errors.txt`. Nothing partial is persisted.
+
+So the three failure modes are all safe. The gap was purely **recovery**: before F19 the partner had
+no way to continue, and no way to understand why.
+
+**What a partner should actually do, in order:**
+
+1. **Do not send `.done`.** An interrupted upload has not started anything.
+2. **Re-run the same upload.** With `overwrite` granted, re-sending is now allowed; a client that
+   skips files already present at the right size (as ours now does) makes this cheap.
+3. **Or clear and restart:** partners hold `delete`, so emptying `live/` and starting over is always
+   available and always safe.
+4. **Only send `.done` once every file named in the manifest is present.**
+
+**The one thing they must NOT do:** re-upload tracks from a batch that already completed. `tracks`
+has no unique constraint on ISRC and the validator only rejects duplicates *within* a single batch,
+so a re-ingested track is silently inserted a second time and pollutes similarity results. This is
+the same gap noted under F14/F7 and it is the strongest argument for adding a cross-batch dedupe.
+
+**Proposed copy for the partner docs** (section 7 of `API_OVERVIEW_PARTNER_DRAFT.md`), which
+currently says nothing about interruption:
+
+> **If an upload is interrupted.** Nothing is ingested until you upload `.done`, so a partial upload
+> is harmless and starts nothing. To recover, simply run your upload again: files already transferred
+> are skipped or replaced, and only the missing ones are sent. Alternatively delete the contents of
+> `live/` and start over. Upload `manifest.csv` after the audio, and `.done` only once every file
+> listed in the manifest is present. If `.done` is sent with files missing, the batch is rejected in
+> full and you will receive a per-row error report; nothing is partially ingested.
+>
+> **Do not re-upload tracks from a batch that has already completed.** They will be added a second
+> time rather than recognised as duplicates.
+
+**Still to do:**
+- [ ] Patch the existing partner's SFTPGo user to add `overwrite` (provisioning only fixes new ones).
+- [ ] Put the copy above into the partner documentation.
+- [ ] Decide on cross-batch duplicate handling.
+
 ### Also noted
 
 `INGEST_SKIP_VALIDATION=true` exists as an env flag to skip all per-file checks, commented "for our
@@ -876,6 +1050,31 @@ Run in order. Do not proceed to the next phase until the current one is green en
   - [ ] Tracks searchable, and similarity returns them
   - [ ] Admin: partner detail, ingestion logs, stage timeline, track list all correct
   - [ ] `logs.json` in `processing/<dt>/` matches the DB timeline and leaks no host paths
+
+### Repeat ingestion: the FAISS index accumulates, it does not replace
+
+**Verified 2026-08-21, batch A of the repeat test. This was the main risk and it is clear.**
+
+The worry: if each embeddings job rebuilt the partner index from only its own batch, every new
+ingestion would silently evict the previous one. Tracks would stay active and searchable while
+returning no similarity neighbours, which is close to the worst possible failure mode because
+nothing reports it.
+
+It does not. The journal across three jobs:
+
+```
+job=4  rebuilt maest index (29 vectors)     run #11, 29 tracks
+job=5  rebuilt maest index (29 vectors)     run #11 re-trigger, unchanged
+job=7  rebuilt maest index (128 vectors)    run #12, +100 tracks
+```
+
+29 + 100 = 129 tracks ingested, 128 vectors, because one track failed to embed (F17). The rebuild
+scans the partner's whole `.npy` store rather than the job's work list, so the arithmetic is exactly
+right and the earlier batch survives intact. Same for the discogs index.
+
+**So a partner can ingest repeatedly without losing earlier catalogue.** Worth re-checking once at
+5,000-track scale, since a full rebuild per batch is O(catalogue) and that cost grows with every
+top-up even when the batch is small.
 
 ### Phase 3: Fix and re-prove
 - [ ] Log every failure in §7 rather than fixing inline.
@@ -984,13 +1183,40 @@ entirely by iterating an empty list. It now reads the real
 empty job list, and prints where to get an admin token on a 401 or 403.
 File: `resomix-similarity-open/scripts/ingest_validate.py`.
 
-**Two manual steps remain.**
+**F17, a legitimate filename rejected as path traversal.** The filename check tested for `..`
+anywhere in the string, but `..` is only traversal as a whole path segment, and in that code path the
+filename never touches the filesystem at all (audio is located by uuid). Split into a strict check
+for the uuid, which does build a path, and a basename check for the filename. *Deployed.*
+File: `resomix-similarity-open/app/api/internal.py`.
+
+**F18, admin's ETA was wrong by the viewer's UTC offset.** The backend emits naive UTC and JavaScript
+parses a suffix-less date-time as local, so `Date.now() - started` was inflated by the offset. One
+shared `parseServerDate()` helper now backs every timestamp read in the pipeline admin. *Needs an
+admin rebuild.* Files: `pipelineUtils.ts`, `StagePanel.tsx`, `PipelinePage.tsx`.
+
+**F19, an interrupted upload could never be retried.** `overwrite` added to the SFTPGo permission
+grant, and the uploader now skips files already present at the right size and replaces partial ones.
+*Client side needs no deploy; server side applies to newly provisioned partners.*
+Files: `resomix-similarity-open/app/api/internal.py`,
+`electrobuzz_server/ingest_selection/ingest_upload.py`.
+
+**F7, ISRC made optional.** Yield on a real catalogue went from ~30% to 99.4%. *Deployed.*
+Files: `app/services/ingestion_runner.py`, `ingest_upload.py`, tests.
+
+**Tooling.** `ingest_upload.py` also gained `--rows` / `--offset` (so "N tracks" means N tracks and
+repeat batches never overlap), per-file error isolation, progress output, `--auto-done` for
+unattended runs, and skip-existing on upload. `select_ingest_tracks.py` gained `--exclude` so a
+larger redraw cannot re-select already-ingested paths.
+
+**Three manual steps remain.**
 
 1. Run #11's `processing_dir` cannot self-heal, because `_refresh_log_from_hetzner` returns early
    for terminal logs and so never asks the fixed endpoint:
-   `UPDATE ingest_logs SET processing_dir = '20260821T073130Z' WHERE id = 11;`
-2. Everything ingested before today was accepted unscanned. Once clamd works, sweep the existing
-   files: `sudo clamdscan -r /srv/sftp/partners/ | tail -5`.
+   `UPDATE ingest_logs SET processing_dir = '20260821T073130Z' WHERE id = 11;` **(done)**
+2. Everything ingested before the clamd fix was accepted unscanned. Sweep what is on disk:
+   `sudo clamdscan -r /srv/sftp/partners/ | tail -5`.
+3. The existing partner's SFTPGo user needs `overwrite` added by hand: provisioning only fixes
+   partners created after the F19 deploy.
 
 ### Awaiting approval
 
@@ -1163,6 +1389,11 @@ from the journal:
 | 7 | 2 | Transcode reported a duration of "46m 28s" for a run of a few minutes | cosmetic | F10 fix preserved `started_at` across a retry, so the figure spanned the gap between attempts | yes, `started_at` resets per attempt |
 | 8 | 2 | `--verify` reported every admin check as `None` | n/a, tooling | `ingest_validate.py` assumed a `data.items` envelope; the admin API returns `{"pagination": {...}, "<resource>": [...]}` | yes, plus fallbacks and a loud fail on an empty job list |
 | 9 | 2 | Everything succeeded but the batch stayed at INGESTED | INGESTED, never READY | F13 the stage advance sits behind `status != "COMPLETED"`, which is set at INGESTED and so is never true | deployed; batch re-triggered and now READY |
+| 10 | 2 | Partner API: search returned nothing, similarity 404'd on every track | n/a, post-READY | F14 partner catalogues are not in Elasticsearch; F15 all tracks left `is_active=false` by F12's failure | both fixed, deployed |
+| 11 | repeat | Batch A embedded 99/100 | one track dropped | F17 a filename containing `..` rejected as path traversal | fixed, deployed; batch B then 100/100 |
+| 12 | repeat | Admin showed "ETA ~2.2h" for a 6m 22s job | cosmetic | F18 naive UTC parsed as local time | fixed, needs admin rebuild |
+| 13 | 5k | Restarting an interrupted 4,740-file upload failed on the first file | upload never resumed | F19 SFTPGo grants `upload` but not `overwrite` | fixed both sides |
+| 14 | 5k | Only ~30% of files produced manifest rows | 70% of catalogue unusable | F7 ISRC was mandatory | decided optional; yield now 99.4% |
 
 ---
 
