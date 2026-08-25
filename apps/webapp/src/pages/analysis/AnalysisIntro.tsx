@@ -14,7 +14,9 @@ const FACTS: { title: string; body: string }[] = [
   { title: "Tempo & Key", body: "Exact BPM and musical key (Camelot), so you can beatmatch and mix in key with confidence." },
   { title: "Energy & Mood", body: "Energy curve and mood mapping, so you can read the vibe before you drop it into a set." },
   { title: "Genre & Instruments", body: "Genre breakdown, detected instruments and stems, so you can find tracks that actually fit together." },
-  { title: "Structure", body: "Intro, build, drop and breakdown laid out on a timeline, so you can cue smarter and transition cleaner." },
+  // Promised a timeline of intro/build/drop/breakdown. Parked with the rest of the structure
+  // display, since advertising a panel the result no longer contains reads as a broken feature.
+  // { title: "Structure", body: "Intro, build, drop and breakdown laid out on a timeline, so you can cue smarter and transition cleaner." },
 ];
 
 /** Small accent-barred sub-heading — stands out from body text without being a full heading. */

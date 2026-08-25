@@ -16,7 +16,9 @@ import { useRecentAnalyses } from "./analysis/useRecentAnalyses.js";
 import { AnalysisIntro } from "./analysis/AnalysisIntro.js";
 import { FullAnalysisLocked } from "@/components/Entitlements/FullAnalysisLocked.tsx";
 import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
-import { CamelotWheel, chromaLabelsForKey, ChromaSummary, ChromaView, Donut, keyFromCamelot, MoodRadar, RibbonChart, sectionAt, SpectrogramView, StemArea, StructureTimeline, WaveTimeline } from "./analysis/heatviz.js";
+// `sectionAt` and `StructureTimeline` are still exported from heatviz; they are unimported
+// here only while the Structure panel below is disabled.
+import { CamelotWheel, chromaLabelsForKey, ChromaSummary, ChromaView, Donut, keyFromCamelot, MoodRadar, RibbonChart, SpectrogramView, StemArea, WaveTimeline } from "./analysis/heatviz.js";
 
 const fmtDuration = (ms: number) => {
   const s = Math.round(ms / 1000);
@@ -142,9 +144,10 @@ export default function AnalysisPage() {
   // ambiguous, spelled through the same Camelot source so it reads consistently (e.g. "6B · Bb major").
   const altLabel = data ? keyFromCamelot(data.tonality.altCamelot) : null;
 
-  const activeSection = data?.energy.structureSegments.find(
-    (s) => currentMs >= s.startMs && currentMs < s.endMs,
-  );
+  // Only the (currently disabled) Structure panel read this. Restore it with the panel.
+  // const activeSection = data?.energy.structureSegments.find(
+  //   (s) => currentMs >= s.startMs && currentMs < s.endMs,
+  // );
 
   const pick = (file?: File | null) => {
     if (file) analyze(file);
@@ -335,7 +338,8 @@ export default function AnalysisPage() {
                 Analyzing · {fileName}
               </div>
               <div className="flex flex-col gap-[var(--px-16)]">
-                <LoadingStep title="Sound & structure" subtitle="tempo · key · loudness · spectrum · sections" />
+                {/* "sections" dropped from both subtitles while the Structure panel is off. */}
+                <LoadingStep title="Sound & dynamics" subtitle="tempo · key · loudness · spectrum" />
                 <LoadingStep title="Sound, mood & style" subtitle="genre · instruments · stems · emotion" />
               </div>
             </div>
@@ -471,7 +475,13 @@ export default function AnalysisPage() {
               )}
             </div>
 
-            {/* structure */}
+            {/* Structure panel is switched OFF while we wait for the Raveform authors to reply
+                about the new approach and its label vocabulary. The backend has stopped computing
+                v1 and v2, so this panel would render an empty strip with no sections. The markup
+                is kept verbatim so re-enabling is a matter of uncommenting it (together with
+                `activeSection` above and the `sectionAt` / `StructureTimeline` imports). See
+                STRUCTURE/docs/2026-08-25-edm-structure-parked-restore-and-gpu-setup.md.
+
             <Panel
               title="Structure"
               subtitle={`${data.energy.structureSegments.length} sections · ${data.rhythm.barCount || "…"} bars · click to seek`}
@@ -501,6 +511,7 @@ export default function AnalysisPage() {
                 />
               </TimeAxis>
             </Panel>
+            */}
 
             {/* waveform + beat grid */}
             <Panel title="Waveform & beat grid" subtitle="energy silhouette · phrase lines · bass entry · click / play to seek">
@@ -771,7 +782,7 @@ export default function AnalysisPage() {
               <Panel title="Sound, mood & style" subtitle="genre · instruments · stems · emotion" center>
                 <div className="flex justify-center py-[var(--px-14)]">
                   <div className="flex flex-col gap-[var(--px-16)]">
-                    <LoadingStep title="Sound & structure" subtitle="tempo · key · loudness · spectrum · sections · ready above" done />
+                    <LoadingStep title="Sound & dynamics" subtitle="tempo · key · loudness · spectrum · ready above" done />
                     <LoadingStep title="Sound, mood & style" subtitle="genre · instruments · stems · emotion · running the models" />
                   </div>
                 </div>

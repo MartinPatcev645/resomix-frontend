@@ -20,7 +20,7 @@ import { AnalysisSummaryCard } from "@/sections/desktop/Workspace/AnalysisSummar
  * `/analysis/full?id=`, reached only by choosing it.
  *
  * The card is rendered from the *projected* payload, so a free user sees exactly what they would
- * have seen in the workspace: BPM, key, energy, structure, the persona blurb, and the link through
+ * have seen in the workspace: BPM, key, energy, the persona blurb, and the link through
  * to their similarity playlist.
  *
  * Rendered inside `WorkspaceShell` by WorkspacePage / WorkspaceMobile — not as a standalone route —

@@ -1,5 +1,5 @@
 import { shortGenre } from "@resomix/hooks";
-import type { AnalysisData, StructureSegment } from "@/pages/analysis/data.ts";
+import type { AnalysisData } from "@/pages/analysis/data.ts";
 import { keyFromCamelot } from "@/pages/analysis/heatviz.tsx";
 import { displayOrNA } from "@/utils/trackUtils.ts";
 
@@ -8,18 +8,23 @@ const fmtClock = (ms: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 };
 
-function structurePhrase(segments: StructureSegment[]): string {
-  if (!segments.length) return "Structure data is N/A for this track.";
-  const drop = segments.find((s) => s.label === "drop" || s.label === "chorus");
-  const build = segments.find((s) => s.label === "build");
-  if (drop && build) {
-    return `Structure moves from ${build.label} toward ${drop.label} around ${fmtClock(drop.startMs)}${drop.endMs ? `, sustaining through ${fmtClock(drop.endMs)}` : ""}.`;
-  }
-  if (drop) {
-    return `Structure peaks through ${drop.label} from ${fmtClock(drop.startMs)} to ${fmtClock(drop.endMs)}.`;
-  }
-  return `${segments.length} structural sections detected across the arrangement.`;
-}
+// Parked with the rest of the structure display while we wait for the Raveform authors' reply.
+// It is not enough to leave this in and let it hit its empty branch: that branch says "Structure
+// data is N/A for this track", which is itself a statement about structure and would now show on
+// EVERY track. See STRUCTURE/docs/2026-08-25-edm-structure-parked-restore-and-gpu-setup.md.
+//
+// function structurePhrase(segments: StructureSegment[]): string {
+//   if (!segments.length) return "Structure data is N/A for this track.";
+//   const drop = segments.find((s) => s.label === "drop" || s.label === "chorus");
+//   const build = segments.find((s) => s.label === "build");
+//   if (drop && build) {
+//     return `Structure moves from ${build.label} toward ${drop.label} around ${fmtClock(drop.startMs)}${drop.endMs ? `, sustaining through ${fmtClock(drop.endMs)}` : ""}.`;
+//   }
+//   if (drop) {
+//     return `Structure peaks through ${drop.label} from ${fmtClock(drop.startMs)} to ${fmtClock(drop.endMs)}.`;
+//   }
+//   return `${segments.length} structural sections detected across the arrangement.`;
+// }
 
 function keyPhrase(data: AnalysisData): string {
   const camelot = displayOrNA(data.tonality.camelot);
@@ -69,7 +74,8 @@ export function resolveAnalysisReadings(data: AnalysisData): {
   return {
     forDj:
       fromApi.forDj.trim() ||
-      `${structurePhrase(data.energy.structureSegments)} ${keyPhrase(data)}, ${bpmPhrase(data)}.`,
+      // `${structurePhrase(data.energy.structureSegments)} ` prefixed this while structure was on.
+      `${keyPhrase(data)}, ${bpmPhrase(data)}.`,
     forProducers:
       fromApi.forProducers.trim() ||
       `${keyPhrase(data)}; arrangement develops through texture and intensity. Loudness range ${data.technical.loudnessRangeLu ? data.technical.loudnessRangeLu.toFixed(1) : "N/A"} LU; integrated ${data.technical.integratedLufs ? data.technical.integratedLufs.toFixed(1) : "N/A"} LUFS. Style indicator ${displayOrNA(style)}.`,

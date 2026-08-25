@@ -42,7 +42,7 @@ export const FullAnalysisLocked: React.FC<FullAnalysisLockedProps> = ({ onBack, 
       </span>
 
       <span className="max-w-md break-words font-helvetica text-[length:var(--px-11)] font-light opacity-70">
-        Your summary — BPM, key, energy and structure — stays free. Pro adds the full breakdown:
+        Your summary — BPM, key and energy — stays free. Pro adds the full breakdown:
         spectrograms, the chromagram, beat and phrase grids, mood and genre over time, and stem
         composition.
       </span>
