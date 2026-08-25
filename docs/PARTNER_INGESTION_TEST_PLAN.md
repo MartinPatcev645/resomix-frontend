@@ -12,8 +12,8 @@
 
 *Last updated 2026-08-21, after 229 tracks across three batches, with a ~4,700-track run in flight.*
 
-The test found **ten faults that no dry run could have found**, plus one product blocker resolved by
-decision. Every one of them would have hit the first real partner. All are fixed. Detail for every
+The test found **eleven faults that no dry run could have found**, plus one product blocker resolved
+by decision. Every one of them would have hit the first real partner. All are fixed. Detail for every
 item is in section 3; this table is the summary.
 
 ### Fixed during the test
@@ -31,6 +31,7 @@ item is in section 3; this table is the summary.
 | **F17** | A filename containing `..` was rejected as path traversal | Cost a real track per batch, on a check guarding a filename that never touches the filesystem | Fixed, deployed |
 | **F18** | Admin's ETA was wrong by the viewer's UTC offset | Read "~2.2h" for a job that took 6m 22s. Every displayed timestamp was off by the same amount | Fixed, needs an admin rebuild |
 | **F19** | SFTPGo grants `upload` but not `overwrite`, so re-writing an existing file is refused | **An interrupted upload could never be retried by any partner**, failing with a bare EACCES on the first file | Fixed both sides; client fix needs no deploy |
+| **F20** | Filenames beginning with a space were stripped before the lookup, then reported missing | 294 healthy files rejected on the 4,740-track batch, and each would also have been flagged as an unexpected extra | Fixed, deployed |
 | **F7** | ISRC was mandatory, and ~70% of a real catalogue has none | A partner could onboard less than a third of their music over an id nothing reads | **Decided: ISRC is now optional.** Format and in-batch uniqueness still enforced when present |
 
 These stack rather than compete. F9 stopped the batch before transcode, so F12 could not be found
@@ -1004,6 +1005,42 @@ currently says nothing about interruption:
 - [ ] Put the copy above into the partner documentation.
 - [ ] Decide on cross-batch duplicate handling.
 
+### F20. Filenames beginning with a space were reported missing while sitting on disk
+
+**Found 2026-08-22, on the 4,740-track batch. Fixed in code, deployed.**
+
+Run #15 failed validation with **294 x `MISSING_AUDIO_FILE`**, while `live/` held exactly
+4,742 entries: 4,740 audio files plus `manifest.csv` plus `.done`. Nothing was actually missing.
+
+Hundreds of Electrobuzz filenames **begin with a space**, visible in the uploader's own log:
+
+```
+[41/4740]  Gary Cooper SA - Deep Inside - (Redemial Tunes).mp3     <- two spaces
+[42/4740] Gorge - Tayo 2.0_electrobuzz.PRO.flac                    <- one
+```
+
+The validator read the manifest value with `.strip()` and then looked for
+`audio_dir / audio_filename`. Stripping removed the leading space, so it searched for a name that
+does not exist while the real file was right there.
+
+**It was worse than a false negative.** The stripped name also went into `manifest_audio_files`, the
+set used for the extra-file check, so the same file would have been reported as **both**
+`MISSING_AUDIO_FILE` and `EXTRA_FILE_NOT_IN_MANIFEST`. Two contradictory errors for one healthy file.
+
+**Fix (done in code).** The file on disk is the source of truth: the lookup tries the manifest value
+**verbatim** first and falls back to the stripped form. Whichever actually exists becomes the name
+carried into the record, the scan targets, and the extra-file set. Stripping stays useful for a
+hand-written manifest with stray padding, without destroying real filenames.
+
+Three tests added: a leading-space file is found and not flagged as extra, a padded manifest value
+resolves to an unpadded file, and a genuinely absent file still fails. 68 pass.
+
+File: `resomix-similarity-open/app/services/ingestion_runner.py`.
+
+**Worth noting what went right.** Two consecutive failed runs over 4,740 files, and the batch was
+left exactly where it started: validation is all-or-nothing and happens *before* the move, so
+`live/` was never consumed and no partial batch was ever persisted. The retry needed no cleanup.
+
 ### Also noted
 
 `INGEST_SKIP_VALIDATION=true` exists as an env flag to skip all per-file checks, commented "for our
@@ -1075,6 +1112,66 @@ right and the earlier batch survives intact. Same for the discogs index.
 **So a partner can ingest repeatedly without losing earlier catalogue.** Worth re-checking once at
 5,000-track scale, since a full rebuild per batch is O(catalogue) and that cost grows with every
 top-up even when the batch is small.
+
+### Phase 4 result: ~4,970 tracks, 2026-08-22. PASSED
+
+The full-scale run, on the same partner that already held 229 tracks from three earlier batches.
+
+**Index accumulation across all five batches**, which was the main structural risk:
+
+```
+job=4    29 vectors     run #11
+job=5    29             re-trigger, unchanged
+job=7   128             +100, one lost to F17
+job=8   129             F17 recovery
+job=10  229             +100
+job=12  4967            +4,740
+```
+
+The manifest carried 4,740 rows, but both downstream stages processed **4,738**, and
+229 + 4,738 = **4,967**, matching the index exactly. So the two missing tracks were lost at
+**persist**, before transcode ever saw them, not at embedding: both stages report `failed=0`.
+`finalize_successful_ingestion` records skipped records in the ingest log's `error_message`, which is
+where to look. Every earlier batch survived intact.
+
+**The FAISS rebuild is cheap, which settles an open worry.** maest finished at `11:45:46` and
+discogs at `11:46:01`: about **15 seconds to rebuild a 4,967-vector index**. The rebuild is
+O(entire catalogue) rather than O(batch), which looked like a problem for partners topping up monthly.
+At this size it is 15 seconds, and it stays negligible well beyond it. Not worth optimising.
+
+**Partner API re-verified at full scale: 11 passed, 0 failed, 0 warnings.** Similarity scores rose
+with catalogue size and the neighbour set turned over completely, which is the index resolving
+against the larger population rather than returning whatever it holds:
+
+| Catalogue | Top score | Top neighbour |
+|---|---|---|
+| 29 | 0.6750 | Tim Paris, Sex Judas |
+| 229 | 0.8705 | Yuli Fershtat, Gabi 2B |
+| ~4,970 | 0.8858 | Kohra, SHFT |
+
+Search returns a full page for every query in under a second, still on the MariaDB path (F14), so no
+per-partner Elasticsearch is needed. Rate limiting still enforced: 27 x 200, 3 x 429.
+
+**Yield.** 4,740 usable rows from 4,770 paths (99.4%) once ISRC became optional (F7). The 30 rejects
+are genuinely bad data: junk sentinels written into the ISRC tag (`UNDEFINED`, `ELECTROBUZZ.NET`,
+`N/A`, `NONE`), files with no title, and two duplicate filenames.
+
+**Measured at scale**, replacing the extrapolations from the 100-track batch:
+
+| Stage | Duration | Per track | Predicted from 100 tracks |
+|---|---|---|---|
+| Transcode | **53m 49s** (12 workers) | 0.68 s | ~1 h |
+| Embeddings | **4h 30m 48s** (concurrency 15) | 3.43 s | ~5.3 h |
+| FAISS rebuild | ~15 s for 4,967 vectors | n/a | unknown, feared costly |
+
+Both stages reported `failed=0` across 4,738 tracks.
+
+**Overlap mode works.** Transcode started `07:15:12` and embeddings `07:15:13`, one second apart, so
+the ~54 minutes of transcode is hidden entirely inside the embedding window. Total wall clock is
+**4h 31m**, not the 5h 24m the stages would take in sequence. Plan future runs on the embedding
+figure alone.
+
+**Still to check on this run:** identify the two records that were skipped at persist.
 
 ### Phase 3: Fix and re-prove
 - [ ] Log every failure in §7 rather than fixing inline.
