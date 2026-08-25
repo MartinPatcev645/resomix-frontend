@@ -11,12 +11,27 @@ own run logs (`monthly_pipeline/last_ingested_date.py`), but those logs are a re
 what a run *believed* it sent, written up to a year ago. This asks the database instead:
 whatever is actually there now, regardless of what any run claimed.
 
+WHICH COLUMN HOLDS THE PATH
+
+Two columns can hold one, and they are not interchangeable:
+
+  * `tracks.source_file_path` — the original Vegerra path. This is where the ~2M migrated
+    catalogue keeps it, written by `scripts/apple_music/insert_matched_tracks.py`, whose
+    own comment calls it "the ONLY ref back to the Electrobuzz master". **Default here.**
+  * `audio_files.stored_path` — the path of the file WE hold. For the migrated catalogue
+    that is the 128 kbps preview (`internal/previews/<uuid>.mp3`, asset_class
+    `StreamingProfile`); for partner ingestion it is `internal/raw/<uuid>.<ext>`. Neither
+    carries a date, so reading this column answers a different question.
+
+Use `--field stored_path` only for a catalogue whose audio_files really do hold source
+paths (the old `type='open'` HTTP pipeline did that via `full_path`).
+
 WHY THE PATH AND NOT `created_at`
 
 `created_at` is when *we* inserted the row, which drifts from the music's own date by
 however long a backfill, a retry or a migration took. The catalogue's date lives in the
 path, because the Vegerra tree is filed by year and month and day. So the date is parsed
-out of `audio_files.stored_path` and `created_at` is never consulted.
+out of the path column above, and `created_at` is never consulted.
 
 The tree carries the date two ways, and both appear within the same month::
 
@@ -38,6 +53,7 @@ Usage
     python scripts/catalogue_high_water_mark.py --partner-id 1
     python scripts/catalogue_high_water_mark.py --like '%veggera%'
     python scripts/catalogue_high_water_mark.py --active-only
+    python scripts/catalogue_high_water_mark.py --field stored_path --type open
 """
 
 import argparse
@@ -98,6 +114,10 @@ async def main() -> int:
     ap.add_argument("--type", default="electrobuzz",
                     help="tracks.type to read. Default 'electrobuzz'. Pass '' for every type.")
     ap.add_argument("--partner-id", type=int, help="Restrict to one partner.")
+    ap.add_argument("--field", choices=("source_file_path", "stored_path"),
+                    default="source_file_path",
+                    help="Which column holds the original path. Default tracks.source_file_path, "
+                         "which is where the migrated catalogue keeps it. See the notes above.")
     ap.add_argument("--like", help="Only paths matching this SQL LIKE, e.g. '%%veggera%%'.")
     ap.add_argument("--active-only", action="store_true",
                     help="Ignore deactivated tracks. Off by default: a deactivated track was "
@@ -112,7 +132,17 @@ async def main() -> int:
     set_current_partner_id(None)
     set_admin_context(True)
 
-    where = ["af.asset_class = 'Master'", "af.stored_path IS NOT NULL", "af.stored_path <> ''"]
+    if args.field == "source_file_path":
+        # Straight off tracks: no join, no asset_class filter. The migrated catalogue's
+        # audio_files are previews, so joining on asset_class='Master' silently returns
+        # almost nothing, which is exactly how this script first came back empty.
+        path_expr, from_clause, key_expr = "t.source_file_path", "tracks t", "t.id"
+        where = ["t.source_file_path IS NOT NULL", "t.source_file_path <> ''"]
+    else:
+        path_expr = "af.stored_path"
+        from_clause = "audio_files af JOIN tracks t ON t.id = af.track_id"
+        key_expr = "af.id"
+        where = ["af.asset_class = 'Master'", "af.stored_path IS NOT NULL", "af.stored_path <> ''"]
     params: Dict[str, object] = {}
     if args.type:
         where.append("t.type = :ttype")
@@ -121,18 +151,17 @@ async def main() -> int:
         where.append("t.partner_id = :pid")
         params["pid"] = args.partner_id
     if args.like:
-        where.append("af.stored_path LIKE :like")
+        where.append(f"{path_expr} LIKE :like")
         params["like"] = args.like
     if args.active_only:
         where.append("t.is_active IS NOT FALSE")
 
     sql = f"""
-        SELECT af.id, af.stored_path
-          FROM audio_files af
-          JOIN tracks t ON t.id = af.track_id
+        SELECT {key_expr}, {path_expr}
+          FROM {from_clause}
          WHERE {' AND '.join(where)}
-           AND af.id > :cursor
-         ORDER BY af.id
+           AND {key_expr} > :cursor
+         ORDER BY {key_expr}
          LIMIT :chunk
     """
 
@@ -142,6 +171,7 @@ async def main() -> int:
     undated: Counter = Counter()
     total = 0
     cursor = 0
+    samples: list = []
 
     print("Reading paths from the database (this consults stored_path only, never created_at)...")
     async with AsyncSessionLocal() as db:
@@ -154,6 +184,8 @@ async def main() -> int:
             for af_id, path in rows:
                 cursor = af_id
                 total += 1
+                if len(samples) < 5:
+                    samples.append(path or "")
                 d, source = extract_date(path or "")
                 how[source.split(":")[0]] += 1
                 if d is None:
@@ -165,16 +197,20 @@ async def main() -> int:
                     roots_for_date[d][path[: m.start()].rsplit("/", 1)[-1] or "?"] += 1
             print(f"  ... {total:,} path(s) read", flush=True)
 
-    scope = args.type or "all types"
+    scope = f"{args.type or 'all types'}, {args.field}"
     if args.partner_id is not None:
         scope += f", partner {args.partner_id}"
-    print(f"\nRead {total:,} Master path(s) from the database ({scope}).\n")
+    print(f"\nRead {total:,} path(s) from the database ({scope}).\n")
 
     if total == 0:
         print("Nothing matched. Widen the filters, or check that tracks.type is what you expect.")
         return 1
     if not per_date:
-        print("No dated paths found. Sample of what was read, to check the layout:")
+        print("No dated paths found in these paths. Samples of what was actually read:")
+        for s in samples[:5]:
+            print(f"  {s[:150]}")
+        print("\nIf these look like internal/raw/... or internal/previews/... then this column "
+              "holds OUR file, not the source. Try --field source_file_path, or a different --type.")
         return 1
 
     newest = max(per_date)
