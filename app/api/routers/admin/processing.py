@@ -69,6 +69,17 @@ class EmbeddingsJobRequest(BaseModel):
 class IngestionTriggerRequest(BaseModel):
     partner_id: int = Field(..., description="Partner tenant id")
     env: str = Field(default="live", description="SFTP env to ingest from ('test' | 'live')")
+    trusted_source: bool = Field(
+        default=False,
+        description=(
+            "Skip ffprobe and the antivirus scan FOR THIS BATCH ONLY. For bulk loads of "
+            "content we already own and already serve, where those checks cost hours and "
+            "prove nothing. Manifest/file reconciliation still runs in full: headers, ISRC "
+            "format when present, in-batch duplicate ISRC, file-present-on-disk, extra-file "
+            "detection, extension allowlist. Reachable only through this admin endpoint; the "
+            "partner-triggered SFTP hook never sets it."
+        ),
+    )
 
 
 def _derive_env_from_path(path: str) -> str:
@@ -576,11 +587,19 @@ async def trigger_ingestion(
 
     # Insert the ingest_logs row (PROCESSING) and fire-and-forget the validation
     # to Hetzner. Admin polls /ingestion/logs/{id}/status to advance + persist.
+    if payload.trusted_source:
+        logger.warning(
+            "[ingestion] admin %s triggered partner %s with TRUSTED_SOURCE: ffprobe + AV "
+            "skipped for this batch.",
+            getattr(current_admin, "email", None) or getattr(current_admin, "id", "?"),
+            payload.partner_id,
+        )
     log_entry = await start_ingestion_job(
         db,
         partner_id=payload.partner_id,
         home_dir=home_dir,
         env=env,
+        trusted_source=payload.trusted_source,
     )
 
     if log_entry.status == "FAILED":

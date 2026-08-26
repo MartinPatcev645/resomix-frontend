@@ -247,8 +247,15 @@ async def dispatch_to_media(
     partner_id: int,
     home_dir: str,
     env: str = "live",
+    trusted_source: bool = False,
 ) -> IngestLog:
-    """Hand the (already-created) batch off to Hetzner and advance its stage."""
+    """Hand the (already-created) batch off to Hetzner and advance its stage.
+
+    ``trusted_source`` skips ffprobe + the antivirus scan for THIS batch only, for bulk
+    loads of content we already own and already serve. It must only ever be set by an
+    explicit admin action: the SFTP hook, which is what a partner triggers, never passes
+    it, so a partner cannot reach this path.
+    """
     from app.services.hetzner_service import HetznerService
 
     env = (env or "live").lower()
@@ -262,6 +269,7 @@ async def dispatch_to_media(
         partner_id=partner_id,
         home_dir=home_dir,
         env=env,
+        trusted_source=trusted_source,
     )
 
     if not result.get("success"):
@@ -307,6 +315,7 @@ async def start_ingestion_job(
     partner_id: int,
     home_dir: str,
     env: str = "live",
+    trusted_source: bool = False,
 ) -> IngestLog:
     """Create the ``ingest_logs`` row and hand the job off to Hetzner.
 
@@ -316,7 +325,7 @@ async def start_ingestion_job(
     close the race.
     """
     log_entry = await create_ingest_log(db, partner_id, home_dir, env)
-    return await dispatch_to_media(db, log_entry, partner_id, home_dir, env)
+    return await dispatch_to_media(db, log_entry, partner_id, home_dir, env, trusted_source)
 
 
 # If a log has been stuck at stage=PERSISTING this long, assume the background worker

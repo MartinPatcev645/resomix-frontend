@@ -329,7 +329,8 @@ class HetznerService:
         }
 
     async def start_ingestion(
-        self, job_id: int, partner_id: int, home_dir: str, env: str = "live"
+        self, job_id: int, partner_id: int, home_dir: str, env: str = "live",
+        trusted_source: bool = False,
     ) -> Dict[str, Any]:
         """
         Fire-and-forget hand-off of an ingestion job to the Hetzner media server.
@@ -344,6 +345,9 @@ class HetznerService:
             partner_id: ID of the partner being ingested.
             home_dir: Container SFTP home, e.g. ``/srv/sftp/partners/<slug>``.
             env: SFTP env — ``"test"`` (dry-run) or ``"live"``.
+            trusted_source: skip the expensive per-file checks (ffprobe + antivirus) for a
+                bulk load of content we already own. Manifest/file reconciliation still
+                runs. Admin-only: never derive this from anything a partner controls.
         """
         if not self.hetzner_url or not self.internal_api_key:
             return {"success": False, "error": "Media server not configured"}
@@ -358,6 +362,7 @@ class HetznerService:
             "partner_id": partner_id,
             "home_dir": home_dir,
             "env": env,
+            "trusted_source": bool(trusted_source),
         }
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:

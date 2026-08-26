@@ -108,6 +108,10 @@ async def _persist_one(db, rec: Dict[str, Any], party_id, partner_id: int, env: 
         p_line_text=rec.get("p_line_text"),
         ingestion_source="csv",
         track_type="electrobuzz",
+        # The original catalogue path, when the manifest supplied one. This is the same
+        # column the existing ~2M tracks use and the key the Apple-matching step joins on,
+        # so a bulk load that omits it cannot later be reconciled with the old catalogue.
+        source_file_path=(rec.get("source_path") or None),
     )
     db.add(new_track)
     await db.flush()  # populate track.id
