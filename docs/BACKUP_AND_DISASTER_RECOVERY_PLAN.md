@@ -56,6 +56,57 @@ be an outage.
 
 ---
 
+## 1a. Measured, 2026-08-26
+
+Both boxes scanned. Numbers below are real, not estimated.
+
+**Database (Alwyzon):** 4.64 GB across 84 tables, all InnoDB. `mysqldump --single-transaction`
+compresses to **601 MB in 77 s**. Largest tables: `tracks` 2.07M rows, `audio_files` 1.96M,
+`track_processing_status` 1.93M, `release_tracks` 1.89M, `apple_music_tracks` 1.70M.
+`TOKEN_ENCRYPTION_KEY` is explicitly set, and exactly **2 rows** in
+`user_service_connections` depend on it.
+
+**File tree (media):** `/srv/sftp` is ZFS (`tank/data/resomix-sftp`, 9.5 TB pool, 2.1 TB used).
+Single-pass scan: **8,056,309 files, 2,092.07 GB**.
+
+| In scope | Files | GB |
+|---|---|---|
+| partner 1 `000000000000` (consumer): embeddings, indexes, catalog, raw, segments, peaks, covers, playlist_covers | 4,061,601 | 297.08 |
+| partner 4 `1d0ffc5112e2`: embeddings, indexes, catalog | 721,694 | 3.77 |
+| partner 6 `b3a56a4e427d`: embeddings, indexes, catalog, covers, raw | 19,589 | 28.85 |
+| analysis `var/results` | 502 | 0.26 |
+| **total** | **4,803,386** | **329.96** |
+
+| Excluded | Files | GB | Why |
+|---|---|---|---|
+| `sftp:live` + `test` (p6) | 49,895 | 771.37 | Partner holds the master |
+| `{slug}/processing/` (p1+p6) | 53,359 | 654.70 | SFTP-exposed batch snapshots, derived from partner source audio we already exclude |
+| `_backup_open_tracks` (p1) | 3,150,150 | 336.25 | **Orphan. Not referenced anywhere in the codebase.** See below |
+| `ingestion`, `internal/processing` | 20 | 0.04 | Job result JSONs, regenerable |
+| **total** | **3,253,424** | **1,762.36** | |
+
+In scope is **15.8%** of the tree. Reconciles to 2,092.06 GB against the reported 2,092.07 GB.
+
+**Sizing conclusion: BX31 (10 TB, €20.80/mo) not BX41.** 330 GB now, roughly 30 GB/month of
+in-scope growth (the 891 GB written in the last 30 days was almost entirely partner 6's
+ingestion, which is out of scope). Even with eight snapshots and no dedup that is years of
+headroom, and Hetzner allows a tier upgrade in place.
+
+**The binding constraint is file count, not bytes.** 3.96M of the in-scope files are partner 1
+embeddings averaging ~4 KB. The first backup will be dominated by traversal and index building,
+not transfer. This is the case restic is good at and naive rsync is bad at.
+
+**Two things to resolve before building:**
+
+1. `_backup_open_tracks`, 336 GB / 3.15M files, `grep` finds no reference in `app/` or
+   `scripts/`. Almost certainly a manual copy of the decommissioned open-CC catalogue. Removing
+   it would cut 39% of the tree's file count, which speeds up every future scan.
+2. `.partner_slugs.json` lists partners 1, 2, 4, 6 but **partner 2's directory does not exist**.
+   Safe direction (stale entry, not a missing one) but it must be correct before anything is
+   built that trusts this file.
+
+---
+
 ## 2. What must be backed up
 
 Ordered by how badly its loss hurts.
@@ -227,6 +278,45 @@ Two safety rules to add on top, because retention bugs destroy backups:
 
 ---
 
+## 6a. The partner tree is on ZFS, which changes the design for the better
+
+Measured 2026-08-26: `/srv/sftp` is not on the root filesystem. It is its own ZFS dataset,
+`tank/data/resomix-sftp`, **9.5 TB with 2.1 TB used**. The 165 GB figure on `/dev/md2` is the
+root filesystem and is unrelated.
+
+This is good news and it upgrades two parts of the plan.
+
+**Snapshot first, then back up from the snapshot.** A backup that walks a live tree for several
+hours captures a moving target: a track uploaded at hour three appears half-written, or its
+`raw/` is captured but its `segments/` are not. ZFS snapshots are instantaneous and
+copy-on-write, so:
+
+```bash
+zfs snapshot tank/data/resomix-sftp@backup-$(date -u +%Y%m%dT%H%M%SZ)
+restic backup /srv/sftp/.zfs/snapshot/backup-.../partners ...
+zfs destroy tank/data/resomix-sftp@backup-...
+```
+
+The snapshot is frozen, so restic reads a consistent instant no matter how long it takes. This
+removes a real class of restore bug rather than merely reducing it.
+
+**Two tiers, and the cheap one covers the common case.** There is 7.4 TB free on that pool.
+
+| Tier | Mechanism | Protects against | Recovery |
+|---|---|---|---|
+| Local | ZFS snapshots, kept on the same GFS ladder | Accidental deletion, bad migration, a partner wiping their own folder | Seconds. `cp` out of `.zfs/snapshot/` |
+| Off-site | restic to the Storage Box | Box loss, disk failure, datacentre incident | Hours |
+
+Local snapshots cost nothing but the delta and are effectively free for write-once data like
+embeddings. They are **not** a backup, because they die with the box, but they resolve the
+failure people actually hit weekly. Off-site restic remains the disaster tier.
+
+If the eventual destination is a real ZFS host rather than a Storage Box, `zfs send -i` is
+better again: block-level incrementals with no file walking at all. A Hetzner Storage Box cannot
+receive ZFS streams, so with that destination restic-over-snapshot is the right pairing.
+
+---
+
 ## 7. Consistency: the ordering detail that decides whether a restore works
 
 The database dump and the file snapshot are taken at different moments. Whichever runs second
@@ -341,19 +431,33 @@ protection.
 
 ## 10. Implementation plan
 
-| Phase | Work | Depends on |
+| # | Work | Estimate |
 |---|---|---|
-| 0 | Provision the Storage Box. Initialise the restic repo. Store the repo password and the age key in the password manager | Your decision on destination |
-| 1 | Backup scripts on each box: `backup_db.sh`, `backup_media.sh`, `backup_analysis.sh`, `backup_secrets.sh`. Each emits JSON metrics on stdout | Phase 0 |
-| 2 | Run them by hand. Confirm sizes, timings, and that the first full transfer completes | Phase 1 |
-| 3 | Media box endpoints `/internal/backup/{start,status}` | Phase 2 |
-| 4 | Alwyzon: migration for the two tables, service, admin router, RBAC permissions | Phase 3 |
-| 5 | Celery beat schedule, retention, alerting | Phase 4 |
-| 6 | Admin UI in `resomix-web` admin app | Phase 4 |
-| 7 | **The DR drill (section 11).** Not optional, and not the last thing you do | Phase 2 is enough to start |
+| 0 | Repo and tooling setup: backup scripts repo, SSH keys, restic repo init, keys stored in the password manager | 1h |
+| 1 | Backup scripts on each box: `backup_db.sh`, `backup_media.sh`, `backup_analysis.sh`, `backup_secrets.sh`. Locking, error handling, JSON metrics on stdout | 3h - 4h |
+| 2 | Run them by hand. Confirm sizes, timings, and that the first full transfer completes | 2h - 3h |
+| 3 | Media box endpoints `/internal/backup/{start,status}`, detached runner, status reporting | 2h - 4h |
+| 4 | Alwyzon: migration for the two tables, service, orchestration, poll loop, admin router, RBAC, tests | 5h - 7h |
+| 5 | Celery beat schedule, retention with the two safety rules, missing-run alarm, alerting | 2h - 4h |
+| 6 | Admin UI in the `resomix-web` admin app | 2h - 4h |
+| 7 | **The DR drill (section 11).** Not optional, and not the last thing you do | 7h - 9h |
+| 8 | Bug resolution from steps 2 and 7 | 5h - 7h |
+| | **Total** | **29h - 43h** |
 
-Phase 7 can begin as soon as phase 2 produces one good snapshot. Do not wait until the UI is
-finished to discover the restore does not work.
+**The destination is assumed to already exist.** Step 0 no longer includes provisioning it. It
+must be reachable before step 2 can complete, so decide it early even though no build time is
+allocated to it.
+
+**You are protected after step 2, not after step 8.** Steps 0 to 2 are 6h - 8h and at the end of
+them there are real, verified, off-box, encrypted backups running nightly. Everything after is
+control, visibility and confidence. Land those three first if the budget is tight.
+
+**Work hours are not wall-clock.** The first full upload runs for as long as it runs, unattended.
+The estimate in step 2 is attended time.
+
+Step 7 can begin as soon as step 2 produces one good snapshot. Do not wait until the UI is
+finished to discover the restore does not work. Step 8 covers bugs in the backup system itself;
+faults it uncovers in the product get reported with their own estimate rather than absorbed.
 
 ---
 
