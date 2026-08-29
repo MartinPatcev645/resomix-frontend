@@ -121,6 +121,30 @@ class Settings(BaseModel):
         default=None,
         description="Internal API key for securely deleting tracks on the Hetzner Audio Processing Server",
     )
+    # Backup control plane. The admin panel reads and writes the backup_runs tables regardless of
+    # these; they only decide whether pressing "Run now" can actually reach a server. Leave the
+    # agent URLs unset until the agent endpoints are deployed — the service then records the run as
+    # dispatch-unavailable rather than pretending it started something.
+    backup_agent_token: Optional[str] = Field(
+        default=None,
+        description="Shared bearer token the backup agents present when posting run metrics, and "
+                    "that Alwyzon presents when asking an agent to start a run",
+    )
+    backup_agent_alwyzon_url: Optional[str] = Field(
+        default=None, description="Base URL of the backup agent on the Alwyzon box (unset = manual trigger disabled)"
+    )
+    backup_agent_media_url: Optional[str] = Field(
+        default=None, description="Base URL of the backup agent on the media box (unset = manual trigger disabled)"
+    )
+    backup_stale_after_hours: int = Field(
+        default=26,
+        description="A component with no success within this many hours is reported stale. 26, not "
+                    "24: the nightly timer has a randomised delay, so a strict 24 would alarm on a "
+                    "healthy run that simply started later than yesterday's",
+    )
+    backup_history_retention_days: int = Field(
+        default=730, description="How long backup run history is kept before purging"
+    )
     # Optional ClamAV virus scanning for user uploads (e.g. playlist covers). Leave the host unset to
     # disable — the scan step then no-ops. When set, a reachable clamd is scanned via INSTREAM.
     clamav_host: Optional[str] = Field(default=None, description="clamd host (unset = scanning disabled)")
@@ -711,6 +735,11 @@ class Settings(BaseModel):
             "HETZNER_INTERNAL_API_KEY": "hetzner_internal_api_key",
             "ANALYSIS_SERVER_URL": "analysis_server_url",
             "ANALYSIS_INTERNAL_API_KEY": "analysis_internal_api_key",
+            "BACKUP_AGENT_TOKEN": "backup_agent_token",
+            "BACKUP_AGENT_ALWYZON_URL": "backup_agent_alwyzon_url",
+            "BACKUP_AGENT_MEDIA_URL": "backup_agent_media_url",
+            "BACKUP_STALE_AFTER_HOURS": "backup_stale_after_hours",
+            "BACKUP_HISTORY_RETENTION_DAYS": "backup_history_retention_days",
             "HETZNER_SFTP_PROVISION_URL": "hetzner_sftp_provision_url",
             "SFTP_SERVER_HOST": "sftp_server_host",
             "SFTP_SERVER_PORT": "sftp_server_port",
@@ -875,6 +904,8 @@ class Settings(BaseModel):
                     "invoice_retention_years",
                     "deletion_request_sla_days",
                     "similarity_job_ttl_seconds",
+                    "backup_stale_after_hours",
+                    "backup_history_retention_days",
                 ]:
                     try:
                         env_overrides[config_key] = int(env_value)

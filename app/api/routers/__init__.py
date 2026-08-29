@@ -32,6 +32,7 @@ from .admin.roles import router as admin_roles_router
 from .admin.processing import router as admin_processing_router
 from .admin.logs import router as admin_logs_router
 from .admin.entitlements import router as admin_entitlements_router
+from .admin.backups import router as admin_backups_router
 from .partner import router as partner_router
 from .contact import router as contact_router
 from .health import router as health_router
@@ -56,6 +57,7 @@ from .entitlements import router as entitlements_router
 from .webhooks import router as webhooks_router
 from .internal.sftp import router as sftp_internal_router
 from .internal.notify import router as notify_internal_router
+from .internal.backups import router as backups_internal_router
 
 V1_PREFIX = "/api/v1"
 
@@ -103,6 +105,7 @@ v1_routers = [
     (admin_processing_router, V1_PREFIX),
     (admin_logs_router, V1_PREFIX),
     (admin_entitlements_router, V1_PREFIX),
+    (admin_backups_router, V1_PREFIX),
     (health_router, V1_PREFIX),
     (dummy_router, V1_PREFIX),
     # Special case: webhooks_router has internal /api/v1 prefix
@@ -110,6 +113,7 @@ v1_routers = [
     # Internal routes
     (sftp_internal_router, ""),
     (notify_internal_router, ""),
+    (backups_internal_router, ""),
 ]
 
 # Admin routers — gated by Cloudflare Access (see app.api.dependencies.cf_access).
@@ -133,10 +137,11 @@ admin_routers = [
     admin_processing_router,
     admin_logs_router,
     admin_entitlements_router,
+    admin_backups_router,
 ]
 
 # Legacy support: Unversioned registration at root
-legacy_root_routers = [r for r, p in v1_routers if p == V1_PREFIX] + [webhooks_router, sftp_internal_router, notify_internal_router]
+legacy_root_routers = [r for r, p in v1_routers if p == V1_PREFIX] + [webhooks_router, sftp_internal_router, notify_internal_router, backups_internal_router]
 
 # Kept for backward compatibility if any script uses it
 all_routers = [r for r, _ in v1_routers]

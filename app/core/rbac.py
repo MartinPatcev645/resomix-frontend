@@ -51,6 +51,12 @@ PERMISSIONS = {
     "promo:manage": "Create, update, or delete promo codes and campaigns",
     "similarity:manage": "Administrative management of similarity indexes and results",
     "spotify_apps:manage": "Manage Spotify application credentials used for playlist transfers",
+    # Backups. Split into read and manage because "see whether last night worked"
+    # and "start a run / delete snapshots" are different levels of trust: the
+    # first is something any operator on call should have, the second touches
+    # the only copy of the data we would ever recover from.
+    "backup:read": "View backup run history, status, and snapshot inventory",
+    "backup:manage": "Trigger backup runs and verification, and manage retention",
 }
 
 # Define roles and their descriptions

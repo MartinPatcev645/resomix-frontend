@@ -69,6 +69,7 @@ from .track_analysis_result import TrackAnalysisResult
 from .track_artifact_status import TrackArtifactStatus
 from .apple_music import AppleMusicTrack
 from .user_service_connection import UserServiceConnection
+from .backup_run import BackupRun, BackupComponent
 
 # Make models available at package level
 __all__ = [
@@ -149,4 +150,7 @@ __all__ = [
     "BillingInvoice",
     "SubscriptionEvent",
     "UsagePeriodHistory",
+    # Backup / disaster recovery
+    "BackupRun",
+    "BackupComponent",
 ]
