@@ -3,13 +3,19 @@ import { usePlaylistStore, useAuthStore } from '@resomix/stores';
 import { getPlaylistSimilarity } from '@resomix/api-client';
 
 /**
- * In-flight request de-dupe, keyed by playlist id.
+ * In-flight request de-dupe, keyed by playlist id AND viewer identity.
  *
  * React StrictMode double-invokes effects in development (mount → cleanup → mount), and each invoke
  * would otherwise fire its own network request before the cleanup can cancel it — two identical
- * `/playlists/similarity/{id}` calls. Sharing a single in-flight promise per id collapses those (and
- * any transient double-mount) into ONE request. The entry is cleared as soon as the request settles,
- * so a genuine later arrival (or refresh) still fetches fresh.
+ * `/playlists/similarity/{id}` calls. Sharing a single in-flight promise collapses those (and any
+ * transient double-mount) into ONE request. The entry is cleared as soon as the request settles, so
+ * a genuine later arrival (or refresh) still fetches fresh.
+ *
+ * The identity belongs in the key. A guest and a logged-in user are served DIFFERENT payloads for
+ * the same playlist (the guest's tracks past the cap come back redacted), so keying on id alone
+ * meant that a login landing while a guest fetch was still in flight handed the authenticated
+ * caller the guest's promise — and its redacted response was written to the store as if it were
+ * theirs. Rare, but it is the same stale-guest-data bug arriving through a second door.
  */
 const inFlight = new Map<string, Promise<any>>();
 
@@ -20,13 +26,14 @@ const inFlight = new Map<string, Promise<any>>();
  */
 const FRESH_HANDOFF_MS = 10_000;
 
-function loadSimilarityOnce(id: string): Promise<any> {
-  let promise = inFlight.get(id);
+function loadSimilarityOnce(id: string, identity: string): Promise<any> {
+  const key = `${identity}:${id}`;
+  let promise = inFlight.get(key);
   if (!promise) {
     promise = getPlaylistSimilarity(id).finally(() => {
-      inFlight.delete(id);
+      inFlight.delete(key);
     });
-    inFlight.set(id, promise);
+    inFlight.set(key, promise);
   }
   return promise;
 }
@@ -43,8 +50,8 @@ function loadSimilarityOnce(id: string): Promise<any> {
  * shows its loader (both pages render `playlistData ? content : loader`) instead of stale data —
  * until the fresh response lands and re-populates the store.
  *
- * Fetch-once-per-id: the effect depends only on `id`, store actions are read via `getState()` so our
- * own writes never re-run it, and concurrent duplicate requests are de-duped (see `loadSimilarityOnce`).
+ * Fetch-once-per-(id, identity): store actions are read via `getState()` so our own writes never
+ * re-run the effect, and concurrent duplicate requests are de-duped (see `loadSimilarityOnce`).
  */
 export function usePlaylistLoader() {
   // Read the requested id on every render so the effect re-runs when React Router swaps the route in
@@ -90,7 +97,7 @@ export function usePlaylistLoader() {
 
     if (isFreshHandoff) {
       store.setLoading(false);
-      loadSimilarityOnce(id)
+      loadSimilarityOnce(id, identity)
         .then((resp) => {
           if (cancelled) return;
           const s = usePlaylistStore.getState();
@@ -114,7 +121,7 @@ export function usePlaylistLoader() {
     store.clearPlaylistData();
     store.setLoading(true);
 
-    loadSimilarityOnce(id)
+    loadSimilarityOnce(id, identity)
       .then((resp) => {
         if (cancelled) return;
         const s = usePlaylistStore.getState();

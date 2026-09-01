@@ -467,7 +467,7 @@ const PlaylistTable: React.FC = () => {
             {unlockedTracks.map((track) => {
                 const idx = rowIndex++;
                 return (
-                    <React.Fragment key={track.id}>
+                    <React.Fragment key={`${track.rank}-${track.id}`}>
                         {renderTrackRow(track, "none", idx)}
                     </React.Fragment>
                 );
@@ -481,7 +481,7 @@ const PlaylistTable: React.FC = () => {
                     {visibleLockedTracks.map((track) => {
                         const idx = rowIndex++;
                         return (
-                            <React.Fragment key={track.id}>
+                            <React.Fragment key={`${track.rank}-${track.id}`}>
                                 {renderTrackRow(track, "blur", idx)}
                             </React.Fragment>
                         );

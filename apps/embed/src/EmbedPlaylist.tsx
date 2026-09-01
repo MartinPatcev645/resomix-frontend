@@ -290,7 +290,7 @@ function ReadyView({
 
       <ol className="embed-list">
         {data.tracks.map((t, i) => (
-          <li key={t.id}>
+          <li key={`${t.rank ?? ''}-${t.id}`}>
             <TrackRow
               t={t}
               index={i}

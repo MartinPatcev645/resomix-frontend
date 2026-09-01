@@ -412,7 +412,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                 </h2>
             </div>
             {unlockedTracks.map((track) => (
-                <React.Fragment key={track.id}>
+                <React.Fragment key={`${track.rank}-${track.id}`}>
                     {renderTrackRow(track, "none")}
                 </React.Fragment>
             ))}
@@ -424,7 +424,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                     rowHeightVar="var(--px-120)"
                 >
                     {visibleLockedTracks.map((track) => (
-                        <React.Fragment key={track.id}>
+                        <React.Fragment key={`${track.rank}-${track.id}`}>
                             {renderTrackRow(track, "blur")}
                         </React.Fragment>
                     ))}
