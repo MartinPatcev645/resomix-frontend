@@ -123,6 +123,13 @@ export interface ApiConfig {
     ADMIN_SYSTEM_LOGS_OVERVIEW: string;
     ADMIN_SYSTEM_LOGS_FACETS: string;
     ADMIN_OPERATION_LOGS: string;
+    ADMIN_BACKUPS_STATUS: string;
+    ADMIN_BACKUPS_STATS: string;
+    ADMIN_BACKUPS_RUNS: string;
+    ADMIN_BACKUPS_SNAPSHOTS: string;
+    ADMIN_BACKUPS_RUN: string;
+    ADMIN_BACKUPS_VERIFY: string;
+    ADMIN_BACKUPS_HISTORY: string;
     ADMIN_PARTNER_STRIPE_CHECKOUT: string;
     ADMIN_AUTH_LOGIN: string;
     ADMIN_AUTH_VERIFY_2FA: string;
@@ -377,6 +384,13 @@ export const API_CONFIG: ApiConfig = {
     ADMIN_SYSTEM_LOGS_OVERVIEW: "/api/v1/admin/logs/overview",
     ADMIN_SYSTEM_LOGS_FACETS: "/api/v1/admin/logs/facets",
     ADMIN_OPERATION_LOGS: "/api/v1/admin/operation-logs",
+    ADMIN_BACKUPS_STATUS: "/api/v1/admin/backups/status",
+    ADMIN_BACKUPS_STATS: "/api/v1/admin/backups/stats",
+    ADMIN_BACKUPS_RUNS: "/api/v1/admin/backups/runs",
+    ADMIN_BACKUPS_SNAPSHOTS: "/api/v1/admin/backups/snapshots",
+    ADMIN_BACKUPS_RUN: "/api/v1/admin/backups/run",
+    ADMIN_BACKUPS_VERIFY: "/api/v1/admin/backups/verify",
+    ADMIN_BACKUPS_HISTORY: "/api/v1/admin/backups/history",
     ADMIN_PARTNER_STRIPE_CHECKOUT: "/api/v1/admin/partners/",
     ADMIN_AUTH_LOGIN: "/api/v1/admin/auth/login",
     ADMIN_AUTH_VERIFY_2FA: "/api/v1/admin/auth/verify-2fa",

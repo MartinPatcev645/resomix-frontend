@@ -32,6 +32,7 @@ export * from "./admin/users";
 export * from "./admin/messages";
 export * from "./admin/partners";
 export * from "./admin/logs";
+export * from "./admin/backups";
 export * from "./admin/auth";
 export * from "./admin/similarity";
 export * from "./admin/promo";

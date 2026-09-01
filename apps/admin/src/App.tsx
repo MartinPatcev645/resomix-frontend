@@ -12,6 +12,7 @@ import PlaylistDetailsPage from '@/pages/PlaylistDetailsPage.tsx'
 import PlaylistRatingsPage from '@/pages/PlaylistRatingsPage.tsx'
 import TracksPage from '@/pages/TracksPage.tsx'
 import LogsPage from '@/pages/LogsPage.tsx'
+import BackupsPage from '@/pages/BackupsPage.tsx'
 import OperationsPage from '@/pages/OperationsPage.tsx'
 import SpotifyAppsPage from '@/pages/SpotifyAppsPage.tsx'
 import PartnersPage from '@/pages/PartnersPage.tsx'
@@ -95,6 +96,7 @@ function App() {
               <Route path="playlists/:uuid/ratings" element={<PlaylistRatingsPage />} />
               <Route path="tracks" element={<TracksPage />} />
               <Route path="logs" element={<LogsPage />} />
+              <Route path="backups" element={<BackupsPage />} />
               <Route path="operations" element={<OperationsPage />} />
               <Route path="spotify-apps" element={<SpotifyAppsPage />} />
               <Route path="partners" element={<PartnersPage />} />
