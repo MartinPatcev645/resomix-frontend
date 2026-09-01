@@ -2,6 +2,19 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { User } from '@resomix/api-client';
 import { hybridStorage, deleteCookie, TAB_ID } from './cookieStorage';
+// Static ESM imports, NOT `require()`.
+//
+// These three call sites used to use `require('./usePlayList')` / `require('./useCart')` inside
+// try/catch. `require` does not exist in an ESM browser bundle, so Vite shipped the call verbatim,
+// it threw ReferenceError on the first statement, and the bare `catch` swallowed it. The result:
+// the playlist and cart resets below have never once run in production. A guest's playlist stayed
+// in the store after login (only a page refresh cleared it), and a logged-out user's cart and
+// playlist were handed to whoever logged in next on the same browser.
+//
+// Safe as static imports: neither module imports this one, so there is no cycle. They are imported
+// by path rather than through './index' for the same reason.
+import { clearAllPlaylistCache, usePlaylistStore } from './usePlayList';
+import { useCartStore } from './useCart';
 
 interface LogoutOptions {
     broadcast?: boolean;
@@ -70,17 +83,18 @@ const useAuthStore = create<AuthState>()(
 
             // Set full authentication
             setAuth: (user, accessToken) => {
-                // A fresh login: drop any playlist cache from the prior (guest / other-user) session
-                // so cached playlists can't leak across identities. Fresh data is refetched on demand.
-                try {
-                    const playlistModule = require('./usePlayList');
-                    playlistModule.clearAllPlaylistCache();
-                    // Also drop the IN-MEMORY playlist view. Clearing only localStorage left a guest's
-                    // redacted "demo" copy sitting in the store, and usePlaylistLoader short-circuits
-                    // (`if (playlistData) return`) on it — so after logging in the user kept seeing the
-                    // anonymous teaser instead of a fresh, full refetch. Resetting forces the reload.
-                    playlistModule.usePlaylistStore.getState().reset();
-                } catch { /* noop if playlist store not loaded */ }
+                // A fresh login: drop any playlist state from the prior (guest / other-user) session
+                // so it can't leak across identities. Fresh data is refetched on demand.
+                //
+                // `clearAllPlaylistCache()` only purges two legacy localStorage keys that nothing
+                // writes any more. The reset below is the part that matters: it drops the IN-MEMORY
+                // playlist, which is what a guest was still being shown after logging in.
+                //
+                // `usePlaylistLoader` re-fetches because its effect keys on the auth identity as
+                // well as the playlist id. Without that, this reset would leave the page on a
+                // loader forever when login happens in place (Google One Tap does not navigate).
+                clearAllPlaylistCache();
+                usePlaylistStore.getState().reset();
 
                 set({
                     user,
@@ -145,23 +159,15 @@ const useAuthStore = create<AuthState>()(
 
             // Logout
             logout: (options?: LogoutOptions) => {
-                // Clear cart state on logout
-                try {
-                    const cartModule = require('./useCart');
-                    cartModule.useCartStore.getState().reset();
-                } catch { /* noop if cart store not loaded */ }
+                // Clear cart state on logout. Neither store is persisted, so this only drops
+                // in-memory state in this tab — but that is exactly the state the next person to
+                // log in on a shared browser would otherwise inherit.
+                useCartStore.getState().reset();
 
-                // Clear the playlist cache on logout so a previous user's (or guest's) cached
-                // playlists are never shown to whoever logs in next on this browser.
-                try {
-                    const playlistModule = require('./usePlayList');
-                    playlistModule.clearAllPlaylistCache();
-                    // Also drop the IN-MEMORY playlist view. Clearing only localStorage left a guest's
-                    // redacted "demo" copy sitting in the store, and usePlaylistLoader short-circuits
-                    // (`if (playlistData) return`) on it — so after logging in the user kept seeing the
-                    // anonymous teaser instead of a fresh, full refetch. Resetting forces the reload.
-                    playlistModule.usePlaylistStore.getState().reset();
-                } catch { /* noop if playlist store not loaded */ }
+                // Same for the playlist, so a previous user's (or guest's) playlist is never shown
+                // to whoever logs in next on this browser.
+                clearAllPlaylistCache();
+                usePlaylistStore.getState().reset();
 
                 set({
                     user: null,

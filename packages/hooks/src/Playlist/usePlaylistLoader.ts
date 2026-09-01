@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { usePlaylistStore } from '@resomix/stores';
+import { usePlaylistStore, useAuthStore } from '@resomix/stores';
 import { getPlaylistSimilarity } from '@resomix/api-client';
 
 /**
@@ -51,6 +51,21 @@ export function usePlaylistLoader() {
   // place — the playlist pages subscribe to the location via useSearchParams(), so they re-render on
   // `?id=` changes and this hook re-reads window.location.
   const id = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null;
+
+  // Re-load when the VIEWER changes, not only when the playlist does.
+  //
+  // The playlist a guest is served is not the playlist a logged-in user is served, so identity is
+  // as much an input to this fetch as the id is. Keying only on `id` meant an in-place login left
+  // the guest copy on screen indefinitely: Google One Tap signs in without navigating (see
+  // GoogleOneTap in App.tsx), so nothing remounted and nothing re-ran. Only a page refresh fixed it.
+  //
+  // Password login happened to work, but by accident — it routes through the auth page and
+  // navigates back, which remounts this hook. Relying on that is relying on the shape of an
+  // unrelated flow.
+  //
+  // Same string as `useEntitlements` uses, so the two stay in step on login, logout and the
+  // cross-subdomain identity reconcile.
+  const identity = useAuthStore((s) => (s.isAuthenticated ? (s.user?.uuid ?? 'user') : 'guest'));
 
   useEffect(() => {
     const store = usePlaylistStore.getState();
@@ -133,5 +148,5 @@ export function usePlaylistLoader() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, identity]);
 }
