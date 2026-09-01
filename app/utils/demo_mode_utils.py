@@ -16,6 +16,9 @@ REDACTION_LIMIT = 20
 ANON_VISIBLE_COUNT = 10
 _ID_PATTERN = "dEm0"
 _TEXT_PATTERN = "demo"
+# Width of the per-row index appended to a masked id, so redacted rows do not all
+# collide on one value. See _mask_id.
+_ID_SUFFIX_WIDTH = 4
 
 
 def is_anonymous_frontend(authenticated: bool, partner_id: Any, system_partner_id: Any) -> bool:
@@ -28,10 +31,33 @@ def is_anonymous_frontend(authenticated: bool, partner_id: Any, system_partner_i
     return (not authenticated) and partner_id == system_partner_id
 
 
-def _mask_id(value: str) -> str:
+def _mask_id(value: str, position: int | None = None) -> str:
+    """A fake id of the same length as the real one, DISTINCT per row.
+
+    The original derived the output from the input's LENGTH alone. Every track uuid is 36
+    characters, so every redacted track received a byte-identical id — ten rows, one id.
+
+    That is not a leak, but it broke the client: the playlist table renders each row as
+    ``<React.Fragment key={track.id}>``, so React was handed ten siblings sharing one key. When
+    the same playlist was refetched as a logged-in user, the list did not update to the now-real
+    tracks; only a page reload did. Duplicate sibling keys make reconciliation undefined, and the
+    UI kept showing the redacted rows while the store held the correct ones.
+
+    ``position`` is the row's index, which the client already knows as ``rank`` — appending it
+    reveals nothing that is not on screen. The ``dEm0`` prefix is preserved because the embed
+    widget identifies redacted tracks with ``String(t.id).startsWith('dEm0')``.
+    """
     pattern = _ID_PATTERN
     length = len(value)
-    return "".join(pattern[i % len(pattern)] for i in range(length))
+    masked = "".join(pattern[i % len(pattern)] for i in range(length))
+    if position is None:
+        return masked
+    suffix = str(position).zfill(_ID_SUFFIX_WIDTH)
+    # No room to disambiguate without eating the prefix the embed widget matches on. Short values
+    # are never the track `id` (a uuid), so leaving them undifferentiated is safe.
+    if length <= len(suffix) + len(pattern):
+        return masked
+    return masked[: length - len(suffix)] + suffix
 
 
 def _mask_text(value: str) -> str:
@@ -67,7 +93,7 @@ def _redact_tracks(tracks: List[MutableMapping[str, Any]], visible_count: int) -
             continue
 
         if "id" in track and track["id"] is not None:
-            track["id"] = _mask_id(str(track["id"]))
+            track["id"] = _mask_id(str(track["id"]), position)
 
         # Every free-text field that identifies the recording. `album` and `genre` were missing:
         # Apple enrichment fills them from the real catalogue, so a scrambled title sitting next to
@@ -82,7 +108,7 @@ def _redact_tracks(tracks: List[MutableMapping[str, Any]], visible_count: int) -
         # than the text pattern: `_mask_text` leaves digits alone, and an ISRC's digits carry its
         # registration year and designation code.
         if track.get("isrc"):
-            track["isrc"] = _mask_id(str(track["isrc"]))
+            track["isrc"] = _mask_id(str(track["isrc"]), position)
 
         # Constants, not scrambles: a real duration narrows the candidates a lot on its own, and
         # unlike the text fields there is no way to mangle a number without it still being a number
