@@ -11,6 +11,7 @@ interface MenuIconProps extends React.SVGProps<SVGSVGElement> {
   className?: string;
 }
 
+
 export function MenuIcon({
   color,
   className = '',

@@ -21,6 +21,7 @@ export function PlaylistMobile() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+  
 
   const { playlistData, isLoading, error, errorReason } = usePlaylistStore();
 

@@ -16,6 +16,7 @@ import type { BillingBetaWindow } from "@resomix/api-client";
  * pressure theatre, and it re-renders the pricing page every second for nothing.
  */
 
+
 export interface FoundingBadgeProps {
   beta: BillingBetaWindow | undefined;
   className?: string;

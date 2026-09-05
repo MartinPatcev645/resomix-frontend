@@ -19,6 +19,7 @@ import { ROUTE_SEO } from '@/routes/seoConfig.ts';
  * built HTML — the bytes a browser actually receives.
  */
 
+
 const DIST = resolve(process.cwd(), 'dist');
 const built = existsSync(resolve(DIST, 'index.html'));
 const html = (route: string) =>
