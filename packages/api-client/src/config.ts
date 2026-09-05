@@ -219,10 +219,26 @@ const getEnv = (key: string, fallback = ""): string => {
   return fallback;
 };
 
+// Strip any trailing slash from a base URL, once, here.
+//
+// Almost every consumer joins these by raw template concatenation with a leading
+// slash — `${MEDIA_URL}/peaks-rich/`, `${API_BASE_URL}${getRefreshPath()}` — so a
+// trailing slash in the env var yields `//peaks-rich/` and `//auth/refresh`.
+// nginx's default `merge_slashes on` masks it server-side, which is worse than a
+// clean failure: it works until someone deploys behind an edge that does not
+// normalise, and then peaks stop loading and sessions expire right after login.
+//
+// `telemetry.ts` and `apps/embed/src/api.ts` already each stripped it locally,
+// which is the tell that this has bitten before and was patched where it hurt
+// rather than where it originates. Doing it once at the source makes the env var
+// forgiving: with or without the slash, every consumer gets the same string.
+const baseUrl = (key: string, fallback: string): string =>
+  getEnv(key, fallback).replace(/\/+$/, "");
+
 export const API_CONFIG: ApiConfig = {
-  BASE_URL: getEnv("VITE_SERVER_BACKEND", "https://bserver.resomix.com"),
-  BASE_URL_LOCAL: getEnv("VITE_BASE_BETA_URL", "https://beta.resomix.com"), // used by desktop apps for direct calls
-  MEDIA_URL: getEnv("VITE_SERVER_MEDIA", "https://media.resomix.com"),
+  BASE_URL: baseUrl("VITE_SERVER_BACKEND", "https://bserver.resomix.com"),
+  BASE_URL_LOCAL: baseUrl("VITE_BASE_BETA_URL", "https://beta.resomix.com"), // used by desktop apps for direct calls
+  MEDIA_URL: baseUrl("VITE_SERVER_MEDIA", "https://media.resomix.com"),
   MAX_FILE_SIZE: 100 * 1024 * 1024, // 100 MB
   ALLOWED_AUDIO_TYPES: [
     "audio/mpeg",
