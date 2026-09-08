@@ -22,6 +22,7 @@ import jwt  # PyJWT
 import time
 import json
 import logging
+import re
 import requests
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
@@ -106,6 +107,66 @@ def _most_common_artist(artist_strings: Iterable[Optional[str]]) -> Optional[str
     top_key = max(counts, key=lambda k: counts[k])
     # Return the most common original casing for the winning artist.
     return display[top_key].most_common(1)[0][0]
+
+
+def _norm_text(value: Optional[str]) -> str:
+    """Lowercase, drop punctuation, collapse whitespace. For comparing names only."""
+    if not value:
+        return ""
+    return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", value.lower())).strip()
+
+
+def _artist_tokens(value: Optional[str]) -> set:
+    """Individual artist names from a combined credit, as a set.
+
+    Apple and our catalogue join multiple artists differently for the SAME recording:
+    ours is "Out Of Place Artefacts, Rødhåd, VRIL" while Apple returns
+    "Out Of Place Artefacts, VRIL & Rødhåd". Comparing the joined strings would call
+    those different; comparing the sets of names calls them equal, which is correct.
+    """
+    if not value:
+        return set()
+    parts = re.split(r"[,&|/]| feat\.? | ft\.? | x | vs\.? ", value, flags=re.IGNORECASE)
+    return {p for p in (_norm_text(p) for p in parts) if p}
+
+
+def _is_same_recording(candidate: Dict[str, Any],
+                       expected: Dict[str, Any],
+                       duration_tolerance_s: int = 8) -> bool:
+    """Is this Apple song the recording we were actually looking for?
+
+    WHY THIS EXISTS (2026-09-08)
+
+    A user's export contained "Ed Prosek - I Could Never" where "Cristian Vogel - Hold"
+    should have been. Apple's catalogue has THREE recordings sharing ISRC DEX181600071 —
+    two Ed Prosek releases and the Cristian Vogel one — and the ISRC lookup returned all
+    three. The old code took ``data[0]`` and never compared anything, so a stranger's song
+    was silently added to someone's library and the export still reported success.
+
+    Duration is the strongest signal and would alone have caught that case (425s vs 255s),
+    but it is only decisive when both sides know it, so name and artist back it up. A
+    mismatch here means "do not use this", never "use it anyway".
+    """
+    exp_dur = expected.get("duration_ms")
+    cand_dur = candidate.get("durationInMillis")
+    if exp_dur and cand_dur:
+        if abs(int(exp_dur) - int(cand_dur)) > duration_tolerance_s * 1000:
+            return False
+
+    exp_title, cand_title = _norm_text(expected.get("name")), _norm_text(candidate.get("name"))
+    if exp_title and cand_title:
+        # Containment, not equality: Apple often carries a suffix we do not store
+        # ("Hold" vs "Hold (Remastered)"), and our titles often carry "(Original Mix)".
+        if not (exp_title == cand_title or exp_title in cand_title or cand_title in exp_title):
+            return False
+
+    exp_art, cand_art = _artist_tokens(expected.get("artist")), _artist_tokens(candidate.get("artistName"))
+    if exp_art and cand_art and not (exp_art & cand_art):
+        return False
+
+    # Nothing contradicted it. With no duration and no usable names there is nothing left
+    # to check, so this is only ever reached for candidates that did not disagree.
+    return True
 
 
 # Token cache for developer tokens
@@ -249,20 +310,31 @@ class AppleMusicTransferService:
         session = requests.Session()
         sf = storefront or settings.apple_storefront
 
-        # 1) ISRC filter
+        # What we are looking for, used to reject a wrong hit below. An empty dict means we
+        # have nothing to check against, and the checks below then only reject candidates
+        # that actively disagree.
+        expected = {"name": title, "artist": artist}
+
+        # 1) ISRC filter.
+        #    NOT limit=1: an ISRC can carry several different recordings in Apple's catalogue
+        #    (DEX181600071 carries three), so asking for one result is asking Apple to pick
+        #    for us. Fetch the set and choose the one that is actually ours.
         if isrc:
             url = f"{APPLE_API}/v1/catalog/{sf}/songs"
-            params = {"filter[isrc]": isrc, "limit": 1}
+            params = {"filter[isrc]": isrc}
             try:
                 r = await loop.run_in_executor(
                     None,
                     lambda: session.get(url, headers=self._apple_headers(dev_token), params=params, timeout=30)
                 )
                 if r.ok:
-                    js = r.json()
-                    items = js.get("data") or []
-                    if items:
-                        return items[0]
+                    items = r.json().get("data") or []
+                    cands = [{**(s.get("attributes") or {}), "id": s.get("id")} for s in items if s.get("id")]
+                    chosen = self._pick_candidate(cands, expected, isrc, sf)
+                    if chosen:
+                        for s in items:
+                            if s.get("id") == chosen:
+                                return s
             except Exception as e:
                 logger.warning("ISRC search failed: %s", str(e))
 
@@ -276,7 +348,7 @@ class AppleMusicTransferService:
 
         if term:
             url = f"{APPLE_API}/v1/catalog/{sf}/search"
-            params = {"term": term, "limit": 3, "types": "songs"}
+            params = {"term": term, "limit": 5, "types": "songs"}
             try:
                 r = await loop.run_in_executor(
                     None,
@@ -285,11 +357,25 @@ class AppleMusicTransferService:
                 if r.ok:
                     js = r.json()
                     songs = (((js.get("results") or {}).get("songs") or {}).get("data")) or []
+                    # Never return songs[0] unchecked. A text search ALWAYS returns its best
+                    # guess, however wrong: searching a generic one-word title happily yields
+                    # a different artist entirely. An unverified hit here means silently
+                    # adding a stranger's song to someone's library, which is worse than
+                    # reporting the track as unmatched.
+                    for s in songs:
+                        cand = {**(s.get("attributes") or {}), "id": s.get("id")}
+                        if s.get("id") and _is_same_recording(cand, expected):
+                            return s
                     if songs:
-                        return songs[0]
+                        top = (songs[0].get("attributes") or {})
+                        logger.info(
+                            "Search for %r by %r in %s returned %d result(s), none matching "
+                            "(best was %r by %r) — reporting unmatched",
+                            title, artist, sf, len(songs), top.get("name"), top.get("artistName"),
+                        )
             except Exception as e:
                 logger.warning("Search failed for '%s' by '%s': %s", title, artist, str(e))
-        
+
         return None
     
     async def _search_tracks_concurrently(self, dev_token: str,
@@ -616,16 +702,30 @@ class AppleMusicTransferService:
         return None
 
     async def _resolve_songs_by_isrc(self, dev_token: str, storefront: str,
-                                     isrcs: List[str]) -> Dict[str, str]:
+                                     isrcs: List[str],
+                                     expected: Optional[Dict[str, Dict[str, Any]]] = None) -> Dict[str, str]:
         """Resolve ISRCs → catalog song ids in the given storefront (batched, ISRC_BATCH/call).
 
         Used to translate our catalogue-storefront matches into the user's storefront so the ids
         are valid for their library (Apple catalog ids are storefront-specific).
+
+        ``expected`` maps isrc → {"apple_song_id", "name", "artist", "duration_ms"} for the
+        recording we actually want. It is what makes this safe: **an ISRC does not uniquely
+        identify a recording in Apple's catalogue.** DEX181600071 returns three songs — two
+        Ed Prosek releases and the Cristian Vogel one we wanted — so the old
+        "first result wins" rule put a stranger's song in a user's playlist (2026-09-08).
+
+        Selection order per ISRC:
+          1. the candidate whose id IS our stored ``apple_song_id`` (exact, no inference),
+          2. else the single candidate that matches on duration/title/artist,
+          3. else NOTHING. An ambiguous ISRC is reported unresolved so the caller can try
+             another route or mark the track unmatched. Guessing is what caused the bug.
         """
         out: Dict[str, str] = {}
         unique = list(dict.fromkeys([i for i in isrcs if i]))
         if not unique:
             return out
+        expected = expected or {}
         loop = asyncio.get_event_loop()
         for i in range(0, len(unique), ISRC_BATCH):
             batch = unique[i:i + ISRC_BATCH]
@@ -636,14 +736,108 @@ class AppleMusicTransferService:
                     None,
                     lambda p=params: _http_request("GET", url, headers=self._apple_headers(dev_token), params=p)
                 )
-                if r.ok:
-                    for song in (r.json().get("data") or []):
-                        aisrc = (song.get("attributes") or {}).get("isrc")
-                        sid = song.get("id")
-                        if aisrc and sid and aisrc not in out:
-                            out[aisrc] = sid
+                if not r.ok:
+                    continue
+                # Group every returned song under its ISRC first; only then choose. The old
+                # code decided as it iterated, which is why position in the response — an
+                # ordering Apple never promised means anything — silently became the answer.
+                by_isrc: Dict[str, List[Dict[str, Any]]] = {}
+                for song in (r.json().get("data") or []):
+                    attrs = song.get("attributes") or {}
+                    aisrc, sid = attrs.get("isrc"), song.get("id")
+                    if aisrc and sid:
+                        by_isrc.setdefault(aisrc, []).append({**attrs, "id": sid})
+
+                for aisrc, candidates in by_isrc.items():
+                    exp = expected.get(aisrc) or {}
+                    chosen = self._pick_candidate(candidates, exp, aisrc, storefront)
+                    if chosen:
+                        out[aisrc] = chosen
             except Exception as e:
                 logger.warning("ISRC batch resolve failed: %s", str(e))
+        return out
+
+    @staticmethod
+    def _pick_candidate(candidates: List[Dict[str, Any]], expected: Dict[str, Any],
+                        label: str, storefront: str) -> Optional[str]:
+        """Choose the one candidate that is genuinely our recording, or None."""
+        if not candidates:
+            return None
+
+        # 1. Our own id came back in this storefront. Nothing to infer.
+        want_id = str(expected.get("apple_song_id") or "")
+        if want_id:
+            for c in candidates:
+                if str(c.get("id")) == want_id:
+                    return want_id
+
+        # 2. Fall back to identity matching, but only when it is UNAMBIGUOUS.
+        matches = [c for c in candidates if _is_same_recording(c, expected)]
+        if len(matches) == 1:
+            return str(matches[0]["id"])
+
+        if len(candidates) == 1 and not expected:
+            # Single candidate and nothing to check it against: no reason to reject it.
+            return str(candidates[0]["id"])
+
+        logger.warning(
+            "Ambiguous lookup for %s in %s: %d candidate(s), %d matched expected "
+            "%r by %r — leaving unresolved rather than guessing",
+            label, storefront, len(candidates), len(matches),
+            expected.get("name"), expected.get("artist"),
+        )
+        return None
+
+    async def _resolve_songs_by_equivalents(self, dev_token: str, storefront: str,
+                                            song_ids: List[str],
+                                            expected: Optional[Dict[str, Dict[str, Any]]] = None
+                                            ) -> Dict[str, str]:
+        """Translate our catalogue song ids into the user's storefront.
+
+        ``filter[equivalents]`` is Apple's purpose-built endpoint for exactly this, and it
+        answers the precise question we have ("what is THIS recording called here?") rather
+        than the looser one an ISRC asks ("what shares this code?"). For the 2026-09-08 case
+        it returned a single correct song where the ISRC returned three.
+
+        Results are matched back by identity, not by position, so batching stays safe even
+        though Apple documents no ordering guarantee. Anything unmatched is simply absent
+        from the result and the caller falls through to the next strategy.
+        """
+        out: Dict[str, str] = {}
+        unique = list(dict.fromkeys([str(s) for s in song_ids if s]))
+        if not unique:
+            return out
+        expected = expected or {}
+        loop = asyncio.get_event_loop()
+        for i in range(0, len(unique), ISRC_BATCH):
+            batch = unique[i:i + ISRC_BATCH]
+            url = f"{APPLE_API}/v1/catalog/{storefront}/songs"
+            params = {"filter[equivalents]": ",".join(batch)}
+            try:
+                r = await loop.run_in_executor(
+                    None,
+                    lambda p=params: _http_request("GET", url, headers=self._apple_headers(dev_token), params=p)
+                )
+                if not r.ok:
+                    continue
+                returned = []
+                for song in (r.json().get("data") or []):
+                    attrs = song.get("attributes") or {}
+                    if song.get("id"):
+                        returned.append({**attrs, "id": song["id"]})
+
+                for src_id in batch:
+                    exp = expected.get(src_id) or {}
+                    # The id being unchanged across storefronts is the common case and the
+                    # cheapest possible confirmation.
+                    if any(str(c["id"]) == src_id for c in returned):
+                        out[src_id] = src_id
+                        continue
+                    hits = [c for c in returned if _is_same_recording(c, exp)] if exp else []
+                    if len(hits) == 1:
+                        out[src_id] = str(hits[0]["id"])
+            except Exception as e:
+                logger.warning("Equivalents batch resolve failed: %s", str(e))
         return out
 
     # ------------------------------------------------------------------ connection (persisted link)
@@ -750,45 +944,98 @@ class AppleMusicTransferService:
             same_storefront = user_sf == catalogue_sf
             logger.info("Catalogue storefront=%s, user storefront=%s (same=%s)", catalogue_sf, user_sf, same_storefront)
 
-            direct: Dict[int, str] = {}          # track_id -> catalog id usable as-is
-            need_isrc: List[Tuple[int, str]] = []  # cross-storefront, resolve by ISRC
+            direct: Dict[int, str] = {}            # track_id -> catalog id usable as-is
+            need_xsf: List[int] = []               # cross-storefront, needs translation
             need_search: List[int] = []            # no stored match -> fallback search
             display_by_track: Dict[int, Dict[str, str]] = {}
+            # What each track actually IS, so every lookup below can be checked rather than
+            # trusted. Keyed twice (by our song id and by isrc) because the two endpoints
+            # return results keyed differently.
+            expect_by_id: Dict[str, Dict[str, Any]] = {}
+            expect_by_isrc: Dict[str, Dict[str, Any]] = {}
 
             for tid in ordered_track_ids:
                 m = apple_matches.get(tid)
                 if m and m.get("apple_song_id"):
                     display_by_track[tid] = {"title": m.get("name") or "Unknown", "artist": m.get("artist") or "Unknown"}
-                    if same_storefront or not m.get("isrc"):
-                        # Same storefront → id is valid. No ISRC → best-effort direct id.
+                    exp = {
+                        "apple_song_id": m["apple_song_id"],
+                        "name": m.get("name"),
+                        "artist": m.get("artist"),
+                        "duration_ms": m.get("duration_ms"),
+                    }
+                    expect_by_id[str(m["apple_song_id"])] = exp
+                    if m.get("isrc"):
+                        expect_by_isrc[m["isrc"]] = exp
+                    if same_storefront:
                         direct[tid] = m["apple_song_id"]
                     else:
-                        need_isrc.append((tid, m["isrc"]))
+                        need_xsf.append(tid)
                 else:
                     need_search.append(tid)
 
-            # 4) Cross-storefront ISRC resolution (batched).
+            # 4) Cross-storefront translation, cheapest and most exact route first.
+            #
+            #    Order matters, and it is the fix for 2026-09-08. The old code went straight
+            #    to the ISRC filter, which asks "what shares this code?" — and an ISRC is NOT
+            #    unique to a recording in Apple's catalogue. DEX181600071 returns three songs
+            #    (two Ed Prosek, one Cristian Vogel); taking the first put the wrong one in a
+            #    user's playlist.
+            #
+            #      a) filter[equivalents] on our own id — asks "what is THIS recording called
+            #         here?", the question we actually have. Often the id is simply unchanged.
+            #      b) ISRC, now choosing by identity instead of by position.
+            #      c) verified text search.
             resolved: Dict[int, str] = {}
-            if need_isrc:
-                isrc_map = await self._resolve_songs_by_isrc(dev_token, user_sf, [i for _, i in need_isrc])
-                for tid, isrc in need_isrc:
-                    sid = isrc_map.get(isrc)
+            if need_xsf:
+                by_id = {tid: apple_matches[tid]["apple_song_id"] for tid in need_xsf}
+                eq_map = await self._resolve_songs_by_equivalents(
+                    dev_token, user_sf, list(by_id.values()), expected=expect_by_id
+                )
+                still: List[Tuple[int, str]] = []
+                for tid in need_xsf:
+                    sid = eq_map.get(str(by_id[tid]))
                     if sid:
                         resolved[tid] = sid
                     else:
-                        need_search.append(tid)  # couldn't resolve → try fallback search
+                        isrc = (apple_matches.get(tid) or {}).get("isrc")
+                        if isrc:
+                            still.append((tid, isrc))
+                        else:
+                            need_search.append(tid)
+
+                if still:
+                    isrc_map = await self._resolve_songs_by_isrc(
+                        dev_token, user_sf, [i for _, i in still], expected=expect_by_isrc
+                    )
+                    for tid, isrc in still:
+                        sid = isrc_map.get(isrc)
+                        if sid:
+                            resolved[tid] = sid
+                        else:
+                            need_search.append(tid)  # couldn't resolve → try fallback search
 
             # 5) Fallback search (only tracks with no stored/resolved id), in the user's storefront.
             if need_search:
                 search_input: List[Tuple[int, Optional[str], str, str]] = []
                 for tid in need_search:
-                    track = await self.track_repository.async_get_by_id(db, tid)
-                    if not track:
-                        continue
-                    title = track.title or "Unknown Track"
-                    artist = track.display_artist or "Unknown Artist"
+                    # Prefer the curated Apple metadata when we have it. A track only reaches
+                    # here after its id failed to translate, and searching with Apple's own
+                    # wording ("Immense Ramps") beats ours ("Immense ramps (Original Mix)") —
+                    # and it is also what the result gets verified against.
+                    m = apple_matches.get(tid) or {}
+                    title = m.get("name")
+                    artist = m.get("artist")
+                    isrc = m.get("isrc")
+                    if not title or not artist:
+                        track = await self.track_repository.async_get_by_id(db, tid)
+                        if not track:
+                            continue
+                        title = title or track.title or "Unknown Track"
+                        artist = artist or track.display_artist or "Unknown Artist"
+                        isrc = isrc or getattr(track, "isrc", None)
                     display_by_track.setdefault(tid, {"title": title, "artist": artist})
-                    search_input.append((tid, getattr(track, "isrc", None), title, artist))
+                    search_input.append((tid, isrc, title, artist))
                 if search_input:
                     for tid, sid in await self._search_tracks_concurrently(dev_token, search_input, storefront=user_sf):
                         if sid:
