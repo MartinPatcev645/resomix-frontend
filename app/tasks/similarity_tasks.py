@@ -24,7 +24,7 @@ import logging
 import os
 from typing import Optional
 
-from app.core.context import set_admin_context, set_current_partner_id
+from app.core.context import bind_task_tenancy
 from app.models.track_artifact_status import (
     ARTIFACT_FAILED,
     ARTIFACT_PROCESSING,
@@ -63,6 +63,8 @@ async def _async_run_similarity_upload(
     track_id: Optional[int],
     visible_count: Optional[int],
 ) -> None:
+    bind_task_tenancy(partner_id)
+
     from app.services.similarity_service import SimilarityService
     from app.utils.demo_mode_utils import apply_demo_mode_redaction
 
@@ -88,13 +90,8 @@ async def _async_run_similarity_upload(
             failed_reason = "audio_unavailable"
             return
 
-        # Partner scoping is request-scoped context the worker does not inherit; set it
-        # explicitly or the query runs against the wrong catalogue.
-        if partner_id is not None:
-            set_current_partner_id(partner_id)
-            set_admin_context(False)
-        else:
-            set_admin_context(True)
+        # Partner scoping is request-scoped context the worker does not inherit; it is
+        # bound at the top of this task, before the first scoped write.
 
         async with AsyncSessionLocal() as db:
             result = await SimilarityService().calculate_similarity_for_upload(
@@ -223,12 +220,17 @@ def _enqueue_analysis_sibling(
         return False
 
 
-async def _mark_crashed(job_id: str, track_id: Optional[int]) -> None:
+async def _mark_crashed(
+    job_id: str, track_id: Optional[int], partner_id: Optional[int] = None
+) -> None:
     """Record a worker-level crash on both the job record and the track.
 
     One coroutine so a single ``run_async_task`` covers both — the crash path runs outside the
     inner handler's event loop, and starting two of them is how one of the writes gets lost.
     """
+    # Without this the two writes below raise on the tenancy failsafe, so a crashed
+    # job records nothing and the client polls a job that never moves.
+    bind_task_tenancy(partner_id)
     await SimilarityUploadJobService().mark_failed(
         job_id, _GENERIC_FAILURE, reason="worker_error"
     )
@@ -282,6 +284,6 @@ def run_similarity_upload(
         # failed in its own loop, or the client polls a job that will never move — and record the
         # same outcome on the track, or the Library capsules spin forever for the same reason.
         try:
-            run_async_task(_mark_crashed(job_id, track_id))
+            run_async_task(_mark_crashed(job_id, track_id, partner_id))
         except Exception:  # pragma: no cover — nothing further we can do
             logger.error("SIMILARITY UPLOAD JOB %s: could not mark failed after crash", job_id)

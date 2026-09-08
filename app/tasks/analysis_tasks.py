@@ -25,7 +25,7 @@ from typing import Optional
 
 from sqlalchemy import update
 
-from app.core.context import set_admin_context, set_current_partner_id
+from app.core.context import bind_task_tenancy
 from app.models.track_analysis_result import (
     SIBLING_FAILED,
     SIBLING_READY,
@@ -68,33 +68,6 @@ _PLAYLIST_SIBLING_TEXT = {
 _ANALYSIS_TIMEOUT_S = 240.0
 
 
-def _bind_tenancy(partner_id: Optional[int]) -> None:
-    """Bind the tenancy context a Celery task cannot inherit from a request.
-
-    MUST be the first statement of any task body that touches a partner-scoped
-    model. The SQL failsafe in ``database/connection.py`` **raises** when
-    ``partner_id`` is None, so without this every ``TrackArtifactStatus`` write
-    fails with "Multi-tenancy violation" — and the task still reports success.
-    The effect is the worst kind of silent failure: the analysis is produced and
-    committed, the sibling playlist is created, and the two rows that tell the
-    Library so are lost, so the screen spins until its timeout with all the work
-    already done.
-
-    This idiom already existed in each of these tasks, but **after** the long
-    call to the analysis service, which is exactly why the terminal state writes
-    landed and the `processing` ones did not. Measured on production 2026-09-08:
-    72 occurrences in 7 days, one per upload. ``app/tasks/webhooks.py`` had it
-    in the right place from the start.
-    """
-    if partner_id is not None:
-        set_current_partner_id(partner_id)
-        set_admin_context(False)
-    else:
-        # No partner: an internally initiated job. Admin context satisfies the
-        # failsafe without narrowing to a tenant that does not apply.
-        set_admin_context(True)
-
-
 async def _async_generate_track_analysis(
     *,
     analysis_id: str,
@@ -104,7 +77,7 @@ async def _async_generate_track_analysis(
     user_id: Optional[int],
     partner_id: Optional[int],
 ) -> None:
-    _bind_tenancy(partner_id)
+    bind_task_tenancy(partner_id)
     client = AnalysisService()
     # Assume the worst until a branch proves otherwise. Every `return` below used to leave the
     # Library with no state at all, which it rendered as "Analysis coming soon" — a message about
@@ -193,7 +166,7 @@ async def _persist_summary(
     async with AsyncSessionLocal() as db:
         # Re-assert for THIS session's failsafe. The callers bind it at the top of their
         # task, but this helper is shared and must not depend on that.
-        _bind_tenancy(partner_id)
+        bind_task_tenancy(partner_id)
         await TrackAnalysisResultService().record_from_canonical(
             db,
             analysis_uuid=analysis_id,
@@ -244,7 +217,7 @@ async def _async_persist_analysis_summary(
     user_id: Optional[int],
     partner_id: Optional[int],
 ) -> None:
-    _bind_tenancy(partner_id)
+    bind_task_tenancy(partner_id)
     client = AnalysisService()
     if not client.is_configured:
         logger.info("ANALYSIS PERSIST: analysis service not configured — skipping %s", analysis_id)
@@ -367,7 +340,7 @@ async def _async_generate_similarity_sibling(
     track_id: Optional[int] = None,
     top_k: int = 20,
 ) -> None:
-    _bind_tenancy(partner_id)
+    bind_task_tenancy(partner_id)
     # Assume the worst until a branch below proves otherwise, so an early return can never leave the
     # row stuck on 'pending' (which the client reads as "keep waiting").
     outcome = SIBLING_FAILED

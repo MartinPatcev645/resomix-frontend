@@ -30,3 +30,26 @@ def set_admin_context(is_admin: bool) -> None:
 def is_admin_context() -> bool:
     """Check if the current context is administrative."""
     return admin_context.get()
+
+
+def bind_task_tenancy(partner_id: Optional[int]) -> None:
+    """Bind the tenancy context a background task cannot inherit from a request.
+
+    MUST be the first statement of any Celery task body that touches a
+    partner-scoped model. The SQL failsafe in ``database/connection.py``
+    **raises** when ``partner_id`` is None, and a task that swallows the
+    exception still reports success — so the work commits and the status rows
+    that tell the UI about it are silently lost. Measured on production
+    2026-09-08: 72 "Multi-tenancy violation" errors in 7 days, one per upload,
+    leaving Library capsules spinning on analyses that had already completed.
+
+    Lives here rather than in a task module so every task can share it without
+    importing another task module.
+    """
+    if partner_id is not None:
+        set_current_partner_id(partner_id)
+        set_admin_context(False)
+    else:
+        # No partner: an internally initiated job. Admin context satisfies the
+        # failsafe without narrowing to a tenant that does not apply.
+        set_admin_context(True)
