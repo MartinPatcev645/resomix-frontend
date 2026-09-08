@@ -197,3 +197,7 @@ scripts/duration/*.csv
 scripts/duration/*.txt
 exports/
 stripe_live_doc.md
+
+# Backups/variants of the real env file. .env.example stays tracked.
+.env.*
+!.env.example
