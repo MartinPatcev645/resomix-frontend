@@ -24,8 +24,15 @@ jinja2==3.1.2
 slowapi==0.1.9
 limits==3.6.0
 pyotp==2.9.0
-bcrypt==4.0.1 
+bcrypt==4.0.1
 PyJWT==2.10.1
+# Verifies the Google Sign-In ID token in app/services/auth_service.py, which
+# imports it at module load — so the API cannot start without it. It was missing
+# here entirely: production only runs because it was pip-installed by hand and
+# never recorded, and a fresh venv built from this file failed to boot on the
+# 2026-09-03 staging rebuild. Pulls in pyasn1-modules; pyasn1 and rsa are already
+# present via python-jose.
+google-auth==2.57.0
 redis==5.0.1
 asyncio-redis==0.16.0
 stripe==15.1.0
