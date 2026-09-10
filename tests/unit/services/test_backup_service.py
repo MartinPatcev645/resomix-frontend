@@ -521,16 +521,37 @@ async def test_trigger_records_the_run_before_dispatch():
     assert repo.runs[0].status == "running"
 
 
-async def test_unconfigured_agent_records_a_failed_run_and_says_why():
-    """The current state of the world: schema and UI are live, the agents are
-    not deployed. Pressing the button must not look like a successful backup,
-    and must not look like a mysterious failure either."""
+async def test_unconfigured_agent_records_nothing_and_says_why():
+    """Issue 128. With no agent configured, pressing Run now used to record a
+    `failed` run so the history showed the attempt. Once the backup watchdog
+    began reading the latest finished run, that record emailed support@ that the
+    backup had failed, when the backups were fine and nothing had been
+    attempted. Nothing can be dispatched, so nothing is recorded; it must still
+    not look like a success, and it must still say plainly why."""
     svc, repo, db = make_service(FakeAgent(configured=False))
     result = await svc.trigger_run(db, server_role="media", user_id=1)
     assert result["dispatched"] is False
     assert result["reason"] == "not_configured"
-    assert repo.runs[0].status == "failed"
+    assert repo.runs == []
+    assert svc.agent.calls == []                     # it did not even try
     assert "No backup agent is configured" in result["message"]
+    assert "nothing was recorded" in result["message"]
+
+
+async def test_unconfigured_agent_verify_records_nothing():
+    svc, repo, db = make_service(FakeAgent(configured=False))
+    result = await svc.trigger_verify(db, server_role="media", user_id=1)
+    assert result["dispatched"] is False
+    assert repo.runs == []
+
+
+async def test_a_dispatch_that_was_tried_and_failed_is_still_recorded():
+    """The other half of 128. Configured but unreachable is a real attempt, and
+    a backup may genuinely have started, so it stays on record."""
+    svc, repo, db = make_service(FakeAgent(configured=True, success=False, reason="unreachable"))
+    result = await svc.trigger_run(db, server_role="media", user_id=1)
+    assert result["dispatched"] is False
+    assert repo.runs[0].status == "failed"
 
 
 async def test_concurrent_trigger_is_refused():

@@ -307,6 +307,24 @@ class BackupService:
             if unknown:
                 raise BackupServiceError(f"Unknown component(s): {', '.join(unknown)}", 400)
 
+        # Nothing can be dispatched, so nothing is recorded (issue 128). This used
+        # to create the run and mark it `failed`, so that the history showed the
+        # attempt. Since the backup watchdog reads the latest finished run, that
+        # record emailed support@ that the backup had failed, when every backup
+        # was fine and nothing had been attempted. A dispatch that is TRIED and
+        # fails (unreachable, agent error) is still recorded below, because then
+        # a backup may genuinely have started.
+        if not self.agent.is_configured(server_role):
+            return {
+                "dispatched": False,
+                "reason": "not_configured",
+                "run": None,
+                "message": (
+                    f"No backup agent is configured for '{server_role}'. "
+                    f"Nothing was started and nothing was recorded."
+                ),
+            }
+
         existing = await self.repo.active_run(db, server_role)
         if existing and not self._is_abandoned(existing):
             # restic locks the repository, so a second run would not corrupt
@@ -385,6 +403,24 @@ class BackupService:
         a verification nobody can point to later.
         """
         self._require_role(server_role)
+
+        # Nothing can be dispatched, so nothing is recorded (issue 128). This used
+        # to create the run and mark it `failed`, so that the history showed the
+        # attempt. Since the backup watchdog reads the latest finished run, that
+        # record emailed support@ that the backup had failed, when every backup
+        # was fine and nothing had been attempted. A dispatch that is TRIED and
+        # fails (unreachable, agent error) is still recorded below, because then
+        # a backup may genuinely have started.
+        if not self.agent.is_configured(server_role):
+            return {
+                "dispatched": False,
+                "reason": "not_configured",
+                "run": None,
+                "message": (
+                    f"No backup agent is configured for '{server_role}'. "
+                    f"Nothing was started and nothing was recorded."
+                ),
+            }
 
         existing = await self.repo.active_run(db, server_role)
         if existing and not self._is_abandoned(existing):
