@@ -532,16 +532,34 @@ class BackupService:
         reported = {c.component for c in components}
         missing = [c for c in expected if c not in reported] if data else []
 
+        # "Missing" means a component the run ENDED without, and a run has not
+        # ended until the agent says so (force_terminal). This used to be judged
+        # on every ingest, so every healthy night flipped to `partial` the moment
+        # its first component reported, before the second had even started. Seen
+        # on production 2026-09-10: the Alwyzon run read "no report from:
+        # secrets" while its own components table showed secrets succeeded. And
+        # because `partial` is a terminal state, the backup watchdog would have
+        # read a healthy night in progress as a finished failure and emailed
+        # about it, every night, in the window between first and last component.
+        #
+        # Our own "no report from" text is also recomputed on every pass instead
+        # of being written once. Written once, it went on naming components that
+        # had reported a minute later. A wrapper or component error is not ours
+        # and is left untouched.
+        missing_prefix = "no report from:"
+        if run.error and run.error.startswith(missing_prefix):
+            run.error = None
+
         if failed:
             run.status = "failed" if not succeeded else "partial"
-        elif pending and not force_terminal:
+        elif (pending or missing) and not force_terminal:
             run.status = "running"
         elif missing or pending:
-            # Every reported component worked, but the run ended without one of
-            # them reporting at all. That is a gap, not a success.
+            # The run has ended without one of them reporting at all. That is a
+            # gap, not a success.
             run.status = "partial"
             if missing and not run.error:
-                run.error = f"no report from: {', '.join(missing)}"
+                run.error = f"{missing_prefix} {', '.join(missing)}"
         elif succeeded:
             run.status = "succeeded"
         else:

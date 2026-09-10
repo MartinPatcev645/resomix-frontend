@@ -285,6 +285,63 @@ async def test_a_component_that_never_reported_makes_the_run_partial():
     assert "secrets" in (run.error or "")
 
 
+async def test_a_healthy_night_in_progress_is_running_never_partial():
+    """The exact sequence of the 2026-09-10 Alwyzon nightly, which the panel
+    recorded as `partial` with "no report from: secrets" while its components
+    table showed secrets succeeded.
+
+    Mid-run is not the end of the run. Until the agent finishes, a component that
+    has not reported yet has simply not run yet. Calling it missing made every
+    healthy night terminal-and-partial after its first component, which the
+    backup watchdog would then have alerted on nightly.
+    """
+    svc, repo, db = make_service()
+    run = await repo.create_run(db, run_uid="n1", server_role="alwyzon", status="running")
+
+    await seed_components(svc, repo, db, run, [("db", "succeeded", 100, 1)])
+    await svc.recompute_run(db, run)                      # secrets has not started
+    assert run.status == "running"
+    assert not (run.error or "")
+
+    await seed_components(svc, repo, db, run, [("secrets", "succeeded", 10, 1)])
+    await svc.recompute_run(db, run)
+    assert run.status == "succeeded"
+
+    await svc.recompute_run(db, run, force_terminal=True)  # the wrapper's /finish
+    assert run.status == "succeeded"
+    assert "no report from" not in (run.error or "")
+
+
+async def test_the_missing_message_is_recomputed_not_frozen():
+    """Written once, the message went on naming a component after it reported."""
+    svc, repo, db = make_service()
+    run = await repo.create_run(db, run_uid="n2", server_role="alwyzon", status="running")
+    await seed_components(svc, repo, db, run, [("db", "succeeded", 100, 1)])
+    await svc.recompute_run(db, run, force_terminal=True)
+    assert run.status == "partial"
+    assert "secrets" in (run.error or "")          # genuinely missing at this point
+
+    # A late report, which is the normal retry case for an idempotent endpoint.
+    await seed_components(svc, repo, db, run, [("secrets", "succeeded", 10, 1)])
+    await svc.recompute_run(db, run, force_terminal=True)
+    assert run.status == "succeeded"
+    assert "no report from" not in (run.error or "")
+
+
+async def test_a_real_wrapper_error_survives_the_recompute():
+    """Only our own generated text is recomputed. The agent's error is not ours."""
+    svc, repo, db = make_service()
+    run = await repo.create_run(db, run_uid="n3", server_role="alwyzon", status="running")
+    run.error = "failed components: db"
+    await seed_components(svc, repo, db, run, [
+        ("db", "failed", 0, 0),
+        ("secrets", "succeeded", 10, 1),
+    ])
+    await svc.recompute_run(db, run, force_terminal=True)
+    assert run.status == "partial"
+    assert run.error == "failed components: db"
+
+
 async def test_maintenance_components_do_not_decide_a_data_run():
     """A failed retention pass does not mean last night's data is missing."""
     svc, repo, db = make_service()
