@@ -207,6 +207,8 @@ class BackupService:
         for role in BACKUP_ROLES:
             latest = await self.repo.latest_run(db, role)
             active = await self.repo.active_run(db, role)
+            if active is not None and self._is_abandoned(active):
+                active = None   # see _is_abandoned: a dead run is not "in progress"
 
             components = []
             for name in ROLE_COMPONENTS.get(role, ()):
@@ -306,7 +308,7 @@ class BackupService:
                 raise BackupServiceError(f"Unknown component(s): {', '.join(unknown)}", 400)
 
         existing = await self.repo.active_run(db, server_role)
-        if existing:
+        if existing and not self._is_abandoned(existing):
             # restic locks the repository, so a second run would not corrupt
             # anything; it would queue and then time out on the lock, which
             # surfaces as a failed backup. Refusing here is the honest answer.
@@ -325,6 +327,11 @@ class BackupService:
             triggered_by_user_id=user_id,
             status="pending",
         )
+        # Record what this run was asked to do, as pending rows, BEFORE dispatch,
+        # the way trigger_verify already does for its one component. The rollup
+        # judges a manual run against exactly these (issue 125).
+        for name in (components or ROLE_COMPONENTS.get(server_role, ())):
+            await self.repo.upsert_component(db, run_id=run.id, component=name, status="pending")
         await db.commit()
         await db.refresh(run)
 
@@ -342,6 +349,13 @@ class BackupService:
 
         reason = dispatch.get("reason")
         error = dispatch.get("error") or "Dispatch failed"
+        # Nothing started, so say so on every requested component, as
+        # trigger_verify does for its one. Left `pending` they would read as a
+        # run still waiting for reports.
+        for c in await self.repo.list_components(db, run.id):
+            if c.status == "pending":
+                await self.repo.upsert_component(db, run_id=run.id, component=c.component,
+                                                 status="failed", error=f"dispatch: {error}")
         await self.repo.update_run(db, run, status="failed", finished_at=datetime.utcnow(),
                                    error=f"dispatch: {error}")
         await db.commit()
@@ -373,7 +387,7 @@ class BackupService:
         self._require_role(server_role)
 
         existing = await self.repo.active_run(db, server_role)
-        if existing:
+        if existing and not self._is_abandoned(existing):
             raise BackupServiceError(
                 f"A backup is already {existing.status} on '{server_role}' "
                 f"(run {existing.run_uid}). Wait for it to finish.",
@@ -516,6 +530,13 @@ class BackupService:
         """
         components = await self.repo.list_components(db, run.id)
 
+        # A run that has ended stays ended (issue 125). Without this, a report
+        # arriving after /finish (a curl retry, or a replay) was recomputed as if
+        # the run were still going, and a `partial` run flipped back to
+        # `running`. Observed 2026-09-10, harmlessly, between two replayed media
+        # reports.
+        force_terminal = force_terminal or run.status in TERMINAL_RUN_STATES
+
         run.bytes_stored = sum(c.bytes_stored or 0 for c in components)
         run.files_processed = sum(c.files_processed or 0 for c in components)
 
@@ -528,7 +549,22 @@ class BackupService:
         succeeded = [c for c in judged if c.status == "succeeded"]
         pending = [c for c in judged if c.status in ("pending", "running")]
 
-        expected = ROLE_COMPONENTS.get(run.server_role, ())
+        # WHAT THIS RUN WAS SUPPOSED TO PRODUCE (issue 125).
+        #
+        # A scheduled night is judged against everything its role owns: that is
+        # what the wrapper runs, and a component that never reports is the gap
+        # this rollup exists to catch. A MANUAL run asked for less. An admin who
+        # starts "db only" from the panel, or an operator who runs one script by
+        # hand mid-incident, would otherwise read `partial`, and the backup
+        # watchdog would email that the backup failed, at exactly the moment
+        # someone is deliberately fixing it. So a manual run is judged against
+        # its own rows: the ones trigger_run created as `pending` at dispatch,
+        # plus whatever reported. A requested row still pending when the run
+        # ends is named as the gap below.
+        if run.trigger == "manual":
+            expected = tuple(c.component for c in data)
+        else:
+            expected = ROLE_COMPONENTS.get(run.server_role, ())
         reported = {c.component for c in components}
         missing = [c for c in expected if c not in reported] if data else []
 
@@ -558,8 +594,10 @@ class BackupService:
             # The run has ended without one of them reporting at all. That is a
             # gap, not a success.
             run.status = "partial"
-            if missing and not run.error:
-                run.error = f"{missing_prefix} {', '.join(missing)}"
+            # Never reported at all, or reported as started and then never again.
+            gone = missing + [c.component for c in pending]
+            if gone and not run.error:
+                run.error = f"{missing_prefix} {', '.join(gone)}"
         elif succeeded:
             run.status = "succeeded"
         else:
@@ -593,6 +631,23 @@ class BackupService:
     # ------------------------------------------------------------------ #
     # Helpers
     # ------------------------------------------------------------------ #
+
+    @staticmethod
+    def _is_abandoned(run: BackupRun) -> bool:
+        """Still `pending` or `running` long after any real run would have ended.
+
+        A wrapper killed mid-run by an OOM, a reboot or a dead box, which is the
+        DR case itself, never sends /finish, so its run never becomes terminal.
+        Counted as active it would block Run-now for that role for ever, at the
+        exact moment someone needs it (issue 125). Past the stale window it is
+        treated as abandoned. This only stops it blocking and showing as "in
+        progress"; the watchdog's staleness check is what alerts on it.
+        """
+        began = run.started_at or run.created_at
+        if began is None:
+            return False
+        hours = int(getattr(settings, "backup_stale_after_hours", 26))
+        return began < datetime.utcnow() - timedelta(hours=hours)
 
     @staticmethod
     def _require_role(role: str) -> None:

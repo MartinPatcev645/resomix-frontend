@@ -342,6 +342,84 @@ async def test_a_real_wrapper_error_survives_the_recompute():
     assert run.error == "failed components: db"
 
 
+async def test_a_manual_subset_run_is_judged_by_what_it_asked_for():
+    """Issue 125. A "db only" run from the panel that backs up db is a success.
+    Judged against the whole role it read `partial`, and the watchdog would have
+    emailed support@ that the backup failed."""
+    svc, repo, db = make_service()
+    await svc.trigger_run(db, server_role="alwyzon", user_id=1, components=["db"])
+    run = repo.runs[-1]
+    rows = await repo.list_components(db, run.id)
+    assert [(c.component, c.status) for c in rows] == [("db", "pending")]   # recorded at dispatch
+    await seed_components(svc, repo, db, run, [("db", "succeeded", 100, 1)])
+    await svc.recompute_run(db, run, force_terminal=True)
+    assert run.status == "succeeded"
+    assert "no report from" not in (run.error or "")
+
+
+async def test_a_manual_run_names_a_requested_component_that_never_reported():
+    svc, repo, db = make_service()
+    await svc.trigger_run(db, server_role="alwyzon", user_id=1, components=["db", "secrets"])
+    run = repo.runs[-1]
+    await seed_components(svc, repo, db, run, [("db", "succeeded", 100, 1)])
+    await svc.recompute_run(db, run, force_terminal=True)
+    assert run.status == "partial"
+    assert "secrets" in (run.error or "")
+
+
+async def test_a_full_manual_run_is_still_judged_against_the_whole_role():
+    """No subset means the whole role, recorded as pending rows, so a component
+    that never reports is still caught on a manual run too."""
+    svc, repo, db = make_service()
+    await svc.trigger_run(db, server_role="alwyzon", user_id=1)
+    run = repo.runs[-1]
+    assert sorted(c.component for c in await repo.list_components(db, run.id)) == ["db", "secrets"]
+    await seed_components(svc, repo, db, run, [("db", "succeeded", 100, 1)])
+    await svc.recompute_run(db, run, force_terminal=True)
+    assert run.status == "partial"
+    assert "secrets" in (run.error or "")
+
+
+async def test_a_finished_run_stays_finished_when_a_late_report_arrives():
+    """Issue 125. A report after /finish (a curl retry, or a replay) flipped a
+    `partial` run back to `running`. Seen 2026-09-10 between two replays."""
+    svc, repo, db = make_service()
+    run = await repo.create_run(db, run_uid="late", server_role="alwyzon", status="running")
+    await seed_components(svc, repo, db, run, [("db", "succeeded", 100, 1)])
+    await svc.recompute_run(db, run, force_terminal=True)
+    assert run.status == "partial"
+    await seed_components(svc, repo, db, run, [("db", "succeeded", 100, 1)])   # the retry
+    await svc.recompute_run(db, run)                                             # an ingest, NOT a finish
+    assert run.status == "partial"
+
+
+async def test_an_abandoned_run_does_not_block_a_new_trigger():
+    """Issue 125. A wrapper that died mid-run never finishes. Counted as active
+    it would block Run-now for that role for ever."""
+    svc, repo, db = make_service()
+    dead = await repo.create_run(db, run_uid="dead", server_role="alwyzon", status="running")
+    dead.started_at = datetime.utcnow() - timedelta(hours=30)
+    result = await svc.trigger_run(db, server_role="alwyzon", user_id=1)
+    assert result["dispatched"] is True
+
+
+async def test_a_live_run_still_blocks_a_new_trigger():
+    """The other side of the same rule: a recent run is genuinely in progress."""
+    svc, repo, db = make_service()
+    live = await repo.create_run(db, run_uid="live", server_role="alwyzon", status="running")
+    live.started_at = datetime.utcnow() - timedelta(hours=1)
+    with pytest.raises(BackupServiceError) as exc:
+        await svc.trigger_run(db, server_role="alwyzon", user_id=1)
+    assert exc.value.status_code == 409
+
+
+async def test_a_failed_dispatch_marks_the_requested_components_failed():
+    svc, repo, db = make_service(agent=FakeAgent(success=False))
+    await svc.trigger_run(db, server_role="alwyzon", user_id=1, components=["db"])
+    run = repo.runs[-1]
+    assert [(c.component, c.status) for c in await repo.list_components(db, run.id)] == [("db", "failed")]
+
+
 async def test_maintenance_components_do_not_decide_a_data_run():
     """A failed retention pass does not mean last night's data is missing."""
     svc, repo, db = make_service()
