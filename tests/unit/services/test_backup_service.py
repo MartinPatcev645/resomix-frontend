@@ -173,6 +173,49 @@ async def seed_components(svc, repo, db, run, spec):
         )
 
 
+# --- the contract with the agent --------------------------------------------- #
+
+def test_role_components_are_all_valid_component_names():
+    """ROLE_COMPONENTS may only name components the ingest endpoint accepts.
+
+    This is the bug that shipped. `ROLE_COMPONENTS` expected `analysis-results`,
+    `media-embeddings` and `media-uploads`; `BACKUP_COMPONENTS` listed the same
+    three, so the two agreed with each other perfectly and neither agreed with the
+    agent, which sends `media` and `analysis`. `ingest_component` rejects an
+    unknown component with a 400, so every media push but `secrets` would have
+    been refused nightly while the panel showed a box that had barely reported.
+    """
+    from app.models.backup_run import BACKUP_COMPONENTS
+    from app.services.backup_service import ROLE_COMPONENTS
+
+    for role, names in ROLE_COMPONENTS.items():
+        for name in names:
+            assert name in BACKUP_COMPONENTS, (
+                f"{role} expects '{name}', which /internal/backups/metrics would reject"
+            )
+
+
+def test_component_names_match_the_backup_agent():
+    """The agent's names, pinned here so a rename on either side fails loudly.
+
+    Each value below is the `COMPONENT="..."` line at the top of the matching
+    script in the server-backups repo, and the role split is that repo's
+    `run_nightly.sh` `case "$ROLE"` block. Nothing in this codebase can check the
+    other repo directly, so this test is the tripwire: if it fails, one side was
+    renamed and the other was not, and the fix is to look at the shell scripts
+    rather than to update this list until it goes green.
+    """
+    from app.models.backup_run import BACKUP_COMPONENTS
+    from app.services.backup_service import ROLE_COMPONENTS
+
+    assert set(BACKUP_COMPONENTS) == {"db", "secrets", "media", "analysis", "verify", "retention"}
+    # secrets is on BOTH roles deliberately: while it ran on Alwyzon alone, the
+    # media box's .env files, SFTPGo password and audit signing key were captured
+    # nowhere at all.
+    assert ROLE_COMPONENTS["alwyzon"] == ("db", "secrets")
+    assert ROLE_COMPONENTS["media"] == ("secrets", "media", "analysis")
+
+
 # --- rollup: the run's status is derived, never trusted ---------------------- #
 
 async def test_all_components_succeeded_makes_the_run_succeeded():
@@ -182,24 +225,23 @@ async def test_all_components_succeeded_makes_the_run_succeeded():
     await seed_components(svc, repo, db, run, [
         ("db", "succeeded", 100, 1),
         ("secrets", "succeeded", 10, 1),
-        ("analysis-results", "succeeded", 5, 3),
     ])
     await svc.recompute_run(db, run)
     assert run.status == "succeeded"
-    assert run.bytes_stored == 115
-    assert run.files_processed == 5
+    assert run.bytes_stored == 110
+    assert run.files_processed == 2
 
 
 async def test_one_failure_among_successes_is_partial_not_failed():
-    """Four of five components working is a different situation from nothing
-    working. Collapsing them loses the distinction that decides whether anyone
-    gets out of bed."""
+    """Some components working is a different situation from nothing working.
+    Collapsing them loses the distinction that decides whether anyone gets out of
+    bed."""
     svc, repo, db = make_service()
-    run = await repo.create_run(db, run_uid="u2", server_role="alwyzon", status="running")
+    run = await repo.create_run(db, run_uid="u2", server_role="media", status="running")
     await seed_components(svc, repo, db, run, [
-        ("db", "succeeded", 100, 1),
         ("secrets", "succeeded", 10, 1),
-        ("analysis-results", "failed", 0, 0),
+        ("media", "succeeded", 100, 1),
+        ("analysis", "failed", 0, 0),
     ])
     await svc.recompute_run(db, run)
     assert run.status == "partial"
@@ -211,7 +253,6 @@ async def test_everything_failed_is_failed():
     await seed_components(svc, repo, db, run, [
         ("db", "failed", 0, 0),
         ("secrets", "failed", 0, 0),
-        ("analysis-results", "failed", 0, 0),
     ])
     await svc.recompute_run(db, run)
     assert run.status == "failed"
@@ -237,12 +278,11 @@ async def test_a_component_that_never_reported_makes_the_run_partial():
     run.started_at = datetime.utcnow() - timedelta(minutes=1)
     await seed_components(svc, repo, db, run, [
         ("db", "succeeded", 100, 1),
-        ("secrets", "succeeded", 10, 1),
-        # analysis-results never reported
+        # secrets never reported
     ])
     await svc.recompute_run(db, run, force_terminal=True)
     assert run.status == "partial"
-    assert "analysis-results" in (run.error or "")
+    assert "secrets" in (run.error or "")
 
 
 async def test_maintenance_components_do_not_decide_a_data_run():
@@ -252,7 +292,6 @@ async def test_maintenance_components_do_not_decide_a_data_run():
     await seed_components(svc, repo, db, run, [
         ("db", "succeeded", 100, 1),
         ("secrets", "succeeded", 10, 1),
-        ("analysis-results", "succeeded", 5, 1),
         ("retention", "failed", 0, 0),
     ])
     await svc.recompute_run(db, run)
@@ -273,14 +312,11 @@ async def test_duration_is_computed_on_terminal_states():
     svc, repo, db = make_service()
     run = await repo.create_run(db, run_uid="u8", server_role="media", status="running")
     run.started_at = datetime(2026, 8, 29, 2, 0, 0)
-    await repo.upsert_component(
-        db, run_id=run.id, component="media-embeddings", status="succeeded",
-        finished_at=datetime(2026, 8, 29, 2, 4, 30), bytes_stored=1, files_processed=1,
-    )
-    await repo.upsert_component(
-        db, run_id=run.id, component="media-uploads", status="succeeded",
-        finished_at=datetime(2026, 8, 29, 2, 4, 30), bytes_stored=1, files_processed=1,
-    )
+    for name in ("secrets", "media", "analysis"):
+        await repo.upsert_component(
+            db, run_id=run.id, component=name, status="succeeded",
+            finished_at=datetime(2026, 8, 29, 2, 4, 30), bytes_stored=1, files_processed=1,
+        )
     await svc.recompute_run(db, run)
     assert run.status == "succeeded"
     assert run.duration_s == 270
@@ -418,7 +454,7 @@ async def test_status_marks_an_old_success_stale():
     svc, repo, db = make_service()
     run = await repo.create_run(db, run_uid="s1", server_role="alwyzon", status="succeeded")
     old = datetime.utcnow() - timedelta(hours=100)
-    for name in ("db", "secrets", "analysis-results"):
+    for name in ("db", "secrets"):
         await repo.upsert_component(db, run_id=run.id, component=name,
                                     status="succeeded", finished_at=old)
     status = await svc.get_status(db)
@@ -430,7 +466,7 @@ async def test_status_marks_an_old_success_stale():
 async def test_status_is_ok_for_a_fresh_success():
     svc, repo, db = make_service()
     run = await repo.create_run(db, run_uid="s2", server_role="alwyzon", status="succeeded")
-    for name in ("db", "secrets", "analysis-results"):
+    for name in ("db", "secrets"):
         await repo.upsert_component(db, run_id=run.id, component=name,
                                     status="succeeded", finished_at=datetime.utcnow())
     status = await svc.get_status(db)

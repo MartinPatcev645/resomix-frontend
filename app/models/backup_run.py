@@ -39,12 +39,28 @@ BACKUP_ROLES = ("alwyzon", "media")
 # first: a file captured before the database leaves a row pointing at something
 # that was never stored, which is a visibly broken track after a restore. The
 # other order leaves orphan files, which are harmless.
+# THESE NAMES ARE A CONTRACT WITH THE AGENT, and they are not ours to choose.
+# Each value is the `COMPONENT="..."` line at the top of the matching script in
+# the server-backups repo, because that is what the agent puts in the metrics
+# file and posts to /internal/backups/metrics.
+#
+# Corrected 2026-09-09. This tuple previously read media-embeddings /
+# media-uploads / analysis-results, which are restic TAG names, not component
+# names, and no agent has ever sent any of them. `ingest_component` rejects an
+# unknown component with a 400, so the media box's `media` and `analysis` pushes
+# would have been refused every night while its `secrets` push succeeded, and the
+# panel would have shown a box that was backing up perfectly as a box that had
+# barely reported. It went unnoticed because Phase 5 shipped with no agent at all
+# and the first real push, on 2026-09-09, was a single `db` component.
+#
+# Order still matters: the database is captured first on purpose. A file captured
+# before the database leaves a row pointing at something never stored, which is a
+# visibly broken track after a restore; the other order leaves harmless orphans.
 BACKUP_COMPONENTS = (
     "db",
     "secrets",
-    "media-embeddings",
-    "media-uploads",
-    "analysis-results",
+    "media",
+    "analysis",
     "verify",
     "retention",
 )

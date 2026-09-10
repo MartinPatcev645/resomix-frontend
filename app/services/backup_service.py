@@ -56,13 +56,26 @@ from app.services.backup_agent_client import backup_agent_client
 
 logger = logging.getLogger(__name__)
 
-# Components each role is responsible for. The media box has no database and no
-# secrets bundle; Alwyzon has no partner media. Listing them explicitly is what
-# lets the status page say "the media box did not report media-uploads" instead
-# of "some component is missing somewhere".
+# Components each role is responsible for. Listing them explicitly is what lets
+# the status page say "the media box did not report media" instead of "some
+# component is missing somewhere".
+#
+# This must mirror `run_nightly.sh`'s own `case "$ROLE"` block, which is the only
+# thing that decides what actually runs where. Corrected 2026-09-09 against it:
+#
+#   * `analysis` runs on MEDIA, not on Alwyzon. `backup_analysis.sh` opens with
+#     `require_role media` and reads a path under /home/ubuntu. Expecting it from
+#     Alwyzon made every Alwyzon night `partial` with "no report from:
+#     analysis-results", forever, on a completely healthy system.
+#   * `secrets` runs on BOTH roles, and that is deliberate. The previous comment
+#     here claimed the media box has no secrets bundle; the backup repo fixed
+#     exactly that belief, because while secrets ran on Alwyzon alone the media
+#     and analysis .env files, the SFTPGo admin password and the audit signing
+#     key were captured NOWHERE. Expecting it on both is what makes that
+#     regression visible if it ever returns.
 ROLE_COMPONENTS: Dict[str, Tuple[str, ...]] = {
-    "alwyzon": ("db", "secrets", "analysis-results"),
-    "media": ("media-embeddings", "media-uploads"),
+    "alwyzon": ("db", "secrets"),
+    "media": ("secrets", "media", "analysis"),
 }
 
 # Components that are maintenance, not data capture. They are recorded, but a

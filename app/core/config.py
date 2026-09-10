@@ -563,6 +563,25 @@ class Settings(BaseModel):
         default=30, description="Silence for an ONGOING incident; cleared as soon as it recovers"
     )
 
+    # Backup alerting. The nightly backups report every component to
+    # /internal/backups/*, and until 2026-09-09 nothing read those rows and told
+    # anybody. The production database then had no backup for three nights and it
+    # was found eleven days later, by hand.
+    watchdog_backup_enabled: bool = Field(
+        default=True, description="Alert when a backup run fails or a restore point goes stale"
+    )
+    # 26 hours, not 24: the nightly runs at a fixed time, so a 24 hour window would
+    # alert on ordinary minute-to-minute drift every single day, and an alert that
+    # cries wolf daily is one nobody reads. Same reasoning as the heartbeat period.
+    watchdog_backup_stale_hours: int = Field(
+        default=26, description="Hours without a SUCCEEDED run before a role's restore point is stale"
+    )
+    # Much longer than the 30 minute default. Backups are nightly, so an unresolved
+    # backup problem should reach someone about twice a day, not every 5 minutes.
+    watchdog_backup_cooldown_minutes: int = Field(
+        default=720, description="Silence for an ONGOING backup incident (default 12h)"
+    )
+
     # Rate Limiting
     rate_limit_enabled: bool = Field(
         default=True, description="Enable rate limiting for auth endpoints"
@@ -850,6 +869,9 @@ class Settings(BaseModel):
             "WATCHDOG_4XX_THRESHOLD": "watchdog_4xx_threshold",
             "WATCHDOG_JOB_FAILURE_THRESHOLD": "watchdog_job_failure_threshold",
             "WATCHDOG_COOLDOWN_MINUTES": "watchdog_cooldown_minutes",
+            "WATCHDOG_BACKUP_ENABLED": "watchdog_backup_enabled",
+            "WATCHDOG_BACKUP_STALE_HOURS": "watchdog_backup_stale_hours",
+            "WATCHDOG_BACKUP_COOLDOWN_MINUTES": "watchdog_backup_cooldown_minutes",
             # CORS allowed origins (value may be a JSON array or comma-separated)
             "RESOMIX_ALLOWED_ORIGINS_PRODUCTION": "allowed_origins_production",
             "RESOMIX_ALLOWED_ORIGINS_DEVELOPMENT": "allowed_origins_development",
@@ -867,7 +889,7 @@ class Settings(BaseModel):
             env_value = os.getenv(env_key)
             if env_value is not None:
                 # Handle boolean conversion
-                if config_key in ["demo_mode", "similarity_auth_required", "rate_limit_enabled", "stripe_automatic_tax_enabled", "elasticsearch_enabled", "es_verify_certs", "cf_access_enabled", "watchdog_enabled"]:
+                if config_key in ["demo_mode", "similarity_auth_required", "rate_limit_enabled", "stripe_automatic_tax_enabled", "elasticsearch_enabled", "es_verify_certs", "cf_access_enabled", "watchdog_enabled", "watchdog_backup_enabled"]:
                     env_overrides[config_key] = env_value.lower() in (
                         "true",
                         "1",
@@ -899,6 +921,8 @@ class Settings(BaseModel):
                     "watchdog_4xx_threshold",
                     "watchdog_job_failure_threshold",
                     "watchdog_cooldown_minutes",
+                    "watchdog_backup_stale_hours",
+                    "watchdog_backup_cooldown_minutes",
                     "system_log_retention_days",
                     "session_ip_retention_days",
                     "invoice_retention_years",
