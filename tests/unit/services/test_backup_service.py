@@ -420,6 +420,33 @@ async def test_a_failed_dispatch_marks_the_requested_components_failed():
     assert [(c.component, c.status) for c in await repo.list_components(db, run.id)] == [("db", "failed")]
 
 
+async def test_a_failed_verify_is_never_swallowed():
+    """Issue 132. Every backup worked and the repository then failed its check.
+    That must reach the watchdog, so the run cannot read `succeeded`."""
+    svc, repo, db = make_service()
+    run = await repo.create_run(db, run_uid="v132", server_role="alwyzon", status="running")
+    await seed_components(svc, repo, db, run, [
+        ("db", "succeeded", 100, 1),
+        ("secrets", "succeeded", 10, 1),
+        ("verify", "failed", 0, 0),
+    ])
+    await svc.recompute_run(db, run, force_terminal=True)
+    assert run.status == "partial"
+
+
+async def test_a_verify_that_fails_after_the_run_already_succeeded_still_counts():
+    """The data components finish first, so the run is already terminal and
+    `succeeded` when verify reports ten minutes later. It must still move."""
+    svc, repo, db = make_service()
+    run = await repo.create_run(db, run_uid="v132b", server_role="alwyzon", status="running")
+    await seed_components(svc, repo, db, run, [("db", "succeeded", 100, 1), ("secrets", "succeeded", 10, 1)])
+    await svc.recompute_run(db, run)
+    assert run.status == "succeeded"
+    await seed_components(svc, repo, db, run, [("verify", "failed", 0, 0)])
+    await svc.recompute_run(db, run)
+    assert run.status == "partial"
+
+
 async def test_maintenance_components_do_not_decide_a_data_run():
     """A failed retention pass does not mean last night's data is missing."""
     svc, repo, db = make_service()

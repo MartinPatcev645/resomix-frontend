@@ -582,6 +582,14 @@ class BackupService:
         judged = data or components
 
         failed = [c for c in judged if c.status == "failed"]
+        # A failed VERIFY is never swallowed (issue 132). Maintenance does not
+        # decide a data run, because a failed retention pass does not mean last
+        # night's data is missing. A failed verify is different: it means the
+        # backups themselves may be unreadable. Left out of the judgement, the run
+        # read `succeeded`, the watchdog saw nothing, and the 2026-09-06 verify
+        # failure went unnoticed until its leaked lock became issue 119.
+        failed += [c for c in components
+                   if c.component == "verify" and c.status == "failed" and c not in judged]
         succeeded = [c for c in judged if c.status == "succeeded"]
         pending = [c for c in judged if c.status in ("pending", "running")]
 

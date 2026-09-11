@@ -9,6 +9,80 @@
 
 ---
 
+## PROGRESS (live status, keep this section current)
+
+**Last updated 2026-09-10.** Step A done. Step B: **2 of 3 batches READY**, batch 2 uploading.
+Steps C and D not started.
+
+The day-to-day procedure is `electrobuzz_server/ingest_selection/MONTHLY_INGEST_RUNBOOK.md`
+(it supersedes the per-batch commands in section B5 below, which predate `run_batches.py`).
+
+### Scope, as actually run
+
+* Cut-off `2025-10-31`. Scan found **174,261** files; **28,021 dropped as duplicate filenames**
+  (George, 2026-08-22: keep the first); **146,242 paths** in 3 batches of 50,000 / 50,000 / 46,242.
+* **Partner reused, not fresh:** `test_electrobuzz_5000`, id **6**, slug `b3a56a4e427d`. It already
+  held the 4,967 test tracks, which stay separable by `ingest_log_id`: **runs 11, 12, 13, 16 are
+  the test; runs 18 onward are the real load.** Step D must filter on that, and cross-check against
+  `electrobuzz_server/ingest_selection/batches/batch_NNNN.txt`.
+
+### Batches
+
+| Batch | Paths | Manifest rows | Uploaded | Run | Embedded | Missing | READY |
+|---|---|---|---|---|---|---|---|
+| 0 | 50,000 | 49,887 | 2026-08-26 | 18 (17 failed validation) | 48,642 | 1,245 | embeddings done 2026-09-01 |
+| 1 | 50,000 | 49,961 | 2026-09-03 | 19 | 49,960 | 1 | 2026-09-10 08:08 UTC |
+| 2 | 46,242 | | uploading from 2026-09-10 | (20) | | | |
+
+**Partner 6 after batch 1:** 104,815 tracks, **103,569 embedded and active**, both FAISS indexes
+(maest, discogs) at **103,569 vectors**, matching the SQL to the vector. Partner API smoke test 10/10
+and already returning 2026 tracks that exist only in run 19.
+
+### Measured, replacing the estimates in B2
+
+| Stage | Per ~50k | Notes |
+|---|---|---|
+| Tag scan (electrobuzz) | 25 to 35 min | 25 to 37 files/s, cold reads off the `/mnt/vegerra` mount |
+| Validation with `trusted_source` | **20 s** | ffprobe + AV skipped; reconciliation still runs |
+| Persist | **2 min 40 s** | run 19: 05:24:58 to 05:27:38 UTC |
+| Transcode + embeddings | ~2 days wall clock | embeddings dominate at 3.43 s/track |
+| FAISS rebuild | ~9 min per index at 103k vectors | whole partner is re-indexed every batch, so this grows |
+
+Section 8's question 1 (the "16 days" figure) is answered: ~2 days per 50k batch, and the real
+scope was 146k, not 300-400k.
+
+### Incidents, and what changed because of them
+
+1. **Batch 0, run 17 failed validation** on 2 files (0-duration mp3; a 579-minute mp3). Alwyzon was
+   stale, so `trusted_source` was silently dropped by Pydantic and the full probe ran. Fixed with
+   `ingest_validate.py --drop`, Alwyzon redeployed, run 18 triggered. No re-upload needed.
+2. **GPU embed server died 2026-08-28 08:06 UTC**, 24 minutes into run 18's embeddings. Kernel log:
+   a null-pointer **segfault inside Essentia's native library** on malformed audio. SIGSEGV cannot be
+   caught in Python, so the app logged nothing; the process was an unsupervised `nohup` inside an
+   SSH session, so nothing restarted it. The job then ran **33.6 hours against a dead port** (425
+   embedded, 49,462 failed). The analysis instance had also been down for 2+ days unnoticed.
+   **Fix:** `maest-discogs-ccreplica/scripts/watchdog_gpu_servers.sh`, cron every 5 min on the GPU
+   box, checks both ports and restarts whichever is dead (shares the weekly-restart script's lock,
+   flap protection after 3 restarts in 30 min). Instances run split: `--embedding-only` on 8005,
+   `--analysis-only` on 8015. Diagnose any future silent death with `journalctl -k | grep segfault`.
+3. **Why run 18 lost 1,245 and run 19 lost 1.** Segfaults still happen; each one fails every track
+   in flight plus everything sent in the up-to-5-minute window before the watchdog restarts the
+   server. Run 18 had several; run 19 effectively none.
+
+### Left to do
+
+| # | Item | Notes |
+|---|---|---|
+| 1 | Batch 2: upload, `--validate`, trigger, verify (runbook step 5b), `--mark-ingested 2` | in progress |
+| 2 | Recover the 1,245 (run 18) + 1 (run 19) | at the end: embeddings job per run with skip-already-embedded. The SQL `missing` column is the list. Real poison files will segfault again; `maest-discogs-ccreplica/scripts/find_poison_tracks.py` names the candidates from the GPU log |
+| 3 | Step C, Apple matching over partner 6, runs 18+ | unchanged scripts, pointed at partner 6 |
+| 4 | Step D promotion scripts | **not written.** Filter `ingest_log_id >= 18`; never touch runs 11/12/13/16 |
+| 5 | Uploader should test the SFTP login before the 25-minute scan | a bad password currently fails only after the scan |
+| 6 | `collect_new_tracks.py`: MP3 > 50 MB rule | would have caught the 579-minute file pre-upload; offered, not approved |
+| 7 | Partner API has no catalogue count | search caps at 100 and `total_results` is declared but returns `None`; `/partner/me` has no count |
+
+---
+
 ## 0. The short version
 
 1. Work out the true resume date from the **database**, not from a year-old run log.
@@ -530,5 +604,9 @@ written until Step B has actually produced data to promote.
 DB persist, transcode, embeddings, FAISS index accumulation across repeat batches, partner API
 search and similarity, rate limiting, and recovery from an interrupted upload.
 
-**Not proven:** anything at 50k+ per batch; the total disk footprint; the vector merge into the main
-index; and the promotion scripts, which do not exist yet.
+**Proven since, at scale (2026-09-10):** two ~50k batches end to end (runs 18 and 19), FAISS
+accumulation to 103,569 vectors, `trusted_source` validation, and recovery from a GPU server death
+mid-run. See PROGRESS at the top.
+
+**Not proven:** the total disk footprint; the vector merge into the main index; and the promotion
+scripts, which do not exist yet.
