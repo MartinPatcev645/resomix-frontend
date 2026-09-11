@@ -8,7 +8,7 @@ servers; for staging we co-locate **all three services on a single box**:
 | Service | Repo | Local bind | Public URL |
 |---|---|---|---|
 | **Alwyzon** control-plane (API, MariaDB, auth, billing) | `basic_fastapi_server_resomix` | `127.0.0.1:8001` | `https://staging-bserver.resomix.com` |
-| **Media / similarity** server (FAISS, audio/peaks/segments/HLS, deletion proof) | `resomix-similarity-open` | `127.0.0.1:8004` | `https://staging-media.resomix.com` |
+| **Media / similarity** server (FAISS, audio/peaks/segments/HLS, deletion proof) | `resomix-similarity-open` | `127.0.0.1:8002` | `https://staging-media.resomix.com` |
 | **SFTPGo** (partner uploads) | (3rd-party) | SFTP `:2022`, Admin REST `127.0.0.1:8090` | partners connect to `staging-media.resomix.com:2022` |
 
 **Out of scope (intentionally):**
@@ -22,8 +22,85 @@ servers; for staging we co-locate **all three services on a single box**:
 > commit real passwords/keys. Two secrets **must be byte-identical on both apps**:
 > `HETZNER_INTERNAL_API_KEY` and `EDGE_JWT_SECRET`.
 
-> **Port map (single box):** Alwyzon `8001`, Media `8004`, SFTPGo SFTP `2022`,
-> SFTPGo Admin `8090` (localhost only), MariaDB `3306`, Redis `6379`.
+> **Port map:** Alwyzon `8001`, Media **`8002`** (not 8004, issue 97), Analysis
+> `8010`, SFTPGo SFTP `2022`, SFTPGo Admin `8090` (localhost only), MariaDB
+> `3306`, Redis `6379`.
+
+---
+
+## Read first: corrected 2026-09-11 from a real two-box rebuild
+
+This runbook was written for one box and an empty database. In September 2026 it
+was used to rebuild production onto **two** boxes **from backup** (the DR drill,
+`server-backups/docs/PHASE-8.md`), and the rebuild found the defects below. Each
+is now corrected in place, at the step it belongs to; this table is the index.
+Issue numbers refer to `server-backups/docs/PROGRESS.md`.
+
+**Two-box split** (production's layout, and the recovery layout):
+
+| Box | Runbook parts | Hardware |
+|---|---|---|
+| **Alwyzon** (box A) | A, B (restore: **no seed**), F (bserver vhost), G, H (Alwyzon unit), L | **4 GB RAM minimum, 8 GB comfortable.** At 1.9 GB MariaDB, the app, two Celery workers and clamd leave 231 MB, and Elasticsearch needs a 1 GB heap on top. Production: 16 GB. *The staging box A stays at about 2 GB by decision (2026-09-11): no Elasticsearch, clamd kept on, 4 GB swap mandatory, large uploads a known limit (`server-backups/docs/CLOSEOUT.md` Part 3)* |
+| **Media** (box B) | A, C, D, K, F (media + analysis vhosts), G, H (media unit), L | **24 GB RAM minimum, 32 GB recommended** (issue 106). Partner 1's FAISS indexes are HNSW graphs that must be fully resident; a 7.8 GB box OOM-kills the service on every similarity query while looking healthy between them. Production: 64 GB |
+
+On two boxes every `127.0.0.1` URL that names the *other* service becomes that
+box's address. **For a recovery from backup, the `.env` files come from the
+restored secrets bundle, not from the blocks in B3, C3 and K2**; those blocks are
+the reference for a fresh build and for checking a restored file.
+
+**Production, as recorded by `server-backups/bin/box_manifest.py` on 2026-09-11**
+(`server-backups/manifests/`): Alwyzon on Ubuntu 22.04, Python **3.10.12**,
+MariaDB **10.6.23**, Redis 6.0, Elasticsearch **8.19.21** (2 GB heap, alias
+`tracks_search`, 1,980,421 documents). Media on Ubuntu 24.04, media venv Python
+**3.10.14** (numpy 2.2.6, faiss-cpu 1.14.3), analysis venv Python **3.12.3**,
+SFTPGo 2.6.4, Redis 7.0. A rebuilt box is judged by comparing its manifest with
+these (Part I).
+
+| # | Step | Correction | Why |
+|---|---|---|---|
+| 1 | Intro, B3, C3, C4, D5, E, F4, I | media port **8002**, not 8004 | production's `PORT=8002`; the rebuilt box A could never have reached box B (issue 97) |
+| 2 | A1 | add `liblzma-dev uuid-dev libgdbm-compat-dev libncursesw5-dev` | without `liblzma-dev` CPython builds with no `_lzma`, and says so only in a line that scrolls past (issue 91) |
+| 3 | A1 | ClamAV is **required** on Alwyzon, never disabled to save memory | similarity and cover uploads fail **open** without it (issue 117); a clamd that answers PONG may still be unable to scan (118) |
+| 4 | A1 | 4 GB swapfile on any box under 8 GB | the 3.5 GiB database dump does not load on 1.9 GB without it |
+| 5 | A2 | the service user is `alwyzon` on Alwyzon and `ubuntu` on media | `devuser` throughout is a substitution |
+| 6 | A3 | each box needs only its own repos' keys, **plus `server-backups`** | the recovery tooling is a private repo a blank box cannot clone (issue 63) |
+| 7 | A4 | match production's Pythons; `make -j2` on small boxes; build in tmux | parallel CPython compiles OOM a 1.9 GB box; the build is 30 to 60 min with PGO |
+| 8 | A4 | verify the build with an import check, not by reading warnings | the `_lzma` omission above was caught only this way |
+| 9 | A5 | **six** shared secrets, generated once, copied by file, verified by fingerprint | a secret generated twice fails as a 401 the caller swallows (issue 116); a pasted value picks up a blank line |
+| 10 | B2 | MariaDB **10.6.x** | production is 10.6, not the "11.3+" another doc claims; match the version rather than guess, since a mismatch fails partway through a load (issue 46) |
+| 11 | B3 | `HLS_MEDIA_BASE_URL` ends in **`/signed-audio/`** | the app appends `/hls-m3u8/`; without the suffix no upload plays and the error names neither URL nor status (issue 105) |
+| 12 | B3 | `RESOMIX_ENV=production` on staging too | it only sets the guest cookie's `secure` flag; any other value makes it non-secure over HTTPS |
+| 13 | B3 | staging CORS origins **only** | as written, the production frontend could make credentialed calls to the staging API |
+| 14 | B3 | `SMTP_FROM_EMAIL` never blank, never a reserved TLD | `fastapi-mail` validates the format at import; blank crashes the app, `.invalid`/`.test` are refused |
+| 15 | B3 | `HETZNER_SFTP_PROVISION_URL` and `SIMILARITY_SERVER_URL` name the **media box** | `127.0.0.1:8004` is wrong on both host and port once the services split (Flow 0) |
+| 16 | B4 | restore: `alembic current` and `heads` first, then `upgrade head`, **never seed** | seeding writes on top of production's rows; an empty `alembic_version` would replay every migration |
+| 17 | B5, H | Alwyzon runs **`run_alwyzon.py`**, unit **`alwyzon.service`** | there is no `run.py`. `run_alwyzon.py` starts uvicorn **and both Celery workers**; running uvicorn alone accepted uploads and never processed one (issues 94, 113) |
+| 18 | C1 | media venv on the Python production uses (3.10), analysis on 3.12 | the `numpy==1.24.3` / `faiss-cpu==1.7.4` pins that forced 3.11 are gone: `requirements.txt` now has `faiss-cpu==1.14.3` and unpinned numpy, which resolves to 2.2.6 on 3.10, exactly production's |
+| 19 | D2 | the media service user owns `.partner_slugs.json` and is in group `sftpgo`; the restored tree is `chown`ed to `sftpgo` | otherwise similarity returns "success" with zero results forever (issues 99, 102, 104) |
+| 20 | D2, J | restart the media service **after** the partner tree is in place and after any ownership fix | a failed slug-map read is cached against the file's mtime, and `chown` does not change it (issue 103) |
+| 21 | D4 | hooks name the Alwyzon box, and Alwyzon's firewall admits the media box on 8001 | on one box they were loopback |
+| 22 | D5 | two-box firewall rules; the SSH rule in the same command as `enable` | 8002 open to box A and the GPU only; never lock yourself out |
+| 23 | E, I | verify with `box_manifest.py`, not `systemctl is-active` | every September fault had an active unit and a healthy `/health` (113, 115, 116, 118) |
+| 24 | F6 | one certificate per box, for that box's names only | a name that resolves to the other box fails the whole certbot run |
+| 25 | G | `[sshd]` jail on; `ignoreip` holds the other box and the GPU; filters before jails | box B trips `nginx-4xx-5xx` and bans itself from the control plane |
+| 26 | K4 | analysis unit needs `KillMode=mixed` | it spawns its own Celery; the default leaves the worker behind on stop |
+| 27 | I | public reachability checked from a machine **outside** both boxes | a box's own `curl` returned 200 for forty minutes while nothing outside could connect (issue 108) |
+| 28 | J | a real recovery follows `server-backups`, not `restore_runbook.md` | that file describes a Docker `mariabackup`/cron/rsync system that does not exist |
+| 29 | K1, K2 | analysis on Python 3.12; `RESOMIX_EMBEDDING_BASE_URL` on GPU port **8015**; durable `RESOMIX_RESULTS_DIR` | 8005 serves embeddings only, so analysis endpoints 404; `./var/results` is wiped on redeploy (issue 47) |
+| 30 | L (new) | a recovered box runs its own backups, backup agent and WireGuard link | a box that does not back itself up is not recovered |
+| 31 | B3 | on **staging**, `WATCHDOG_BACKUP_ENABLED=false` | staging never backs up, so the backup watchdog would email support@ a stale-backup alarm every 12 h from production's restored `.env` over real SMTP |
+| 32 | A4 | with the system Python, install **`python3.10-dev python3.10-venv`** on both boxes | a source build ships `Python.h`, the system Python does not: the `mariadb` wheel fails with `Python.h: No such file or directory` (issue 142, second drill) |
+
+**Long operations run in tmux** (a dump load, a Python build, a 4.8M-inode
+`chown`), and every session follows `server-backups` D80, both halves:
+
+- `set -g history-limit 200000` in `~/.tmux.conf`, **set when the box is built**
+  (A1 does it), not when tmux is first needed. The default 2,000 lines lost the
+  first drill's build warnings, and tmux has no terminal scrollback.
+- **Start every session logged, never bare**, and state the log path in any
+  instruction that uses it:
+  `tmux new -s NAME \; pipe-pane -o 'cat >> ~/tmux-NAME.log'`, then read it
+  from any shell with `tail -f ~/tmux-NAME.log`. It survives the session.
 
 ---
 
@@ -33,13 +110,23 @@ These steps prepare the box for **both** Python apps.
 
 ### A1. System update + build dependencies + media tools
 
+On any box under 8 GB RAM, add swap **first** (correction 4):
+
+```bash
+sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile && echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab && free -h
+```
+
 ```bash
 sudo apt update && sudo apt upgrade -y
+# liblzma-dev, uuid-dev, libgdbm-compat-dev, libncursesw5-dev: without them a
+# source-built CPython silently lacks _lzma/_uuid/_dbm/curses (correction 2).
 sudo apt install -y \
-  build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev \
-  libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev \
-  git curl pkg-config ffmpeg \
+  build-essential zlib1g-dev libncurses5-dev libncursesw5-dev libgdbm-dev \
+  libgdbm-compat-dev libnss3-dev liblzma-dev uuid-dev \
+  libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev bzip2 \
+  git curl pkg-config ffmpeg tmux \
   libmariadb-dev libmariadb-dev-compat
+printf 'set -g history-limit 200000\n' >> ~/.tmux.conf
 ffmpeg -version    # media server needs ffmpeg + ffprobe on PATH
 # libmariadb-dev provides `mariadb_config`, required to build the `mariadb`
 # Python wheel in Alwyzon's requirements.txt (otherwise pip fails with
@@ -53,10 +140,15 @@ audiowaveform --version
 # If the PPA has no build for this Ubuntu release, grab the .deb from
 # https://github.com/bbc/audiowaveform/releases and: sudo apt install -y ./audiowaveform_*.deb
 
-# ClamAV — used by BOTH apps:
-#   • Alwyzon virus-scans every similarity/upload audio file (500 without the socket).
+# ClamAV: used by BOTH apps, and REQUIRED on Alwyzon (correction 3):
+#   • Alwyzon virus-scans every similarity/upload audio file. Two code paths with
+#     opposite failure behaviour: the analysis upload refuses when clamd is
+#     down, but the similarity and cover uploads ACCEPT UNSCANNED FILES (issue
+#     117). Never disable clamd to save memory; size the box instead.
 #   • Media virus-scans every ingestion file in the validation phase (ingestion v2),
 #     when ANTIVIRUS_ENABLED=true in the media .env.
+#   • `clamdscan --ping` / PONG does NOT prove it can scan (issue 118). Part I's
+#     box_manifest streams a real kilobyte through it.
 sudo apt install -y clamav clamav-daemon
 sudo systemctl stop clamav-freshclam            # release the DB lock
 sudo freshclam                                  # download the initial virus DB (a few min)
@@ -67,6 +159,11 @@ ls -l /var/run/clamav/clamd.ctl                 # confirm the socket exists
 ```
 
 ### A2. Non-root service user
+
+> **Correction 5.** Production's service user is **`alwyzon`** on the Alwyzon box
+> and **`ubuntu`** on the media box, with code under `~/usman/<repo>`. Every
+> `devuser` in this runbook stands for that user; on a recovery, use production's
+> names so restored paths and ownership line up.
 
 ```bash
 sudo adduser devuser            # strong password
@@ -81,6 +178,12 @@ su - devuser
 > `Key is already in use`. We clone **three** repos onto this box (Alwyzon, media,
 > and the analysis add-on — see Part K), so we generate **three** keys and
 > disambiguate them with `~/.ssh/config` host aliases.
+>
+> **Correction 6, two boxes:** the Alwyzon box needs only the `alwyzon` key; the
+> media box needs `media` and `analysis`. **Both** also need a fourth key, on
+> `Resomix/server-backups` (host alias `github-backups`): a recovery starts by
+> cloning it, and a blank box cannot reach a private repo without its own key
+> (issue 63).
 
 ```bash
 git config --global user.name  "Resomix Deploy"
@@ -141,6 +244,32 @@ ssh -T git@github-analysis   # → "Hi Resomix/resomix-analysis-service! ..."
 
 ### A4. Python from source — **two versions** (one per app)
 
+> **Correction 7, superseding the note below: match production's interpreters,
+> and build nothing you do not need.** Production (manifest, 2026-09-11):
+> Alwyzon venv **3.10.12**, media venv **3.10.14**, analysis venv **3.12.3**. On
+> Ubuntu 22.04 the system `python3` *is* 3.10, so the Alwyzon and media venvs
+> need no source build at all, and 3.12 for analysis comes from
+> `ppa:deadsnakes/ppa` (`python3.12 python3.12-venv python3.12-dev`) in seconds.
+> **Correction 32:** the system 3.10 needs its headers too,
+> `sudo apt install -y python3.10-dev python3.10-venv`, or `pip install -r
+> requirements.txt` fails building the `mariadb` wheel (`Python.h: No such file or
+> directory`, issue 142). A source build ships the headers, which is why the first
+> drill never saw this.
+> The 3.11 requirement below is obsolete: the media pins that forced it are gone.
+> If you do build from source: in tmux, `make -j2` on a box under 4 GB (each
+> parallel compile holds a few hundred MB), and drop `--enable-optimizations` on
+> staging (the 3.12 build on box A took about 90 s without it; PGO makes it 30 to
+> 60 min). Then **prove the build** rather
+> than reading its warnings (correction 8):
+>
+> ```bash
+> python3.12 -c "import ssl, ctypes, sqlite3, zlib, lzma, bz2, readline, hashlib, decimal, uuid, curses, _gdbm"
+> ```
+>
+> `_tkinter` is the only module allowed to be missing on a server.
+>
+> *Original note, kept for the record:*
+>
 > ⚠️ **The two apps need different Python versions.**
 > - **Alwyzon → Python 3.12.** Its deps build cleanly on 3.12.
 > - **Media server → Python 3.11.** Its pinned engine deps `numpy==1.24.3` and
@@ -174,6 +303,24 @@ python3.11 --version            # -> Python 3.11.9
 ```
 
 ### A5. Generate the shared cross-service secrets (once)
+
+> **Correction 9.** There are **six** cross-service secrets, not two, and each
+> must be byte-identical on every holder:
+>
+> | Secret | Held by |
+> |---|---|
+> | `EDGE_JWT_SECRET` | Alwyzon, media, and analysis as **`RESOMIX_EDGE_JWT_SECRET`** |
+> | `HETZNER_INTERNAL_API_KEY` | Alwyzon, media |
+> | `PREVIEW_HMAC_SECRET`, `PREVIEW_FERNET_SECRET` | Alwyzon, media |
+> | `ANALYSIS_INTERNAL_API_KEY` | Alwyzon, and analysis as **`RESOMIX_INTERNAL_API_KEY`** |
+> | `BACKUP_AGENT_TOKEN` | Alwyzon's `.env`, and `server-backups/config/backup.env` on both boxes |
+>
+> **On a recovery, generate none of them**: the restored `.env` files carry
+> production's. On a fresh build, generate each **once**, on one box, and copy the
+> file to the other; never generate a second copy "to match" (issue 116: it fails
+> as a 401 the caller swallows). A pasted value picks up blank lines, so strip them
+> (`grep -v '^[[:space:]]*$'`). Part I verifies all six by fingerprint across both
+> boxes without printing any.
 
 Keep these in a scratch note — you'll paste the **same** values into both `.env` files.
 
@@ -213,6 +360,14 @@ pip install --upgrade pip && pip install -r requirements.txt
 > **Always use `.venv/bin/python`** for this repo (app, pytest, alembic).
 
 ### B2. MariaDB + Redis (fresh, empty)
+
+> **Correction 10.** Install **MariaDB 10.6.x** to match production (10.6.23;
+> Ubuntu 22.04's default is already 10.6). **On a recovery** the names are
+> production's, not the ones below: database **`resomix_prod`**, user
+> **`resomix_user`**, both created by the restore. On staging, then rotate that
+> user's password so production's stops living on the box:
+> `ALTER USER 'resomix_user'@'localhost' IDENTIFIED BY '<new>'` and the same for
+> `'resomix_user'@'127.0.0.1'`, then `FLUSH PRIVILEGES`.
 
 ```bash
 sudo apt install -y mariadb-server redis-server
@@ -255,16 +410,29 @@ Write `/home/devuser/usman/basic_fastapi_server_resomix/.env`. The block below i
 the **full staging file**, production-mode on a single box. Lines marked `# ⚠️`
 differ from a typical local-dev `.env`; placeholders `<...>` you must fill in.
 
+> **On a recovery, do not write this file**: restore it (it is in the secrets
+> bundle) and use this block only to check it. **On staging built from a restore**,
+> start from the restored file and override, never the reverse: it holds live
+> Stripe and live SMTP, and `JWT_SECRET_KEY` **must** be rotated or a staging
+> token is valid in production (`server-backups/docs/STAGING-HANDOVER.md` §2).
+> "Blank what you do not need" is not always safe: use inert but well-formed
+> values where the app validates at import (correction 14).
+>
+> Corrected lines in the block, by number from the table at the top: 11
+> (`HLS_MEDIA_BASE_URL`), 12 (`RESOMIX_ENV`), 13 (CORS), 14
+> (`SMTP_FROM_EMAIL`), 15 (the two media URLs). Added: the analysis and backup
+> control-plane keys production has and this block lacked.
+
 ```bash
 # ── MongoDB (external Atlas) ────────────────────────────────────────
 MONGODB_URI=<your mongodb+srv URI>
 
 # ── External services (single box) ──────────────────────────────────
-SIMILARITY_SERVER_URL=http://127.0.0.1:8004        # ⚠️ internal call, same box
+SIMILARITY_SERVER_URL=http://<MEDIA_BOX_IP>:8002   # ⚠️ corr. 15: the media box, port 8002 (single box: http://127.0.0.1:8002; production: https://media.resomix.com)
 RESOMIX_SERVER_URL=http://127.0.0.1:8001           # ⚠️ self, internal
 PUBLIC_ALWYZON_URL=https://staging-bserver.resomix.com   # ⚠️ public (needs nginx)
-HLS_MEDIA_BASE_URL=https://staging-media.resomix.com     # ⚠️ public media (needs nginx)
-RESOMIX_ENV=production                             # ⚠️ was development
+HLS_MEDIA_BASE_URL=https://staging-media.resomix.com/signed-audio/   # ⚠️ corr. 11: the /signed-audio/ suffix is part of the value
+RESOMIX_ENV=production                             # ⚠️ corr. 12: production on staging too (only sets the guest cookie's secure flag)
 
 # ── Google Sheets (creds file must exist under creds/) ──────────────
 SERVICE_ACCOUNT_FILE=creds/<service-account>.json
@@ -293,7 +461,9 @@ RESOMIX_USE_DEVELOPMENT_CORS=false                 # ⚠️ was true
 # ⚠️ JSON array (NOT comma-separated) — pydantic parses List[str] as JSON.
 # Include EVERY browser origin that calls the API: the user frontend AND the
 # admin frontend. A missing origin → login preflight returns 400 "Disallowed CORS origin".
-RESOMIX_ALLOWED_ORIGINS_PRODUCTION=["https://staging-admin.resomix.com","https://staging.resomix.com","https://resomix.com"]
+# ⚠️ corr. 13: staging origins ONLY. Never https://resomix.com here, or the production
+#    frontend can make credentialed calls to the staging API.
+RESOMIX_ALLOWED_ORIGINS_PRODUCTION=["https://staging-admin.resomix.com","https://staging-frontend.resomix.com"]
 
 # ── Modes ───────────────────────────────────────────────────────────
 DEMO_MODE=false
@@ -312,7 +482,7 @@ MARIA_DB_USER=resomixAdmin                          # ⚠️ was root
 MARIA_DB_PASS=<DB_PASSWORD>                          # ⚠️ real password, not 'test'
 MARIA_DB_HOST=127.0.0.1
 MARIA_DB_PORT=3306                                  # ⚠️ was 3307
-MARIA_DB_NAME=resomix_db
+MARIA_DB_NAME=resomix_db                            # ⚠️ recovery: resomix_prod / resomix_user, production's names (corr. 10)
 
 # ── ElasticSearch (NOT installed on this box) ───────────────────────
 ELASTICSEARCH_ENABLED=false                         # ⚠️ enable only after installing ES
@@ -367,13 +537,28 @@ SMTP_HOST=smtp-relay.brevo.com
 SMTP_PORT=587
 SMTP_USER=<smtp user>
 SMTP_PASSWORD=<smtp pass>
-SMTP_FROM_EMAIL=noreply@resomix.com
+SMTP_FROM_EMAIL=noreply@resomix.com                 # ⚠️ corr. 14: never blank (crashes at import); on staging noreply@staging.resomix.com, not a .invalid/.test address
 SMTP_FROM_NAME=Resomix
-FRONTEND_URL=https://staging.resomix.com            # ⚠️ staging frontend for email links
+FRONTEND_URL=https://staging-frontend.resomix.com   # ⚠️ staging webapp (Cloudflare Pages) for email links
 
 # ── Cross-service secret (MUST match media) ─────────────────────────
 HETZNER_INTERNAL_API_KEY=<shared with media>
 REDIS_URL=redis://127.0.0.1:6379/0
+
+# ── Analysis service (Part K, on the media box). Missing from this block until 2026-09 ──
+ANALYSIS_SERVER_URL=https://staging-analysis.resomix.com   # production: https://analysis.resomix.com
+ANALYSIS_INTERNAL_API_KEY=<shared with analysis RESOMIX_INTERNAL_API_KEY>   # corr. 9
+
+# ── Backup control plane (server-backups, Part L) ──────────────────
+BACKUP_AGENT_TOKEN=<shared with both boxes' server-backups/config/backup.env>   # corr. 9
+BACKUP_AGENT_ALWYZON_URL=http://127.0.0.1:8787
+BACKUP_AGENT_MEDIA_URL=http://10.99.0.2:8787         # the media agent, through the WireGuard link only
+ADMIN_NOTIFICATION_EMAIL=support@resomix.com          # backup-failure alerts (watchdog)
+# ⚠️ corr. 31, STAGING: WATCHDOG_BACKUP_ENABLED=false. Staging never backs itself up, and a
+#    role that has never succeeded counts as stale, so with production's restored .env
+#    (support@ set) and real SMTP it emails support@ "no successful backup" every 12 h,
+#    indistinguishable from a production alarm. Production and a real recovery: leave it on.
+WATCHDOG_BACKUP_ENABLED=true
 
 # ── Telemetry ───────────────────────────────────────────────────────
 TELEMETRY_FLUSH_INTERVAL_SECONDS=120
@@ -392,13 +577,30 @@ STRIPE_SECRET_KEY=<sk_test_...>
 STRIPE_WEBHOOK_SECRET=<whsec_...>
 
 # ── SFTP provisioning / partner-facing SFTP host ────────────────────
-HETZNER_SFTP_PROVISION_URL=http://127.0.0.1:8004/internal/provision-sftp-user  # ⚠️ 127.0.0.1
+HETZNER_SFTP_PROVISION_URL=http://<MEDIA_BOX_IP>:8002/internal/provision-sftp-user  # ⚠️ corr. 15 (production: https://media.resomix.com/internal/provision-sftp-user)
 SFTP_SERVER_HOST=staging-media.resomix.com          # ⚠️ was sftp.resomix.com
 SFTP_SERVER_PORT=2022
 SFTP_BASE_PATH=/srv/sftp
 ```
 
 ### B4. Migrate + seed (fresh schema, no restore)
+
+> **Correction 16, after a restore: migrate only, and check first. Never seed.**
+> Seeding writes rows on top of production's data. The dump is usually behind the
+> code by a migration or two, so the upgrade is still needed, but look before
+> running it:
+>
+> ```bash
+> .venv/bin/alembic current      # must print a revision; EMPTY means stop and investigate
+> .venv/bin/alembic heads
+> .venv/bin/alembic upgrade head # only once current is a known ancestor of head
+> ```
+>
+> An empty `alembic_version` would replay every migration onto populated tables.
+> On the 2026-09 drill this was a single step, `e4a9b2c7d135` → `f1c3d5a90b27`,
+> taking 84 tables to 86.
+>
+> The block below is for a **fresh, empty** database only.
 
 ```bash
 source .venv/bin/activate
@@ -425,10 +627,18 @@ mariadb -u resomixAdmin -p resomix_db -e "SHOW TABLES;"
 
 ### B5. Smoke test
 
+> **Correction 17.** This repo has **no `run.py`**. The launcher is
+> **`run_alwyzon.py`**, and it starts uvicorn **and both Celery workers**
+> (`similarity` in the foreground queue, `celery` in the background) and
+> supervises them. Running `uvicorn app.main:app` alone, as an earlier correction
+> here once said, gives an API that accepts uploads and never processes one
+> (issues 94, 113).
+
 ```bash
-.venv/bin/python run.py        # binds 0.0.0.0:8001
+.venv/bin/python run_alwyzon.py   # uvicorn on 0.0.0.0:8001 + both Celery workers
 # in another shell:
 curl -s http://127.0.0.1:8001/api/v1/health     # -> {"status":"healthy"}
+pgrep -af 'celery.*worker'                      # both workers present; none means async jobs queue forever
 ```
 
 `Ctrl-C` to stop (supervised process comes in Part H).
@@ -447,13 +657,17 @@ embeddings — it calls the GPU server for that.
 cd ~
 git clone git@github-media:Resomix/resomix-similarity-open.git
 cd resomix-similarity-open
-python3.11 -m venv .venv && source .venv/bin/activate   # ⚠️ 3.11, NOT 3.12 — see A4
-pip install --upgrade pip && pip install -r requirements.txt   # faiss-cpu, fastapi, etc.
+python3.10 -m venv .venv                 # ⚠️ corr. 18: production's media venv is 3.10.14
+.venv/bin/python -m pip install --upgrade pip && .venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -c "import numpy, faiss; print(numpy.__version__, faiss.__version__)"   # production: 2.2.6 1.14.3
 ```
 
-> **Why 3.11 here:** `numpy==1.24.3` and `faiss-cpu==1.7.4` have no Python 3.12
-> wheels. Building the media venv with `python3.12` fails on the numpy source
-> build. Always create this venv with `python3.11`.
+> **Correction 18.** The 3.11 requirement is obsolete: `requirements.txt` now pins
+> `faiss-cpu==1.14.3` with numpy unpinned, which resolves to numpy 2.2.6 on 3.10,
+> exactly production's. Install with the venv's own interpreter
+> (`.venv/bin/python -m pip`), never a bare `pip`: on the media box a leaked
+> `PYTHONPATH` or an activated sibling venv has installed into the wrong one
+> before.
 
 ### C2. Create the media working directories
 
@@ -482,11 +696,11 @@ APP_NAME=Resomix Similarity API
 APP_VERSION=1.1.0
 DEBUG=false
 HOST=0.0.0.0
-PORT=8004
+PORT=8002                                            # ⚠️ corr. 1: production's port, not 8004
 RESOMIX_DEV_PUBLIC_URL=https://staging-media.resomix.com   # ⚠️ was localhost:8004
 
-# ⚠️ loopback + the staging box public IP + the GPU embed server IP
-ALLOWED_IPS=127.0.0.1,localhost,::1,<STAGING_PUBLIC_IP>,<GPU_EMBED_SERVER_IP>
+# ⚠️ loopback + the Alwyzon box's public IP (two boxes) + the GPU embed server IP
+ALLOWED_IPS=127.0.0.1,localhost,::1,<ALWYZON_BOX_IP>,<GPU_EMBED_SERVER_IP>
 
 DEMO_MODE=false
 
@@ -597,9 +811,9 @@ CLAMD_SOCKET=/var/run/clamav/clamd.ctl
 
 ```bash
 source .venv/bin/activate
-.venv/bin/python run.py         # prints "Server will run on 0.0.0.0:8004"
-# in another shell — confirm it's up (use a known health/root route):
-curl -s http://127.0.0.1:8004/    # expect a JSON response, not a connection refusal
+.venv/bin/python run.py         # prints "Server will run on 0.0.0.0:8002"
+# in another shell, confirm it's up:
+curl -s http://127.0.0.1:8002/health    # expect 200, not a connection refusal
 ```
 
 `Ctrl-C` to stop.
@@ -682,6 +896,33 @@ id sftpgo                            # sanity-check the group exists
 > sudo chmod -R 2770    /srv/sftp/partners/<slug>
 > ```
 
+#### After a restore (corrections 19, 20)
+
+A restored partner tree does not arrive owned correctly, and the media service
+fails **silently** when it is not:
+
+```bash
+# 1. The restored tree is owned by a numeric uid (999, which is lxd on a fresh
+#    box and sftpgo on production). Give it to sftpgo. 4.8M inodes took 2 min;
+#    run it in tmux. Modes survive the restore (dirs 2775 setgid, files 644).
+sudo chown -R sftpgo:sftpgo /srv/sftp          # issue 99
+
+# 2. The slug map must be readable by the MEDIA SERVICE USER. It restores as
+#    0600 sftpgo; production's service user owns it and is in group sftpgo.
+sudo chown <media-service-user>:sftpgo /srv/sftp/partners/.partner_slugs.json
+sudo usermod -aG sftpgo <media-service-user>   # partners 4 and 6 live in drwxrws--- dirs
+
+# 3. THEN restart the media service. Not before, and again after any later
+#    ownership fix.
+sudo systemctl restart resomix-media
+```
+
+Why each matters: if the service cannot read `.partner_slugs.json` it gets
+`EACCES`, falls back to numeric partner folders that do not exist, and
+**similarity returns "success" with zero results forever** (issues 102, 104). And
+a failed slug-map read is cached against the file's **mtime**, which `chown` does
+not change, so a service started before the fix never retries (issue 103).
+
 #### Same model on the production Hetzner media box
 
 This isn't staging-only. On the **production** two-server layout, SFTPGo and the
@@ -761,6 +1002,16 @@ curl -s -X PUT http://127.0.0.1:8090/api/v2/admins/admin \
 
 ### D4. Configure bindings + hooks
 
+> **Correction 21, two boxes.** Both hooks call **Alwyzon**, which is on the other
+> box: use `http://<ALWYZON_BOX_IP>:8001/internal/sftp/{auth,event}` where the
+> table says `127.0.0.1:8001`, and open Alwyzon's firewall to the media box on
+> 8001 (D5). These hooks carry partner credentials, so on production they should
+> travel inside the WireGuard link (`http://10.99.0.1:8001/...`), not the public
+> address: `server-backups` issue 133. On a recovery, patch the packaged
+> `sftpgo.json` with production's deltas only and keep the `.orig`; hand-writing
+> the file loses every default the version ships. If the media `.env` came from
+> production, rotate `SFTPGO_ADMIN_PASS`: it still holds production's value.
+>
 > ⚠️ **Do NOT replace the whole file** and **do NOT hand-edit it in nano** — the
 > default `/etc/sftpgo/sftpgo.json` is ~600 lines. The `.deb` already wrote a
 > complete config; we only change a few keys, scripted in place. The table is
@@ -823,19 +1074,39 @@ sudo apt install -y ufw
 sudo ufw allow OpenSSH            # your admin SSH (port 22)
 sudo ufw allow 80,443/tcp        # nginx
 sudo ufw allow 2022/tcp          # partner SFTP
-# 8090 (SFTPGo admin), 8001, 8004, 8010 (analysis, Part K) stay localhost-only — do NOT open them.
+# 8090 (SFTPGo admin), 8001, 8002, 8010 (analysis, Part K) stay localhost-only — do NOT open them.
 sudo ufw enable
 ```
+
+> **Correction 22, two boxes.** Each box admits the other only on the one port it
+> needs, and **the SSH rule goes in the same command as the enable**, so a typo
+> cannot lock you out:
+>
+> ```bash
+> # media box: the media service only to Alwyzon and the GPU box
+> sudo ufw allow 22,80,443,2022/tcp && sudo ufw allow from <ALWYZON_BOX_IP> to any port 8002 && sudo ufw allow from <GPU_IP> to any port 8002 && sudo ufw default deny incoming && sudo ufw --force enable
+> # Alwyzon box: the API only to the media box (SFTPGo's hooks)
+> sudo ufw allow 22,80,443/tcp && sudo ufw allow from <MEDIA_BOX_IP> to any port 8001 && sudo ufw default deny incoming && sudo ufw --force enable
+> ```
+>
+> With ufw in place, Alwyzon binds `0.0.0.0:8001` as production does. Production's
+> media box additionally admits 80/443 **from Cloudflare's ranges only**, since its
+> hostnames are proxied (`server-backups` issue 52), and the two production boxes
+> talk over WireGuard (Part L).
 
 ---
 
 ## Part E — Verify the cross-service wiring
 
-With all three apps running (Parts B/C/D), confirm the links:
+With all three apps running (Parts B/C/D), confirm the links. **Correction 23:**
+the checks below are the quick version for one box. On two boxes, and for any
+recovery, Part I's `box_manifest.py` replaces them: the secret check below cannot
+see the analysis service's `RESOMIX_` names, and none of it notices a missing
+worker or a clamd that cannot scan.
 
 ```bash
 # 1. Alwyzon -> media server reachable on this box:
-curl -s http://127.0.0.1:8004/ >/dev/null && echo "media OK"
+curl -s http://127.0.0.1:8002/health >/dev/null && echo "media OK"
 
 # 2. Media server -> SFTPGo admin REST reachable:
 curl -s http://127.0.0.1:8090/api/v2/token >/dev/null && echo "sftpgo admin OK"
@@ -863,7 +1134,7 @@ IPv6. "Name" is just the label; the provider appends `.resomix.com`.
 | Type | Name | Value | Notes |
 |------|------|-------|-------|
 | `A` | `staging-bserver` | `<SERVER_PUBLIC_IPV4>` | Alwyzon (→ nginx → 8001) |
-| `A` | `staging-media` | `<SERVER_PUBLIC_IPV4>` | media HTTPS (→ 8004) **and** SFTP host (`:2022`) |
+| `A` | `staging-media` | `<SERVER_PUBLIC_IPV4>` | media HTTPS (→ 8002) **and** SFTP host (`:2022`) |
 | `A` | `staging-analysis` | `<SERVER_PUBLIC_IPV4>` | analysis service (→ nginx → 8010); only if deploying Part K |
 | `A` | `staging-sftp-admin` | `<SERVER_PUBLIC_IPV4>` | only if exposing the admin (F-d) |
 
@@ -1006,7 +1277,7 @@ server {
         # generous limit — HLS playback fires many small segment requests
         limit_req  zone=media_rl burst=50 nodelay;
         limit_conn perip_conn 40;
-        proxy_pass http://127.0.0.1:8004;
+        proxy_pass http://127.0.0.1:8002;    # corr. 1: not 8004
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -1113,11 +1384,47 @@ sudo certbot --nginx -d staging-bserver.resomix.com -d staging-media.resomix.com
 sudo certbot renew --dry-run        # confirm auto-renewal works
 ```
 
+> **Correction 24, two boxes: one certificate per box, for that box's names
+> only.** A name that resolves to the other box fails the HTTP-01 challenge and
+> takes the whole run down with it:
+>
+> ```bash
+> # Alwyzon box
+> sudo certbot --nginx -d staging-bserver.resomix.com --non-interactive --agree-tos -m <email> --redirect
+> # media box (one certificate covers both names)
+> sudo certbot --nginx -d staging-media.resomix.com -d staging-analysis.resomix.com --non-interactive --agree-tos -m <email> --redirect
+> ```
+>
+> Then `sudo certbot renew --dry-run` and `systemctl list-timers certbot.timer`
+> on each: a certificate that cannot renew is an outage on a 90-day timer. Every
+> name in a vhost's `server_name` must be on its certificate: when adding a name
+> to an existing vhost, re-run certbot with it, then check with
+> `sudo certbot certificates`.
+
 ---
 
 ## Part G — fail2ban (recommended)
 
 Bans IPs that probe/scan over HTTP. All filters read nginx's access log.
+
+> **Correction 25.** Three changes, each learned the hard way on the drill boxes:
+> 1. **Write the filters (G3) before the jails (G2)**, then restart. A jail whose
+>    filter file is missing fails the configuration.
+> 2. **`ignoreip` must hold the other box and the GPU box**, not just loopback.
+>    Otherwise the media box's own calls trip `nginx-4xx-5xx` (40 non-2xx in 2
+>    min) and it **bans itself from the control plane**:
+>    `ignoreip = 127.0.0.1/8 ::1 <OTHER_BOX_IP> <GPU_IP>`
+> 3. **Enable `[sshd]`.** The jails below cover only nginx, on boxes with a public
+>    SSH port:
+>    ```ini
+>    [sshd]
+>    enabled = true
+>    ```
+>
+> fail2ban installs its own iptables chains, so a ban does not show in
+> `ufw status`. If a box is unreachable while ufw looks right, check
+> `sudo fail2ban-client status nginx-404` and `sudo iptables -S` (issue 108).
+> Production's Alwyzon box runs fail2ban; production's media box does not.
 
 ### G1. Install
 
@@ -1134,7 +1441,11 @@ bantime  = 1h
 findtime = 10m
 maxretry = 10
 backend  = auto
-# (optional) ignoreip = 127.0.0.1/8 ::1 <YOUR_ADMIN_IP>
+# corr. 25: NOT optional on two boxes. The other box and the GPU, or they ban each other.
+ignoreip = 127.0.0.1/8 ::1 <OTHER_BOX_IP> <GPU_IP>
+
+[sshd]
+enabled  = true
 
 [nginx-4xx-5xx]
 enabled  = true
@@ -1208,17 +1519,25 @@ sudo fail2ban-client status             # lists the active jails
 
 ## Part H — Process supervision (systemd)
 
-**Alwyzon** — `/etc/systemd/system/resomix-api.service`:
+**Alwyzon** — `/etc/systemd/system/alwyzon.service`.
+
+> **Correction 17.** The unit is **`alwyzon.service`**, production's name (the
+> `resomix-api` this part used to name matches nothing), and it runs
+> **`run_alwyzon.py`**, not `run.py`, which does not exist in this repo.
+> `run_alwyzon.py` starts uvicorn and **both Celery workers** and supervises them,
+> so this one unit is the whole service. Stop it with `systemctl stop`, never
+> `kill -9`: SIGKILL orphans the workers (`DuplicateNodenameWarning` on the next
+> start; clean up with `pkill -f 'app.tasks.celery_app'`).
 
 ```ini
 [Unit]
-Description=Resomix Alwyzon API
+Description=Resomix Alwyzon API (uvicorn + supervised Celery workers)
 After=network.target mariadb.service redis-server.service
 
 [Service]
 User=devuser
-WorkingDirectory=/home/devuser/basic_fastapi_server_resomix
-ExecStart=/home/devuser/basic_fastapi_server_resomix/.venv/bin/python run.py
+WorkingDirectory=/home/devuser/usman/basic_fastapi_server_resomix
+ExecStart=/home/devuser/usman/basic_fastapi_server_resomix/.venv/bin/python run_alwyzon.py
 Restart=on-failure
 
 [Install]
@@ -1234,8 +1553,8 @@ After=network.target
 
 [Service]
 User=devuser
-WorkingDirectory=/home/devuser/resomix-similarity-open
-ExecStart=/home/devuser/resomix-similarity-open/.venv/bin/python run.py
+WorkingDirectory=/home/devuser/usman/resomix-similarity-open
+ExecStart=/home/devuser/usman/resomix-similarity-open/.venv/bin/python run.py
 Restart=on-failure
 
 [Install]
@@ -1253,8 +1572,8 @@ Requires=redis-server.service
 
 [Service]
 User=devuser
-WorkingDirectory=/home/devuser/resomix-similarity-open
-ExecStart=/home/devuser/resomix-similarity-open/.venv/bin/celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2
+WorkingDirectory=/home/devuser/usman/resomix-similarity-open
+ExecStart=/home/devuser/usman/resomix-similarity-open/.venv/bin/celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2
 Restart=on-failure
 
 [Install]
@@ -1263,10 +1582,11 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now resomix-api resomix-media resomix-media-worker
-sudo systemctl status resomix-api resomix-media resomix-media-worker sftpgo
+sudo systemctl enable --now alwyzon                              # Alwyzon box
+sudo systemctl enable --now resomix-media resomix-media-worker   # media box
+sudo systemctl status alwyzon resomix-media resomix-media-worker sftpgo
 # Verify the worker is wired to its broker:
-cd /home/devuser/resomix-similarity-open && \
+cd /home/devuser/usman/resomix-similarity-open && \
   .venv/bin/python -c "from app.tasks.celery_app import ping; print(ping.delay().get(timeout=10))"   # → pong
 ```
 
@@ -1274,24 +1594,73 @@ cd /home/devuser/resomix-similarity-open && \
 > see Part C `.env`), so it never collides with Alwyzon's Celery (`/0`,`/1`).
 > In the production split it runs on the media box against that box's own Redis.
 
-> Alwyzon's background workers (quota flush, webhook dispatch, cleanup) run via
-> the same app/Celery setup — give them their own units if this box runs them.
+> Alwyzon's background workers (quota flush, webhook dispatch, cleanup) are the
+> two Celery workers `run_alwyzon.py` already supervises. Do **not** add units for
+> them: a second copy consumes the same queues.
+>
+> **Settled 2026-09-11 (`server-backups` issue 136):** production's media box runs
+> **no** `resomix-media-worker`, and that is correct today. The media Celery app
+> registers only a `ping` task and nothing enqueues to it; its own docstring says
+> the endpoints move to Celery "in later stages". Install this unit when those
+> stages land, not before. The only Celery worker on production media is the
+> analysis service's own (K4).
 
 ---
 
 ## Part I — Final verification checklist
 
+**Correction 23: verify with the manifest first.** Every fault the September
+rebuild found had an `active` unit and a healthy `/health`: no Celery worker
+(113), an analysis URL at a closed port (115), a shared secret generated twice
+(116), clamd answering PONG while unable to scan (118). The checklist below sees
+none of them. `server-backups/bin/box_manifest.py` does: it streams a real
+kilobyte through clamd, counts the Celery workers and queue depth, probes every
+configured URL from the box, checks the units the role requires, and fingerprints
+every cross-service secret without printing it.
+
+On each box (write the capture to the home directory, not into the repo):
+
+```bash
+cd ~/usman/server-backups && git pull && sudo python3 bin/box_manifest.py --role <alwyzon|media> > ~/manifest-<box>.json && python3 -c "import json,os;d=json.load(open(os.path.expanduser('~/manifest-<box>.json')));print('\n'.join(d['problems']) or 'no problems')"
+```
+
+**Pass: `no problems` on both boxes.** Add `--staging` on a staging box only; it
+stops the manifest requiring the backup units, WireGuard and Elasticsearch,
+which staging lacks by decision. A real recovery never passes it.
+
+Then, on the workstation, with both captures copied into `server-backups/manifests/`:
+
+```bash
+python3 bin/box_manifest.py --compare manifests/<new-alwyzon>.json manifests/<new-media>.json   # must exit 0: the pair agrees on all six secrets
+python3 bin/box_manifest.py --compare manifests/alwyzon.json manifests/<new-alwyzon>.json       # drift from production, line by line
+python3 bin/box_manifest.py --compare manifests/media.json manifests/<new-media>.json
+```
+
+For a real recovery the last two must also exit 0: the restored `.env` files are
+production's, so every secret matches. For staging add `--ignore-secrets` to
+those two only, since staging shares no signing secret with production.
+
+**Correction 27: public reachability, from a machine outside both boxes.** It is
+the one thing no box can test about itself; a box's own `curl` returned 200 for
+forty minutes on 2026-09-05 while nothing outside could open a socket (issue 108):
+
+```bash
+for h in <alwyzon-host> <media-host> <analysis-host>; do printf "%-28s " "$h"; curl -s -o /dev/null -m 8 -w "%{http_code} ip=%{remote_ip}\n" "https://$h/health"; done
+```
+
+The quick checklist, for a fresh single box:
+
 - [ ] `https://staging-bserver.resomix.com/api/v1/health` → `{"status":"healthy"}` over TLS.
 - [ ] `https://staging-media.resomix.com/` responds over TLS.
 - [ ] *(if Part K)* `https://staging-analysis.resomix.com/health` over TLS; Celery worker up (a test upload reaches `succeeded`); analysis Redis on its **own** db (`/4`), not `/1`.
 - [ ] MariaDB: `SHOW TABLES;` lists core tables; `seed_rbac`/`seed_data` rows present.
-- [ ] `HETZNER_INTERNAL_API_KEY` and `EDGE_JWT_SECRET` identical on both apps (Part E).
-- [ ] Alwyzon `SIMILARITY_SERVER_URL` = `http://127.0.0.1:8004`; media reachable.
+- [ ] All six shared secrets identical on every holder (A5; `box_manifest.py --compare`).
+- [ ] Alwyzon `SIMILARITY_SERVER_URL` names the media service on port 8002; media reachable.
 - [ ] SFTPGo: `sftpgo` service active; SFTP listening on `:2022`; Admin REST on `127.0.0.1:8090` only.
 - [ ] SFTPGo auth hook → `:8001/internal/sftp/auth`; upload hook → `:8001/internal/sftp/event`.
 - [ ] `/srv/sftp/partners` owned by the `sftpgo` user; `/srv/resomix/{partners,shared,audit_logs,audit_keys}` exist.
 - [ ] Media `EMBED_SERVER` points at the dedicated GPU embedding server.
-- [ ] ufw: only `22, 80, 443, 2022` open; `8001/8004/8090/3306/6379` are localhost-only.
+- [ ] ufw: only `22, 80, 443, 2022` open; `8001/8002/8090/3306/6379` are localhost-only (two boxes: D5's per-box rules).
 - [ ] systemd units `enabled`; Certbot certs issued; `renew --dry-run` passes.
 - [ ] fail2ban jails active.
 - [ ] End-to-end: provision a test partner → SFTP login on `:2022` → upload + `.done` → ingest log opens.
@@ -1305,7 +1674,14 @@ database**, with embedding generation delegated to the GPU server.
 
 This runbook stops before loading live data.
 
-- **Full DR restore** (catastrophic recovery): follow [restore_runbook.md](restore_runbook.md).
+- **Full DR restore** (catastrophic recovery): **correction 28.** Follow
+  `server-backups`: `docs/PHASE-8.md`, section *"The recovery procedure, as actually
+  run"*, which restores both boxes with `bin/restore.sh --role alwyzon|media` from
+  the restic repository on the Storage Box (62 minutes for both boxes on the
+  2026-09 drill). **Do not follow [restore_runbook.md](restore_runbook.md)**: it
+  describes a Docker `mariabackup` + cron + rsync system with `--password=test`
+  that does not exist, and a drill that did not happen as described. After the
+  restore: B4's migrate-only check, then D2's ownership fixes and restart order.
 - **Selective import** for staging: pull the relevant MariaDB table dumps from
   the Hetzner Storage Box into the already-migrated schema (re-run AUTO_INCREMENT
   fix-ups afterward), and sync the per-partner media assets into
@@ -1322,7 +1698,7 @@ open-tracks FAISS index is absent:
 ERROR ... could not open /srv/resomix/data/embeddings/maest_index.index ... No such file or directory
 ```
 
-The `except` in `lifespan` swallows it, so uvicorn still binds 8004 — but the
+The `except` in `lifespan` swallows it, so uvicorn still binds 8002 — but the
 steps after `similarity_service.preload()` (e.g. monthly-pipeline init) are
 skipped, and the **global** similarity catalog is unavailable. **Partner-scoped
 flows do not need this** (per-partner indexes are built at ingestion).
@@ -1358,19 +1734,22 @@ every model/embedding call is delegated to the GPU embedding server
 > `/separate_stems`). Until the GPU box serves those, analyses still complete — but
 > the semantic/composition sections come back `partial`. Local DSP ("part 1":
 > tempo/key/loudness/spectral/energy/structure) works regardless. Confirm with:
-> `curl -F file=@track.mp3 http://<GPU_EMBED_IP>:8005/get_analysis_bundle`.
+> `curl -F file=@track.mp3 http://<GPU_EMBED_IP>:8015/get_analysis_bundle` (8015, the
+> analysis instance; see K2).
 
 ### K1. Clone + venv + deps
 
 ```bash
-cd /home/devuser
+cd /home/devuser/usman
 git clone git@github-analysis:Resomix/resomix-analysis-service.git   # ⚠️ the ALIAS, not github.com (see A3)
 cd resomix-analysis-service
 
-python3 -m venv .venv           # CPU-only, light deps — the box Python 3.12 (A4) is fine
+# ⚠️ corr. 29: Python 3.12 explicitly (production: 3.12.3). A bare `python3` is 3.10 on
+#    Ubuntu 22.04; the drill built this venv on 3.10 first and had to rebuild it.
+python3.12 -m venv .venv
 .venv/bin/pip install --upgrade pip
 .venv/bin/pip install -r requirements.txt
-mkdir -p var/work var/results   # local filesystem store (v1)
+sudo mkdir -p /srv/resomix/analysis/{work,results} && sudo chown -R devuser:devuser /srv/resomix/analysis   # corr. 29: durable, outside the repo
 ```
 
 ### K2. Configure `.env`
@@ -1388,8 +1767,16 @@ RESOMIX_API_PORT=8010
 #    (.env.example ships /1, which COLLIDES with Alwyzon — change it.)
 RESOMIX_REDIS_URL=redis://127.0.0.1:6379/4
 
-# The dedicated GPU embedding server (the same box the media server's EMBED_SERVER points at).
-RESOMIX_EMBEDDING_BASE_URL=http://<GPU_EMBED_IP>:8005
+# ⚠️ corr. 29: the GPU box's ANALYSIS instance, port 8015 (production: http://46.4.100.18:8015).
+#    8005 is the embedding-only instance the media server uses; it has no analysis
+#    endpoints, so /get_analysis_bundle, /get_semantics and /separate_stems 404 while
+#    embeddings still answer 200, and every analysis comes back part-1 only.
+RESOMIX_EMBEDDING_BASE_URL=http://<GPU_EMBED_IP>:8015
+
+# ⚠️ corr. 29: durable storage, outside the repo. ./var/results is wiped by a redeploy,
+#    and a restore puts the analysis results here (issue 47).
+RESOMIX_WORK_DIR=/srv/resomix/analysis/work
+RESOMIX_RESULTS_DIR=/srv/resomix/analysis/results
 
 # Lock CORS to the browser origins that call it directly (comma-separated here, NOT JSON).
 # Leave the default "*" if only the Alwyzon backend calls it server-to-server.
@@ -1397,7 +1784,8 @@ RESOMIX_CORS_ALLOW_ORIGINS=https://staging.resomix.com,https://staging-frontend.
 ```
 
 > Storage (`RESOMIX_WORK_DIR` / `RESOMIX_RESULTS_DIR`) defaults to `./var/...` under
-> the repo — fine for staging. The GPU-response cache (`./var/gpu_cache`) reuses
+> the repo. **Not fine even for staging** (corr. 29): a redeploy wipes it, and restored
+> results live there. Set both, as above. The GPU-response cache (`./var/gpu_cache`) reuses
 > embedding-server responses across repeat analyses; delete a track's folder to
 > invalidate after a GPU change.
 
@@ -1455,10 +1843,11 @@ Requires=redis-server.service
 
 [Service]
 User=devuser
-WorkingDirectory=/home/devuser/resomix-analysis-service
-ExecStart=/home/devuser/resomix-analysis-service/.venv/bin/python run_analysis.py
+WorkingDirectory=/home/devuser/usman/resomix-analysis-service
+ExecStart=/home/devuser/usman/resomix-analysis-service/.venv/bin/python run_analysis.py
 Restart=on-failure
 KillSignal=SIGTERM
+KillMode=mixed          # corr. 26: SIGTERM to the launcher, then clean up the worker it spawned
 TimeoutStopSec=30
 
 [Install]
@@ -1478,7 +1867,7 @@ sudo systemctl status resomix-analysis
 **Manual quick-start (no systemd):**
 
 ```bash
-cd /home/devuser/resomix-analysis-service && source .venv/bin/activate
+cd /home/devuser/usman/resomix-analysis-service && source .venv/bin/activate
 nohup python run_analysis.py > analysis.out 2>&1 &   # API + worker together; stop with `kill <pid>` (SIGTERM)
 ```
 
@@ -1495,7 +1884,38 @@ curl -s https://staging-analysis.resomix.com/health     # nginx + TLS + Cloudfla
 .venv/bin/python scripts/analyze_client.py audio/prelisten.mp3 --out result.json
 ```
 
-- `8010` stays **localhost-only** in ufw (nginx is the only public door) — like 8001/8004.
+- `8010` stays **localhost-only** in ufw (nginx is the only public door) — like 8001/8002.
 - Job stuck at `queued` → the **worker isn't running** (check the unit /
   `RESOMIX_EMBED_WORKER`). Reaches `succeeded` but semantic/composition sections are
   empty/`partial` → the **GPU embedding endpoints aren't deployed** yet (top callout).
+
+---
+
+## Part L: backups, the backup agent and the WireGuard link (correction 30)
+
+A recovered box that does not back itself up is not recovered: the next failure
+has nothing to restore from. Everything here lives in the `server-backups` repo
+(its `README.md` and `docs/PROGRESS.md` Phases 1 to 6 are the procedure); this
+part is the checklist, so it cannot be skipped by a runbook that ends at Part K.
+
+On **each** production box (not staging, which never backs itself up):
+
+- [ ] `~/usman/server-backups` cloned through its own deploy key (A3).
+- [ ] `config/backup.env` from the restored secrets bundle, `chmod 600`,
+      `BACKUP_ROLE` set, restic **0.19.1** from upstream (not the distro package).
+- [ ] `bash tests/run_tests.sh` → `ALL GREEN` **on the box itself**. The laptop
+      suite is not the authority: macOS bash 3.2 has hidden real failures.
+- [ ] `server-backups.timer` enabled (Alwyzon 02:00 UTC, media 03:00 UTC).
+- [ ] `server-backups-agent.service` installed (Phase 4, the admin panel's *Run
+      now*). **No `MemoryMax`** on that unit: the backups it starts share its
+      cgroup, and a cap OOM-kills them.
+- [ ] WireGuard `wg0` up between the two boxes (Alwyzon `10.99.0.1`, media
+      `10.99.0.2`, UDP 51820 open only to the other box). Backup reports and
+      the media agent travel only inside it; the agent on media binds
+      `10.99.0.2:8787`.
+- [ ] Alwyzon `.env`: `BACKUP_AGENT_TOKEN`, `BACKUP_AGENT_ALWYZON_URL`,
+      `BACKUP_AGENT_MEDIA_URL`, `ADMIN_NOTIFICATION_EMAIL` (B3).
+- [ ] One *Run now* per box from the admin panel, ending `succeeded`, and one
+      scheduled night recorded `succeeded` for both roles.
+- [ ] `box_manifest.py` without `--staging` reports `no problems` (Part I): it
+      requires the timer, the agent and `wg-quick@wg0` on both roles.
