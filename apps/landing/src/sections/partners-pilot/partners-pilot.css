@@ -1187,6 +1187,31 @@
     text-align: right;
   }
 
+  /* The stage label is absolutely positioned above the columns, and the panel
+     reserves a fixed top padding for one line of it. Below 1024px the longest
+     labels wrap, and an absolute second line lands on top of "RESOMIX DOES".
+     Put both HUD lines into the flow instead, so any number of lines pushes the
+     columns down. */
+  .pp-page .pp-stagepanel {
+    padding-top: var(--px-20);
+  }
+
+  .pp-page .pp-stagepanel .pp-hudtop-l {
+    position: static;
+    display: block;
+    line-height: 1.6;
+  }
+
+  .pp-page .pp-stagepanel .pp-truth.pp-hudtop-r {
+    position: static;
+    justify-content: flex-end;
+    margin-top: var(--px-4);
+  }
+
+  .pp-page .pp-stagepanel .pp-stagecols {
+    margin-top: var(--px-16);
+  }
+
   .pp-page .pp-stagecols {
     grid-template-columns: 1fr;
     gap: var(--px-24);
@@ -1280,7 +1305,7 @@
   }
 
   .pp-page .pp-stagepanel {
-    padding: var(--px-36) var(--px-20) var(--px-18);
+    padding: var(--px-20) var(--px-20) var(--px-18);
   }
 
   .pp-page .pp-stagecols {
