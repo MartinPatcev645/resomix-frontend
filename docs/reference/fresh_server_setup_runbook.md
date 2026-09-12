@@ -698,6 +698,7 @@ DEBUG=false
 HOST=0.0.0.0
 PORT=8002                                            # ⚠️ corr. 1: production's port, not 8004
 RESOMIX_DEV_PUBLIC_URL=https://staging-media.resomix.com   # ⚠️ was localhost:8004
+PUBLIC_MEDIA_BASE_URL=https://staging-media.resomix.com    # ⚠️ server-backups issue 144: defaults to https://media.resomix.com; unset on staging, every upload's HLS playlist points at PRODUCTION and nothing plays
 
 # ⚠️ loopback + the Alwyzon box's public IP (two boxes) + the GPU embed server IP
 ALLOWED_IPS=127.0.0.1,localhost,::1,<ALWYZON_BOX_IP>,<GPU_EMBED_SERVER_IP>
