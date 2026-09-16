@@ -72,3 +72,5 @@ export * from './Seo/useDocumentMeta';
 // Performance — staged loading of non-critical third parties
 export * from './Perf/useAfterIdle';
 export * from './Perf/useGoogleTagManager';
+export * from './Analytics/dataLayer';
+export * from './Analytics/useAnalyticsIdentity';

@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useSilktide, useTelemetry , useAfterIdle, useGoogleTagManager } from "@resomix/hooks";
+import { useFirstVisit, useResponsive, useTermsAcceptance, useAuthInit, useSilktide, useTelemetry , useAfterIdle, useGoogleTagManager, useAnalyticsIdentity } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, TermsAcceptance, SineWaves, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
@@ -69,6 +69,8 @@ function App() {
      570 ms of TBT; nothing it does needs to happen while the workspace is still booting. */
   const analyticsReady = useAfterIdle(4000);
   useGoogleTagManager(import.meta.env.VITE_GTM_ID ?? 'GTM-PD9XQZRV', analyticsReady);
+  /* Puts the signed-in user's uuid on the dataLayer so the GTM tag can call posthog.identify(). */
+  useAnalyticsIdentity();
   useTelemetry();
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();

@@ -6,6 +6,7 @@ import {
   validatePasswordConfirmation,
   validateCheckbox,
   calculatePasswordStrength,
+  pushSignupCompleted,
 } from "@resomix/hooks";
 import { StatusMessage } from "../Elements/StatusMessage";
 import { FormInput } from "../Elements/FormInput";
@@ -216,6 +217,11 @@ export default function RegisterContent({
         password: form.password,
       });
       if (result.success) {
+        // Signup is complete here even though the user is not signed in yet: email registration
+        // requires verification first, so the uuid comes from the registration response rather
+        // than from the auth store. `user_identified` follows later, at their first login.
+        const created = (result as { data?: { user?: { uuid?: string } } }).data?.user;
+        pushSignupCompleted({ userId: created?.uuid, signupSource: "email", surface: "register" });
         setStatusType("success");
         setStatusMessage(
           "Account created successfully! Please check your email to verify your account."
