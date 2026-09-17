@@ -4,6 +4,7 @@ tracks_input.jsonl
 apple_matches.jsonl
 apple_matches.migrate.jsonl
 *.jsonl
+promote_partner6.summary.json
 
 # migration old->new uuid map (Script 1 output; ~165 MB at full scale)
 uuid_map.tsv
