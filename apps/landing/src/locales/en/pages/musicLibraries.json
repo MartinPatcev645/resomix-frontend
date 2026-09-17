@@ -76,7 +76,11 @@
         },
         {
           "q": "How do we start?",
-          "a": "With a private catalogue pilot on a representative sample, or through the partner API for a scoped integration into your own product."
+          "a": "With a private catalogue pilot on a representative sample, or through the partner API for a scoped integration into your own product.",
+          "link": {
+            "label": "[ Start a Catalogue Pilot → ]",
+            "to": "/partners/pilot#apply"
+          }
         }
       ]
     },

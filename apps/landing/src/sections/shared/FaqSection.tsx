@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FAQ_FAMILIES, type FaqNamespace } from './faqFamilies.ts';
 import './faq.css';
@@ -6,6 +7,13 @@ import './faq.css';
 interface FaqItem {
   q: string;
   a: string;
+  /**
+   * Optional call to action under the answer, in the site's bracket-link style. An internal path,
+   * hash allowed: LandingLayout scrolls to the anchor once the target page has mounted. It is a
+   * real `<a href>` in the static HTML, so crawlers can follow it. The FAQPage schema keeps the
+   * answer text only, which is why the link sits beside the answer and not inside it.
+   */
+  link?: { label: string; to: string };
 }
 
 /**
@@ -41,7 +49,17 @@ export function FaqSection({ ns }: { ns: FaqNamespace }) {
         {items.map((item) => (
           <Fragment key={item.q}>
             <dt>{item.q}</dt>
-            <dd>{item.a}</dd>
+            <dd>
+              {item.a}
+              {item.link ? (
+                <>
+                  {' '}
+                  <Link className="faq-link font-fira" to={item.link.to}>
+                    {item.link.label}
+                  </Link>
+                </>
+              ) : null}
+            </dd>
           </Fragment>
         ))}
       </dl>

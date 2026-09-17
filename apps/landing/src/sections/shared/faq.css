@@ -38,3 +38,27 @@
   border-bottom: 0;
   padding-bottom: 0;
 }
+
+/*
+ * Optional call to action under an answer. It follows the site's bracket links (.tr-bracket in
+ * trust.css): mono face, dotted underline that appears in the accent colour on hover. It sits on
+ * its own line so the answer reads as a complete sentence without it, and the vertical padding
+ * keeps the tap target above the 24px the accessibility audit asks for.
+ */
+.faq-list .faq-link {
+  display: block;
+  width: fit-content;
+  margin-top: var(--px-10);
+  padding: var(--px-6) 0;
+  font-size: var(--px-13);
+  letter-spacing: var(--px-1);
+  color: var(--color-primary);
+  text-decoration: underline dotted transparent;
+  text-underline-offset: var(--px-4);
+}
+
+.faq-list .faq-link:hover,
+.faq-list .faq-link:focus-visible {
+  color: var(--color-neon-orange, #ee4a26);
+  text-decoration-color: var(--color-neon-orange, #ee4a26);
+}

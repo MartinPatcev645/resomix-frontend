@@ -1038,6 +1038,11 @@ George answered five of these on 17 September 2026, and all five are now impleme
 | Publish a catalogue size | Keep it secret | No number anywhere. The FAQ answers about catalogue scale avoid one |
 | Switch the Publishers page to British spelling | Yes, make it all British | Eleven words changed on that page. A scan found no American spelling on any other page |
 
+While reviewing the copy George asked for one addition. The "How do we start?" answer on the
+Music Libraries page now carries a bracket link, "[ Start a Catalogue Pilot → ]", to
+`/partners/pilot#apply`. A FAQ item can take an optional `link` in its locale entry, and
+`prerenderedBody.spec.tsx` fails if such a link points at a missing page or anchor.
+
 Home, Developers, Partners and the Pilot page also have drafted FAQs in §5, but George's approval
 named the product and solution pages, so those four are not built. `SoftwareApplication` on the
 two live product pages, the Journal articles and the citation work remain open.
