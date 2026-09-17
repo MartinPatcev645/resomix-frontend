@@ -30,6 +30,9 @@ WHICH TRACKS MOVE (George, 17 September 2026)
   * Where several different versions matched one Apple song, the version that fits Apple's title
     and length is promoted. The others are set aside as "different_version_rematch" rather than
     promoted with a preview of the wrong recording.
+  * Where no track's title fits Apple's version AND the length differs from Apple's by more than
+    3 seconds, the match is a different recording and the song is held back as
+    "apple_version_mismatch". Same length with a different label is promoted.
   * Nothing is deleted. Everything not promoted stays on partner 6, with its reason recorded in
     the parked file.
 """
@@ -233,6 +236,7 @@ async def cmd_plan(_args) -> None:
 
     plan: List[Dict[str, Any]] = []
     apple_version_misfits = 0
+    apple_version_held_back = 0
     for song, rows in by_song.items():
         if song in live:
             for r in rows:
@@ -243,7 +247,8 @@ async def cmd_plan(_args) -> None:
         apple_v = version_of(apple.get("name"))
         apple_s = (apple.get("duration_ms") or 0) / 1000.0 or None
         fits = [r for r in rows if versions_compatible(version_of(r["title"]), apple_v)]
-        if not fits:
+        misfit = not fits
+        if misfit:
             apple_version_misfits += 1
             fits = rows
         anchor = min(fits, key=lambda r: (
@@ -252,6 +257,18 @@ async def cmd_plan(_args) -> None:
             -r["score"],
             r["uuid"],
         ))
+        # No track in the group has Apple's version in its title. If the length still matches
+        # Apple's, it is the same audio labelled differently ("Room 20-1 (Original Mix)" against
+        # "Room 20 - 1") and it is promoted. If the length does not match either, the match is a
+        # different recording ("Wavey (Extended Mix)" 271s against Apple's Linska Remix, 166s),
+        # so the whole group is held back rather than promoted with the wrong preview.
+        # (Agreed 17 September 2026 after reviewing samples: 337 same length, 125 not.)
+        if misfit and not (anchor["dur"] is not None and apple_s
+                           and abs(anchor["dur"] - apple_s) <= DURATION_TOLERANCE_S):
+            apple_version_held_back += 1
+            for r in rows:
+                parked.append({"uuid": r["uuid"], "reason": "apple_version_mismatch", "song_id": song})
+            continue
         am = anchor["apple"]
         plan.append({
             "track_id": anchor["track_id"], "uuid": anchor["uuid"],
@@ -284,6 +301,7 @@ async def cmd_plan(_args) -> None:
         "to_promote": len(plan),
         "already_on_partner1_from_earlier_run": sum(1 for p in plan if info[p["uuid"]]["partner_id"] == TARGET_PARTNER),
         "groups_where_no_track_fits_apple_version": apple_version_misfits,
+        "of_those_held_back_length_also_differs": apple_version_held_back,
         "parked": len(parked),
         "parked_by_reason": dict(reasons.most_common()),
     }
