@@ -368,6 +368,7 @@ async def cmd_db(args) -> None:
         blocking = Counter()
         with_apple = 0
         empty_isrc = 0
+        test_entries = 0
         for chunk in _chunks(ids, DB_CHUNK):
             ph, params = _in_params("i", chunk)
             for pid, n in (await db.execute(text(
@@ -377,10 +378,20 @@ async def cmd_db(args) -> None:
                 blocking[table] += (await db.execute(text(
                     f"SELECT COUNT(*) FROM {table} WHERE {col} IN ({ph}) AND partner_id = :src"),
                     {**params, "src": SOURCE_PARTNER})).scalar() or 0
+            # Partner API smoke tests on partner 6 leave similarity playlists with no user and no
+            # guest (found 17 September 2026: six, seeded from one track). They are test data and
+            # are left as they are. Anything owned by a user, a guest, or another partner stops the move.
+            test_playlist = "p.partner_id = :src AND p.user_id IS NULL AND p.guest_visitor_id IS NULL"
+            src_params = {**params, "src": SOURCE_PARTNER}
             blocking["playlists (seed)"] += (await db.execute(text(
-                f"SELECT COUNT(*) FROM playlists WHERE seed_track_id IN ({ph})"), params)).scalar() or 0
+                f"SELECT COUNT(*) FROM playlists p WHERE p.seed_track_id IN ({ph}) AND NOT ({test_playlist})"),
+                src_params)).scalar() or 0
             blocking["playlist_tracks"] += (await db.execute(text(
-                f"SELECT COUNT(*) FROM playlist_tracks WHERE track_id IN ({ph})"), params)).scalar() or 0
+                "SELECT COUNT(*) FROM playlist_tracks pt JOIN playlists p ON p.id = pt.playlist_id "
+                f"WHERE pt.track_id IN ({ph}) AND NOT ({test_playlist})"), src_params)).scalar() or 0
+            test_entries += (await db.execute(text(
+                "SELECT COUNT(*) FROM playlist_tracks pt JOIN playlists p ON p.id = pt.playlist_id "
+                f"WHERE pt.track_id IN ({ph}) AND {test_playlist}"), src_params)).scalar() or 0
             with_apple += (await db.execute(text(
                 f"SELECT COUNT(*) FROM apple_music_tracks WHERE track_id IN ({ph})"), params)).scalar() or 0
             empty_isrc += (await db.execute(text(
@@ -395,6 +406,7 @@ async def cmd_db(args) -> None:
         print(f"apple_music_tracks present  : {with_apple:,}   to insert: {len(ids) - with_apple:,}")
         print(f"tracks with empty isrc      : {empty_isrc:,}   (filled from Apple)")
         print(f"user data on these tracks   : {dict(blocking)}")
+        print(f"partner 6 test playlist entries, left as they are: {test_entries:,}")
         if other or sum(blocking.values()):
             sys.exit("\nUnexpected rows above. Nothing was changed. Stopping so this can be looked at.")
         if not args.execute:
