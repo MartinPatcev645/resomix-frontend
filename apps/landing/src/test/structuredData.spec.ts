@@ -29,6 +29,30 @@ const nodes = (route: string): Node[] =>
 
 const typed = (route: string, type: string) => nodes(route).filter((n) => n['@type'] === type);
 
+/** React's server renderer escapes these in text nodes, so visible copy is compared escaped. */
+const escText = (s: string) =>
+  s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+
+/** Pages that mount <FaqSection>. Kept in step with FAQ_ROUTES in vite.config.ts. */
+const FAQ_ROUTES = [
+  '/product',
+  '/product/sonic-discovery',
+  '/product/track-intelligence',
+  '/product/catalog-intelligence',
+  '/solutions/record-labels',
+  '/solutions/music-publishers',
+  '/solutions/sync-agencies',
+  '/solutions/music-libraries-sample-providers',
+  '/solutions/djs',
+  '/solutions/music-curators',
+  '/solutions/producers',
+];
+
 describe.skipIf(!built)('per-page structured data', () => {
   const indexed = Object.keys(ROUTE_SEO).filter((r) => r !== '/404' && !ROUTE_SEO[r].noindex);
 
@@ -135,6 +159,51 @@ describe.skipIf(!built)('per-page structured data', () => {
       // Google's rule: FAQPage may only describe Q&A a visitor can see on the page.
       expect(page, `question not visible on /trust: ${q.name}`).toContain(q.name);
       expect(q.acceptedAnswer.text.length).toBeGreaterThan(20);
+    }
+  });
+
+  /*
+   * The page FAQs. Two promises are asserted: the schema exists on every page that shows one, and
+   * every question AND answer in it is present in the built HTML, outside any script. A FAQPage
+   * describing text a visitor cannot see is a manual-action risk, and it is also useless to an AI
+   * assistant, which reads the visible copy first.
+   */
+  it('marks up every page FAQ as FAQPage, using only questions and answers a visitor can see', () => {
+    for (const route of FAQ_ROUTES) {
+      const faq = typed(route, 'FAQPage')[0];
+      expect(faq, `${route} has no FAQPage`).toBeDefined();
+      const questions = faq.mainEntity as Array<{ name: string; acceptedAnswer: { text: string } }>;
+      expect(questions.length, `${route} should carry at least four questions`).toBeGreaterThanOrEqual(4);
+      const visible = html(route).replace(/<script[\s\S]*?<\/script>/g, '');
+      for (const q of questions) {
+        expect(visible, `${route}: question not visible: ${q.name}`).toContain(escText(q.name));
+        expect(visible, `${route}: answer not visible for: ${q.name}`).toContain(
+          escText(q.acceptedAnswer.text),
+        );
+      }
+    }
+  });
+
+  it('names Resomix in every FAQ answer set, so a quoted answer carries the brand', () => {
+    // The ShelfSignal report found pages that were read and quoted without the brand being named.
+    for (const route of FAQ_ROUTES) {
+      const questions = typed(route, 'FAQPage')[0].mainEntity as Array<{
+        acceptedAnswer: { text: string };
+      }>;
+      const naming = questions.filter((q) => q.acceptedAnswer.text.includes('Resomix'));
+      expect(naming.length, `${route} answers never say Resomix`).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('emits the Sonic Discovery steps as HowTo, from the list the page itself renders', () => {
+    const howTo = typed('/product/sonic-discovery', 'HowTo')[0];
+    expect(howTo).toBeDefined();
+    const steps = howTo.step as Array<{ position: number; name: string; text: string }>;
+    expect(steps.map((s) => s.position)).toEqual([1, 2, 3, 4, 5]);
+    const visible = html('/product/sonic-discovery').replace(/<script[\s\S]*?<\/script>/g, '');
+    for (const s of steps) {
+      expect(visible, `step not visible: ${s.name}`).toContain(escText(s.name));
+      expect(visible, `step text not visible: ${s.name}`).toContain(escText(s.text));
     }
   });
 

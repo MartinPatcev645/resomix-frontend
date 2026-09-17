@@ -5,6 +5,7 @@ import { PrBlock } from '@/sections/producers/PrBlock.tsx';
 import { PrPaths } from '@/sections/producers/PrPaths.tsx';
 import { PrCraft } from '@/sections/producers/PrCraft.tsx';
 import { PrFinalCta } from '@/sections/producers/PrFinalCta.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
@@ -60,6 +61,7 @@ export default function ProducersPage() {
         <PrBlock />
         <PrPaths />
         <PrCraft />
+        <FaqSection ns="producers" />
         <PrFinalCta />
       </main>
     </div>

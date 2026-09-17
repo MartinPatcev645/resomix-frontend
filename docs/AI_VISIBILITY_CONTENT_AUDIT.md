@@ -1027,6 +1027,22 @@ consistent with 0% on ChatGPT and a stale www title in the report.
 
 ## 11. Decisions for George before or during the pass
 
+George answered five of these on 17 September 2026, and all five are now implemented locally.
+
+| Question | George's answer | What was done |
+|---|---|---|
+| FAQ block on the product and solution pages | Approved | One shared `FaqSection` on the four product pages and the seven solution pages, four to six questions each, placed before the closing call to action. `FAQPage` schema is built from the same strings |
+| Numbered steps under the Sonic Discovery diagram | Approved, and make it even simpler so it works as an information signal | Five short plain steps under the flow figure, also emitted as `HowTo` schema |
+| Reword the beta notice | Yes, change it | The notice now opens "Resomix is a sound-first music discovery and track analysis platform, currently in beta." It is shared, so the app shows it too |
+| Publish a catalogue size | Keep it secret | No number anywhere. The FAQ answers about catalogue scale avoid one |
+| Switch the Publishers page to British spelling | Yes, make it all British | Eleven words changed on that page. A scan found no American spelling on any other page |
+
+Home, Developers, Partners and the Pilot page also have drafted FAQs in §5, but George's approval
+named the product and solution pages, so those four are not built. `SoftwareApplication` on the
+two live product pages, the Journal articles and the citation work remain open.
+
+The original list follows for the record.
+
 | Decision | Why it needs George |
 |---|---|
 | Reword the beta notice to lead with what Resomix is, e.g. "Resomix, the sound-first music discovery platform, is in production beta…" | It is the legal/UX notice on every page of both apps |

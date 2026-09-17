@@ -47,6 +47,11 @@ interface RouteSeoLike {
    * strings the page renders, so the markup cannot describe something a visitor cannot see.
    */
   faq?: Array<{ question: string; answer: string }>
+  /**
+   * A numbered how-it-works list that is VISIBLE on the page, emitted as `HowTo`. Same rule as
+   * `faq`: built from the strings the page renders, never describing anything a visitor cannot see.
+   */
+  howTo?: { name: string; steps: Array<{ name: string; text: string }> }
 }
 
 /** Escape for use inside a double-quoted HTML attribute. Titles contain & and — routinely. */
@@ -146,6 +151,20 @@ function structuredData(seo: RouteSeoLike, url: string, origin: string, routePat
         '@type': 'Question',
         name: question,
         acceptedAnswer: { '@type': 'Answer', text: answer },
+      })),
+    })
+  }
+
+  if (seo.howTo?.steps.length) {
+    graph.push({
+      '@type': 'HowTo',
+      '@id': `${url}#howto`,
+      name: seo.howTo.name,
+      step: seo.howTo.steps.map(({ name, text }, i) => ({
+        '@type': 'HowToStep',
+        position: i + 1,
+        name,
+        text,
       })),
     })
   }

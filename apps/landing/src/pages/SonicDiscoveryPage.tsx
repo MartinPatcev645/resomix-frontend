@@ -6,6 +6,7 @@ import { SdDimensionBands } from '@/sections/sonic-discovery/SdDimensionBands.ts
 import { SdAudienceModes } from '@/sections/sonic-discovery/SdAudienceModes.tsx';
 import { SdProof } from '@/sections/sonic-discovery/SdProof.tsx';
 import { SdFinalCta } from '@/sections/sonic-discovery/SdFinalCta.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
@@ -105,6 +106,8 @@ export default function SonicDiscoveryPage() {
           />
 
           <SdProof />
+
+          <FaqSection ns="sonicDiscovery" />
 
           <SdFinalCta />
         </div>

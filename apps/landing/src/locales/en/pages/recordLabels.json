@@ -45,6 +45,28 @@
       "p3": "Resomix's similarity engine is not designed to replace the human \"touch\", but to enhance it and amplify it so that it can reach its true potential.",
       "figureAria": "The engine surfaces a small set of candidate tracks from the catalogue; a white ring marks the one the label team chooses; the decision stays human"
     },
+    "faq": {
+      "eyebrow": "Questions",
+      "title": "Questions labels ask about Resomix",
+      "items": [
+        {
+          "q": "How can a label make its back catalogue discoverable?",
+          "a": "Resomix profiles the authorised catalogue once into a private index. An older release can then surface beside a new signing whenever the two are close in sound, with no need for it to have a history of attention."
+        },
+        {
+          "q": "Can we compare a new demo with our existing catalogue?",
+          "a": "Yes. Use the demo as the reference and Resomix returns the releases in your catalogue that sit closest to it, ranked by sonic similarity."
+        },
+        {
+          "q": "Can Resomix help us answer sync requests?",
+          "a": "It surfaces candidates from your catalogue that match the reference by sound, for your team to review. Clearance and rights decisions stay human."
+        },
+        {
+          "q": "Is our catalogue visible to other labels?",
+          "a": "No. Partner catalogues are logically isolated, restricted to authorised access, and never pooled."
+        }
+      ]
+    },
     "cta": {
       "h2": "Ready to try our cutting-edge similarity engine?",
       "line": "Get in touch today.",

@@ -169,6 +169,61 @@
       "reserved": "Approved beta feedback will appear here",
       "reservedNote": "reserved module · no testimonial is invented for this page"
     },
+    "steps": {
+      "title": "How Resomix Sonic Discovery works, in five steps",
+      "items": [
+        {
+          "name": "Choose a reference track",
+          "text": "Search for a track in Resomix, or upload your own audio file."
+        },
+        {
+          "name": "Resomix analyses the sound",
+          "text": "The PYXIS-1 engine measures rhythm, harmony, timbre, structure and energy, using more than 70 audio characteristics."
+        },
+        {
+          "name": "Resomix compares it with the catalogue",
+          "text": "The sound profile is compared with every track Resomix has already analysed."
+        },
+        {
+          "name": "Resomix ranks the closest matches",
+          "text": "Tracks are ordered by similarity score, automatically."
+        },
+        {
+          "name": "You get a playlist",
+          "text": "Listen to the results, save them, export them, or use any result as your next reference."
+        }
+      ]
+    },
+    "faq": {
+      "eyebrow": "06 // questions",
+      "title": "Questions about Resomix Sonic Discovery",
+      "items": [
+        {
+          "q": "How do I find tracks that sound like a track I already have?",
+          "a": "Search for the track in Resomix, or upload the file, and Sonic Discovery returns a ranked playlist of the closest matches by sound, judged on groove, energy, timbre and structure rather than on genre tags or release date."
+        },
+        {
+          "q": "Can I search for music by uploading a file?",
+          "a": "Yes. Upload an MP3, WAV, FLAC or AIFF as your reference. Resomix processes it privately, uses it only as the query, and deletes the source audio no later than 24 hours after upload or analysis."
+        },
+        {
+          "q": "Is Sonic Discovery an audio fingerprinting or song-identification tool?",
+          "a": "No. Fingerprinting tells you what a recording is. Resomix tells you what sounds like it, meaning the tracks with the strongest measured sonic relationship to your reference, whoever released them and whenever."
+        },
+        {
+          "q": "How does Resomix decide which tracks are similar?",
+          "a": "Resomix's PYXIS-1 engine builds a sonic profile from more than 70 measurable audio characteristics of the whole recording, then compares it with a pre-analysed index. The result is deterministic, so the same reference against the same index returns the same shortlist, each result with its similarity score."
+        },
+        {
+          "q": "Which catalogue does Sonic Discovery search?",
+          "a": "The Resomix catalogue of electronic music, already profiled by PYXIS-1. Partner catalogues are separate and private. See Catalogue Intelligence."
+        },
+        {
+          "q": "Can DJs use it to find tracks that mix well together?",
+          "a": "Yes. The shortlist is ranked by groove, energy and structure, and Track Intelligence shows the key, Camelot code and BPM of any result, so you can check compatibility before you play it. The selection stays yours."
+        }
+      ]
+    },
     "cta": {
       "leftEyebrow": "For music professionals",
       "leftTitle": "Hear the shortlist for yourself.",

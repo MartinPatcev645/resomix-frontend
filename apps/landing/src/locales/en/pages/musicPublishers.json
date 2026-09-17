@@ -2,7 +2,7 @@
   "musicPublishers": {
     "hero": {
       "eyebrow": "Use case · Music publishers",
-      "body": "Resomix helps music publishers search and understand their repertoire by sound. Music publishers face a daunting task: creating a cohesive catalog that’s both genuine and marketable, while also knowing how to make the most of every track as the collection expands.",
+      "body": "Resomix helps music publishers search and understand their repertoire by sound. Music publishers face a daunting task: creating a cohesive catalogue that’s both genuine and marketable, while also knowing how to make the most of every track as the collection expands.",
       "status": "Guided partner evaluation",
       "captionA": "Reference recording → PYXIS-1 → related works across the catalogue",
       "captionB": "Partner-scoped · authorised audio",
@@ -11,24 +11,24 @@
       "title": "Turn your catalogue into a [[living asset]]"
     },
     "editorial": {
-      "p1": "That’s no trivial task, especially if you consider that your average catalog hosts tens of thousands of songs!",
-      "p2": "The good thing is that technology comes to the rescue with automating systems that help search, analyze, and optimize large catalogs in ways no human can; only these powerful engines can dive into a music collection so deeply and thoroughly, delivering results in line with what you’re looking for.",
+      "p1": "That’s no trivial task, especially if you consider that your average catalogue hosts tens of thousands of songs!",
+      "p2": "The good thing is that technology comes to the rescue with automating systems that help search, analyse, and optimise large catalogues in ways no human can; only these powerful engines can dive into a music collection so deeply and thoroughly, delivering results in line with what you’re looking for.",
       "pull": "But there’s something only the finest discovery engines can do: translate emotions and moods into sonic connections.",
       "afterQuote": "Resomix was designed to do precisely that."
     },
     "gap": {
       "eyebrow": "The visibility gap",
-      "h2": "A Big Catalog Is Not Enough – When You Don’t Know It",
-      "p1": "Spending years building a catalog, only to barely touch its true potential, is the problem of every music publisher today.",
-      "p2": "The story usually goes like this: new releases are prioritized, while older songs slowly disappear from view. That’s partly intrinsic to the modern music industry, where new songs are more sought-after, whereas songs that are not old enough to be considered vintage live in this limbo where no one looks for them.",
-      "p3": "Metadata can help rediscover songs buried in a catalog, but it’s not designed to see sonic connection: it shows you songs that are tagged the same way, but that doesn’t mean they’re sonically related, or that they can fill the same purpose. What you need is an engine specifically designed to explore your entire catalogue through the sound itself.",
+      "h2": "A Big Catalogue Is Not Enough – When You Don’t Know It",
+      "p1": "Spending years building a catalogue, only to barely touch its true potential, is the problem of every music publisher today.",
+      "p2": "The story usually goes like this: new releases are prioritised, while older songs slowly disappear from view. That’s partly intrinsic to the modern music industry, where new songs are more sought-after, whereas songs that are not old enough to be considered vintage live in this limbo where no one looks for them.",
+      "p3": "Metadata can help rediscover songs buried in a catalogue, but it’s not designed to see sonic connection: it shows you songs that are tagged the same way, but that doesn’t mean they’re sonically related, or that they can fill the same purpose. What you need is an engine specifically designed to explore your entire catalogue through the sound itself.",
       "figureAriaD": "A catalogue timeline with three zones: established workhorses, a large quiet underexposed middle, and recent visible releases. A metadata rail sits above; a sonic relationship layer sits below. One orange path bypasses the metadata grouping and connects a recent reference to a work inside the underexposed middle.",
       "figureAriaM": "Mobile: the three catalogue zones stacked, with the metadata rail above, the sonic layer below, and one orange path connecting a recent reference to an underexposed work."
     },
     "activate": {
       "eyebrow": "The engine",
       "h2": "Activate Your Catalogue with Resomix",
-      "p1": "Resomix analyzes the structure of a song at a granular level, going deeper than any search engine and extrapolating the core of a song, its sonic soul.",
+      "p1": "Resomix analyses the structure of a song at a granular level, going deeper than any search engine and extrapolating the core of a song, its sonic soul.",
       "p2": "This allows publishers to explore and compare compositions based on their sonic characteristics rather than simply relying on metadata. By analysing the structural, harmonic, rhythmic, timbral, and emotional qualities of a track, Resomix’s proprietary engine PYXIS-1 can uncover relationships between compositions that are not audible at first glance, but are undoubtedly there.",
       "trust1": "Authorised audio inputs",
       "trust2": "Partner-scoped index",
@@ -73,7 +73,7 @@
     "closing": {
       "eyebrow": "The publisher remains in control",
       "p1": "The biggest value of a catalogue should be its depth, not its most recent additions or the usual “workhorses.”",
-      "p2": "By analyzing a catalogue through sound, Resomix can help publishers spend less time looking for music and more time understanding what they actually have at their disposal today. Resomix’s similarity engine is not designed to replace the knowledge and relationships that are at the heart of music publishing, but to help you amplify the value of the collection you’ve built.",
+      "p2": "By analysing a catalogue through sound, Resomix can help publishers spend less time looking for music and more time understanding what they actually have at their disposal today. Resomix’s similarity engine is not designed to replace the knowledge and relationships that are at the heart of music publishing, but to help you amplify the value of the collection you’ve built.",
       "closeLine": "Your catalogue is already full of possibilities. Let Resomix help you discover them.",
       "status": "Start with a representative catalogue sample",
       "triad": {
@@ -84,6 +84,28 @@
         "decisionsTitle": "Informed catalogue decisions",
         "decisionsSub": "What is reviewed, pitched or pursued, decided by your team."
       }
+    },
+    "faq": {
+      "eyebrow": "Questions",
+      "title": "Questions publishers ask about Resomix",
+      "items": [
+        {
+          "q": "How can a publisher find related works across its catalogue?",
+          "a": "Start from any recording as the reference. Resomix's PYXIS-1 engine compares it with the represented works already profiled in your private index and returns the closest, whatever their era or how they were tagged."
+        },
+        {
+          "q": "Does Resomix make rights or licensing decisions?",
+          "a": "No. Resomix surfaces sonic relationships and candidates. Rights context, artist relationships and professional judgement stay with your team."
+        },
+        {
+          "q": "Is our catalogue exposed to anyone else?",
+          "a": "No. Authorised audio, derived profiles and the index stay inside your partner scope, and partner content is not made public."
+        },
+        {
+          "q": "How do we start?",
+          "a": "With a guided pilot on a representative sample of your catalogue. You agree the scope, the reference tracks and how results are judged, then review ranked matches before deciding whether to go further."
+        }
+      ]
     },
     "cta": {
       "pilot": "Request a catalogue pilot",

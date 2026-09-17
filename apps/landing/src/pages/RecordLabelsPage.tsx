@@ -7,6 +7,7 @@ import { RlQuote } from '@/sections/record-labels/RlQuote.tsx';
 import { RlWorkflows } from '@/sections/record-labels/RlWorkflows.tsx';
 import { RlCreativity } from '@/sections/record-labels/RlCreativity.tsx';
 import { RlFinalCta } from '@/sections/record-labels/RlFinalCta.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
@@ -62,6 +63,7 @@ export default function RecordLabelsPage() {
         <RlQuote />
         <RlWorkflows />
         <RlCreativity />
+        <FaqSection ns="recordLabels" />
         <RlFinalCta />
       </main>
     </div>

@@ -58,6 +58,28 @@
       "p3": "For sample providers and music libraries, this means moving beyond traditional search and giving producers a more intuitive way to find inspiration.",
       "figureAria": "A deep stack of sample crates; one sound buried near the bottom glows and a thread lifts it to the user at the surface"
     },
+    "faq": {
+      "eyebrow": "Questions",
+      "title": "Questions libraries ask about Resomix",
+      "items": [
+        {
+          "q": "Can users search a sample library by sound instead of tags?",
+          "a": "Yes. A user picks a sound they already like as the reference, and Resomix returns the sounds across the library that share its sonic character, wherever they sit in the pack structure."
+        },
+        {
+          "q": "How does Resomix fit alongside our existing tags?",
+          "a": "It sits beneath them. Tags remain the way users describe what they want. Resomix answers the case where they can hear it but cannot type it."
+        },
+        {
+          "q": "Is our library shared with anyone else?",
+          "a": "No. Each partner's audio, profiles and index stay inside that partner's own scope, and partner content is never made public or used to train PYXIS-1."
+        },
+        {
+          "q": "How do we start?",
+          "a": "With a private catalogue pilot on a representative sample, or through the partner API for a scoped integration into your own product."
+        }
+      ]
+    },
     "cta": {
       "h2": "Your catalogue is already full of possibilities.",
       "line": "Resomix can help your users discover them more efficiently.",

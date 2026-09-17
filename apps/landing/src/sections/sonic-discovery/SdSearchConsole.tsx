@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { SdFlowPanel } from '@/sections/sonic-discovery/scenes/SdFlowPanel.tsx';
+import { SdFlowSteps } from '@/sections/sonic-discovery/SdFlowSteps.tsx';
 
 interface SdSearchConsoleProps {
   motionOn: boolean;
@@ -19,6 +20,9 @@ export function SdSearchConsole({ motionOn }: SdSearchConsoleProps) {
       </div>
 
       <SdFlowPanel motionOn={motionOn} />
+
+      {/* The same flow as readable copy: the figure's stage labels are SVG text. */}
+      <SdFlowSteps />
     </section>
   );
 }

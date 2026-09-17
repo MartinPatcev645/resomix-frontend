@@ -1,0 +1,40 @@
+/*
+ * Shared FAQ list.
+ *
+ * The section shell, eyebrow and heading come from each page's own classes (faqFamilies.ts). Only
+ * the question-and-answer list is styled here, and it follows the trust page's rights Q&A
+ * (.tr-qa in trust.css) so the two read as one system. No reveal or fade classes on purpose: the
+ * copy must be visible in the static HTML and must never wait on an observer.
+ */
+.faq-list {
+  margin: var(--px-28) 0 0;
+  max-width: 52rem;
+}
+
+.faq-list dt {
+  font-weight: 400;
+  color: var(--color-primary);
+  font-size: var(--px-17);
+  line-height: 1.5;
+  padding-top: var(--px-24);
+}
+
+.faq-list dt:first-of-type {
+  padding-top: 0;
+}
+
+.faq-list dd {
+  margin: var(--px-8) 0 0;
+  padding-bottom: var(--px-22);
+  color: var(--color-text-secondary);
+  font-size: var(--px-15);
+  font-weight: 300;
+  line-height: 1.7;
+  /* Neutral grey, so the divider holds on both the dark and the light theme. */
+  border-bottom: 1px dotted rgba(128, 128, 128, 0.28);
+}
+
+.faq-list dd:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}

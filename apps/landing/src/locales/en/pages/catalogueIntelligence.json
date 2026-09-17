@@ -120,6 +120,36 @@
       },
       "scoreNote": "Evaluation measures, agreed per pilot. No pre-filled percentages, timings or pass marks."
     },
+    "faq": {
+      "eyebrow": "09 // Questions",
+      "title": "Questions about Resomix Catalogue Intelligence",
+      "items": [
+        {
+          "q": "How can a label make its back catalogue discoverable?",
+          "a": "Resomix processes the authorised recordings once into a private, partner-scoped sonic index. From then on any track, old or new, can be returned when it sounds right for the reference, without waiting for streams, sales or editorial attention."
+        },
+        {
+          "q": "How do I find similar tracks inside our own catalogue?",
+          "a": "Use any indexed track as the reference, or upload a recording. PYXIS-1 compares it with your catalogue and returns the closest matches, ranked by similarity, with no manual shortlisting."
+        },
+        {
+          "q": "Is our catalogue shared with other partners or made public?",
+          "a": "No. Each partner's audio, derived profiles and index stay inside that partner's scope. There is no shared partner pool, and partner content is not made publicly available."
+        },
+        {
+          "q": "Is our audio used to train PYXIS-1?",
+          "a": "No. Partner content is not used to train or fine-tune PYXIS-1, and Resomix does not generate derivative audio."
+        },
+        {
+          "q": "What do we need to deliver?",
+          "a": "Authorised audio as MP3, WAV, FLAC or AIFF, and a CSV manifest with ISRC, title, artist and filename for each track, through the managed partner workflow."
+        },
+        {
+          "q": "How large a catalogue can Resomix process?",
+          "a": "Catalogues are ingested in batches and the index is rebuilt as each batch lands, so the size is agreed per pilot rather than capped up front. A representative sample is enough to start."
+        }
+      ]
+    },
     "closing": {
       "eyebrow": "Start with a representative sample",
       "h2": "Process the catalogue. Test the matches. Decide with evidence.",

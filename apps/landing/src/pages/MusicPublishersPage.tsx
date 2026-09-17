@@ -8,6 +8,7 @@ import { MpActivate } from '@/sections/music-publishers/MpActivate.tsx';
 import { MpOutcomes } from '@/sections/music-publishers/MpOutcomes.tsx';
 import { MpCrossEra } from '@/sections/music-publishers/MpCrossEra.tsx';
 import { MpClosing } from '@/sections/music-publishers/MpClosing.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
@@ -103,6 +104,7 @@ export default function MusicPublishersPage() {
           <MpActivate />
           <MpOutcomes />
           <MpCrossEra />
+          <FaqSection ns="musicPublishers" />
           <MpClosing />
         </main>
       </MpDefsProvider>

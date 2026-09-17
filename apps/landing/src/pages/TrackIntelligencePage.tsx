@@ -11,6 +11,7 @@ import { TiLensModes } from '@/sections/track-intelligence/TiLensModes.tsx';
 import { TiProvenance } from '@/sections/track-intelligence/TiProvenance.tsx';
 import { TiPlatformConnect } from '@/sections/track-intelligence/TiPlatformConnect.tsx';
 import { TiFinalCta } from '@/sections/track-intelligence/TiFinalCta.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
@@ -110,6 +111,7 @@ export default function TrackIntelligencePage() {
         <TiLensModes onScrollToProfile={scrollToProfile} />
         <TiProvenance />
         <TiPlatformConnect />
+        <FaqSection ns="trackIntelligence" />
         <TiFinalCta />
       </div>
     </div>

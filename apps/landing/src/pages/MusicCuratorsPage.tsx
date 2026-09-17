@@ -5,6 +5,7 @@ import { McuGap } from '@/sections/music-curators/McuGap.tsx';
 import { McuRail } from '@/sections/music-curators/McuRail.tsx';
 import { McuPhilosophy } from '@/sections/music-curators/McuPhilosophy.tsx';
 import { McuFinalCta } from '@/sections/music-curators/McuFinalCta.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
@@ -60,6 +61,7 @@ export default function MusicCuratorsPage() {
         <McuGap />
         <McuRail />
         <McuPhilosophy />
+        <FaqSection ns="musicCurators" />
         <McuFinalCta />
       </main>
     </div>

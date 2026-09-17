@@ -3,30 +3,80 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 import { readFileSync, writeFileSync } from 'node:fs'
-import { ROUTE_SEO, SITEMAP_DEFAULTS, SITE_ORIGIN } from './src/routes/seoConfig.ts'
+import { ROUTE_SEO, SITEMAP_DEFAULTS, SITE_ORIGIN, type RouteSeo } from './src/routes/seoConfig.ts'
 import { prerenderHead } from '../../tooling/prerenderHead.ts'
 import { minifyPublicScripts } from '../../tooling/minifyPublicScripts.ts'
 
-/**
- * The trust page's rights section is a visible question-and-answer list. It is emitted as
- * `FAQPage` from these same strings, so the markup can never describe Q&A a visitor cannot see,
- * which is Google's rule for the type. One answer wraps a mailto link around the legal address,
- * so the JSON stores it in two halves.
+/*
+ * Visible question-and-answer copy and how-it-works steps are emitted as `FAQPage` and `HowTo`
+ * structured data. They are read here from the very locale strings the pages render, so the markup
+ * can never describe something a visitor cannot see, which is Google's rule for both types. The
+ * copy stays in the locale files and out of seoConfig.ts, which holds metadata only.
  */
-function trustFaq(): Array<{ question: string; answer: string }> {
-  const file = path.resolve(__dirname, 'src/locales/en/pages/trust.json')
-  const { trust } = JSON.parse(readFileSync(file, 'utf8')) as {
-    trust: {
-      legalEmail: string
-      rights: {
-        qa: Array<{ question: string; answer?: string; answerBefore?: string; answerAfter?: string }>
-      }
-    }
-  }
+type Faq = Array<{ question: string; answer: string }>
+
+type PrerenderRoute = RouteSeo & {
+  faq?: Faq
+  howTo?: { name: string; steps: Array<{ name: string; text: string }> }
+}
+
+/** A page's English copy, keyed by its locale namespace (which is also its file name). */
+function pageCopy<T>(ns: string): T {
+  const file = path.resolve(__dirname, `src/locales/en/pages/${ns}.json`)
+  return (JSON.parse(readFileSync(file, 'utf8')) as Record<string, T>)[ns]
+}
+
+/** Routes whose page mounts `<FaqSection ns=…>`. The value is the page's locale namespace. */
+const FAQ_ROUTES: Record<string, string> = {
+  '/product': 'product',
+  '/product/sonic-discovery': 'sonicDiscovery',
+  '/product/track-intelligence': 'trackIntelligence',
+  '/product/catalog-intelligence': 'catalogueIntelligence',
+  '/solutions/record-labels': 'recordLabels',
+  '/solutions/music-publishers': 'musicPublishers',
+  '/solutions/sync-agencies': 'syncAgencies',
+  '/solutions/music-libraries-sample-providers': 'musicLibraries',
+  '/solutions/djs': 'djs',
+  '/solutions/music-curators': 'musicCurators',
+  '/solutions/producers': 'producers',
+}
+
+function pageFaq(ns: string): Faq {
+  const { faq } = pageCopy<{ faq?: { items?: Array<{ q: string; a: string }> } }>(ns)
+  return (faq?.items ?? []).map(({ q, a }) => ({ question: q, answer: a }))
+}
+
+/** The trust page's rights section is an older Q&A with its own shape. One answer wraps a mailto
+    link around the legal address, so the JSON stores it in two halves. */
+function trustFaq(): Faq {
+  const trust = pageCopy<{
+    legalEmail: string
+    rights: { qa: Array<{ question: string; answer?: string; answerBefore?: string; answerAfter?: string }> }
+  }>('trust')
   return trust.rights.qa.map((item) => ({
     question: item.question,
     answer: item.answer ?? `${item.answerBefore ?? ''}${trust.legalEmail}${item.answerAfter ?? ''}`,
   }))
+}
+
+function sonicDiscoveryHowTo(): NonNullable<PrerenderRoute['howTo']> {
+  const { steps } = pageCopy<{
+    steps: { title: string; items: Array<{ name: string; text: string }> }
+  }>('sonicDiscovery')
+  return { name: steps.title, steps: steps.items }
+}
+
+function routesWithPageCopy(): Record<string, PrerenderRoute> {
+  const routes: Record<string, PrerenderRoute> = { ...ROUTE_SEO }
+  for (const [route, ns] of Object.entries(FAQ_ROUTES)) {
+    routes[route] = { ...routes[route], faq: pageFaq(ns) }
+  }
+  routes['/trust'] = { ...routes['/trust'], faq: trustFaq() }
+  routes['/product/sonic-discovery'] = {
+    ...routes['/product/sonic-discovery'],
+    howTo: sonicDiscoveryHowTo(),
+  }
+  return routes
 }
 
 // https://vite.dev/config/
@@ -47,7 +97,7 @@ export default defineConfig(({ mode }) => {
       /* Bakes each route's head into its own HTML file. Link-preview scrapers do not run JS, so
          the runtime RouteMeta never reaches them — every shared URL previewed as the homepage. */
       prerenderHead({
-        routes: { ...ROUTE_SEO, '/trust': { ...ROUTE_SEO['/trust'], faq: trustFaq() } },
+        routes: routesWithPageCopy(),
         origin: SITE_ORIGIN,
         outDir: path.resolve(__dirname, 'dist'),
         organization: { sameAs },

@@ -27,7 +27,10 @@ export const DemoStageBanner: React.FC<DemoStageBannerProps> = ({ onDismiss, con
             Beta Stage Notice
           </p>
           <p className="text-[length:var(--px-11)] lg:text-[length:var(--px-9)] font-light font-fira text-[var(--color-text-secondary)] mt-[var(--px-6)] leading-[var(--px-14)]">
-            Resomix is currently in beta. You may encounter bugs or incomplete features while we continue improving the sonic discovery experience. If you find an issue, please report it through our{" "}
+            {/* Leads with WHAT Resomix is. Every prerendered page ships this notice above its H1,
+                so it is the first "Resomix is" sentence an AI assistant reads on the whole site.
+                It used to be a sentence about bugs (ShelfSignal report, September 2026). */}
+            Resomix is a sound-first music discovery and track analysis platform, currently in beta. You may encounter bugs or incomplete features while we keep improving it. If you find an issue, please report it through our{" "}
             <a
               href={contactUrl}
               className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors cursor-pointer underline underline-offset-2"

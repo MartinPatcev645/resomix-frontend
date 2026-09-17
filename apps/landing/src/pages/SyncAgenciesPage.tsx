@@ -6,6 +6,7 @@ import { SaProblems } from '@/sections/sync-agencies/SaProblems.tsx';
 import { SaWorkflows } from '@/sections/sync-agencies/SaWorkflows.tsx';
 import { SaExpect } from '@/sections/sync-agencies/SaExpect.tsx';
 import { SaFinalCta } from '@/sections/sync-agencies/SaFinalCta.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
@@ -60,6 +61,7 @@ export default function SyncAgenciesPage() {
         <SaProblems />
         <SaWorkflows />
         <SaExpect />
+        <FaqSection ns="syncAgencies" />
         <SaFinalCta />
       </main>
     </div>

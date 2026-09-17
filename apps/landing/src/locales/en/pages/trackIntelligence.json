@@ -330,6 +330,36 @@
         }
       }
     },
+    "faq": {
+      "eyebrow": "10 // QUESTIONS",
+      "title": "Questions about Resomix Track Intelligence",
+      "items": [
+        {
+          "q": "How do I find the BPM and key of a track?",
+          "a": "Upload the track to Resomix and open Track Intelligence. Tempo, key and Camelot code are measured directly from the audio and shown with a confidence value, alongside structure, loudness and energy."
+        },
+        {
+          "q": "How accurate is the key detection?",
+          "a": "Measured values such as tempo, key and loudness are read from the recording, so the same file always returns the same result, and the key is shown with its confidence and any alternative key. Predicted values such as genre and mood are classification signals, shown with confidence, never as absolutes."
+        },
+        {
+          "q": "Does Resomix tag genre and mood automatically?",
+          "a": "Yes, as predicted signals. Track Intelligence reports genre and style, mood and theme, and instrumentation such as vocal presence, each with a confidence level and with secondary signals kept visible instead of forced into one label."
+        },
+        {
+          "q": "Can Track Intelligence enrich catalogue metadata?",
+          "a": "For a partner catalogue, yes. The same analysis runs across every authorised recording so structure, tempo, key, mood and genre are described in the same terms for every track, and it can flag inconsistent tagging. Resomix does not edit your metadata. It gives your team consistent evidence to work from."
+        },
+        {
+          "q": "Can I analyse my own unreleased track?",
+          "a": "Yes. The upload is processed privately, is not used to train PYXIS-1, and the source audio is deleted no later than 24 hours after upload or analysis."
+        },
+        {
+          "q": "Can I get the analysis as data?",
+          "a": "Partners can retrieve versioned, structured JSON through the Resomix API, with rhythm, tonality, loudness, mood, structure and provenance fields. Analysis access is enabled on request."
+        }
+      ]
+    },
     "cta": {
       "leftEyebrow": "FOR MUSIC PROFESSIONALS",
       "leftTitle": "See your track as data you can use.",
