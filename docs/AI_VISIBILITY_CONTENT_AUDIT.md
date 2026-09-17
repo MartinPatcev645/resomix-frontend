@@ -1,11 +1,10 @@
 # AI Visibility Content Audit
 
-Status: in progress. On 17 September 2026 the approval-free items were implemented locally and
-are uncommitted. That covers the replaced descriptions, the definition sentences and brand ties
-(as edits to existing strings, no new elements), llms.txt, the enriched Organization node, the
-Service and WebAPI entities, FAQPage on the trust page, and the flat `<route>.html` build output
-so the canonical URL no longer redirects. Waiting on George are the FAQ blocks, the Sonic
-Discovery steps list and the items in §11. Waiting on access are Cloudflare and Bing (§8, §10).
+Status: complete on the website side, 17 September 2026. Everything in this document that could
+be done in the repository or in Cloudflare is built, tested and checked on staging, and it reaches
+resomix.com with the next production release. What remains either follows that release (Bing,
+IndexNow and the note to Vladimir, §10 and §13) or belongs to George (§11). This document is the
+technical record. The plain-language version for George is `AI_VISIBILITY_SUMMARY.md`.
 Prepared: 17 September 2026.
 Sources compared: the ShelfSignal report "Resomix on the AI shelf" (collected 15 September 2026),
 Vladimir's two WhatsApp messages of 16 September and his follow-up with seven fixes, the full
@@ -276,7 +275,9 @@ the existing opening paragraph, so nothing new is rendered and the layout is unt
 
 ### 4.4 The FAQ block
 
-Pending George's approval, since it is a new section on each page (§11).
+Approved by George on 17 September 2026 for the four product pages and the seven solution pages,
+and built. The FAQs drafted in §5 for Home, Developers, Partners and the Pilot page are not
+approved yet.
 
 - One block per page, placed after the last content section and before the closing CTA, so it
   does not disturb the designed flow above it.
@@ -1054,32 +1055,27 @@ The original list follows for the record.
 
 ---
 
-## 12. Order of work and effort
+## 12. Order of work and status
 
-In the order Usman asked for: Cloudflare first, then metadata, then the rest.
+In the order Usman asked for, which was Cloudflare first, then metadata, then the rest.
 
-| Step | What | Files | Effort |
+| Step | What | Files | Status |
 |---|---|---|---|
-| 1 | Cloudflare checks and www redirect rule (§8) | dashboard | 1 h, needs access |
-| 2 | Twelve descriptions plus the contact placeholder (§3.2, §5) | `seoConfig.ts` | 0.5 h |
-| 3 | Sonic Discovery: hero sentence, plain-text steps, FAQ copy (§5.3) | `sonicDiscovery.json`, one steps component, shared FAQ section | 2 h |
-| 4 | Track Intelligence, Catalogue Intelligence, Product, Home copy and FAQs (§5.1, 5.2, 5.4, 5.5) | four locale files | 1.5 h |
-| 5 | Developers, Partners, Pilot (§5.6 to 5.8) | three locale files | 1 h |
-| 6 | Seven solution pages: lead paragraphs, brand ties, FAQs, Publishers spelling (§5.10 to 5.16) | seven locale files, hero sections render one extra `<p>` | 2 h |
-| 7 | Structured data (§7): Organization enrichment, entity field, generators, tests | `index.html`, `seoConfig.ts`, `prerenderHead.ts`, two spec files | 2 h |
-| 8 | Canonical: `<route>.html` output in both writers, spec update (§9) | two tooling files, one spec | 1 h |
-| 9 | `llms.txt` (§6) | `public/llms.txt` | 0.25 h |
-| 10 | `pnpm build`, run `prerenderedHead.spec.ts` and `structuredData.spec.ts`, view-source spot checks | | 0.5 h |
-| 11 | Deploy (Usman commits and pushes demo → main), purge Cloudflare cache for changed URLs, Bing + IndexNow + GSC (§10) | | 0.5 h |
-| 12 | Verify (§13) and send Vladimir the go-live date and changed URLs | | 0.5 h |
+| 1 | Cloudflare checks and www redirect rule (§8) | dashboard | Done. Findings in §8.3 |
+| 2 | Descriptions that name Resomix, plus the contact placeholder (§3.2, §5) | `seoConfig.ts`, webapp `seoConfig.ts` | Done, 14 routes |
+| 3 | Sonic Discovery hero sentence, plain-text steps and FAQ (§5.3) | `sonicDiscovery.json`, `SdFlowSteps.tsx`, shared FAQ section | Done |
+| 4 | Track Intelligence, Catalogue Intelligence, Product and Home copy, and the three product FAQs (§5.1, 5.2, 5.4, 5.5) | four locale files | Done |
+| 5 | Developers, Partners and Pilot hero copy (§5.6 to 5.8) | three locale files | Done. Their FAQs are drafted and not approved |
+| 6 | Seven solution pages, with the definition sentence prepended to the existing intro, brand ties, FAQs and the Publishers spelling (§5.10 to 5.16) | seven locale files, `sections/shared/FaqSection.tsx` | Done |
+| 7 | Structured data (§7) | `index.html`, `seoConfig.ts`, `prerenderHead.ts`, `vite.config.ts`, `structuredData.spec.ts` | Done, except `SoftwareApplication` |
+| 8 | Canonical, flat `<route>.html` output in both writers (§9) | two tooling files, six specs | Done. Verified on staging, where the bare URL returns 200 and the slashed form 308 |
+| 9 | `llms.txt` (§6) | `public/llms.txt` | Done |
+| 10 | Build and the seven build-output specs | | Done. 121 tests pass |
+| 11 | Production release from demo to main, then Bing, IndexNow and Search Console (§10) | | After the release |
+| 12 | Verify (§13) and send Vladimir the go-live date and the changed URLs | | After the release |
 
-Total: 12 to 13 hours. Steps 2 to 9 need no account access and can run while step 1 waits for
-George.
-
-Progress on 17 September 2026. Steps 2, 4, 5, 6 (without the FAQ blocks and the Publishers
-spelling), 7 (without SoftwareApplication and per-page FAQPage), 8 and 9 are done locally,
-uncommitted, and the build and the seven build-output specs pass. Step 3's steps list and every
-FAQ block wait for George. Steps 1, 11 and 12 wait for access and for the deploy.
+George reviewed the visible changes on 17 September 2026 and Usman checked the design on every
+touched page before the push.
 
 ---
 
