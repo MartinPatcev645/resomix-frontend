@@ -220,8 +220,10 @@ export default function RegisterContent({
         // Signup is complete here even though the user is not signed in yet: email registration
         // requires verification first, so the uuid comes from the registration response rather
         // than from the auth store. `user_identified` follows later, at their first login.
-        const created = (result as { data?: { user?: { uuid?: string } } }).data?.user;
-        pushSignupCompleted({ userId: created?.uuid, signupSource: "email", surface: "register" });
+        // The field is `user_uuid`, not a nested user object: registration returns identity
+        // fields only, never a `User` (packages/api-client/src/types/auth.ts).
+        const created = (result as { data?: { user_uuid?: string } }).data;
+        pushSignupCompleted({ userId: created?.user_uuid, signupSource: "email", surface: "register" });
         setStatusType("success");
         setStatusMessage(
           "Account created successfully! Please check your email to verify your account."
