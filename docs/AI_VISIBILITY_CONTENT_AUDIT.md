@@ -957,6 +957,32 @@ and drops the path. Replace with a Redirect Rule on the zone:
 Verify with `curl -I https://www.resomix.com/product/sonic-discovery` (expect 301 to the bare
 host with the path intact).
 
+### 8.3 Findings on 17 September 2026
+
+- The zone is on the Free plan. AI bot policies are set to Allow for Search, Agent and Training.
+  Bot Preference Sync (the managed robots.txt, now inside the AI bot policies dialog) is off, Bot
+  fight mode is off and AI Labyrinth is off. Nothing needed changing.
+- No rule for www existed in Redirect Rules or Bulk Redirects, yet www answered 301 to the
+  homepage for every path. A new Redirect Rule named "www to apex, keep path" matches
+  `http*://www.resomix.com/*` and targets `https://resomix.com/${2}` with the query string
+  preserved. Verified live on http and https. Redirect Rules run before Bulk Redirects and Page
+  Rules, so the older static redirect is shadowed and can stay where it is.
+- The dashboard warned that DNS "may not be proxying traffic for http" when the rule was deployed.
+  That is a parsing quirk of the `http*` wildcard. The www record is proxied and the rule applies.
+- AI Crawl Control shows no blocked crawler. In the last 24 hours it counted 398 AI crawler
+  requests with 362 allowed, and ChatGPT-User, OAI-SearchBot, GPTBot, ClaudeBot, PerplexityBot and
+  BingBot all reached the site. The 36 unsuccessful requests are 4xx responses, mostly from
+  Meta-ExternalAgent.
+- The Optimization tab lists the pages assistants retrieved for answers. The homepage dominates,
+  and inner pages appear with a trailing slash, which is the old build layout still on production
+  until demo is merged to main.
+- Caveat for the proof sent to Vladimir. The user agent probes run from the terminal on
+  17 September sit inside that 24 hour window. The Claude-User and Perplexity-User rows, the five
+  staging hits and the five Sonic Discovery retrievals are that test traffic, not assistants.
+  Retake the screenshots once the window has rolled over.
+- The "Homepage, Cache Everything" cache rule is not holding a stale page. Production serves the
+  current title with no edge cache status.
+
 ---
 
 ## 9. One canonical URL (trailing slash)
