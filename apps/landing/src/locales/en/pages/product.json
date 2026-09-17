@@ -2,7 +2,7 @@
   "product": {
     "hero": {
       "eyebrow": "Product overview // PYXIS-1 sonic intelligence",
-      "body": "Resomix uses PYXIS-1 to find related tracks, read one recording in detail, or make an authorised catalogue searchable by sound.",
+      "body": "Resomix is a music similarity search and audio analysis platform. It uses its PYXIS-1 engine to find related tracks, read one recording in detail, or make an authorised catalogue searchable by sound.",
       "ctaPrimary": "Try Sonic Discovery",
       "ctaSecondary": "Explore the three products",
       "ctaPilot": "Request a guided partner pilot",

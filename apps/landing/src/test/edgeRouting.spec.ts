@@ -28,8 +28,10 @@ const declaredRoutes = (() => {
   return [...src.matchAll(/<Route\s+path="([^"]+)"/g)].map((m) => m[1]).filter((r) => r !== '*');
 })();
 
+/* `<route>.html`, the flat form: Pages serves the bare URL from it and redirects the slashed URL to
+   it. The directory form (`<route>/index.html`) redirects the other way, away from the canonical. */
 const shellFor = (route: string) =>
-  route === '/' ? resolve(DIST, 'index.html') : resolve(DIST, route.replace(/^\//, ''), 'index.html');
+  route === '/' ? resolve(DIST, 'index.html') : resolve(DIST, `${route.replace(/^\//, '')}.html`);
 
 describe.skipIf(!built)('edge routing', () => {
   it('emits a real 404 page', () => {

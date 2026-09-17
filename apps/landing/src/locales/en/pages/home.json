@@ -3,7 +3,7 @@
     "hero": {
       "beta": "Production beta · Powered by PYXIS-1",
       "title": "Drop one track.\nFind [[what belongs next.]]",
-      "platform": "Resomix reveals a track's unique identity, subtle connections, and its place within a music catalogue.",
+      "platform": "Resomix is a music similarity search and audio analysis platform for electronic music. Drop one track and it reveals the track's identity, its closest sonic relatives and its place within a music catalogue.",
       "tryCta": "Try Resomix",
       "exploreCta": "Explore the Product",
       "pilotLink": "Start a Catalogue Pilot",
@@ -71,7 +71,7 @@
       "tileSearchD": "Type an artist or title, and use any result as your reference.",
       "tileDropK": "Drop a track. We'll listen.",
       "tileDropD": "MP3, WAV, FLAC or AIFF. Processed privately, deleted no later than 24 hours after upload or analysis.",
-      "step02": "PYXIS-1 builds a sonic profile",
+      "step02": "Resomix's PYXIS-1 engine builds a sonic profile",
       "step02body": "70+ measurable audio characteristics, read from the recording itself.",
       "step03": "Get a ranked shortlist",
       "step03sub": "A similarity playlist, created automatically, so you can audition it track by track.",

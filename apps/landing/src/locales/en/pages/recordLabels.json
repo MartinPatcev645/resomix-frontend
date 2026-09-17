@@ -3,7 +3,7 @@
     "hero": {
       "chip": "Use case · Record labels",
       "h1": "Give authorised recordings [[another route into discovery.]]",
-      "intro": "Running a label is hard, and it always has been. Choosing the artists to release, curating every project with care, managing a growing catalogue, and consistently releasing music that's in line with the essence of your project all require time and dedication.",
+      "intro": "Resomix is a catalogue search tool for record labels. It analyses the audio itself with its PYXIS-1 engine, so a label can search and compare its own releases by how they sound, not only by metadata. Running a label is hard, and it always has been. Choosing the artists to release, curating every project with care, managing a growing catalogue, and consistently releasing music that's in line with the essence of your project all require time and dedication.",
       "figureAria": "Ten years of a label's releases drawn as a timeline; one orange thread connects a recent signing back to an older release, re-lighting it"
     },
     "statement": {

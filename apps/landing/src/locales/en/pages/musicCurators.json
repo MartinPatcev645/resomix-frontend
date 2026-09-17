@@ -2,7 +2,7 @@
   "musicCurators": {
     "hero": {
       "chip": "Use case · Music curators",
-      "intro": "The art of music curation is born from a unique mix of talent and experience; the ability to hear music differently, to predict trends, to see hidden connections, is the essence of what makes humans connect through music.",
+      "intro": "Resomix is a music discovery tool for curators. One reference track becomes the starting point for a ranked set of tracks that share its sound, whatever their genre, era or chart position. The art of music curation is born from a unique mix of talent and experience; the ability to hear music differently, to predict trends, to see hidden connections, is the essence of what makes humans connect through music.",
       "ctaNote": "Free to start · production beta",
       "figureAria": "Tracks scattered across decades and genre strata; from the reference track a signal journey flows outward through numbered stops across eras and genres, forming a playlist chain linked by the curator, with one direction still unexplored",
       "title": "Curate from the sound, [[not only the chart.]]"
@@ -24,7 +24,7 @@
       "eyebrow": "For music curators",
       "h2": "Expand your curation with Resomix",
       "lead1": "What curators need is a discovery engine that analyses the audio itself, without relying on metadata, giving them a fresh approach to the music they find and select for their projects.",
-      "lead2": "By analysing the structural, harmonic, rhythmic, timbral, and emotional qualities of a reference track, PYXIS-1 is designed to discover new connections between songs, hidden underneath the surface of the genres the songs naturally fall into.",
+      "lead2": "By analysing the structural, harmonic, rhythmic, timbral, and emotional qualities of a reference track, Resomix's PYXIS-1 engine is designed to discover new connections between songs, hidden underneath the surface of the genres the songs naturally fall into.",
       "intro": "What does all this actually mean for a music curator:",
       "listAria": "What Resomix means for a music curator",
       "items": {

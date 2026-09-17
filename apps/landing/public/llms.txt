@@ -1,34 +1,44 @@
 # Resomix
 
-> Resomix finds music by how it sounds, not how it is tagged. The PYXIS-1 engine builds a sonic
-> profile for each recording so a catalogue can be searched by reference rather than by metadata.
+> Resomix is a music similarity search and audio analysis platform for electronic music. Its
+> PYXIS-1 engine builds a sonic profile for each recording, so tracks can be found by how they
+> sound rather than how they are tagged.
 
-Resomix is a sonic intelligence platform for the electronic music industry. Upload or pick a
-reference track and it returns ranked matches that genuinely belong next to it; analyse a single
-recording; or make an authorised catalogue searchable by sound.
+Resomix is a sonic intelligence platform built in Thessaloniki. Pick or upload a reference track
+and Sonic Discovery returns ranked matches that belong next to it. Track Intelligence analyses a
+single recording for BPM, key, structure, energy, timbre, genre and mood. Catalogue Intelligence
+makes an authorised catalogue searchable by sound inside a private index.
 
 ## Product
 
-- [Product overview](https://resomix.com/product): Search, similarity and track analysis in one place.
-- [Sonic Discovery](https://resomix.com/product/sonic-discovery): Reference-based discovery — one track in, ranked matches out.
-- [Track Intelligence](https://resomix.com/product/track-intelligence): Tempo, key, energy and sonic character read from the audio.
-- [Catalogue Intelligence](https://resomix.com/product/catalog-intelligence): Authorised catalogues profiled into a partner-scoped sonic index.
+- [Product overview](https://resomix.com/product): One engine and three workflows. Similarity search, track analysis and catalogue search by sound.
+- [Sonic Discovery](https://resomix.com/product/sonic-discovery): Music similarity search. One track or upload in, a ranked playlist of similar-sounding tracks out.
+- [Track Intelligence](https://resomix.com/product/track-intelligence): Track analysis software. BPM and key detection, structure, energy, loudness, timbre, and genre and mood signals with confidence.
+- [Catalogue Intelligence](https://resomix.com/product/catalog-intelligence): Search a music catalogue by sound. Authorised recordings are profiled into a private, partner-scoped index.
 
 ## Solutions
 
-- [Record labels](https://resomix.com/solutions/record-labels)
-- [Music publishers](https://resomix.com/solutions/music-publishers)
-- [Sync agencies](https://resomix.com/solutions/sync-agencies)
-- [Music libraries and sample providers](https://resomix.com/solutions/music-libraries-sample-providers)
-- [DJs](https://resomix.com/solutions/djs)
-- [Music curators](https://resomix.com/solutions/music-curators)
-- [Producers](https://resomix.com/solutions/producers)
+- [Record labels](https://resomix.com/solutions/record-labels): Catalogue search by sound for labels and distributors.
+- [Music publishers](https://resomix.com/solutions/music-publishers): Find related works across a publishing catalogue by sound.
+- [Sync agencies](https://resomix.com/solutions/sync-agencies): Reference-based search for briefs. Clearance stays human.
+- [Music libraries and sample providers](https://resomix.com/solutions/music-libraries-sample-providers): Music library search by sound.
+- [DJs](https://resomix.com/solutions/djs): Music discovery tool for DJs. Find the next track from one reference.
+- [Music curators](https://resomix.com/solutions/music-curators): Playlist curation from a reference track.
+- [Producers](https://resomix.com/solutions/producers): Decode a reference track, then explore the music around it.
 
 ## Developers and partners
 
-- [Developers](https://resomix.com/developers): One API for search, similarity and track analysis.
-- [Partners](https://resomix.com/partners): Three ways to work with Resomix.
-- [Guided catalogue pilot](https://resomix.com/partners/pilot): Evaluate on your own authorised audio.
+- [Developers](https://resomix.com/developers): Music similarity and audio analysis API for search, similarity by track or upload, and track analysis. Partner-scoped, with no public sandbox.
+- [Partners](https://resomix.com/partners): Three ways to work with Resomix. A private pilot, the live API, or integration planning.
+- [Guided catalogue pilot](https://resomix.com/partners/pilot): Managed evaluation on your own authorised audio, with the scorecard agreed first.
+
+## Facts
+
+- Resomix is not an audio fingerprinting or song-identification service. It finds and explains
+  music by sound. It does not tell you what a recording is.
+- Uploaded reference audio is deleted no later than 24 hours after upload or analysis.
+- User and partner audio is not used to train or fine-tune PYXIS-1. PYXIS-1 does not generate audio.
+- Partner catalogues are logically isolated. There is no shared partner pool and no public sandbox.
 
 ## About
 

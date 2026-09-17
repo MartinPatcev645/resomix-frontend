@@ -11,9 +11,10 @@ import { ROUTE_SEO, SITE_ORIGIN } from '@/routes/seoConfig.ts';
  * the head after React boots. Those scrapers never execute JavaScript — they read the bytes the
  * server returned. Runtime head management cannot reach them by construction.
  *
- * The build now emits `dist/<route>/index.html` per route with the head already correct. These
- * assertions run against that build output, because the only thing that matters here is what a
- * scraper receives.
+ * The build now emits `dist/<route>.html` per route with the head already correct (the flat form,
+ * so the bare canonical URL is served directly and the slashed one redirects to it, not the other
+ * way round). These assertions run against that build output, because the only thing that matters
+ * here is what a scraper receives.
  *
  * Skipped when dist/ is absent (a plain `vitest` run with no prior build) rather than failing, so
  * the suite does not depend on build order.
@@ -21,8 +22,8 @@ import { ROUTE_SEO, SITE_ORIGIN } from '@/routes/seoConfig.ts';
 
 const DIST = resolve(process.cwd(), 'dist');
 const built = existsSync(resolve(DIST, 'index.html'));
-const html = (route: string) =>
-  readFileSync(resolve(DIST, route === '/' ? 'index.html' : `${route.slice(1)}/index.html`), 'utf8');
+const fileFor = (route: string) => resolve(DIST, route === '/' ? 'index.html' : `${route.slice(1)}.html`);
+const html = (route: string) => readFileSync(fileFor(route), 'utf8');
 
 const tag = (src: string, re: RegExp) => src.match(re)?.[1];
 
@@ -30,10 +31,15 @@ describe.skipIf(!built)('prerendered per-route head', () => {
   const routes = Object.keys(ROUTE_SEO).filter((r) => r !== '/404');
 
   it('emits an HTML file for every route', () => {
-    const missing = routes.filter(
-      (r) => !existsSync(resolve(DIST, r === '/' ? 'index.html' : `${r.slice(1)}/index.html`)),
-    );
+    const missing = routes.filter((r) => !existsSync(fileFor(r)));
     expect(missing).toEqual([]);
+  });
+
+  it('emits the flat file, never the directory form that makes the canonical URL redirect', () => {
+    // dist/about/index.html would make Pages 308 /about -> /about/, and /about is the canonical.
+    for (const r of ['/about', '/product/sonic-discovery']) {
+      expect(existsSync(resolve(DIST, r.slice(1), 'index.html')), `${r}/index.html must not exist`).toBe(false);
+    }
   });
 
   it.each(routes)('%s ships its own title and description in the raw HTML', (route) => {
@@ -69,7 +75,7 @@ describe.skipIf(!built)('prerendered per-route head', () => {
   });
 
   it('keeps asset URLs absolute, or nested pages would 404 their own JS', () => {
-    // dist/solutions/producers/index.html resolving "./assets/x.js" would request
+    // dist/solutions/producers.html resolving "./assets/x.js" would request
     // /solutions/producers/assets/x.js — the whole app would fail to boot at depth.
     const src = html('/solutions/producers');
     expect(src).toMatch(/src="\/assets\//);

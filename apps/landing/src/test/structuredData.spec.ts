@@ -18,7 +18,7 @@ import { ROUTE_SEO, SITE_ORIGIN } from '@/routes/seoConfig.ts';
 const DIST = resolve(process.cwd(), 'dist');
 const built = existsSync(resolve(DIST, 'index.html'));
 const html = (route: string) =>
-  readFileSync(resolve(DIST, route === '/' ? 'index.html' : `${route.slice(1)}/index.html`), 'utf8');
+  readFileSync(resolve(DIST, route === '/' ? 'index.html' : `${route.slice(1)}.html`), 'utf8');
 
 interface Node { '@type': string; [k: string]: unknown }
 
@@ -89,6 +89,75 @@ describe.skipIf(!built)('per-page structured data', () => {
   it('stays valid JSON in every built file', () => {
     for (const route of indexed) {
       expect(() => nodes(route), `${route} has malformed JSON-LD`).not.toThrow();
+    }
+  });
+
+  /*
+   * The page's own entity. Assistants answer "whose page is this, and what is it about" from
+   * exactly these nodes; the ShelfSignal report (Sept 2026) read our pages and could not lift the
+   * claim out of the text. `Service` on partner and solutions routes, `WebAPI` on the developer
+   * overview, and the WebPage points at it.
+   */
+  it('emits a Service on every partner and solutions route, tied to the Organization', () => {
+    const expected = indexed.filter((r) => r.startsWith('/solutions/') || r.startsWith('/partners'));
+    expect(expected.length).toBeGreaterThan(5);
+    for (const route of expected) {
+      const [service, ...extra] = typed(route, 'Service');
+      expect(service, `${route} has no Service`).toBeDefined();
+      expect(extra, `${route} has more than one Service`).toEqual([]);
+      expect(service.provider).toEqual({ '@id': `${SITE_ORIGIN}/#organization` });
+      expect(typed(route, 'WebPage')[0].mainEntity).toEqual({ '@id': service['@id'] });
+    }
+  });
+
+  it('describes the developer overview as a WebAPI, not a Service', () => {
+    const api = typed('/developers', 'WebAPI')[0];
+    expect(api.provider).toEqual({ '@id': `${SITE_ORIGIN}/#organization` });
+    expect(api.documentation).toMatch(/^https:\/\//);
+    expect(typed('/developers', 'Service')).toHaveLength(0);
+  });
+
+  it('claims no entity on the product pages until one is approved', () => {
+    // Those pages describe live software; a SoftwareApplication node there is a pending decision.
+    for (const route of ['/product', '/product/sonic-discovery', '/product/track-intelligence']) {
+      expect(typed(route, 'Service')).toHaveLength(0);
+      expect(typed(route, 'SoftwareApplication')).toHaveLength(0);
+    }
+  });
+
+  it('marks up the trust page Q&A as FAQPage, from the strings the page itself renders', () => {
+    const faq = typed('/trust', 'FAQPage')[0];
+    expect(faq).toBeDefined();
+    const questions = faq.mainEntity as Array<{ name: string; acceptedAnswer: { text: string } }>;
+    expect(questions.length).toBeGreaterThanOrEqual(5);
+    const page = html('/trust');
+    for (const q of questions) {
+      // Google's rule: FAQPage may only describe Q&A a visitor can see on the page.
+      expect(page, `question not visible on /trust: ${q.name}`).toContain(q.name);
+      expect(q.acceptedAnswer.text.length).toBeGreaterThan(20);
+    }
+  });
+
+  it('gives the Organization real contact points and, when built with env, real profiles only', () => {
+    const org = typed('/', 'Organization')[0];
+    expect(org.contactPoint).toBeDefined();
+    // sameAs is merged from VITE_*_URL at build time; a local build without them has none, which
+    // is correct. What must never happen is an empty or malformed entry.
+    const sameAs = org.sameAs as string[] | undefined;
+    if (sameAs) {
+      expect(sameAs.length).toBeGreaterThan(0);
+      for (const u of sameAs) expect(u).toMatch(/^https:\/\/\S+$/);
+    }
+  });
+
+  it('never asserts reviews or prices anywhere', () => {
+    // We have no reviews, and prices live on /pricing only. Either fabricated is a manual action.
+    for (const route of indexed) {
+      for (const n of nodes(route)) {
+        expect(n.aggregateRating, `${route} ${n['@type']} carries aggregateRating`).toBeUndefined();
+        expect(n.review, `${route} ${n['@type']} carries review`).toBeUndefined();
+        expect(n.offers, `${route} ${n['@type']} carries offers`).toBeUndefined();
+      }
     }
   });
 });

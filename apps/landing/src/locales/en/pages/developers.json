@@ -5,7 +5,7 @@
       "eyebrowLive": "Live",
       "eyebrowSuffix": " · Partner-scoped REST API · Powered by PYXIS-1",
       "title": "Put similarity and track intelligence [[inside your product.]]",
-      "sub": "Search your own catalogue by sound and rank it by how the music actually sounds, through a partner-scoped REST API. Structured Track Intelligence analysis is enabled on request, against your own catalogue.",
+      "sub": "The Resomix API is a music similarity and audio analysis API for partners, powered by Resomix's PYXIS-1 engine. Search your own catalogue by sound and rank it by how the music actually sounds, through a partner-scoped REST API. Structured Track Intelligence analysis (tempo, key, loudness, structure, mood and genre signals) is enabled on request, against your own catalogue.",
       "ctaPrimary": "Request API Access",
       "ctaSecondary": "View Full API Reference",
       "trustline": "Partner-scoped · Versioned JSON · Private catalogue index",

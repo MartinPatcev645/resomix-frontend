@@ -82,7 +82,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
   '/contact': {
     title: 'Contact Resomix: Support, Partnerships and Press Enquiries',
     description:
-      'Reach the Resomix team in Thessaloniki for product support, partner and catalogue enquiries, or press. We reply from support@resomix.com within the beta.',
+      'Reach the Resomix team in Thessaloniki for product support, partner and catalogue enquiries, or press. Write to support@resomix.com and we will get back to you.',
     canonical: `${LANDING_ORIGIN}/contact`,
     priority: 0.5,
   },

@@ -2,7 +2,7 @@
   "producers": {
     "hero": {
       "chip": "Use case · Electronic music producers",
-      "support": "Resomix uses the PYXIS-1 analytical engine to examine 70+ musical characteristics across rhythm, harmony, timbre, structure and energy, then surfaces sonically related tracks that can unlock new production ideas.",
+      "support": "Resomix is a reference-analysis and discovery tool for producers. It uses the PYXIS-1 analytical engine to examine 70+ musical characteristics across rhythm, harmony, timbre, structure and energy, then surfaces sonically related tracks that can unlock new production ideas.",
       "ctaNote": "Free to start · production beta",
       "figureAria": "The creative loop breaks open: a reference track feeds the PYXIS-1 sonic profile, five labelled dimensions, rhythm, harmony, timbre, structure and energy, fan out, and the highlighted thread reaches an unexpected sonic match: new directions to explore",
       "title": "Understand your recording and study [[the music around it.]]"

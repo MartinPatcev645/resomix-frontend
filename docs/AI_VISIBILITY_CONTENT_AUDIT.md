@@ -1,6 +1,11 @@
 # AI Visibility Content Audit
 
-Status: draft for review. Nothing in this document has been implemented yet.
+Status: in progress. On 17 September 2026 the approval-free items were implemented locally and
+are uncommitted. That covers the replaced descriptions, the definition sentences and brand ties
+(as edits to existing strings, no new elements), llms.txt, the enriched Organization node, the
+Service and WebAPI entities, FAQPage on the trust page, and the flat `<route>.html` build output
+so the canonical URL no longer redirects. Waiting on George are the FAQ blocks, the Sonic
+Discovery steps list and the items in §11. Waiting on access are Cloudflare and Bing (§8, §10).
 Prepared: 17 September 2026.
 Sources compared: the ShelfSignal report "Resomix on the AI shelf" (collected 15 September 2026),
 Vladimir's two WhatsApp messages of 16 September and his follow-up with seven fixes, the full
@@ -232,8 +237,9 @@ Marco wrote them.
 
 - British spelling in public copy: catalogue, analyse, organisation, authorised. The `catalog`
   spelling in the Catalogue Intelligence URL and title is a deliberate split and stays.
-- Short declarative sentences. Colon-led explanations are the house pattern ("Resomix does not
-  replace listening: it helps it travel further"). No exclamation marks in the new text.
+- Short declarative sentences. Some existing copy opens an explanation with a colon. New copy does
+  not, because the pattern reads as machine-written, so it splits into two sentences instead. No
+  exclamation marks and no em dashes in the new text.
 - No superlatives about ourselves. The buyer questions say "best"; the pages answer them with a
   checkable statement, never with "the best".
 - The eyebrow style (`01 // The profile`) and the H1 accent markers `[[…]]` are untouched.
@@ -265,10 +271,12 @@ Every indexable page gets one sentence, in its first paragraph under the H1, of 
 > [who].
 
 Twenty to forty words, present tense, quotable on its own. It uses the exact buyer phrase the page
-owns (§1.1). On the solution pages, whose openings are essay-style, the sentence becomes a short
-new first paragraph and the existing opening moves down one paragraph unchanged.
+owns (§1.1). On the solution pages, whose openings are essay-style, the sentence is prepended to
+the existing opening paragraph, so nothing new is rendered and the layout is untouched.
 
 ### 4.4 The FAQ block
+
+Pending George's approval, since it is a new section on each page (§11).
 
 - One block per page, placed after the last content section and before the closing CTA, so it
   does not disturb the designed flow above it.
@@ -297,13 +305,13 @@ unchanged everywhere.
 - Title (unchanged): Resomix: Find & Analyse Electronic Music by Sound
 - Description (current, no Resomix): Drop one track and hear what belongs next. The PYXIS-1 engine
   powers sonic similarity search, track analysis and catalogue intelligence for electronic music.
-- **Proposed description** (159 chars): Resomix finds electronic music by how it sounds. Drop one
+- **Applied description** (159 chars): Resomix finds electronic music by how it sounds. Drop one
   track and its PYXIS-1 engine returns a ranked shortlist, reads one recording or searches a catalogue.
 - H1 (unchanged): Drop one track. Find what belongs next.
 - First paragraph today, `home.hero.platform`: "Resomix reveals a track's unique identity, subtle
   connections, and its place within a music catalogue."
-- **Proposed `home.hero.platform`**: "Resomix is a music similarity search and audio analysis
-  platform for electronic music: drop one track and it reveals the track's identity, its closest
+- **Applied `home.hero.platform`**: "Resomix is a music similarity search and audio analysis
+  platform for electronic music. Drop one track and it reveals the track's identity, its closest
   sonic relatives and its place within a music catalogue."
 - Brand tie: `home.how.step02` "PYXIS-1 builds a sonic profile" becomes "Resomix's PYXIS-1 engine
   builds a sonic profile". The eyebrow "Production beta · Powered by PYXIS-1" stays.
@@ -314,17 +322,17 @@ unchanged everywhere.
 - Proposed FAQ, new key `home.faq`:
   1. **What is Resomix?** Resomix is a sonic intelligence platform for electronic music. Its
      PYXIS-1 engine reads more than 70 measurable audio characteristics from a recording and uses
-     them for three things: finding similar tracks (Sonic Discovery), analysing one track (Track
-     Intelligence) and making an authorised catalogue searchable by sound (Catalogue Intelligence).
+     them to find similar tracks (Sonic Discovery), analyse one track (Track Intelligence) and make
+     an authorised catalogue searchable by sound (Catalogue Intelligence).
   2. **How do I find music by sound?** Search for a track already in the Resomix catalogue, or
      upload your own reference. PYXIS-1 compares its sonic profile with a pre-analysed index and
      returns a ranked playlist of the closest matches, which you can audition, save or use as the
      next reference.
   3. **Is Resomix a song-identification app like Shazam?** No. Audio fingerprinting tells you what
-     a recording is. Resomix tells you what sounds like it: it starts from a track you already have
+     a recording is. Resomix tells you what sounds like it. It starts from a track you already have
      and finds its closest sonic relatives, whoever released them and whenever.
   4. **Is Resomix free?** Sonic Discovery is free to start during the production beta. A Pro plan
-     is available for deeper use; the plans are compared on the pricing page.
+     is available for deeper use, and the plans are compared on the pricing page.
 - Schema: `WebPage` (exists) plus `FAQPage`. The Organization node in `index.html` gains `sameAs`,
   `contactPoint` and `foundingLocation` (§7).
 
@@ -335,13 +343,13 @@ unchanged everywhere.
 - First paragraph today, `product.hero.body`: "Resomix uses PYXIS-1 to find related tracks, read
   one recording in detail, or make an authorised catalogue searchable by sound." Already a
   definition sentence and already tied. One addition so the buyer phrase is present:
-- **Proposed `product.hero.body`**: "Resomix is a music similarity search and audio analysis
-  platform: it uses its PYXIS-1 engine to find related tracks, read one recording in detail, or
+- **Applied `product.hero.body`**: "Resomix is a music similarity search and audio analysis
+  platform. It uses its PYXIS-1 engine to find related tracks, read one recording in detail, or
   make an authorised catalogue searchable by sound."
 - Proposed FAQ, new key `product.faq`:
   1. **What is the difference between Sonic Discovery, Track Intelligence and Catalogue
      Intelligence?** Sonic Discovery finds tracks that sound like a reference. Track Intelligence
-     explains one recording: structure, tempo, key, energy, timbre, mood. Catalogue Intelligence
+     explains one recording, from structure and tempo to key, energy, timbre and mood. Catalogue Intelligence
      applies the same engine to an authorised partner catalogue inside a private index. All three
      run on Resomix's PYXIS-1 engine.
   2. **What is PYXIS-1?** PYXIS-1 is Resomix's proprietary audio-analysis and similarity engine. It
@@ -349,7 +357,7 @@ unchanged everywhere.
      spectral profile and energy, and combines them into one sonic profile per recording. It is not
      a generative system and does not create audio.
   3. **Does Resomix identify songs?** No. Resomix is not an audio fingerprinting service. It does
-     not tell you what a recording is; it finds and explains recordings by how they sound.
+     not tell you what a recording is. It finds and explains recordings by how they sound.
   4. **Does Resomix train on my audio?** No. Uploaded references are deleted no later than 24 hours
      after upload or analysis, and neither user nor partner audio is used to train or fine-tune
      PYXIS-1.
@@ -362,15 +370,15 @@ unchanged everywhere.
 - Title (unchanged): Find Similar Tracks by Sound: Sonic Discovery | Resomix
 - Description (current, no Resomix): Start with one track or upload a reference. PYXIS-1 compares
   sonic profiles against a pre-analysed index and returns a ranked playlist of close matches.
-- **Proposed description** (158 chars): Resomix Sonic Discovery is a music similarity search tool.
+- **Applied description** (158 chars): Resomix Sonic Discovery is a music similarity search tool.
   Start with one track or upload a reference and PYXIS-1 returns a ranked playlist of similar tracks.
 - H1 (unchanged): Find similar tracks by sound.
 - First paragraph today, `sonicDiscovery.hero.sub`: "Search by how the music actually sounds.
   PYXIS-1 reads the groove, energy, timbre and structure of your reference (drawn from 70+
   measurable audio characteristics) and returns a ranked shortlist you can listen, analyse, and
   develop."
-- **Proposed `sonicDiscovery.hero.sub`**: "Resomix Sonic Discovery is a music similarity search
-  tool: search by how the music actually sounds. Resomix's PYXIS-1 engine reads the groove,
+- **Applied `sonicDiscovery.hero.sub`**: "Resomix Sonic Discovery is a music similarity search
+  tool that searches by how the music actually sounds. Resomix's PYXIS-1 engine reads the groove,
   energy, timbre and structure of your reference (drawn from 70+ measurable audio characteristics)
   and returns a ranked shortlist you can listen to, analyse and develop." (Also repairs "you can
   listen, analyse, and develop".)
@@ -380,34 +388,35 @@ unchanged everywhere.
   list beside or below the flow panel, in the protocol style already used for the "returned" line.
   Every line is lifted from existing flow keys:
   1. **Reference.** Search for a track already in the index, or upload your own. A searched track
-     uses its existing sonic profile; an upload is profiled on arrival.
+     uses its existing sonic profile, and an upload is profiled on arrival.
   2. **Sonic profile.** PYXIS-1 reads rhythm, harmony, timbre, structure and energy, from 70+
      measurable audio characteristics.
   3. **Comparison.** The profile is compared with the pre-analysed sonic index. Catalogue
      candidates are already profiled, so nothing is reanalysed per search.
   4. **Ranking.** The closest matches are ranked automatically. No manual selection.
-  5. **Playlist.** The Sonic Discovery playlist is returned: search around 5 to 6 seconds, upload
-     around 15 to 20 seconds (observed, not a service-level commitment). Audition, save, export, or
-     chain a result as your next reference.
+  5. **Playlist.** The Sonic Discovery playlist is returned, in around 5 to 6 seconds for a search
+     and 15 to 20 seconds for an upload (observed, not a service-level commitment). Audition, save,
+     export, or chain a result as your next reference.
   The SVG stays as the visual; the list is the text an assistant can quote.
 - Buyer phrases to land in body: "music similarity search" (hero), "find tracks that match a
   reference track", "music search by upload", "similar sounding tracks" (FAQ).
 - Proposed FAQ, new key `sonicDiscovery.faq`:
   1. **How do I find tracks that sound like a track I already have?** Search for the track in
      Resomix, or upload the file, and Sonic Discovery returns a ranked playlist of the closest
-     matches by sound: groove, energy, timbre and structure rather than genre tags or release date.
+     matches by sound, judged on groove, energy, timbre and structure rather than on genre tags or
+     release date.
   2. **Can I search for music by uploading a file?** Yes. Upload an MP3, WAV, FLAC or AIFF as your
      reference. Resomix processes it privately, uses it only as the query, and deletes the source
      audio no later than 24 hours after upload or analysis.
   3. **Is Sonic Discovery an audio fingerprinting or song-identification tool?** No. Fingerprinting
-     tells you what a recording is. Resomix tells you what sounds like it: the tracks with the
-     strongest measured sonic relationship to your reference, whoever released them and whenever.
+     tells you what a recording is. Resomix tells you what sounds like it, meaning the tracks with
+     the strongest measured sonic relationship to your reference, whoever released them and whenever.
   4. **How does Resomix decide which tracks are similar?** Resomix's PYXIS-1 engine builds a sonic
      profile from more than 70 measurable audio characteristics of the whole recording, then
-     compares it with a pre-analysed index. The result is deterministic: the same reference against
-     the same index returns the same shortlist, each result with its similarity score.
+     compares it with a pre-analysed index. The result is deterministic, so the same reference
+     against the same index returns the same shortlist, each result with its similarity score.
   5. **Which catalogue does it search?** The Resomix catalogue of electronic music, already
-     profiled by PYXIS-1. Partner catalogues are separate and private; see Catalogue Intelligence.
+     profiled by PYXIS-1. Partner catalogues are separate and private. See Catalogue Intelligence.
   6. **Can DJs use it to find tracks that mix well together?** Yes. The shortlist is ranked by
      groove, energy and structure, and Track Intelligence shows the key, Camelot code and BPM of any
      result, so you can check compatibility before you play it. The selection stays yours.
@@ -422,27 +431,27 @@ unchanged everywhere.
 - Description (current, no Resomix): Track Intelligence turns PYXIS-1 audio analysis into a
   readable view of one recording: structure, tempo, key, energy, timbre, spectral character,
   confidence.
-- **Proposed description** (153 chars): Resomix Track Intelligence is track analysis software:
-  BPM, key and Camelot, structure, energy, loudness, timbre, genre and mood read from one recording.
+- **Applied description** (157 chars): Resomix Track Intelligence is track analysis software. It
+  reads BPM, key and Camelot, structure, energy, loudness, timbre, genre and mood from one recording.
 - H1 (unchanged): See how the track moves, changes and holds together.
 - First paragraph today, `trackIntelligence.hero.sub`: "Through 70+ measurable audio
   characteristics, PYXIS-1 measures a song's rhythm, energy, harmony, timbre, spectral behaviour and
   structure, and turns these traits into one readable track profile."
-- **Proposed `trackIntelligence.hero.sub`**: "Resomix Track Intelligence is track analysis
+- **Applied `trackIntelligence.hero.sub`**: "Resomix Track Intelligence is track analysis
   software for one recording at a time. Through 70+ measurable audio characteristics, Resomix's
   PYXIS-1 engine measures a song's tempo, key, rhythm, energy, harmony, timbre, spectral behaviour
   and structure, and turns these traits into one readable track profile."
 - The body never says "Resomix" today. Three further insertions:
   - `structure.lead`: "A structural score with the waveform, beat grid and sections on one
-    timeline." becomes "BPM detection and a structural score: the waveform, beat grid and sections
-    on one timeline. Select a section to read its role."
-  - `harmony.lead`: becomes "Musical key detection with confidence: detected key and Camelot code
-    up front, a readable chromagram strip, and full pitch evidence and harmonic relationships one
-    step deeper."
+    timeline." becomes "BPM detection and a structural score, with the waveform, beat grid and
+    sections on one timeline. Select a section to read its role."
+  - `harmony.lead`: becomes "Musical key detection with confidence. The detected key and Camelot
+    code sit up front with a readable chromagram strip, and the full pitch evidence and harmonic
+    relationships one step deeper."
   - `identity.lead`: becomes "Automatic genre, style, mood and instrumentation tagging, shown as
-    coordinated signals with confidence: stronger and weaker, never absolute."
+    coordinated signals with confidence. Stronger and weaker, never absolute."
   - `energy.body`, last sentence: "Our analysis just describes the music; the decision-making
-    process is in your hands only." becomes "Resomix's analysis describes the music; the decision
+    process is in your hands only." becomes "Resomix's analysis describes the music. The decision
     stays in your hands."
 - The page is labelled SAMPLE DATA throughout. The FAQ must not present the sample numbers as
   results, and does not.
@@ -460,22 +469,22 @@ unchanged everywhere.
   3. **Does Resomix tag genre and mood automatically?** Yes, as predicted signals. Track Intelligence
      reports genre and style, mood and theme, and instrumentation such as vocal presence, each with
      a confidence level and with secondary signals kept visible instead of forced into one label.
-  4. **Can Track Intelligence enrich catalogue metadata?** For a partner catalogue, yes: the same
+  4. **Can Track Intelligence enrich catalogue metadata?** For a partner catalogue, yes. The same
      analysis runs across every authorised recording so structure, tempo, key, mood and genre are
      described in the same terms for every track, and it can flag inconsistent tagging. Resomix
-     does not edit your metadata; it gives your team consistent evidence to work from.
+     does not edit your metadata. It gives your team consistent evidence to work from.
   5. **Can I analyse my own unreleased track?** Yes. The upload is processed privately, is not used
      to train PYXIS-1, and the source audio is deleted no later than 24 hours after upload or
      analysis.
   6. **Can I get the analysis as data?** Partners can retrieve versioned, structured JSON through
-     the Resomix API: rhythm, tonality, loudness, mood, structure and provenance fields. Analysis
-     access is enabled on request.
+     the Resomix API, with rhythm, tonality, loudness, mood, structure and provenance fields.
+     Analysis access is enabled on request.
 - Schema: `WebPage` plus `SoftwareApplication` (name "Resomix Track Intelligence") plus `FAQPage`.
 
 ### 5.5 Catalogue Intelligence `/product/catalog-intelligence`
 
 - Title (unchanged): Make Your Music Catalog Searchable by Sound | Resomix
-- Description: already names Resomix. Optional replacement to carry the buyer phrase (157 chars):
+- Applied description, so the buyer phrase is present (157 chars):
   Search your music catalogue by sound. Resomix processes authorised recordings into a private,
   partner-scoped index, and one reference returns ranked matches.
 - H1 (unchanged): Make your catalogue discoverable by sound.
@@ -483,10 +492,10 @@ unchanged everywhere.
   typo): "with PYXIS-1, Resomix creates a sonic profile for every track in your sound library and
   makes your music searchable by sound. Start with one recording and discover ranked matches from
   across your catalogue."
-- **Proposed `catalogueIntelligence.hero.body`**: "Resomix Catalogue Intelligence lets labels,
+- **Applied `catalogueIntelligence.hero.body`**: "Resomix Catalogue Intelligence lets labels,
   publishers, distributors and libraries search a music catalogue by sound. Resomix's PYXIS-1
   engine creates a sonic profile for every authorised recording and makes the catalogue searchable
-  by sound: start with one recording and discover ranked matches from across your catalogue."
+  by sound. Start with one recording and discover ranked matches from across your catalogue."
 - Large-catalogue processing: add one sentence to `partner.body1` after "In a scoped integration,
   authorised server-side requests bring the results into your own product or workflow.": "Catalogues
   are delivered in batches through managed ingestion, and the private index is rebuilt as each
@@ -517,15 +526,15 @@ unchanged everywhere.
 - Description (current, no Resomix): Integrate partner-scoped similarity and track-analysis
   services behind your own product. REST access through a guided pilot, with no public sandbox to
   misuse.
-- **Proposed description** (157 chars): The Resomix API is a music similarity and audio analysis
-  API: search, similarity by track or upload, and versioned track analysis against your own
+- **Applied description** (156 chars): The Resomix API is a music similarity and audio analysis
+  API with search, similarity by track or upload, and versioned track analysis of your own
   catalogue.
 - H1 (unchanged): Put similarity and track intelligence inside your product.
 - First paragraph today, `developers.hero.sub`: "Search your own catalogue by sound and rank it by
   how the music actually sounds, through a partner-scoped REST API. Structured Track Intelligence
   analysis is enabled on request, against your own catalogue."
-- **Proposed `developers.hero.sub`**: "The Resomix API is a music similarity and audio analysis API
-  for partners, powered by Resomix's PYXIS-1 engine: search your own catalogue by sound and rank it
+- **Applied `developers.hero.sub`**: "The Resomix API is a music similarity and audio analysis API
+  for partners, powered by Resomix's PYXIS-1 engine. Search your own catalogue by sound and rank it
   by how the music actually sounds, through a partner-scoped REST API. Structured Track
   Intelligence analysis (tempo, key, loudness, structure, mood and genre signals) is enabled on
   request, against your own catalogue."
@@ -538,8 +547,8 @@ unchanged everywhere.
   2. **Can I try the API without a partner agreement?** Not today. There is no public sandbox,
      because similarity is only meaningful inside a real catalogue. The evaluation path is a guided
      pilot with a scoped key against a sample of your own repertoire. A self-serve trial is planned.
-  3. **What does the track analysis endpoint return?** Versioned structured JSON: rhythm (BPM,
-     beats, downbeats, phrases), tonality (key, scale, Camelot, tuning, chromagram), loudness and
+  3. **What does the track analysis endpoint return?** Versioned structured JSON covering rhythm
+     (BPM, beats, downbeats, phrases), tonality (key, scale, Camelot, tuning, chromagram), loudness and
      dynamics, mood and genre signals with scores, structure with millisecond ranges, and
      provenance. Analysis is enabled per partner on request.
   4. **Does the API search a shared catalogue?** No. Every key searches only that partner's private
@@ -553,15 +562,15 @@ unchanged everywhere.
 - Title (unchanged): Partner With Resomix: Catalogue Discovery by Sound
 - Description (current, no Resomix): Labels, distributors, publishers and platforms make authorised
   catalogues searchable by sound. Keep your brand, storefront, licensing and customer control.
-- **Proposed description** (156 chars): Partner with Resomix: labels, distributors, publishers and
+- **Applied description** (156 chars): Partner with Resomix. Labels, distributors, publishers and
   platforms make authorised catalogues searchable by sound through a private pilot or the live API.
 - H1 (unchanged): Make your catalogue part of sound-first discovery.
 - First paragraph today, `partners.hero.sub`: "Start with a private catalogue pilot, or integrate
   the live API. Bring sound-first discovery to your catalogue, platform or music product."
-- **Proposed `partners.hero.sub`**: "Resomix works with labels, distributors, publishers, music
-  libraries and music-technology products in three ways: a private catalogue pilot, the live
-  partner API, or integration planning. Bring sound-first discovery to your catalogue, platform or
-  music product."
+- **Applied `partners.hero.sub`**: "Resomix works with labels, distributors, publishers, music
+  libraries and music-technology products in three ways. Start with a private catalogue pilot,
+  integrate the live partner API, or scope a deployment together. Bring sound-first discovery to
+  your catalogue, platform or music product."
 - FAQ: a short one, new key `partners.faq`, because the page is already question-led:
   1. **How do I partner with Resomix?** Tell us about your catalogue, product or integration
      through the form on this page. Resomix checks fit, arranges a scoping call, and both teams
@@ -578,15 +587,15 @@ unchanged everywhere.
 - Description (current, no Resomix): Test PYXIS-1 on your own catalogue. Define the scope,
   references and evaluation criteria, then review ranked results before deciding whether to
   integrate.
-- **Proposed description** (160 chars): Test Resomix on your own catalogue. A managed private
-  pilot for labels, distributors and catalogue teams: agree scope and scorecard, then review ranked
+- **Applied description** (160 chars): Test Resomix on your own catalogue. A managed private
+  pilot for labels, distributors and catalogue teams. Agree scope and scorecard, then review ranked
   results.
 - H1 (unchanged): Test PYXIS-1 on the music that matters to your team.
 - First paragraph today, `partnersPilot.hero.sub`: "A managed private pilot for labels,
   distributors and catalogue teams. Test sonic discovery on authorised material, with success
   criteria agreed up front."
-- **Proposed `partnersPilot.hero.sub`**: "The Resomix Private Catalogue Pilot is a managed
-  evaluation for labels, distributors and catalogue teams: test Resomix's PYXIS-1 engine on
+- **Applied `partnersPilot.hero.sub`**: "The Resomix Private Catalogue Pilot is a managed
+  evaluation for labels, distributors and catalogue teams. Test Resomix's PYXIS-1 engine on
   authorised material, with success criteria agreed up front."
 - Steps: the six stages are HTML already.
 - FAQ, new key `partnersPilot.faq`:
@@ -595,9 +604,9 @@ unchanged everywhere.
      question the pilot should answer.
   2. **How long does a pilot take?** The timeline is agreed during scoping. Resomix does not
      publish fixed pilot durations.
-  3. **What happens at the end?** A decision pack, not a sales demo: what worked, what did not,
-     where the limits are. The outcomes are stop, extend, or plan production. The pilot does not
-     convert into a contract automatically.
+  3. **What happens at the end?** A decision pack rather than a sales demo, covering what worked,
+     what did not and where the limits are. The outcomes are stop, extend, or plan production. The
+     pilot does not convert into a contract automatically.
 - Schema: `WebPage` plus `Service` plus `FAQPage`.
 
 ### 5.9 Trust `/trust`
@@ -605,9 +614,8 @@ unchanged everywhere.
 - Title (unchanged): Trust and Control at Resomix: How We Handle Audio
 - Description (current, no Resomix): User uploads are deleted within 24 hours. Partner catalogues
   stay inside private, partner-scoped indexes. No training on your content. No generated audio.
-- **Proposed description** (157 chars): How Resomix handles audio: user uploads deleted within 24
-  hours, partner catalogues kept in private indexes, no training on your content, no generated
-  audio.
+- **Applied description** (150 chars): How Resomix handles audio. Uploads are deleted within 24
+  hours, partner catalogues stay in private indexes, and your audio is never used for training.
 - Body: `hero.body` already opens "Resomix is a production-beta sonic discovery service." No copy
   changes.
 - Schema: emit `FAQPage` from the existing `trust.rights.qa` list (seven visible questions). No
@@ -618,16 +626,15 @@ unchanged everywhere.
 - Title (unchanged): Catalogue Search by Sound for Record Labels | Resomix
 - Description (current, no Resomix): Make authorised label and distributor catalogues searchable by
   sound. Surface older, relevant recordings beside new releases through ranked sonic matches.
-- **Proposed description** (158 chars): Resomix lets record labels search their catalogue by
+- **Applied description** (158 chars): Resomix lets record labels search their catalogue by
   sound. Authorised recordings become a private index where older, relevant tracks surface beside
   new ones.
 - H1 (unchanged): Give authorised recordings another route into discovery.
 - Opening today, `recordLabels.hero.intro`: "Running a label is hard, and it always has been…"
   (essay voice, keep).
-- **New first paragraph**, new key `recordLabels.hero.lead`, rendered above the existing intro:
-  "Resomix is a catalogue search tool for record labels: it analyses the audio itself with its
-  PYXIS-1 engine, so a label can search and compare its own releases by how they sound, not only by
-  metadata."
+- **Applied, prepended to `recordLabels.hero.intro`** (nothing new rendered): "Resomix is a
+  catalogue search tool for record labels. It analyses the audio itself with its PYXIS-1 engine, so
+  a label can search and compare its own releases by how they sound, not only by metadata."
 - Brand tie: the body has no PYXIS-1 today; the lead above introduces it. `workflows.lead1` stays.
 - FAQ, new key `recordLabels.faq`:
   1. **How can a label make its back catalogue discoverable?** Resomix profiles the authorised
@@ -649,7 +656,7 @@ unchanged everywhere.
 - H1 (unchanged): Turn your catalogue into a living asset
 - Opening today, `musicPublishers.hero.body`: "Music publishers face a daunting task: creating a
   cohesive catalog that's both genuine and marketable…"
-- **Proposed `musicPublishers.hero.body`**, one sentence prepended: "Resomix helps music
+- **Applied `musicPublishers.hero.body`**, one sentence prepended: "Resomix helps music
   publishers search and understand their repertoire by sound. Publishers face a daunting task:
   creating a cohesive catalogue that's both genuine and marketable, while also knowing how to make
   the most of every track as the collection expands."
@@ -678,8 +685,8 @@ unchanged everywhere.
 - H1 (unchanged): Surface candidates by sound. Keep every clearance decision human.
 - Opening today, `syncAgencies.hero.intro`: "A talented sync agent can see opportunities where
   others don't…" (keep).
-- **New first paragraph**, new key `syncAgencies.hero.lead`: "Resomix is a search tool for sync
-  agencies: it finds the tracks in a catalogue that match a reference or a brief by how they sound,
+- **Applied, prepended to `syncAgencies.hero.intro`**: "Resomix is a search tool for sync
+  agencies. It finds the tracks in a catalogue that match a reference or a brief by how they sound,
   and leaves every clearance decision human."
 - Brand tie: `workflows.lead1` already introduces "a sonic similarity engine (PYXIS-1)" as
   Resomix's. No change.
@@ -690,7 +697,7 @@ unchanged everywhere.
      clear.
   2. **Does Resomix clear or license music?** No. It supports the search. Clearance, rights and
      placement decisions are made by people.
-  3. **Can it search our agency's own catalogue?** Yes, through a private catalogue pilot: your
+  3. **Can it search our agency's own catalogue?** Yes, through a private catalogue pilot. Your
      authorised recordings are profiled into a partner-scoped index that only your team can search.
   4. **Does it replace our tagging system?** No. Tags stay yours and stay useful. Resomix adds a
      sonic layer beneath them, so a track that was never tagged for a mood can still be found by
@@ -702,14 +709,14 @@ unchanged everywhere.
 - Title (unchanged): Sound-First Search for Music & Sample Libraries | Resomix
 - Description (current, no Resomix): Help authorised libraries and sample catalogues be explored
   through structure, texture and sonic relationships, with ranked results from one audio reference.
-- **Proposed description** (159 chars): Resomix gives music libraries and sample providers search
+- **Applied description** (159 chars): Resomix gives music libraries and sample providers search
   by sound. Start from one sound and PYXIS-1 surfaces related loops, samples and tracks in the
   library.
 - H1 (unchanged): Let the library be explored through its sound.
 - Opening today, `musicLibraries.hero.intro`: "The bigger a music library becomes, the more
   difficult it becomes to navigate." (keep)
-- **New first paragraph**, new key `musicLibraries.hero.lead`: "Resomix is a sound-first search
-  layer for music libraries and sample providers: users start from a sound they like and find its
+- **Applied, prepended to `musicLibraries.hero.intro`**: "Resomix is a sound-first search
+  layer for music libraries and sample providers. Users start from a sound they like and find its
   relatives across the catalogue, instead of typing what they cannot describe."
 - Brand tie: `values.lead2` "By analysing the sonic characteristics of individual sounds and loops,
   PYXIS-1 can identify…" becomes "…Resomix's PYXIS-1 engine can identify…".
@@ -718,7 +725,7 @@ unchanged everywhere.
      already like as the reference, and Resomix returns the sounds across the library that share its
      sonic character, wherever they sit in the pack structure.
   2. **How does Resomix fit alongside our existing tags?** It sits beneath them. Tags remain the
-     way users describe what they want; Resomix answers the case where they can hear it but cannot
+     way users describe what they want. Resomix answers the case where they can hear it but cannot
      type it.
   3. **How do we start?** With a private catalogue pilot on a representative sample, or through the
      partner API for a scoped integration into your own product.
@@ -729,16 +736,15 @@ unchanged everywhere.
 - Title (unchanged): Find Your Next Track by Sound: Resomix for DJs & Sets
 - Description (current, no Resomix): Start from one known record and audition ranked, sonically
   related candidates. Build sets by energy, groove and character, beyond genre tags and charts.
-- **Proposed description** (159 chars): Resomix is a music discovery tool for DJs. Start from one
-  record and audition a ranked shortlist matched on groove, energy and character: tracks that mix
-  well.
+- **Applied description** (154 chars): Resomix is a music discovery tool for DJs. Start from one
+  record and audition a ranked shortlist that mixes well, matched on groove, energy and character.
 - H1 (unchanged): Find the next track without hours of unfocused digging.
 - Opening today, `djs.hero.intro`: "Learning to DJ might not sound that difficult. Becoming a
   great DJ, however, is an entirely different matter." (keep)
-- **New first paragraph**, new key `djs.hero.lead`, and per the report's M5 it answers the
-  question in the question's own words: "Resomix is a music discovery tool for DJs: pick one track
-  and it returns a ranked shortlist of records that sound like it, so you find what to play next
-  without hours of digging."
+- **Applied, prepended to `djs.hero.intro`**, and per the report's M5 it answers the question in
+  the question's own words: "Resomix is a music discovery tool for DJs. Pick one track and it
+  returns a ranked shortlist of records that sound like it, so you find what to play next without
+  hours of digging."
 - Brand tie: `journeys.lead1` already says "Resomix's deterministic engine PYXIS-1". No change.
 - FAQ, new key `djs.faq`:
   1. **How do DJs find tracks that mix well together with Resomix?** Start from the track you
@@ -750,9 +756,9 @@ unchanged everywhere.
   3. **Does it only return popular tracks?** No. Results are ranked by measured sound, not by
      charts, release date or play counts, which is how forgotten B-sides come back into sets.
   4. **Can I export a shortlist?** Save the results as a playlist in Resomix and export it to Apple
-     Music. (Confirm the export is live on the public app before publishing; see §11.)
-  5. **Is Resomix free for DJs?** Free to start in the production beta. A Pro plan adds depth; the
-     plans are compared on the pricing page.
+     Music. (Confirm the export is live on the public app before publishing, see §11.)
+  5. **Is Resomix free for DJs?** Free to start in the production beta. A Pro plan adds depth, and
+     the plans are compared on the pricing page.
 - Schema: `WebPage` plus `Service` plus `FAQPage`.
 
 ### 5.15 Music Curators `/solutions/music-curators`
@@ -760,14 +766,14 @@ unchanged everywhere.
 - Title (unchanged): Playlist Curation by Sound: Resomix for Music Curators
 - Description (current, no Resomix): Move beyond charts and static tags. Start from an audio
   reference and review ranked, sonically related candidates for playlists and editorial programming.
-- **Proposed description** (157 chars): Resomix is a playlist curation tool for music curators.
+- **Applied description** (157 chars): Resomix is a playlist curation tool for music curators.
   Start from an audio reference and review ranked, sonically related candidates beyond charts and
   tags.
 - H1 (unchanged): Curate from the sound, not only the chart.
 - Opening today, `musicCurators.hero.intro`: "The art of music curation is born from a unique mix
   of talent and experience…" (keep)
-- **New first paragraph**, new key `musicCurators.hero.lead`: "Resomix is a music discovery tool
-  for curators: one reference track becomes the starting point for a ranked set of tracks that
+- **Applied, prepended to `musicCurators.hero.intro`**: "Resomix is a music discovery tool
+  for curators. One reference track becomes the starting point for a ranked set of tracks that
   share its sound, whatever their genre, era or chart position."
 - Brand tie: `rail.lead2` "…PYXIS-1 is designed to discover new connections…" becomes
   "…Resomix's PYXIS-1 engine is designed to discover new connections…".
@@ -787,17 +793,17 @@ unchanged everywhere.
 - Title (unchanged): Reference & Track Analysis by Sound: Resomix for Producers
 - Description (current, no Resomix): Inspect arrangement, energy and timbre in your own recording,
   then explore sonically related references. Evidence for decisions that stay creatively yours.
-- **Proposed description** (159 chars): Resomix helps producers decode a reference track: inspect
+- **Applied description** (159 chars): Resomix helps producers decode a reference track. Inspect
   arrangement, energy and timbre, then explore sonically related music. The creative decision is
   yours.
 - H1 (unchanged): Understand your recording and study the music around it.
 - First paragraph today, `producers.hero.support`: "Resomix uses the PYXIS-1 analytical engine to
-  examine 70+ musical characteristics…" Already named and tied. One optional prefix: "Resomix is
-  a reference-analysis and discovery tool for producers: it uses the PYXIS-1 analytical engine…"
+  examine 70+ musical characteristics…" Already named and tied. Applied prefix: "Resomix is a
+  reference-analysis and discovery tool for producers. It uses the PYXIS-1 analytical engine…"
 - FAQ, new key `producers.faq`:
-  1. **How do I analyse a reference track?** Upload it to Resomix and open Track Intelligence:
-     structure, energy journey, tempo, key, loudness, timbre and spectral character, each read from
-     the audio and shown with confidence where it applies.
+  1. **How do I analyse a reference track?** Upload it to Resomix and open Track Intelligence. You
+     get structure, energy journey, tempo, key, loudness, timbre and spectral character, each read
+     from the audio and shown with confidence where it applies.
   2. **Can I upload my own unfinished track?** Yes. It is processed privately, never used to train
      PYXIS-1, and deleted no later than 24 hours after upload or analysis.
   3. **Does Resomix generate music or tell me what to change?** No. It surfaces relationships and
@@ -815,8 +821,8 @@ what allows `foundingLocation` in the Organization node).
 - `/pricing`: description fine. Its copy lives in the shared billing components and was not part
   of this audit.
 - `/contact`: the description still carries the placeholder that `SEO_METADATA_ALL_PAGES.md`
-  flagged ("We reply from support@resomix.com within the beta"). **Proposed description**
-  (160 chars): Reach the Resomix team in Thessaloniki for product support, partner and catalogue
+  flagged ("We reply from support@resomix.com within the beta"). **Applied description**, on the
+  webapp's mirrored entry too (160 chars): Reach the Resomix team in Thessaloniki for product support, partner and catalogue
   enquiries, or press. Write to support@resomix.com and we will get back to you.
 - `/waitlist`: fine.
 
@@ -839,37 +845,37 @@ sentences, and a short "what Resomix is not" block, all facts already on the sit
 > sound rather than how they are tagged.
 
 Resomix is a sonic intelligence platform built in Thessaloniki. Pick or upload a reference track
-and it returns ranked matches that belong next to it (Sonic Discovery); analyse a single recording
-for BPM, key, structure, energy, timbre, genre and mood (Track Intelligence); or make an
-authorised catalogue searchable by sound inside a private index (Catalogue Intelligence).
+and Sonic Discovery returns ranked matches that belong next to it. Track Intelligence analyses a
+single recording for BPM, key, structure, energy, timbre, genre and mood. Catalogue Intelligence
+makes an authorised catalogue searchable by sound inside a private index.
 
 ## Product
 
-- [Product overview](https://resomix.com/product): One engine, three workflows: similarity search, track analysis, catalogue search by sound.
+- [Product overview](https://resomix.com/product): One engine and three workflows. Similarity search, track analysis and catalogue search by sound.
 - [Sonic Discovery](https://resomix.com/product/sonic-discovery): Music similarity search. One track or upload in, a ranked playlist of similar-sounding tracks out.
 - [Track Intelligence](https://resomix.com/product/track-intelligence): Track analysis software. BPM and key detection, structure, energy, loudness, timbre, and genre and mood signals with confidence.
-- [Catalogue Intelligence](https://resomix.com/product/catalog-intelligence): Search a music catalogue by sound. Authorised recordings profiled into a private, partner-scoped index.
+- [Catalogue Intelligence](https://resomix.com/product/catalog-intelligence): Search a music catalogue by sound. Authorised recordings are profiled into a private, partner-scoped index.
 
 ## Solutions
 
 - [Record labels](https://resomix.com/solutions/record-labels): Catalogue search by sound for labels and distributors.
 - [Music publishers](https://resomix.com/solutions/music-publishers): Find related works across a publishing catalogue by sound.
-- [Sync agencies](https://resomix.com/solutions/sync-agencies): Reference-based search for briefs; clearance stays human.
+- [Sync agencies](https://resomix.com/solutions/sync-agencies): Reference-based search for briefs. Clearance stays human.
 - [Music libraries and sample providers](https://resomix.com/solutions/music-libraries-sample-providers): Music library search by sound.
-- [DJs](https://resomix.com/solutions/djs): Music discovery tool for DJs: find the next track from one reference.
+- [DJs](https://resomix.com/solutions/djs): Music discovery tool for DJs. Find the next track from one reference.
 - [Music curators](https://resomix.com/solutions/music-curators): Playlist curation from a reference track.
 - [Producers](https://resomix.com/solutions/producers): Decode a reference track, then explore the music around it.
 
 ## Developers and partners
 
-- [Developers](https://resomix.com/developers): Music similarity and audio analysis API: search, similarity by track or upload, track analysis. Partner-scoped, no public sandbox.
-- [Partners](https://resomix.com/partners): Three ways to work with Resomix: private pilot, live API, integration planning.
-- [Guided catalogue pilot](https://resomix.com/partners/pilot): Managed evaluation on your own authorised audio, scorecard agreed first.
+- [Developers](https://resomix.com/developers): Music similarity and audio analysis API for search, similarity by track or upload, and track analysis. Partner-scoped, with no public sandbox.
+- [Partners](https://resomix.com/partners): Three ways to work with Resomix. A private pilot, the live API, or integration planning.
+- [Guided catalogue pilot](https://resomix.com/partners/pilot): Managed evaluation on your own authorised audio, with the scorecard agreed first.
 
 ## Facts
 
 - Resomix is not an audio fingerprinting or song-identification service. It finds and explains
-  music by sound; it does not tell you what a recording is.
+  music by sound. It does not tell you what a recording is.
 - Uploaded reference audio is deleted no later than 24 hours after upload or analysis.
 - User and partner audio is not used to train or fine-tune PYXIS-1. PYXIS-1 does not generate audio.
 - Partner catalogues are logically isolated. There is no shared partner pool and no public sandbox.
@@ -903,10 +909,11 @@ in `seoConfig.ts` next to the title (a new optional `entity` field on `RouteSeo`
 | `FAQPage` on every page with a `faq` array, plus `/trust` from `rights.qa` | `prerenderHead.ts` | Generated from the same strings the visible block renders |
 | `WebPage.mainEntity` → the route's entity `@id` where one exists | `prerenderHead.ts` | Plan §3 |
 
-Tests to extend: `structuredData.spec.ts` (no empty `sameAs`, every `Service` and
-`SoftwareApplication` has a `provider` resolving to the Organization, `FAQPage` question count
-equals the locale array length, no node carries `aggregateRating` or `offers`) and
-`prerenderedHead.spec.ts`.
+Implemented on 17 September 2026, except `SoftwareApplication` and the per-page `FAQPage` blocks,
+which wait for George. `structuredData.spec.ts` now asserts a `Service` with a resolving
+`provider` on every partner and solutions route, `WebAPI` on the developer overview, `FAQPage` on
+the trust page from questions that are visible in the built HTML, no empty `sameAs` entry, and no
+`aggregateRating`, `review` or `offers` anywhere.
 
 Expectation to set with George: `FAQPage` no longer produces a Google rich result for commercial
 sites. Its value here is for AI assistants, which is the point of this exercise.
@@ -964,7 +971,10 @@ then serves the bare URL with 200 and 308-redirects the slashed form to it, whic
 canonical. `dist/404.html` and the `/auth/*` rewrite are unaffected. Update
 `prerenderedHead.spec.ts` for the new file names.
 
-Alternative, not recommended: switch canonical, sitemap and every internal link to the slashed
+Implemented on 17 September 2026 in both writers and in the six specs that read the built files.
+`prerenderedHead.spec.ts` now also fails if the directory form reappears.
+
+Alternative, not taken: switch canonical, sitemap and every internal link to the slashed
 form. It touches far more files and Google treats the two forms as different URLs anyway, so the
 choice only has to be consistent.
 
@@ -1023,6 +1033,11 @@ In the order Usman asked for: Cloudflare first, then metadata, then the rest.
 
 Total: 12 to 13 hours. Steps 2 to 9 need no account access and can run while step 1 waits for
 George.
+
+Progress on 17 September 2026. Steps 2, 4, 5, 6 (without the FAQ blocks and the Publishers
+spelling), 7 (without SoftwareApplication and per-page FAQPage), 8 and 9 are done locally,
+uncommitted, and the build and the seven build-output specs pass. Step 3's steps list and every
+FAQ block wait for George. Steps 1, 11 and 12 wait for access and for the deploy.
 
 ---
 

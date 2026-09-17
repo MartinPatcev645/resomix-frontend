@@ -3,7 +3,7 @@
     "hero": {
       "eyebrow": "Sonic Discovery // live in beta · powered by PYXIS-1",
       "title": "Find similar tracks [[by sound.]]",
-      "sub": "Search by how the music actually sounds. PYXIS-1 reads the groove, energy, timbre and structure of your reference (drawn from 70+ measurable audio characteristics) and returns a ranked shortlist you can listen, analyse, and develop.",
+      "sub": "Resomix Sonic Discovery is a music similarity search tool that searches by how the music actually sounds. Resomix's PYXIS-1 engine reads the groove, energy, timbre and structure of your reference (drawn from 70+ measurable audio characteristics) and returns a ranked shortlist you can listen to, analyse and develop.",
       "ctaPrimary": "Try Sonic Discovery",
       "ctaSecondary": "See how matching works",
       "fieldLabel": "One track becomes a search field",

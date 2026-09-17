@@ -3,7 +3,7 @@
     "hero": {
       "chip": "Use case · Music libraries & sample providers",
       "h1": "Let the library be explored [[through its sound.]]",
-      "intro": "The bigger a music library becomes, the more difficult it becomes to navigate.",
+      "intro": "Resomix is a sound-first search layer for music libraries and sample providers. Users start from a sound they like and find its relatives across the catalogue, instead of typing what they cannot describe. The bigger a music library becomes, the more difficult it becomes to navigate.",
       "figureAria": "A wall of sample tiles; one reference sound is selected and orange threads reach its sonic relatives in other packs across the library"
     },
     "statement": {
@@ -23,7 +23,7 @@
       "eyebrow": "For music libraries & sample providers",
       "h2": "A new way to explore your catalogue",
       "lead1": "Resomix can give music libraries and sample providers a new way to help users explore their catalogues.",
-      "lead2": "By analysing the sonic characteristics of individual sounds and loops, PYXIS-1 can identify subtle relationships that traditional metadata might miss.",
+      "lead2": "By analysing the sonic characteristics of individual sounds and loops, Resomix's PYXIS-1 engine can identify subtle relationships that traditional metadata might miss.",
       "lead3": "Instead of searching exclusively through tags, users of a sample library could start with a sound they already like and explore other elements that share its sonic DNA.",
       "couldMean": "For music libraries and sample providers, this could mean:",
       "items": {

@@ -26,7 +26,7 @@ import { ROUTE_SEO } from '@/routes/seoConfig.ts';
 const DIST = resolve(process.cwd(), 'dist');
 const built = existsSync(resolve(DIST, 'index.html'));
 const html = (route: string) =>
-  readFileSync(resolve(DIST, route === '/' ? 'index.html' : `${route.slice(1)}/index.html`), 'utf8');
+  readFileSync(resolve(DIST, route === '/' ? 'index.html' : `${route.slice(1)}.html`), 'utf8');
 
 /**
  * Contents of `<div id="root">…</div>`, i.e. what a non-JS reader gets.

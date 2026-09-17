@@ -2,7 +2,7 @@
   "djs": {
     "hero": {
       "chip": "Use case · DJs",
-      "intro": "Learning to DJ might not sound that difficult. Becoming a great DJ, however, is an entirely different matter.",
+      "intro": "Resomix is a music discovery tool for DJs. Pick one track and it returns a ranked shortlist of records that sound like it, so you find what to play next without hours of digging. Learning to DJ might not sound that difficult. Becoming a great DJ, however, is an entirely different matter.",
       "ctaNote": "Free to start · production beta",
       "figureAria": "A crate of records drawn as dense rows of spines; one record is pulled out and a journey of ranked musical ideas unfolds from it, offering ideas rather than a set order",
       "title": "Find the next track without hours of [[unfocused digging.]]"
