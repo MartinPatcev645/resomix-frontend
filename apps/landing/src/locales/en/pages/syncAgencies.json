@@ -3,7 +3,7 @@
     "hero": {
       "chip": "Use case · Sync agencies",
       "h1": "Surface candidates by sound.\nKeep every clearance decision [[human.]]",
-      "intro": "A talented sync agent can see opportunities where others don't; someone who can connect the dots, understand creative visions, and give musicians the spotlight they deserve.",
+      "intro": "Resomix is a search tool for sync agencies. It finds the tracks in a catalogue that match a reference or a brief by how they sound, and leaves every clearance decision human. A talented sync agent can see opportunities where others don't; someone who can connect the dots, understand creative visions, and give musicians the spotlight they deserve.",
       "figureAria": "Flat metadata tags pass through the Resomix gate and become a felt reading of the music: intimate, nostalgic, unsettling, uplifting"
     },
     "idea": {
@@ -43,6 +43,28 @@
       "p2": "It's the ultimate lateral thinking approach, organically applied to music discovery.",
       "p3": "You're fully in control of your tagging system, but Resomix can help you uncover hidden gems you forgot about, showing you the gaps in your agency's catalogue, and giving you unique solutions that'll satisfy clients and artists alike.",
       "figureAria": "A catalogue field where the expected path runs straight and grey while a lateral orange thread reaches a distant hidden gem; a dashed circle marks a coverage gap and a white ring marks the human choice"
+    },
+    "faq": {
+      "eyebrow": "Questions",
+      "title": "Questions sync agencies ask about Resomix",
+      "items": [
+        {
+          "q": "How do I find music that matches a creative brief?",
+          "a": "Start from the reference the brief gives you, or the closest track you know. Resomix returns ranked candidates from the catalogue that share its groove, energy, timbre and structure, for your team to review, refine and clear."
+        },
+        {
+          "q": "Does Resomix clear or license music?",
+          "a": "No. It supports the search. Clearance, rights and placement decisions are made by rights holders."
+        },
+        {
+          "q": "Can it search our agency's own catalogue?",
+          "a": "Yes, through a private catalogue pilot. Your authorised recordings are profiled into a partner-scoped index that only your team can search."
+        },
+        {
+          "q": "Does it replace our tagging system?",
+          "a": "No. Tags stay yours and stay useful. Resomix adds a sonic layer beneath them, so a track that was never tagged for a mood can still be found by how it feels."
+        }
+      ]
     },
     "cta": {
       "h2": "Ready to try our cutting-edge similarity engine?",

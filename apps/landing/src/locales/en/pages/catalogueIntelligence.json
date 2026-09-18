@@ -2,7 +2,7 @@
   "catalogueIntelligence": {
     "hero": {
       "eyebrow": "Product 03 // Catalogue Intelligence",
-      "body": "with PYXIS-1, Resomix creates a sonic profile for every track in your sound library and makes your music searchable by sound. Start with one recording and discover ranked matches from across your catalogue.",
+      "body": "Resomix Catalogue Intelligence lets labels, publishers, distributors and libraries search a music catalogue by sound. Resomix's PYXIS-1 engine creates a sonic profile for every authorised recording and makes the catalogue searchable by sound. Start with one recording and discover ranked matches from across your catalogue.",
       "ctaPrimary": "Request a catalogue pilot",
       "ctaSecondary": "See how it works",
       "status": "Guided partner evaluation · Authorised audio · Partner-scoped index",
@@ -62,7 +62,7 @@
     "partner": {
       "eyebrow": "06 // Partner experience",
       "h2": "Add sonic retrieval without replacing the systems you already run.",
-      "body1": "Resomix sits alongside your existing tools as a discovery and analysis layer. In a guided pilot, you test catalogue similarity and Track Intelligence on an agreed sample. In a scoped integration, authorised server-side requests bring the results into your own product or workflow.",
+      "body1": "Resomix sits alongside your existing tools as a discovery and analysis layer. In a guided pilot, you test catalogue similarity and Track Intelligence on an agreed sample. In a scoped integration, authorised server-side requests bring the results into your own product or workflow. Catalogues are delivered in batches through managed ingestion, and the private index is rebuilt as each batch lands.",
       "body2": "You keep your catalogue, brand, licensing model and customer relationships. Resomix supplies the processing, sonic profiles and ranking behind them, as defined in the agreement.",
       "figureAriaD": "Four-part architecture: the partner product or internal tool calls scoped API access, which reaches the partner sonic index and returns either ranked similarity results or a track analysis response.",
       "figureAriaM": "Mobile integration: partner product, scoped API access, partner sonic index, then the two response branches."
@@ -119,6 +119,36 @@
         "w5": "Whether the analysis is useful and credible for the workflow you have in mind."
       },
       "scoreNote": "Evaluation measures, agreed per pilot. No pre-filled percentages, timings or pass marks."
+    },
+    "faq": {
+      "eyebrow": "09 // Questions",
+      "title": "Questions about Resomix Catalogue Intelligence",
+      "items": [
+        {
+          "q": "How can a label make its back catalogue discoverable?",
+          "a": "Resomix processes the authorised recordings once into a private, partner-scoped sonic index. From then on any track, old or new, can be returned when it sounds right for the reference, without waiting for streams, sales or editorial attention."
+        },
+        {
+          "q": "How do I find similar tracks inside our own catalogue?",
+          "a": "Use any indexed track as the reference, or upload a recording. PYXIS-1 compares it with your catalogue and returns the closest matches, ranked by similarity, with no manual shortlisting."
+        },
+        {
+          "q": "Is our catalogue shared with other partners or made public?",
+          "a": "No. Each partner's audio, derived profiles and index stay inside that partner's scope. There is no shared partner pool, and partner content is not made publicly available."
+        },
+        {
+          "q": "Is our audio used to train PYXIS-1?",
+          "a": "No. Partner content is not used to train or fine-tune PYXIS-1, and Resomix does not generate derivative audio."
+        },
+        {
+          "q": "What do we need to deliver?",
+          "a": "Authorised audio as MP3, WAV, FLAC or AIFF, and a CSV manifest with ISRC, title, artist and filename for each track, through the managed partner workflow."
+        },
+        {
+          "q": "How large a catalogue can Resomix process?",
+          "a": "Catalogues are ingested in batches and the index is rebuilt as each batch lands, so the size is agreed per pilot rather than capped up front. A representative sample is enough to start."
+        }
+      ]
     },
     "closing": {
       "eyebrow": "Start with a representative sample",

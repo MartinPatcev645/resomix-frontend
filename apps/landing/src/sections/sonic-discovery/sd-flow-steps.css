@@ -1,0 +1,58 @@
+/*
+ * Plain-text steps under the Sonic Discovery flow figure (SdFlowSteps.tsx).
+ * No reveal or fade classes on purpose: this copy must be readable in the static HTML.
+ */
+.sd-page .sd-steps {
+  margin-top: var(--px-40);
+  max-width: 52rem;
+}
+
+.sd-page .sd-steps-title {
+  margin: 0 0 var(--px-16);
+  font-size: var(--px-17);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-primary);
+}
+
+.sd-page .sd-steps-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sd-page .sd-steps-list li {
+  display: grid;
+  grid-template-columns: var(--px-40) 1fr;
+  gap: var(--px-12);
+  padding: var(--px-14) 0;
+  border-bottom: 1px dotted rgba(128, 128, 128, 0.28);
+}
+
+.sd-page .sd-steps-list li:last-child {
+  border-bottom: 0;
+}
+
+.sd-page .sd-steps-n {
+  padding-top: var(--px-3);
+  font-size: var(--px-12);
+  letter-spacing: var(--px-2);
+  color: #ee4a26;
+}
+
+.sd-page .sd-steps-name {
+  display: block;
+  font-size: var(--px-16);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-primary);
+}
+
+.sd-page .sd-steps-text {
+  display: block;
+  margin-top: var(--px-4);
+  font-size: var(--px-15);
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+}

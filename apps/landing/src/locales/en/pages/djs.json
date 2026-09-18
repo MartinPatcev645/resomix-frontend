@@ -2,7 +2,7 @@
   "djs": {
     "hero": {
       "chip": "Use case · DJs",
-      "intro": "Learning to DJ might not sound that difficult. Becoming a great DJ, however, is an entirely different matter.",
+      "intro": "Resomix is a music discovery tool for DJs. Pick one track and it returns a ranked shortlist of records that sound like it, so you find what to play next without hours of digging. Learning to DJ might not sound that difficult. Becoming a great DJ, however, is an entirely different matter.",
       "ctaNote": "Free to start · production beta",
       "figureAria": "A crate of records drawn as dense rows of spines; one record is pulled out and a journey of ranked musical ideas unfolds from it, offering ideas rather than a set order",
       "title": "Find the next track without hours of [[unfocused digging.]]"
@@ -58,6 +58,32 @@
       "p1": "There's something about a DJ's style that automation simply can't replicate. Your ability to read the room and mix tracks seamlessly is the core of your musical identity, and Resomix's similarity engine is here to make your discovery process faster, more creative, and intuitive.",
       "p2": "Our deterministic engine is a creative companion, one that won't replace your unique taste, but rather help you discover more possibilities, faster, so you can spend less time searching and more time shaping the music journey you want to create.",
       "figureAria": "The room drawn as a soft arc of listeners above; the DJ, a white ring, stands between the room and a fan of surfaced musical ideas; the engine suggests and the DJ reads the room"
+    },
+    "faq": {
+      "eyebrow": "Questions",
+      "title": "Questions DJs ask about Resomix",
+      "items": [
+        {
+          "q": "How do DJs find tracks that mix well together with Resomix?",
+          "a": "Start from the track you know you will play. Resomix ranks candidates by groove, energy and structure, and Track Intelligence shows each one's key, Camelot code and BPM, so you can check compatibility before you commit. The selection is yours."
+        },
+        {
+          "q": "Can I use my own tracks as the reference?",
+          "a": "Yes. Upload an MP3, WAV, FLAC or AIFF. It is processed privately and deleted no later than 24 hours after upload or analysis."
+        },
+        {
+          "q": "Does it only return popular tracks?",
+          "a": "No. Results are ranked by measured sound, not by charts, release date or play counts, which is how forgotten B-sides come back into sets."
+        },
+        {
+          "q": "Can I save a shortlist?",
+          "a": "Yes. Save the results as a playlist in Resomix, export it, or use any result as the next reference and keep digging."
+        },
+        {
+          "q": "Is Resomix free for DJs?",
+          "a": "Free to start in the production beta. A Pro plan adds depth, and the plans are compared on the pricing page."
+        }
+      ]
     },
     "final": {
       "line1": "Choose a track.",

@@ -5,6 +5,7 @@ import { DjLibrary } from '@/sections/djs/DjLibrary.tsx';
 import { DjJourneys } from '@/sections/djs/DjJourneys.tsx';
 import { DjUnique } from '@/sections/djs/DjUnique.tsx';
 import { DjFinalCta } from '@/sections/djs/DjFinalCta.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
@@ -60,6 +61,7 @@ export default function DjsPage() {
         <DjLibrary />
         <DjJourneys />
         <DjUnique />
+        <FaqSection ns="djs" />
         <DjFinalCta />
       </main>
     </div>

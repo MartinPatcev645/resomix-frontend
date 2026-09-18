@@ -13,6 +13,7 @@ import { AbPartners } from '@/sections/about/AbPartners.tsx';
 import { AbTeam } from '@/sections/about/AbTeam.tsx';
 import { AbFounder } from '@/sections/about/AbFounder.tsx';
 import { AbClosing } from '@/sections/about/AbClosing.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import '@/sections/about/about.css';
 
 
@@ -97,6 +98,7 @@ export default function AboutPage() {
           <AbPartners />
           <AbTeam />
           <AbFounder />
+          <FaqSection ns="about" />
           <AbClosing />
         </main>
       </AbDefsProvider>

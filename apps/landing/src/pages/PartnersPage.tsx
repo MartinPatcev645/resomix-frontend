@@ -7,6 +7,7 @@ import { PnEngagementLine } from '@/sections/partners/PnEngagementLine.tsx';
 import { PnAudiences } from '@/sections/partners/PnAudiences.tsx';
 import { PnControl } from '@/sections/partners/PnControl.tsx';
 import { PnContactForm } from '@/sections/partners/PnContactForm.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import type { RouteId } from '@/sections/partners/pnData.ts';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
@@ -86,6 +87,7 @@ export default function PartnersPage() {
         <PnEngagementLine />
         <PnAudiences activePath={activePath} onSelectPath={setActivePath} />
         <PnControl />
+        <FaqSection ns="partners" />
         <PnContactForm />
       </div>
     </div>

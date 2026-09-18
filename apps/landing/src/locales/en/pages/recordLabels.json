@@ -3,7 +3,7 @@
     "hero": {
       "chip": "Use case · Record labels",
       "h1": "Give authorised recordings [[another route into discovery.]]",
-      "intro": "Running a label is hard, and it always has been. Choosing the artists to release, curating every project with care, managing a growing catalogue, and consistently releasing music that's in line with the essence of your project all require time and dedication.",
+      "intro": "Resomix is a catalogue search tool for record labels. It analyses the audio itself with its PYXIS-1 engine, so a label can search and compare its own releases by how they sound, not only by metadata. Running a label is hard, and it always has been. Choosing the artists to release, curating every project with care, managing a growing catalogue, and consistently releasing music that's in line with the essence of your project all require time and dedication.",
       "figureAria": "Ten years of a label's releases drawn as a timeline; one orange thread connects a recent signing back to an older release, re-lighting it"
     },
     "statement": {
@@ -44,6 +44,28 @@
       "p2": "Our deterministic engine can do the heavy lifting, highlighting opportunities for your label that might have been ignored. Your role, whether you're the label founder or marketing assistant, will always be to choose the right path for the label based on its history and creative integrity.",
       "p3": "Resomix's similarity engine is not designed to replace the human \"touch\", but to enhance it and amplify it so that it can reach its true potential.",
       "figureAria": "The engine surfaces a small set of candidate tracks from the catalogue; a white ring marks the one the label team chooses; the decision stays human"
+    },
+    "faq": {
+      "eyebrow": "Questions",
+      "title": "Questions labels ask about Resomix",
+      "items": [
+        {
+          "q": "How can a label make its back catalogue discoverable?",
+          "a": "Resomix profiles the authorised catalogue once into a private index. An older release can then surface beside a new signing whenever the two are close in sound, with no need for it to have a history of attention."
+        },
+        {
+          "q": "Can we compare a new demo with our existing catalogue?",
+          "a": "Yes. Use the demo as the reference and Resomix returns the releases in your catalogue that sit closest to it, ranked by sonic similarity."
+        },
+        {
+          "q": "Can Resomix help us answer sync requests?",
+          "a": "It surfaces candidates from your catalogue that match the reference by sound, for your team to review. Clearance and rights decisions stay human."
+        },
+        {
+          "q": "Is our catalogue visible to other labels?",
+          "a": "No. Partner catalogues are logically isolated, restricted to authorised access, and never pooled."
+        }
+      ]
     },
     "cta": {
       "h2": "Ready to try our cutting-edge similarity engine?",

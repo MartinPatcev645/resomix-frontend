@@ -79,11 +79,15 @@ function cssFor(manifest: Record<string, ManifestChunk>, entry: string): string[
   return out
 }
 
-/** `dist/index.html` for `/`, `dist/about/index.html` for `/about`. Mirrors prerenderHead. */
+/**
+ * `dist/index.html` for `/`, `dist/about.html` for `/about`. Mirrors prerenderHead, which explains
+ * why it is `<route>.html` and not `<route>/index.html`: Pages serves the bare URL from the former
+ * and redirects to the slashed URL for the latter, and the bare URL is the canonical.
+ */
 function htmlPathFor(clientDir: string, route: string): string {
   return route === '/'
     ? path.resolve(clientDir, 'index.html')
-    : path.resolve(clientDir, route.replace(/^\//, ''), 'index.html')
+    : path.resolve(clientDir, `${route.replace(/^\//, '')}.html`)
 }
 
 const ROOT_RE = /(<div id="root">)(<\/div>)/

@@ -2,7 +2,7 @@
   "trackIntelligence": {
     "hero": {
       "eyebrow": "TRACK INTELLIGENCE // BETA · SAMPLE DATA · POWERED BY PYXIS-1",
-      "sub": "Through 70+ measurable audio characteristics, PYXIS-1 measures a song's rhythm, energy, harmony, timbre, spectral behaviour and structure, and turns these traits into one readable track profile.",
+      "sub": "Resomix Track Intelligence is track analysis software for one recording at a time. Through 70+ measurable audio characteristics, Resomix's PYXIS-1 engine measures a song's tempo, key, rhythm, energy, harmony, timbre, spectral behaviour and structure, and turns these traits into one readable track profile.",
       "ctaPrimary": "Analyse a Track",
       "ctaSecondary": "Explore the Analysis",
       "anatomyLabel": "SONIC ANATOMY · ONE RECORDING, MANY MEASUREMENTS",
@@ -72,7 +72,7 @@
     "structure": {
       "eyebrow": "02 // TIME & STRUCTURE",
       "title": "How the track unfolds",
-      "lead": "A structural score with the waveform, beat grid and sections on one timeline. Select a section to read its role.",
+      "lead": "BPM detection and a structural score, with the waveform, beat grid and sections on one timeline. Select a section to read its role.",
       "panelLabel": "STRUCTURAL SCORE · WAVEFORM + BEAT GRID + SECTIONS",
       "sampleData": "SAMPLE DATA",
       "figureAlt": "Structural score: the full waveform with a beat grid beneath it and six labelled section blocks (intro, build, drop 01, break, drop 02 and outro) with their durations. The selected section is highlighted with its energy and loudness readout. Sample data.",
@@ -110,12 +110,12 @@
       "legendPeak": "global peak",
       "readingInterp": "<b>Reading it:</b> intensity climbs gradually, with no abrupt jumps; the long break releases energy before the strongest section; the final drop carries the global peak, then the outro steps down rather than cutting.",
       "interpTruth": "EXAMPLE INTERPRETATION FROM MEASURED OUTPUTS",
-      "body": "DJs check the track's flow before building a set. Producers study how arrangements are made. Curators focus on the pacing. Catalogue teams turn libraries into searchable tags. Our analysis just describes the music; the decision-making process is in your hands only."
+      "body": "DJs check the track's flow before building a set. Producers study how arrangements are made. Curators focus on the pacing. Catalogue teams turn libraries into searchable tags. Resomix's analysis describes the music. The decision stays in your hands."
     },
     "harmony": {
       "eyebrow": "04 // HARMONY & PITCH",
       "title": "Key and harmonic behaviour",
-      "lead": "Detected key, confidence and a readable chromagram strip up front, with full pitch evidence and harmonic relationships one step deeper.",
+      "lead": "Musical key detection with confidence. The detected key and Camelot code sit up front with a readable chromagram strip, and the full pitch evidence and harmonic relationships one step deeper.",
       "panelLabel": "HARMONIC FIELD · KEY + STABILITY",
       "sampleData": "SAMPLE DATA",
       "keyMain": "G MINOR",
@@ -160,7 +160,7 @@
     "identity": {
       "eyebrow": "06 // SONIC IDENTITY",
       "title": "A profile, not a label",
-      "lead": "Genre, style, mood and vibe as coordinated signals: stronger and weaker, never absolute.",
+      "lead": "Automatic genre, style, mood and instrumentation tagging, shown as coordinated signals with confidence. Stronger and weaker, never absolute.",
       "genreTitle": "Genre & style",
       "genreDetail": "detailed style: deep · dub-inflected · rolling",
       "moodTitle": "Mood & theme",
@@ -329,6 +329,36 @@
           "status": "docs + guided pilot"
         }
       }
+    },
+    "faq": {
+      "eyebrow": "10 // QUESTIONS",
+      "title": "Questions about Resomix Track Intelligence",
+      "items": [
+        {
+          "q": "How do I find the BPM and key of a track?",
+          "a": "Upload the track to Resomix and open Track Intelligence. Tempo, key and Camelot code are measured directly from the audio and shown with a confidence value, alongside structure, loudness and energy."
+        },
+        {
+          "q": "How accurate is the key detection?",
+          "a": "Measured values such as tempo, key and loudness are read from the recording, so the same file always returns the same result, and the key is shown with its confidence and any alternative key. Predicted values such as genre and mood are classification signals, shown with confidence, never as absolutes."
+        },
+        {
+          "q": "Does Resomix tag genre and mood automatically?",
+          "a": "Yes, as predicted signals. Track Intelligence reports genre and style, mood and theme, and instrumentation such as vocal presence, each with a confidence level and with secondary signals kept visible instead of forced into one label."
+        },
+        {
+          "q": "Can Track Intelligence enrich catalogue metadata?",
+          "a": "For a partner catalogue, yes. The same analysis runs across every authorised recording so structure, tempo, key, mood and genre are described in the same terms for every track, and it can flag inconsistent tagging. Resomix does not edit your metadata. It gives your team consistent evidence to work from."
+        },
+        {
+          "q": "Can I analyse my own unreleased track?",
+          "a": "Yes. The upload is processed privately, is not used to train PYXIS-1, and the source audio is deleted no later than 24 hours after upload or analysis."
+        },
+        {
+          "q": "Can I get the analysis as data?",
+          "a": "Partners can retrieve versioned, structured JSON through the Resomix API, with rhythm, tonality, loudness, mood, structure and provenance fields. Analysis access is enabled on request."
+        }
+      ]
     },
     "cta": {
       "leftEyebrow": "FOR MUSIC PROFESSIONALS",

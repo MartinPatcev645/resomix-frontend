@@ -13,20 +13,45 @@ import path from 'node:path'
  * pointed at, previewed as the homepage.
  *
  * Rewriting the head at runtime cannot fix that; the tags have to already be in the response. This
- * writes `dist/<route>/index.html` for each route, identical to the SPA shell except for the head.
- * Cloudflare Pages serves a directory's `index.html` for that path, so `/solutions/producers` now
- * returns HTML that already says "Producers — …". The app itself is unchanged: same bundle, same
- * hydration, and the SPA fallback still covers anything not listed here.
+ * writes `dist/<route>.html` for each route, identical to the SPA shell except for the head. The
+ * app itself is unchanged: same bundle, same hydration, and the SPA fallback still covers anything
+ * not listed here.
  *
- * This is prerendering of the HEAD only, not the body — the visible page is still client-rendered.
- * That is all a link preview needs, and it avoids pulling in a full SSG pipeline.
+ * WHY `<route>.html` AND NOT `<route>/index.html`
+ * ------------------------------------------------
+ * Cloudflare Pages serves `/about` from `about.html` and 308-redirects `/about/` to it. With the
+ * directory form it is the other way round: the bare URL, which is also the canonical, the sitemap
+ * entry and every internal link, redirected to the slashed one. The ShelfSignal report of
+ * September 2026 showed AI assistants reading `/product/sonic-discovery/`, a URL that was not the
+ * canonical. One URL per page, and it is the one we declare.
+ *
+ * This is prerendering of the HEAD only; the body is filled in by prerenderBodies.ts afterwards.
  */
+
+interface RouteEntityLike {
+  type: 'Service' | 'WebAPI'
+  name: string
+  serviceType?: string
+  documentation?: string
+}
 
 interface RouteSeoLike {
   title: string
   description: string
   noindex?: boolean
   canonical?: string
+  /** The thing the page is about; see seoConfig.ts. */
+  entity?: RouteEntityLike
+  /**
+   * Question-and-answer pairs that are VISIBLE on the page. Emitted as `FAQPage` from the very
+   * strings the page renders, so the markup cannot describe something a visitor cannot see.
+   */
+  faq?: Array<{ question: string; answer: string }>
+  /**
+   * A numbered how-it-works list that is VISIBLE on the page, emitted as `HowTo`. Same rule as
+   * `faq`: built from the strings the page renders, never describing anything a visitor cannot see.
+   */
+  howTo?: { name: string; steps: Array<{ name: string; text: string }> }
 }
 
 /** Escape for use inside a double-quoted HTML attribute. Titles contain & and — routinely. */
@@ -69,7 +94,8 @@ const titleCase = (slug: string) =>
   slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 
 /**
- * Per-page JSON-LD: `WebPage` plus a `BreadcrumbList`.
+ * Per-page JSON-LD: `WebPage`, the page's own entity where it has one, its visible FAQ where it
+ * has one, and a `BreadcrumbList`.
  *
  * `Organization` and `WebSite` already ship in the shell, but they describe the SITE — every URL
  * was declaring the same two things and nothing about itself. This adds what the page IS, tied back
@@ -80,18 +106,68 @@ const titleCase = (slug: string) =>
  * invisible to them — and structured data is the strongest signal they do read.
  */
 function structuredData(seo: RouteSeoLike, url: string, origin: string, routePath: string): string {
-  const graph: unknown[] = [
-    {
-      '@type': 'WebPage',
-      '@id': `${url}#webpage`,
-      url,
-      name: seo.title,
+  const organization = { '@id': `${origin}/#organization` }
+  const webPage: Record<string, unknown> = {
+    '@type': 'WebPage',
+    '@id': `${url}#webpage`,
+    url,
+    name: seo.title,
+    description: seo.description,
+    isPartOf: { '@id': `${origin}/#website` },
+    about: organization,
+    inLanguage: 'en',
+  }
+  const graph: unknown[] = [webPage]
+
+  /*
+   * The thing the page is ABOUT: a `Service` on the partner and solutions pages, a `WebAPI` on the
+   * developer overview. Neither earns a Google rich result; the point is entity clarity for the
+   * Knowledge Graph and for AI answer engines. No `offers` and no `aggregateRating`, ever: there
+   * are no public prices on these pages and there are no reviews, and inventing either is the most
+   * common cause of a structured-data manual action.
+   */
+  if (seo.entity) {
+    const { type, name, serviceType, documentation } = seo.entity
+    const id = `${url}#${type === 'WebAPI' ? 'api' : 'service'}`
+    graph.push({
+      '@type': type,
+      '@id': id,
+      name,
       description: seo.description,
-      isPartOf: { '@id': `${origin}/#website` },
-      about: { '@id': `${origin}/#organization` },
-      inLanguage: 'en',
-    },
-  ]
+      url,
+      provider: organization,
+      ...(serviceType ? { serviceType } : {}),
+      ...(type === 'Service' ? { areaServed: 'Worldwide' } : {}),
+      ...(documentation ? { documentation } : {}),
+    })
+    webPage.mainEntity = { '@id': id }
+  }
+
+  if (seo.faq?.length) {
+    graph.push({
+      '@type': 'FAQPage',
+      '@id': `${url}#faq`,
+      mainEntity: seo.faq.map(({ question, answer }) => ({
+        '@type': 'Question',
+        name: question,
+        acceptedAnswer: { '@type': 'Answer', text: answer },
+      })),
+    })
+  }
+
+  if (seo.howTo?.steps.length) {
+    graph.push({
+      '@type': 'HowTo',
+      '@id': `${url}#howto`,
+      name: seo.howTo.name,
+      step: seo.howTo.steps.map(({ name, text }, i) => ({
+        '@type': 'HowToStep',
+        position: i + 1,
+        name,
+        text,
+      })),
+    })
+  }
 
   // Home has no trail worth stating; a single-item breadcrumb is noise.
   const segments = routePath.split('/').filter(Boolean)
@@ -111,6 +187,33 @@ function structuredData(seo: RouteSeoLike, url: string, origin: string, routePat
   }
 
   return JSON.stringify({ '@context': 'https://schema.org', '@graph': graph })
+}
+
+/**
+ * Add `sameAs` to the shell's site-level `Organization` node.
+ *
+ * The official profiles live in env (VITE_FACEBOOK_URL and friends), not in source, so they cannot
+ * be written into index.html by hand. They are merged here at build time, and only the ones that
+ * are real URLs: an empty `sameAs` entry is invalid, and a wrong one can merge this entity with
+ * someone else's in the Knowledge Graph, which is far harder to undo than to avoid.
+ */
+function enrichOrganization(shell: string, sameAs: string[]): string {
+  const urls = sameAs.map((u) => u.trim()).filter((u) => /^https?:\/\/\S+$/.test(u))
+  if (!urls.length) return shell
+  const re = /(<script type="application\/ld\+json">)([\s\S]*?)(<\/script>)/
+  const match = shell.match(re)
+  if (!match) return shell
+  let data: { '@graph'?: Array<Record<string, unknown>> }
+  try {
+    data = JSON.parse(match[2])
+  } catch {
+    return shell
+  }
+  const org = data['@graph']?.find((node) => node['@type'] === 'Organization')
+  if (!org) return shell
+  org.sameAs = urls
+  // Function replacer: a string replacement would interpret `$` sequences in the JSON.
+  return shell.replace(re, (_m, open: string, _json: string, close: string) => open + JSON.stringify(data) + close)
 }
 
 /** Rewrite the shell's head for one route. The body is untouched. */
@@ -153,6 +256,19 @@ function inlineStylesheet(html: string, outDir: string, id: string, href: string
   return html.replace(link, `<style id="${id}">${css}</style>`)
 }
 
+/** `dist/index.html` for `/`, `dist/about.html` for `/about`, `dist/product/sonic-discovery.html` when nested. */
+export function htmlPathFor(outDir: string, routePath: string): string {
+  return routePath === '/'
+    ? path.resolve(outDir, 'index.html')
+    : path.resolve(outDir, `${routePath.replace(/^\//, '')}.html`)
+}
+
+function writeRoute(outDir: string, routePath: string, html: string): void {
+  const file = htmlPathFor(outDir, routePath)
+  mkdirSync(path.dirname(file), { recursive: true })
+  writeFileSync(file, html)
+}
+
 export function prerenderHead(options: {
   routes: Record<string, RouteSeoLike>
   origin: string
@@ -166,8 +282,10 @@ export function prerenderHead(options: {
    * start 404ing.
    */
   extraRoutes?: string[]
+  /** Site-level facts that live in env rather than in index.html. */
+  organization?: { sameAs?: string[] }
 }): { name: string; apply: 'build'; closeBundle(): void } {
-  const { routes, origin, outDir, extraRoutes = [], inlineCss = [] } = options
+  const { routes, origin, outDir, extraRoutes = [], inlineCss = [], organization } = options
 
   return {
     name: 'prerender-head',
@@ -177,6 +295,7 @@ export function prerenderHead(options: {
       let shell = readFileSync(shellPath, 'utf8')
       // Done once, on the shell, so every route inherits it.
       for (const { id, href } of inlineCss) shell = inlineStylesheet(shell, outDir, id, href)
+      if (organization?.sameAs) shell = enrichOrganization(shell, organization.sameAs)
       let written = 0
 
       for (const [routePath, seo] of Object.entries(routes)) {
@@ -184,15 +303,7 @@ export function prerenderHead(options: {
         if (routePath === '/404') continue
 
         const url = seo.canonical ?? (routePath === '/' ? `${origin}/` : `${origin}${routePath}`)
-        const html = render(shell, seo, url, origin, routePath)
-
-        if (routePath === '/') {
-          writeFileSync(shellPath, html)
-        } else {
-          const dir = path.resolve(outDir, routePath.replace(/^\//, ''))
-          mkdirSync(dir, { recursive: true })
-          writeFileSync(path.join(dir, 'index.html'), html)
-        }
+        writeRoute(outDir, routePath, render(shell, seo, url, origin, routePath))
         written++
       }
 
@@ -205,9 +316,7 @@ export function prerenderHead(options: {
           description: routes['/']?.description ?? '',
           noindex: true,
         }, `${origin}${routePath}`)
-        const dir = path.resolve(outDir, routePath.replace(/^\//, ''))
-        mkdirSync(dir, { recursive: true })
-        writeFileSync(path.join(dir, 'index.html'), html)
+        writeRoute(outDir, routePath, html)
         written++
       }
 

@@ -26,7 +26,7 @@ import { ROUTE_SEO } from '@/routes/seoConfig.ts';
 const DIST = resolve(process.cwd(), 'dist');
 const built = existsSync(resolve(DIST, 'index.html'));
 const html = (route: string) =>
-  readFileSync(resolve(DIST, route === '/' ? 'index.html' : `${route.slice(1)}/index.html`), 'utf8');
+  readFileSync(resolve(DIST, route === '/' ? 'index.html' : `${route.slice(1)}.html`), 'utf8');
 
 /**
  * Contents of `<div id="root">…</div>`, i.e. what a non-JS reader gets.
@@ -76,6 +76,29 @@ describe.skipIf(!built)('prerendered per-route body', () => {
     // The nav alone reaches the product and solutions trees; a shell-only document has none.
     expect(links.size).toBeGreaterThan(5);
     expect(links.has('/about')).toBe(true);
+  });
+
+  it('points every FAQ call to action at a real page and a real anchor', () => {
+    // A FAQ answer can carry a bracket link (FaqSection.tsx). With 404.html in place a wrong path
+    // is a genuine 404, and a wrong hash silently lands at the top of the page instead of the form.
+    const broken: string[] = [];
+    let found = 0;
+    for (const r of routes) {
+      const tags = rootOf(html(r)).match(/<a\b[^>]*>/g) ?? [];
+      for (const tag of tags.filter((a) => /class="[^"]*\bfaq-link\b/.test(a))) {
+        found++;
+        const href = tag.match(/href="([^"]+)"/)?.[1] ?? '';
+        const [path, hash] = href.split('#');
+        const file = resolve(DIST, path === '/' ? 'index.html' : `${path.slice(1)}.html`);
+        if (!path.startsWith('/') || !existsSync(file)) {
+          broken.push(`${r} -> ${href} (no such page)`);
+        } else if (hash && !readFileSync(file, 'utf8').includes(`id="${hash}"`)) {
+          broken.push(`${r} -> ${href} (no such anchor)`);
+        }
+      }
+    }
+    expect(found, 'no FAQ link found, so this test no longer proves anything').toBeGreaterThan(0);
+    expect(broken).toEqual([]);
   });
 
   it('never bakes the boot loader into the HTML', () => {

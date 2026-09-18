@@ -8,6 +8,7 @@ import { DevIngestionRail } from '@/sections/developers/DevIngestionRail.tsx';
 import { DevSchemaMap } from '@/sections/developers/DevSchemaMap.tsx';
 import { DevIntegrationAccess } from '@/sections/developers/DevIntegrationAccess.tsx';
 import { DevEvaluationCta } from '@/sections/developers/DevEvaluationCta.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
@@ -100,6 +101,7 @@ export default function DevelopersPage() {
         <DevIngestionRail />
         <DevSchemaMap onCopy={handleCopy} />
         <DevIntegrationAccess onCopy={handleCopy} />
+        <FaqSection ns="developers" />
         <DevEvaluationCta />
       </div>
     </div>

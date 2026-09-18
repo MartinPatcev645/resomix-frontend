@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useFirstVisit, useAuthInit, useSilktide, useAfterIdle, useGoogleTagManager } from "@resomix/hooks";
+import { useFirstVisit, useAuthInit, useSilktide, useAfterIdle, useGoogleTagManager, useAnalyticsIdentity } from "@resomix/hooks";
 import { consentConfig } from './config/consentConfig.ts';
 import { WelcomeMessage, FeedbackForm, GoogleOneTap } from "@resomix/ui";
 import { useFeedbackStore, useAuthStore } from "@resomix/stores";
@@ -66,6 +66,8 @@ function App() {
    */
   const analyticsReady = useAfterIdle(4000);
   useGoogleTagManager(import.meta.env.VITE_GTM_ID ?? 'GTM-PD9XQZRV', analyticsReady);
+  /* Puts the signed-in user's uuid on the dataLayer so the GTM tag can call posthog.identify(). */
+  useAnalyticsIdentity();
   const { showWelcome, dismiss } = useFirstVisit();
   const { showFeedback } = useFeedbackStore();
   /*

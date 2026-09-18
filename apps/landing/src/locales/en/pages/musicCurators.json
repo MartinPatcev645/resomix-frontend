@@ -2,7 +2,7 @@
   "musicCurators": {
     "hero": {
       "chip": "Use case · Music curators",
-      "intro": "The art of music curation is born from a unique mix of talent and experience; the ability to hear music differently, to predict trends, to see hidden connections, is the essence of what makes humans connect through music.",
+      "intro": "Resomix is a music discovery tool for curators. One reference track becomes the starting point for a ranked set of tracks that share its sound, whatever their genre, era or chart position. The art of music curation is born from a unique mix of talent and experience; the ability to hear music differently, to predict trends, to see hidden connections, is the essence of what makes humans connect through music.",
       "ctaNote": "Free to start · production beta",
       "figureAria": "Tracks scattered across decades and genre strata; from the reference track a signal journey flows outward through numbered stops across eras and genres, forming a playlist chain linked by the curator, with one direction still unexplored",
       "title": "Curate from the sound, [[not only the chart.]]"
@@ -24,7 +24,7 @@
       "eyebrow": "For music curators",
       "h2": "Expand your curation with Resomix",
       "lead1": "What curators need is a discovery engine that analyses the audio itself, without relying on metadata, giving them a fresh approach to the music they find and select for their projects.",
-      "lead2": "By analysing the structural, harmonic, rhythmic, timbral, and emotional qualities of a reference track, PYXIS-1 is designed to discover new connections between songs, hidden underneath the surface of the genres the songs naturally fall into.",
+      "lead2": "By analysing the structural, harmonic, rhythmic, timbral, and emotional qualities of a reference track, Resomix's PYXIS-1 engine is designed to discover new connections between songs, hidden underneath the surface of the genres the songs naturally fall into.",
       "intro": "What does all this actually mean for a music curator:",
       "listAria": "What Resomix means for a music curator",
       "items": {
@@ -57,6 +57,28 @@
       "p1": "As a curator, your biggest asset is your individuality. Now that thousands of songs are released daily, you need tools that help you dig deeper, and find sonic connections based on moods and atmospheres instead of genre tags or release dates.",
       "p2": "Our discovery engine is designed to show you the hidden corners of your unique music taste, letting you appreciate the beauty of tracks that connect even when separated by genres and time; songs that fit together because they were born from similar emotions, just waiting for someone to link them together for the first time.",
       "figureAria": "Two tracks from different decades, each with its emotion contour; the contours echo the same shape and an orange thread links them; born from similar emotions, linked for the first time by you"
+    },
+    "faq": {
+      "eyebrow": "Questions",
+      "title": "Questions curators ask about Resomix",
+      "items": [
+        {
+          "q": "How do I find songs that fit a playlist's mood?",
+          "a": "Pick the track that already has the mood and use it as the reference. Resomix returns candidates that share its energy, timbre and structure, so the playlist flows by sound rather than by tag."
+        },
+        {
+          "q": "Can I save a shortlist?",
+          "a": "Yes. Add results to a working shortlist and save it as a playlist in Resomix, then keep listening and reviewing from there."
+        },
+        {
+          "q": "Does it recommend only what is already popular?",
+          "a": "No. Ranking is by measured sonic relationship, so a track from another decade or genre can sit next to a recent release when they were born from the same feeling."
+        },
+        {
+          "q": "Can I upload my own reference track?",
+          "a": "Yes. Upload an MP3, WAV, FLAC or AIFF. Resomix processes it privately and deletes the source audio no later than 24 hours after upload or analysis."
+        }
+      ]
     },
     "final": {
       "h2": "Expand your sonic horizon",

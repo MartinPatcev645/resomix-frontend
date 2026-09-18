@@ -192,56 +192,11 @@ export const COMPARE = {
   },
 } as const;
 
-export const FAQ = {
-  heading: "Frequently asked questions",
-  tabs: {
-    plans: "Plans and usage",
-    billing: "Billing and payments",
-    managing: "Managing your plan",
-  },
-} as const;
-
-export const FAQ_ITEMS = {
-  unlimited: {
-    q: "What does “Unlimited (fair use)” mean?",
-    a: `Pro searches, exports, and Library listing have no plan-level numerical ceiling for normal individual use. Automated bulk submission through the consumer interface, sharing or transferring account credentials or API keys, and attempts to circumvent quotas or metering are not permitted. Bulk processing is available only under an applicable plan or written agreement.`,
-  },
-  allowances: {
-    q: "When do my allowances reset?",
-    a: `Searches and exports reset daily. Uploads reset monthly, on your own billing anniversary rather than on the first of the month — so two subscribers who joined on different days reset on different days. The reset time is shown in your local time.`,
-  },
-  library: {
-    q: "What happens to my playlists if I pass the Free Library listing limit?",
-    a: `Nothing is deleted. Free lists your five most recent playlists in the Library; beyond that a playlist is still created, saved and fully usable by its link — you can open, play, rename, export and share it. The Library header shows the full count so the number never looks like work went missing. Pro lists all of them.`,
-  },
-  freeSummary: {
-    q: "What is in the Free analysis summary?",
-    a: `The complete card, not a teaser: BPM with confidence, key, scale and Camelot code, duration, loudness, the energy journey, the section map, genre and style, danceability, valence, arousal, vocal or instrumental, the written read-outs for DJs, producers and curators, and a link to the matching similarity playlist.`,
-  },
-  fullTi: {
-    q: "What does Full Track Intelligence add?",
-    a: `Spectrograms, chromagram and tuning detail, beat, downbeat and phrase grids, spectral curves including centroid, rolloff, flatness, bandwidth and zero crossing, loudness and RMS energy across the whole recording, genre, mood and instrumentation over time, stem composition and vocal regions, and onset detection.`,
-  },
-  cancel: {
-    q: "What happens if I cancel?",
-    a: `Pro remains active until the end of the period you have already paid for, then the account returns to Free. Your playlists and analyses stay; Free listing and visibility limits apply again. Cancellation is handled in the billing portal.`,
-  },
-  vat: {
-    q: "How is VAT handled?",
-    a: `Displayed prices are base amounts excluding VAT. The exact total including applicable VAT is calculated from your billing location and shown at checkout before you are bound to pay.`,
-  },
-  uploads: {
-    q: "What happens to audio I upload?",
-    a: `Temporary Reference Uploads are processed privately, are not made public or accessible to other users, and are deleted no later than 24 hours after upload or analysis. User audio is not used to train or fine-tune PYXIS-1.`,
-  },
-  appleMusic: {
-    q: "Do I need Apple Music to use the transfer?",
-    a: `Yes — the Apple Music destination transfers a playlist into your own Apple Music account, so it requires one. The TXT tracklist needs nothing. Resomix is not an Apple partner and Apple Music is not a source of analysis.`,
-  },
-  foundingOffer: {
-    q: "When does the founding offer close, and what happens to my price?",
-  },
-} as const;
+/* The FAQ strings live in `pricingFaqCopy.ts`, a file with no imports, because the landing build
+   reads them straight from `vite.config.ts` to emit the page's FAQPage markup. They are re-exported
+   here so every existing call site keeps importing copy from one place. */
+export { FAQ, FAQ_ITEMS, FAQ_ORDER } from "./pricingFaqCopy";
+export type { StaticFaqId } from "./pricingFaqCopy";
 
 export const LEGAL_LINKS: ReadonlyArray<{ label: string; slug: string }> = [
   { label: "Terms of Service", slug: "terms" },

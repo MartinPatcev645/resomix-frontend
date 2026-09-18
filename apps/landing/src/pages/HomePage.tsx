@@ -10,6 +10,7 @@ import { HmApi } from '@/sections/home/HmApi.tsx';
 import { HmAudiences } from '@/sections/home/HmAudiences.tsx';
 import { HmTrust } from '@/sections/home/HmTrust.tsx';
 import { HmFinalCta } from '@/sections/home/HmFinalCta.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
@@ -68,6 +69,7 @@ export default function HomePage() {
         <HmApi />
         <HmAudiences />
         <HmTrust />
+        <FaqSection ns="home" />
         <HmFinalCta />
       </main>
     </div>

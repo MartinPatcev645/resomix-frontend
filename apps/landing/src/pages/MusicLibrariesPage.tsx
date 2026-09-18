@@ -6,6 +6,7 @@ import { MlTags } from '@/sections/music-libraries/MlTags.tsx';
 import { MlValues } from '@/sections/music-libraries/MlValues.tsx';
 import { MlLost } from '@/sections/music-libraries/MlLost.tsx';
 import { MlFinalCta } from '@/sections/music-libraries/MlFinalCta.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
@@ -60,6 +61,7 @@ export default function MusicLibrariesPage() {
         <MlTags />
         <MlValues />
         <MlLost />
+        <FaqSection ns="musicLibraries" />
         <MlFinalCta />
       </main>
     </div>

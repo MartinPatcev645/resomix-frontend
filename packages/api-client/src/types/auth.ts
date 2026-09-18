@@ -39,10 +39,18 @@ export interface TwoFactorRequiredResponse {
   };
 }
 
+/**
+ * Registration does not return a `User`: the account is not usable until the emailed link is
+ * clicked, so the server sends back only the identity fields (see `RegisterResponse` in the
+ * backend's app/schemas/auth.py and the payload built in auth_controller.register).
+ */
 export interface RegisterResponse {
   success: boolean;
   data: {
-    user: User;
+    /** The backend's external user uuid, the same value `user.uuid` carries after login. */
+    user_uuid: string;
+    email: string;
+    username: string;
     message: string;
   };
 }

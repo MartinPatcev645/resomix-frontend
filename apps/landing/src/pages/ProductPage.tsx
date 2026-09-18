@@ -10,6 +10,7 @@ import { PoApi } from '@/sections/product/PoApi.tsx';
 import { PoPathways } from '@/sections/product/PoPathways.tsx';
 import { PoTrust } from '@/sections/product/PoTrust.tsx';
 import { PoClosing } from '@/sections/product/PoClosing.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import '@/sections/product/product.css';
 
 
@@ -89,6 +90,7 @@ export default function ProductPage() {
           <PoApi />
           <PoPathways />
           <PoTrust />
+          <FaqSection ns="product" />
           <PoClosing />
         </main>
       </PoDefsProvider>

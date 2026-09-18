@@ -10,6 +10,7 @@ import { CiPartner } from '@/sections/catalogue-intelligence/CiPartner.tsx';
 import { CiBoundary } from '@/sections/catalogue-intelligence/CiBoundary.tsx';
 import { CiPilot } from '@/sections/catalogue-intelligence/CiPilot.tsx';
 import { CiClosing } from '@/sections/catalogue-intelligence/CiClosing.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
@@ -106,6 +107,7 @@ export default function CatalogueIntelligencePage() {
           <CiPartner />
           <CiBoundary />
           <CiPilot />
+          <FaqSection ns="catalogueIntelligence" />
           <CiClosing />
         </main>
       </CiDefsProvider>

@@ -2,7 +2,7 @@
   "product": {
     "hero": {
       "eyebrow": "Product overview // PYXIS-1 sonic intelligence",
-      "body": "Resomix uses PYXIS-1 to find related tracks, read one recording in detail, or make an authorised catalogue searchable by sound.",
+      "body": "Resomix is a music similarity search and audio analysis platform. It uses its PYXIS-1 engine to find related tracks, read one recording in detail, or make an authorised catalogue searchable by sound.",
       "ctaPrimary": "Try Sonic Discovery",
       "ctaSecondary": "Explore the three products",
       "ctaPilot": "Request a guided partner pilot",
@@ -143,8 +143,34 @@
       "figureAriaD": "Two independent data-handling lanes that never merge: a user reference is processed privately and deleted within 24 hours; an authorised partner catalogue is processed within its own scope into a private index with authorised partner output.",
       "figureAriaM": "Mobile: the user lane and partner lane stacked and clearly separate."
     },
+    "faq": {
+      "eyebrow": "10 // Questions",
+      "title": "Questions about the Resomix platform",
+      "items": [
+        {
+          "q": "What is the difference between Sonic Discovery, Track Intelligence and Catalogue Intelligence?",
+          "a": "Sonic Discovery finds tracks that sound like a reference. Track Intelligence explains one recording, from structure and tempo to key, energy, timbre and mood. Catalogue Intelligence applies the same engine to an authorised partner catalogue inside a private index. All three run on Resomix's PYXIS-1 engine."
+        },
+        {
+          "q": "What is PYXIS-1?",
+          "a": "PYXIS-1 is Resomix's proprietary audio-analysis and similarity engine. It extracts more than 70 measurable characteristics across rhythm, harmony, timbre, structure, spectral profile and energy, and combines them into one sonic profile per recording. It is not a generative system and does not create audio."
+        },
+        {
+          "q": "Does Resomix identify songs?",
+          "a": "No. Resomix is not an audio fingerprinting service. It does not tell you what a recording is. It finds and explains recordings by how they sound."
+        },
+        {
+          "q": "Does Resomix train on my audio?",
+          "a": "No. Uploaded references are deleted no later than 24 hours after upload or analysis, and neither user nor partner audio is used to train or fine-tune PYXIS-1."
+        },
+        {
+          "q": "Is there an API?",
+          "a": "Yes. Resomix offers a partner-scoped REST API for search, similarity and track analysis against your own catalogue, reached through a guided pilot. There is no public sandbox."
+        }
+      ]
+    },
     "closing": {
-      "eyebrow": "10 // Choose your route",
+      "eyebrow": "11 // Choose your route",
       "h2": "Start with one track. Or put your catalogue in the pilot.",
       "publicTitle": "Hear the discovery workflow for yourself.",
       "publicBody": "Search for a known track or upload a reference and receive a ranked Sonic Discovery playlist.",

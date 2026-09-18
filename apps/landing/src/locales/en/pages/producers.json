@@ -2,7 +2,7 @@
   "producers": {
     "hero": {
       "chip": "Use case · Electronic music producers",
-      "support": "Resomix uses the PYXIS-1 analytical engine to examine 70+ musical characteristics across rhythm, harmony, timbre, structure and energy, then surfaces sonically related tracks that can unlock new production ideas.",
+      "support": "Resomix is a reference-analysis and discovery tool for producers. It uses the PYXIS-1 analytical engine to examine 70+ musical characteristics across rhythm, harmony, timbre, structure and energy, then surfaces sonically related tracks that can unlock new production ideas.",
       "ctaNote": "Free to start · production beta",
       "figureAria": "The creative loop breaks open: a reference track feeds the PYXIS-1 sonic profile, five labelled dimensions, rhythm, harmony, timbre, structure and energy, fan out, and the highlighted thread reaches an unexpected sonic match: new directions to explore",
       "title": "Understand your recording and study [[the music around it.]]"
@@ -52,6 +52,28 @@
       "h2": "PYXIS-1 surfaces the relationships. You shape the result.",
       "body": "Resomix does not generate a track or prescribe a formula. PYXIS-1 surfaces relationships across rhythm, harmony, timbre, structure and energy. You decide what to study, reinterpret, contrast or leave behind in your own production.",
       "figureAria": "A reference track feeds the PYXIS-1 sonic profile of 70+ characteristics; four labelled relationship branches lead to related sonic directions, and from the white-ringed result the producer's own white contour grows; analysis surfaces the connections and the producer makes the music"
+    },
+    "faq": {
+      "eyebrow": "Questions",
+      "title": "Questions producers ask about Resomix",
+      "items": [
+        {
+          "q": "How do I analyse a reference track?",
+          "a": "Upload it to Resomix and open Track Intelligence. You get structure, energy journey, tempo, key, loudness, timbre and spectral character, each read from the audio and shown with confidence where it applies."
+        },
+        {
+          "q": "Can I upload my own unfinished track?",
+          "a": "Yes. It is processed privately, never used to train PYXIS-1, and deleted no later than 24 hours after upload or analysis."
+        },
+        {
+          "q": "What does Resomix measure in a track?",
+          "a": "More than 70 audio characteristics across rhythm, harmony, timbre, structure and energy. Resomix's PYXIS-1 engine combines them into one sonic profile, which is what it compares when it looks for related music."
+        },
+        {
+          "q": "Does Resomix generate music or tell me what to change?",
+          "a": "No. It surfaces relationships and evidence. What to study, reinterpret or leave behind stays your decision."
+        }
+      ]
     },
     "final": {
       "h2": "Bring a reference. Find a new direction.",
