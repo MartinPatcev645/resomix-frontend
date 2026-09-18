@@ -416,3 +416,99 @@ If it prints `text/html`, the function was not picked up, and the fix is the Pag
 setting rather than anything in this repository. A repository-root `functions/` directory would be
 the wrong answer, because the other Pages projects in this monorepo build from that same root and
 would inherit it.
+
+
+---
+
+## Markdown negotiation: the function was not picked up, and the better fix
+
+Deployed and rescanned 18 September 2026.
+
+### What shipped and works
+
+All twenty Markdown twins are live. Verified on production:
+
+- `https://resomix.com/index.md`, `/product/sonic-discovery.md` and the rest all return **200** with
+  `content-type: text/markdown; charset=utf-8`
+- each carries `x-robots-tag: noindex`, so they never compete with the page they mirror
+- every HTML page advertises its twin with `<link rel="alternate" type="text/markdown">`
+- `llms.txt` explains both routes to them
+
+So an agent can read clean Markdown of any page today. The substance of this item is done.
+
+### What did not work
+
+`Accept: text/markdown` still returns `text/html`. A cache purge changed nothing, which rules out
+caching and confirms the function is simply not running.
+
+The cause is where Pages looks for functions. It looks in the project's **root directory**, and this
+project builds from the repository root, because its build command is the root-level
+`pnpm build:landing` script. So Pages looks for `<repo root>/functions/` and never sees
+`apps/landing/functions/_middleware.ts`.
+
+**Moving it to the repository root would work and is the wrong fix.** The webapp, admin and embed
+Pages projects build from that same root. All three would inherit this middleware and turn from
+plain static-asset projects into Functions projects, with the cold starts and the failure surface
+that implies, to satisfy one checklist item on a fourth project.
+
+### The recommended fix, a URL Rewrite transform rule
+
+No code, no functions, nothing inherited by the other projects, and available on the Free plan.
+Cloudflare dashboard, resomix.com, **Rules**, **Transform Rules**, **Rewrite URL**, Create rule.
+
+Two rules, because the home page needs a different target from the rest.
+
+**Rule 1, "Markdown for agents, home page"**
+
+Custom filter expression:
+
+```
+http.request.uri.path eq "/" and http.request.headers["accept"][0] contains "text/markdown"
+```
+
+Then: Rewrite to, **Path**, **Static**, value `/index.md`. Leave the query alone.
+
+**Rule 2, "Markdown for agents, all other pages"**
+
+Custom filter expression:
+
+```
+http.request.uri.path in {"/about" "/product" "/product/sonic-discovery" "/product/track-intelligence" "/product/catalog-intelligence" "/developers" "/partners" "/partners/pilot" "/trust" "/solutions/record-labels" "/solutions/music-publishers" "/solutions/sync-agencies" "/solutions/music-libraries-sample-providers" "/solutions/djs" "/solutions/music-curators" "/solutions/producers" "/pricing" "/contact" "/waitlist"} and http.request.headers["accept"][0] contains "text/markdown"
+```
+
+Then: Rewrite to, **Path**, **Dynamic**, value:
+
+```
+concat(http.request.uri.path, ".md")
+```
+
+The path list is exact rather than a pattern on purpose. A pattern such as "any path without a file
+extension" would also catch `/robots.txt` and `/sitemap.xml` and rewrite them into 404s for any
+client that happened to send that Accept header. An explicit set cannot misfire. The cost is that
+adding a route means adding it here, which is noted beside the route list in
+`apps/landing/src/routes/seoConfig.ts`.
+
+### Verifying
+
+Should print `text/markdown`:
+
+```
+curl -s -o /dev/null -D - -H "Accept: text/markdown" https://resomix.com/ | grep -i content-type
+```
+
+And a browser must be unaffected, so this must still print `text/html`:
+
+```
+curl -s -o /dev/null -D - -H "Accept: text/html,application/xhtml+xml" https://resomix.com/ | grep -i content-type
+```
+
+### The other route, if you would rather
+
+Set this Pages project's **root directory** to `apps/landing` and adjust the build command and
+output directory to match. The function then activates exactly as written, with no rules to
+maintain and no route list to keep in step. It is the tidier answer and the riskier change, because
+a pnpm workspace build from a subdirectory needs the build command reworked, and getting that wrong
+takes the site down rather than degrading it.
+
+I would take the transform rule. Two rules in a dashboard, reversible in seconds, and the blast
+radius is one hostname.

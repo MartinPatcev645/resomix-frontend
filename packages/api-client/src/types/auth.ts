@@ -30,6 +30,18 @@ export interface LoginResponse {
   };
 }
 
+/**
+ * "Continue with Google" returns the same session as a password login, plus `is_new_user`.
+ *
+ * Google's single button covers sign-up and sign-in and the session looks identical either way,
+ * so this flag is the only way to tell a first Google sign-in from a returning one. Optional
+ * because an older backend simply omits it, in which case the sign-in still works and only the
+ * sign-up event is skipped.
+ */
+export interface GoogleLoginResponse extends LoginResponse {
+  data: LoginResponse["data"] & { is_new_user?: boolean };
+}
+
 export interface TwoFactorRequiredResponse {
   success: boolean;
   data: {

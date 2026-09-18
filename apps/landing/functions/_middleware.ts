@@ -1,6 +1,30 @@
 /**
  * Content negotiation for Markdown.
  *
+ * NOT CURRENTLY ACTIVE. READ THIS FIRST.
+ * --------------------------------------
+ * Deployed 18 September 2026 and Cloudflare did not pick it up. `Accept: text/markdown` against
+ * resomix.com still returns `text/html`, and a cache purge changed nothing.
+ *
+ * The cause is where Pages looks for functions. It looks in the project's ROOT DIRECTORY, and this
+ * project almost certainly builds from the repository root, because its build command is the
+ * root-level `pnpm build:landing` script. So Pages looks for `<repo root>/functions/` and never
+ * sees this file.
+ *
+ * Moving it to the repository root would work and is the wrong fix: the webapp, admin and embed
+ * Pages projects build from that same root, so all three would inherit this middleware and turn
+ * from plain static-asset projects into Functions projects.
+ *
+ * The file is kept because it is correct and because changing the project's root directory to
+ * `apps/landing` would activate it as it stands. The recommended route instead is a Cloudflare URL
+ * Rewrite transform rule, which needs no code and touches no other project. Either way, see
+ * docs/AGENT_READINESS_FINDINGS.md.
+ *
+ * Nothing depends on this file. The Markdown twins are live and reachable at their own `.md`
+ * addresses, every page advertises one, and llms.txt explains both routes.
+ *
+ * WHAT IT DOES, WHEN ACTIVE
+ * -------------------------
  * A request that asks for `text/markdown` gets the Markdown twin of the page. Everything else,
  * which is every browser and every search crawler, is passed straight through untouched.
  *

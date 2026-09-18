@@ -21,6 +21,11 @@ interface GoogleSignInButtonProps {
   width?: number;
   /** Overrides the wrapper's default `mx-auto` — pass "" (or "mx-0") to place it inline in a flex row. */
   className?: string;
+  /**
+   * Where this button lives ("register", "login"). Only labels the analytics sign-up event that a
+   * first-time Google account triggers, so it is safe to omit.
+   */
+  surface?: string;
 }
 
 // Width shared by the visible pill and the invisible GIS button behind it (they must match so the
@@ -52,6 +57,7 @@ export function GoogleSignInButton({
   label = 'Continue with Google',
   width = BUTTON_WIDTH,
   className,
+  surface,
 }: GoogleSignInButtonProps) {
   const gsiRef = useRef<HTMLDivElement | null>(null);
   const [unavailable, setUnavailable] = useState(false);
@@ -79,7 +85,7 @@ export function GoogleSignInButton({
               onCredential(response.credential);
               return;
             }
-            const res = await handleGoogleCredential(response.credential);
+            const res = await handleGoogleCredential(response.credential, surface);
             if (res.success) onSuccess?.(res.data);
             else onError?.(res.error, (res as { code?: string | null }).code ?? null);
           },

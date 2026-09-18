@@ -48,14 +48,34 @@ export type GoogleCredentialResult =
 /**
  * Exchange a Google ID token for our session and populate the auth store — identical end state to a
  * password login. Imports are dynamic to avoid cross-package circular deps (same pattern as LoginContent).
+ *
+ * `surface` says where the sign-in was started ("register", "login", "one_tap"). It is only used to
+ * label the analytics sign-up event, so callers that do not care can leave it alone.
  */
-export async function handleGoogleCredential(credential: string): Promise<GoogleCredentialResult> {
+export async function handleGoogleCredential(
+  credential: string,
+  surface = 'google',
+): Promise<GoogleCredentialResult> {
   try {
     const { loginWithGoogle } = await import('@resomix/api-client');
     const { useAuthStore } = await import('@resomix/stores');
     const result = await loginWithGoogle(credential);
     if (result.success && result.data && 'access_token' in result.data) {
-      const data = result.data as { access_token: string; user: any };
+      const data = result.data as { access_token: string; user: any; is_new_user?: boolean };
+      // One Google button covers sign-up and sign-in, and only the server can tell them apart, so
+      // this fires solely on `is_new_user`. It runs BEFORE setAuth so a Google sign-up emits
+      // signup_completed and then user_identified, the same order the email flow produces (setAuth
+      // is what makes useAnalyticsIdentity announce the identity). Its own try/catch because an
+      // analytics failure must never cost the user their sign-in; an older backend that omits the
+      // flag simply emits nothing, exactly as before.
+      if (data.is_new_user) {
+        try {
+          const { pushSignupCompleted } = await import('@resomix/hooks');
+          pushSignupCompleted({ userId: data.user?.uuid, signupSource: 'google', surface });
+        } catch {
+          /* analytics is best-effort */
+        }
+      }
       useAuthStore.getState().setAuth(data.user, data.access_token);
       return { success: true, data: result.data };
     }

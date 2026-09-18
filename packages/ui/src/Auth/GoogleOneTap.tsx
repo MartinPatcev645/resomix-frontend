@@ -28,7 +28,7 @@ export function GoogleOneTap({ clientId, disabled, onSuccess }: GoogleOneTapProp
         google.accounts.id.initialize({
           client_id: resolvedClientId,
           callback: async (response: { credential: string }) => {
-            const res = await handleGoogleCredential(response.credential);
+            const res = await handleGoogleCredential(response.credential, 'one_tap');
             // No full-page reload: handleGoogleCredential already populated the auth store, so the app
             // re-renders as logged-in and One Tap self-dismisses. A reload here would race the auth
             // persistence (leaving a half-logged-in state) and cancel in-flight requests.

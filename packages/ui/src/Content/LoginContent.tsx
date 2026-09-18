@@ -401,6 +401,7 @@ export default function LoginContent({
                     onError={handleGoogleError}
                     width={240}
                     className="mx-auto shrink-0 sm:mx-0"
+                    surface="login"
                   />
                 </>
               )}

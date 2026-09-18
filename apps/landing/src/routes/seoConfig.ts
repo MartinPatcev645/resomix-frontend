@@ -50,6 +50,12 @@ const RESOMIX_SERVICE = (name: string, serviceType: string): RouteEntity => ({
   serviceType,
 });
 
+/*
+ * Adding a route here has one consequence outside this repository. The Cloudflare URL Rewrite rule
+ * that serves the Markdown twin on `Accept: text/markdown` matches an explicit list of paths, so a
+ * new route needs adding to that rule too or it will answer with HTML. The rule, and why the list
+ * is explicit rather than a pattern, are in docs/AGENT_READINESS_FINDINGS.md.
+ */
 export const ROUTE_SEO: Record<string, RouteSeo> = {
   '/': {
     title: 'Resomix: Find & Analyse Electronic Music by Sound',
