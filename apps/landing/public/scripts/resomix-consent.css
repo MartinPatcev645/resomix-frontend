@@ -260,7 +260,8 @@ Modal - Header
   gap: 16px;
 }
 
-#stcm-modal h1 {
+/* h2, not the vendor's h1. See the note beside getModalContent() in resomix-consent.js. */
+#stcm-modal h2 {
   font-family: var(--fontFamily);
   color: var(--textColor);
   font-size: 24px;

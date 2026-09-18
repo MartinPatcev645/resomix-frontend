@@ -120,12 +120,30 @@ answers on VAT, cancellation and uploaded audio could not be read at all. They c
 states the Pro price in plain text for the first time, with the date attached so it ages honestly.
 The before and after for all six is at the end of the page-by-page document.
 
+## The developer hub is fixed too
+
+api-docs.resomix.com was the worst of it. Every address returned the same empty page, and each one
+told search engines that its real address was the hub's home page, which is a direct request to
+ignore it. On top of that the preview image it pointed at had never existed, so every link to the
+docs shared with no image.
+
+It now serves a real page at every address, with its own title, its own description and its own
+summary for search engines. That is roughly 4,500 words of documentation that assistants could not
+read before and can now, sitting exactly where our weakest question is, which is "best audio
+analysis API for music". Unknown addresses return a proper not-found page instead of reporting
+success, and the preview image works. Nothing about how the hub looks has changed.
+
+The build now refuses to publish if any of those faults come back, so this cannot quietly undo
+itself the next time someone adds a page.
+
 ## Still open with you
 
-- **The developer hub, api-docs.resomix.com.** I audited it and it is invisible to assistants. Its
-  pages are drawn by JavaScript, which assistants do not run, so they see an empty page. On top of
-  that, all nine addresses in its sitemap serve the same document and each one tells search engines
-  that its real address is the hub's home page, which asks them to drop it. It is the largest body
-  of Resomix writing that assistants cannot read, and it sits exactly where our weakest question is.
+- **One question about the API spec.** The machine-readable spec file in the docs repository lists
+  different addresses from the ones the documentation itself shows. One of them is out of date and
+  only the API team can say which. I have not published either, because a spec with the wrong
+  addresses in it is worse than none. Once it is settled, publishing it is the most useful single
+  file we can offer a partner's developers.
+- **Is the developer hub meant to be public?** Everything above assumes yes. It documents a partner
+  API with no public sandbox, so it is worth you confirming once.
 - The four decisions in the agent readiness document I sent earlier.
 - The Journal articles and the outreach described above.

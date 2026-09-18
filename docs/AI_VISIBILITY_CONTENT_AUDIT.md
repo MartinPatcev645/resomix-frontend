@@ -1130,7 +1130,7 @@ shape that already exists, so **no new CSS is needed anywhere**.
 | `/trust` | Description updated, and its existing seven-question list is already emitted as `FAQPage` | 7, pre-existing | none |
 | `/pricing` | **Done, differently.** It already had a categorised block in `PricingFaq.tsx`. Three buyer questions were added and the block was repaired, see §14.3 | 12 | none |
 | `/contact`, `/waitlist` | Descriptions fine, pages are thin by design | none | none |
-| beta.resomix.com | Deliberately `noindex`, with `/subscribe` and `/contact` canonicalised to the landing site | none | none |
+| beta.resomix.com | **Not what this document said until 18 September.** It is fully indexable. All three of its pages serve `<meta name="robots" content="index, follow">` and canonicalise to themselves, and its sitemap is registered in Bing Webmaster Tools. See §16 | needs a decision | see §16 |
 
 Two guards in `structuredData.spec.ts` shaped the copy. A block must carry at least four questions,
 and at least two answers must name Resomix. That is why Partners, the Pilot and About each gained a
@@ -1317,25 +1317,147 @@ five-question block and `WebAPI` structured data. The developer hub is the deepe
 that answer, and assistants have been reading its sitemap, but there has never been anything for
 them to read. It is the largest single body of Resomix writing that assistants cannot see.
 
-### 15.4 What would fix it
+### 15.4 Fixed, 18 September 2026
 
-In order of value for effort. Effort is a first estimate only, because the hub's repository has not
-been opened yet, and the first item depends entirely on how it is built.
+Repository `resomix_docs`, branch `main`. The hub is a Vite React app on Cloudflare Pages, the same
+stack as the landing site, so the approach ported rather than being invented. Its own record is
+`resomix_docs/docs/BUILD_AND_SEO.md`.
 
-| Fix | Why | First estimate |
-|---|---|---|
-| Per-page canonical, title and description | Stops the nine sub-pages telling search engines to ignore them. Cheapest fix with the largest immediate effect | 1 to 2 h |
-| Prerender the nine sitemap pages to static HTML | Puts real words in the body. The landing app already solves exactly this with `tooling/prerenderHead.ts` and `tooling/prerenderBodies.ts`, so if the hub is a Vite React app on Cloudflare Pages too, the approach ports rather than being invented | half a day to a day, to confirm once the repo is open |
-| Serve a real 404 for unknown paths | Stops every typo and every dead link reporting success | 30 min |
-| Serve the OpenAPI spec at a real path as `application/json` | An agent can then read the API directly, and it is what `/.well-known/api-catalog` on the main site would point at | 30 min, assuming a spec file exists |
-| `llms.txt` at the hub root | Same short guide the main site now carries, pointing at the nine pages | 30 min |
+| Fix | State |
+|---|---|
+| One real HTML file per route, with that route's own head | Done. `dist/index.html`, `dist/quickstart.html` and so on, written by a new `tooling/prerender.ts` in a second build pass |
+| The rendered page in the served HTML | Done. A new `src/entry-server.tsx` renders every route. 4,561 words of documentation are now in the bytes the server returns, against zero before |
+| Per-page canonical, title, description, Open Graph and JSON-LD | Done, from the metadata `src/lib/seo.ts` already held. The registry moved to `src/lib/routes.ts` so the build and the browser read one source |
+| A real 404 | Done. `404.html` is emitted, so Cloudflare Pages stops answering unknown paths with a 200 |
+| Generated sitemap | Done. Built from the route list, so it cannot drift. The hand-written `public/sitemap.xml` was removed |
+| `llms.txt` | Done, generated. It lists every page and, separately, the raw Markdown behind each guide, which is cheaper for an agent to read than the rendered page |
+| `_headers` | New. Caching, security headers, and `Link` headers pointing an agent at llms.txt and the sitemap without it having to parse a page |
+| The broken preview image | Fixed. `og:image` pointed at a file on that host which has never existed, so scrapers were handed HTML where an image should be. It now points at the main site's real cover, with alt text |
+| Two `<h1>` per page | Fixed. The sidebar wordmark was a heading; it is a `<span>` now and looks identical |
+| Heading levels skipping from `h1` to `h3` | Fixed on the two pages that did it, by promoting one level. No visual change, the classes are untouched |
+| Skip link | Added. Every page began with eleven sidebar links to tab through |
+| Unnamed navigation landmark | Fixed |
+| Two runtime fetches before any guide appeared | Removed. The guides are read from the bundle at build time, so there is no loading skeleton and nothing to wait for |
 
-The first two are the ones that matter. The rest are tidy-up that becomes worthwhile once the pages
-are readable.
+A new `tooling/verifyBuild.ts` reads the built files and **fails the build** if any of these come
+back. It checks unique titles and canonicals, that each canonical is the route's own, one `h1` per
+page, no skipped heading levels, a skip link, named navigation landmarks, a real body rather than an
+empty shell, valid JSON-LD with the site nodes and a breadcrumb, an `og:image` that exists, the 404
+being noindex with no canonical, and the sitemap matching the route list exactly. It found a genuine
+fault on its first run, which was that its own tag matching was too strict, and it has caught
+everything since.
 
-### 15.5 One thing to check before any of this
+### 15.5 Left for George
 
-Whether the hub is meant to be public at all. It documents a partner API with no public sandbox, and
-its own pages say so. If the intent is that only approved partners read it, then the right fix is
-the opposite of the one above, which is to `noindex` it and keep the main site's `/developers` page
-as the public answer. That is George's call, and it should be settled before the work is scheduled.
+- **`openapi.json` contradicts the site.** The spec in the repository root lists `/v1/search`,
+  `/v1/similarity/query` and `/health`. The reference the site renders, from
+  `src/data/endpoints.ts`, documents `/api/v1/search_tracks/`, `/api/v1/similarity/search` and
+  `/api/v1/similarity/upload`. One is wrong and only the API team can say which, so nothing is
+  published at `/openapi.json` yet. A spec with the wrong paths is worse than no spec. Once it is
+  settled it is the single most useful file an agent or a partner's code generator can read.
+- **Whether the hub should be public at all.** It documents a partner API with no public sandbox.
+  Everything above assumes yes, which is what he asked for, and it is worth him confirming once.
+- **`README.md` in that repository is stale**, offering a sandbox key and a `localhost` base URL
+  while the site says there is no public sandbox.
+
+---
+
+## 16. The app subdomain competes with the marketing pages
+
+Found 18 September 2026, while registering the site in Bing Webmaster Tools. Earlier sections of
+this document stated that `beta.resomix.com` is `noindex`. That was wrong, and the correction
+matters because it works directly against everything else here.
+
+### 16.1 What is actually served
+
+| URL | Status | Robots | Canonical |
+|---|---|---|---|
+| `https://beta.resomix.com/` | 200 | `index, follow` | itself |
+| `https://beta.resomix.com/sonic-discovery` | 200 | `index, follow` | itself |
+| `https://beta.resomix.com/analysis` | 200 | `index, follow` | itself |
+
+No `X-Robots-Tag` header anywhere. `https://beta.resomix.com/sitemap.xml` lists all three and is
+registered in Bing Webmaster Tools, submitted and crawled on 18 September.
+
+### 16.2 Why it matters
+
+`beta.resomix.com/sonic-discovery` and `resomix.com/product/sonic-discovery` are two indexable
+pages, on two Resomix hosts, about the same named product. The marketing page is the one that now
+carries the definition sentence, the buyer phrases, the six questions, the five plain-text steps and
+the `FAQPage` and `HowTo` markup. The app page carries an interface and needs a sign-in to do
+anything.
+
+An assistant choosing between them has no reason to prefer the right one, and a search engine
+splits the signals between them. The whole point of the September work was to make one page per
+question the obvious answer. This quietly undoes part of that.
+
+It is also the wrong page to land a stranger on. Someone who asks an assistant "what is a music
+similarity search tool" and is sent to a signed-out app screen learns nothing about Resomix.
+
+### 16.3 What to do
+
+The choice is George's, and it is genuinely a choice.
+
+1. **`noindex` the app and canonicalise its three pages to the marketing equivalents.** My
+   recommendation. `beta.resomix.com/` to `resomix.com/`, `/sonic-discovery` to
+   `/product/sonic-discovery`, `/analysis` to `/product/track-intelligence`. The app keeps working
+   exactly as it does, and every search and every assistant is pointed at the page written to
+   answer them. Roughly 30 minutes in `apps/webapp`, plus removing that sitemap from Bing.
+2. **Leave it indexable.** Defensible only if the app pages are meant to rank on their own, which
+   would mean giving them real copy, and that is a much larger job than option 1.
+
+Whichever is chosen, the `beta.resomix.com` sitemap should not stay registered in Bing under the
+`resomix.com` property while the pages are `noindex`, because that asks Bing to crawl pages it is
+then told to ignore.
+
+---
+
+## 17. Two headings on every page, from the cookie banner
+
+Found 18 September 2026 by Bing's Live URL check, hours after the production release.
+
+### 17.1 What it was
+
+Bing reported "More than one h1 tag, 2 instances found" on the homepage. Its own issue viewer named
+both. The first was `<h1>Customize your cookie preferences</h1>` inside `#stcm-modal`, the second
+was the page's real hero heading.
+
+The consent manager is Silktide, vendor code at `apps/landing/public/scripts/resomix-consent.js`
+and an identical copy in `apps/webapp`. Its modal used a level-one heading for the title, so **every
+page on both the site and the app had two top-level headings** from the moment that modal was built.
+
+### 17.2 Why nothing caught it
+
+`singleContentTree.spec.ts` already asserted exactly one `h1` per page, and it passed, because it
+reads the prerendered HTML. The consent modal is built by a script at runtime and never appears in
+the served markup. A parser reading the response sees one heading. A browser, and Bing's Live URL
+check, which renders, sees two.
+
+That is the general lesson. The prerendered HTML is what a crawler is served, not what a browser
+ends up with, and a check that only reads the former has a blind spot exactly the size of whatever
+JavaScript adds.
+
+A first diagnosis blamed something else, which is worth recording so nobody re-derives it. The
+shipped `index.html` had a comment explaining font choices that contained the literal text of a
+heading tag, and a naive scan of the response counts two. That was a red herring. Bing's issue
+viewer named the cookie modal, not the comment. The comment was reworded anyway, since a tag name
+written as prose costs nothing and removes the ambiguity for the next person reading a raw count.
+
+### 17.3 What was changed
+
+- The modal title is now a level-two heading, in both apps. One line in the vendor script, with a
+  note beside it so a vendor update does not silently revert it.
+- The matching `#stcm-modal` selector in `resomix-consent.css` was moved to the same level, in both
+  apps, so the modal looks identical.
+- `singleContentTree.spec.ts` gained a check that reads the shipped consent script itself and fails
+  if a level-one heading comes back, plus the precautionary one about tag names in comments.
+
+Verified on the built output of both apps. The dashboards will keep reporting the old result until
+the pages are recrawled after the next deploy.
+
+### 17.4 Still open on that modal
+
+It has no `role="dialog"` and no `aria-modal`, so a screen reader is not told it is a dialog. That
+is vendor behaviour rather than something we introduced, and it was left alone under the rule that
+vendor code is wired in unchanged unless it blocks something. Worth raising with George separately,
+because a consent dialog is exactly the kind of thing an accessibility audit looks at first.
