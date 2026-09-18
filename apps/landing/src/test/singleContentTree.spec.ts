@@ -49,6 +49,43 @@ describe.skipIf(!built)('the page is rendered once, not per breakpoint', () => {
     expect(offenders, 'these routes have zero or duplicate H1s').toEqual([]);
   });
 
+  /**
+   * The check above reads `#root`, which is where headings belong. This one reads the WHOLE
+   * document, because the shell's comments ship to production too.
+   *
+   * On 18 September 2026 Bing's Live URL test reported the homepage as having two h1 elements. A
+   * conforming parser sees one: the second was the text `<h1>` inside a comment in index.html
+   * explaining which font the hero uses. Bing's on-page checker counts tag names inside comments,
+   * and Bing is what ChatGPT and Copilot search through, so being technically right was not worth
+   * the error badge. Write tag names out in prose instead.
+   */
+  /**
+   * The h1 check above reads the prerendered HTML, which is everything a crawler is served but NOT
+   * everything a browser ends up with. The cookie consent modal is built by a script at runtime,
+   * and the Silktide default gave its title a level-one heading, so every page of the site had two
+   * as soon as that modal existed. Nothing in the prerendered markup could show it, which is why it
+   * survived until Bing's on-page check reported it on 18 September 2026.
+   *
+   * This reads the script we actually ship.
+   */
+  it('the consent modal does not add a second top-level heading at runtime', () => {
+    const script = resolve(DIST, 'scripts/resomix-consent.js');
+    if (!existsSync(script)) return;
+    const source = readFileSync(script, 'utf8');
+    const headings = source.match(/<h1[\s>]/g) ?? [];
+    expect(headings, 'the consent modal must not use a level-one heading').toEqual([]);
+  });
+
+  it('never writes a tag name as markup inside a comment in the shipped HTML', () => {
+    const offenders: string[] = [];
+    for (const route of routes) {
+      const comments = html(route).match(/<!--[\s\S]*?-->/g) ?? [];
+      const guilty = comments.filter((c) => /<(h[1-6]|title|main|nav|body|html)[\s>]/i.test(c));
+      if (guilty.length) offenders.push(route);
+    }
+    expect(offenders, 'naive on-page checkers count these as real elements').toEqual([]);
+  });
+
   it('keeps the homepage DOM under the size the duplicate tree forced', () => {
     // Was 2,573. A generous ceiling: this is a guard against the duplication returning, not a
     // budget for the design.

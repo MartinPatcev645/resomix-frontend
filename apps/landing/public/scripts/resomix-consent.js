@@ -1033,9 +1033,14 @@ class SilktideConsentManager {
 
 
 
+    /* h2, not h1. The Silktide default is a level-one heading, which put a second top-level
+       heading on every page of the site the moment this modal was built, because the page's own
+       hero already holds that level. Bing's on-page check reported "More than one h1 tag"
+       site-wide on 18 September 2026. Keep this at level two when updating the consent manager,
+       and keep the matching selector in resomix-consent.css in step. */
     const modalContent = `
       <header>
-        <h1>${preferencesTitle}</h1>
+        <h2>${preferencesTitle}</h2>
       </header>
       ${preferencesDescription}
       <section id="stcm-form">

@@ -165,7 +165,9 @@
     <link rel="preconnect" href="https://bserver.resomix.com" crossorigin="use-credentials">
 
     <!-- Preload only the faces that gate first paint, as the Latin subset:
-           Benzin 700  — the hero <h1>, which Lighthouse reported as the desktop LCP element
+           Benzin 700  — the hero heading, which Lighthouse reported as the desktop LCP element
+           (written out rather than as a tag: Bing's on-page checker counts tag names inside HTML
+           comments, and reported the homepage as having two h1 elements because of this line)
            Helvetica 300 — body copy (the page root is `font-helvetica font-light`)
            Fira Code 500 — nav/eyebrow type, and the largest single CLS culprit (0.059)
          These were previously discovered only after index.css parsed, which is why a font sat at
