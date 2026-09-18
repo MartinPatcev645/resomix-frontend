@@ -43,6 +43,34 @@ and Bing. Access was never the reason Resomix went unnamed in the report.
 We also fixed one real fault. Every link on www.resomix.com used to land on the homepage, whatever
 page it pointed at. It now redirects to the same page on resomix.com.
 
+## Every item up to Level 2, what it needs and how long
+
+Level 1 is the five Quick Wins, Level 2 the three Technical Groundwork items. Nothing below needs
+the paid Cloudflare plan, and nothing changes how the pages look.
+
+| Item | What turns it green | Where | Time |
+|---|---|---|---|
+| robots.txt | Already green. The file exists, is valid and blocks no AI crawler | `apps/landing/public/robots.txt` | Done |
+| Sitemap | Already green. Built from the route list on every deploy | generated into `sitemap.xml` from `apps/landing/src/routes/seoConfig.ts` | Done |
+| AI crawler rules | Already green. Search, agent and training bots are all set to allow, and no crawler is blocked | Cloudflare, Security Settings and AI Crawl Control | Done |
+| Content Signals | Add one line under `User-agent: *` stating how automated systems may use the content | `apps/landing/public/robots.txt` | 10 min |
+| Markdown for agents | Serve a plain-text version of each page when an agent asks for one. Cloudflare's own switch needs the Pro plan, so we build it. A build step writes a Markdown copy of every page, and a small Cloudflare Pages function returns it when the request asks for Markdown | new `apps/landing/functions/_middleware.ts` plus a new build step beside `tooling/prerenderBodies.ts` | 1 to 2 h |
+| API catalogue | Publish a small file listing our API and where its documentation lives, following the published standard, and serve it with the right content type | new `apps/landing/public/.well-known/api-catalog` plus one rule in `apps/landing/public/_headers` | 30 to 40 min |
+| Link headers | Add one response header pointing at the API catalogue, the sitemap and llms.txt, so an agent finds them without reading the page | `apps/landing/public/_headers` | 10 min |
+| auth.md | Publish a short page explaining how an agent acting for a person signs up and signs in, and how API access is granted | new `apps/landing/public/auth.md` | 30 min, after the wording is agreed |
+| Rescan and verify | Re-run the Cloudflare scan and check each item reports green | Cloudflare, AI Crawl Control, Optimization | 10 min |
+
+**Total 2.5 to 3.5 hours**, which takes Level 1 to 5 of 5 and Level 2 to 3 of 3. Without the
+Markdown item it is about 1.5 hours, and the score becomes Level 1 at 4 of 5 with Level 2 complete.
+
+These are clean-run times. If any item does not report green on the first rescan, add a little for
+troubleshooting, most likely on the Markdown item, since it is the only one that introduces new
+moving parts.
+
+Three of these need a decision from you before they can be written, and they are listed at the end
+of this document. The Content Signals line needs your answer on training, the API catalogue needs
+to know which links we publish, and auth.md needs the sign-up policy.
+
 ## What is missing at Level 1
 
 ### 1. Content Signals

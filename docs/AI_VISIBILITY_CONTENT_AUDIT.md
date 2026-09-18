@@ -1101,3 +1101,84 @@ After deploy, for each changed URL:
 5. Send Vladimir: go-live date, the full list of changed URLs (all twenty indexable routes plus
    `llms.txt`), the Cloudflare AI Crawl Control screenshot, and the note that www and trailing-slash
    canonicals were fixed. He re-runs 2 to 3 weeks later against the 15 September baseline.
+
+---
+
+## 14. Pages not yet covered, and exactly what each needs
+
+Written 18 September 2026 and checked against the code, not from notes. George approved the
+questions sections for "the product and solution pages", so the four product pages and the seven
+solution pages are done. This section is everything else.
+
+What was verified for each page below: whether it already carries `faq` copy in its locale file
+(none of these do), which of the three section shapes in `sections/shared/faqFamilies.ts` its
+markup matches, and where in its page file the block would mount. All five candidates match a
+shape that already exists, so **no new CSS is needed anywhere**.
+
+| Page | State now | What to add | Effort | Decision |
+|---|---|---|---|---|
+| `/developers` | Opening paragraph and description done. No FAQ | The five questions drafted in §5.6 | 30 min | Approval only |
+| `/` | Opening paragraph, step 2 tie and description done. No FAQ | The four questions drafted in §5.1 | 30 min | Approval only |
+| `/partners` | Opening paragraph and description done. No FAQ | The three questions drafted in §5.7 | 20 min | Approval only |
+| `/partners/pilot` | Opening paragraph and description done. No FAQ | The three questions drafted in §5.8 | 20 min | Approval only |
+| `/about` | Untouched. Names Resomix 26 times in body copy already, and its description is fine | Three questions, drafted below. Optional | 30 min | Approval only |
+| `/trust` | Description updated, and its existing seven-question list is already emitted as `FAQPage` | Nothing | none | none |
+| `/pricing` | Untouched. Its copy is not in a landing locale file at all, it comes from `PricingContent` in `packages/ui`, shared with the webapp | Optional. A short FAQ needs a copy home first, either a new landing locale namespace or a landing-only block, so it is not the 20 minutes the others are | 45 min to 1 h | Whether it is worth it, and whether the webapp shows it too |
+| `/contact`, `/waitlist` | Descriptions fine, pages are thin by design | Nothing | none | none |
+| beta.resomix.com | Deliberately `noindex`, with `/subscribe` and `/contact` canonicalised to the landing site | Nothing | none | none |
+
+### 14.1 The four pages with copy already drafted
+
+Each one is the same four-file change, exactly as the eleven done pages were built.
+
+| File | Change |
+|---|---|
+| `apps/landing/src/locales/en/pages/<ns>.json` | Add the `faq` block, from §5. Place it before the page's closing key so the file reads in page order |
+| `apps/landing/src/sections/shared/faqFamilies.ts` | Add one line to `FAQ_FAMILIES` with the style that matches the page |
+| `apps/landing/src/pages/<Page>.tsx` | Import `FaqSection` and mount `<FaqSection ns="<ns>" />` at the position below |
+| `apps/landing/vite.config.ts` | Add the route to `FAQ_ROUTES` so the `FAQPage` schema is emitted from the same strings |
+| `apps/landing/src/test/structuredData.spec.ts` | Add the route to its own `FAQ_ROUTES` list, which is what fails if the schema and the visible copy ever drift |
+
+| Page | Namespace | Style line to add | Mount before |
+|---|---|---|---|
+| Developers | `developers` | `developers: instrumentStyle('dev')` | `<DevEvaluationCta />` in `DevelopersPage.tsx` |
+| Home | `home` | `home: solutionStyle('hm')` | `<HmFinalCta />` in `HomePage.tsx` |
+| Partners | `partners` | `partners: instrumentStyle('pn')` | `<PnContactForm />` in `PartnersPage.tsx` |
+| Private Catalogue Pilot | `partnersPilot` | `partnersPilot: instrumentStyle('pp')` | `<PpApplyForm />` in `PartnersPilotPage.tsx` |
+| About, if approved | `about` | `about: productStyle('ab')` | `<AbClosing />` in `AboutPage.tsx` |
+
+Section numbering, to keep each page's eyebrows in order. Developers becomes `08 // Questions` and
+its evaluation section moves to `09`. The Pilot becomes `08 // Questions` and its apply section
+moves to `09`. Home, Partners and About number their sections differently or not at all, so their
+FAQ eyebrow is simply `Questions`, as on the solution pages.
+
+Why Developers is first in the list: the report shows 0 of 25 answers naming Resomix for "best
+audio analysis API for music", and this page is the only page that can answer it.
+
+### 14.2 About, draft copy
+
+Deliberately different questions from Home and Product, so the pages do not repeat each other.
+Every answer is drawn from copy already on the About page.
+
+1. **Who builds Resomix, and where?** A small team of music-industry professionals and
+   signal-processing engineers in Thessaloniki, Greece. Resomix started from a frustration they knew
+   first-hand, which is how long it takes to find the one recording that fits a moment.
+2. **Is Resomix a streaming service?** No. Resomix helps you find and understand music. It is not
+   a place to listen to full tracks, and it does not replace a store or a streaming service.
+3. **What does Resomix deliberately not do?** It does not generate or recreate audio, it does not
+   train on user or partner content, and it does not decide for you. It surfaces measured evidence
+   and candidates, and the choice stays with the person.
+
+### 14.3 Outside this repository
+
+- **Journal, blog.resomix.com.** George and Marco's. The site intro explains sound-first discovery
+  well, but no sentence starts "Resomix is". One habit would help every future article, which is to
+  name Resomix in the first paragraph and answer one buyer question outright. The report's cheapest
+  gain is the seventeen questions where Resomix is never named.
+- **Developer hub, api-docs.resomix.com.** Assistants fetched its sitemap twelve times in one day,
+  so they do read it. A plain request for the home page returned only the title, which usually means
+  the content is drawn by JavaScript, and no major AI crawler runs JavaScript. Worth 30 minutes to
+  confirm, because that hub is our strongest evidence for the API questions. If it is
+  client-rendered, it is invisible to the assistants no matter what /developers says.
+- **`SoftwareApplication` on the two live product pages.** Still George's call, see §3.5 and §11.
+  Invisible on the page, 30 minutes.
