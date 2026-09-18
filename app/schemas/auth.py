@@ -134,6 +134,20 @@ class GoogleLoginRequest(BaseModel):
         json_schema_extra = {"example": {"credential": "eyJhbGciOiJSUzI1NiIsImtpZCI6..."}}
 
 
+class GoogleLoginResponse(LoginResponse):
+    """Same session as a password login, plus whether this call created the account.
+
+    Google's one button covers sign-up and sign-in, and the session it returns looks the same
+    either way. ``is_new_user`` is the only thing that separates them, so the frontend can treat a
+    first Google sign-in as a sign-up. An existing email account that merely gains a Google link
+    is a login, and reports False.
+    """
+
+    is_new_user: bool = Field(
+        ..., description="True when this request created the account (a Google sign-up)"
+    )
+
+
 class TwoFactorRequiredResponse(BaseModel):
     """2FA required response"""
 

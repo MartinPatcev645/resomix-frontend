@@ -531,6 +531,7 @@ class AuthService:
                 await self.user_repo.async_link_provider(db, user.id, "google", provider_uid)
 
         # 3) Brand new → create the account, link it, and put it on the default (free) plan.
+        is_new_user = False
         if user is None:
             username = await self._generate_unique_username(db, email)
             user = await self.user_repo.async_create_oauth_user(
@@ -538,6 +539,7 @@ class AuthService:
             )
             await self.user_repo.async_link_provider(db, user.id, "google", provider_uid)
             await self._assign_default_plan(db, user)
+            is_new_user = True
 
         if not user.is_active:
             # Same shape as the password path so one frontend handler covers both.
@@ -546,10 +548,17 @@ class AuthService:
                 detail=inactive_account_detail(user),
             )
 
-        return await self._create_user_session(
+        session = await self._create_user_session(
             db=db, user=user, user_agent=user_agent, ip_address=ip_address,
             guest_visitor_id=guest_visitor_id,
         )
+        # True only when THIS request created the account. Google gives us no such signal, and the
+        # session payload is identical for a first sign-in and a tenth one, so the frontend cannot
+        # tell a sign-up from a login without it (the analytics layer needs to fire its signup
+        # event exactly once). Branch 2 above, where an existing email account simply gains a
+        # Google link, is a login and reports False.
+        session["is_new_user"] = is_new_user
+        return session
 
     async def link_google_to_user(self, db: AsyncSession, user_id: int, credential: str) -> None:
         """Link a Google identity to the CURRENT user (used by "Connect Google" in the profile).

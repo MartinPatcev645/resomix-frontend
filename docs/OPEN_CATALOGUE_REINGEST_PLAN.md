@@ -11,6 +11,10 @@
 
 ## PROGRESS (live status, keep this section current)
 
+**2026-09-17.** All three batches ingested (runs 18, 19, 20). Step C (Apple matching) and Step D
+(promotion into partner 1) are done. 87,593 tracks are live in partner 1. What is left is tracked in
+`OPEN_CATALOGUE_REINGEST_FOLLOWUPS.md`. The rest of this section still reads as of 10 September.
+
 **Last updated 2026-09-10.** Step A done. Step B: **2 of 3 batches READY**, batch 2 uploading.
 Steps C and D not started.
 

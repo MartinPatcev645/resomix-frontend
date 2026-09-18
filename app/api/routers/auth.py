@@ -24,6 +24,7 @@ from app.schemas.auth import (
     LoginRequest,
     LoginResponse,
     GoogleLoginRequest,
+    GoogleLoginResponse,
     TwoFactorRequiredResponse,
     TwoFactorVerifyRequest,
     TokenRefreshResponse,
@@ -118,7 +119,7 @@ async def login(
 
 @router.post(
     "/google",
-    response_model=LoginResponse,
+    response_model=GoogleLoginResponse,
     status_code=200,
     summary="Continue with Google",
     description="Sign in (or sign up) with a Google ID token from Google Identity Services.",
