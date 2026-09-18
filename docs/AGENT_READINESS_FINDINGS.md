@@ -456,6 +456,21 @@ that implies, to satisfy one checklist item on a fourth project.
 No code, no functions, nothing inherited by the other projects, and available on the Free plan.
 Cloudflare dashboard, resomix.com, **Rules**, **Transform Rules**, **Rewrite URL**, Create rule.
 
+**Use "Edit expression", not the visual builder.** This is the step that went wrong on the first
+attempt and it is easy to miss. The form opens on a Field, Operator and Value builder, and pasting
+an expression into the Value box makes Cloudflare treat the whole expression as a string to match
+the URL against. The preview then reads
+`(http.request.full_uri wildcard r#"http.request.uri.path in {...}"#)` and the rule matches nothing,
+because it is literally asking whether the URL looks like the text of an expression. The
+"This rule may not apply to your traffic" warning about DNS is a symptom of the same mistake, not a
+separate problem.
+
+The link is at the top right of the Expression Preview box. Click it, clear the field, and paste the
+raw expression.
+
+Both expressions below also pin the hostname. That scopes the rule to the site it is meant for and
+satisfies the check that produced the DNS warning, since resomix.com is a proxied record.
+
 Two rules, because the home page needs a different target from the rest.
 
 **Rule 1, "Markdown for agents, home page"**
@@ -463,7 +478,7 @@ Two rules, because the home page needs a different target from the rest.
 Custom filter expression:
 
 ```
-http.request.uri.path eq "/" and http.request.headers["accept"][0] contains "text/markdown"
+http.host eq "resomix.com" and http.request.uri.path eq "/" and http.request.headers["accept"][0] contains "text/markdown"
 ```
 
 Then: Rewrite to, **Path**, **Static**, value `/index.md`. Leave the query alone.
@@ -473,7 +488,7 @@ Then: Rewrite to, **Path**, **Static**, value `/index.md`. Leave the query alone
 Custom filter expression:
 
 ```
-http.request.uri.path in {"/about" "/product" "/product/sonic-discovery" "/product/track-intelligence" "/product/catalog-intelligence" "/developers" "/partners" "/partners/pilot" "/trust" "/solutions/record-labels" "/solutions/music-publishers" "/solutions/sync-agencies" "/solutions/music-libraries-sample-providers" "/solutions/djs" "/solutions/music-curators" "/solutions/producers" "/pricing" "/contact" "/waitlist"} and http.request.headers["accept"][0] contains "text/markdown"
+http.host eq "resomix.com" and http.request.uri.path in {"/about" "/product" "/product/sonic-discovery" "/product/track-intelligence" "/product/catalog-intelligence" "/developers" "/partners" "/partners/pilot" "/trust" "/solutions/record-labels" "/solutions/music-publishers" "/solutions/sync-agencies" "/solutions/music-libraries-sample-providers" "/solutions/djs" "/solutions/music-curators" "/solutions/producers" "/pricing" "/contact" "/waitlist"} and http.request.headers["accept"][0] contains "text/markdown"
 ```
 
 Then: Rewrite to, **Path**, **Dynamic**, value:
@@ -512,3 +527,50 @@ takes the site down rather than degrading it.
 
 I would take the transform rule. Two rules in a dashboard, reversible in seconds, and the blast
 radius is one hostname.
+
+---
+
+## Markdown negotiation, working and verified
+
+18 September 2026. Two URL Rewrite rules, both active, verified against production.
+
+| Client sends | Gets back |
+|---|---|
+| `Accept: text/markdown` on any of the 20 pages | `200 text/markdown; charset=utf-8` |
+| A normal browser `Accept` on any page | `200 text/html; charset=utf-8` |
+
+Checked on `/`, `/product/sonic-discovery`, `/developers`, `/solutions/djs`, `/pricing` and
+`/waitlist`, both ways round.
+
+### It cannot misfire
+
+The explicit path set was the right call. Every one of these was requested with
+`Accept: text/markdown` and every one came back untouched.
+
+| Path | Still returns |
+|---|---|
+| `/robots.txt` | `text/plain` |
+| `/sitemap.xml` | `application/xml` |
+| `/llms.txt` | `text/plain` |
+| `/auth.md` | `text/markdown`, its own file, not a rewrite |
+| `/.well-known/api-catalog` | `application/linkset+json` |
+| `/og-cover.png` | `image/png` |
+
+A pattern rule such as "any path with no file extension" would have rewritten the first three into
+404s for any client that happened to send that header.
+
+The rewrite also stays out of the HTML path entirely. The canonical on `/developers` is still
+`https://resomix.com/developers`, not the Markdown address, so nothing about how search engines see
+the site changed.
+
+### Where this leaves the two levels
+
+Quick Wins 5 of 5. Technical Groundwork 2 of 3, with the third being the OAuth item that we are
+deliberately not faking, for the reasons set out above.
+
+### What to keep in step
+
+Adding a route means adding its path to rule 2, or that page will answer with HTML while every
+other page answers with Markdown. There is a note beside the route list in
+`apps/landing/src/routes/seoConfig.ts` saying so. The rule lives in the Cloudflare dashboard under
+Rules, Transform Rules, Rewrite URL, named "Every other page".
