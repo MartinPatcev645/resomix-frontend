@@ -84,9 +84,14 @@
   Cache-Control: public, max-age=3600
   Access-Control-Allow-Origin: *
 
-/auth.md
+# Every page also has a Markdown twin, written at build time, so an agent can read the prose without
+# parsing the document. `noindex` because the twin is a second representation of a page that already
+# has a canonical address, not a page of its own, and two indexable copies of the same words is the
+# duplication this whole effort exists to avoid. It stays fully readable; noindex is not a block.
+/*.md
   Content-Type: text/markdown; charset=utf-8
-  Cache-Control: public, max-age=3600
+  X-Robots-Tag: noindex
+  Cache-Control: public, max-age=0, must-revalidate
   Access-Control-Allow-Origin: *
 
 # Content-hashed build output: the name changes whenever the bytes change, so it is safe to keep

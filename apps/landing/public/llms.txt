@@ -40,6 +40,25 @@ makes an authorised catalogue searchable by sound inside a private index.
 - User and partner audio is not used to train or fine-tune PYXIS-1. PYXIS-1 does not generate audio.
 - Partner catalogues are logically isolated. There is no shared partner pool and no public sandbox.
 
+## Reading these pages cheaply
+
+Every page has a Markdown twin holding the same prose without the navigation, the layout or the
+markup. Two ways to reach it, whichever suits your client.
+
+- Send `Accept: text/markdown` to the page's own address and you get Markdown back.
+- Or append `.md` to the path, so https://resomix.com/product/sonic-discovery.md returns the
+  Markdown for https://resomix.com/product/sonic-discovery. The home page is
+  https://resomix.com/index.md
+
+Each HTML page also declares its twin with `<link rel="alternate" type="text/markdown">`. The twins
+are `noindex` on purpose, because they are a second representation of a page that already has a
+canonical address, not pages of their own.
+
+- [How agents and people sign in](https://resomix.com/auth.md): What can be done without an account,
+  how a person registers, and how partner API access is arranged.
+- [API catalogue](https://resomix.com/.well-known/api-catalog): The Resomix Partner API and its
+  documentation, as a linkset.
+
 ## About
 
 - [About Resomix](https://resomix.com/about)

@@ -2,9 +2,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
-import { ROUTE_SEO } from './src/routes/seoConfig.ts'
+import { ROUTE_SEO, SITE_ORIGIN } from './src/routes/seoConfig.ts'
 import { PAGE_MODULES } from './src/routes/pageModules.ts'
 import { prerenderBodies } from '../../tooling/prerenderBodies.ts'
+import { markdownForAgents } from '../../tooling/markdownForAgents.ts'
 
 /**
  * Second build pass: renders each route's BODY into the HTML files the client build produced.
@@ -37,6 +38,13 @@ export default defineConfig({
       inlineCss: true,
       /* The catch-all route renders the 404 page, so ask for a path that matches nothing else. */
       notFound: { url: '/404', file: 'dist/404.html' },
+    }),
+    /* Runs after prerenderBodies, which is the point: it converts the HTML that pass has just
+       finished writing, so the Markdown can never describe a page that is not what we serve. */
+    markdownForAgents({
+      routes: Object.keys(ROUTE_SEO).filter((route) => route !== '/404' && !ROUTE_SEO[route].noindex),
+      clientDir: path.resolve(__dirname, 'dist'),
+      origin: SITE_ORIGIN,
     }),
   ],
   resolve: {

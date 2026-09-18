@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { ROUTE_SEO } from '@/routes/seoConfig.ts';
 
 /**
  * The files that exist only for automated clients.
@@ -167,7 +168,7 @@ describe.skipIf(!built)('files published for automated clients', () => {
       expect(headers()).toMatch(
         /\/\.well-known\/api-catalog\s*\n\s*Content-Type:\s*application\/linkset\+json/,
       );
-      expect(headers()).toMatch(/\/auth\.md\s*\n\s*Content-Type:\s*text\/markdown/);
+      expect(headers()).toMatch(/\/\*\.md\s*\n\s*Content-Type:\s*text\/markdown/);
     });
 
     it('advertises the catalogue, the sitemap and llms.txt in the response', () => {
@@ -184,6 +185,87 @@ describe.skipIf(!built)('files published for automated clients', () => {
       expect(txt).toContain('Strict-Transport-Security:');
       expect(txt).toContain('Content-Security-Policy-Report-Only:');
       expect(txt).toMatch(/\/assets\/\*\s*\n\s*Cache-Control:\s*public, max-age=31536000, immutable/);
+    });
+  });
+
+  describe('the Markdown twins', () => {
+    /* Cloudflare sells this as a Pro switch. We generate the files at build time instead, from the
+       prerendered HTML, so what an agent reads is a conversion of what a browser is served rather
+       than a second rendering of the same data. See tooling/markdownForAgents.ts. */
+    const ROUTES = Object.keys(ROUTE_SEO).filter(
+      (route) => route !== '/404' && !ROUTE_SEO[route].noindex,
+    );
+    const fileFor = (route: string) => (route === '/' ? 'index' : route.replace(/^\//, ''));
+
+    it('exists for every indexable route that has a page', () => {
+      const missing = ROUTES.filter((route) => {
+        const base = fileFor(route);
+        /* Redirect and hand-off shells have no <main> and nothing to convert. */
+        if (!existsSync(resolve(DIST, `${base}.html`))) return false;
+        if (!readFileSync(resolve(DIST, `${base}.html`), 'utf8').includes('<main')) return false;
+        return !existsSync(resolve(DIST, `${base}.md`));
+      });
+      expect(missing, 'these routes have no Markdown twin').toEqual([]);
+    });
+
+    it('carries the real prose, not an empty shell', () => {
+      /*
+       * A low floor on purpose. This catches a conversion that produced nothing, which is the
+       * failure that matters and the one the first version of the converter actually hit. It is not
+       * a rule about how long a page should be. `/waitlist` is 90 words because the page is a
+       * heading, two sentences and a form, and dropping the form is deliberate.
+       */
+      const thin = ROUTES.filter((route) => {
+        const file = resolve(DIST, `${fileFor(route)}.md`);
+        if (!existsSync(file)) return false;
+        const words = readFileSync(file, 'utf8').split(/\s+/).filter(Boolean).length;
+        return words < 40;
+      });
+      expect(thin, 'these Markdown twins converted to nothing').toEqual([]);
+    });
+
+    it('keeps the page heading, so the twin is recognisably the same page', () => {
+      const offenders: string[] = [];
+      for (const route of ROUTES) {
+        const base = fileFor(route);
+        if (!existsSync(resolve(DIST, `${base}.md`))) continue;
+        const html = readFileSync(resolve(DIST, `${base}.html`), 'utf8');
+        const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? '';
+        const words = h1
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&[a-z]+;/g, ' ')
+          .split(/\s+/)
+          .filter((w) => w.length > 3);
+        if (!words.length) continue;
+        const md = readFileSync(resolve(DIST, `${base}.md`), 'utf8');
+        if (!words.some((w) => md.includes(w))) offenders.push(route);
+      }
+      expect(offenders, 'these twins do not contain their page heading').toEqual([]);
+    });
+
+    it('leaves no React comment separators in the output', () => {
+      // React writes `<!-- -->` between adjacent text expressions. Left in, they read as literal
+      // text in the Markdown, which is what the first version of the converter shipped.
+      const dirty = ROUTES.filter((route) => {
+        const file = resolve(DIST, `${fileFor(route)}.md`);
+        return existsSync(file) && readFileSync(file, 'utf8').includes('<!-- -->');
+      });
+      expect(dirty, 'these twins contain React comment separators').toEqual([]);
+    });
+
+    it('is advertised from the HTML page it belongs to', () => {
+      const unlinked = ROUTES.filter((route) => {
+        const base = fileFor(route);
+        if (!existsSync(resolve(DIST, `${base}.md`))) return false;
+        return !readFileSync(resolve(DIST, `${base}.html`), 'utf8').includes(
+          `<link rel="alternate" type="text/markdown" href="/${base}.md"`,
+        );
+      });
+      expect(unlinked, 'these pages do not link their Markdown twin').toEqual([]);
+    });
+
+    it('is not indexable, because it duplicates a page that already has a canonical', () => {
+      expect(read('_headers')).toMatch(/\/\*\.md[\s\S]{0,160}?X-Robots-Tag:\s*noindex/);
     });
   });
 

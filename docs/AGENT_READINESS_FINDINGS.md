@@ -264,3 +264,155 @@ drop everything below its own block, and that is the failure this suite is watch
    falls through on any error, and no involvement with `/assets`, `/scripts`, `/fonts` or `/auth`.
    The Cloudflare Pages root-directory setting for this monorepo needs checking first, so the
    `functions/` directory lands where Pages expects it.
+
+---
+
+## The auth.md check, and why I am recommending we stop at 2 of 3
+
+Second rescan, 18 September 2026. The heading complaint is gone. The new one is
+
+> auth.md exists but OAuth Protected Resource Metadata was not found
+
+That is a different request, and it is the one item on this whole list I do not think we should
+satisfy.
+
+### What it is asking for
+
+Its own instructions spell it out. Publish OAuth Protected Resource Metadata at
+`/.well-known/oauth-protected-resource` containing `resource`, **`authorization_servers`**,
+`scopes_supported` and `bearer_methods_supported`. Then publish OAuth Authorization Server metadata
+at each advertised authorization server's `/.well-known/oauth-authorization-server`, with an
+`issuer` that matches.
+
+In other words, advertise an OAuth authorization server, and then describe it.
+
+### Why we cannot honestly do that
+
+**Resomix has no authorization server.** The partner API authenticates with `rmx_` keys issued to
+approved partners during onboarding, sent either as `X-Api-Key` or as a bearer token. There is no
+authorization endpoint, no token endpoint, no client registration, and no flow for a third party to
+obtain a credential. I checked the backend rather than assuming: the only matches for "token
+endpoint" are an Apple developer token and the playlist embed token, neither of which is OAuth.
+
+So publishing that metadata means naming an authorization server that does not exist. An agent that
+read it and followed the issuer would send an authorization request into a 404. That is worse than a
+missing badge, because it fails at the moment someone is actually trying to integrate, and it fails
+silently until then.
+
+### The half measure, and why it still does not fit
+
+`authorization_servers` is optional in RFC 9728, so a truthful minimal document is possible. It
+would state the resource, that bearer tokens go in the header, the documented scope, and where the
+documentation is. Every line true.
+
+Two things are still wrong with it. The check wants `authorization_servers`, so it would most likely
+stay red anyway. And the metadata belongs at the resource's own origin, `api.resomix.com`, not on
+the marketing site, so serving it from here would put it in the wrong place to make a scanner happy.
+
+### What this check is actually for
+
+It is Level 2, "Help AI bots use your services by registering on behalf of users". It is aimed at a
+service an agent can sign up for and start transacting with on its own. The Resomix partner API is
+the opposite by design. Access follows a scoping conversation and a signed agreement, and the site
+says so in several places.
+
+It also does nothing for the reason this work exists. Vladimir's report measures whether assistants
+name Resomix when someone asks for a music similarity tool. An OAuth discovery document does not
+move that number by any amount.
+
+### Recommendation
+
+Leave Quick Wins at 4 of 5 and Technical Groundwork at 2 of 3, and treat this one as answered rather
+than failed. `auth.md` does the job the check is named for. It tells an agent exactly how a person
+registers, that it cannot do that itself and why, that credential sharing is not permitted, and
+where the supported route for automation actually is.
+
+If Resomix ever wants agents to obtain credentials autonomously, OAuth is the right answer and it is
+a backend project with a real design behind it, not a file. That is George's call and it belongs on
+the API roadmap, not on this checklist.
+
+---
+
+## Markdown for agents, the last item
+
+Built 18 September 2026. Cloudflare sells this as a switch that needs the Pro plan, so it is built
+here instead. Their requirement is simply that a request asking for Markdown gets Markdown while
+browsers keep getting HTML.
+
+### How it is built, and why that shape
+
+Two pieces, and the split is the whole design.
+
+**The files are written at build time.** A new step, `tooling/markdownForAgents.ts`, converts each
+prerendered page into a Markdown twin at `<route>.md`. Twenty routes, 110 KiB. It runs after the
+body prerender and converts the HTML that pass has just written, so the Markdown is a conversion of
+the exact bytes a browser receives rather than a second rendering of the same data down a different
+path. It cannot drift from the page.
+
+**The function only rewrites a path.** `apps/landing/functions/_middleware.ts` answers an
+`Accept: text/markdown` request by fetching the twin that already exists. It generates nothing.
+
+That matters because on Cloudflare Pages `_middleware` runs in front of **every** request to the
+project, static assets included, and a throw there takes the site down. This one does as little as
+it possibly can. Every branch that is not "this request explicitly asked for Markdown and a twin
+exists" returns the untouched original response, and the whole body is wrapped in a catch that also
+returns the untouched original. A bug in it costs the Markdown feature, not the website. To switch
+it off, delete the file and redeploy; nothing else depends on it.
+
+### What ends up in the twin
+
+The conversion starts at `<main>`, so the header, the four navigation blocks, the beta banner and
+the footer are all left out. That chrome is what assistants strip anyway, and repeating it on every
+page is part of what made the pages expensive to read.
+
+Inside that, only text wrapped in a content element is taken, meaning headings, paragraphs, lists
+and the question blocks. This rule is doing real work. These pages carry visual schematics built
+from plain divs, mock playlists with invented track names and percentages, and the same panels again
+in a mobile variant. All of it is genuine text in the DOM and none of it is prose. An early version
+without this rule produced a page that opened with "Night Circuit · Vela Nine" and "91%".
+
+### Three faults found while building it, worth recording
+
+**The step ran before the pages existed.** `closeBundle` is a parallel Rollup hook, so putting the
+plugin after the prerender in the array did nothing. The first run reported twenty skipped routes
+and a green build, which is the worst kind of wrong. The hook is now declared with `sequential` and
+`order: 'post'`.
+
+**React comment separators.** React writes `<!-- -->` between adjacent text expressions, and the
+first converter carried them through as literal text. Comments are now stripped before parsing.
+
+**Elements with no whitespace between them.** `<span>Choose a reference track</span><span>Search for
+a track</span>` is separated by CSS, not by whitespace, so concatenating gave a run-on. A single
+space now goes in where both sides end and start with a word character.
+
+### Discovery
+
+Three routes to the same content, so a client finds it whichever way it looks.
+
+- `Accept: text/markdown` on the page's own address, handled by the function.
+- `<route>.md`, which is a plain static file and works with no function at all.
+- A `<link rel="alternate" type="text/markdown">` in every page's head, and a section in `llms.txt`
+  explaining both.
+
+The twins are served `noindex`. They are a second representation of a page that already has a
+canonical address, and two indexable copies of the same words is exactly the duplication the rest of
+this work exists to avoid.
+
+### The one thing to check after deploying
+
+Whether Cloudflare picks the function up at all. It sits at `apps/landing/functions/`, which is
+correct if the Pages project's root directory is `apps/landing`. If the root directory is the
+repository root instead, Pages will look for `functions/` there and silently ignore this one.
+
+That failure mode is harmless and easy to read. The `.md` addresses keep working either way, and
+every page keeps advertising its twin; only the `Accept` header negotiation would be inactive. The
+check is one command, and it should print `text/markdown`:
+
+```
+curl -s -o /dev/null -D - -H "Accept: text/markdown" https://resomix.com/product/sonic-discovery | grep -i content-type
+```
+
+If it prints `text/html`, the function was not picked up, and the fix is the Pages root directory
+setting rather than anything in this repository. A repository-root `functions/` directory would be
+the wrong answer, because the other Pages projects in this monorepo build from that same root and
+would inherit it.
