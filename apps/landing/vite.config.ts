@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { ROUTE_SEO, SITEMAP_DEFAULTS, SITE_ORIGIN, type RouteSeo } from './src/routes/seoConfig.ts'
+import { FAQ_ITEMS, FAQ_ORDER } from '../../packages/ui/src/Billing/pricingFaqCopy.ts'
 import { prerenderHead } from '../../tooling/prerenderHead.ts'
 import { minifyPublicScripts } from '../../tooling/minifyPublicScripts.ts'
 
@@ -64,6 +65,16 @@ function trustFaq(): Faq {
   }))
 }
 
+/** The pricing page's questions live in the shared billing package, because the same block renders
+    inside the app at `beta.resomix.com/subscribe`. That file is copy only, with a single type-only
+    import, so it reads here exactly as a locale file does. `FAQ_ORDER` leaves out the founding-offer
+    question on purpose, since its answer is assembled at runtime from the billing API and there is
+    no fixed text to declare. */
+function pricingFaq(): Faq {
+  const ids = [...FAQ_ORDER.plans, ...FAQ_ORDER.billing, ...FAQ_ORDER.managing]
+  return ids.map((id) => ({ question: FAQ_ITEMS[id].q, answer: FAQ_ITEMS[id].a }))
+}
+
 function sonicDiscoveryHowTo(): NonNullable<PrerenderRoute['howTo']> {
   const { steps } = pageCopy<{
     steps: { title: string; items: Array<{ name: string; text: string }> }
@@ -77,6 +88,7 @@ function routesWithPageCopy(): Record<string, PrerenderRoute> {
     routes[route] = { ...routes[route], faq: pageFaq(ns) }
   }
   routes['/trust'] = { ...routes['/trust'], faq: trustFaq() }
+  routes['/pricing'] = { ...routes['/pricing'], faq: pricingFaq() }
   routes['/product/sonic-discovery'] = {
     ...routes['/product/sonic-discovery'],
     howTo: sonicDiscoveryHowTo(),

@@ -49,6 +49,7 @@ const FAQ_ROUTES = [
   '/partners',
   '/partners/pilot',
   '/about',
+  '/pricing',
   '/solutions/record-labels',
   '/solutions/music-publishers',
   '/solutions/sync-agencies',

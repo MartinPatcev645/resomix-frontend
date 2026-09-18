@@ -200,10 +200,11 @@ https://resomix.com/contact
 
 ## Added on 18 September 2026
 
-You approved everything except Pricing, so the questions sections are now on five more pages. The
-site goes from eleven pages with a questions block to sixteen. It is the same layout as the eleven
-you have already reviewed, with no new design work, and each block sits at the bottom of its page
-just above the closing call to action.
+Questions sections are now on six more pages, which is every page that should have one. The site
+goes from eleven to seventeen. Home, Developers, Partners, the Pilot and About use the same layout
+as the eleven you have already reviewed, with no new design work, and each block sits at the bottom
+of its page just above the closing call to action. Pricing is different, because it already had its
+own question block, so that one was repaired and extended rather than replaced.
 
 Three pages needed a fourth question. The site's own build check requires at least four questions in
 a block and at least two answers that name Resomix, which is there to stop a thin block slipping
@@ -258,11 +259,27 @@ https://resomix.com/about
 | **Section number above the closing block** 12 // Choose a way in | **Section number above the closing block** 13 // Choose a way in |
 | **Questions section** There was none. | **Questions section, added at the bottom before the call to action** The question "Who is Resomix for?" was added during the build so the block reaches four. It is drawn from the page's own section 08. Heading: Questions people ask about the company<br><br>**Who builds Resomix, and where?**<br>A small team of music-industry professionals and signal-processing engineers based in Thessaloniki, Greece. Resomix started from a frustration they knew first-hand, which is how long it takes to find the one recording that fits a moment.<br><br>**Who is Resomix for?**<br>DJs, producers, curators and music enthusiasts use Sonic Discovery and Track Intelligence directly. Labels, distributors, publishers and music libraries use Catalogue Intelligence and the partner API to make an authorised catalogue searchable by sound.<br><br>**Is Resomix a streaming service?**<br>No. Resomix helps you find and understand music. It is not a place to listen to full tracks, and it does not replace a store or a streaming service.<br><br>**What does Resomix deliberately not do?**<br>It does not generate or recreate audio, it does not train on user or partner content, and it does not decide for you. Resomix surfaces measured evidence and candidates, and the choice stays with the person. |
 
+## Pricing
+
+https://resomix.com/pricing
+
+| Before | After |
+|---|---|
+| **Questions section** It was already there, in three categories you open. Only the first category, Plans and usage, was actually written into the page a search engine or an AI assistant receives. The other two, Billing and payments and Managing your plan, were headings with nothing behind them, so VAT, cancellation and what happens to uploaded audio could not be read at all. | **Questions section** All three categories are now written into the page. Nothing looks different on screen, the closed categories still open on click, but the answers are there to be read. That is five answers that were invisible before, plus the three new ones below. |
+| **Questions about price and the free plan** There were none. The block answered how the plans work but never the two things people actually type, which are whether Resomix is free and what Pro costs. | **Three new questions, added to the existing block**<br><br>**Is Resomix free?**<br>Yes. Resomix is free to use with an account, and no card is required. Sonic Discovery and the complete analysis summary are included, and you can run three searches a day as a guest without signing up at all. Pro is for people who want uninterrupted discovery, more matches in each result and the full Track Intelligence dashboard.<br><br>**Do I need a paid plan to try Resomix?**<br>No. Start as a guest or on the free Resomix plan, run a real search on your own reference and read the analysis summary before you decide anything. There is no card to enter, and the free plan is not a timed trial.<br><br>**How much does Resomix Pro cost?**<br>As of late 2026, Resomix Pro is €7.99 per month plus applicable VAT, with a saving on annual billing. Prices change over time, so treat that figure as a guide. What applies to you is what the plan cards above show and what the checkout confirms before you pay. |
+
+One thing about this page I want you to know rather than change. The plan cards and the comparison
+table are drawn from the billing system when the page opens, so the real prices and every limit in
+that table are always correct and can never disagree with what a customer is charged. That is the
+right design and I have not touched it. The side effect is that a search engine or an assistant
+reading the page without running it sees the word "Loading" where the cards are, and does not see
+the comparison table at all. Putting the price into the questions block, with its date attached, is
+what closes that gap, and it is why the new answer reads the way it does.
+
 ## What is still open
 
 | Page or site | Where it stands | What I suggest | Time |
 |---|---|---|---|
-| Pricing | The only page left without a questions block. Its wording does not live with the other page copy, it comes from a component shared with the app, so new text there would show up in two places at once | A short block answering whether Resomix is free, what Pro adds, and whether a plan is needed to try it. It needs a home for the new text first, which is the decision, not the writing | 45 min to 1 h, once the decision is made |
 | Developer hub, api-docs.resomix.com | Audited on 18 September. The pages are drawn by JavaScript, so assistants see an empty page. All nine addresses in its sitemap serve the same document, and each one tells search engines its real address is the hub's home page, which asks them to drop it | Two fixes matter. Give each page its own address, title and description, and publish the pages as real text the way the main site does. The rest is tidy-up | 1 to 2 h for the addresses, half a day to a day for the text, to confirm once I have the repository |
 | Journal, blog.resomix.com | Yours and Marco's. The site intro explains sound-first discovery well, though no sentence says "Resomix is" | Worth one habit for new articles. Name Resomix in the first paragraph and let the article answer one buyer question outright. The report's cheapest gain is the seventeen questions we never appear in | your call |
 | Machine-readable "software" label on Sonic Discovery and Track Intelligence | Waiting on your decision | Adds a hidden label saying each page describes a working product. Invisible on the page | 30 min |

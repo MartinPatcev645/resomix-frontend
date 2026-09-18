@@ -37,7 +37,7 @@ already there.
 | A sentence under each main heading that says what Resomix is, in the words buyers use, such as "music similarity search tool" and "track analysis software" | 15 pages |
 | "Resomix's PYXIS-1 engine" wherever a page first mentions PYXIS-1, so the engine is always tied to the brand | Every page that mentions it |
 | Search descriptions rewritten to name Resomix. The same text is what shows in link previews | 14 pages |
-| A questions and answers block, in the words people type into an assistant, 73 questions in total | 16 pages, being the 4 product pages, the 7 solution pages, and Home, Developers, Partners, the Pilot and About |
+| A questions and answers block, in the words people type into an assistant, 85 questions in total | 17 pages, being the 4 product pages, the 7 solution pages, and Home, Developers, Partners, the Pilot, About and Pricing |
 | The five steps of Sonic Discovery as plain text under the diagram. They were drawn inside the graphic, where assistants cannot read them | Sonic Discovery |
 | The beta notice now opens with what Resomix is, instead of a warning about bugs | Every page, site and app |
 | British spelling throughout | Music Publishers |
@@ -61,7 +61,7 @@ Two things came out of this that are worth knowing.
 | 2. Resomix in the search description and the link preview | Done on 14 pages |
 | 3. "Resomix (PYXIS-1 engine)" instead of just "PYXIS-1" | Done, in our own wording |
 | 4. Diagram steps as plain text | Done on Sonic Discovery |
-| 5. FAQ in buyer wording, with the matching hidden labels | Done on 16 pages |
+| 5. FAQ in buyer wording, with the matching hidden labels | Done on 17 pages |
 | 6. One address per page, for www and the trailing slash | Done |
 | 7. Bing Webmaster Tools and IndexNow | Happens right after the production release |
 
@@ -96,6 +96,7 @@ https://resomix.com/developers
 https://resomix.com/partners
 https://resomix.com/partners/pilot
 https://resomix.com/about
+https://resomix.com/pricing
 https://resomix.com/trust
 https://resomix.com/solutions/record-labels
 https://resomix.com/solutions/music-publishers
@@ -110,16 +111,17 @@ https://resomix.com/llms.txt
 
 ## Added since you read this
 
-Home, Developers, Partners, the Private Catalogue Pilot and About now carry the same question block,
-so sixteen pages have one. Developers was the important one, because it is the natural answer to
-"best audio analysis API for music", a question where we do not appear at all today. The before and
-after for all five is at the end of the page-by-page document.
+Home, Developers, Partners, the Private Catalogue Pilot and About now carry the same question
+block, and Pricing already had one of its own, which I repaired and extended. Seventeen pages now
+have one. Developers was the important one, because it is the natural answer to "best audio analysis
+API for music", a question where we do not appear at all today. On Pricing, two of its three
+question categories were never actually written into the page a search engine receives, so the
+answers on VAT, cancellation and uploaded audio could not be read at all. They can now, and the page
+states the Pro price in plain text for the first time, with the date attached so it ages honestly.
+The before and after for all six is at the end of the page-by-page document.
 
 ## Still open with you
 
-- **Pricing.** The only page without a question block. Its wording comes from a component shared
-  with the app, so new text there would appear in two places at once. That is the decision, and the
-  writing is the easy part.
 - **The developer hub, api-docs.resomix.com.** I audited it and it is invisible to assistants. Its
   pages are drawn by JavaScript, which assistants do not run, so they see an empty page. On top of
   that, all nine addresses in its sitemap serve the same document and each one tells search engines

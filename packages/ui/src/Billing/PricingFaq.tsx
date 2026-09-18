@@ -1,5 +1,13 @@
 import { useState, type ReactNode } from "react";
-import { FAQ, FAQ_ITEMS, LEGAL_BASE, LEGAL_LINKS, PRO_CARD } from "./pricingCopy";
+import {
+  FAQ,
+  FAQ_ITEMS,
+  FAQ_ORDER,
+  LEGAL_BASE,
+  LEGAL_LINKS,
+  PRO_CARD,
+  type StaticFaqId,
+} from "./pricingCopy";
 
 export interface FoundingOfferCopy {
   /** Formatted offer-entry deadline from `data.beta.end_date`, or null when closed. */
@@ -47,6 +55,15 @@ function Disc({ q, children }: { q: string; children: ReactNode }) {
 
 function Para({ children }: { children: ReactNode }) {
   return <p className="m-0">{children}</p>;
+}
+
+/**
+ * A category's questions, read from FAQ_ORDER so this list and the `FAQPage` structured data the
+ * landing build emits stay one list. Adding a question there puts it on the page and in the markup
+ * at the same time, which is what Google asks for and what our own build check enforces.
+ */
+function staticItems(ids: ReadonlyArray<StaticFaqId>): FaqItem[] {
+  return ids.map((id) => ({ id, q: FAQ_ITEMS[id].q, a: <Para>{FAQ_ITEMS[id].a}</Para> }));
 }
 
 function buildFoundingAnswer(offer: FoundingOfferCopy): ReactNode | null {
@@ -99,26 +116,16 @@ export function PricingFaq({ beta }: { beta: FoundingOfferCopy }) {
 
   const foundingAnswer = buildFoundingAnswer(beta);
 
-  const plansItems: FaqItem[] = [
-    { id: "unlimited", q: FAQ_ITEMS.unlimited.q, a: <Para>{FAQ_ITEMS.unlimited.a}</Para> },
-    { id: "allowances", q: FAQ_ITEMS.allowances.q, a: <Para>{FAQ_ITEMS.allowances.a}</Para> },
-    { id: "library", q: FAQ_ITEMS.library.q, a: <Para>{FAQ_ITEMS.library.a}</Para> },
-    { id: "freeSummary", q: FAQ_ITEMS.freeSummary.q, a: <Para>{FAQ_ITEMS.freeSummary.a}</Para> },
-    { id: "fullTi", q: FAQ_ITEMS.fullTi.q, a: <Para>{FAQ_ITEMS.fullTi.a}</Para> },
-    { id: "appleMusic", q: FAQ_ITEMS.appleMusic.q, a: <Para>{FAQ_ITEMS.appleMusic.a}</Para> },
-  ];
+  const plansItems = staticItems(FAQ_ORDER.plans);
 
   const billingItems: FaqItem[] = [
     ...(foundingAnswer
       ? [{ id: "foundingOffer", q: FAQ_ITEMS.foundingOffer.q, a: foundingAnswer }]
       : []),
-    { id: "vat", q: FAQ_ITEMS.vat.q, a: <Para>{FAQ_ITEMS.vat.a}</Para> },
+    ...staticItems(FAQ_ORDER.billing),
   ];
 
-  const managingItems: FaqItem[] = [
-    { id: "cancel", q: FAQ_ITEMS.cancel.q, a: <Para>{FAQ_ITEMS.cancel.a}</Para> },
-    { id: "uploads", q: FAQ_ITEMS.uploads.q, a: <Para>{FAQ_ITEMS.uploads.a}</Para> },
-  ];
+  const managingItems = staticItems(FAQ_ORDER.managing);
 
   const tabs: Array<{ name: string; items: FaqItem[] }> = [
     { name: FAQ.tabs.plans, items: plansItems },
@@ -179,19 +186,25 @@ export function PricingFaq({ beta }: { beta: FoundingOfferCopy }) {
                 </svg>
               </button>
 
-              {open && (
-                <div
-                  id={`rx-faq-panel-${i}`}
-                  aria-labelledby={`rx-faq-cat-${i}`}
-                  className="pb-[var(--px-8)] pl-[var(--px-4)]"
-                >
-                  {t.items.map((item) => (
-                    <Disc key={item.id} q={item.q}>
-                      {item.a}
-                    </Disc>
-                  ))}
-                </div>
-              )}
+              {/* Always rendered, hidden while the category is closed.
+                  It used to be mounted only when open, which cost two things. Two of the three
+                  categories were absent from the served HTML, so a crawler or an AI assistant read
+                  a third of the answers and neither VAT nor cancellation was among them. And
+                  `aria-controls` above pointed at an element that did not exist, which is the one
+                  thing that pattern must never do. `hidden` keeps the behaviour identical on
+                  screen. */}
+              <div
+                id={`rx-faq-panel-${i}`}
+                aria-labelledby={`rx-faq-cat-${i}`}
+                hidden={!open}
+                className="pb-[var(--px-8)] pl-[var(--px-4)]"
+              >
+                {t.items.map((item) => (
+                  <Disc key={item.id} q={item.q}>
+                    {item.a}
+                  </Disc>
+                ))}
+              </div>
             </div>
           );
         })}

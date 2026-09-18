@@ -1104,16 +1104,16 @@ After deploy, for each changed URL:
 
 ---
 
-## 14. Pages not yet covered, and exactly what each needs
+## 14. The remaining pages, and what each one got
 
 Written 18 September 2026 and checked against the code, not from notes. George approved the
 questions sections for "the product and solution pages", so the four product pages and the seven
 solution pages were done first. This section is everything else.
 
 **Status, 18 September 2026.** Home, Developers, Partners, Private Catalogue Pilot and About are
-now built and verified, which takes the site from eleven pages with a questions block to sixteen.
-Pricing is the only page left, and it is held deliberately, for the reason in the table below.
-Everything in the two subsections that follow is the as-built record, not a proposal.
+now built and verified, and Pricing was repaired and extended in place, which takes the site from
+eleven pages with a questions block to seventeen and from 52 questions to 85. Everything in the
+subsections that follow is the as-built record, not a proposal.
 
 What was verified for each page below: whether it already carries `faq` copy in its locale file
 (none of these do), which of the three section shapes in `sections/shared/faqFamilies.ts` its
@@ -1128,7 +1128,7 @@ shape that already exists, so **no new CSS is needed anywhere**.
 | `/partners/pilot` | **Done.** Opening paragraph, description and a four-question block | 4 | `07 // Questions`, Apply moved to `08` |
 | `/about` | **Done.** It already named Resomix 26 times in body copy, and now carries a four-question block | 4 | `12 // Questions`, Choose a way in moved to `13` |
 | `/trust` | Description updated, and its existing seven-question list is already emitted as `FAQPage` | 7, pre-existing | none |
-| `/pricing` | **Held.** Its copy is not in a landing locale file at all, it comes from `PricingContent` in `packages/ui`, shared with the webapp. Adding a questions block there needs a home for the new text first, either a new landing locale namespace or a landing-only block, so it is not the 20 minutes the other pages were | 0 | pending, 45 min to 1 h |
+| `/pricing` | **Done, differently.** It already had a categorised block in `PricingFaq.tsx`. Three buyer questions were added and the block was repaired, see §14.3 | 12 | none |
 | `/contact`, `/waitlist` | Descriptions fine, pages are thin by design | none | none |
 | beta.resomix.com | Deliberately `noindex`, with `/subscribe` and `/contact` canonicalised to the landing site | none | none |
 
@@ -1210,7 +1210,43 @@ drawn from the control sections those pages already render.
   never used to train or fine-tune Resomix's PYXIS-1 engine. Public exposure is not part of a pilot,
   and access, retention and deletion terms are agreed before anything is ingested.
 
-### 14.3 Outside this repository
+### 14.3 Pricing, which needed repair rather than a new block
+
+`/pricing` renders `PricingContent` from `packages/ui`, shared with the webapp's `/subscribe`, and
+it already carried a three-category question block in `PricingFaq.tsx`. Three faults, found by
+reading the built HTML rather than the source.
+
+**1. Two of the three categories were never in the DOM.** The category panels were mounted with
+`{open && (…)}` and `tab` starts at `0`, so the served HTML carried only "Plans and usage". The
+answers on VAT, cancellation and uploaded audio were absent entirely, not merely collapsed. Fixed by
+rendering all three and using the `hidden` attribute, which looks identical on screen. That also
+fixes a real accessibility fault, because `aria-controls` on the category buttons pointed at an
+element that did not exist while the panel was closed.
+
+**2. No buyer questions.** The block explained how the plans work but never answered "is Resomix
+free" or "how much does Resomix cost", which are the two things people actually type. Three
+questions added, `isFree`, `tryFirst` and `proPrice`.
+
+**3. No `FAQPage` markup.** Now emitted, 12 questions. The copy had to be readable from
+`vite.config.ts`, which is type-checked as part of the landing app where the billing package's types
+resolve differently, so the strings moved into `packages/ui/src/Billing/pricingFaqCopy.ts`, a file
+with no imports at all. `pricingCopy.ts` re-exports them, so no existing call site changed. A new
+`FAQ_ORDER` export is the single list both `PricingFaq` and the build read, which is what stops the
+markup describing a question the page does not show. The founding-offer question is excluded,
+because its answer is assembled at runtime from live billing data.
+
+Result, measured on the built page. Body text 1,415 words to 1,715, and the price appears in the
+static HTML for the first time.
+
+**What was deliberately not changed.** The plan cards and the comparison table are gated on
+`!loading` and their numbers come from `/billing/plans`. `planFeatures.ts` states the reason
+plainly, which is that hard-coded plan copy starts lying the first time an admin edits a plan and
+nothing fails. So a crawler sees "Loading" where the cards are and no comparison table at all.
+Rendering them at build time would mean either inventing fallback numbers or shipping blank cells,
+and both are worse than the gap. The dated price in the questions block is the answer to it.
+Revisit only if the billing API ever exposes a build-time snapshot.
+
+### 14.4 Outside this repository
 
 - **Journal, blog.resomix.com.** George and Marco's. The site intro explains sound-first discovery
   well, but no sentence starts "Resomix is". One habit would help every future article, which is to
