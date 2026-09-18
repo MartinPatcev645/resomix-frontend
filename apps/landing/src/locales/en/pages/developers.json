@@ -300,8 +300,34 @@
         }
       ]
     },
+    "faq": {
+      "eyebrow": "07 // Questions",
+      "title": "Questions developers ask about the Resomix API",
+      "items": [
+        {
+          "q": "Is there an API for music similarity search?",
+          "a": "Yes. The Resomix API returns ranked similar tracks from your own indexed catalogue, from a catalogue track ID or an uploaded reference of up to 100 MB, with scores and metadata in a versioned JSON envelope."
+        },
+        {
+          "q": "Can I try the API without a partner agreement?",
+          "a": "Not today. Resomix does not run a public sandbox, because similarity is only meaningful inside a real catalogue. The evaluation path is a guided pilot with a scoped key against a sample of your own repertoire. A self-serve trial is planned."
+        },
+        {
+          "q": "What does the track analysis endpoint return?",
+          "a": "Versioned structured JSON covering rhythm (BPM, beats, downbeats and phrases), tonality (key, scale, Camelot code, tuning and chromagram), loudness and dynamics, mood and genre signals with scores, structure with millisecond ranges, and provenance. Analysis is enabled per partner on request."
+        },
+        {
+          "q": "Does the API search a shared catalogue?",
+          "a": "No. Every key searches only that partner's private index. A key can never query another partner's catalogue or the Resomix consumer product."
+        },
+        {
+          "q": "What are the rate limits?",
+          "a": "Per-second limits and monthly quotas are provisioned per partner agreement. On HTTP 429, respect Retry-After and back off exponentially."
+        }
+      ]
+    },
     "evaluate": {
-      "eyebrow": "07 // Evaluate",
+      "eyebrow": "08 // Evaluate",
       "title": "Test the API on your own catalogue.",
       "lead": "There is no public sandbox today. The current evaluation path is a guided pilot using a representative sample of your own catalogue.",
       "chips": [

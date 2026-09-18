@@ -28,10 +28,15 @@ function pageCopy<T>(ns: string): T {
 
 /** Routes whose page mounts `<FaqSection ns=…>`. The value is the page's locale namespace. */
 const FAQ_ROUTES: Record<string, string> = {
+  '/': 'home',
   '/product': 'product',
   '/product/sonic-discovery': 'sonicDiscovery',
   '/product/track-intelligence': 'trackIntelligence',
   '/product/catalog-intelligence': 'catalogueIntelligence',
+  '/developers': 'developers',
+  '/partners': 'partners',
+  '/partners/pilot': 'partnersPilot',
+  '/about': 'about',
   '/solutions/record-labels': 'recordLabels',
   '/solutions/music-publishers': 'musicPublishers',
   '/solutions/sync-agencies': 'syncAgencies',

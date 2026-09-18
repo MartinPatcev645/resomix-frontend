@@ -207,8 +207,30 @@
       "trustLink": "[ View Trust, Rights & Security ]",
       "partnerLink": "[ Review the Partner Process → ]"
     },
+    "faq": {
+      "eyebrow": "07 // Questions",
+      "title": "Questions catalogue teams ask about the pilot",
+      "items": [
+        {
+          "q": "What do we need to bring?",
+          "a": "Authorised audio, a CSV manifest with ISRC, title, artist and filename, a representative mix of current and older repertoire, known reference tracks, a small group of expert reviewers, and one clear question the pilot should answer."
+        },
+        {
+          "q": "How long does a pilot take?",
+          "a": "The timeline is agreed during scoping, around the sample and the question. Resomix does not publish fixed pilot durations."
+        },
+        {
+          "q": "What happens to our audio during the pilot?",
+          "a": "It stays inside the agreed pilot boundary. The sample is processed in a partner-scoped catalogue, restricted to authorised access, and it is never used to train or fine-tune Resomix's PYXIS-1 engine. Public exposure is not part of a pilot, and access, retention and deletion terms are agreed before anything is ingested."
+        },
+        {
+          "q": "What happens at the end?",
+          "a": "Resomix delivers a decision pack rather than a sales demo, covering what worked, what did not and where the limits are. The outcomes are stop, extend, or plan production, and the pilot does not convert into a contract automatically."
+        }
+      ]
+    },
     "form": {
-      "eyebrow": "07 // Apply",
+      "eyebrow": "08 // Apply",
       "title": "Tell us what you want to explore",
       "lead": "Tell us about your catalogue, API integration or potential pilot. Submitting this form doesn't create an account or automatically start a pilot.",
       "formLabel": "Pilot inquiry",

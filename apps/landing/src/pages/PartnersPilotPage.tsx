@@ -8,6 +8,7 @@ import { PpScorecard } from '@/sections/partners-pilot/PpScorecard.tsx';
 import { PpDeliverables } from '@/sections/partners-pilot/PpDeliverables.tsx';
 import { PpHandling } from '@/sections/partners-pilot/PpHandling.tsx';
 import { PpApplyForm } from '@/sections/partners-pilot/PpApplyForm.tsx';
+import { FaqSection } from '@/sections/shared/FaqSection.tsx';
 import voidFieldDark from '@/assets/void-field/void-field-dark.webp';
 import voidFieldLight from '@/assets/void-field/void-field-light.webp';
 import voidGrainDark from '@/assets/void-field/void-grain-dark.webp';
@@ -99,6 +100,7 @@ export default function PartnersPilotPage() {
         <PpScorecard />
         <PpDeliverables />
         <PpHandling />
+        <FaqSection ns="partnersPilot" />
         <PpApplyForm />
       </div>
     </div>

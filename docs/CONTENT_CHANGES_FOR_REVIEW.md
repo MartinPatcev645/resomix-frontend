@@ -196,26 +196,74 @@ https://resomix.com/contact
 |---|---|
 | **Search description** Reach the Resomix team in Thessaloniki for product support, partner and catalogue enquiries, or press. We reply from support@resomix.com within the beta. | **Search description** Reach the Resomix team in Thessaloniki for product support, partner and catalogue enquiries, or press. Write to support@resomix.com and we will get back to you. |
 
-## Pages we have not touched yet, and what they need
+---
 
-The questions sections were approved for the product and solution pages, so those eleven are done.
-This is everything else, with what I would do and how long it takes.
+## Added on 18 September 2026
+
+You approved everything except Pricing, so the questions sections are now on five more pages. The
+site goes from eleven pages with a questions block to sixteen. It is the same layout as the eleven
+you have already reviewed, with no new design work, and each block sits at the bottom of its page
+just above the closing call to action.
+
+Three pages needed a fourth question. The site's own build check requires at least four questions in
+a block and at least two answers that name Resomix, which is there to stop a thin block slipping
+through. Partners, the Pilot and About each gained one question for that reason, and each one is
+noted below.
+
+Where a page numbers its sections, the new block takes the number of the closing section and the
+closing section moves down one. Those moves are listed too, so nothing looks out of place when you
+read down the page.
+
+## Home, round two
+
+https://resomix.com/
+
+| Before | After |
+|---|---|
+| **Questions section** There was none. | **Questions section, added at the bottom before the call to action** Heading: Questions people ask about Resomix<br><br>**What is Resomix?**<br>Resomix is a sonic intelligence platform for electronic music. Its PYXIS-1 engine reads more than 70 measurable audio characteristics from a recording and uses them to find similar tracks with Sonic Discovery, analyse one track with Track Intelligence, and make an authorised catalogue searchable by sound with Catalogue Intelligence.<br><br>**How do I find music by sound?**<br>Search for a track already in the Resomix catalogue, or upload your own reference. PYXIS-1 compares its sonic profile with a pre-analysed index and returns a ranked playlist of the closest matches, which you can audition, save or use as the next reference.<br><br>**Is Resomix a song-identification app like Shazam?**<br>No. Audio fingerprinting tells you what a recording is. Resomix tells you what sounds like it. It starts from a track you already have and finds its closest sonic relatives, whoever released them and whenever.<br><br>**Is Resomix free?**<br>Sonic Discovery is free to start during the production beta. A Pro plan is available for deeper use, and the plans are compared on the pricing page. |
+
+## Developers, round two
+
+https://resomix.com/developers
+
+| Before | After |
+|---|---|
+| **Section number above the closing block** 07 // Evaluate | **Section number above the closing block** 08 // Evaluate |
+| **Questions section** There was none. | **Questions section, added at the bottom before the call to action** Heading: Questions developers ask about the Resomix API<br><br>**Is there an API for music similarity search?**<br>Yes. The Resomix API returns ranked similar tracks from your own indexed catalogue, from a catalogue track ID or an uploaded reference of up to 100 MB, with scores and metadata in a versioned JSON envelope.<br><br>**Can I try the API without a partner agreement?**<br>Not today. Resomix does not run a public sandbox, because similarity is only meaningful inside a real catalogue. The evaluation path is a guided pilot with a scoped key against a sample of your own repertoire. A self-serve trial is planned.<br><br>**What does the track analysis endpoint return?**<br>Versioned structured JSON covering rhythm (BPM, beats, downbeats and phrases), tonality (key, scale, Camelot code, tuning and chromagram), loudness and dynamics, mood and genre signals with scores, structure with millisecond ranges, and provenance. Analysis is enabled per partner on request.<br><br>**Does the API search a shared catalogue?**<br>No. Every key searches only that partner's private index. A key can never query another partner's catalogue or the Resomix consumer product.<br><br>**What are the rate limits?**<br>Per-second limits and monthly quotas are provisioned per partner agreement. On HTTP 429, respect Retry-After and back off exponentially. |
+
+## Partners, round two
+
+https://resomix.com/partners
+
+| Before | After |
+|---|---|
+| **Section number above the contact form** 06 // Contact | **Section number above the contact form** 07 // Contact |
+| **Questions section** There was none. | **Questions section, added at the bottom before the call to action** The last question, about catalogues being kept apart, was added during the build so the block reaches the four the site requires. It repeats nothing new, it restates the control section already on the page. Heading: Questions partners ask about Resomix<br><br>**How do I partner with Resomix?**<br>Tell us about your catalogue, product or integration through the form on this page. Resomix checks fit, arranges a scoping call, and both teams agree inputs, method and terms before anything is ingested.<br><br>**Does submitting the form start a pilot or create an account?**<br>No. It starts a conversation about fit. There are no fixed timelines and no automatic account or key creation, and ingestion begins only after approval.<br><br>**Will our catalogue be mixed with anyone else's?**<br>No. Partner catalogues are logically isolated, and a similarity search only ever runs against the catalogue authorised for that partner. Resomix's PYXIS-1 engine is not trained or fine-tuned on partner audio and does not generate derivative audio. Ownership and commercial control stay with you.<br><br>**Is there a public sandbox?**<br>No. Resomix does not run a public sandbox or a shared partner catalogue. The guided pilot, with a scoped key against your own sample, is the evaluation route, and a self-serve trial is planned. |
+
+## Private Catalogue Pilot, round two
+
+https://resomix.com/partners/pilot
+
+| Before | After |
+|---|---|
+| **Section number above the apply form** 07 // Apply | **Section number above the apply form** 08 // Apply |
+| **Questions section** There was none. | **Questions section, added at the bottom before the call to action** The question about what happens to your audio was added during the build so the block reaches four. It restates the control section already on the page. Heading: Questions catalogue teams ask about the pilot<br><br>**What do we need to bring?**<br>Authorised audio, a CSV manifest with ISRC, title, artist and filename, a representative mix of current and older repertoire, known reference tracks, a small group of expert reviewers, and one clear question the pilot should answer.<br><br>**How long does a pilot take?**<br>The timeline is agreed during scoping, around the sample and the question. Resomix does not publish fixed pilot durations.<br><br>**What happens to our audio during the pilot?**<br>It stays inside the agreed pilot boundary. The sample is processed in a partner-scoped catalogue, restricted to authorised access, and it is never used to train or fine-tune Resomix's PYXIS-1 engine. Public exposure is not part of a pilot, and access, retention and deletion terms are agreed before anything is ingested.<br><br>**What happens at the end?**<br>Resomix delivers a decision pack rather than a sales demo, covering what worked, what did not and where the limits are. The outcomes are stop, extend, or plan production, and the pilot does not convert into a contract automatically. |
+
+## About
+
+https://resomix.com/about
+
+| Before | After |
+|---|---|
+| **Section number above the closing block** 12 // Choose a way in | **Section number above the closing block** 13 // Choose a way in |
+| **Questions section** There was none. | **Questions section, added at the bottom before the call to action** The question "Who is Resomix for?" was added during the build so the block reaches four. It is drawn from the page's own section 08. Heading: Questions people ask about the company<br><br>**Who builds Resomix, and where?**<br>A small team of music-industry professionals and signal-processing engineers based in Thessaloniki, Greece. Resomix started from a frustration they knew first-hand, which is how long it takes to find the one recording that fits a moment.<br><br>**Who is Resomix for?**<br>DJs, producers, curators and music enthusiasts use Sonic Discovery and Track Intelligence directly. Labels, distributors, publishers and music libraries use Catalogue Intelligence and the partner API to make an authorised catalogue searchable by sound.<br><br>**Is Resomix a streaming service?**<br>No. Resomix helps you find and understand music. It is not a place to listen to full tracks, and it does not replace a store or a streaming service.<br><br>**What does Resomix deliberately not do?**<br>It does not generate or recreate audio, it does not train on user or partner content, and it does not decide for you. Resomix surfaces measured evidence and candidates, and the choice stays with the person. |
+
+## What is still open
 
 | Page or site | Where it stands | What I suggest | Time |
 |---|---|---|---|
-| Developers | Opening paragraph and description updated. No questions section | Add it. Five questions are already written. This page is our answer to "best audio analysis API for music", one of the questions we are never named in, so of everything left this is the one I would do first | 30 min |
-| Home | Opening paragraph and description updated. No questions section | Add it. Four questions are written, covering "what is Resomix", "how do I find music by sound" and whether we are a song-identification app | 30 min |
-| Partners | Opening paragraph and description updated. No questions section | Add the three short questions already written about how to start and what a pilot involves | 20 min |
-| Private Catalogue Pilot | Opening paragraph and description updated. No questions section | Add the three questions already written about what a partner brings and what they get back | 20 min |
-| About | Unchanged. It already names Resomix throughout and reads well | Optional. Three questions, now drafted, answering who builds Resomix and where, whether it is a streaming service, and what it deliberately does not do. They are kept different from the Home and Product questions so the pages do not repeat each other | 30 min |
-| Trust, Rights and Security | Description updated, and its existing question list is now declared to assistants | Nothing further | none |
-| Pricing | Untouched. Its wording does not live with the other page copy, it comes from a component shared with the app | Optional. A short questions block answering whether Resomix is free and what Pro adds. Because of where its wording lives, it needs a home for the new text first, so it is a longer job than the others | 45 min to 1 h |
-| Contact and Waitlist | Descriptions fine | Nothing further | none |
-| The app, beta.resomix.com | Deliberately kept out of search | Nothing | none |
+| Pricing | The only page left without a questions block. Its wording does not live with the other page copy, it comes from a component shared with the app, so new text there would show up in two places at once | A short block answering whether Resomix is free, what Pro adds, and whether a plan is needed to try it. It needs a home for the new text first, which is the decision, not the writing | 45 min to 1 h, once the decision is made |
+| Developer hub, api-docs.resomix.com | Audited on 18 September. The pages are drawn by JavaScript, so assistants see an empty page. All nine addresses in its sitemap serve the same document, and each one tells search engines its real address is the hub's home page, which asks them to drop it | Two fixes matter. Give each page its own address, title and description, and publish the pages as real text the way the main site does. The rest is tidy-up | 1 to 2 h for the addresses, half a day to a day for the text, to confirm once I have the repository |
 | Journal, blog.resomix.com | Yours and Marco's. The site intro explains sound-first discovery well, though no sentence says "Resomix is" | Worth one habit for new articles. Name Resomix in the first paragraph and let the article answer one buyer question outright. The report's cheapest gain is the seventeen questions we never appear in | your call |
-| Developer hub, api-docs.resomix.com | Assistants fetched its sitemap twelve times in one day, so they do read it. When I requested the page, only the title came back, which usually means the content is drawn by JavaScript, and assistants do not run JavaScript | Worth checking properly. If that is what is happening, the hub is invisible to them, which matters because it is our best evidence for the API questions | 30 min to check |
 | Machine-readable "software" label on Sonic Discovery and Track Intelligence | Waiting on your decision | Adds a hidden label saying each page describes a working product. Invisible on the page | 30 min |
-
-Doing the four pages with questions already written comes to about 1 hour 40 minutes. Adding About
-makes it about 2 hours 10 minutes. I checked each of these against the site's code, and all of them
-fit the layout we already built for the other eleven pages, so nothing new has to be designed.
+| Trust, Contact, Waitlist, the app | Descriptions done, or deliberately kept out of search | Nothing further | none |

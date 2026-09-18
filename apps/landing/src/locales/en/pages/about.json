@@ -218,8 +218,30 @@
       "figureAriaD": "A restrained analogue radio-frequency line beginning at Italian progressive house radio in the late 1990s, carrying twenty-plus years of DJing and producing, and resolving into the present Resomix signal in Thessaloniki.",
       "figureAriaM": "Mobile: the late-1990s radio-frequency line resolving into the present Resomix signal."
     },
+    "faq": {
+      "eyebrow": "12 // Questions",
+      "title": "Questions people ask about the company",
+      "items": [
+        {
+          "q": "Who builds Resomix, and where?",
+          "a": "A small team of music-industry professionals and signal-processing engineers based in Thessaloniki, Greece. Resomix started from a frustration they knew first-hand, which is how long it takes to find the one recording that fits a moment."
+        },
+        {
+          "q": "Who is Resomix for?",
+          "a": "DJs, producers, curators and music enthusiasts use Sonic Discovery and Track Intelligence directly. Labels, distributors, publishers and music libraries use Catalogue Intelligence and the partner API to make an authorised catalogue searchable by sound."
+        },
+        {
+          "q": "Is Resomix a streaming service?",
+          "a": "No. Resomix helps you find and understand music. It is not a place to listen to full tracks, and it does not replace a store or a streaming service."
+        },
+        {
+          "q": "What does Resomix deliberately not do?",
+          "a": "It does not generate or recreate audio, it does not train on user or partner content, and it does not decide for you. Resomix surfaces measured evidence and candidates, and the choice stays with the person."
+        }
+      ]
+    },
     "closing": {
-      "eyebrow": "12 // Choose a way in",
+      "eyebrow": "13 // Choose a way in",
       "h2": "Start with one track. Or test Resomix on your catalogue.",
       "public": {
         "title": "Hear the discovery workflow for yourself.",

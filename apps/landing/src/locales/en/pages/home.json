@@ -182,6 +182,28 @@
       "z3d": "Logically isolated, agreement-bound, restricted to authorised access. A production beta with its controls stated plainly.",
       "link": "View Trust, Rights & Security"
     },
+    "faq": {
+      "eyebrow": "Questions",
+      "title": "Questions people ask about Resomix",
+      "items": [
+        {
+          "q": "What is Resomix?",
+          "a": "Resomix is a sonic intelligence platform for electronic music. Its PYXIS-1 engine reads more than 70 measurable audio characteristics from a recording and uses them to find similar tracks with Sonic Discovery, analyse one track with Track Intelligence, and make an authorised catalogue searchable by sound with Catalogue Intelligence."
+        },
+        {
+          "q": "How do I find music by sound?",
+          "a": "Search for a track already in the Resomix catalogue, or upload your own reference. PYXIS-1 compares its sonic profile with a pre-analysed index and returns a ranked playlist of the closest matches, which you can audition, save or use as the next reference."
+        },
+        {
+          "q": "Is Resomix a song-identification app like Shazam?",
+          "a": "No. Audio fingerprinting tells you what a recording is. Resomix tells you what sounds like it. It starts from a track you already have and finds its closest sonic relatives, whoever released them and whenever."
+        },
+        {
+          "q": "Is Resomix free?",
+          "a": "Sonic Discovery is free to start during the production beta. A Pro plan is available for deeper use, and the plans are compared on the pricing page."
+        }
+      ]
+    },
     "final": {
       "head": "You bring the vision. We surface the sound.",
       "body": "Resomix maps the measurable character of a track and surfaces its closest sonic relationships, no matter who released it or when. That's what discovery should be.",

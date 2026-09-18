@@ -161,8 +161,30 @@
       "linkApi": "[ Read the API Overview → ]",
       "linkLegal": "[ View Legal Information ]"
     },
+    "faq": {
+      "eyebrow": "06 // Questions",
+      "title": "Questions partners ask about Resomix",
+      "items": [
+        {
+          "q": "How do I partner with Resomix?",
+          "a": "Tell us about your catalogue, product or integration through the form on this page. Resomix checks fit, arranges a scoping call, and both teams agree inputs, method and terms before anything is ingested."
+        },
+        {
+          "q": "Does submitting the form start a pilot or create an account?",
+          "a": "No. It starts a conversation about fit. There are no fixed timelines and no automatic account or key creation, and ingestion begins only after approval."
+        },
+        {
+          "q": "Will our catalogue be mixed with anyone else's?",
+          "a": "No. Partner catalogues are logically isolated, and a similarity search only ever runs against the catalogue authorised for that partner. Resomix's PYXIS-1 engine is not trained or fine-tuned on partner audio and does not generate derivative audio. Ownership and commercial control stay with you."
+        },
+        {
+          "q": "Is there a public sandbox?",
+          "a": "No. Resomix does not run a public sandbox or a shared partner catalogue. The guided pilot, with a scoped key against your own sample, is the evaluation route, and a self-serve trial is planned."
+        }
+      ]
+    },
     "form": {
-      "eyebrow": "06 // Contact",
+      "eyebrow": "07 // Contact",
       "title": "Tell us what you want to explore",
       "lead": "Tell us about your catalogue, API integration or potential pilot. Submitting this form doesn't create an account or automatically start a pilot.",
       "formLabel": "Contact partnerships",

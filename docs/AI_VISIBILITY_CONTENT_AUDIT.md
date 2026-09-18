@@ -1108,28 +1108,38 @@ After deploy, for each changed URL:
 
 Written 18 September 2026 and checked against the code, not from notes. George approved the
 questions sections for "the product and solution pages", so the four product pages and the seven
-solution pages are done. This section is everything else.
+solution pages were done first. This section is everything else.
+
+**Status, 18 September 2026.** Home, Developers, Partners, Private Catalogue Pilot and About are
+now built and verified, which takes the site from eleven pages with a questions block to sixteen.
+Pricing is the only page left, and it is held deliberately, for the reason in the table below.
+Everything in the two subsections that follow is the as-built record, not a proposal.
 
 What was verified for each page below: whether it already carries `faq` copy in its locale file
 (none of these do), which of the three section shapes in `sections/shared/faqFamilies.ts` its
 markup matches, and where in its page file the block would mount. All five candidates match a
 shape that already exists, so **no new CSS is needed anywhere**.
 
-| Page | State now | What to add | Effort | Decision |
-|---|---|---|---|---|
-| `/developers` | Opening paragraph and description done. No FAQ | The five questions drafted in §5.6 | 30 min | Approval only |
-| `/` | Opening paragraph, step 2 tie and description done. No FAQ | The four questions drafted in §5.1 | 30 min | Approval only |
-| `/partners` | Opening paragraph and description done. No FAQ | The three questions drafted in §5.7 | 20 min | Approval only |
-| `/partners/pilot` | Opening paragraph and description done. No FAQ | The three questions drafted in §5.8 | 20 min | Approval only |
-| `/about` | Untouched. Names Resomix 26 times in body copy already, and its description is fine | Three questions, drafted below. Optional | 30 min | Approval only |
-| `/trust` | Description updated, and its existing seven-question list is already emitted as `FAQPage` | Nothing | none | none |
-| `/pricing` | Untouched. Its copy is not in a landing locale file at all, it comes from `PricingContent` in `packages/ui`, shared with the webapp | Optional. A short FAQ needs a copy home first, either a new landing locale namespace or a landing-only block, so it is not the 20 minutes the others are | 45 min to 1 h | Whether it is worth it, and whether the webapp shows it too |
-| `/contact`, `/waitlist` | Descriptions fine, pages are thin by design | Nothing | none | none |
-| beta.resomix.com | Deliberately `noindex`, with `/subscribe` and `/contact` canonicalised to the landing site | Nothing | none | none |
+| Page | State now | Questions | Section number |
+|---|---|---|---|
+| `/developers` | **Done.** Opening paragraph, description and a five-question block | 5 | `07 // Questions`, Evaluate moved to `08` |
+| `/` | **Done.** Opening paragraph, step 2 tie, description and a four-question block | 4 | `Questions`, unnumbered, as the home page does not number its sections |
+| `/partners` | **Done.** Opening paragraph, description and a four-question block | 4 | `06 // Questions`, Contact moved to `07` |
+| `/partners/pilot` | **Done.** Opening paragraph, description and a four-question block | 4 | `07 // Questions`, Apply moved to `08` |
+| `/about` | **Done.** It already named Resomix 26 times in body copy, and now carries a four-question block | 4 | `12 // Questions`, Choose a way in moved to `13` |
+| `/trust` | Description updated, and its existing seven-question list is already emitted as `FAQPage` | 7, pre-existing | none |
+| `/pricing` | **Held.** Its copy is not in a landing locale file at all, it comes from `PricingContent` in `packages/ui`, shared with the webapp. Adding a questions block there needs a home for the new text first, either a new landing locale namespace or a landing-only block, so it is not the 20 minutes the other pages were | 0 | pending, 45 min to 1 h |
+| `/contact`, `/waitlist` | Descriptions fine, pages are thin by design | none | none |
+| beta.resomix.com | Deliberately `noindex`, with `/subscribe` and `/contact` canonicalised to the landing site | none | none |
 
-### 14.1 The four pages with copy already drafted
+Two guards in `structuredData.spec.ts` shaped the copy. A block must carry at least four questions,
+and at least two answers must name Resomix. That is why Partners, the Pilot and About each gained a
+fourth question beyond the three first drafted in §5.7, §5.8 and §14.2. Every block ships with three
+answers naming the brand, so the guard has room before it bites.
 
-Each one is the same four-file change, exactly as the eleven done pages were built.
+### 14.1 How the five pages were built
+
+Each one was the same five-file change, exactly as the eleven earlier pages were built.
 
 | File | Change |
 |---|---|
@@ -1139,35 +1149,66 @@ Each one is the same four-file change, exactly as the eleven done pages were bui
 | `apps/landing/vite.config.ts` | Add the route to `FAQ_ROUTES` so the `FAQPage` schema is emitted from the same strings |
 | `apps/landing/src/test/structuredData.spec.ts` | Add the route to its own `FAQ_ROUTES` list, which is what fails if the schema and the visible copy ever drift |
 
-| Page | Namespace | Style line to add | Mount before |
-|---|---|---|---|
-| Developers | `developers` | `developers: instrumentStyle('dev')` | `<DevEvaluationCta />` in `DevelopersPage.tsx` |
-| Home | `home` | `home: solutionStyle('hm')` | `<HmFinalCta />` in `HomePage.tsx` |
-| Partners | `partners` | `partners: instrumentStyle('pn')` | `<PnContactForm />` in `PartnersPage.tsx` |
-| Private Catalogue Pilot | `partnersPilot` | `partnersPilot: instrumentStyle('pp')` | `<PpApplyForm />` in `PartnersPilotPage.tsx` |
-| About, if approved | `about` | `about: productStyle('ab')` | `<AbClosing />` in `AboutPage.tsx` |
+| Page | Namespace | Style line | Mounted before | Section id |
+|---|---|---|---|---|
+| Developers | `developers` | `developers: instrumentStyle('dev')` | `<DevEvaluationCta />` in `DevelopersPage.tsx` | `dev-faq` |
+| Home | `home` | `home: solutionStyle('hm')` | `<HmFinalCta />` in `HomePage.tsx` | `hm-faq` |
+| Partners | `partners` | `partners: instrumentStyle('pn')` | `<PnContactForm />` in `PartnersPage.tsx` | `pn-faq` |
+| Private Catalogue Pilot | `partnersPilot` | `partnersPilot: instrumentStyle('pp')` | `<PpApplyForm />` in `PartnersPilotPage.tsx` | `pp-faq` |
+| About | `about` | `about: productStyle('ab')` | `<AbClosing />` in `AboutPage.tsx` | `ab-faq` |
 
-Section numbering, to keep each page's eyebrows in order. Developers becomes `08 // Questions` and
-its evaluation section moves to `09`. The Pilot becomes `08 // Questions` and its apply section
-moves to `09`. Home, Partners and About number their sections differently or not at all, so their
-FAQ eyebrow is simply `Questions`, as on the solution pages.
+No new CSS was written. Each block borrows its own page's section shell, eyebrow and heading
+classes, and only the question list itself comes from the shared `faq.css`.
 
-Why Developers is first in the list: the report shows 0 of 25 answers naming Resomix for "best
+Section numbering, corrected against the built pages. Every one of these blocks sits immediately
+before the page's closing call to action, so it takes that section's number and the closing section
+moves down one. Developers is `07 // Questions` with Evaluate now `08`. Partners is `06 //
+Questions` with Contact now `07`. The Pilot is `07 // Questions` with Apply now `08`. About is `12
+// Questions` with Choose a way in now `13`. Home is the only one of the five that does not number
+its sections, so its eyebrow is simply `Questions`, as on the solution pages. An earlier draft of
+this section said Developers and the Pilot would be `08` with their closing sections at `09`, which
+was one out on both.
+
+One cosmetic leftover on About. Its section ids run `ab-s1` to `ab-s13` by position, and the closing
+section keeps `ab-s13` although it is now the fourteenth section. The id is referenced by CSS, so it
+was left alone rather than renamed for tidiness.
+
+Why Developers mattered most of the five. The report shows 0 of 25 answers naming Resomix for "best
 audio analysis API for music", and this page is the only page that can answer it.
 
-### 14.2 About, draft copy
+### 14.2 About, as shipped
 
 Deliberately different questions from Home and Product, so the pages do not repeat each other.
 Every answer is drawn from copy already on the About page.
 
 1. **Who builds Resomix, and where?** A small team of music-industry professionals and
-   signal-processing engineers in Thessaloniki, Greece. Resomix started from a frustration they knew
-   first-hand, which is how long it takes to find the one recording that fits a moment.
-2. **Is Resomix a streaming service?** No. Resomix helps you find and understand music. It is not
+   signal-processing engineers based in Thessaloniki, Greece. Resomix started from a frustration
+   they knew first-hand, which is how long it takes to find the one recording that fits a moment.
+2. **Who is Resomix for?** DJs, producers, curators and music enthusiasts use Sonic Discovery and
+   Track Intelligence directly. Labels, distributors, publishers and music libraries use Catalogue
+   Intelligence and the partner API to make an authorised catalogue searchable by sound.
+3. **Is Resomix a streaming service?** No. Resomix helps you find and understand music. It is not
    a place to listen to full tracks, and it does not replace a store or a streaming service.
-3. **What does Resomix deliberately not do?** It does not generate or recreate audio, it does not
-   train on user or partner content, and it does not decide for you. It surfaces measured evidence
-   and candidates, and the choice stays with the person.
+4. **What does Resomix deliberately not do?** It does not generate or recreate audio, it does not
+   train on user or partner content, and it does not decide for you. Resomix surfaces measured
+   evidence and candidates, and the choice stays with the person.
+
+Question 2 was added during the build, to clear the four-question guard, and it is drawn from the
+page's own section 08, "Who Resomix is for".
+
+### 14.2a The fourth questions added to Partners and the Pilot
+
+Both pages had three questions drafted in §5.7 and §5.8 and needed a fourth. Both new answers are
+drawn from the control sections those pages already render.
+
+- Partners, **Will our catalogue be mixed with anyone else's?** No. Partner catalogues are logically
+  isolated, and a similarity search only ever runs against the catalogue authorised for that
+  partner. Resomix's PYXIS-1 engine is not trained or fine-tuned on partner audio and does not
+  generate derivative audio. Ownership and commercial control stay with you.
+- Pilot, **What happens to our audio during the pilot?** It stays inside the agreed pilot boundary.
+  The sample is processed in a partner-scoped catalogue, restricted to authorised access, and it is
+  never used to train or fine-tune Resomix's PYXIS-1 engine. Public exposure is not part of a pilot,
+  and access, retention and deletion terms are agreed before anything is ingested.
 
 ### 14.3 Outside this repository
 
@@ -1175,10 +1216,90 @@ Every answer is drawn from copy already on the About page.
   well, but no sentence starts "Resomix is". One habit would help every future article, which is to
   name Resomix in the first paragraph and answer one buyer question outright. The report's cheapest
   gain is the seventeen questions where Resomix is never named.
-- **Developer hub, api-docs.resomix.com.** Assistants fetched its sitemap twelve times in one day,
-  so they do read it. A plain request for the home page returned only the title, which usually means
-  the content is drawn by JavaScript, and no major AI crawler runs JavaScript. Worth 30 minutes to
-  confirm, because that hub is our strongest evidence for the API questions. If it is
-  client-rendered, it is invisible to the assistants no matter what /developers says.
+- **Developer hub, api-docs.resomix.com.** Audited 18 September 2026. Confirmed invisible to
+  assistants. Full findings in §15.
 - **`SoftwareApplication` on the two live product pages.** Still George's call, see §3.5 and §11.
   Invisible on the page, 30 minutes.
+
+---
+
+## 15. Developer hub audit, api-docs.resomix.com
+
+Run 18 September 2026 with ordinary HTTP requests. No AI user agents were used, for the reason
+recorded in §13. The hub is not in this repository, so this is a black-box audit of what it serves.
+
+### 15.1 What was tested
+
+The home page, all nine URLs listed in its own sitemap, `robots.txt`, `sitemap.xml`, one path that
+does not exist, and three paths an agent would try.
+
+### 15.2 Findings
+
+**1. The hub is a client-rendered single-page app, and its body is empty.** What it serves is
+literally one empty container and one module script. Measured on the home page, the body contains
+**zero words**. The head is excellent, with a real title, a real description, Open Graph tags,
+Twitter tags, a canonical, and Organization plus WebSite JSON-LD. There is simply nothing under it.
+No major AI crawler runs JavaScript, so everything written on that hub is invisible to them.
+
+**2. All nine sitemap URLs serve the same document.** Same 17,355 bytes, same title, same
+description, same canonical. Two of them were compared byte for byte and the only difference was
+the order in which Cloudflare injected its font-face CSS. To a crawler, `/quickstart`,
+`/authentication`, `/rate-limits` and the other six are one page.
+
+| URL | Status | Body words | Canonical |
+|---|---|---|---|
+| `/` | 200 | 0 | `https://api-docs.resomix.com/` |
+| `/api-ref` | 200 | 0 | `https://api-docs.resomix.com/` |
+| `/playground` | 200 | 0 | `https://api-docs.resomix.com/` |
+| `/introduction` | 200 | 0 | `https://api-docs.resomix.com/` |
+| `/onboarding` | 200 | 0 | `https://api-docs.resomix.com/` |
+| `/ingestion-requirements` | 200 | 0 | `https://api-docs.resomix.com/` |
+| `/quickstart` | 200 | 0 | `https://api-docs.resomix.com/` |
+| `/authentication` | 200 | 0 | `https://api-docs.resomix.com/` |
+| `/rate-limits` | 200 | 0 | `https://api-docs.resomix.com/` |
+
+**3. The canonical is the actively harmful part.** Every sub-page tells a search engine that the
+real address of its content is the home page. That is a direct instruction to drop the sub-page from
+the index. The sitemap submits nine URLs and each one then withdraws itself. This is the same class
+of fault as the `www` redirect we fixed on the main site in §8, and it has the same effect, which is
+that every link earned by a sub-page credits the home page instead.
+
+**4. Unknown paths return 200 rather than 404.** A made-up path served the same shell with a success
+code. So did `/llms.txt`, `/openapi.json` and `/.well-known/api-catalog`, all as `text/html`. An
+agent asking for the OpenAPI spec is told "here it is" and handed a web page. This also means the
+hub can never pass the API catalogue check described in `AGENT_READINESS_FINDINGS.md`, because a
+catalogue served as HTML does not count.
+
+**5. `robots.txt` and `sitemap.xml` are both correct.** Allow all, sitemap declared, nine URLs
+listed with sensible priorities. Nothing to change there.
+
+### 15.3 What this means for the report
+
+Vladimir's weakest question for us is "best audio analysis API for music", where Resomix is named in
+0 of 25 answers. `/developers` on the main site now answers it in the page's own words, with a
+five-question block and `WebAPI` structured data. The developer hub is the deeper evidence behind
+that answer, and assistants have been reading its sitemap, but there has never been anything for
+them to read. It is the largest single body of Resomix writing that assistants cannot see.
+
+### 15.4 What would fix it
+
+In order of value for effort. Effort is a first estimate only, because the hub's repository has not
+been opened yet, and the first item depends entirely on how it is built.
+
+| Fix | Why | First estimate |
+|---|---|---|
+| Per-page canonical, title and description | Stops the nine sub-pages telling search engines to ignore them. Cheapest fix with the largest immediate effect | 1 to 2 h |
+| Prerender the nine sitemap pages to static HTML | Puts real words in the body. The landing app already solves exactly this with `tooling/prerenderHead.ts` and `tooling/prerenderBodies.ts`, so if the hub is a Vite React app on Cloudflare Pages too, the approach ports rather than being invented | half a day to a day, to confirm once the repo is open |
+| Serve a real 404 for unknown paths | Stops every typo and every dead link reporting success | 30 min |
+| Serve the OpenAPI spec at a real path as `application/json` | An agent can then read the API directly, and it is what `/.well-known/api-catalog` on the main site would point at | 30 min, assuming a spec file exists |
+| `llms.txt` at the hub root | Same short guide the main site now carries, pointing at the nine pages | 30 min |
+
+The first two are the ones that matter. The rest are tidy-up that becomes worthwhile once the pages
+are readable.
+
+### 15.5 One thing to check before any of this
+
+Whether the hub is meant to be public at all. It documents a partner API with no public sandbox, and
+its own pages say so. If the intent is that only approved partners read it, then the right fix is
+the opposite of the one above, which is to `noindex` it and keep the main site's `/developers` page
+as the public answer. That is George's call, and it should be settled before the work is scheduled.

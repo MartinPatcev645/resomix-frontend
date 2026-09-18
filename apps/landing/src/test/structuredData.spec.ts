@@ -40,10 +40,15 @@ const escText = (s: string) =>
 
 /** Pages that mount <FaqSection>. Kept in step with FAQ_ROUTES in vite.config.ts. */
 const FAQ_ROUTES = [
+  '/',
   '/product',
   '/product/sonic-discovery',
   '/product/track-intelligence',
   '/product/catalog-intelligence',
+  '/developers',
+  '/partners',
+  '/partners/pilot',
+  '/about',
   '/solutions/record-labels',
   '/solutions/music-publishers',
   '/solutions/sync-agencies',
