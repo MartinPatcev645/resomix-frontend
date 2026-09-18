@@ -1455,9 +1455,22 @@ written as prose costs nothing and removes the ambiguity for the next person rea
 Verified on the built output of both apps. The dashboards will keep reporting the old result until
 the pages are recrawled after the next deploy.
 
-### 17.4 Still open on that modal
+### 17.4 Dialog semantics, added 18 September 2026
 
-It has no `role="dialog"` and no `aria-modal`, so a screen reader is not told it is a dialog. That
-is vendor behaviour rather than something we introduced, and it was left alone under the rule that
-vendor code is wired in unchanged unless it blocks something. Worth raising with George separately,
-because a consent dialog is exactly the kind of thing an accessibility audit looks at first.
+The Silktide default shipped no `role` and no accessible name on either the banner or the modal, so
+a screen reader reached both with nothing to say about what they were. Both now carry a role, in
+both apps.
+
+| | Role | Name | `aria-modal` |
+|---|---|---|---|
+| Preferences modal, `#stcm-modal` | `dialog` | `aria-labelledby` the heading it already renders | `true` |
+| Consent banner, `#stcm-banner` | `dialog` | `aria-label`, defaulting to "Cookie consent" and overridable from config | **not set** |
+
+The difference is deliberate. The modal earns `aria-modal` because everything that claim implies is
+already true of it: `toggleModal` draws a backdrop, locks body scroll, moves focus to the close
+button and traps Tab inside. The banner traps Tab as well, but it has no backdrop and the page
+behind it stays visible and usable, so declaring it modal would hide the entire page from a screen
+reader on a promise the design does not make.
+
+Neither change alters anything on screen. Both are attributes set after the element is built, next
+to a comment saying why, so a Silktide update does not quietly drop them.

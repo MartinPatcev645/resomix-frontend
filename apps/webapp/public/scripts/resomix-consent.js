@@ -922,6 +922,22 @@ class SilktideConsentManager {
     // Create prompt element
     this.prompt = this.createWrapperChild(this.getBannerContent(), 'stcm-banner');
 
+    /* A role and a name, again absent from the Silktide default. The banner has no heading of its
+       own, only a paragraph and three buttons, so without this a screen reader reaches it with
+       nothing to say about what it is.
+
+       `aria-modal` is deliberately NOT set here, unlike the preferences modal. Tab is trapped in
+       the banner, but there is no backdrop and the page behind it stays visible and usable, so
+       declaring it modal would hide the whole page from a screen reader on a claim the design does
+       not make. */
+    if (this.prompt) {
+      this.prompt.setAttribute('role', 'dialog');
+      this.prompt.setAttribute(
+        'aria-label',
+        this.config.text?.prompt?.accessibleLabel || 'Cookie consent',
+      );
+    }
+
     // Add positioning class from config
     if (this.prompt && this.config.prompt?.position) {
       // Map old position names to new stcm- prefixed names
@@ -1040,7 +1056,7 @@ class SilktideConsentManager {
        and keep the matching selector in resomix-consent.css in step. */
     const modalContent = `
       <header>
-        <h2>${preferencesTitle}</h2>
+        <h2 id="stcm-modal-title">${preferencesTitle}</h2>
       </header>
       ${preferencesDescription}
       <section id="stcm-form">
@@ -1091,6 +1107,17 @@ class SilktideConsentManager {
   createModal() {
     // Create preferences element
     this.preferences = this.createWrapperChild(this.getModalContent(), 'stcm-modal');
+
+    /* Dialog semantics, added on top of the Silktide default, which shipped none. Without a role a
+       screen reader announces this as an unlabelled group and gives no way to tell it apart from
+       the page behind it. Everything a modal needs is already here, which is why `aria-modal` is
+       honest: toggleModal draws a backdrop, locks body scroll, moves focus to the close button and
+       traps Tab inside. The name comes from the heading the modal already renders. */
+    if (this.preferences) {
+      this.preferences.setAttribute('role', 'dialog');
+      this.preferences.setAttribute('aria-modal', 'true');
+      this.preferences.setAttribute('aria-labelledby', 'stcm-modal-title');
+    }
   }
 
   toggleModal(show) {
