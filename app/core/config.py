@@ -159,6 +159,17 @@ class Settings(BaseModel):
         default=None,
         description="Shared secret sent as X-Internal-Key so only Alwyzon can trigger analyses",
     )
+    # PostHog (server-side capture only). The browser's PostHog is loaded by the GTM container, not
+    # by us; this is for the handful of facts no browser can report, starting with the Stripe-
+    # confirmed subscription. Leave the key unset to disable — every capture then no-ops, which is
+    # how local and staging run unless someone opts them in.
+    posthog_api_key: Optional[str] = Field(
+        default=None, description="PostHog project API key (phc_...); unset = capture disabled"
+    )
+    posthog_host: str = Field(
+        default="https://eu.i.posthog.com",
+        description="PostHog ingestion host — the project lives in EU Cloud",
+    )
     hetzner_sftp_provision_url: Optional[str] = Field(
         default=None,
         description="URL of the internal provisioning script on Hetzner",
@@ -759,6 +770,8 @@ class Settings(BaseModel):
             "BACKUP_AGENT_MEDIA_URL": "backup_agent_media_url",
             "BACKUP_STALE_AFTER_HOURS": "backup_stale_after_hours",
             "BACKUP_HISTORY_RETENTION_DAYS": "backup_history_retention_days",
+            "POSTHOG_API_KEY": "posthog_api_key",
+            "POSTHOG_HOST": "posthog_host",
             "HETZNER_SFTP_PROVISION_URL": "hetzner_sftp_provision_url",
             "SFTP_SERVER_HOST": "sftp_server_host",
             "SFTP_SERVER_PORT": "sftp_server_port",

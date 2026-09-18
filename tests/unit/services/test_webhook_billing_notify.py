@@ -21,7 +21,7 @@ already covers it, and a second message lands on someone whose card merely expir
 from __future__ import annotations
 
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -164,6 +164,56 @@ async def test_a_list_price_subscriber_gets_no_founding_claim() -> None:
 
     await svc._notify_subscription_state(db, SUB_ID, "evt_1", event_type="customer.subscription.created")
     assert svc.billing_email.subscription_started.call_args.kwargs["founding_until"] is None
+
+
+# --------------------------------------------------------------------------- #
+# The paid conversion, reported to PostHog
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.asyncio
+async def test_the_paid_conversion_is_reported_to_posthog() -> None:
+    """Sent from here, not from the browser: only Stripe knows the money actually moved.
+
+    It carries the price the customer BOUGHT at (a founding subscriber pays less than list), and
+    the user uuid as `distinct_id`, which is the same identity the frontend hands PostHog at login.
+    """
+    row = Row(stripe_price_id="price_founding_eur", is_founding=True)
+    svc, db = _service_and_db_created(row, _price())
+
+    with patch(
+        "app.services.webhook_service.analytics_service.subscription_started",
+        new=AsyncMock(return_value=True),
+    ) as posthog:
+        await svc._notify_subscription_state(
+            db, SUB_ID, "evt_1", event_type="customer.subscription.created"
+        )
+
+    posthog.assert_awaited_once()
+    kwargs = posthog.call_args.kwargs
+    assert kwargs["amount_cents"] == 799
+    assert kwargs["currency"] == "EUR"
+    assert kwargs["interval"] == "month"
+    assert kwargs["is_founding"] is True
+    assert kwargs["subscription_id"] == SUB_ID
+
+
+@pytest.mark.parametrize("event_type", [
+    "customer.subscription.updated",
+    "customer.subscription.deleted",
+    None,
+])
+@pytest.mark.asyncio
+async def test_renewals_and_cancellations_are_not_reported_as_new_sales(event_type) -> None:
+    """`subscription_started` means ONE thing. A renewal reporting it would double-count revenue."""
+    svc, db = _service_and_db_created(Row(), _price())
+
+    with patch(
+        "app.services.webhook_service.analytics_service.subscription_started",
+        new=AsyncMock(return_value=True),
+    ) as posthog:
+        await svc._notify_subscription_state(db, SUB_ID, "evt_1", event_type=event_type)
+
+    posthog.assert_not_awaited()
 
 
 @pytest.mark.asyncio

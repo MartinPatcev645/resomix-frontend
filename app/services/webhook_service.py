@@ -31,6 +31,7 @@ from app.services.billing_email_service import BillingEmailService
 from app.services.billing_refund_service import BillingRefundService
 from app.services.billing_sync_service import BillingSyncService
 from app.services.billing_service import BillingService
+from app.services.analytics_service import analytics_service
 
 logger = logging.getLogger(__name__)
 
@@ -94,10 +95,12 @@ class WebhookService:
                 )
             ).scalar_one_or_none()
 
+        plan_name = await self._plan_name(db, row.plan_id)
+
         await self.billing_email.subscription_started(
             db, user,
             subscription_id=row.stripe_subscription_id,
-            plan_name=await self._plan_name(db, row.plan_id),
+            plan_name=plan_name,
             amount_cents=price.unit_amount_cents if price else None,
             currency=price.currency if price else row.currency,
             interval=price.interval if price else None,
@@ -105,6 +108,26 @@ class WebhookService:
             # Only for a founding subscriber: the locked rate IS the offer they bought.
             founding_until=row.founding_lock_ends_at if row.is_founding else None,
             stripe_event_id=stripe_event_id,
+        )
+
+        # The same moment, reported to PostHog. This is a second reader of one fact, not a second
+        # listener: the subscription becomes real where Stripe's confirmation is written to our
+        # database, and this line runs after that transaction has committed, only on
+        # `customer.subscription.created`, and only for events the webhook has not already seen
+        # (`handle_stripe_webhook` drops replays by Stripe event id) — so it fires once per sale.
+        #
+        # `distinct_id` is the user uuid, the same value the frontend gives PostHog at login, so
+        # the conversion lands on the person who has been browsing rather than a new profile.
+        # Deliberately NOT gated on the email's return value: that is False when Brevo fails too,
+        # and a delivery problem is not a reason to lose the sale from the funnel.
+        await analytics_service.subscription_started(
+            user_uuid=user.uuid,
+            plan_name=plan_name,
+            amount_cents=price.unit_amount_cents if price else None,
+            currency=(price.currency if price else row.currency),
+            interval=price.interval if price else None,
+            subscription_id=row.stripe_subscription_id,
+            is_founding=bool(row.is_founding),
         )
 
     async def _notify_refund(
