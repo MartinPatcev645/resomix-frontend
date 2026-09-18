@@ -31,6 +31,16 @@ const ALLOWED_HOSTS = [
 
 const hostOf = (url: string) => new URL(url).host;
 
+/**
+ * Collapse newlines so a phrase can be matched regardless of where the prose happens to wrap.
+ *
+ * These files are hand-written and hard-wrapped at 100 columns, so a sentence moves across lines
+ * whenever a word ahead of it changes. Matching the raw text means an assertion fails for reasons
+ * that have nothing to do with what the file says, which is exactly what happened the first time
+ * this suite ran.
+ */
+const prose = (text: string) => text.replace(/\s+/g, ' ');
+
 describe.skipIf(!built)('files published for automated clients', () => {
   describe('robots.txt', () => {
     it('declares the content signals, inside the wildcard user-agent group', () => {
@@ -93,15 +103,43 @@ describe.skipIf(!built)('files published for automated clients', () => {
   });
 
   describe('auth.md', () => {
+    it('opens with an H1 naming the standard, which is what the scanner looks for', () => {
+      // Cloudflare's scan reported "auth.md exists but is missing the expected Auth.md heading"
+      // when this file led with a descriptive title instead. The check is on the first heading.
+      const first = read('auth.md').split('\n').find((l) => l.startsWith('# '));
+      expect(first, 'auth.md has no H1').toBeDefined();
+      expect(first!.toLowerCase(), 'the H1 must contain "auth.md"').toContain('auth.md');
+    });
+
     it('is published and says the things an agent must not assume', () => {
       expect(existsSync(resolve(DIST, 'auth.md')), 'auth.md is not in the build').toBe(true);
       const txt = read('auth.md');
       expect(txt.length, 'auth.md is a stub').toBeGreaterThan(800);
 
+      /* Self-contained is the standard's fallback when there is no OAuth metadata to point at, and
+         it is the branch we are on. It asks for the audience, the endpoints, the methods and how
+         credentials are used. */
+      expect(prose(txt), 'must name its audience').toMatch(/## Audience/i);
+      expect(txt, 'must give the registration endpoint').toContain(
+        'https://beta.resomix.com/auth/register',
+      );
+      expect(txt, 'must give the sign-in endpoint').toContain(
+        'https://beta.resomix.com/auth/login',
+      );
+      expect(prose(txt), 'must say why no OAuth metadata is published').toMatch(
+        /oauth-protected-resource/i,
+      );
+
+      /* The clause that keeps this page from contradicting the Terms. An auth.md that invited an
+         agent to take someone's password would breach the same policy the pricing page states. */
+      expect(prose(txt), 'must not invite credential sharing').toMatch(
+        /sharing or transferring account credentials/i,
+      );
+
       /* The three claims that keep this page honest. If the product ever changes any of them, this
          file has to change with it, and failing here is how that gets noticed. */
-      expect(txt, 'must say there is no public sandbox').toMatch(/no public sandbox/i);
-      expect(txt, 'must say bulk account creation is not permitted').toMatch(
+      expect(prose(txt), 'must say there is no public sandbox').toMatch(/no public sandbox/i);
+      expect(prose(txt), 'must say bulk account creation is not permitted').toMatch(
         /automated or bulk account creation is not permitted/i,
       );
       expect(txt, 'must link the Terms, which is the governing document').toContain(

@@ -183,7 +183,7 @@ The full spec suite was re-run after each change and all of it passes.
 | `robots.txt` | One `Content-Signal` line added directly under `User-agent: *`. Exactly one directive added, every existing rule and the sitemap line untouched |
 | `.well-known/api-catalog` | An RFC 9727 linkset naming the Resomix Partner API, with six documentation links, the plain-language description on `/developers`, the author, the Terms, and the pilot page as the route to access |
 | `_headers` | Three `Link` relations on every response, and media types for the two extensionless files. Added to the existing block, never a rewrite of it |
-| `auth.md` | Written from copy already on the site |
+| `auth.md` | Written from copy already on the site. The H1 must literally contain "auth.md", which the scanner checks and a descriptive title fails |
 
 ### The decision that needed making
 
@@ -193,15 +193,39 @@ search for it, which is the same outcome the rest of this work is chasing. It co
 text and nothing else. Uploaded audio is never used for training, and that statement on the Trust
 page is unaffected.
 
+### The rescan, and what it found
+
+Run on 18 September after the deploy. Quick Wins went to **4 of 5** and Technical Groundwork to
+**2 of 3**. Content Signals, the API catalogue and the Link headers all report green.
+
+auth.md came back as "exists but is missing the expected Auth.md heading". The check is on the first
+heading, which has to contain the string `auth.md`. It opened with a descriptive title instead, so
+the file was correct and the heading was not. Now `# auth.md for Resomix`, and the spec asserts it.
+
+The same rescan settled the shape of the rest of that file. The standard asks for OAuth discovery
+documents where they exist, and falls back to a self-contained page where they do not. Resomix has
+no authorization server, so the fallback is the branch we are on: name the audience, give the
+endpoints, list the methods, explain how credentials are used. There is now a short OAuth section
+saying plainly that nothing is published at `/.well-known/oauth-protected-resource` and why, so a
+client stops looking instead of treating the absence as a fault.
+
 ### What auth.md deliberately says
 
 That an agent **cannot** complete a sign-up on its own, because email verification goes to the
-person's inbox and Google sign-in needs their consent. That automated or bulk account creation is
-not permitted, which restates a rule already on the pricing page. That there is no public sandbox
-and no self-serve API key. And that card details are the person's to enter, never an agent's.
+person's inbox and Google sign-in needs their consent. That there is no public sandbox and no
+self-serve API key, so there is no endpoint an agent can call to provision itself a credential. And
+that card details are the person's to enter, never an agent's.
 
-Being useful to an agent and being honest with it are the same thing here. A page that implied an
-agent could sign someone up would generate support load and breach the Terms.
+It also states that **sharing or transferring account credentials is not permitted**, and that an
+agent should therefore not ask a person for their Resomix password or store one. That is not a
+stylistic choice. It is already a Terms clause, quoted on the pricing page, and a document inviting
+an agent to sign in with someone's password would have contradicted it on the same domain. The sign
+in endpoint is documented, because the standard asks for it and a person following the link is the
+intended flow. What is not documented is a way to hand that password to software.
+
+Being useful to an agent and being honest with it turn out to be the same thing here. The honest
+answer to "how does a bot register on behalf of a user" is that it cannot, and here is the partner
+API, which is the route that exists for automation.
 
 ### The API catalogue has no `service-desc`, on purpose
 
