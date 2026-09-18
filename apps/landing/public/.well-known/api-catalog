@@ -1,0 +1,76 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://resomix.com/.well-known/api-catalog",
+      "item": [
+        {
+          "href": "https://api-docs.resomix.com/",
+          "title": "Resomix Partner API",
+          "type": "text/html"
+        }
+      ]
+    },
+    {
+      "anchor": "https://api-docs.resomix.com/",
+      "service-doc": [
+        {
+          "href": "https://api-docs.resomix.com/",
+          "title": "Resomix Developer Hub",
+          "type": "text/html"
+        },
+        {
+          "href": "https://api-docs.resomix.com/api-ref",
+          "title": "API reference",
+          "type": "text/html"
+        },
+        {
+          "href": "https://api-docs.resomix.com/quickstart",
+          "title": "Quickstart, your first similarity search",
+          "type": "text/html"
+        },
+        {
+          "href": "https://api-docs.resomix.com/authentication",
+          "title": "Authentication and scopes",
+          "type": "text/html"
+        },
+        {
+          "href": "https://api-docs.resomix.com/rate-limits",
+          "title": "Rate limits and quotas",
+          "type": "text/html"
+        },
+        {
+          "href": "https://api-docs.resomix.com/onboarding",
+          "title": "Partner onboarding",
+          "type": "text/html"
+        }
+      ],
+      "describedby": [
+        {
+          "href": "https://resomix.com/developers",
+          "title": "What the Resomix API does, in short",
+          "type": "text/html"
+        }
+      ],
+      "author": [
+        {
+          "href": "https://resomix.com/",
+          "title": "Resomix"
+        }
+      ],
+      "terms-of-service": [
+        {
+          "href": "https://legal.resomix.com/legal/terms/",
+          "title": "Terms of Service",
+          "type": "text/html"
+        }
+      ],
+      "help": [
+        {
+          "href": "https://resomix.com/partners/pilot",
+          "title": "How API access is arranged, the guided pilot",
+          "type": "text/html"
+        }
+      ]
+    }
+  ]
+}

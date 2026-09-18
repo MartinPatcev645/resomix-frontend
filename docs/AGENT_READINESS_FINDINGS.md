@@ -53,12 +53,12 @@ the paid Cloudflare plan, and nothing changes how the pages look.
 | robots.txt | Already green. The file exists, is valid and blocks no AI crawler | `apps/landing/public/robots.txt` | Done |
 | Sitemap | Already green. Built from the route list on every deploy | generated into `sitemap.xml` from `apps/landing/src/routes/seoConfig.ts` | Done |
 | AI crawler rules | Already green. Search, agent and training bots are all set to allow, and no crawler is blocked | Cloudflare, Security Settings and AI Crawl Control | Done |
-| Content Signals | Add one line under `User-agent: *` stating how automated systems may use the content | `apps/landing/public/robots.txt` | 10 min |
+| Content Signals | **Done 18 Sep.** One line under `User-agent: *`, all three values yes | `apps/landing/public/robots.txt` | Done |
 | Markdown for agents | Serve a plain-text version of each page when an agent asks for one. Cloudflare's own switch needs the Pro plan, so we build it. A build step writes a Markdown copy of every page, and a small Cloudflare Pages function returns it when the request asks for Markdown | new `apps/landing/functions/_middleware.ts` plus a new build step beside `tooling/prerenderBodies.ts` | 1 to 2 h |
-| API catalogue | Publish a small file listing our API and where its documentation lives, following the published standard, and serve it with the right content type | new `apps/landing/public/.well-known/api-catalog` plus one rule in `apps/landing/public/_headers` | 30 to 40 min |
-| Link headers | Add one response header pointing at the API catalogue, the sitemap and llms.txt, so an agent finds them without reading the page | `apps/landing/public/_headers` | 10 min |
-| auth.md | Publish a short page explaining how an agent acting for a person signs up and signs in, and how API access is granted | new `apps/landing/public/auth.md` | 30 min, after the wording is agreed |
-| Rescan and verify | Re-run the Cloudflare scan and check each item reports green | Cloudflare, AI Crawl Control, Optimization | 10 min |
+| API catalogue | **Done 18 Sep.** Linkset naming the Partner API with six documentation links, plus author, terms and the pilot route | `apps/landing/public/.well-known/api-catalog` plus a rule in `_headers` | Done |
+| Link headers | **Done 18 Sep.** Three relations on every response, `api-catalog`, `sitemap` and `alternate` for llms.txt | `apps/landing/public/_headers`, added to the existing block | Done |
+| auth.md | **Done 18 Sep.** Written from copy already on the site, and states plainly that an agent cannot complete a sign-up | `apps/landing/public/auth.md` | Done, wording still to be checked against the Terms |
+| Rescan and verify | Re-run the Cloudflare scan and check each item reports green. Needs the deploy first | Cloudflare, AI Crawl Control, Optimization | 10 min, pending deploy |
 
 **Total 2.5 to 3.5 hours**, which takes Level 1 to 5 of 5 and Level 2 to 3 of 3. Without the
 Markdown item it is about 1.5 hours, and the score becomes Level 1 at 4 of 5 with Level 2 complete.
@@ -67,9 +67,9 @@ These are clean-run times. If any item does not report green on the first rescan
 troubleshooting, most likely on the Markdown item, since it is the only one that introduces new
 moving parts.
 
-Three of these need a decision from you before they can be written, and they are listed at the end
-of this document. The Content Signals line needs your answer on training, the API catalogue needs
-to know which links we publish, and auth.md needs the sign-up policy.
+All three decisions were answered on 18 September and the four items they gated are built. What is
+left is the rescan, which needs a deploy first, and the Markdown item, which is being done on its
+own afterwards for the reason in the next section.
 
 ## What is missing at Level 1
 
@@ -167,3 +167,76 @@ The scan offers a "Set up in Cloudflare" button next to Content Signals. Please 
 switches on a feature that writes its own block at the top of our robots.txt and keeps rewriting
 it from a dashboard setting. Writing the one line ourselves passes the same check and keeps
 robots.txt fully under our control.
+
+---
+
+## As built, 18 September 2026
+
+Four of the five outstanding items are done. Nothing here touches page copy, locale files, the
+question blocks or any structured data, so the September content work is untouched by construction.
+The full spec suite was re-run after each change and all of it passes.
+
+### What was published
+
+| File | What it is |
+|---|---|
+| `robots.txt` | One `Content-Signal` line added directly under `User-agent: *`. Exactly one directive added, every existing rule and the sitemap line untouched |
+| `.well-known/api-catalog` | An RFC 9727 linkset naming the Resomix Partner API, with six documentation links, the plain-language description on `/developers`, the author, the Terms, and the pilot page as the route to access |
+| `_headers` | Three `Link` relations on every response, and media types for the two extensionless files. Added to the existing block, never a rewrite of it |
+| `auth.md` | Written from copy already on the site |
+
+### The decision that needed making
+
+`Content-Signal: search=yes, ai-input=yes, ai-train=yes`. All three yes, agreed 18 September. The
+reasoning on the third is that training is how an assistant comes to know a brand without having to
+search for it, which is the same outcome the rest of this work is chasing. It covers the marketing
+text and nothing else. Uploaded audio is never used for training, and that statement on the Trust
+page is unaffected.
+
+### What auth.md deliberately says
+
+That an agent **cannot** complete a sign-up on its own, because email verification goes to the
+person's inbox and Google sign-in needs their consent. That automated or bulk account creation is
+not permitted, which restates a rule already on the pricing page. That there is no public sandbox
+and no self-serve API key. And that card details are the person's to enter, never an agent's.
+
+Being useful to an agent and being honest with it are the same thing here. A page that implied an
+agent could sign someone up would generate support load and breach the Terms.
+
+### The API catalogue has no `service-desc`, on purpose
+
+The catalogue links to documentation, not to a machine-readable specification, because there is not
+yet one we trust. The `openapi.json` in the developer hub repository lists different endpoint paths
+from the reference the hub renders. Publishing a spec with the wrong paths is worse than publishing
+none. Once the API team says which is current, adding a `service-desc` link is a few minutes and it
+is the single most useful thing in this file.
+
+### Guards
+
+`apps/landing/src/test/agentReadiness.spec.ts`, eleven assertions against the built output. These
+files have no visible consumer, so nothing on a page breaks when one goes missing, which is exactly
+why they need a test.
+
+It checks the Content-Signal line and its position, that robots.txt still allows crawling and still
+names the sitemap, that the catalogue is valid JSON in the linkset shape and names an API with
+documentation, that auth.md still makes its three honest claims, that both extensionless files
+declare a media type, that the three Link relations are present, that everything the Link header
+promises is actually published, and that every address in both files is an https Resomix host.
+
+It also asserts that HSTS, the report-only CSP and the immutable asset caching rule are still in
+`_headers`. Cloudflare's Bot Preference Sync would rewrite robots.txt from a dashboard setting and
+drop everything below its own block, and that is the failure this suite is watching for.
+
+### Still to do
+
+1. **Deploy, then rescan.** The Cloudflare scan reads the live site, so the four items above report
+   green only after a release.
+2. **Markdown for agents**, the one remaining item, deliberately held back. It is the only item that
+   introduces a Cloudflare Pages Function, and `functions/_middleware.ts` runs in front of every
+   request on the project, static assets included. If it throws, the whole site does, and that now
+   includes the pages Google and Bing began crawling on 18 September. It will be done on its own,
+   after the four above are verified green, with strict content negotiation so it only acts on a
+   request that explicitly asks for Markdown and otherwise falls straight through, a catch that
+   falls through on any error, and no involvement with `/assets`, `/scripts`, `/fonts` or `/auth`.
+   The Cloudflare Pages root-directory setting for this monorepo needs checking first, so the
+   `functions/` directory lands where Pages expects it.

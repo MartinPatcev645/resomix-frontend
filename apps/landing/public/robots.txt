@@ -4,6 +4,21 @@
 # -----------------------------------------------------
 
 User-agent: *
+# How automated systems may use the text on this website (contentsignals.org).
+#   search    appearing in a search index and its results
+#   ai-input  an AI assistant reading a page to answer someone's question
+#   ai-train  using this text to train or fine-tune a model
+# All three are yes. The first two are the visibility this site is written for, and the third is how
+# an assistant comes to know the brand without having to search for it first.
+#
+# This covers the public marketing pages and nothing else. It says nothing about audio that people
+# or partners upload, which is never used for training, as stated on https://resomix.com/trust
+#
+# Written here by hand on purpose. Cloudflare offers a "Set up in Cloudflare" button for this, which
+# turns on Bot Preference Sync and then rewrites this file from a dashboard setting, overwriting
+# every rule below. Do not use it.
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+
 # Allow all main pages and assets
 Allow: /
 

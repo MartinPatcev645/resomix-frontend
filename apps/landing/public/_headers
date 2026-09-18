@@ -60,6 +60,35 @@
   #                                  It belongs on the enforced header, when we switch.
   Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://accounts.google.com https://eu.i.posthog.com https://*.posthog.com https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://bserver.resomix.com https://media.resomix.com https://eu.i.posthog.com https://*.posthog.com https://www.googletagmanager.com https://accounts.google.com https://cloudflareinsights.com https://static.cloudflareinsights.com; media-src 'self' blob: https://media.resomix.com; frame-src https://accounts.google.com https://www.googletagmanager.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https://accounts.google.com; object-src 'none'
 
+  # --- Discovery for automated clients ----------------------------------------------------------
+  # Where the machine-readable parts of this site are, carried in the response so an agent finds
+  # them without fetching and parsing a page first. `api-catalog` is the relation registered by
+  # RFC 9727; the other two are long-standing registered relations.
+  #
+  # Cloudflare Pages folds repeated Link lines into one comma-separated header, which is what the
+  # spec expects.
+  Link: </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"
+  Link: </sitemap.xml>; rel="sitemap"; type="application/xml"
+  Link: </llms.txt>; rel="alternate"; type="text/plain"; title="Site guide for AI systems"
+
+# The API catalogue, RFC 9727. Served from a path with no file extension, so the media type has to
+# be stated here or Pages guesses.
+/.well-known/api-catalog
+  Content-Type: application/linkset+json; charset=utf-8
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
+# Plain-text files meant to be read by tools rather than browsers.
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
+/auth.md
+  Content-Type: text/markdown; charset=utf-8
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *
+
 # Content-hashed build output: the name changes whenever the bytes change, so it is safe to keep
 # forever and never revalidate.
 /assets/*
