@@ -574,3 +574,125 @@ Adding a route means adding its path to rule 2, or that page will answer with HT
 other page answers with Markdown. There is a note beside the route list in
 `apps/landing/src/routes/seoConfig.ts` saying so. The rule lives in the Cloudflare dashboard under
 Rules, Transform Rules, Rewrite URL, named "Every other page".
+
+---
+
+## Replacing the path list with a wildcard
+
+Asked on 18 September, and the right question. Maintaining a list of every page inside a dashboard
+rule is a trap: it works until someone adds a page and nobody remembers.
+
+My original objection was that a wildcard would catch `/robots.txt` and `/sitemap.xml` and rewrite
+them into 404s. **That was wrong.** Both of those have file extensions, so a rule keyed on "no
+extension" never touches them. I checked the whole build rather than reasoning about it again, and
+there are exactly three paths with no extension:
+
+| Path | Served? |
+|---|---|
+| `/_redirects` | No. Cloudflare Pages consumes it |
+| `/_headers` | No. Cloudflare Pages consumes it |
+| `/.well-known/api-catalog` | Yes. The one genuine collision |
+
+One exclusion is all it takes.
+
+### The replacement for rule 2
+
+Same rule, same action, new expression. Paste it with **Edit expression**, not the builder.
+
+```
+http.host eq "resomix.com" and http.request.headers["accept"][0] contains "text/markdown" and http.request.uri.path.extension eq "" and not starts_with(http.request.uri.path, "/.well-known/") and not ends_with(http.request.uri.path, "/")
+```
+
+Action is unchanged: Rewrite to, Path, Dynamic, `concat(http.request.uri.path, ".md")`.
+
+Rule 1, for the home page, stays exactly as it is.
+
+### What each clause is for
+
+| Clause | Why |
+|---|---|
+| `http.host eq "resomix.com"` | Scopes it to this site and satisfies the proxied-DNS check |
+| `accept contains "text/markdown"` | The only thing that should trigger any of this |
+| `path.extension eq ""` | A page has no extension. This is what keeps `/robots.txt`, `/sitemap.xml`, `/llms.txt`, `/auth.md` and every image and asset out |
+| `not starts_with(..., "/.well-known/")` | The one extensionless file we actually serve |
+| `not ends_with(..., "/")` | Excludes `/` (rule 1 handles it) and the slashed form of any page. `/about/` falls through, Pages redirects it to `/about`, and the client gets Markdown on the retry |
+
+Any page added from now on is covered with no further work.
+
+### If the editor rejects `http.request.uri.path.extension`
+
+That field is relatively recent. If the expression will not validate, use this instead, which relies
+only on `ends_with` and `starts_with`:
+
+```
+http.host eq "resomix.com" and http.request.headers["accept"][0] contains "text/markdown" and not ends_with(http.request.uri.path, "/") and not starts_with(http.request.uri.path, "/.well-known/") and not starts_with(http.request.uri.path, "/assets/") and not starts_with(http.request.uri.path, "/fonts/") and not starts_with(http.request.uri.path, "/scripts/") and not ends_with(http.request.uri.path, ".txt") and not ends_with(http.request.uri.path, ".xml") and not ends_with(http.request.uri.path, ".md") and not ends_with(http.request.uri.path, ".png") and not ends_with(http.request.uri.path, ".svg") and not ends_with(http.request.uri.path, ".ico") and not ends_with(http.request.uri.path, ".json") and not ends_with(http.request.uri.path, ".webp") and not ends_with(http.request.uri.path, ".html")
+```
+
+Longer, same effect, no new fields.
+
+### The one thing the wildcard gives up
+
+A mistyped address from a client that asks for Markdown, say `/produkt`, now becomes a request for
+`/produkt.md`, which does not exist. Cloudflare Pages answers with the 404 page. Without the
+wildcard it would have answered with the 404 page too, just labelled `text/html` instead of
+`text/markdown`. A 404 either way, and not worth maintaining a list of twenty paths to avoid.
+
+### After switching
+
+Re-run both checks. The first must say `text/markdown`, the second must say `text/html`.
+
+```
+curl -s -o /dev/null -D - -H "Accept: text/markdown" https://resomix.com/solutions/djs | grep -i content-type
+curl -s -o /dev/null -D - -H "Accept: text/html,application/xhtml+xml" https://resomix.com/solutions/djs | grep -i content-type
+```
+
+And confirm the exclusion holds, which must still say `application/linkset+json`:
+
+```
+curl -s -o /dev/null -D - -H "Accept: text/markdown" https://resomix.com/.well-known/api-catalog | grep -i content-type
+```
+
+Once it is in, the note in `apps/landing/src/routes/seoConfig.ts` about keeping the rule in step can
+go, and so can this maintenance burden.
+
+---
+
+## Closed, 18 September 2026
+
+The wildcard rule is deployed and the maintenance burden is gone. Verified against production.
+
+| Check | Result |
+|---|---|
+| All 20 pages with `Accept: text/markdown` | `text/markdown` on every one |
+| The same 20 with a browser `Accept` | `text/html` on every one |
+| `/robots.txt`, `/sitemap.xml`, `/llms.txt`, the IndexNow key file | untouched, still `text/plain` |
+| `/sitemap.xml` | untouched, `application/xml` |
+| `/.well-known/api-catalog` | untouched, `application/linkset+json` |
+| `/og-cover.png` | untouched, `image/png` |
+| `/auth.md` | its own file, `text/markdown`, not a rewrite |
+| `/about/` with a Markdown Accept | `308` to `/about`, which then answers in Markdown |
+
+A page added from now on is covered with no change in Cloudflare and no change here.
+
+### Final state
+
+| Group | Start | Now |
+|---|---|---|
+| Quick Wins, Level 1 | 3 of 5 | **5 of 5** |
+| Technical Groundwork, Level 2 | 0 of 3 | **2 of 3** |
+
+The remaining item is the OAuth one, deliberately not done. The reasoning is in this document and
+the plain-language version is in `AGENT_READINESS_STATUS_FOR_GEORGE.md`.
+
+### Where the pieces live
+
+| Piece | Where |
+|---|---|
+| Content Signals, robots.txt | `apps/landing/public/robots.txt` |
+| API catalogue | `apps/landing/public/.well-known/api-catalog` |
+| Link headers, media types, the `noindex` on twins | `apps/landing/public/_headers` |
+| auth.md | `apps/landing/public/auth.md` |
+| Markdown twin generation | `tooling/markdownForAgents.ts`, wired in `apps/landing/vite.config.ssr.ts` |
+| Serving the twins on `Accept` | Cloudflare, Rules, Transform Rules, Rewrite URL, two rules |
+| Guards | `apps/landing/src/test/agentReadiness.spec.ts`, 18 assertions |
+| The unused Pages function | `apps/landing/functions/_middleware.ts`, inactive, safe to delete |

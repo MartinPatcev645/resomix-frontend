@@ -51,10 +51,13 @@ const RESOMIX_SERVICE = (name: string, serviceType: string): RouteEntity => ({
 });
 
 /*
- * Adding a route here has one consequence outside this repository. The Cloudflare URL Rewrite rule
- * that serves the Markdown twin on `Accept: text/markdown` matches an explicit list of paths, so a
- * new route needs adding to that rule too or it will answer with HTML. The rule, and why the list
- * is explicit rather than a pattern, are in docs/AGENT_READINESS_FINDINGS.md.
+ * Adding a route here also adds its Markdown twin, at `<route>.md`, built by
+ * tooling/markdownForAgents.ts and served to anything sending `Accept: text/markdown`.
+ *
+ * Nothing outside this repository needs updating for that, as long as the Cloudflare rewrite rule
+ * named "Every other page" is on the wildcard expression rather than the explicit path list it
+ * started on. Both versions, and how to tell which is deployed, are in
+ * docs/AGENT_READINESS_FINDINGS.md.
  */
 export const ROUTE_SEO: Record<string, RouteSeo> = {
   '/': {
