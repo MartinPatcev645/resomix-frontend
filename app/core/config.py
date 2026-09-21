@@ -170,6 +170,14 @@ class Settings(BaseModel):
         default="https://eu.i.posthog.com",
         description="PostHog ingestion host — the project lives in EU Cloud",
     )
+    # The `environment` label on every server event. Staging and production share one PostHog
+    # project and are told apart by this property. It cannot come from `resomix_env`: staging
+    # must keep RESOMIX_ENV=production because that value sets the guest cookie's `secure` flag
+    # (server-backups issue 92), so it would label staging's events as production. Unset falls
+    # back to `resomix_env`, which keeps production's events exactly as they are today.
+    posthog_environment: Optional[str] = Field(
+        default=None, description="Label for the `environment` property; unset = RESOMIX_ENV"
+    )
     hetzner_sftp_provision_url: Optional[str] = Field(
         default=None,
         description="URL of the internal provisioning script on Hetzner",
@@ -772,6 +780,7 @@ class Settings(BaseModel):
             "BACKUP_HISTORY_RETENTION_DAYS": "backup_history_retention_days",
             "POSTHOG_API_KEY": "posthog_api_key",
             "POSTHOG_HOST": "posthog_host",
+            "POSTHOG_ENVIRONMENT": "posthog_environment",
             "HETZNER_SFTP_PROVISION_URL": "hetzner_sftp_provision_url",
             "SFTP_SERVER_HOST": "sftp_server_host",
             "SFTP_SERVER_PORT": "sftp_server_port",

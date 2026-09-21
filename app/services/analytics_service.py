@@ -79,10 +79,12 @@ class AnalyticsService:
             return False
 
         props: Dict[str, Any] = dict(properties or {})
-        # Staging and production can point at the same PostHog project without staging's test
+        # Staging and production point at the same PostHog project without staging's test
         # purchases quietly inflating real revenue — every server event says which box sent it,
-        # so an insight can exclude anything that is not production.
-        props.setdefault("environment", settings.resomix_env)
+        # so an insight can exclude anything that is not production. Staging sets
+        # POSTHOG_ENVIRONMENT=staging; see `posthog_environment` in config for why RESOMIX_ENV
+        # cannot be used for this.
+        props.setdefault("environment", settings.posthog_environment or settings.resomix_env)
         if set_properties:
             props["$set"] = set_properties
 
