@@ -149,6 +149,13 @@ class Settings(BaseModel):
     # disable — the scan step then no-ops. When set, a reachable clamd is scanned via INSTREAM.
     clamav_host: Optional[str] = Field(default=None, description="clamd host (unset = scanning disabled)")
     clamav_port: int = Field(default=3310, description="clamd TCP port")
+    # Antivirus scan on the audio upload paths (analysis and similarity), via the local clamd
+    # socket with a clamscan fallback. ON by default, so an environment that never sets it keeps
+    # scanning. Set ANTIVIRUS_ENABLED=false where no clamd runs, e.g. the 1.9 GB staging box,
+    # where every upload otherwise fails with "An internal error occurred during antivirus scan".
+    # Not RESOMIX_ENV=development to get the same effect: that also flips the guest cookie's
+    # secure flag.
+    antivirus_enabled: bool = Field(default=True, description="Scan audio uploads with ClamAV")
     # Analysis microservice (runs on the Hetzner box; Alwyzon is its only caller). Leave unset
     # until the service is deployed — the upload orchestration treats an unset URL as "analysis
     # not available yet" and skips it (similarity still works). Mirrors the similarity wiring.
@@ -773,6 +780,7 @@ class Settings(BaseModel):
             "HETZNER_INTERNAL_API_KEY": "hetzner_internal_api_key",
             "ANALYSIS_SERVER_URL": "analysis_server_url",
             "ANALYSIS_INTERNAL_API_KEY": "analysis_internal_api_key",
+            "ANTIVIRUS_ENABLED": "antivirus_enabled",
             "BACKUP_AGENT_TOKEN": "backup_agent_token",
             "BACKUP_AGENT_ALWYZON_URL": "backup_agent_alwyzon_url",
             "BACKUP_AGENT_MEDIA_URL": "backup_agent_media_url",
@@ -911,7 +919,7 @@ class Settings(BaseModel):
             env_value = os.getenv(env_key)
             if env_value is not None:
                 # Handle boolean conversion
-                if config_key in ["demo_mode", "similarity_auth_required", "rate_limit_enabled", "stripe_automatic_tax_enabled", "elasticsearch_enabled", "es_verify_certs", "cf_access_enabled", "watchdog_enabled", "watchdog_backup_enabled"]:
+                if config_key in ["demo_mode", "similarity_auth_required", "rate_limit_enabled", "stripe_automatic_tax_enabled", "elasticsearch_enabled", "es_verify_certs", "cf_access_enabled", "watchdog_enabled", "watchdog_backup_enabled", "antivirus_enabled"]:
                     env_overrides[config_key] = env_value.lower() in (
                         "true",
                         "1",

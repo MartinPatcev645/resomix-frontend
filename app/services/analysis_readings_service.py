@@ -48,10 +48,16 @@ logger = logging.getLogger(__name__)
 
 _FORMATTER = Formatter()
 
-# Section labels the structure detector emits (see resomix-analysis-service/app/utils/structure.py):
-# intro, build, drop, main, breakdown, section, outro.
+# Section labels matched below are DISPLAYED words, never canonical classes. The
+# `structure` block shows one of four vocabularies per track (see
+# resomix-analysis-service/app/utils/edm_structure/vocabulary.py): only the peak
+# vocabulary ever says "drop"; a groove track says "groove" / "break", a neutral
+# one "main". So `{drop_start}` is simply never offered where the genre does not
+# use the word, which is the M3.1 rule the structure reading is built around.
 #
-# structure_v2 keeps that vocabulary for tracks with a supported beat, and swaps
+# Older results carry the v1 detector's labels: intro, build, drop, main,
+# breakdown, section, outro. structure_v2 kept that vocabulary for tracks with a
+# supported beat, and swaps
 # it for a rhythm-free one when there isn't one: intro / rise / peak / sustain /
 # release / fade (beatless), or peak / break / groove (downtempo). Nothing here
 # needs to know about those — a template asking for {drop_start} is simply never
@@ -142,9 +148,15 @@ def _mood_top(semantics: Dict[str, Any]) -> Optional[str]:
 def _tempo_is_showable(result: Dict[str, Any]) -> bool:
     """May the copy quote a BPM for this track?
 
-    ``structure_v2.bpm_display.show`` is the answer when v2 ran. Results without
-    it predate v2 and keep the old behaviour of always quoting the tempo.
+    The ``structure`` block answers first: when it found no beat grid it reports
+    ``status: "gate"``, and a tempo quoted for a track with no beat is exactly the
+    "steady 154.8 BPM under an ambient track" this guard exists for. Otherwise
+    ``structure_v2.bpm_display.show`` answers for the results that carry it, and
+    anything older keeps the original behaviour of always quoting the tempo.
     """
+    structure = result.get("structure")
+    if isinstance(structure, dict) and structure.get("status") in ("ok", "gate"):
+        return structure["status"] != "gate"
     v2 = result.get("structure_v2")
     if not isinstance(v2, dict):
         return True
@@ -155,13 +167,30 @@ def _tempo_is_showable(result: Dict[str, Any]) -> bool:
 
 
 def _structure_segments(result: Dict[str, Any]) -> Any:
-    """Prefer structure_v2's sections; fall back to v1 for older results.
+    """The sections a template may quote, newest reading first.
 
-    v2 snaps its boundaries to the downbeat grid, so the timestamps a template
-    quotes ("the drop enters at 2:08") land on the bar rather than a quarter-bar
-    off it. Results produced before v2 existed, or where its stage degraded,
-    still have v1 and still read fine.
+    The ``structure`` block, when present, is authoritative, and each section is
+    offered under the word the track's OWN vocabulary shows for it, not its
+    canonical class. That distinction is the whole point: a minimal track stores
+    its grooves as canonical ``drop`` but shows them as "groove", and a template
+    reading "the drop enters at 1:01" would put the one word that genre must never
+    see into copy a DJ reads. Matching on the shown word means a drop template is
+    only ever eligible where the track is actually shown a drop. Hidden start / end
+    markers are not sections a reader is told about, so they are skipped.
+
+    Otherwise structure_v2's sections, then v1's, for results that predate the
+    block; those keep exactly the readings they have always had.
     """
+    structure = result.get("structure")
+    if isinstance(structure, dict) and structure.get("status") in ("ok", "gate"):
+        shown = []
+        for sec in structure.get("sections") or []:
+            if not isinstance(sec, dict) or sec.get("hidden") or not isinstance(sec.get("word"), str):
+                continue
+            shown.append(
+                {"label": sec["word"], "start_ms": sec.get("start_ms"), "end_ms": sec.get("end_ms")}
+            )
+        return shown
     v2 = result.get("structure_v2")
     if isinstance(v2, dict):
         segments = v2.get("segments")

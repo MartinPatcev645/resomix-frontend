@@ -22,6 +22,8 @@ import os
 import threading
 from typing import Dict, Any
 
+from app.core.config import settings
+
 # Cap on simultaneous clamd scans.
 #
 # Scans now run in a threadpool rather than one-at-a-time on the event loop, so nothing else
@@ -136,6 +138,17 @@ class AntivirusService:
                 "clean": True,
                 "threat": None,
                 "method": "skipped_dev",
+                "filename": filename,
+            }
+
+        # Switched off for this environment (ANTIVIRUS_ENABLED=false), e.g. staging, which runs no
+        # clamd. Default is on, so production is unaffected unless it opts out explicitly.
+        if not settings.antivirus_enabled:
+            return {
+                "success": True,
+                "clean": True,
+                "threat": None,
+                "method": "disabled",
                 "filename": filename,
             }
 

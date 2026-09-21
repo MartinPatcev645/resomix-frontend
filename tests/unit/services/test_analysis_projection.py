@@ -215,6 +215,38 @@ class TestDegenerateInput:
         assert project_summary("boom") == "boom"
 
 
+class TestStructureBlock:
+    _STRUCTURE = {
+        "status": "ok",
+        "gate": None,
+        "sections": [{"label": "drop", "word": "groove", "shown": "groove 1", "start_ms": 0,
+                      "end_ms": 1000, "bars": 8, "hidden": False}],
+        "summary": "8-bar groove",
+        "family": "groove",
+        "vocabulary": "groove",
+        "family_reason": "genre Electronic---Minimal",
+        "routed_family": "groove",
+        "family_detail": {"top_style": "Electronic---Minimal", "share": 1.0},
+        "model": "all-fold ensemble (8)",
+        "attention_backend": "natten 0.15.1 (compiled)",
+        "device": "cuda",
+        "model_bpm": 125.0,
+    }
+
+    def test_the_card_gets_the_section_map_it_draws(self):
+        projected = project_summary({"structure": dict(self._STRUCTURE)})
+        assert projected["structure"]["sections"] == self._STRUCTURE["sections"]
+        assert projected["structure"]["summary"] == "8-bar groove"
+
+    def test_calibration_and_provenance_are_withheld(self):
+        """`family_detail` is the genre routing's raw numbers, kept to calibrate its thresholds,
+        the same reason `beat_support` is withheld from structure_v2. The model fields are
+        server provenance, not something the card draws."""
+        kept = set(project_summary({"structure": dict(self._STRUCTURE)})["structure"])
+        assert not kept & {"family_detail", "routed_family", "model", "attention_backend",
+                           "device", "model_bpm"}
+
+
 class TestAllowListIntegrity:
     def test_no_section_is_both_allowed_and_full_only(self):
         assert not (set(SUMMARY_FIELDS) & FULL_ONLY_SECTIONS)

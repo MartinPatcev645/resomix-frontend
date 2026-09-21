@@ -194,3 +194,75 @@ def test_attach_leaves_an_error_envelope_alone() -> None:
     assert attach_readings("not a result", "analysis-abc") == "not a result"
     empty = {"state": "queued"}
     assert "readings" not in attach_readings(empty, "analysis-abc")
+
+
+# --------------------------------------------------------------------------- #
+# the `structure` block
+# --------------------------------------------------------------------------- #
+def _section(label: str, word: str, start: int, end: int, *, hidden: bool = False) -> dict:
+    return {"label": label, "word": None if hidden else word, "start_ms": start, "end_ms": end,
+            "bars": 8, "hidden": hidden, "shown": None if hidden else word}
+
+
+def _with_structure(family: str, sections: list) -> dict:
+    result = _full_result()
+    result["structure"] = {"status": "ok", "gate": None, "family": family, "vocabulary": family,
+                           "summary": "", "sections": sections}
+    return result
+
+
+# A minimal track: its grooves are canonical `drop`, but it is SHOWN "groove".
+_GROOVE = [
+    _section("start", "", 0, 400, hidden=True),
+    _section("intro", "intro", 400, 60_000),
+    _section("buildup", "build", 60_000, 75_000),
+    _section("drop", "groove", 75_000, 150_000),
+    _section("breakdown", "break", 150_000, 165_000),
+    _section("drop", "groove", 165_000, 280_000),
+    _section("outro", "outro", 280_000, 300_000),
+]
+_PEAK = [
+    _section("intro", "intro", 0, 60_000),
+    _section("drop", "drop", 60_000, 150_000),
+    _section("breakdown", "breakdown", 150_000, 165_000),
+    _section("outro", "outro", 165_000, 300_000),
+]
+
+
+def test_structure_offers_sections_by_their_shown_word() -> None:
+    facts = extract_facts(_with_structure("groove", _GROOVE))
+    assert facts["build_start"] == "1:00"
+    assert facts["outro_start"] == "4:40"
+    # hidden start / end markers are not sections a reader is told about
+    assert facts["section_count"] == "6"
+
+
+def test_a_groove_track_is_never_told_about_a_drop() -> None:
+    """M3.1. Its grooves are canonical `drop`, so matching on the canonical class would put "the
+    drop enters at 1:15" into copy for the one genre that must never see the word."""
+    result = _with_structure("groove", _GROOVE)
+    facts = extract_facts(result)
+    assert "drop_start" not in facts and "drop_end" not in facts
+    for i in range(200):
+        for text in build_readings(result, f"analysis-{i}").values():
+            assert "drop" not in text.lower(), text
+
+
+def test_a_peak_track_still_gets_its_drop() -> None:
+    facts = extract_facts(_with_structure("peak", _PEAK))
+    assert facts["drop_start"] == "1:00"
+    assert facts["breakdown_start"] == "2:30"
+
+
+def test_no_beat_grid_quotes_no_tempo_and_no_sections() -> None:
+    result = _full_result()
+    result["structure"] = {"status": "gate", "gate": "continuous piece", "sections": []}
+    facts = extract_facts(result)
+    assert "bpm" not in facts and "bpm_confidence_pct" not in facts
+    assert "section_count" not in facts
+
+
+def test_the_structure_block_outranks_the_deprecated_ones() -> None:
+    result = _with_structure("peak", _PEAK)
+    result["energy"]["structure_segments"] = [{"label": "drop", "start_ms": 5_000, "end_ms": 6_000}]
+    assert extract_facts(result)["drop_start"] == "1:00"

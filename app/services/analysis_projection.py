@@ -29,8 +29,10 @@ Read off ``AnalysisSummaryCard.tsx``, field by field — not guessed:
     energy     the energy-journey curve + the v1 section map
     semantics  genre, style, mood dimensions, danceability, valence, arousal, voice
     readings   the DJ / producer / curator blurbs
-    structure_v2  the beat-aware section map the card now draws, plus the tempo
-                  display decision (a beatless track must not be shown a BPM)
+    structure  the section map the card draws as a table: every section with the
+               word shown for it, its bars and times, and the one-line summary
+    structure_v2  DEPRECATED. No longer produced; kept so results persisted
+                  while it existed still render their tempo display decision
 
 WHAT IT DOES NOT GET
 --------------------
@@ -80,10 +82,17 @@ SUMMARY_FIELDS: Dict[str, frozenset] = {
         {"for_dj", "dj", "for_djs", "for_producers", "producers", "for_producer",
          "for_curators", "curators", "for_curator"}
     ),
-    # structure_v2 is the section map the card now renders (it supersedes
-    # energy.structure_segments, which stays in the payload for older results).
-    # `beat_support` is deliberately absent: it is the rhythm-gate scorecard kept
-    # for threshold calibration, not something the card draws.
+    # The section map the card draws. `status` / `gate` cover a track with no beat
+    # grid, which gets a sentence instead of sections. Deliberately NOT
+    # `family_detail` (the genre routing's raw numbers, kept to calibrate its
+    # thresholds, the same reason `beat_support` is withheld below),
+    # `routed_family`, or the model / attention_backend / device provenance.
+    "structure": frozenset(
+        {"status", "gate", "sections", "summary", "family", "vocabulary", "family_reason"}
+    ),
+    # DEPRECATED: no longer produced. Kept so results persisted while it existed
+    # keep their tempo display decision. `beat_support` is deliberately absent:
+    # it is the rhythm-gate scorecard kept for threshold calibration.
     "structure_v2": frozenset(
         {"version", "profile", "grid", "bpm_display", "flags", "segments", "error"}
     ),
