@@ -14,7 +14,7 @@ interface StructurePanelProps {
 }
 
 /**
- * The track's structure as a strip under the player, click to seek.
+ * The track's structure as a strip under the player. Clicking a section seeks to its start.
  *
  * Drawn ONLY from the `structure` block. The v1 / v2 readings it replaces were withdrawn, so an
  * older result that still carries them shows no panel at all rather than bringing them back.
@@ -67,10 +67,12 @@ export const StructurePanel: React.FC<StructurePanelProps> = ({ data, durationMs
         </div>
       }
     >
+      {/* A click jumps to the START of the section under it, not the exact spot, so a DJ lands on
+          the phrase. Over a hidden start / end marker there is no section, so it seeks as clicked. */}
       <TimeAxis
         durationMs={durationMs}
         currentMs={currentMs}
-        onSeek={onSeek}
+        onSeek={(ms) => onSeek(sectionAtMs(segments, ms)?.startMs ?? ms)}
         tooltip={(f) => {
           const label = sectionAt(segments, durationMs, f);
           return label ? <span className="ml-[var(--px-6)] uppercase">{label}</span> : null;

@@ -145,7 +145,7 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
       : withConfidenceSuffix("BPM", data.rhythm.confidence);
 
   /**
-   * The four tiles under the structure list.
+   * The four tiles beside the structure list, or under everything when there is none.
    *
    * ENERGY IS DELIBERATELY ABSENT. A fifth chip used to render it from `moodDimensions`; the
    * energy graph sits directly above and shows the same thing over time, which is strictly more
@@ -178,6 +178,7 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
     () => (data.structure?.status === "ok" ? structureTableRows(data.energy.structureSegments) : []),
     [data.structure, data.energy.structureSegments],
   );
+  const characteristicsBeside = characteristics.length > 0 && structureRows.length > 0;
 
   // Three distinct states, so a disabled button is never ambiguous: ready, still pairing, or
   // genuinely absent (a legacy upload that predates automatic pairing).
@@ -310,15 +311,15 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
           )}
         </div>
 
+        {/* Beside a structure table the tiles stack one per row down the right column, filling
+            the space the table leaves under the reading. */}
+        {characteristicsBeside && <CharacteristicsPanel tiles={characteristics} stacked className="lg:flex-1" />}
         </div>
       </div>
 
-      {/* The four characteristics now run as one full-width horizontal row.
-          They used to be rendered twice (2×2 on mobile in the left column, stacked one-per-row
-          on desktop in the narrow right column) purely to work around the tall structure list
-          opposite them. With that list gone there is no tall column to balance, so a single
-          full-width instance is both simpler and wider: four across on desktop, 2×2 on phones. */}
-      {characteristics.length > 0 && <CharacteristicsPanel tiles={characteristics} />}
+      {/* With no structure table there is no tall column to balance, so the tiles run as one
+          full-width row instead: four across on desktop, 2×2 on phones. */}
+      {characteristics.length > 0 && !characteristicsBeside && <CharacteristicsPanel tiles={characteristics} />}
 
       {/* Stacked and full-width below lg (matching the app's own desktop/mobile switch) so all
           three read as one equal-width set instead of three content-width buttons; inline row on
@@ -420,37 +421,44 @@ const EnergyPolyline: React.FC<{ values: number[]; height: number; color: string
 };
 
 /**
- * The "Track characteristics" panel — one full-width instance, tiles side by side.
+ * The "Track characteristics" panel, rendered once, in one of two places.
  *
- * It used to render TWICE, split by breakpoint: 2×2 on a phone in the left column, and stacked
- * one-per-row on desktop in the narrow right column. Both of those were shaped around the track
- * structure list, which made the left column tall and pushed the tiles somewhere they fit rather
- * than somewhere they read well. The panel now sits below both columns at full width, so the
- * structure list's height no longer decides where the tiles go: four across on desktop, falling
- * back to 2×2 where that would be too narrow.
+ * Beside a structure table (`stacked`) it takes the right column under the reading, one tile per
+ * row, and stretches so the tiles share whatever height the table leaves. Without one it sits
+ * below both columns at full width, four across. Both fall back to 2×2 on a phone.
  */
 const CharacteristicsPanel: React.FC<{
   tiles: { key: string; label: string; value: string; definition: string }[];
+  stacked?: boolean;
   className?: string;
-}> = ({ tiles, className = "" }) => (
+}> = ({ tiles, stacked = false, className = "" }) => (
   <div className={`flex flex-col border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] ${className}`}>
     <div className="border-b border-[var(--rx-color-border-subtle)] px-[var(--px-14)] py-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)]">
       Track characteristics
     </div>
-    <div className="grid grid-cols-2 lg:grid-cols-4">
+    <div className={stacked ? "grid grid-cols-2 lg:flex-1 lg:auto-rows-fr lg:grid-cols-1" : "grid grid-cols-2 lg:grid-cols-4"}>
       {tiles.map((tile, i) => (
         <div
           key={tile.key}
           className={[
             "px-[var(--px-14)] py-[var(--px-12)]",
-            // Border COLOUR unconditionally, widths per position, so the same tile works in both
-            // arrangements without doubled or dangling lines. 2×2: left edge on the right-hand
+            // Border COLOUR unconditionally, widths per position, so the same tile works in every
+            // arrangement without doubled or dangling lines. 2×2: left edge on the right-hand
             // cell, top edge on the second row. One row of 4: a left edge on every cell but the
-            // first, and no top edges at all.
+            // first, and no top edges at all. One column of 4: a top edge on every cell but the
+            // first, and no left edges at all.
             "border-[var(--rx-color-border-subtle)]",
-            i % 2 === 1 ? "border-l" : "",
-            i > 0 ? "lg:border-l" : "",
-            i >= 2 ? "border-t lg:border-t-0" : "",
+            ...(stacked
+              ? [
+                  "lg:flex lg:flex-col lg:justify-center",
+                  i % 2 === 1 ? "border-l lg:border-l-0" : "",
+                  i >= 2 ? "border-t" : i > 0 ? "lg:border-t" : "",
+                ]
+              : [
+                  i % 2 === 1 ? "border-l" : "",
+                  i > 0 ? "lg:border-l" : "",
+                  i >= 2 ? "border-t lg:border-t-0" : "",
+                ]),
           ].join(" ")}
         >
           <div className="font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-muted)]">
