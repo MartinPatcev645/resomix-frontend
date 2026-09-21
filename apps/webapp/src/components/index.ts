@@ -31,6 +31,8 @@ import { TrackMetaRow } from "./Library/TrackMetaRow.tsx";
 import { LibraryFilters } from "./Library/LibraryFilters.tsx";
 import { BackToHomeButton } from "./Library/BackToHomeButton.tsx";
 import { RouteFallback } from "./RouteFallback.tsx";
+import { StructureList } from "./Analysis/StructureList.tsx";
+import { StructurePanel } from "./Analysis/StructurePanel.tsx";
 
 import { WebLayout } from "./Layout/WebLayout.tsx";
 
@@ -68,5 +70,7 @@ export {
     LibraryFilters,
     BackToHomeButton,
     RouteFallback,
+    StructureList,
+    StructurePanel,
     WebLayout,
 }

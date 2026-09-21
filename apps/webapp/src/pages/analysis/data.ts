@@ -8,12 +8,47 @@ export type ScoredLabel = { label: string; score: number };
 export type StructureSegment = {
   startMs: number;
   endMs: number;
+  /**
+   * The text this section is called on screen. For the current `structure` block it is the word
+   * the track's own vocabulary uses plus its occurrence number ("groove 2", "drop 1a"), never the
+   * canonical class, so a minimal track can never be captioned "drop". Older results carry their
+   * v1 / v2 label here instead.
+   */
   label: string;
   confidence: number;
-  /** Whole bars spanned. Only present on structure_v2, and null on its wall-clock fallback. */
+  /** Whole bars spanned. */
   bars?: number | null;
   /** structure_v2 provenance, e.g. "review", "snapped_far". */
   flags?: string[];
+  /** The bare displayed word ("groove"), used for colour. Only on the `structure` block. */
+  word?: string;
+  /** The full rendered text with measured modifiers ("groove 1 · rising"). */
+  shown?: string;
+  /** The canonical, genre-independent class ("drop"). Never displayed. */
+  role?: string;
+  /**
+   * A start or end marker the reading does not name. Kept in the list, and drawn as a blank
+   * block, because the strip lays sections out by width: dropping one would shift every section
+   * after it out of line with the audio.
+   */
+  hidden?: boolean;
+  /** Bar the section starts on, counted from the downbeat grid. */
+  startBar?: number | null;
+};
+
+/** The `structure` block: what the whole-track reading needs beyond the sections themselves. */
+export type StructureInfo = {
+  /** "ok", or "gate" when there is no beat grid to count bars on. */
+  status: "ok" | "gate";
+  /** The sentence to show instead of sections when `status` is "gate". */
+  gate: string | null;
+  /** One line for the whole track, e.g. "32-bar intro · groove 1 from bar 33 (1:01) · …". */
+  summary: string;
+  /** The family that decided the words, e.g. "groove" or "peak". */
+  family: string | null;
+  vocabulary: string | null;
+  /** How the family was decided, in words. */
+  familyReason: string | null;
 };
 
 /**
@@ -51,6 +86,12 @@ export interface AnalysisData {
   energy: { energyCurve: Series; onsetTimesSeconds: number[]; structureSegments: StructureSegment[]; bassEntryMs: number };
   /** Null on results produced before structure_v2 existed, or where its stage degraded. */
   structureV2: StructureV2 | null;
+  /**
+   * The track-structure reading. Null while it is still computing, where the service did not
+   * produce one, and on every result from before it existed. Structure is only ever SHOWN from
+   * this block: the older v1 / v2 readings were withdrawn and must not reappear on old results.
+   */
+  structure: StructureInfo | null;
   semantics: { genreTop: ScoredLabel[]; styleMaestTop: ScoredLabel[]; moodThemeTop: ScoredLabel[]; instrumentTop: ScoredLabel[]; moodDimensions: Record<string, number>; danceability: number; approachability: number; voiceInstrumental: string; voiceScore: number; timbreBright: number; timbreDark: number; moodAcoustic: number; moodElectronic: number; valence: number; arousal: number };
   timeline: { genreOverTime: TimelineTrack; moodOverTime: TimelineTrack; instrumentOverTime: TimelineTrack; voiceRegions: VoiceRegion[] };
   composition: { stems: Record<string, StemMetrics>; vocalRegions: VoiceRegion[] };

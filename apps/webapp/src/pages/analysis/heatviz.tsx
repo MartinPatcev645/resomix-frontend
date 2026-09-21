@@ -735,16 +735,30 @@ export function WaveTimeline({
 }
 
 /* ------------------------------------------------------ StructureTimeline */
-type Segment = { startMs: number; endMs: number; label: string; confidence: number };
+type Segment = {
+  startMs: number;
+  endMs: number;
+  label: string;
+  confidence: number;
+  /** Bare displayed word, the colour key when present ("groove" for "groove 2"). */
+  word?: string;
+  /** Full rendered text with modifiers, for the tooltip. */
+  shown?: string;
+  /** A start / end marker: drawn blank so every later block stays in line with the audio. */
+  hidden?: boolean;
+};
 
 // Warmth tracks energy: the more of the brand orange a block carries, the more is
-// going on in it. Cool blue is reserved for the two "the drums stopped" labels.
+// going on in it. Cool blue is reserved for the "the drums stopped" words.
 //
-// The three vocabularies structure_v2 can emit are all covered. Which one a track
-// gets depends on its `profile`, so no single track shows a mix of them:
-//   dance      intro / build / drop / breakdown / main / section / outro
-//   downtempo  intro / build / peak / break / groove / outro
-//   beatless   intro / rise / peak / sustain / release / fade
+// Keyed by the DISPLAYED word, so a colour always matches what the block says. The
+// current structure reading uses four vocabularies, one per track, never mixed:
+//   neutral  intro / build / main / breakdown / cooldown / outro
+//   peak     intro / build / drop / breakdown / cooldown / outro
+//   groove   intro / build / groove / break / wind-down / outro
+//   ambient  opening / swell / full / sparse / fade / closing
+// plus "part" for the three classes the model's label head cannot resolve. The
+// older structure_v2 words are kept for results that still carry them.
 const SECTION_COLOR: Record<string, string> = {
   // shared
   intro: "rgba(238,74,38,0.22)",
@@ -767,6 +781,21 @@ const SECTION_COLOR: Record<string, string> = {
   sustain: "rgba(238,74,38,0.35)",
   release: "rgba(238,74,38,0.26)",
   fade: "rgba(238,74,38,0.18)",
+  // current structure reading: the words the older map did not have
+  cooldown: "rgba(238,74,38,0.3)",
+  "wind-down": "rgba(238,74,38,0.3)",
+  "beatless intro": "rgba(238,74,38,0.22)",
+  "beatless outro": "rgba(238,74,38,0.18)",
+  opening: "rgba(238,74,38,0.22)",
+  "beatless opening": "rgba(238,74,38,0.22)",
+  swell: "rgba(238,74,38,0.5)",
+  full: "rgba(238,74,38,0.72)",
+  sparse: "rgba(127,176,255,0.45)",
+  closing: "rgba(238,74,38,0.18)",
+  "beatless closing": "rgba(238,74,38,0.18)",
+  bridge: "rgba(255,255,255,0.15)",
+  passage: "rgba(255,255,255,0.15)",
+  part: "rgba(255,255,255,0.15)",
 };
 
 const fmtTime = (ms: number) => {
@@ -788,15 +817,16 @@ export function StructureTimeline({
       <div className="pointer-events-none flex h-[var(--px-44)] w-full overflow-hidden rounded-[var(--px-8)]">
         {segments.map((s, i) => {
           const w = ((s.endMs - s.startMs) / durationMs) * 100;
-          const active = currentMs != null && currentMs >= s.startMs && currentMs < s.endMs;
+          const active = !s.hidden && currentMs != null && currentMs >= s.startMs && currentMs < s.endMs;
+          const background = s.hidden ? "transparent" : SECTION_COLOR[s.word || s.label] ?? SECTION_COLOR.section;
           return (
             <div
               key={i}
               className={"relative flex items-center justify-center border-r border-black/30 " + (active ? "brightness-[1.35]" : "")}
-              style={{ width: `${w}%`, background: SECTION_COLOR[s.label] ?? SECTION_COLOR.section }}
+              style={{ width: `${w}%`, background }}
             >
               <span className="truncate px-[var(--px-4)] font-helvetica text-[length:var(--px-9)] uppercase tracking-[var(--px-1)]">
-                {w > 6 ? s.label : ""}
+                {w > 6 && !s.hidden ? s.label : ""}
               </span>
             </div>
           );
@@ -812,11 +842,16 @@ export function StructureTimeline({
   );
 }
 
-/** Section label at a 0..1 fraction of the track (for the structure tooltip). */
+/**
+ * Section text at a 0..1 fraction of the track (for the structure tooltip). The full rendered text
+ * when there is one, so the tooltip carries the measured modifiers the block has no room for.
+ * Null over a hidden start / end marker, which the reading deliberately does not name.
+ */
 export function sectionAt(segments: Segment[], durationMs: number, frac: number): string | null {
   const ms = frac * durationMs;
   const seg = segments.find((s) => ms >= s.startMs && ms < s.endMs);
-  return seg ? seg.label : null;
+  if (!seg || seg.hidden) return null;
+  return seg.shown || seg.label;
 }
 
 /* -------------------------------------------------------------- RibbonChart */

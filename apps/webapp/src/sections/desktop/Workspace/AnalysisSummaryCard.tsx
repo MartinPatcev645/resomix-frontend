@@ -15,13 +15,9 @@ import {
   peakIndex,
   sampleTimeMs,
 } from "@/utils/energyCurve.ts";
-// `@/utils/structureStrip.ts` still exists and is still unit-tested; it is unimported here only
-// while the structure list is disabled.
-// import {
-//   mergeStructureSegments,
-//   structureListMeta,
-//   type MergedStructureSegment,
-// } from "@/utils/structureStrip.ts";
+import { sectionWord, structureTableRows } from "@/utils/structureStrip.ts";
+// By path, not through `@/components`: App.tsx loads that barrel eagerly.
+import { StructureList } from "@/components/Analysis/StructureList.tsx";
 import { SubmitPendingGlyph } from "./WorkspaceStage.tsx";
 import {
   ANALYSIS_SIBLING_PLAYLIST_NOTE,
@@ -55,22 +51,19 @@ const fmtClock = (ms: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 };
 
-// Section labels drawn with accent emphasis in the structure list. Parked with it (see below).
-// const SECTION_HOT: Record<string, boolean> = {
-//   drop: true,
-//   chorus: true,
-// };
-
 /**
  * The sentence under the energy graph.
  *
  * Was a 10px all-caps caption reading "ENERGY JOURNEY: PEAK AROUND 0:33, RELEASES AFTER 0:46" —
  * a heading and a finding welded together in the one type size that is hardest to read. The
  * heading is now drawn separately, so this is just the finding, in a normal sentence.
+ *
+ * Matches on the DISPLAYED word, not the canonical class: a groove track's sections are stored as
+ * `drop` but called "groove", and must never be described as having a drop.
  */
 function energySentence(segments: StructureSegment[], durationMs: number, peakMs: number): string {
   if (!durationMs) return "Energy across the track.";
-  const drop = segments.find((s) => s.label === "drop" || s.label === "chorus");
+  const drop = segments.find((s) => !s.hidden && ["drop", "chorus"].includes(sectionWord(s)));
   if (drop) {
     return drop.endMs < durationMs
       ? `Peak detected around ${fmtClock(drop.startMs)}, with release after ${fmtClock(drop.endMs)}.`
@@ -86,9 +79,9 @@ function energyDesc(
   peakMs: number,
 ): string {
   if (!values.length) return "Normalized energy curve across the track.";
-  const drop = segments.find((s) => s.label === "drop");
+  const drop = segments.find((s) => !s.hidden && sectionWord(s) === "drop");
   if (drop) {
-    return `Energy rises through the arrangement, peaks through the ${drop.label} from ${fmtClock(drop.startMs)} to ${fmtClock(drop.endMs)}, then falls through the outro.`;
+    return `Energy rises through the arrangement, peaks through the drop from ${fmtClock(drop.startMs)} to ${fmtClock(drop.endMs)}, then falls through the outro.`;
   }
   return `Energy peaks around ${fmtClock(peakMs)} across a ${fmtDuration(durationMs)} track.`;
 }
@@ -179,12 +172,12 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
     return sampleTimeMs(fullIdx, hop);
   }, [downsampledEnergy, energySeries]);
 
-  // Fed only the (currently disabled) structure list. Restore together with it.
-  // const mergedStructure = useMemo(
-  //   () => mergeStructureSegments(data.energy.structureSegments),
-  //   [data.energy.structureSegments],
-  // );
-  // const hasStructure = mergedStructure.length > 0;
+  // Only from the `structure` block: the v1 / v2 readings were withdrawn and must not reappear on
+  // an old result that still carries them.
+  const structureRows = useMemo(
+    () => (data.structure?.status === "ok" ? structureTableRows(data.energy.structureSegments) : []),
+    [data.structure, data.energy.structureSegments],
+  );
 
   // Three distinct states, so a disabled button is never ambiguous: ready, still pairing, or
   // genuinely absent (a legacy upload that predates automatic pairing).
@@ -269,20 +262,18 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
             </figure>
           )}
 
-          {/* Track structure list is switched OFF while we wait for the Raveform authors to
-              reply about the new approach and its label vocabulary. The backend has stopped
-              computing v1 and v2, so this would always be empty. `StructureList` below is kept
-              intact for the same reason. See
-              STRUCTURE/docs/2026-08-25-edm-structure-parked-restore-and-gpu-setup.md.
-
-          {hasStructure && <StructureList segments={mergedStructure} className="lg:flex-1" />}
-          */}
+          {structureRows.length > 0 && <StructureList segments={structureRows} className="lg:flex-1" />}
+          {data.structure?.status === "gate" && data.structure.gate && (
+            <p className="m-0 font-helvetica text-[length:var(--px-13)] font-light text-[var(--rx-color-text-muted)]">
+              {data.structure.gate}
+            </p>
+          )}
         </div>
 
-        {/* Both columns run to the full height of the grid row (`lg:h-full`). This mattered most
-            when the structure list sat opposite and either column could be the taller one; with
-            structure parked it is just the energy graph against the reading panel, and `h-full`
-            keeps them from drifting apart if either grows. */}
+        {/* Both columns run to the full height of the grid row (`lg:h-full`). The structure list
+            sits under the energy graph on the left, so either column can be the taller one, and
+            `h-full` keeps them from drifting apart. A track with no structure reading is just the
+            energy graph against the reading panel. */}
         <div className="flex min-w-0 flex-col gap-[var(--px-18)] lg:h-full">
         <div className="border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] p-[var(--px-16)]">
           <div className="mb-[var(--px-12)] flex flex-wrap gap-[var(--px-4)]" role="tablist" aria-label="Reading">
@@ -434,9 +425,9 @@ const EnergyPolyline: React.FC<{ values: number[]; height: number; color: string
  * It used to render TWICE, split by breakpoint: 2×2 on a phone in the left column, and stacked
  * one-per-row on desktop in the narrow right column. Both of those were shaped around the track
  * structure list, which made the left column tall and pushed the tiles somewhere they fit rather
- * than somewhere they read well. With structure switched off there is no tall column left to
- * balance, so the panel spans the full width and the tiles run horizontally: four across on
- * desktop, falling back to 2×2 where that would be too narrow.
+ * than somewhere they read well. The panel now sits below both columns at full width, so the
+ * structure list's height no longer decides where the tiles go: four across on desktop, falling
+ * back to 2×2 where that would be too narrow.
  */
 const CharacteristicsPanel: React.FC<{
   tiles: { key: string; label: string; value: string; definition: string }[];
@@ -476,101 +467,3 @@ const CharacteristicsPanel: React.FC<{
     </div>
   </div>
 );
-
-// The track-structure list is switched OFF while we wait for the Raveform authors to reply
-// about the new approach and its label vocabulary. The backend has stopped computing structure
-// v1 and v2, so this would always render empty. Commented out rather than deleted: `tsc` runs
-// with noUnusedLocals, so an unreferenced component fails the build. Restore this block, the
-// SECTION_HOT map above, the structureStrip import, `mergedStructure` and the JSX call site.
-// See STRUCTURE/docs/2026-08-25-edm-structure-parked-restore-and-gpu-setup.md.
-// /** Rows shown on a phone before the rest go behind the toggle. Desktop always lists every row. */
-// const STRUCTURE_VISIBLE_MOBILE = 6;
-//
-// /**
-//  * The track's arrangement, as a numbered chronological list.
-//  *
-//  * REPLACES THE PROPORTIONAL STRIP, which encoded each section's duration as its width. That is the
-//  * one property a reader cannot measure by eye, and it cost the two things they can read: any
-//  * section shorter than 4% of the track had its name suppressed entirely (`segmentShowsLabel`), so
-//  * the strip showed unlabelled gaps between labels, and no timings appeared anywhere. Past ten
-//  * sections it also became a horizontally-scrolling element inside a vertically-scrolling page.
-//  *
-//  * A list gives every section a name and a time regardless of how brief it is, and it costs nothing
-//  * on a narrow screen — names wrap, times do not.
-//  *
-//  * Drops carry an accent left border AND an accent name, but the timing stays white and the row
-//  * stays numbered, so the emphasis survives greyscale and colour-blindness rather than being the
-//  * only signal.
-//  */
-// const StructureList: React.FC<{ segments: MergedStructureSegment[]; className?: string }> = ({
-//   segments,
-//   className = "",
-// }) => {
-//   const [expanded, setExpanded] = useState(false);
-//   const collapsible = segments.length > STRUCTURE_VISIBLE_MOBILE;
-//
-//   return (
-//     <div className={`border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] ${className}`}>
-//       <div className="flex items-center justify-between gap-[var(--px-12)] border-b border-[var(--rx-color-border-subtle)] px-[var(--px-14)] py-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)]">
-//         <span>Track structure</span>
-//         {/* Two forms of the same fact: the full wording does not fit beside the title at 320px. */}
-//         <span className="text-right tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">
-//           <span className="lg:hidden">{structureListMeta(segments, { short: true })}</span>
-//           <span className="hidden lg:inline">{structureListMeta(segments)}</span>
-//         </span>
-//       </div>
-//
-//       <ul className="m-0 list-none p-0">
-//         {segments.map((s, i) => {
-//           const hot = SECTION_HOT[s.label.toLowerCase()] ?? false;
-//           // Hidden on a phone only; desktop has the height for the full arrangement.
-//           const overflow = collapsible && !expanded && i >= STRUCTURE_VISIBLE_MOBILE;
-//           return (
-//             <li
-//               key={`${s.label}-${s.startMs}`}
-//               className={[
-//                 overflow ? "hidden lg:grid" : "grid",
-//                 "grid-cols-[var(--px-28)_minmax(0,1fr)_auto] lg:grid-cols-[var(--px-32)_minmax(0,1fr)_auto]",
-//                 "min-h-[var(--px-44)] items-center gap-[var(--px-10)]",
-//                 "border-t border-[var(--rx-color-border-subtle)] first:border-t-0",
-//                 "py-[var(--px-8)] pl-[var(--px-12)] pr-[var(--px-14)] border-l-2",
-//                 hot ? "border-l-[var(--color-accent,#EE4A26)] bg-[rgba(238,74,38,.05)]" : "border-l-transparent",
-//               ].join(" ")}
-//             >
-//               <span
-//                 className={`font-fira text-[length:var(--px-11)] tabular-nums ${
-//                   hot ? "text-[rgba(238,74,38,.8)]" : "text-[var(--rx-color-text-muted)]"
-//                 }`}
-//               >
-//                 {String(i + 1).padStart(2, "0")}
-//               </span>
-//               <span
-//                 className={`font-fira text-[length:var(--px-12)] uppercase tracking-[var(--px-1)] [overflow-wrap:anywhere] ${
-//                   hot ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--rx-color-text-secondary)]"
-//                 }`}
-//               >
-//                 {s.label}
-//               </span>
-//               {/* Tabular and nowrap: times are the column a reader scans, so they must line up and
-//                   must never be the thing that wraps. The name wraps instead. */}
-//               <span className="whitespace-nowrap text-right font-fira text-[length:var(--px-12)] tabular-nums text-[var(--rx-color-text-primary)]">
-//                 {fmtClock(s.startMs)}–{fmtClock(s.endMs)}
-//               </span>
-//             </li>
-//           );
-//         })}
-//       </ul>
-//
-//       {collapsible && (
-//         <button
-//           type="button"
-//           onClick={() => setExpanded((v) => !v)}
-//           aria-expanded={expanded}
-//           className={`block w-full min-h-[var(--px-44)] cursor-pointer border-0 border-t border-[var(--rx-color-border-subtle)] bg-[rgba(255,255,255,.02)] p-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-2)] text-[var(--rx-color-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,.05)] hover:text-[var(--rx-color-text-primary)] lg:hidden ${WORKSPACE_FOCUS_VISIBLE}`}
-//         >
-//           {expanded ? "Show fewer sections" : `Show all ${segments.length} sections`}
-//         </button>
-//       )}
-//     </div>
-//   );
-// };

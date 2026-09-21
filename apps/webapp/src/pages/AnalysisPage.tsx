@@ -15,9 +15,10 @@ import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
 import { useRecentAnalyses } from "./analysis/useRecentAnalyses.js";
 import { AnalysisIntro } from "./analysis/AnalysisIntro.js";
 import { FullAnalysisLocked } from "@/components/Entitlements/FullAnalysisLocked.tsx";
+// By path, not through `@/components`: App.tsx loads that barrel eagerly, and this panel pulls in
+// the chart modules this lazily-loaded page keeps out of the main bundle.
+import { StructurePanel } from "@/components/Analysis/StructurePanel.tsx";
 import { ACCENT, BarList, fmtClock, Gauge, LineChart, LoadingStep, MoodMap, MultiLineChart, Panel, Spinner, StatCard, TagChips, TimeAxis, TipRows, useToggleSet, valueAt } from "./analysis/charts.js";
-// `sectionAt` and `StructureTimeline` are still exported from heatviz; they are unimported
-// here only while the Structure panel below is disabled.
 import { CamelotWheel, chromaLabelsForKey, ChromaSummary, ChromaView, Donut, keyFromCamelot, MoodRadar, RibbonChart, SpectrogramView, StemArea, WaveTimeline } from "./analysis/heatviz.js";
 
 const fmtDuration = (ms: number) => {
@@ -143,11 +144,6 @@ export default function AnalysisPage() {
   // Secondary key candidate (from the numpy cross-check) — shown only when the detection is flagged
   // ambiguous, spelled through the same Camelot source so it reads consistently (e.g. "6B · Bb major").
   const altLabel = data ? keyFromCamelot(data.tonality.altCamelot) : null;
-
-  // Only the (currently disabled) Structure panel read this. Restore it with the panel.
-  // const activeSection = data?.energy.structureSegments.find(
-  //   (s) => currentMs >= s.startMs && currentMs < s.endMs,
-  // );
 
   const pick = (file?: File | null) => {
     if (file) analyze(file);
@@ -338,9 +334,9 @@ export default function AnalysisPage() {
                 Analyzing · {fileName}
               </div>
               <div className="flex flex-col gap-[var(--px-16)]">
-                {/* "sections" dropped from both subtitles while the Structure panel is off. */}
                 <LoadingStep title="Sound & dynamics" subtitle="tempo · key · loudness · spectrum" />
-                <LoadingStep title="Sound, mood & style" subtitle="genre · instruments · stems · emotion" />
+                {/* Structure is computed with the stems on the GPU, so it belongs to this step. */}
+                <LoadingStep title="Sound, mood & style" subtitle="genre · instruments · stems · sections · emotion" />
               </div>
             </div>
           </div>
@@ -475,43 +471,15 @@ export default function AnalysisPage() {
               )}
             </div>
 
-            {/* Structure panel is switched OFF while we wait for the Raveform authors to reply
-                about the new approach and its label vocabulary. The backend has stopped computing
-                v1 and v2, so this panel would render an empty strip with no sections. The markup
-                is kept verbatim so re-enabling is a matter of uncommenting it (together with
-                `activeSection` above and the `sectionAt` / `StructureTimeline` imports). See
-                STRUCTURE/docs/2026-08-25-edm-structure-parked-restore-and-gpu-setup.md.
-
-            <Panel
-              title="Structure"
-              subtitle={`${data.energy.structureSegments.length} sections · ${data.rhythm.barCount || "…"} bars · click to seek`}
-              right={
-                <div className="text-right font-helvetica text-[length:var(--px-9)] opacity-60">
-                  {activeSection ? (
-                    <span className="uppercase">{activeSection.label}</span>
-                  ) : (
-                    <span>bass in @ {(data.energy.bassEntryMs / 1000).toFixed(0)}s</span>
-                  )}
-                </div>
-              }
-            >
-              <TimeAxis
-                durationMs={durationMs}
-                currentMs={currentMs}
-                onSeek={seek}
-                tooltip={(f) => {
-                  const label = sectionAt(data.energy.structureSegments, durationMs, f);
-                  return label ? <span className="ml-[var(--px-6)] uppercase">{label}</span> : null;
-                }}
-              >
-                <StructureTimeline
-                  segments={data.energy.structureSegments}
-                  durationMs={data.identity.durationMs}
-                  currentMs={currentMs}
-                />
-              </TimeAxis>
-            </Panel>
-            */}
+            {/* The section map, under the player. Renders nothing when there is no structure to
+                show, and a loader while part 2 is still computing it. */}
+            <StructurePanel
+              data={data}
+              durationMs={durationMs}
+              currentMs={currentMs}
+              onSeek={seek}
+              pending={!part2Done}
+            />
 
             {/* waveform + beat grid */}
             <Panel title="Waveform & beat grid" subtitle="energy silhouette · phrase lines · bass entry · click / play to seek">

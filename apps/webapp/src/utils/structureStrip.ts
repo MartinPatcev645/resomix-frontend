@@ -8,6 +8,48 @@ export interface MergedStructureSegment {
   confidence: number;
   /** Original section count merged into this row. */
   sectionCount: number;
+  /** Full rendered text with measured modifiers ("groove 1 · rising"). */
+  shown?: string;
+  /** Whole bars spanned. */
+  bars?: number | null;
+  /** Bare displayed word ("groove"), for emphasis. */
+  word?: string;
+}
+
+/** The displayed word a section is called by, lower-cased: "drop" for "drop 1a". */
+export function sectionWord(s: { word?: string; label: string }): string {
+  return (s.word || s.label).toLowerCase();
+}
+
+/** The section under the playhead, or undefined over a hidden start / end marker. */
+export function sectionAtMs<T extends { startMs: number; endMs: number; hidden?: boolean }>(
+  segments: T[],
+  ms: number,
+): T | undefined {
+  return segments.find((s) => !s.hidden && ms >= s.startMs && ms < s.endMs);
+}
+
+/**
+ * The rows the structure table lists: every section a reader is shown, in order.
+ *
+ * NOT merged, unlike `mergeStructureSegments` below. The structure reading already numbers a
+ * repeated word ("groove 1", "groove 2") because in groove-based music consecutive sections really
+ * are different, so collapsing them would undo a deliberate decision. Hidden start / end markers
+ * are dropped here, since a table row has no width to keep in line.
+ */
+export function structureTableRows(segments: StructureSegment[]): MergedStructureSegment[] {
+  return segments
+    .filter((s) => !s.hidden)
+    .map((s) => ({
+      label: s.label,
+      startMs: s.startMs,
+      endMs: s.endMs,
+      confidence: s.confidence,
+      sectionCount: 1,
+      shown: s.shown || s.label,
+      bars: s.bars ?? null,
+      word: s.word || s.label,
+    }));
 }
 
 export function mergeStructureSegments(segments: StructureSegment[]): MergedStructureSegment[] {
