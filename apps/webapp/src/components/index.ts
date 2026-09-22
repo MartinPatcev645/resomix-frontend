@@ -33,6 +33,7 @@ import { BackToHomeButton } from "./Library/BackToHomeButton.tsx";
 import { RouteFallback } from "./RouteFallback.tsx";
 import { StructureList } from "./Analysis/StructureList.tsx";
 import { StructurePanel } from "./Analysis/StructurePanel.tsx";
+import { StructureStrip } from "./Analysis/StructureStrip.tsx";
 
 import { WebLayout } from "./Layout/WebLayout.tsx";
 
@@ -72,5 +73,6 @@ export {
     RouteFallback,
     StructureList,
     StructurePanel,
+    StructureStrip,
     WebLayout,
 }

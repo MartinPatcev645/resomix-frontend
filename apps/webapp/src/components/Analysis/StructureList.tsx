@@ -1,13 +1,11 @@
 import React, { useState } from "react";
 import { fmtClock } from "@/pages/analysis/charts.tsx";
 import { WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
+import { sectionTone } from "@/utils/sectionColors.ts";
 import { sectionWord, structureListMeta, type MergedStructureSegment } from "@/utils/structureStrip.ts";
 
 /** Rows shown on a phone before the rest go behind the toggle. Desktop always lists every row. */
 const STRUCTURE_VISIBLE_MOBILE = 6;
-
-/** Words drawn with accent emphasis. Only the peak vocabulary ever says "drop". */
-const SECTION_HOT: Record<string, boolean> = { drop: true };
 
 /**
  * The track's arrangement, as a numbered chronological table.
@@ -16,8 +14,9 @@ const SECTION_HOT: Record<string, boolean> = { drop: true };
  * property a reader cannot measure by eye, and it hides the names of short sections. A list gives
  * every section a name, a bar count and a time however brief it is, and wraps on a narrow screen.
  *
- * Drops carry an accent left border AND an accent name, with the timing and the row number left
- * plain, so the emphasis survives greyscale and colour-blindness rather than being the only signal.
+ * Each row carries its word's colour from the section palette (`utils/sectionColors.ts`), the same
+ * one the strip on the full analysis page uses: a left stripe, the name and the bar count in the
+ * word's bright tone. Colour is never the only signal, since every row also names its section.
  */
 export const StructureList: React.FC<{ segments: MergedStructureSegment[]; className?: string }> = ({
   segments,
@@ -39,7 +38,7 @@ export const StructureList: React.FC<{ segments: MergedStructureSegment[]; class
 
       <ul className="m-0 list-none p-0">
         {segments.map((s, i) => {
-          const hot = SECTION_HOT[sectionWord(s)] ?? false;
+          const tone = sectionTone(sectionWord(s));
           // Hidden on a phone only; desktop has the height for the full arrangement.
           const overflow = collapsible && !expanded && i >= STRUCTURE_VISIBLE_MOBILE;
           return (
@@ -50,27 +49,22 @@ export const StructureList: React.FC<{ segments: MergedStructureSegment[]; class
                 "grid-cols-[var(--px-28)_minmax(0,1fr)_auto] lg:grid-cols-[var(--px-32)_minmax(0,1fr)_auto]",
                 "min-h-[var(--px-44)] items-center gap-[var(--px-10)]",
                 "border-t border-[var(--rx-color-border-subtle)] first:border-t-0",
-                "py-[var(--px-8)] pl-[var(--px-12)] pr-[var(--px-14)] border-l-2",
-                hot ? "border-l-[var(--color-accent,#EE4A26)] bg-[rgba(238,74,38,.05)]" : "border-l-transparent",
+                "py-[var(--px-8)] pl-[var(--px-12)] pr-[var(--px-14)] border-l-[length:var(--px-3)]",
               ].join(" ")}
+              style={{ borderLeftColor: tone.fg }}
             >
-              <span
-                className={`font-fira text-[length:var(--px-11)] tabular-nums ${
-                  hot ? "text-[rgba(238,74,38,.8)]" : "text-[var(--rx-color-text-muted)]"
-                }`}
-              >
+              <span className="font-fira text-[length:var(--px-11)] tabular-nums text-[var(--rx-color-text-muted)]">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <span className="min-w-0">
                 <span
-                  className={`block font-fira text-[length:var(--px-12)] uppercase tracking-[var(--px-1)] [overflow-wrap:anywhere] ${
-                    hot ? "text-[var(--color-accent,#EE4A26)]" : "text-[var(--rx-color-text-secondary)]"
-                  }`}
+                  className="block font-fira text-[length:var(--px-12)] uppercase tracking-[var(--px-1)] [overflow-wrap:anywhere]"
+                  style={{ color: tone.fg }}
                 >
                   {s.shown || s.label}
                 </span>
                 {s.bars ? (
-                  <span className="block font-fira text-[length:var(--px-10)] tabular-nums text-[var(--rx-color-text-muted)]">
+                  <span className="block font-fira text-[length:var(--px-10)] tabular-nums opacity-70" style={{ color: tone.fg }}>
                     {s.bars} {s.bars === 1 ? "bar" : "bars"}
                   </span>
                 ) : null}

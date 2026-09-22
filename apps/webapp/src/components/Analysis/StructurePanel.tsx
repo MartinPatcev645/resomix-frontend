@@ -1,8 +1,9 @@
 import React from "react";
 import type { AnalysisData } from "@/pages/analysis/data.ts";
 import { Panel, Spinner, TimeAxis } from "@/pages/analysis/charts.tsx";
-import { sectionAt, StructureTimeline } from "@/pages/analysis/heatviz.tsx";
 import { sectionAtMs } from "@/utils/structureStrip.ts";
+// By path, like this component itself: App.tsx loads the `@/components` barrel eagerly.
+import { StructureStrip } from "./StructureStrip.tsx";
 
 interface StructurePanelProps {
   data: AnalysisData;
@@ -74,11 +75,13 @@ export const StructurePanel: React.FC<StructurePanelProps> = ({ data, durationMs
         currentMs={currentMs}
         onSeek={(ms) => onSeek(sectionAtMs(segments, ms)?.startMs ?? ms)}
         tooltip={(f) => {
-          const label = sectionAt(segments, durationMs, f);
-          return label ? <span className="ml-[var(--px-6)] uppercase">{label}</span> : null;
+          // The full rendered text, so the tooltip carries the measured modifiers the block has no
+          // room for. Nothing over a hidden start / end marker, which the reading does not name.
+          const hovered = sectionAtMs(segments, f * durationMs);
+          return hovered ? <span className="ml-[var(--px-6)] uppercase">{hovered.shown || hovered.label}</span> : null;
         }}
       >
-        <StructureTimeline segments={segments} durationMs={data.identity.durationMs} currentMs={currentMs} />
+        <StructureStrip segments={segments} durationMs={durationMs} currentMs={currentMs} />
       </TimeAxis>
       {structure.summary && (
         <p className="m-0 mt-[var(--px-10)] font-helvetica text-[length:var(--px-11)] font-light leading-[var(--px-16)] opacity-60">

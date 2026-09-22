@@ -88,6 +88,7 @@
 @import "./styles/pixels.css";
 @import "./styles/fonts.css";
 @import "./styles/font-fallbacks.css";
+@import "./styles/sections.css";
 
 /* ─── Brand font stacks ──────────────────────────────────────────────────────
    These variables were REFERENCED in 103 places and DEFINED nowhere.

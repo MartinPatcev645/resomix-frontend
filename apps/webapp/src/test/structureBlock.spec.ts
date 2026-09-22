@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { mapCanonicalToAnalysisData } from "@/pages/analysis/mapCanonical.ts";
-import { sectionAt } from "@/pages/analysis/heatviz.tsx";
+import { SECTION_WORD_GROUPS, sectionTone } from "@/utils/sectionColors.ts";
 import { sectionAtMs, sectionWord, structureListMeta, structureTableRows } from "@/utils/structureStrip.ts";
+import sectionTokensCss from "@/styles/sections.css?raw";
 
 /**
  * The `structure` block as the analysis service emits it, for a minimal track: canonical `drop`
@@ -59,8 +60,8 @@ describe("the structure block", () => {
 
   it("never names a hidden marker, on hover or under the playhead", () => {
     const segs = mapCanonicalToAnalysisData(raw({ structure: grooveStructure })).energy.structureSegments;
-    expect(sectionAt(segs, 170000, 100 / 170000)).toBeNull(); // inside the `start` marker
-    expect(sectionAt(segs, 170000, 20000 / 170000)).toBe("groove 1 · rising");
+    expect(sectionAtMs(segs, 100)).toBeUndefined(); // inside the `start` marker
+    expect(sectionAtMs(segs, 20000)?.shown).toBe("groove 1 · rising");
     expect(sectionAtMs(segs, 165000)).toBeUndefined(); // inside the `end` marker
     expect(sectionAtMs(segs, 100000)?.label).toBe("groove 2");
   });
@@ -106,5 +107,40 @@ describe("the structure block", () => {
   it("finds a drop by its displayed word, so a numbered drop still counts", () => {
     expect(sectionWord({ word: "drop", label: "drop 1a" })).toBe("drop");
     expect(sectionWord({ label: "main" })).toBe("main");
+  });
+});
+
+describe("section colours", () => {
+  // Every word the structure reading can put on screen: the four vocabularies, plus "part".
+  const SHOWN_WORDS = [
+    "intro", "build", "main", "drop", "groove", "breakdown", "break", "cooldown", "wind-down", "outro",
+    "opening", "swell", "full", "sparse", "fade", "closing", "part",
+  ];
+
+  it("gives every word the reading can show its own colour", () => {
+    expect(Object.keys(SECTION_WORD_GROUPS).sort()).toEqual([...SHOWN_WORDS].sort());
+    for (const word of SHOWN_WORDS) {
+      expect(sectionTone(word)).toEqual({ bg: `var(--section-${word}-bg)`, fg: `var(--section-${word}-fg)` });
+    }
+  });
+
+  it("defines a token for every colour it hands out, so no block renders unstyled", () => {
+    for (const word of SHOWN_WORDS) {
+      expect(sectionTokensCss).toContain(`--section-${word}-bg:`);
+      expect(sectionTokensCss).toContain(`--section-${word}-fg:`);
+    }
+  });
+
+  it("colours by the word, so a numbered or capitalised label still matches", () => {
+    const segs = mapCanonicalToAnalysisData(raw({ structure: grooveStructure })).energy.structureSegments;
+    const groove2 = segs.find((s) => s.label === "groove 2")!;
+    expect(sectionTone(sectionWord(groove2)).fg).toBe("var(--section-groove-fg)");
+    expect(sectionTone("Wind-Down").fg).toBe("var(--section-wind-down-fg)");
+  });
+
+  it("draws anything unknown as 'part', never as nothing", () => {
+    expect(sectionTone("rise").fg).toBe("var(--section-part-fg)"); // an older reading's word
+    expect(sectionTone("constructor").fg).toBe("var(--section-part-fg)"); // not a prototype key
+    expect(sectionTone("").bg).toBe("var(--section-part-bg)");
   });
 });
