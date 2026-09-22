@@ -304,12 +304,18 @@ button.nav-cta-primary:hover {
   display: none;
   background: rgba(10, 10, 10, 0.94);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  /* The bar is fixed to the viewport, but what sits in it belongs to the page column, which stops
+     at 2560px (WebLayout's lg:max-w-[var(--px-2560)]). Up to 2560 this is just the frame inset,
+     so nothing moves; wider than that the surplus is split evenly, so the logo, links and accent
+     rule stay over the page instead of drifting to the screen edges. The bar's background still
+     spans the full width, as the page background does. `100%` is this bar's width at both uses. */
+  --nav-sticky-inset: max(var(--frame-inset-x), calc((100% - var(--px-2560)) / 2 + var(--frame-inset-x)));
 }
 
 .nav-sticky::after {
   content: "";
   position: absolute;
-  left: var(--frame-inset-x);
+  left: var(--nav-sticky-inset);
   bottom: -1px;
   width: 2.5rem;
   border-bottom: 1px solid var(--color-primary, #ee4a26);
@@ -322,7 +328,7 @@ button.nav-cta-primary:hover {
 .nav-sticky-in {
   position: relative;
   height: 100%;
-  margin: 0 var(--frame-inset-x);
+  margin: 0 var(--nav-sticky-inset);
 }
 
 .nav-sticky .nav-cl {

@@ -22,7 +22,10 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
   const generationTime = React.useMemo(() => fetchGenerationTime(), []);
 
   return (
-    <footer className="mt-[var(--px-150)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]">
+    <footer
+      className="mt-[var(--px-150)] pb-[var(--px-30)] relative z-15 min-h-[var(--px-275)]"
+      style={{ "--footer-headline-size": "clamp(50.4px, 4.921875vw, 126px)" } as React.CSSProperties}
+    >
       {/*
         Full-bleed headline. Only the FONT-SIZE is made viewport-based (inline so the webapp's
         root-font-size cap — George's 4230874, html capped at 16px above 1280px — can't freeze it):
@@ -32,15 +35,35 @@ const GlobalFooter: React.FC<GlobalFooterProps> = ({ logo, baseUrl = "https://re
         `mx-[--px-63]` side margin in WebSideLines so the title's left edge lands exactly on the
         content-box edge. (Making `-left` a vw over-compensated that fixed margin and pushed the "J"
         off-screen with a growing right gap on wide viewports.)
+
+        `lineHeight: 1.5` is the value it already inherited from Tailwind's preflight, pinned here
+        because the gap below is computed from it — see there.
       */}
       <div
         aria-hidden="true"
         className="absolute -left-[var(--px-63)] top-[var(--px-180)] min-w-[var(--px-1280)] font-benzin uppercase whitespace-nowrap"
-        style={{ fontSize: "clamp(50.4px, 4.921875vw, 126px)" }}
+        style={{ fontSize: "var(--footer-headline-size)", lineHeight: 1.5 }}
       >
         Join the Resomix Universe
       </div>
-      <div className="flex flex-col gap-[var(--px-130)]">
+      {/*
+        The headline is absolutely positioned, so nothing in the flow knows how tall it is. Up to a
+        1280px viewport that was fine, because the headline and everything here scale together. Above
+        1280 the root font is capped at 16px, so this column stops growing while the headline keeps
+        going to 126px, and from roughly 2,200px wide it ran into the copyright and links row below.
+
+        So the gap grows by exactly as much as the headline's line box does past its 1280px size:
+        (size - --px-63) is 0 at or below 1280 (both are 4.921875vw there), so the layout is
+        unchanged at every width that already worked, and reaches 63px x 1.5 = 94.5px extra at 2560,
+        where the page itself stops widening. max() keeps it from ever dipping below the old gap.
+      */}
+      <div
+        className="flex flex-col"
+        style={{
+          rowGap:
+            "calc(var(--px-130) + max(0px, (var(--footer-headline-size) - var(--px-63)) * 1.5))",
+        }}
+      >
         <div className="flex flex-col px-[var(--px-65)] min-h-[var(--px-129)]">
           <div className="flex w-full justify-start">
             <a
