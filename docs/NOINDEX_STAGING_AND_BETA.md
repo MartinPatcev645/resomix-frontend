@@ -86,21 +86,33 @@ for a host that actually appears in Bing.
 To find what is indexed, search `site:staging-frontend.resomix.com` on each engine, and the same for
 the other two hosts.
 
-## 4. Beta, waiting on one confirmation
+## 4. Beta is a service, decided 23 September
 
-§16 of `AI_VISIBILITY_CONTENT_AUDIT.md` put a choice to George. `beta.resomix.com` is indexable
-today, and its `/sonic-discovery` competes with `resomix.com/product/sonic-discovery` for the same
-query, which is the one the September work was written to win.
+§16 of `AI_VISIBILITY_CONTENT_AUDIT.md` put a choice to George, because `beta.resomix.com` was
+indexable and its `/sonic-discovery` competed with `resomix.com/product/sonic-discovery` for the
+query the September work was written to win.
 
-The reported answer is that beta is fine without being indexed. When that is confirmed, the change
-is small and lives in `apps/webapp/src/routes/seoConfig.ts`:
+**His answer: treat beta as a service.** The sign-in page may be in search, since that is the way
+in and what someone searching for it wants. Nothing behind it belongs there.
 
-1. Mark `/`, `/sonic-discovery` and `/analysis` as `noindex`. Everything else in the app already is.
-2. The generated sitemap then has nothing left to list, so stop emitting it and drop the `Sitemap:`
-   line from `apps/webapp/public/robots.txt`.
-3. Remove the `beta.resomix.com` sitemap from Bing Webmaster Tools, since it would otherwise ask
-   Bing to crawl pages it is then told to ignore.
-4. Update `apps/webapp/src/test/prerenderedHead.spec.ts`, which currently asserts the opposite.
+Applied in `apps/webapp`:
 
-No canonical to the marketing pages alongside the noindex. The two together are a contradiction, and
-that is already written into the spec file as the reason it was not done before.
+| Change | Where |
+|---|---|
+| `/`, `/sonic-discovery` and `/analysis` are now `noindex` | `src/routes/seoConfig.ts` |
+| `/auth/login` is the one indexable route, with a description written for a search result | `src/routes/seoConfig.ts` |
+| The shell's default is `noindex, follow`, so an unknown path is never a result either | `index.html` |
+| The generated sitemap now lists exactly one URL, `/auth/login` | built from the same config |
+| robots.txt still allows crawling, and says why | `public/robots.txt` |
+| Both SEO specs assert the new shape | `src/test/routeSeo.spec.tsx`, `src/test/prerenderedHead.spec.ts` |
+
+No canonical to the marketing pages alongside a noindex. The two together contradict each other, and
+that reasoning was already written into the spec file.
+
+The `beta.resomix.com` sitemap can stay registered in Bing. It now advertises the one page that is
+still meant to be found.
+
+**This reaches production with the next `demo` to `main` release.** Until then beta still serves
+`index, follow`, while `staging-frontend` is already covered by the rule in section 1. Once it is
+live, the three old URLs can be cleared faster with a removal request in Google and Bing rather than
+waiting for a natural re-crawl.

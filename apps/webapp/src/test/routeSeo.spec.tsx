@@ -40,11 +40,12 @@ describe('every route is accounted for', () => {
   });
 });
 
-describe('the signed-in app stays out of the index', () => {
+describe('the app stays out of the index', () => {
+  // The workspace itself: a service, not pages to be found. Its marketing equivalents rank instead.
+  const WORKSPACE = ['/', '/sonic-discovery', '/analysis'];
   // These render a redirect or an empty shell to a logged-out crawler.
   const PRIVATE = ['/library', '/profile', '/sessions', '/change-password'];
   const AUTH = [
-    '/auth/login',
     '/auth/register',
     '/auth/forgot-password',
     '/auth/reset-password',
@@ -52,14 +53,22 @@ describe('the signed-in app stays out of the index', () => {
     '/auth/verify-2fa',
   ];
 
-  it.each([...PRIVATE, ...AUTH, '/error', '/loader', '/playlist'])('%s is noindex', (path) => {
-    expect(ROUTE_SEO[path]?.noindex, `${path} would be indexed`).toBe(true);
-  });
+  it.each([...WORKSPACE, ...PRIVATE, ...AUTH, '/error', '/loader', '/playlist'])(
+    '%s is noindex',
+    (path) => {
+      expect(ROUTE_SEO[path]?.noindex, `${path} would be indexed`).toBe(true);
+    },
+  );
 
-  it('keeps the public workspace indexable', () => {
-    for (const path of ['/', '/sonic-discovery', '/analysis']) {
-      expect(ROUTE_SEO[path].noindex).toBeUndefined();
-    }
+  it('leaves sign-in as the one way in that a search can offer', () => {
+    // George, 23 September: treat beta as a service. The entrance belongs in search, the workspace
+    // behind it does not.
+    expect(ROUTE_SEO['/auth/login'].noindex).toBeUndefined();
+    const indexable = Object.entries(ROUTE_SEO)
+      .filter(([, seo]) => !seo.noindex)
+      .map(([path]) => path)
+      .sort();
+    expect(indexable).toEqual(['/auth/login', '/contact', '/subscribe']);
   });
 
   it('follows links even on noindex pages, so link equity is not stranded', () => {
@@ -102,7 +111,8 @@ describe('pages shared with the marketing site do not compete with it', () => {
 
 describe('sitemap contents', () => {
   it('lists only genuinely indexable app pages', () => {
-    expect(sitemapRoutes().map((r) => r.path).sort()).toEqual(['/', '/analysis', '/sonic-discovery']);
+    // One route, the way in. Everything else is either the service itself or canonical elsewhere.
+    expect(sitemapRoutes().map((r) => r.path)).toEqual(['/auth/login']);
   });
 
   it('is generated, not committed', () => {
@@ -122,13 +132,15 @@ describe('static head no longer contradicts the per-route tags', () => {
     '',
   );
 
-  it('does not blanket-block the whole app', () => {
-    expect(html).not.toContain('noindex');
-    expect(html).not.toContain('nofollow');
+  it('declares noindex, follow as the default', () => {
+    // The shell is what an unknown path gets served, and an unknown path on a service is not a
+    // search result. Sign-in opts back in through its own prerendered head.
+    expect(html).toMatch(/<meta name="robots" content="noindex, follow">/);
   });
 
-  it('declares index, follow as the default', () => {
-    expect(html).toMatch(/<meta name="robots" content="index, follow">/);
+  it('never blocks link following', () => {
+    // The old blanket tag was noindex,nofollow; the nofollow stranded link equity for no benefit.
+    expect(html).not.toContain('nofollow');
   });
 
   it('ships absolute social image URLs', () => {

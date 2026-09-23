@@ -1,9 +1,10 @@
 # -----------------------------------------------------
 # robots.txt for Resomix Beta (https://beta.resomix.com)
 #
-# Crawling is ALLOWED across the app. Pages that should stay out of the index — the signed-in
-# workspace (/library, /profile, /sessions) and the auth screens — carry a `noindex` robots meta
-# tag instead of being blocked here.
+# Crawling is ALLOWED across the app, and almost every page carries a `noindex` robots meta tag
+# instead of being blocked here. This app is a service rather than a set of pages to be found: the
+# words belong on resomix.com, and `/auth/login` is the single address that stays indexable,
+# because it is the way in and the result someone searching for the sign-in page wants.
 #
 # That distinction matters: a page blocked in robots.txt is never fetched, so its noindex tag is
 # never read, and the URL can still surface in results as a bare link. Allow the crawl and let the

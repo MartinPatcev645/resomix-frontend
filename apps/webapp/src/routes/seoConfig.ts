@@ -2,19 +2,26 @@
  * Per-route SEO metadata for the app at beta.resomix.com — the single source for the document head
  * AND the sitemap.
  *
- * The app used to be blanket `noindex, nofollow` in index.html while robots.txt simultaneously
- * invited crawling and published a sitemap advertising four URLs. It now allows crawling properly,
- * which makes two things load-bearing:
+ * THE APP IS A SERVICE, NOT A SET OF PAGES (George, 23 September 2026). The only address that
+ * belongs in a search result is the way in, so `/auth/login` is the single indexable route and
+ * everything else is `noindex`. The words a search engine or an assistant should find live on
+ * resomix.com, which is written to answer questions; this app is where someone works after they
+ * arrive, and `beta.resomix.com/sonic-discovery` was competing with
+ * `resomix.com/product/sonic-discovery` for exactly the query the marketing page was written to win.
  *
- *  1. WHAT NOT TO INDEX. Most of this app is a signed-in workspace. A crawler hitting /library or
- *     /profile sees a redirect or an empty shell, and Google explicitly advises against indexing
- *     sign-in screens. Those are `noindex` — crawlable, so the tag is actually seen, but kept out
- *     of the index rather than blocked in robots.txt (a blocked page's noindex is never read).
+ * Three rules follow from that:
  *
- *  2. DUPLICATE CONTENT. `/subscribe` and `/contact` render the *same shared components* as
- *     resomix.com. Two origins serving identical pages is exactly what makes a search engine pick
- *     one arbitrarily and split the signals. Both carry a cross-origin canonical pointing at the
- *     marketing site, which is the version we want ranking.
+ *  1. NOINDEX, NOT DISALLOW. Every route here stays crawlable and carries the tag. A page blocked
+ *     in robots.txt is never fetched, so its noindex is never read, and a URL already in an index
+ *     stays there as a bare link.
+ *
+ *  2. NO CANONICAL ALONGSIDE A NOINDEX. The pair contradicts itself: it asks a crawler both to drop
+ *     the page and to credit another URL. `/subscribe` and `/contact` render the *same shared
+ *     components* as resomix.com, so those two keep a cross-origin canonical instead, which is the
+ *     correct signal for a duplicate.
+ *
+ *  3. THE SITEMAP IS DERIVED. It lists whatever is left indexable, which is now the sign-in page
+ *     alone.
  */
 
 /** Production origin for this app. */
@@ -38,26 +45,28 @@ export interface RouteSeo {
 }
 
 export const ROUTE_SEO: Record<string, RouteSeo> = {
+  /* ---------- the workspace: the service itself, kept out of search ----------
+     These three were indexable until 23 September. They are the app a person uses once they are
+     signed in, and their marketing equivalents on resomix.com (/, /product/sonic-discovery,
+     /product/track-intelligence) carry the definitions, the buyer phrases and the questions that
+     are meant to rank. Two hosts answering the same query split the signal between them. */
   '/': {
     title: 'Resomix: Find Tracks by Sound',
     description:
       'Drop a reference track and get ranked matches that actually belong next to it. Sonic discovery, track analysis and playlists in one workspace.',
-    changefreq: 'weekly',
-    priority: 1.0,
+    noindex: true,
   },
   '/sonic-discovery': {
     title: 'Sonic Discovery: Search by Reference | Resomix',
     description:
       'Search the catalogue by sound rather than tags: upload or pick a reference and explore what sits next to it.',
-    changefreq: 'weekly',
-    priority: 0.9,
+    noindex: true,
   },
   '/analysis': {
     title: 'Track Analysis: See What a Track Is Made Of | Resomix',
     description:
       'Upload a track to read its tempo, key, energy and sonic character, then jump straight to similar recordings.',
-    changefreq: 'weekly',
-    priority: 0.9,
+    noindex: true,
   },
 
   /* The full Track Intelligence dashboard. `noindex` on purpose: it is only ever reachable with a
@@ -94,8 +103,16 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
   '/sessions': { title: 'Active Sessions | Resomix', description: 'Devices signed in to your account.', noindex: true },
   '/change-password': { title: 'Change Password | Resomix', description: 'Update your account password.', noindex: true },
 
-  /* ---------- auth screens: Google advises against indexing sign-in pages ---------- */
-  '/auth/login': { title: 'Sign In | Resomix', description: 'Sign in to your Resomix account.', noindex: true },
+  /* ---------- auth screens ----------
+     Sign-in is the ONE indexable page on this host: the entrance to the service, and the result a
+     person searching "Resomix login" is actually looking for. Everything else here creates an
+     account or resets a password, which nobody arrives at from a search engine. */
+  '/auth/login': {
+    title: 'Sign In | Resomix',
+    description: 'Sign in to your Resomix account to search by sound, analyse tracks and build playlists.',
+    changefreq: 'monthly',
+    priority: 0.5,
+  },
   '/auth/register': { title: 'Create an Account | Resomix', description: 'Create a Resomix account.', noindex: true },
   '/auth/forgot-password': { title: 'Reset Your Password | Resomix', description: 'Request a password reset link.', noindex: true },
   '/auth/reset-password': { title: 'Set a New Password | Resomix', description: 'Choose a new account password.', noindex: true },
