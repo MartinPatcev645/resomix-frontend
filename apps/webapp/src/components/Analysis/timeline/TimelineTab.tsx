@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { shortGenre } from "@resomix/hooks";
 import type { AnalysisData } from "@/pages/analysis/data.ts";
 import { fmtClock, Spinner, TimeAxis } from "@/pages/analysis/charts.tsx";
 import { ChromaView, SpectrogramView, StemArea, STEM_COLORS } from "@/pages/analysis/heatviz.tsx";
@@ -163,7 +164,7 @@ export const TimelineTab: React.FC<{
           />
         </TimelineLane>
 
-        {genreRows.length > 0 && <HeatRows title="Genre" rows={genreRows} rowHeight={h.row} />}
+        {genreRows.length > 0 && <HeatRows title="Genre" rows={genreRows} rowHeight={h.row} labelTransform={shortGenre} />}
         {moodRows.length > 0 && <HeatRows title="Mood" rows={moodRows} rowHeight={h.row} />}
         {instrumentRows.length > 0 && <HeatRows title="Instruments" rows={instrumentRows} rowHeight={h.row} />}
 

@@ -73,6 +73,7 @@ export default function AnalysisPage() {
    */
   const tabParam = searchParams.get("tab");
   const tab: AnalysisTab = isAnalysisTab(tabParam) ? tabParam : "timeline";
+  const tabsRef = useRef<HTMLDivElement>(null);
   const setTab = useCallback(
     (next: AnalysisTab) => {
       setSearchParams(
@@ -83,6 +84,15 @@ export default function AnalysisPage() {
         },
         { replace: true },
       );
+      // Bring the tab bar back into view when the reader is below it. Without this, switching
+      // from the bottom of a long tab (the Genre footer's link to Timeline) dropped them at the
+      // bottom of the next one. Only scrolls when the bar is actually off the top, so choosing a
+      // tab while already at the top does not jump.
+      requestAnimationFrame(() => {
+        const el = tabsRef.current;
+        if (!el) return;
+        if (el.getBoundingClientRect().top < 0) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     },
     [setSearchParams],
   );
@@ -223,7 +233,7 @@ export default function AnalysisPage() {
   const part2Done = status === "done";
 
   return (
-    <section className="pt-[var(--px-120)] px-[var(--px-20)] md:px-[var(--px-56)] lg:px-[var(--px-80)] pb-[var(--px-80)] tracking-[var(--px-1)]">
+    <section className="pt-[var(--px-16)] lg:pt-[var(--px-24)] px-[var(--px-20)] md:px-[var(--px-56)] lg:px-[var(--px-80)] pb-[var(--px-80)] tracking-[var(--px-1)]">
       <div className="mx-auto w-full max-w-6xl text-[var(--color-primary)]">
         {/* Back nav — return to wherever the user came from: Library when the analysis was opened
             from a track, otherwise the upload landing. Mirrors the playlist page's back link. */}
@@ -414,10 +424,12 @@ export default function AnalysisPage() {
               isDesktop={isDesktop}
             />
 
-            {/* Stat cards. One row on desktop; on a phone they scroll sideways rather than
-                shrinking to a size where the numbers stop being readable. */}
-            <div className="-mx-[var(--px-20)] flex gap-[var(--px-12)] overflow-x-auto px-[var(--px-20)] [scrollbar-width:none] lg:mx-0 lg:grid lg:grid-cols-5 lg:overflow-visible lg:px-0">
-              <div className="w-[var(--px-120)] shrink-0 lg:w-auto">
+            {/* Stat cards. One row on desktop, two columns on a phone with Genre across the
+                bottom. The handoff's sideways-scrolling row was worse in practice: the last cards
+                sat off-screen with nothing to say so, and the row held its scroll position while
+                the rest of the page moved. Nothing here scrolls horizontally now. */}
+            <div className="grid grid-cols-2 gap-[var(--px-12)] lg:grid-cols-5">
+              <div>
                 <StatCard
                   label="Tempo"
                   value={data.rhythm.bpm == null ? <Spinner size={20} /> : fmtBpm(data.rhythm.bpm)}
@@ -428,7 +440,7 @@ export default function AnalysisPage() {
                   hint="Tempo in beats per minute (Essentia RhythmExtractor2013). Confidence reflects how steady the pulse is."
                 />
               </div>
-              <div className="w-[var(--px-120)] shrink-0 lg:w-auto">
+              <div>
                 <StatCard
                   label="Key"
                   value={data.tonality.key == null ? <Spinner size={20} /> : keyLabel ? `${keyLabel.name} ${keyLabel.scale === "major" ? "maj" : "min"}` : "—"}
@@ -437,10 +449,10 @@ export default function AnalysisPage() {
                   hint="Estimated musical key & scale (Essentia EDMA profile, tuned for electronic music), plus its Camelot code for harmonic mixing."
                 />
               </div>
-              <div className="w-[var(--px-120)] shrink-0 lg:w-auto">
+              <div>
                 <StatCard label="Loudness" value={data.technical.integratedLufs.toFixed(1)} sub="LUFS integrated" hint="Integrated loudness in LUFS (EBU R128), the overall perceived level across the whole track." />
               </div>
-              <div className="w-[var(--px-120)] shrink-0 lg:w-auto">
+              <div>
                 <StatCard
                   label="Length"
                   value={fmtDuration(data.identity.durationMs)}
@@ -448,7 +460,7 @@ export default function AnalysisPage() {
                   hint="Total track length (mm:ss), with the arrangement it covers."
                 />
               </div>
-              <div className="w-[var(--px-120)] shrink-0 lg:w-auto">
+              <div className="col-span-2 lg:col-span-1">
                 {data.semantics.genreTop.length > 0 ? (
                   <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)]">{shortGenre(data.semantics.genreTop[0].label)}</span>} sub={`${(data.semantics.genreTop[0].score * 100).toFixed(0)}% match`} hint="Most likely genre from the Discogs-400 model (MAEST-30s). The full ranking is on the Genre tab." />
                 ) : (
@@ -457,7 +469,11 @@ export default function AnalysisPage() {
               </div>
             </div>
 
-            <AnalysisTabs value={tab} onChange={setTab} variant={isDesktop ? "cards" : "segmented"} />
+            {/* `scroll-mt` clears the sticky player, so scrolling here never parks the tab bar
+                underneath it. */}
+            <div ref={tabsRef} className="scroll-mt-[var(--px-130)] lg:scroll-mt-[var(--px-150)]">
+              <AnalysisTabs value={tab} onChange={setTab} variant={isDesktop ? "cards" : "segmented"} />
+            </div>
 
             <div id={`analysis-panel-${tab}`} role="tabpanel" aria-labelledby={`analysis-tab-${tab}`}>
               {tab === "timeline" && (

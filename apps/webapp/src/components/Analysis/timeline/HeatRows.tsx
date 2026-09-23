@@ -76,9 +76,12 @@ function HeatRow({ values, height }: { values: number[]; height: number }) {
   }, [values]);
 
   return (
+    // `w-full`, not just `flex-1`: the canvas's intrinsic width is its FRAME COUNT, and a grid
+    // column does not stretch a replaced element. Without this a 12-frame genre row drew 12px
+    // wide while a 600-frame mood row ran off the side of the page.
     <canvas
       ref={ref}
-      className="block min-w-0 flex-1 rounded-[var(--px-2)] bg-[var(--an-lane)]"
+      className="block w-full min-w-0 flex-1 rounded-[var(--px-2)] bg-[var(--an-lane)]"
       style={{ height, imageRendering: "pixelated" }}
     />
   );

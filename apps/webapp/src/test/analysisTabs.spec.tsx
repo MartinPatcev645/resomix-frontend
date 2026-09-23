@@ -86,6 +86,10 @@ describe("Timeline tab", () => {
     }
     expect(screen.getByText(/32-bar intro/)).toBeInTheDocument();
     expect(screen.getByText(/124 BPM/)).toBeInTheDocument();
+    // Heat-row names are shortened like everywhere else; the raw model label is far too long for
+    // the gutter and truncated to "electronic---te…".
+    expect(screen.getByText("Tech House")).toBeInTheDocument();
+    expect(screen.queryByText("Electronic---Tech House")).not.toBeInTheDocument();
   });
 
   it("keeps the lanes in place while part 2 is still computing", () => {
