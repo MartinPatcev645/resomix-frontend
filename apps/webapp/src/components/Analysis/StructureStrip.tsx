@@ -8,6 +8,16 @@ interface StructureStripProps {
   segments: StructureSegment[];
   durationMs: number;
   currentMs?: number | null;
+  /**
+   * Block height in pixels. Defaults to the panel size it was designed at; the Timeline tab passes
+   * the lane height instead (64 desktop, 48 phone), where the strip is one lane among several.
+   */
+  height?: number;
+  /**
+   * The 0:00 / duration pair under the blocks. Off inside the Timeline tab, where the shared ruler
+   * already prints the scale above and below every lane.
+   */
+  showEnds?: boolean;
 }
 
 /**
@@ -28,9 +38,15 @@ interface StructureStripProps {
  * 1280px design width) are container queries in `em` of the block's 1rem font size, so they scale
  * with the fluid rem like every other size on the page.
  */
-export const StructureStrip: React.FC<StructureStripProps> = ({ segments, durationMs, currentMs = null }) => (
+export const StructureStrip: React.FC<StructureStripProps> = ({
+  segments,
+  durationMs,
+  currentMs = null,
+  height,
+  showEnds = true,
+}) => (
   <div>
-    <div className="flex h-[var(--px-84)] w-full">
+    <div className="flex w-full" style={{ height: height ?? "var(--px-84)" }}>
       {segments.map((s, i) => {
         const width = durationMs > 0 ? ((s.endMs - s.startMs) / durationMs) * 100 : 0;
         const key = `${s.startMs}-${i}`;
@@ -73,9 +89,11 @@ export const StructureStrip: React.FC<StructureStripProps> = ({ segments, durati
         );
       })}
     </div>
-    <div className="mt-[var(--px-10)] flex justify-between font-[family-name:var(--section-font)] text-[length:var(--px-12)] font-normal text-[var(--section-meta)]">
-      <span>0:00</span>
-      <span>{fmtClock(durationMs)}</span>
-    </div>
+    {showEnds && (
+      <div className="mt-[var(--px-10)] flex justify-between font-[family-name:var(--section-font)] text-[length:var(--px-12)] font-normal text-[var(--section-meta)]">
+        <span>0:00</span>
+        <span>{fmtClock(durationMs)}</span>
+      </div>
+    )}
   </div>
 );

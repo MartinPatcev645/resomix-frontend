@@ -254,11 +254,35 @@ export function Panel({
 }
 
 /* --------------------------------------------------------------- StatCard */
-export function StatCard({ label, value, sub, hint }: { label: string; value: ReactNode; sub?: string; hint?: string }) {
+export function StatCard({
+  label,
+  value,
+  sub,
+  hint,
+  flag,
+}: {
+  label: string;
+  value: ReactNode;
+  sub?: string;
+  hint?: string;
+  /**
+   * A short caveat about the number itself, such as "62% conf" on a weak tempo or "or 7B" on an
+   * ambiguous key. Printed in the card's top-right corner in the warning tone, because a reader
+   * who cannot see that the value is uncertain will quote it as if it were not.
+   */
+  flag?: string;
+}) {
   return (
     <div className="group relative rounded-[var(--px-10)] border border-[var(--opacity-15)] bg-[var(--opacity-10)] p-[var(--px-14)] transition-colors hover:border-[var(--opacity-30)]">
-      <div className="font-helvetica text-[length:var(--px-9)] font-light uppercase tracking-[var(--px-1)] opacity-50">
-        {label}
+      <div className="flex items-start justify-between gap-[var(--px-6)]">
+        <div className="font-helvetica text-[length:var(--px-9)] font-light uppercase tracking-[var(--px-1)] opacity-50">
+          {label}
+        </div>
+        {flag && (
+          <span className="shrink-0 rounded-[var(--px-3)] bg-[var(--an-flag-bg)] px-[var(--px-6)] py-[var(--px-2)] font-fira text-[length:var(--px-10)] leading-none text-[var(--an-flag-fg)]">
+            {flag}
+          </span>
+        )}
       </div>
       <div className="mt-[var(--px-4)] font-helvetica text-[length:var(--px-26)] font-medium leading-none">
         {value}

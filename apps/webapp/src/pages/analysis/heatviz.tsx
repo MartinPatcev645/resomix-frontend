@@ -8,11 +8,19 @@ import { useEffect, useRef, useState } from "react";
 import type { Matrix, StemMetrics, TimelineTrack } from "./data.js";
 import { ACCENT, fmtClock, TimeAxis, TipRows, ToggleLegend, valueAt } from "./charts.js";
 
+/**
+ * Stem colours, from the analysis redesign handoff (`--an-stem-*` in styles/analysis.css).
+ *
+ * Literal hex rather than the tokens themselves because these are read by canvas fills, where a
+ * CSS custom property is not resolvable. They are the same four values as the tokens; change both
+ * together. Drums moved off the accent orange deliberately: on the redesigned page orange means
+ * the playhead, and nothing else.
+ */
 export const STEM_COLORS: Record<string, string> = {
-  drums: "#EE4A26",
-  bass: "#7fb0ff",
-  other: "#8fd694",
-  vocals: "#c88fe0",
+  drums: "#ff8c42",
+  bass: "#6f9bff",
+  other: "#4fd1e0",
+  vocals: "#b48cff",
 };
 
 /* ---------------------------------------------------- colormap (magma-ish) */
@@ -37,7 +45,24 @@ function colormap(t: number): [number, number, number] {
 }
 
 /* --------------------------------------------------------------- Heatmap */
-export function Heatmap({ matrix, height = 150, gamma = 1 }: { matrix: Matrix; height?: number; gamma?: number }) {
+export function Heatmap({
+  matrix,
+  height = 150,
+  gamma = 1,
+  tint,
+  radiusClass = "rounded-[var(--px-8)]",
+}: {
+  matrix: Matrix;
+  height?: number;
+  gamma?: number;
+  /**
+   * Draw one hue at the value's alpha instead of the magma ramp. The Timeline tab's Pitch lane
+   * uses it: on that page the ramp's warm end reads as the orange playhead, and a second colour
+   * scale competes with the section palette the other lanes are tinted from.
+   */
+  tint?: [number, number, number];
+  radiusClass?: string;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -65,21 +90,29 @@ export function Heatmap({ matrix, height = 150, gamma = 1 }: { matrix: Matrix; h
       // Draw low index at the bottom (natural frequency / pitch orientation).
       const yr = rows - 1 - r;
       for (let c = 0; c < cols; c++) {
-        const [rr, gg, bb] = colormap(((matrix.data[r][c] - min) / span) ** gamma);
+        const v = ((matrix.data[r][c] - min) / span) ** gamma;
         const o = (yr * cols + c) * 4;
-        img.data[o] = rr;
-        img.data[o + 1] = gg;
-        img.data[o + 2] = bb;
-        img.data[o + 3] = 255;
+        if (tint) {
+          img.data[o] = tint[0];
+          img.data[o + 1] = tint[1];
+          img.data[o + 2] = tint[2];
+          img.data[o + 3] = Math.round(Math.max(0, Math.min(1, v)) * 255);
+        } else {
+          const [rr, gg, bb] = colormap(v);
+          img.data[o] = rr;
+          img.data[o + 1] = gg;
+          img.data[o + 2] = bb;
+          img.data[o + 3] = 255;
+        }
       }
     }
     ctx.putImageData(img, 0, 0);
-  }, [matrix]);
+  }, [matrix, gamma, tint]);
 
   return (
     <canvas
       ref={ref}
-      className="w-full rounded-[var(--px-8)]"
+      className={`w-full ${radiusClass}`}
       style={{ height, imageRendering: "pixelated" }}
     />
   );
@@ -114,6 +147,7 @@ export function SpectrogramView({
   onSeek,
   height = 190,
   linear = false,
+  chrome = true,
 }: {
   matrix: Matrix;
   sampleRateHz: number;
@@ -124,6 +158,12 @@ export function SpectrogramView({
   // true = rows are already linear frequency bins (draw directly); false = mel
   // bands (resample onto a linear axis).
   linear?: boolean;
+  /**
+   * The frequency column, the time ticks and the power colorbar. Off in the Timeline tab, where
+   * the lane gutter, the lane's right axis and the shared ruler already say all three — and where
+   * a 34px axis inside the chart would push this lane's x out of step with the lanes above it.
+   */
+  chrome?: boolean;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
@@ -215,7 +255,7 @@ export function SpectrogramView({
   return (
     <div className="flex">
       {/* frequency axis — OUTSIDE the plot, evenly spaced (0, 2k, 4k … Nyquist) */}
-      <div className="relative shrink-0 w-[var(--px-34)]" style={{ height }}>
+      <div className={`relative shrink-0 w-[var(--px-34)] ${chrome ? "" : "hidden"}`} style={{ height }}>
         {hzTicks.map((f) => (
           <div
             key={f}
@@ -231,10 +271,14 @@ export function SpectrogramView({
       {/* plot + time axis + power scale, all sharing the plot's width */}
       <div className="min-w-0 flex-1">
         <TimeAxis durationMs={durationMs} currentMs={currentMs ?? null} onSeek={onSeek} tooltip={() => null}>
-          <canvas ref={ref} className="block w-full rounded-[var(--px-8)]" style={{ height, imageRendering: "pixelated" }} />
+          <canvas
+            ref={ref}
+            className={`block w-full ${chrome ? "rounded-[var(--px-8)]" : "rounded-[var(--px-4)]"}`}
+            style={{ height, imageRendering: "pixelated" }}
+          />
         </TimeAxis>
 
-        {timeTicks.length > 1 && (
+        {chrome && timeTicks.length > 1 && (
           <div className="relative mt-[var(--px-4)] h-[var(--px-12)]">
             {timeTicks.map((t) => {
               const frac = durationMs > 0 ? t / durationMs : 0;
@@ -253,7 +297,7 @@ export function SpectrogramView({
           </div>
         )}
 
-        <div className="mt-[var(--px-6)] flex items-center gap-[var(--px-10)]">
+        <div className={`mt-[var(--px-6)] flex items-center gap-[var(--px-10)] ${chrome ? "" : "hidden"}`}>
           <span className="shrink-0 font-helvetica text-[length:var(--px-9)] uppercase tracking-wide opacity-45">Power</span>
           <div className="flex-1">
             <div className="h-[var(--px-8)] w-full rounded-full" style={{ background: gradient }} />
@@ -290,6 +334,8 @@ export function ChromaView({
   onSeek,
   height = 130,
   labels = CHROMA_LABELS,
+  tint,
+  showLabels = true,
 }: {
   matrix: Matrix;
   durationMs: number;
@@ -297,6 +343,14 @@ export function ChromaView({
   onSeek?: (ms: number) => void;
   height?: number;
   labels?: string[];
+  /** Single hue instead of the magma ramp — see `Heatmap`. */
+  tint?: [number, number, number];
+  /**
+   * The pitch-class column down the left. Off in the Timeline tab, where the lane's own right axis
+   * prints the three notes that matter (B, the tonic, C) and a 24px column inside the chart would
+   * push this lane's x out of step with every other one.
+   */
+  showLabels?: boolean;
 }) {
   const rows = matrix.data.length;
   const cols = rows ? matrix.data[0].length : 0;
@@ -315,7 +369,7 @@ export function ChromaView({
   return (
     <div className="flex">
       {/* pitch-class axis — OUTSIDE the plot (C at the bottom … B at the top) */}
-      <div className="relative shrink-0 w-[var(--px-24)]" style={{ height }}>
+      <div className={`relative shrink-0 w-[var(--px-24)] ${showLabels ? "" : "hidden"}`} style={{ height }}>
         {labels.slice(0, rows).map((lab, i) => {
           const yr = rows - 1 - i; // pitch-class 0 (C) at the bottom
           return (
@@ -340,7 +394,13 @@ export function ChromaView({
             <TipRows rows={chromaAt(frac).slice(0, 4).map((t) => ({ label: t.label, value: `${(t.v * 100).toFixed(0)}%` }))} />
           )}
         >
-          <Heatmap matrix={matrix} height={height} gamma={2.2} />
+          <Heatmap
+            matrix={matrix}
+            height={height}
+            gamma={2.2}
+            tint={tint}
+            radiusClass={tint ? "rounded-[var(--px-4)]" : "rounded-[var(--px-8)]"}
+          />
         </TimeAxis>
       </div>
     </div>
@@ -804,6 +864,7 @@ export function StemArea({
   currentMs = null,
   onSeek,
   vocalRegions = [],
+  showLegend = true,
 }: {
   stems: Record<string, StemMetrics>;
   hidden?: Set<string>;
@@ -813,6 +874,11 @@ export function StemArea({
   currentMs?: number | null;
   onSeek?: (ms: number) => void;
   vocalRegions?: { startMs: number; endMs: number; meanScore: number }[];
+  /**
+   * The colour key under the chart. Off in the Timeline tab, which prints the same names and
+   * presence percentages in the lane gutter instead, where every other lane keeps its label.
+   */
+  showLegend?: boolean;
 }) {
   const allNames = Object.keys(stems);
   const names = allNames.filter((n) => !hidden?.has(n)); // stacked in this order
@@ -880,7 +946,7 @@ export function StemArea({
       ) : (
         svg
       )}
-      {onToggle ? (
+      {!showLegend ? null : onToggle ? (
         <ToggleLegend
           items={allNames.map((n) => ({ label: n, color: STEM_COLORS[n] ?? "#888", suffix: `${stems[n].presencePct.toFixed(0)}%` }))}
           hidden={hidden ?? new Set()}

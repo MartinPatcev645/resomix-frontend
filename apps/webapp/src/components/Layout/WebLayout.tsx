@@ -88,7 +88,11 @@ export function WebLayout() {
         <OptionalAuthRoute>
             <div
                 id="webapp-page-root"
-                className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen flex flex-col relative overflow-x-hidden`}
+                /* `overflow-x-clip`, not `overflow-x-hidden`: `hidden` makes this element a
+                   scroll container, and a scroll container that never scrolls neutralises
+                   `position: sticky` for everything inside it (the analysis page's player).
+                   `clip` cuts horizontal overflow exactly the same way without becoming one. */
+                className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen flex flex-col relative overflow-x-clip`}
             >
                 <AppBackground />
 
@@ -100,7 +104,9 @@ export function WebLayout() {
 
                 <div
                     className={`mx-auto w-full flex-1 flex flex-col text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)] ${showOverlay ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-                    style={{ overflowX: "hidden" }}
+                    /* See the note on the page root: `clip` keeps the horizontal guard without
+                       breaking sticky positioning inside. */
+                    style={{ overflowX: "clip" }}
                 >
                     <WebSideLines
                         isDesktop={isDesktop}
