@@ -1,0 +1,22 @@
+# -----------------------------------------------------
+# robots.txt for the Resomix admin app
+#
+# This app is internal on every host it is served from, production and staging alike. Nothing in it
+# belongs in a search index, and an admin screen sitting in search results is an invitation to
+# probe it.
+#
+# Crawling is ALLOWED on purpose, and the `noindex, nofollow` tag in index.html does the work. A
+# page blocked here is never fetched, so its noindex is never read, and a URL already in an index
+# stays there as a bare link. Allow the crawl, let the tag remove the page, and only then consider
+# switching this to `Disallow: /`.
+#
+# Before this file existed there was no robots.txt at all: every path returned the app's HTML with
+# a 200, including /robots.txt itself, so a crawler read the app shell as crawl rules and treated
+# the whole host as open.
+# -----------------------------------------------------
+
+User-agent: *
+Allow: /
+
+# Build artefacts: never useful, occasionally revealing.
+Disallow: /*.map$
