@@ -28,6 +28,7 @@ import { HarmonyTab } from "@/components/Analysis/HarmonyTab.tsx";
 import { VibeTab } from "@/components/Analysis/VibeTab.tsx";
 import { GenreTab } from "@/components/Analysis/GenreTab.tsx";
 import { TabPending } from "@/components/Analysis/TabPending.tsx";
+import { ExportPdfButton } from "@/components/Analysis/export/ExportPdfButton.tsx";
 
 const fmtDuration = (ms: number) => {
   const s = Math.round(ms / 1000);
@@ -402,13 +403,18 @@ export default function AnalysisPage() {
                   {data.identity.channels === 2 ? "stereo" : "mono"} · {data.identity.sampleRateHz / 1000} kHz
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={resetAll}
-                className={WORKSPACE_BTN_SECONDARY}
-              >
-                Analyze another
-              </button>
+              <div className="flex flex-wrap items-center gap-[var(--px-10)]">
+                {/* Only once part 2 has landed: an export of a half-finished analysis would print
+                    empty lanes and call itself a report. */}
+                {part2Done && <ExportPdfButton data={data} />}
+                <button
+                  type="button"
+                  onClick={resetAll}
+                  className={WORKSPACE_BTN_SECONDARY}
+                >
+                  Analyze another
+                </button>
+              </div>
             </div>
 
             {/* Transport. The element stays hidden and the sticky player drives it, so there is
