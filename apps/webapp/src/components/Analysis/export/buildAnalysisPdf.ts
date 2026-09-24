@@ -179,15 +179,19 @@ function layout(
   paintPage(doc);
   const L = new Layout(doc, spread);
 
-  const section = (draw: () => void) => {
-    L.begin();
+  const section = (draw: () => void, tight = false) => {
+    L.begin(tight);
     draw();
     L.end();
   };
 
-  section(() => drawCover(L, facts, meta));
-  section(() => drawFacts(L, data, facts, meta));
-  section(() => drawStats(L, data));
+  section(() => drawCover(L, data, facts, meta, plates));
+  // The facts table and the stat cards are one block: they are the same statement about the track
+  // and a page turn or a gap between them would read as two.
+  section(() => {
+    drawFacts(L, data, facts, meta);
+    drawStats(L, data);
+  });
   // The Timeline always opens a sheet of its own, and the turn happens outside the section so the
   // page it leaves behind is still counted as having room to spread.
   L.newPage();
@@ -196,14 +200,15 @@ function layout(
   section(() => drawVibe(L, data));
   section(() => drawGenre(L, data));
   if (hasReadings(data)) section(() => drawReadings(L, data));
-  section(() => drawClosing(L));
+  // The closing note is a footnote to whatever precedes it, so it never floats away from it.
+  section(() => drawClosing(L), true);
 
   return L;
 }
 
 /* --------------------------------------------------------------------- cover */
 
-function drawCover(L: Layout, facts: TrackFacts, meta: PdfMeta): void {
+function drawCover(L: Layout, data: AnalysisData, facts: TrackFacts, meta: PdfMeta, plates: Plates): void {
   const { doc } = L;
   const x = MARGIN_X;
 
@@ -262,7 +267,8 @@ function drawCover(L: Layout, facts: TrackFacts, meta: PdfMeta): void {
     L.y,
     body,
   );
-  L.gap(28);
+  L.gap(24);
+  L.gap(drawHero(doc, x, L.y, CONTENT_W, data, plates));
 
   const contents: [string, string, string][] = [
     ["01", "Timeline", "structure, energy, spectrum, pitch, style, mood, stems"],
@@ -283,6 +289,45 @@ function drawCover(L: Layout, facts: TrackFacts, meta: PdfMeta): void {
 
   text(doc, `Exported ${meta.exportedOn}`, x, L.y, { size: 7.5, color: C.inkFaint, spacing: 0.4 });
   L.gap(24);
+}
+
+/**
+ * The track at a glance, across the foot of the cover.
+ *
+ * The cover otherwise carries nothing but type, and a page of type with a gap in it reads as a
+ * page that ran out. This is the one picture that says what the track IS in a glance: its sections
+ * in their own colours, and the energy underneath them on the same time axis. Both are drawn by
+ * the same code the Timeline uses, just across the full width instead of a lane.
+ *
+ * Nothing is invented for it. A result with no structure and no beat grid has no glance to show,
+ * so it draws nothing and the page closes up around it.
+ */
+function drawHero(doc: jsPDF, x: number, y: number, w: number, data: AnalysisData, plates: Plates): number {
+  const durationMs = data.identity.durationMs;
+  const segments = data.energy.structureSegments;
+  const hasBeat = (data.rhythm.downbeatsSeconds?.length ?? 0) > 0;
+  if (durationMs <= 0 || (!segments.length && !hasBeat)) return 0;
+
+  const structureH = 32;
+  const energyH = 74;
+  const spectrumH = 58;
+  const rulerH = 11;
+  let cy = y;
+
+  if (segments.length) {
+    drawStructure(doc, cy, structureH, segments, durationMs, x, w);
+    cy += structureH + 3;
+  }
+  drawEnergy(doc, cy, energyH, data, durationMs, x, w);
+  cy += energyH + 3;
+  if (plates.spectrum) {
+    image(doc, plates.spectrum.data, x, cy, w, spectrumH, "an-hero-spectrum");
+    cy += spectrumH;
+  }
+  drawRuler(doc, cy, rulerH, durationMs, false, x, w);
+  cy += rulerH;
+
+  return cy - y + 10;
 }
 
 /* ---------------------------------------------------------------- the track */
@@ -510,18 +555,26 @@ function laneAxis(doc: jsPDF, y: number, h: number, labels: string[]): void {
   });
 }
 
-function drawRuler(doc: jsPDF, y: number, h: number, durationMs: number, flip: boolean): void {
+function drawRuler(
+  doc: jsPDF,
+  y: number,
+  h: number,
+  durationMs: number,
+  flip: boolean,
+  x = CHART_X,
+  w = CHART_W,
+): void {
   const baseY = flip ? y : y + h;
-  line(doc, CHART_X, baseY, CHART_X + CHART_W, baseY, C.grid, 0.5);
+  line(doc, x, baseY, x + w, baseY, C.grid, 0.5);
   const labelY = flip ? y + 3 : y + 1;
   for (let t = 60_000; t < durationMs; t += 60_000) {
     const f = t / durationMs;
     // The track length is always printed at the right edge, so a tick that would sit under it is
     // dropped rather than stacked on top of it.
     if (f > 0.92) break;
-    text(doc, clock(t), CHART_X + f * CHART_W, labelY, { size: 5.6, color: C.inkMuted, align: "center" });
+    text(doc, clock(t), x + f * w, labelY, { size: 5.6, color: C.inkMuted, align: "center" });
   }
-  text(doc, clock(durationMs), CHART_X + CHART_W, labelY, { size: 5.6, color: C.inkMuted, align: "right" });
+  text(doc, clock(durationMs), x + w, labelY, { size: 5.6, color: C.inkMuted, align: "right" });
 }
 
 function drawStructure(
@@ -530,11 +583,13 @@ function drawStructure(
   h: number,
   segments: AnalysisData["energy"]["structureSegments"],
   durationMs: number,
+  originX = CHART_X,
+  totalW = CHART_W,
 ): void {
   if (durationMs <= 0) return;
   segments.forEach((s) => {
-    const x = CHART_X + (s.startMs / durationMs) * CHART_W;
-    const w = ((s.endMs - s.startMs) / durationMs) * CHART_W - 1;
+    const x = originX + (s.startMs / durationMs) * totalW;
+    const w = ((s.endMs - s.startMs) / durationMs) * totalW - 1;
     if (w <= 0 || s.hidden) return;
     const tone = sectionTone(sectionWord(s));
     fillRect(doc, x, y, w, h, tone.bg, 2);
@@ -554,9 +609,17 @@ function drawStructure(
   });
 }
 
-function drawEnergy(doc: jsPDF, y: number, h: number, data: AnalysisData, durationMs: number): void {
-  fillRect(doc, CHART_X, y, CHART_W, h, C.lane, 2);
-  [0.33, 0.66].forEach((f) => line(doc, CHART_X, y + f * h, CHART_X + CHART_W, y + f * h, C.grid, 0.4, [1.5, 2]));
+function drawEnergy(
+  doc: jsPDF,
+  y: number,
+  h: number,
+  data: AnalysisData,
+  durationMs: number,
+  originX = CHART_X,
+  totalW = CHART_W,
+): void {
+  fillRect(doc, originX, y, totalW, h, C.lane, 2);
+  [0.33, 0.66].forEach((f) => line(doc, originX, y + f * h, originX + totalW, y + f * h, C.grid, 0.4, [1.5, 2]));
 
   const bars = barsFromDownbeats(data.rhythm.downbeatsSeconds, durationMs);
   if (!bars.length || durationMs <= 0) return;
@@ -564,10 +627,10 @@ function drawEnergy(doc: jsPDF, y: number, h: number, data: AnalysisData, durati
   const segments = data.energy.structureSegments;
 
   bars.forEach((b, i) => {
-    const x = CHART_X + (b.startMs / durationMs) * CHART_W;
+    const x = originX + (b.startMs / durationMs) * totalW;
     // Bars meet rather than leaving a hairline of lane between them: at two points wide, a gap
     // reads as a white grid drawn over the energy instead of as separate bars.
-    const w = Math.max(0.35, ((b.endMs - b.startMs) / durationMs) * CHART_W);
+    const w = Math.max(0.35, ((b.endMs - b.startMs) / durationMs) * totalW);
     const bh = Math.max(0.6, (values[i] ?? 0) * h);
     const section = sectionAtMs(segments, (b.startMs + b.endMs) / 2);
     const tone = section ? sectionTone(sectionWord(section)).fg : blend(C.inkMuted, C.lane, 0.5);
@@ -581,7 +644,7 @@ function drawEnergy(doc: jsPDF, y: number, h: number, data: AnalysisData, durati
       const db = meanInRange(curve, b.startMs, b.endMs);
       if (db == null || !Number.isFinite(db)) return;
       pts.push({
-        x: CHART_X + (((b.startMs + b.endMs) / 2) / durationMs) * CHART_W,
+        x: originX + (((b.startMs + b.endMs) / 2) / durationMs) * totalW,
         y: y + lufsFrac(db) * h,
       });
     });
@@ -910,15 +973,15 @@ function drawVibe(L: Layout, data: AnalysisData): void {
 
 /* --------------------------------------------------------------------- genre */
 
-const TOP_N = 7;
+const TOP_N = 10;
 
 function drawGenre(L: Layout, data: AnalysisData): void {
   const { doc } = L;
   const genre = (data.semantics.styleMaestTop ?? []).slice(0, TOP_N);
   const style = (data.semantics.genreTop ?? []).slice(0, TOP_N);
-  const rowsH = 26 + TOP_N * 22 + 20;
-  L.ensure(rowsH + 26);
-  sectionHead(L, "04", "Genre & Sonic Style", `top ${TOP_N} of each`);
+  const shown = Math.max(genre.length, style.length, 1);
+  L.ensure(26 + 22 + shown * 22 + 30);
+  sectionHead(L, "04", "Genre & Sonic Style", `top ${shown} of each`);
 
   const gap = 20;
   const w = (CONTENT_W - gap) / 2;
@@ -942,7 +1005,7 @@ function drawGenre(L: Layout, data: AnalysisData): void {
       fillRect(doc, x + 12, y + 11, (w - 24) * Math.max(0.02, Math.min(1, it.score)), 3.4, C.accent, 1.7);
     });
   });
-  L.gap(22 + Math.max(genre.length, style.length, 1) * 22 + 8 + 12);
+  L.gap(22 + shown * 22 + 8 + 12);
 
   L.gap(
     paragraph(

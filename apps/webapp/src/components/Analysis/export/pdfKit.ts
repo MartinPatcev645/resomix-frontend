@@ -274,9 +274,13 @@ export class Layout {
     private readonly spread: number[] = [],
   ) {}
 
-  begin(): void {
+  /**
+   * Open a section. `tight` refuses the extra spacing the measure pass allotted, for a block that
+   * belongs directly under the one before it rather than wherever the page wants it.
+   */
+  begin(tight = false): void {
     this.index++;
-    this.y += this.spread[this.index] ?? 0;
+    if (!tight) this.y += this.spread[this.index] ?? 0;
     this.startY = this.y;
     this.startPage = this.page;
   }
@@ -323,7 +327,7 @@ export class Layout {
  * Capped, because a page holding one short section should end where it ends rather than float its
  * two paragraphs half a page apart. Whatever is left over after the cap stays at the foot.
  */
-export function computeSpread(marks: SectionMark[], maxSpread = 150): number[] {
+export function computeSpread(marks: SectionMark[], maxSpread = 230): number[] {
   const spread = new Array(marks.length).fill(0);
   const byPage = new Map<number, number[]>();
   marks.forEach((m, i) => {

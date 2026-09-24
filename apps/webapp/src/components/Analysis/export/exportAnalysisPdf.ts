@@ -14,7 +14,8 @@ export interface ExportPdfOptions {
   betaUrl: string;
 }
 
-export async function exportAnalysisPdf(data: AnalysisData, options: ExportPdfOptions): Promise<void> {
+/** Builds the document, hands it to the browser, and returns the filename it was saved as. */
+export async function exportAnalysisPdf(data: AnalysisData, options: ExportPdfOptions): Promise<string> {
   const { jsPDF } = await import("jspdf");
   const makeDoc = () => new jsPDF({ unit: "pt", format: "a4", orientation: "portrait", compress: true });
 
@@ -25,11 +26,11 @@ export async function exportAnalysisPdf(data: AnalysisData, options: ExportPdfOp
     betaUrl: options.betaUrl,
   });
 
+  const filename = pdfFilename(facts.artist ? `${facts.artist} · ${facts.title}` : facts.title);
   // `returnPromise` so a browser that hands the file over asynchronously (iOS opens it rather
   // than downloading it) reports a failure here instead of looking like it worked.
-  await doc.save(pdfFilename(facts.artist ? `${facts.artist} · ${facts.title}` : facts.title), {
-    returnPromise: true,
-  });
+  await doc.save(filename, { returnPromise: true });
+  return filename;
 }
 
 /** A filename a DJ can find again, without the characters a filesystem will not take. */
