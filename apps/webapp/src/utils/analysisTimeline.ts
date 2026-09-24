@@ -118,6 +118,48 @@ export function parseCamelot(code: string | null | undefined): { number: number;
   return { number, letter: m[2] as "A" | "B" };
 }
 
+/** Semitones above the root, natural minor and major. */
+const MINOR_STEPS = [0, 2, 3, 5, 7, 8, 10];
+const MAJOR_STEPS = [0, 2, 4, 5, 7, 9, 11];
+
+/**
+ * The seven pitch classes a Camelot code's key actually uses, as indices into a C-first chroma.
+ *
+ * The wheel is the circle of fifths, so each step up the number is seven semitones, with 8B as C
+ * major and 8A as A minor. Empty for a code that cannot be read, which the caller must treat as
+ * "cannot say", never as "no notes are in key".
+ */
+export function camelotRootPitchClass(code: string | null | undefined): number | null {
+  const parsed = parseCamelot(code);
+  if (!parsed) return null;
+  const base = parsed.letter === "B" ? 0 : 9; // 8B = C major, 8A = A minor
+  return (((parsed.number - 8) * 7 + base) % 12 + 12) % 12;
+}
+
+export function inKeyPitchClasses(code: string | null | undefined): Set<number> {
+  const root = camelotRootPitchClass(code);
+  const parsed = parseCamelot(code);
+  if (root == null || !parsed) return new Set();
+  const steps = parsed.letter === "B" ? MAJOR_STEPS : MINOR_STEPS;
+  return new Set(steps.map((s) => (root + s) % 12));
+}
+
+/**
+ * Whole-track mean pitch-class energy from the chromagram.
+ *
+ * The service computes this in its semantics stage and sends it as `mean_chroma`, but it is absent
+ * on results produced before that stage existed, and the Harmony tab's note chart is the only
+ * thing that reads it — so it recomputes rather than showing an empty panel. Same arithmetic the
+ * service uses: the mean of each of the 12 rows.
+ */
+export function meanChromaFromMatrix(rows: number[][] | null | undefined): number[] {
+  if (!rows || rows.length !== 12 || !rows[0]?.length) return [];
+  return rows.map((row) => {
+    const usable = row.filter((v) => Number.isFinite(v));
+    return usable.length ? usable.reduce((a, b) => a + b, 0) / usable.length : 0;
+  });
+}
+
 export interface CamelotNeighbour {
   code: string;
   relation: string;

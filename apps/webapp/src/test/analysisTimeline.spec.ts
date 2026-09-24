@@ -3,6 +3,9 @@ import {
   barMeans,
   barsFromDownbeats,
   camelotNeighbours,
+  camelotRootPitchClass,
+  inKeyPitchClasses,
+  meanChromaFromMatrix,
   genreAgreement,
   lufsFrac,
   meanInRange,
@@ -147,5 +150,35 @@ describe("mergeGenreModels", () => {
   it("says something honest when the models share nothing", () => {
     const rows = mergeGenreModels([{ label: "dub", score: 0.4 }], [{ label: "jazz", score: 0.3 }], id);
     expect(genreAgreement(rows)).toContain("entirely different");
+  });
+});
+
+describe("key spelling and note energy", () => {
+  it("finds the root of a Camelot code", () => {
+    expect(camelotRootPitchClass("8B")).toBe(0); // C major
+    expect(camelotRootPitchClass("8A")).toBe(9); // A minor
+    expect(camelotRootPitchClass("4A")).toBe(5); // F minor
+    expect(camelotRootPitchClass("nonsense")).toBeNull();
+  });
+
+  it("lights the seven notes the key actually uses", () => {
+    // F minor: F G Ab Bb C Db Eb
+    expect([...inKeyPitchClasses("4A")].sort((a, b) => a - b)).toEqual([0, 1, 3, 5, 7, 8, 10]);
+    // C major: the white notes
+    expect([...inKeyPitchClasses("8B")].sort((a, b) => a - b)).toEqual([0, 2, 4, 5, 7, 9, 11]);
+  });
+
+  it("claims nothing when the key cannot be read, rather than dimming at random", () => {
+    expect(inKeyPitchClasses(null).size).toBe(0);
+  });
+
+  it("recomputes mean chroma from the chromagram when the server did not send it", () => {
+    const rows = Array.from({ length: 12 }, (_, i) => [i, i + 2]);
+    expect(meanChromaFromMatrix(rows)).toEqual(Array.from({ length: 12 }, (_, i) => i + 1));
+  });
+
+  it("returns nothing for a chromagram that is not 12 rows", () => {
+    expect(meanChromaFromMatrix([[1, 2]])).toEqual([]);
+    expect(meanChromaFromMatrix(null)).toEqual([]);
   });
 });

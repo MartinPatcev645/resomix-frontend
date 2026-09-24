@@ -102,7 +102,7 @@ describe("Timeline tab", () => {
 
 describe("Harmony tab", () => {
   it("shows the key, the compatible keys and the ambiguity warning", () => {
-    render(<HarmonyTab data={full} isDesktop />);
+    render(<HarmonyTab data={full} />);
     expect(screen.getByText("Mix-compatible keys")).toBeInTheDocument();
     expect(screen.getByText("Note energy")).toBeInTheDocument();
     expect(screen.getByText(/Key may be ambiguous/)).toBeInTheDocument();
@@ -111,7 +111,7 @@ describe("Harmony tab", () => {
   });
 
   it("mounts on a result whose key has not been read yet", () => {
-    render(<HarmonyTab data={partial} isDesktop />);
+    render(<HarmonyTab data={partial} />);
     expect(screen.getByText("Key")).toBeInTheDocument();
   });
 });

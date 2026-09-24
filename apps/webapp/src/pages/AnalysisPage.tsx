@@ -316,13 +316,15 @@ export default function AnalysisPage() {
                 if (status === "idle") pick(e.dataTransfer.files?.[0]);
               }}
               className={
-                "flex w-full flex-col items-center gap-[var(--px-12)] rounded-[var(--px-16)] border border-dotted " +
+                // A dashed 2px edge, not a 1px dotted one at 30%: the drop target has to look like
+                // a target before anything has been uploaded, and at 1px it read as background.
+                "flex w-full flex-col items-center gap-[var(--px-12)] rounded-[var(--px-16)] border-2 border-dashed " +
                 "p-[var(--px-56)] text-center transition-colors " +
                 (dragOver ? "bg-[var(--opacity-15)]" : "bg-[var(--opacity-10)]") +
                 " " +
                 (status === "idle" ? "cursor-pointer hover:bg-[var(--opacity-15)]" : "cursor-default")
               }
-              style={{ borderColor: dragOver ? ACCENT : "var(--opacity-30)" }}
+              style={{ borderColor: dragOver ? ACCENT : "var(--rx-color-border-strong, rgba(255,255,255,0.45))" }}
             >
               {status === "idle" ? (
                 <>
@@ -472,7 +474,7 @@ export default function AnalysisPage() {
             {/* `scroll-mt` clears the sticky player, so scrolling here never parks the tab bar
                 underneath it. */}
             <div ref={tabsRef} className="scroll-mt-[var(--px-130)] lg:scroll-mt-[var(--px-150)]">
-              <AnalysisTabs value={tab} onChange={setTab} variant={isDesktop ? "cards" : "segmented"} />
+              <AnalysisTabs value={tab} onChange={setTab} showHint={isDesktop} />
             </div>
 
             <div id={`analysis-panel-${tab}`} role="tabpanel" aria-labelledby={`analysis-tab-${tab}`}>
@@ -491,7 +493,7 @@ export default function AnalysisPage() {
 
               {tab === "harmony" &&
                 (data.tonality.camelot ? (
-                  <HarmonyTab data={data} isDesktop={isDesktop} />
+                  <HarmonyTab data={data} />
                 ) : (
                   <TabPending title="Harmony" detail="key · chromagram" pending={!part2Done} />
                 ))}
