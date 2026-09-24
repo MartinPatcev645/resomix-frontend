@@ -172,6 +172,15 @@ export default function AnalysisPage() {
   // Key stat + Harmony subtitle, always matching the wheel — never the sharp-normalized raw key).
   const keyLabel = data ? keyFromCamelot(data.tonality.camelot) : null;
   /** "228 bars · 9 sections" for the Length card, once the arrangement has been read. */
+  /**
+   * The genre reading for the stat card. The Genre & Sonic Style tab lists genre first and sonic
+   * style second, so the card shows the same list the tab calls Genre, falling back to the other
+   * when only that one has landed.
+   */
+  const topGenre = data?.semantics.styleMaestTop?.length
+    ? data.semantics.styleMaestTop
+    : (data?.semantics.genreTop ?? []);
+
   const barsAndSections = useMemo(() => {
     const segments = data?.energy.structureSegments ?? [];
     const sections = segments.filter((seg) => !seg.hidden).length;
@@ -438,7 +447,7 @@ export default function AnalysisPage() {
                   value={data.rhythm.bpm == null ? <Spinner size={20} /> : fmtBpm(data.rhythm.bpm)}
                   unit={data.rhythm.bpm == null ? undefined : "BPM"}
                   sub={data.rhythm.bpm == null ? "analyzing…" : `${data.rhythm.beatCount} beats`}
-                  hint="Tempo in beats per minute (Essentia RhythmExtractor2013). Confidence reflects how steady the pulse is."
+                  hint="Tempo in beats per minute, measured from the pulse of the track itself."
                 />
               </div>
               <div>
@@ -447,7 +456,7 @@ export default function AnalysisPage() {
                   value={data.tonality.key == null ? <Spinner size={20} /> : keyLabel ? `${keyLabel.name} ${keyLabel.scale === "major" ? "maj" : "min"}` : "—"}
                   unit={data.tonality.camelot ?? undefined}
                   sub={data.tonality.key == null ? "analyzing…" : `${(data.tonality.strength * 100).toFixed(0)}% strength`}
-                  hint="Estimated musical key & scale (Essentia EDMA profile, tuned for electronic music), plus its Camelot code for harmonic mixing."
+                  hint="Estimated musical key and scale, tuned for electronic music, with its Camelot code for harmonic mixing."
                 />
               </div>
               <div>
@@ -468,20 +477,20 @@ export default function AnalysisPage() {
                 />
               </div>
               <div className="col-span-2 lg:col-span-1">
-                {data.semantics.genreTop.length > 0 ? (
+                {topGenre.length > 0 ? (
                   <StatCard
                     label="Genre"
-                    value={<span className="text-[length:var(--px-18)]">{shortGenre(data.semantics.genreTop[0].label)}</span>}
-                    unit={`${(data.semantics.genreTop[0].score * 100).toFixed(0)}%`}
+                    value={<span className="text-[length:var(--px-18)]">{shortGenre(topGenre[0].label)}</span>}
+                    unit={`${(topGenre[0].score * 100).toFixed(0)}%`}
                     sub={
-                      data.semantics.genreTop[1]
-                        ? `${shortGenre(data.semantics.genreTop[1].label)} ${(data.semantics.genreTop[1].score * 100).toFixed(0)}%`
+                      topGenre[1]
+                        ? `${shortGenre(topGenre[1].label)} ${(topGenre[1].score * 100).toFixed(0)}%`
                         : "top match"
                     }
-                    hint="Most likely genre from the Discogs-400 model (MAEST-30s). The full ranking is on the Genre tab."
+                    hint="The strongest genre reading for this track. The full ranking is on the Genre and Sonic Style tab."
                   />
                 ) : (
-                  <StatCard label="Genre" value={<Spinner size={20} />} sub="analyzing…" hint="Genre needs the model pass (part 2), filling in shortly." />
+                  <StatCard label="Genre" value={<Spinner size={20} />} sub="analyzing…" hint="Genre arrives with the second half of the analysis, filling in shortly." />
                 )}
               </div>
             </div>

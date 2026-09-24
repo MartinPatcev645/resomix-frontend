@@ -96,7 +96,7 @@ export const VibeTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
             <div className="flex items-baseline justify-between gap-[var(--px-10)]">
               <h2 className="m-0 font-helvetica text-[length:var(--px-14)] font-medium text-[var(--an-text)]">Mood tags</h2>
               <span className="font-fira text-[length:var(--px-10)] text-[var(--an-text-muted)]">
-                MTG-Jamendo · size = confidence · above 50% highlighted
+                size = confidence · above 50% highlighted
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-[var(--px-6)]">

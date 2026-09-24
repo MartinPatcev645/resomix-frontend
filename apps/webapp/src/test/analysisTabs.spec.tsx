@@ -135,13 +135,21 @@ describe("Vibe tab", () => {
 });
 
 describe("Genre tab", () => {
-  it("merges the two models into one list", () => {
+  it("keeps genre and sonic style as two separate lists", () => {
     render(<GenreTab data={full} onOpenTimeline={noop} />);
-    // `lowercase` is a CSS class, so the text itself keeps the model's own casing.
-    expect(screen.getByText("Tech House")).toBeInTheDocument();
-    expect(screen.getByText("72% · 61%")).toBeInTheDocument();
-    // A label only one model found still appears, with a dash for the other.
-    expect(screen.getByText("— · 40%")).toBeInTheDocument();
+    expect(screen.getByText("Genre")).toBeInTheDocument();
+    expect(screen.getByText("Sonic style")).toBeInTheDocument();
+    // The label both readings agree on appears once per list, never merged into one row.
+    expect(screen.getAllByText("Tech House")).toHaveLength(2);
+    // ...and each list keeps the label only it found.
+    expect(screen.getByText("Minimal")).toBeInTheDocument();
+    expect(screen.getByText("Techno")).toBeInTheDocument();
+    expect(screen.getByText("72%")).toBeInTheDocument();
+  });
+
+  it("names no model anywhere a reader can see", () => {
+    const { container } = render(<GenreTab data={full} onOpenTimeline={noop} />);
+    expect(container.textContent).not.toMatch(/discogs|maest|jamendo|demucs|essentia/i);
   });
 });
 

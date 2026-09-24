@@ -17,10 +17,10 @@ import { WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspaceP
 export type AnalysisTab = "timeline" | "harmony" | "vibe" | "genre";
 
 export const ANALYSIS_TABS: { id: AnalysisTab; name: string; desc: string }[] = [
-  { id: "timeline", name: "Timeline", desc: "Structure, energy, spectrum, pitch, genre, mood and stems on one shared time axis." },
+  { id: "timeline", name: "Timeline", desc: "Structure, energy, spectrum, pitch, style, mood and stems on one shared time axis." },
   { id: "harmony", name: "Harmony", desc: "Camelot wheel, key strength, compatible keys and note energy." },
   { id: "vibe", name: "Vibe", desc: "Valence and arousal, perceptual profile and weighted mood tags." },
-  { id: "genre", name: "Genre", desc: "Both genre models in one ranked list." },
+  { id: "genre", name: "Genre & Sonic Style", desc: "Two ranked readings of what the track is." },
 ];
 
 /** `?tab=` is user-supplied, so anything unknown falls back to the first view rather than a blank page. */

@@ -184,7 +184,7 @@ export const TimelineTab: React.FC<{
         {/* The shipped ribbons, unchanged: orange heat with the label inside the row. The lane
             gutter carries the group name, so they line up with every chart above them. */}
         {data.timeline.genreOverTime.series.length > 0 && (
-          <TimelineLane title="Genre" meta="over time" className={spacedLane}>
+          <TimelineLane title="Sonic style" meta="over time" className={spacedLane}>
             <TimeAxis durationMs={durationMs} currentMs={null} onSeek={onSeek}>
               <RibbonChart track={data.timeline.genreOverTime} rowHeight={h.row} labelTransform={shortGenre} />
             </TimeAxis>
@@ -209,20 +209,16 @@ export const TimelineTab: React.FC<{
           <TimelineLane
             title="Stems"
             className={spacedLane}
+            // The mix donut rides beside the heading, where the gutter has spare width, leaving
+            // the full column for four switches at one per row. Both are live: hiding a stem drops
+            // it from the stacked area and fades its slice.
+            titleAside={
+              <span className="block w-[var(--px-36)]">
+                <Donut stems={data.composition.stems} hidden={stemsHidden} />
+              </span>
+            }
             gutterExtra={
-              // The mix donut and the stem switches, both live: hiding a stem drops it from the
-              // stacked area and fades its slice. They sit in the gutter rather than under the
-              // chart so the lane keeps the same height as the ones around it.
-              <div className="flex w-full flex-col items-start gap-[var(--px-8)]">
-                <div className="w-full max-w-[var(--px-56)]">
-                  <Donut stems={data.composition.stems} hidden={stemsHidden} />
-                </div>
-                <StemSwitches
-                  stems={data.composition.stems}
-                  hidden={stemsHidden}
-                  onToggle={toggleStem}
-                />
-              </div>
+              <StemSwitches stems={data.composition.stems} hidden={stemsHidden} onToggle={toggleStem} />
             }
           >
             <StemArea
@@ -269,16 +265,16 @@ export const TimelineTab: React.FC<{
  * The stem switches, sized for the lane gutter.
  *
  * `ToggleLegend` is the page-wide control and it is right everywhere else, but at 112px its
- * checkbox and its `name · 81%` spacing force one switch per line and push the donut off the top
- * of the lane. Same behaviour, two to a row: the colour carries the state, and the percentage sits
- * in brackets so it costs a character rather than a gap.
+ * checkbox and its `name · 81%` spacing left the names cut off. Same behaviour in a narrower
+ * frame: the colour carries the state, and the percentage sits in brackets so the whole label
+ * fits without truncation.
  */
 const StemSwitches: React.FC<{
   stems: AnalysisData["composition"]["stems"];
   hidden: Set<string>;
   onToggle: (name: string) => void;
 }> = ({ stems, hidden, onToggle }) => (
-  <div className="grid w-full grid-cols-2 gap-[var(--px-4)]">
+  <div className="flex w-full flex-col gap-[var(--px-3)]">
     {Object.keys(stems).map((name) => {
       const on = !hidden.has(name);
       const color = STEM_COLORS[name] ?? "#888";
@@ -290,7 +286,7 @@ const StemSwitches: React.FC<{
           aria-pressed={on}
           title={`${name} · ${stems[name].presencePct.toFixed(0)}% of the mix`}
           className={[
-            "truncate rounded-[var(--px-3)] border px-[var(--px-4)] py-[var(--px-1)] text-left",
+            "w-full rounded-[var(--px-3)] border px-[var(--px-6)] py-[var(--px-1)] text-left",
             "font-fira text-[length:var(--px-9)] capitalize transition-all hover:brightness-125",
             on ? "" : "opacity-40",
           ].join(" ")}
