@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { shortGenre } from "@resomix/hooks";
 import type { AnalysisData } from "@/pages/analysis/data.ts";
-import { fmtClock, Spinner, TimeAxis, ToggleLegend, useToggleSet } from "@/pages/analysis/charts.tsx";
+import { fmtClock, hexA, Spinner, TimeAxis, useToggleSet } from "@/pages/analysis/charts.tsx";
 import { ChromaView, Donut, RibbonChart, SpectrogramView, StemArea, STEM_COLORS } from "@/pages/analysis/heatviz.tsx";
 import { sectionAtMs } from "@/utils/structureStrip.ts";
 import { StructureStrip } from "../StructureStrip.tsx";
@@ -196,16 +196,12 @@ export const TimelineTab: React.FC<{
               // The mix donut and the stem switches, both live: hiding a stem drops it from the
               // stacked area and fades its slice. They sit in the gutter rather than under the
               // chart so the lane keeps the same height as the ones around it.
-              <div className="flex w-full flex-col items-start gap-[var(--px-6)]">
-                <div className="w-full max-w-[var(--px-80)]">
+              <div className="flex w-full flex-col items-start gap-[var(--px-8)]">
+                <div className="w-full max-w-[var(--px-56)]">
                   <Donut stems={data.composition.stems} hidden={stemsHidden} />
                 </div>
-                <ToggleLegend
-                  items={stemNames.map((n) => ({
-                    label: n,
-                    color: STEM_COLORS[n] ?? "#888",
-                    suffix: `${data.composition.stems[n].presencePct.toFixed(0)}%`,
-                  }))}
+                <StemSwitches
+                  stems={data.composition.stems}
                   hidden={stemsHidden}
                   onToggle={toggleStem}
                 />
@@ -257,6 +253,48 @@ export const TimelineTab: React.FC<{
     </div>
   );
 };
+
+/**
+ * The stem switches, sized for the lane gutter.
+ *
+ * `ToggleLegend` is the page-wide control and it is right everywhere else, but at 112px its
+ * checkbox and its `name · 81%` spacing force one switch per line and push the donut off the top
+ * of the lane. Same behaviour, two to a row: the colour carries the state, and the percentage sits
+ * in brackets so it costs a character rather than a gap.
+ */
+const StemSwitches: React.FC<{
+  stems: AnalysisData["composition"]["stems"];
+  hidden: Set<string>;
+  onToggle: (name: string) => void;
+}> = ({ stems, hidden, onToggle }) => (
+  <div className="grid w-full grid-cols-2 gap-[var(--px-4)]">
+    {Object.keys(stems).map((name) => {
+      const on = !hidden.has(name);
+      const color = STEM_COLORS[name] ?? "#888";
+      return (
+        <button
+          key={name}
+          type="button"
+          onClick={() => onToggle(name)}
+          aria-pressed={on}
+          title={`${name} · ${stems[name].presencePct.toFixed(0)}% of the mix`}
+          className={[
+            "truncate rounded-[var(--px-3)] border px-[var(--px-4)] py-[var(--px-1)] text-left",
+            "font-fira text-[length:var(--px-9)] capitalize transition-all hover:brightness-125",
+            on ? "" : "opacity-40",
+          ].join(" ")}
+          style={{
+            borderColor: on ? color : "var(--an-border)",
+            background: on ? hexA(color, 0.14) : "transparent",
+            color: on ? color : "var(--an-text-muted)",
+          }}
+        >
+          {name} ({stems[name].presencePct.toFixed(0)}%)
+        </button>
+      );
+    })}
+  </div>
+);
 
 /** A lane whose data arrives with part 2, so the row keeps its place instead of the page jumping. */
 const LanePending: React.FC<{ label: string; pending: boolean; height: number }> = ({ label, pending, height }) => (

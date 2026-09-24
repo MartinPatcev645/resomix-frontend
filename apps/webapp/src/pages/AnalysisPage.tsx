@@ -16,6 +16,7 @@ import { useRecentAnalyses } from "./analysis/useRecentAnalyses.js";
 import { AnalysisIntro } from "./analysis/AnalysisIntro.js";
 import { FullAnalysisLocked } from "@/components/Entitlements/FullAnalysisLocked.tsx";
 import { ACCENT, LoadingStep, Spinner, StatCard } from "./analysis/charts.js";
+import { WORKSPACE_BTN_SECONDARY } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
 import { keyFromCamelot } from "./analysis/heatviz.js";
 // The redesigned dashboard (handoff: four tabs, one shared timeline). By path, like StructurePanel
 // above: App.tsx loads the `@/components` barrel eagerly, and these pull in the chart modules this
@@ -395,7 +396,7 @@ export default function AnalysisPage() {
               <button
                 type="button"
                 onClick={resetAll}
-                className="rounded-full border border-[var(--opacity-30)] px-[var(--px-16)] py-[var(--px-6)] font-helvetica text-[length:var(--px-11)] uppercase hover:bg-[var(--opacity-15)]"
+                className={WORKSPACE_BTN_SECONDARY}
               >
                 Analyze another
               </button>
@@ -435,6 +436,7 @@ export default function AnalysisPage() {
                 <StatCard
                   label="Tempo"
                   value={data.rhythm.bpm == null ? <Spinner size={20} /> : fmtBpm(data.rhythm.bpm)}
+                  unit={data.rhythm.bpm == null ? undefined : "BPM"}
                   sub={data.rhythm.bpm == null ? "analyzing…" : `${data.rhythm.beatCount} beats`}
                   hint="Tempo in beats per minute (Essentia RhythmExtractor2013). Confidence reflects how steady the pulse is."
                 />
@@ -443,12 +445,19 @@ export default function AnalysisPage() {
                 <StatCard
                   label="Key"
                   value={data.tonality.key == null ? <Spinner size={20} /> : keyLabel ? `${keyLabel.name} ${keyLabel.scale === "major" ? "maj" : "min"}` : "—"}
-                  sub={data.tonality.key == null ? "analyzing…" : `Camelot ${data.tonality.camelot}`}
+                  unit={data.tonality.camelot ?? undefined}
+                  sub={data.tonality.key == null ? "analyzing…" : `${(data.tonality.strength * 100).toFixed(0)}% strength`}
                   hint="Estimated musical key & scale (Essentia EDMA profile, tuned for electronic music), plus its Camelot code for harmonic mixing."
                 />
               </div>
               <div>
-                <StatCard label="Loudness" value={data.technical.integratedLufs.toFixed(1)} sub="LUFS integrated" hint="Integrated loudness in LUFS (EBU R128), the overall perceived level across the whole track." />
+                <StatCard
+                  label="Loudness"
+                  value={data.technical.integratedLufs.toFixed(1)}
+                  unit="LUFS"
+                  sub={`LRA ${data.technical.loudnessRangeLu.toFixed(1)} LU · peak ${data.technical.truePeakDbtp.toFixed(1)} dB`}
+                  hint="Integrated loudness in LUFS (EBU R128), the overall perceived level across the whole track."
+                />
               </div>
               <div>
                 <StatCard
@@ -460,9 +469,19 @@ export default function AnalysisPage() {
               </div>
               <div className="col-span-2 lg:col-span-1">
                 {data.semantics.genreTop.length > 0 ? (
-                  <StatCard label="Top genre" value={<span className="text-[length:var(--px-16)]">{shortGenre(data.semantics.genreTop[0].label)}</span>} sub={`${(data.semantics.genreTop[0].score * 100).toFixed(0)}% match`} hint="Most likely genre from the Discogs-400 model (MAEST-30s). The full ranking is on the Genre tab." />
+                  <StatCard
+                    label="Genre"
+                    value={<span className="text-[length:var(--px-18)]">{shortGenre(data.semantics.genreTop[0].label)}</span>}
+                    unit={`${(data.semantics.genreTop[0].score * 100).toFixed(0)}%`}
+                    sub={
+                      data.semantics.genreTop[1]
+                        ? `${shortGenre(data.semantics.genreTop[1].label)} ${(data.semantics.genreTop[1].score * 100).toFixed(0)}%`
+                        : "top match"
+                    }
+                    hint="Most likely genre from the Discogs-400 model (MAEST-30s). The full ranking is on the Genre tab."
+                  />
                 ) : (
-                  <StatCard label="Top genre" value={<Spinner size={20} />} sub="analyzing…" hint="Genre needs the model pass (part 2), filling in shortly." />
+                  <StatCard label="Genre" value={<Spinner size={20} />} sub="analyzing…" hint="Genre needs the model pass (part 2), filling in shortly." />
                 )}
               </div>
             </div>

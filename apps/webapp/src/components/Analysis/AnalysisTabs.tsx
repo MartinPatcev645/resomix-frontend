@@ -1,18 +1,17 @@
 import React, { useEffect } from "react";
+import { PAGE_MARK_INTERACTIVE } from "@resomix/ui";
+import { WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
 
 /**
  * AnalysisTabs — the four-view tab bar for the full analysis page.
  *
- * Deliberately the SAME control as the source tabs on the discovery workspace: one row, dividers
- * between the cells, the active one lifted by the overlay fill and a 2px accent rule underneath.
- * The page had its own cyan card treatment for a while and it read as a different product; a tab
- * bar is chrome, and chrome should look the same everywhere in the app.
+ * Built from the same card the workspace uses for "what do you want to do", because that is the
+ * control this page's reader has already met: the top-left mark, the accent border and tinted fill
+ * on the chosen one, the title in caps and one line saying what is inside. Only the contents
+ * differ, four views instead of two tasks, with a number key where the task cards carry an icon.
  *
- * Only the active view's description is printed, once, under the bar. Four descriptions cost more
- * height than the first lane of the timeline and nobody reads the three that do not apply.
- *
- * Keyboard: ArrowLeft and ArrowRight cycle, 1 to 4 jump. Under 640px the four cells wrap to two
- * rows, the same way the discovery tabs do.
+ * Keyboard: ArrowLeft and ArrowRight cycle, 1 to 4 jump. The cards drop to two columns on a
+ * tablet and one on a phone, the same way the task cards do.
  */
 
 export type AnalysisTab = "timeline" | "harmony" | "vibe" | "genre";
@@ -49,14 +48,12 @@ export const AnalysisTabs: React.FC<{
     return () => window.removeEventListener("keydown", onKey);
   }, [value, onChange]);
 
-  const active = ANALYSIS_TABS.find((t) => t.id === value) ?? ANALYSIS_TABS[0];
-
   return (
-    <div className="flex flex-col gap-[var(--px-10)]">
+    <div className="flex flex-col gap-[var(--px-8)]">
       <div
         role="tablist"
         aria-label="Analysis views"
-        className="flex w-full border border-[var(--rx-color-border-subtle)] max-[640px]:grid max-[640px]:grid-cols-2"
+        className="grid grid-cols-2 gap-[var(--px-10)] sm:gap-[var(--px-12)] lg:grid-cols-4"
       >
         {ANALYSIS_TABS.map((t, i) => {
           const on = t.id === value;
@@ -71,40 +68,55 @@ export const AnalysisTabs: React.FC<{
               tabIndex={on ? 0 : -1}
               onClick={() => onChange(t.id)}
               className={[
-                "ws-focus-ring min-h-[var(--px-44)] flex-1 shrink-0 cursor-pointer border-r border-[var(--rx-color-border-subtle)]",
-                "px-[var(--px-24)] py-[var(--px-12)] font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)]",
-                "transition-[background-color,color,box-shadow] duration-[var(--rx-duration-base)] ease-[var(--rx-ease-standard)]",
-                "last:border-r-0 max-[640px]:px-[var(--px-8)] max-[640px]:text-center",
+                "ws-transition flex h-full flex-col gap-[var(--px-8)] border p-[var(--px-14)] text-left",
+                "transition-[border-color,background-color] duration-[var(--rx-duration-base)] ease-[var(--rx-ease-standard)]",
+                PAGE_MARK_INTERACTIVE,
+                WORKSPACE_FOCUS_VISIBLE,
                 on
-                  ? "bg-[var(--rx-color-overlay)] text-[var(--rx-color-text-primary)] shadow-[inset_0_-2px_0_0_var(--rx-color-accent)]"
-                  : "text-[var(--rx-color-text-secondary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--rx-color-text-primary)]",
+                  ? "ws-mode-card-selected cursor-default border-[var(--rx-color-accent)] bg-[var(--rx-color-selected)]"
+                  : "cursor-pointer border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.035)]",
               ].join(" ")}
             >
-              <span aria-hidden="true" className="mr-[var(--px-8)] opacity-50">
-                {i + 1}
+              <span className="flex min-w-0 items-center gap-[var(--px-10)]">
+                <span
+                  aria-hidden="true"
+                  className={[
+                    "shrink-0 rounded-[var(--rx-radius-tag)] border px-[var(--px-6)] py-[var(--px-1)]",
+                    "font-fira text-[length:var(--px-11)] font-medium",
+                    on
+                      ? "border-[var(--rx-color-accent)] text-[var(--rx-color-accent)]"
+                      : "border-[var(--rx-color-border-default)] text-[var(--rx-color-text-secondary)]",
+                  ].join(" ")}
+                >
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1 font-helvetica text-[length:var(--px-14)] font-bold uppercase leading-[var(--px-18)] tracking-[0.03em] text-[var(--rx-color-text-primary)]">
+                  {t.name}
+                </span>
               </span>
-              {t.name}
+              <span className="hidden font-helvetica text-[length:var(--px-12)] font-light leading-[var(--px-17)] text-[var(--rx-color-text-secondary)] [text-wrap:pretty] sm:block">
+                {t.desc}
+              </span>
             </button>
           );
         })}
       </div>
 
-      <div className="flex flex-wrap items-baseline justify-between gap-[var(--px-8)]">
-        <p className="m-0 font-helvetica text-[length:var(--px-12)] leading-[1.45] text-[var(--an-tab-desc)] [text-wrap:pretty]">
-          {active.desc}
-        </p>
-        {showHint && (
-          <span className="flex shrink-0 items-center gap-[var(--px-6)] font-fira text-[length:var(--px-10)] tracking-[0.04em] text-[var(--an-tab-hint)]">
-            <Key>←</Key>
-            <Key>→</Key>
-            <span>switch view ·</span>
-            <Key>1</Key>
-            <span>–</span>
-            <Key>4</Key>
-            <span>jump</span>
-          </span>
-        )}
-      </div>
+      <p className="m-0 font-helvetica text-[length:var(--px-12)] font-light leading-[1.45] text-[var(--rx-color-text-secondary)] sm:hidden">
+        {(ANALYSIS_TABS.find((t) => t.id === value) ?? ANALYSIS_TABS[0]).desc}
+      </p>
+
+      {showHint && (
+        <div className="flex items-center justify-end gap-[var(--px-6)] font-fira text-[length:var(--px-10)] tracking-[0.04em] text-[var(--an-tab-hint)]">
+          <Key>←</Key>
+          <Key>→</Key>
+          <span>switch view ·</span>
+          <Key>1</Key>
+          <span>–</span>
+          <Key>4</Key>
+          <span>jump</span>
+        </div>
+      )}
     </div>
   );
 };

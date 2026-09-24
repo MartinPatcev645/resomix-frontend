@@ -257,23 +257,35 @@ export function Panel({
 export function StatCard({
   label,
   value,
+  unit,
   sub,
   hint,
 }: {
   label: string;
   value: ReactNode;
+  /**
+   * The value's unit, set small and dim right after it — "124.0 BPM", "F min 4A", "-10.4 LUFS".
+   * Kept out of `value` so the number stays the biggest thing in the card, which is what a reader
+   * scanning five cards is actually looking for.
+   */
+  unit?: string;
   sub?: string;
   hint?: string;
 }) {
   return (
-    <div className="group relative rounded-[var(--px-10)] border border-[var(--opacity-15)] bg-[var(--opacity-10)] p-[var(--px-14)] transition-colors hover:border-[var(--opacity-30)]">
-      <div className="font-helvetica text-[length:var(--px-9)] font-light uppercase tracking-[var(--px-1)] opacity-50">
+    <div className="group relative rounded-[var(--px-10)] border border-[var(--an-border)] bg-[var(--an-card)] p-[var(--px-14)] transition-colors hover:border-[var(--rx-color-border-strong)]">
+      <div className="font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-2)] text-[var(--an-text-muted)]">
         {label}
       </div>
-      <div className="mt-[var(--px-4)] font-helvetica text-[length:var(--px-26)] font-medium leading-none">
-        {value}
+      <div className="mt-[var(--px-6)] flex items-baseline gap-[var(--px-6)]">
+        <span className="font-helvetica text-[length:var(--px-26)] font-medium leading-none text-[var(--an-text)]">
+          {value}
+        </span>
+        {unit && (
+          <span className="font-fira text-[length:var(--px-11)] leading-none text-[var(--an-text-muted)]">{unit}</span>
+        )}
       </div>
-      {sub && <div className="mt-[var(--px-3)] font-helvetica text-[length:var(--px-9)] opacity-40">{sub}</div>}
+      {sub && <div className="mt-[var(--px-8)] font-fira text-[length:var(--px-11)] text-[var(--an-text-muted)]">{sub}</div>}
       {hint && (
         <div className="pointer-events-none absolute left-[var(--px-8)] right-[var(--px-8)] top-full z-30 mt-[var(--px-4)] rounded-[var(--px-6)] border border-[var(--opacity-20)] bg-black/90 px-[var(--px-8)] py-[var(--px-6)] font-helvetica text-[length:var(--px-9)] font-light leading-snug opacity-0 transition-opacity duration-150 group-hover:opacity-100">
           {hint}
