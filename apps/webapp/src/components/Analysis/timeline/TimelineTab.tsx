@@ -1,21 +1,19 @@
 import React, { useMemo } from "react";
 import { shortGenre } from "@resomix/hooks";
 import type { AnalysisData } from "@/pages/analysis/data.ts";
-import { fmtClock, Spinner, TimeAxis } from "@/pages/analysis/charts.tsx";
-import { ChromaView, SpectrogramView, StemArea, STEM_COLORS } from "@/pages/analysis/heatviz.tsx";
+import { fmtClock, Spinner, TimeAxis, ToggleLegend, useToggleSet } from "@/pages/analysis/charts.tsx";
+import { ChromaView, Donut, RibbonChart, SpectrogramView, StemArea, STEM_COLORS } from "@/pages/analysis/heatviz.tsx";
 import { sectionAtMs } from "@/utils/structureStrip.ts";
-import { topSeriesByMean } from "@/utils/analysisTimeline.ts";
 import { StructureStrip } from "../StructureStrip.tsx";
 import { EnergyLane } from "./EnergyLane.tsx";
-import { HeatRows } from "./HeatRows.tsx";
 import { TimelineLane, LANE_GRID } from "./TimelineLane.tsx";
 import { TimeRuler } from "./TimeRuler.tsx";
 
 /** Lane heights, in px at the design root size. Compact halves the tall ones for short viewports. */
 const HEIGHTS = {
-  desktop: { ruler: 18, structure: 64, energy: 120, spectrum: 140, pitch: 96, row: 14, stems: 110 },
-  compact: { ruler: 18, structure: 52, energy: 80, spectrum: 96, pitch: 64, row: 10, stems: 72 },
-  mobile: { ruler: 16, structure: 48, energy: 72, spectrum: 84, pitch: 60, row: 12, stems: 72 },
+  desktop: { ruler: 18, structure: 64, energy: 120, spectrum: 140, pitch: 96, row: 18, stems: 110 },
+  compact: { ruler: 18, structure: 52, energy: 80, spectrum: 96, pitch: 64, row: 12, stems: 72 },
+  mobile: { ruler: 16, structure: 48, energy: 72, spectrum: 84, pitch: 60, row: 14, stems: 72 },
 };
 
 const CHROMA_ORDER = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -51,12 +49,8 @@ export const TimelineTab: React.FC<{
   const totalBars = segments.reduce((sum, s) => sum + (s.bars ?? 0), 0);
   const frac = durationMs > 0 ? Math.min(1, Math.max(0, currentMs / durationMs)) : 0;
 
-  const genreRows = useMemo(() => topSeriesByMean(data.timeline.genreOverTime, 5), [data.timeline.genreOverTime]);
-  const moodRows = useMemo(() => topSeriesByMean(data.timeline.moodOverTime, 4), [data.timeline.moodOverTime]);
-  const instrumentRows = useMemo(
-    () => topSeriesByMean(data.timeline.instrumentOverTime, 5),
-    [data.timeline.instrumentOverTime],
-  );
+  const stemNames = useMemo(() => Object.keys(data.composition.stems), [data.composition.stems]);
+  const { hidden: stemsHidden, toggle: toggleStem } = useToggleSet(stemNames.length);
 
   const nyquist = data.identity.sampleRateHz > 0 ? data.identity.sampleRateHz / 2 : 22050;
   const spectrumAxis = [1, 0.75, 0.5, 0.25, 0].map((f) => fmtHz(nyquist * f));
@@ -64,6 +58,10 @@ export const TimelineTab: React.FC<{
   const bpmText = data.rhythm.bpm == null ? null : `${Number.isInteger(data.rhythm.bpm) ? data.rhythm.bpm : data.rhythm.bpm.toFixed(1)} BPM`;
 
   const spectrogram = data.spectral.linearSpectrogram ?? data.spectral.melSpectrogram;
+  // Structure and Energy read as one block, so they stay tight. Everything below them is a
+  // separate reading of the track and gets room to breathe, except in compact, which exists
+  // precisely to give that room back.
+  const spacedLane = compact ? "" : "mt-[var(--px-14)]";
 
   return (
     <div className="flex flex-col gap-[var(--px-10)]">
@@ -128,6 +126,7 @@ export const TimelineTab: React.FC<{
 
         <TimelineLane
           title="Spectrum"
+          className={spacedLane}
           meta={isDesktop ? "Hz, linear" : `0 – ${fmtHz(nyquist)} Hz`}
           axis={spectrumAxis}
         >
@@ -145,6 +144,7 @@ export const TimelineTab: React.FC<{
 
         <TimelineLane
           title="Pitch"
+          className={spacedLane}
           meta={tonic ? `chromagram · tonic ${tonic}` : "chromagram"}
           axis={[
             "B",
@@ -164,27 +164,58 @@ export const TimelineTab: React.FC<{
           />
         </TimelineLane>
 
-        {genreRows.length > 0 && <HeatRows title="Genre" rows={genreRows} rowHeight={h.row} labelTransform={shortGenre} />}
-        {moodRows.length > 0 && <HeatRows title="Mood" rows={moodRows} rowHeight={h.row} />}
-        {instrumentRows.length > 0 && <HeatRows title="Instruments" rows={instrumentRows} rowHeight={h.row} />}
+        {/* The shipped ribbons, unchanged: orange heat with the label inside the row. The lane
+            gutter carries the group name, so they line up with every chart above them. */}
+        {data.timeline.genreOverTime.series.length > 0 && (
+          <TimelineLane title="Genre" meta="over time" className={spacedLane}>
+            <TimeAxis durationMs={durationMs} currentMs={null} onSeek={onSeek}>
+              <RibbonChart track={data.timeline.genreOverTime} rowHeight={h.row} labelTransform={shortGenre} />
+            </TimeAxis>
+          </TimelineLane>
+        )}
+        {data.timeline.moodOverTime.series.length > 0 && (
+          <TimelineLane title="Mood" meta="over time" className={spacedLane}>
+            <TimeAxis durationMs={durationMs} currentMs={null} onSeek={onSeek}>
+              <RibbonChart track={data.timeline.moodOverTime} rowHeight={h.row} />
+            </TimeAxis>
+          </TimelineLane>
+        )}
+        {data.timeline.instrumentOverTime.series.length > 0 && (
+          <TimelineLane title="Instruments" meta="over time" className={spacedLane}>
+            <TimeAxis durationMs={durationMs} currentMs={null} onSeek={onSeek}>
+              <RibbonChart track={data.timeline.instrumentOverTime} rowHeight={h.row} />
+            </TimeAxis>
+          </TimelineLane>
+        )}
 
         {Object.keys(data.composition.stems).length > 0 ? (
           <TimelineLane
             title="Stems"
-            meta="source separation"
+            className={spacedLane}
             gutterExtra={
-              <span className="flex flex-col gap-[var(--px-2)]">
-                {Object.keys(data.composition.stems).map((name) => (
-                  <span key={name} className="flex items-center gap-[var(--px-5)] font-fira text-[length:var(--px-9)] text-[var(--an-text-muted)]">
-                    <span className="inline-block h-[var(--px-6)] w-[var(--px-6)] rounded-full" style={{ background: STEM_COLORS[name] ?? "#888" }} />
-                    {name} · {data.composition.stems[name].presencePct.toFixed(0)}%
-                  </span>
-                ))}
-              </span>
+              // The mix donut and the stem switches, both live: hiding a stem drops it from the
+              // stacked area and fades its slice. They sit in the gutter rather than under the
+              // chart so the lane keeps the same height as the ones around it.
+              <div className="flex w-full flex-col items-start gap-[var(--px-6)]">
+                <div className="w-full max-w-[var(--px-80)]">
+                  <Donut stems={data.composition.stems} hidden={stemsHidden} />
+                </div>
+                <ToggleLegend
+                  items={stemNames.map((n) => ({
+                    label: n,
+                    color: STEM_COLORS[n] ?? "#888",
+                    suffix: `${data.composition.stems[n].presencePct.toFixed(0)}%`,
+                  }))}
+                  hidden={stemsHidden}
+                  onToggle={toggleStem}
+                />
+              </div>
             }
           >
             <StemArea
               stems={data.composition.stems}
+              hidden={stemsHidden}
+              onToggle={toggleStem}
               height={h.stems}
               durationMs={durationMs}
               currentMs={null}

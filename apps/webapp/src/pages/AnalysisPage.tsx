@@ -436,9 +436,6 @@ export default function AnalysisPage() {
                   label="Tempo"
                   value={data.rhythm.bpm == null ? <Spinner size={20} /> : fmtBpm(data.rhythm.bpm)}
                   sub={data.rhythm.bpm == null ? "analyzing…" : `${data.rhythm.beatCount} beats`}
-                  // A tempo the rhythm stage is unsure of is still printed, but never silently:
-                  // an unsteady pulse is exactly the case where a DJ would rather know.
-                  flag={data.rhythm.bpm != null && data.rhythm.confidence < 0.7 ? `${(data.rhythm.confidence * 100).toFixed(0)}% conf` : undefined}
                   hint="Tempo in beats per minute (Essentia RhythmExtractor2013). Confidence reflects how steady the pulse is."
                 />
               </div>
@@ -447,7 +444,6 @@ export default function AnalysisPage() {
                   label="Key"
                   value={data.tonality.key == null ? <Spinner size={20} /> : keyLabel ? `${keyLabel.name} ${keyLabel.scale === "major" ? "maj" : "min"}` : "—"}
                   sub={data.tonality.key == null ? "analyzing…" : `Camelot ${data.tonality.camelot}`}
-                  flag={data.tonality.ambiguous && data.tonality.altCamelot ? `or ${data.tonality.altCamelot}` : undefined}
                   hint="Estimated musical key & scale (Essentia EDMA profile, tuned for electronic music), plus its Camelot code for harmonic mixing."
                 />
               </div>

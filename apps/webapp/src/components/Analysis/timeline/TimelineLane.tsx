@@ -25,11 +25,13 @@ export const TimelineLane: React.FC<{
   meta?: React.ReactNode;
   /** Desktop-only right axis. Rendered top-to-bottom, evenly spaced. */
   axis?: React.ReactNode[];
-  /** Extra gutter content under the title, such as the stems legend. */
+  /** Extra gutter content under the title, such as the stems donut and switches. */
   gutterExtra?: React.ReactNode;
+  /** Spacing the caller controls, so the stack can group lanes that belong together. */
+  className?: string;
   children: React.ReactNode;
-}> = ({ title, meta, axis, gutterExtra, children }) => (
-  <div className={`flex flex-col gap-[var(--px-6)] ${LANE_GRID}`}>
+}> = ({ title, meta, axis, gutterExtra, className = "", children }) => (
+  <div className={`flex flex-col gap-[var(--px-6)] ${LANE_GRID} ${className}`}>
     <div className="flex items-baseline justify-between gap-[var(--px-8)] lg:flex-col lg:items-start lg:justify-start lg:gap-[var(--px-4)] lg:pt-[var(--px-2)]">
       <span className="font-fira text-[length:var(--px-10)] font-semibold uppercase tracking-[0.06em] text-[var(--an-text-strong)] lg:text-[length:var(--px-11)]">
         {title}
@@ -39,7 +41,7 @@ export const TimelineLane: React.FC<{
           {meta}
         </span>
       ) : null}
-      {gutterExtra ? <span className="hidden lg:block">{gutterExtra}</span> : null}
+      {gutterExtra ? <div className="hidden w-full lg:block">{gutterExtra}</div> : null}
     </div>
 
     <div className="min-w-0">{children}</div>
