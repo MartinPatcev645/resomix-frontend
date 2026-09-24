@@ -7,45 +7,34 @@ import { WORKSPACE_BTN_SECONDARY } from "@/sections/desktop/Workspace/workspaceP
 const LANDING_FALLBACK = "https://resomix.com";
 const BETA_FALLBACK = "https://beta.resomix.com";
 
-const LABELS: Record<Stage, string> = {
-  idle: "Export PDF",
-  building: "Laying out…",
-  drawing: "Rendering…",
-  saving: "Saving…",
-};
-
-type Stage = "idle" | "building" | "drawing" | "saving";
-
 /**
  * Download the whole analysis as one A4 document.
  *
- * Everything the export needs is loaded on the click, not with the page: the PDF writer and the
- * DOM capture are ~400KB between them, and the reader who never presses this should not pay for
- * them. The work itself is a second or two of hidden rendering, so the button says where it is up
- * to rather than freezing on one word.
+ * The writer is loaded on the click, not with the page. The export after that is arithmetic and
+ * takes well under a second, so the button only has two states: a failure is a real failure rather
+ * than something still working.
  */
 export const ExportPdfButton: React.FC<{ data: AnalysisData; className?: string }> = ({ data, className }) => {
-  const [stage, setStage] = useState<Stage>("idle");
+  const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
   const run = useCallback(async () => {
-    if (stage !== "idle") return;
+    if (busy) return;
     setFailed(false);
-    setStage("building");
+    setBusy(true);
     try {
-      const { exportAnalysisPdf } = await import("./exportAnalysisPdf.tsx");
+      const { exportAnalysisPdf } = await import("./exportAnalysisPdf.ts");
       await exportAnalysisPdf(data, {
         landingUrl: BASE_LANDING_URL || LANDING_FALLBACK,
         betaUrl: BASE_BETA_URL || BETA_FALLBACK,
-        onStage: setStage,
       });
     } catch (err) {
       console.error("PDF export failed", err);
       setFailed(true);
     } finally {
-      setStage("idle");
+      setBusy(false);
     }
-  }, [data, stage]);
+  }, [data, busy]);
 
   return (
     <span className="inline-flex items-center gap-[var(--px-10)]">
@@ -57,9 +46,9 @@ export const ExportPdfButton: React.FC<{ data: AnalysisData; className?: string 
       <button
         type="button"
         onClick={() => void run()}
-        disabled={stage !== "idle"}
-        aria-busy={stage !== "idle"}
-        className={`${WORKSPACE_BTN_SECONDARY} ${stage === "idle" ? "cursor-pointer" : "cursor-progress"} ${className ?? ""}`}
+        disabled={busy}
+        aria-busy={busy}
+        className={`${WORKSPACE_BTN_SECONDARY} ${busy ? "cursor-progress" : "cursor-pointer"} ${className ?? ""}`}
       >
         <svg
           aria-hidden="true"
@@ -73,7 +62,7 @@ export const ExportPdfButton: React.FC<{ data: AnalysisData; className?: string 
           <polyline points="7 11 12 16 17 11" />
           <path d="M4 20h16" />
         </svg>
-        {LABELS[stage]}
+        {busy ? "Exporting…" : "Export PDF"}
       </button>
     </span>
   );
