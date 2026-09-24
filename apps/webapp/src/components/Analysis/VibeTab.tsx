@@ -11,10 +11,10 @@ const METERS: { label: string; pick: (s: AnalysisData["semantics"]) => number; c
   { label: "Acoustic", pick: (s) => s.moodAcoustic, color: "var(--an-meter-acoustic)" },
 ];
 
-/** Tags under this score are listed as names only, not drawn as pills. */
-const TAG_FLOOR = 0.2;
+/** How many tags get a pill. The rest are named once underneath. */
+const TAG_SHOWN = 6;
 /** At or above this, a tag is drawn hot. */
-const TAG_HOT = 0.6;
+const TAG_HOT = 0.5;
 
 /**
  * Vibe: where the track sits emotionally, how it is built, and what it is about.
@@ -26,9 +26,11 @@ const TAG_HOT = 0.6;
  */
 export const VibeTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
   const s = data.semantics;
+  // The six strongest, always. A fixed score floor left tracks whose tags all sit low with no
+  // pills at all, which reads as "no moods" rather than "nothing the model is sure of".
   const tags = [...(s.moodThemeTop ?? [])].sort((a, b) => b.score - a.score);
-  const shown = tags.filter((t) => t.score >= TAG_FLOOR);
-  const hidden = tags.filter((t) => t.score < TAG_FLOOR);
+  const shown = tags.slice(0, TAG_SHOWN);
+  const hidden = tags.slice(TAG_SHOWN);
 
   // Valence and arousal are −1…+1; the plot is 0…1 from the bottom-left.
   const x = (s.valence + 1) / 2;
@@ -44,12 +46,14 @@ export const VibeTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
           </span>
         </div>
         <div className="relative aspect-square w-full rounded-[var(--px-8)] border border-[var(--an-border)] bg-[var(--an-lane)]">
-          <span aria-hidden="true" className="absolute inset-x-[var(--px-12)] top-1/2 h-px bg-[var(--an-rule)]" />
-          <span aria-hidden="true" className="absolute inset-y-[var(--px-12)] left-1/2 w-px bg-[var(--an-rule)]" />
-          <Quadrant className="left-[var(--px-12)] top-[var(--px-10)]" label="energetic" />
-          <Quadrant className="right-[var(--px-12)] top-[var(--px-10)]" label="bright" />
-          <Quadrant className="left-[var(--px-12)] bottom-[var(--px-10)]" label="dark" />
-          <Quadrant className="right-[var(--px-12)] bottom-[var(--px-10)]" label="calm" />
+          {/* Arousal runs up the y axis and valence along the x, so the four words belong on the
+              EDGES they name, not in the corners, where they read as quadrant names instead. */}
+          <span aria-hidden="true" className="absolute inset-x-[var(--px-12)] top-1/2 h-px bg-[var(--an-grid)]" />
+          <span aria-hidden="true" className="absolute inset-y-[var(--px-12)] left-1/2 w-px bg-[var(--an-grid)]" />
+          <AxisLabel className="left-1/2 top-[var(--px-10)] -translate-x-1/2" label="energetic" />
+          <AxisLabel className="left-1/2 bottom-[var(--px-10)] -translate-x-1/2" label="calm" />
+          <AxisLabel className="left-[var(--px-10)] top-1/2 -translate-y-1/2" label="dark" />
+          <AxisLabel className="right-[var(--px-10)] top-1/2 -translate-y-1/2" label="bright" />
           <span
             className="absolute h-[var(--px-14)] w-[var(--px-14)] -translate-x-1/2 translate-y-1/2 rounded-full bg-[var(--an-accent)]"
             style={{
@@ -91,13 +95,15 @@ export const VibeTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
           <section className="flex flex-col gap-[var(--px-10)]">
             <div className="flex items-baseline justify-between gap-[var(--px-10)]">
               <h2 className="m-0 font-helvetica text-[length:var(--px-14)] font-medium text-[var(--an-text)]">Mood tags</h2>
-              <span className="font-fira text-[length:var(--px-10)] text-[var(--an-text-muted)]">below 20% hidden</span>
+              <span className="font-fira text-[length:var(--px-10)] text-[var(--an-text-muted)]">
+                MTG-Jamendo · size = confidence · above 50% highlighted
+              </span>
             </div>
             <div className="flex flex-wrap items-center gap-[var(--px-6)]">
               {shown.map((t) => {
                 const hot = t.score >= TAG_HOT;
                 // Size carries the score, so the strongest tags read first without a legend.
-                const size = 12 + Math.round(Math.min(1, (t.score - TAG_FLOOR) / (1 - TAG_FLOOR)) * 6);
+                const size = 12 + Math.round(Math.min(1, Math.max(0, t.score)) * 6);
                 return (
                   <span
                     key={t.label}
@@ -128,8 +134,10 @@ export const VibeTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
   );
 };
 
-const Quadrant: React.FC<{ className: string; label: string }> = ({ className, label }) => (
-  <span className={`absolute font-fira text-[length:var(--px-10)] uppercase tracking-[0.06em] text-[var(--an-text-muted)] ${className}`}>
+const AxisLabel: React.FC<{ className: string; label: string }> = ({ className, label }) => (
+  <span
+    className={`absolute font-fira text-[length:var(--px-10)] uppercase tracking-[0.08em] text-[var(--an-text-secondary)] ${className}`}
+  >
     {label}
   </span>
 );

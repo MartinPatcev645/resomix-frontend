@@ -50,7 +50,11 @@ const full = mapCanonicalToAnalysisData({
   semantics: {
     genre_top: [{ label: "Electronic---Tech House", score: 0.72 }, { label: "Electronic---Techno", score: 0.18 }],
     style_maest_top: [{ label: "Electronic---Tech House", score: 0.61 }, { label: "Electronic---Minimal", score: 0.4 }],
-    mood_theme_top: [{ label: "energetic", score: 0.78 }, { label: "dark", score: 0.31 }, { label: "sexy", score: 0.12 }],
+    mood_theme_top: [
+      { label: "energetic", score: 0.78 }, { label: "deep", score: 0.64 }, { label: "dark", score: 0.31 },
+      { label: "funny", score: 0.28 }, { label: "party", score: 0.24 }, { label: "retro", score: 0.19 },
+      { label: "sexy", score: 0.12 }, { label: "sport", score: 0.08 },
+    ],
     danceability: 0.8, approachability: 0.6, voice_score: 0.2, timbre_bright: 0.55,
     mood_acoustic: 0.1, mood_electronic: 0.95, valence: 0.32, arousal: 0.71,
   },
@@ -121,10 +125,12 @@ describe("Vibe tab", () => {
     render(<VibeTab data={full} />);
     expect(screen.getByText("Perceptual profile")).toBeInTheDocument();
     expect(screen.getByText("Danceable")).toBeInTheDocument();
-    // Twice over: the plot's quadrant label, and the track's strongest mood tag.
+    // Twice over: the plot's axis label, and the track's strongest mood tag.
     expect(screen.getAllByText("energetic")).toHaveLength(2);
-    // Under 20% is listed by name only, never drawn as a pill.
-    expect(screen.getByText(/hidden: sexy 12/)).toBeInTheDocument();
+    // Six pills whatever the scores are, then the rest named once underneath.
+    expect(screen.getByText("retro")).toBeInTheDocument();
+    expect(screen.queryByText("sexy")).not.toBeInTheDocument();
+    expect(screen.getByText(/hidden: sexy 12 · sport 8/)).toBeInTheDocument();
   });
 });
 

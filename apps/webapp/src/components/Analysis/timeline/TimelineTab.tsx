@@ -65,26 +65,43 @@ export const TimelineTab: React.FC<{
 
   return (
     <div className="flex flex-col gap-[var(--px-10)]">
-      <div className={`flex flex-wrap items-baseline justify-between gap-[var(--px-8)] font-fira text-[length:var(--px-10)] text-[var(--an-text-muted)] lg:text-[length:var(--px-11)]`}>
-        <span>
-          {shownSections ? `${shownSections} sections · ` : ""}
-          {totalBars ? `${totalBars} bars · ` : ""}
-          {bpmText ? `${bpmText} · ` : ""}
-          {isDesktop ? "click a section to jump to its start" : "tap to seek"}
-        </span>
-        <span className="flex items-center gap-[var(--px-10)]">
-          <span className="hidden lg:inline">LANE COLOR = SECTION · │ PLAYHEAD</span>
-          {isDesktop && (
-            <button
-              type="button"
-              onClick={onToggleCompact}
-              aria-pressed={compact}
-              className="cursor-pointer rounded-[var(--px-4)] border border-[var(--an-border)] px-[var(--px-8)] py-[var(--px-2)] uppercase tracking-[0.06em] text-[var(--an-text-muted)] transition-colors duration-[var(--an-fast)] hover:border-[var(--an-tab-border-hover)] hover:text-[var(--an-text-strong)]"
-            >
-              {compact ? "full height" : "compact"}
-            </button>
-          )}
-        </span>
+      {/* The reading of the track sits ABOVE the lanes, where it describes what the reader is
+          about to look at. At the bottom it was a footnote to a chart nobody had reached yet. */}
+      <div className="flex flex-col gap-[var(--px-8)] border-b border-[var(--an-rule)] pb-[var(--px-10)]">
+        <div className="flex flex-wrap items-baseline justify-between gap-[var(--px-10)] font-fira text-[length:var(--px-10)] text-[var(--an-text-muted)] lg:text-[length:var(--px-11)]">
+          <span>
+            {shownSections ? `${shownSections} sections · ` : ""}
+            {totalBars ? `${totalBars} bars · ` : ""}
+            {bpmText ? `${bpmText} · ` : ""}
+            {isDesktop ? "click a section to jump to its start" : "tap to seek"}
+          </span>
+          <span className="flex items-center gap-[var(--px-10)]">
+            <span className="hidden lg:inline">LANE COLOR = SECTION · │ PLAYHEAD</span>
+            {isDesktop && (
+              <button
+                type="button"
+                onClick={onToggleCompact}
+                aria-pressed={compact}
+                className={[
+                  "ws-focus-ring inline-flex min-h-[var(--px-28)] cursor-pointer items-center",
+                  "rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent",
+                  "px-[var(--px-10)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)]",
+                  "text-[var(--rx-color-text-primary)] transition-[background-color,border-color]",
+                  "duration-[var(--rx-duration-base)] ease-[var(--rx-ease-standard)]",
+                  "hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)]",
+                ].join(" ")}
+              >
+                {compact ? "full height" : "compact"}
+              </button>
+            )}
+          </span>
+        </div>
+
+        {data.structure?.summary && (
+          <p className="m-0 max-w-[900px] font-helvetica text-[length:var(--px-12)] font-light leading-[1.6] text-[var(--an-text-secondary)] lg:text-[length:var(--px-13)]">
+            {data.structure.summary}
+          </p>
+        )}
       </div>
 
       {/* One positioning context for the lanes AND the playhead, so both read the same two insets
@@ -244,12 +261,6 @@ export const TimelineTab: React.FC<{
           )}
         </div>
       </div>
-
-      {data.structure?.summary && (
-        <p className="m-0 max-w-[900px] font-helvetica text-[length:var(--px-12)] font-light leading-[1.6] text-[var(--an-text-secondary)] lg:text-[length:var(--px-13)]">
-          {data.structure.summary}
-        </p>
-      )}
     </div>
   );
 };
