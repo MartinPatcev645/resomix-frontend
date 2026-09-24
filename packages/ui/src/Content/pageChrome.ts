@@ -60,6 +60,19 @@ export const PAGE_BTN_SECONDARY =
   `${PAGE_BTN_BASE} border border-[var(--rx-color-border-default)] bg-transparent text-[var(--rx-color-text-primary)] ` +
   "hover:border-[var(--rx-color-border-strong)] hover:bg-[rgba(255,255,255,0.06)]";
 
+/**
+ * The way OUT of a page.
+ *
+ * The same secondary button with the accent as its edge, so the one control that leaves the page
+ * is the one that reads first. Its label and destination change from page to page (Sonic
+ * Discovery, Back to Library, Back to Upload) and the button does not. The webapp's own back
+ * control wears the matching `HERO_TOOLBAR_BACK`; change the two together.
+ */
+export const PAGE_BTN_BACK =
+  `${PAGE_BTN_BASE} gap-[var(--px-6)] border border-[var(--rx-color-accent)] bg-transparent ` +
+  "text-[var(--rx-color-text-primary)] hover:border-[var(--rx-color-accent-hover)] " +
+  "hover:text-[var(--rx-color-accent-hover)]";
+
 export const PAGE_BTN_PRIMARY =
   `${PAGE_BTN_BASE} border border-[var(--rx-color-accent)] bg-[var(--rx-color-accent)] font-semibold text-[#050505] ` +
   "hover:border-[var(--rx-color-accent-hover)] hover:bg-[var(--rx-color-accent-hover)]";

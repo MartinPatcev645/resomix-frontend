@@ -1,14 +1,20 @@
 import React from "react";
 import type { AnalysisData } from "@/pages/analysis/data.ts";
 
-/** The six perceptual meters, in the handoff's order, each with its own colour token. */
-const METERS: { label: string; pick: (s: AnalysisData["semantics"]) => number; color: string }[] = [
-  { label: "Danceable", pick: (s) => s.danceability, color: "var(--an-meter-danceable)" },
-  { label: "Electronic", pick: (s) => s.moodElectronic, color: "var(--an-meter-electronic)" },
-  { label: "Vocal", pick: (s) => s.voiceScore, color: "var(--an-meter-vocal)" },
-  { label: "Approachable", pick: (s) => s.approachability, color: "var(--an-meter-approachable)" },
-  { label: "Bright", pick: (s) => s.timbreBright, color: "var(--an-meter-bright)" },
-  { label: "Acoustic", pick: (s) => s.moodAcoustic, color: "var(--an-meter-acoustic)" },
+/**
+ * The six perceptual meters, in the handoff's order, each with its own colour token.
+ *
+ * The second line says what the number is OF. "Bright 52" means nothing on its own, and a reader
+ * guessing at it will guess wrong: three of these six are one end of a pair rather than an amount
+ * of something, so the axis has to be printed or the score is unreadable.
+ */
+const METERS: { label: string; sub: string; pick: (s: AnalysisData["semantics"]) => number; color: string }[] = [
+  { label: "Danceable", sub: "rhythm regularity", pick: (s) => s.danceability, color: "var(--an-meter-danceable)" },
+  { label: "Electronic", sub: "vs acoustic", pick: (s) => s.moodElectronic, color: "var(--an-meter-electronic)" },
+  { label: "Vocal", sub: "voice presence", pick: (s) => s.voiceScore, color: "var(--an-meter-vocal)" },
+  { label: "Approachable", sub: "vs experimental", pick: (s) => s.approachability, color: "var(--an-meter-approachable)" },
+  { label: "Bright", sub: "vs dark", pick: (s) => s.timbreBright, color: "var(--an-meter-bright)" },
+  { label: "Acoustic", sub: "instrumentation", pick: (s) => s.moodAcoustic, color: "var(--an-meter-acoustic)" },
 ];
 
 /** How many tags get a pill. The rest are named once underneath. */
@@ -78,9 +84,14 @@ export const VibeTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
               return (
                 <div
                   key={m.label}
-                  className="grid min-h-[var(--px-44)] grid-cols-[var(--px-110)_minmax(0,1fr)_var(--px-36)] items-center gap-[var(--px-10)] border-b border-[var(--an-rule)] py-[var(--px-8)]"
+                  className="grid min-h-[var(--px-52)] grid-cols-[var(--px-110)_minmax(0,1fr)_var(--px-36)] items-center gap-[var(--px-10)] border-b border-[var(--an-rule)] py-[var(--px-8)]"
                 >
-                  <span className="font-helvetica text-[length:var(--px-12)] text-[var(--an-text-secondary)]">{m.label}</span>
+                  <span className="flex min-w-0 flex-col gap-[var(--px-2)]">
+                    <span className="font-helvetica text-[length:var(--px-12)] text-[var(--an-text)]">{m.label}</span>
+                    <span className="font-fira text-[length:var(--px-9)] leading-tight text-[var(--an-text-muted)]">
+                      {m.sub}
+                    </span>
+                  </span>
                   <span className="h-[var(--px-6)] w-full overflow-hidden rounded-[var(--px-3)] bg-[var(--an-border)]">
                     <span className="block h-full rounded-[var(--px-3)]" style={{ width: `${v * 100}%`, background: m.color }} />
                   </span>

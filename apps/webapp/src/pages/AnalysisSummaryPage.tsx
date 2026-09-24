@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { BackButton } from "@/components/Navigation/BackButton.tsx";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
 import { AnalysisSummaryCard } from "@/sections/desktop/Workspace/AnalysisSummaryCard.tsx";
 
@@ -52,17 +53,7 @@ export default function AnalysisSummaryPage() {
     <section className="w-full">
       <div className="mx-auto w-full max-w-4xl text-[var(--color-primary)]">
         <div className="mb-[var(--px-16)]">
-          <button
-            type="button"
-            onClick={() => navigate(backHref)}
-            aria-label={cameFromLibrary ? "Back to Library" : "Back to Analysis"}
-            className="inline-flex items-center gap-[var(--px-8)] font-fira text-[length:var(--px-10)] font-light uppercase tracking-wide opacity-70 transition-opacity hover:opacity-100 cursor-pointer"
-          >
-            <svg className="h-[var(--px-12)] w-[var(--px-12)] fill-none stroke-current" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            {cameFromLibrary ? "Back to Library" : "Back to Analysis"}
-          </button>
+          <BackButton label={cameFromLibrary ? "Back to Library" : "Back to Analysis"} to={backHref} />
         </div>
 
         {!analysisId && (

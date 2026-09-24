@@ -16,12 +16,28 @@ import React from "react";
  * Icon-only controls override padding/size; the cover pencil also overrides the background,
  * because it sits on the artwork and must stay opaque.
  */
-export const HERO_TOOLBAR_BTN =
+const HERO_TOOLBAR_SHAPE =
   "group inline-flex min-h-[var(--px-44)] cursor-pointer items-center justify-center gap-[var(--px-6)] whitespace-nowrap " +
-  "rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent " +
+  "rounded-[var(--rx-radius-control)] bg-transparent " +
   "px-[var(--px-14)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] " +
-  "text-[var(--rx-color-text-primary)] transition-[color,border-color] duration-[var(--rx-duration-base,150ms)] ease-out " +
+  "text-[var(--rx-color-text-primary)] transition-[color,border-color] duration-[var(--rx-duration-base,150ms)] ease-out";
+
+export const HERO_TOOLBAR_BTN =
+  `${HERO_TOOLBAR_SHAPE} border border-[var(--rx-color-border-default)] ` +
   "hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]";
+
+/**
+ * The way OUT of a page, wherever one exists.
+ *
+ * Same button in every respect but the edge, which is the accent rather than the default border so
+ * the one control that leaves the page is the one that is visible at a glance. The label and the
+ * destination change from page to page (Sonic Discovery, Back to Library, Back to Upload); the
+ * button does not. The webapp's `BackButton` and the playlist hero both wear this, and
+ * `PAGE_BTN_BACK` in `@resomix/ui` is the same treatment for the pages that live in that package.
+ */
+export const HERO_TOOLBAR_BACK =
+  `${HERO_TOOLBAR_SHAPE} border border-[var(--rx-color-accent)] ` +
+  "hover:border-[var(--rx-color-accent-hover)] hover:text-[var(--rx-color-accent-hover)]";
 
 const ICON = "h-[var(--px-16)] w-[var(--px-16)] shrink-0";
 

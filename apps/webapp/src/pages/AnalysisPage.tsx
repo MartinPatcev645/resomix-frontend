@@ -29,6 +29,7 @@ import { VibeTab } from "@/components/Analysis/VibeTab.tsx";
 import { GenreTab } from "@/components/Analysis/GenreTab.tsx";
 import { TabPending } from "@/components/Analysis/TabPending.tsx";
 import { ExportPdfButton } from "@/components/Analysis/export/ExportPdfButton.tsx";
+import { BackButton } from "@/components/Navigation/BackButton.tsx";
 
 const fmtDuration = (ms: number) => {
   const s = Math.round(ms / 1000);
@@ -249,17 +250,7 @@ export default function AnalysisPage() {
         {/* Back nav — return to wherever the user came from: Library when the analysis was opened
             from a track, otherwise the upload landing. Mirrors the playlist page's back link. */}
         <div className="mb-[var(--px-16)]">
-          <button
-            type="button"
-            onClick={() => navigate(cameFromLibrary ? "/library" : "/")}
-            aria-label={cameFromLibrary ? "Back to Library" : "Back to Upload"}
-            className="inline-flex items-center gap-[var(--px-8)] text-[length:var(--px-10)] font-light font-fira uppercase tracking-wide opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
-          >
-            <svg className="w-[var(--px-12)] h-[var(--px-12)] fill-none stroke-current" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            {cameFromLibrary ? "Back to Library" : "Back to Upload"}
-          </button>
+          <BackButton label={cameFromLibrary ? "Back to Library" : "Back to Upload"} to={cameFromLibrary ? "/library" : "/"} />
         </div>
 
         <header className="mb-[var(--px-28)] text-center">

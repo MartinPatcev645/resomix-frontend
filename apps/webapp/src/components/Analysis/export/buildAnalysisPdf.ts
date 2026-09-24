@@ -873,13 +873,19 @@ function drawWheel(doc: jsPDF, cx: number, cy: number, r: number, camelot: strin
 
 /* ---------------------------------------------------------------------- vibe */
 
-const METERS: { label: string; pick: (s: AnalysisData["semantics"]) => number; key: keyof typeof METER_RGB }[] = [
-  { label: "Danceable", pick: (s) => s.danceability, key: "danceable" },
-  { label: "Electronic", pick: (s) => s.moodElectronic, key: "electronic" },
-  { label: "Vocal", pick: (s) => s.voiceScore, key: "vocal" },
-  { label: "Approachable", pick: (s) => s.approachability, key: "approachable" },
-  { label: "Bright", pick: (s) => s.timbreBright, key: "bright" },
-  { label: "Acoustic", pick: (s) => s.moodAcoustic, key: "acoustic" },
+/** Same six as the Vibe tab, second line included: a score with no axis printed cannot be read. */
+const METERS: {
+  label: string;
+  sub: string;
+  pick: (s: AnalysisData["semantics"]) => number;
+  key: keyof typeof METER_RGB;
+}[] = [
+  { label: "Danceable", sub: "rhythm regularity", pick: (s) => s.danceability, key: "danceable" },
+  { label: "Electronic", sub: "vs acoustic", pick: (s) => s.moodElectronic, key: "electronic" },
+  { label: "Vocal", sub: "voice presence", pick: (s) => s.voiceScore, key: "vocal" },
+  { label: "Approachable", sub: "vs experimental", pick: (s) => s.approachability, key: "approachable" },
+  { label: "Bright", sub: "vs dark", pick: (s) => s.timbreBright, key: "bright" },
+  { label: "Acoustic", sub: "instrumentation", pick: (s) => s.moodAcoustic, key: "acoustic" },
 ];
 
 function drawVibe(L: Layout, data: AnalysisData): void {
@@ -917,13 +923,14 @@ function drawVibe(L: Layout, data: AnalysisData): void {
     const col = i % 2;
     const row = Math.floor(i / 2);
     const x = rx + col * (colW + 18);
-    const y = top + 16 + row * 26;
+    const y = top + 16 + row * 34;
     const v = Math.max(0, Math.min(1, m.pick(s)));
-    text(doc, m.label, x, y, { size: 8, color: C.inkSoft });
+    text(doc, m.label, x, y, { size: 8, color: C.ink });
     text(doc, String(Math.round(v * 100)), x + colW, y, { size: 8, color: C.ink, align: "right" });
-    fillRect(doc, x, y + 12, colW, 3.6, C.line, 1.8);
-    fillRect(doc, x, y + 12, colW * v, 3.6, METER_RGB[m.key], 1.8);
-    line(doc, x, y + 21, x + colW, y + 21, C.rule, 0.4);
+    text(doc, m.sub, x, y + 10, { size: 6.2, color: C.inkMuted });
+    fillRect(doc, x, y + 20, colW, 3.6, C.line, 1.8);
+    fillRect(doc, x, y + 20, colW * v, 3.6, METER_RGB[m.key], 1.8);
+    line(doc, x, y + 29, x + colW, y + 29, C.rule, 0.4);
   });
   L.gap(plot + 18);
 

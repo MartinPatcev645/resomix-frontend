@@ -75,14 +75,14 @@ export const ExportPdfButton: React.FC<{ data: AnalysisData; className?: string 
         status={state.kind === "working" ? "loading" : state.kind === "done" ? "success" : "error"}
         eyebrow="Analysis // Export"
         title={
-          state.kind === "working" ? "Building your PDF" : state.kind === "done" ? "Export ready" : "Export failed"
+          state.kind === "working" ? "Building your PDF" : state.kind === "done" ? "Your PDF is ready" : "Export failed"
         }
         message={
           state.kind === "working" ? (
-            "The whole analysis, laid out as an A4 document."
+            "The whole analysis, laid out as an A4 document. The download starts on its own."
           ) : state.kind === "done" ? (
             <>
-              Saved to your downloads as{" "}
+              The download will start in a couple of seconds, as{" "}
               <span className="font-fira text-[length:var(--px-11)] text-[var(--rx-color-text-primary)]">
                 {state.filename}
               </span>

@@ -19,7 +19,7 @@ import { playlistAccessChrome, PLAYLIST_LOCK_MARK } from "@/utils/playlistAccess
 import { StickyReferenceBar } from "@/components/Playlist/StickyReferenceBar.tsx";
 import { PLAYLIST_DIVIDER_BORDER } from "@/utils/playlistChrome.ts";
 import { WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
-import { HERO_TOOLBAR_BTN, HeroChevronLeft, HeroAutoplayToggle, HeroClockIcon, RenameIcon, ExportIcon, ShareIcon } from "@/components/Playlist/heroToolbar.tsx";
+import { HERO_TOOLBAR_BTN, HERO_TOOLBAR_BACK, HeroChevronLeft, HeroAutoplayToggle, HeroClockIcon, RenameIcon, ExportIcon, ShareIcon } from "@/components/Playlist/heroToolbar.tsx";
 
 const PlaylistHero: React.FC = () => {
   const stickySentinelRef = React.useRef<HTMLDivElement | null>(null);
@@ -436,7 +436,7 @@ const PlaylistHero: React.FC = () => {
               e.preventDefault();
               navigate("/library");
             }}
-            className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}`}
+            className={`${HERO_TOOLBAR_BACK} ${WORKSPACE_FOCUS_VISIBLE}`}
             id="playlist-hero-back-link"
           >
             <HeroChevronLeft />
@@ -450,7 +450,7 @@ const PlaylistHero: React.FC = () => {
               e.preventDefault();
               navigate("/sonic-discovery");
             }}
-            className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}`}
+            className={`${HERO_TOOLBAR_BACK} ${WORKSPACE_FOCUS_VISIBLE}`}
             id="playlist-hero-back-link"
           >
             <HeroChevronLeft />
