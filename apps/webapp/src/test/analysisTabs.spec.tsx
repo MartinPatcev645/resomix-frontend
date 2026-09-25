@@ -132,6 +132,23 @@ describe("Vibe tab", () => {
     expect(screen.queryByText("sexy")).not.toBeInTheDocument();
     expect(screen.getByText(/hidden: sexy 12 · sport 8/)).toBeInTheDocument();
   });
+
+  /**
+   * The marker's caption used to be pinned to the dot's right, always. A bright track puts the dot
+   * near the right edge, so on a phone, where the plot is only as wide as the screen, "this track"
+   * ran outside the square. It now sits on whichever side has room.
+   */
+  it("keeps the marker caption inside the plot on a bright track", () => {
+    const bright = { ...full, semantics: { ...full.semantics, valence: 0.9, arousal: 0.4 } };
+    render(<VibeTab data={bright} />);
+    expect(screen.getByText("this track").className).toContain("right-[var(--px-18)]");
+  });
+
+  it("puts the caption to the right of the marker on a dark track", () => {
+    const dark = { ...full, semantics: { ...full.semantics, valence: -0.9, arousal: 0.4 } };
+    render(<VibeTab data={dark} />);
+    expect(screen.getByText("this track").className).toContain("left-[var(--px-18)]");
+  });
 });
 
 describe("Genre tab", () => {
