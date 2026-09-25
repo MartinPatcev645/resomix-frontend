@@ -143,8 +143,130 @@ class AudioService:
                 except Exception as e:
                     print(f"[FFmpeg Validation] Error cleaning up validation temp file {temp_path}: {str(e)}")
 
+    # ------------------------------------------------------------------ #
+    # Upload inspection (what a user is actually allowed to send)
+    # ------------------------------------------------------------------ #
+    #
+    # The container ffprobe reports -> the extension we hand downstream. Uploads arrive named
+    # anything at all: WhatsApp sends Opus as `.mpeg`, iOS sends AAC as `.m4a`, and a browser may
+    # send no extension at all. Naming the onward file from the CONTENT means no service further
+    # down has to trust a name. `format_name` is a comma-separated family ("mov,mp4,m4a,3gp,3g2"),
+    # so each token is looked up in turn.
+    _EXT_BY_FORMAT = {
+        "mp3": ".mp3",
+        "wav": ".wav",
+        "flac": ".flac",
+        "aiff": ".aiff",
+        "ogg": ".ogg",
+        "mp4": ".m4a",
+        "asf": ".wma",
+        "matroska": ".mka",
+        "aac": ".aac",
+        "amr": ".amr",
+        "caf": ".caf",
+        "wv": ".wv",
+        "ape": ".ape",
+    }
+
+    # Codecs that carry no encoder loss. They are converted (when converted at all) to another
+    # lossless format, never to MP3.
+    _LOSSLESS_CODECS = {
+        "flac", "alac", "wavpack", "ape", "tta", "mlp", "truehd", "wmalossless",
+    }
+
+    @staticmethod
+    def probe_upload(audio_bytes: bytes) -> Optional[dict]:
+        """One ffprobe pass over an upload. ``None`` when ffprobe cannot read it at all.
+
+        Returns the few facts every later step needs, so nothing has to guess from a filename:
+        container, codec, bitrate, sample rate, channels, duration, whether the codec is lossless,
+        whether there is real video in the file, and the extension the content deserves.
+        """
+        temp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".tmp") as temp_file:
+                temp_path = temp_file.name
+                temp_file.write(audio_bytes)
+
+            result = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_format", "-show_streams",
+                 "-print_format", "json", temp_path],
+                capture_output=True, text=True, timeout=60,
+            )
+            if result.returncode != 0 or not result.stdout:
+                return None
+            probe = json.loads(result.stdout)
+        except (FileNotFoundError, subprocess.SubprocessError, json.JSONDecodeError, OSError) as exc:
+            print(f"[AudioService] probe failed: {exc}")
+            return None
+        finally:
+            if temp_path and os.path.exists(temp_path):
+                try:
+                    os.unlink(temp_path)
+                except OSError:
+                    pass
+
+        streams = probe.get("streams") or []
+        audio = next((s for s in streams if s.get("codec_type") == "audio"), None)
+        if audio is None:
+            return None
+
+        # Embedded cover art is a video stream with `attached_pic` set. Treating it as video would
+        # reject every tagged MP3 in the world.
+        has_video = any(
+            s.get("codec_type") == "video" and not (s.get("disposition") or {}).get("attached_pic")
+            for s in streams
+        )
+
+        fmt = probe.get("format") or {}
+        tokens = [t.strip().lower() for t in (fmt.get("format_name") or "").split(",") if t.strip()]
+        container = tokens[0] if tokens else ""
+        extension = next(
+            (AudioService._EXT_BY_FORMAT[t] for t in tokens if t in AudioService._EXT_BY_FORMAT),
+            "",
+        )
+
+        def _num(value, cast):
+            try:
+                return cast(value)
+            except (TypeError, ValueError):
+                return None
+
+        codec = (audio.get("codec_name") or "").lower()
+        return {
+            "container": container,
+            "codec": codec,
+            "extension": extension,
+            "bitrate_bps": _num(audio.get("bit_rate") or fmt.get("bit_rate"), int),
+            "sample_rate": _num(audio.get("sample_rate"), int),
+            "channels": _num(audio.get("channels"), int),
+            "duration_s": _num(fmt.get("duration") or audio.get("duration"), float),
+            "lossless": codec in AudioService._LOSSLESS_CODECS or codec.startswith("pcm_"),
+            "has_video": has_video,
+        }
+
+    @staticmethod
+    def inspect_upload(audio_bytes: bytes, max_duration_s: Optional[int] = None) -> tuple:
+        """``(info, error)`` for an upload. Exactly one of the two is set.
+
+        The gate is the file's CONTENT, not its extension or its declared type: anything with an
+        audio stream is accepted, whatever it is named. Video files are refused, and so is audio
+        longer than ``max_duration_s``.
+        """
+        info = AudioService.probe_upload(audio_bytes)
+        if info is None:
+            return None, (
+                "We could not read any audio in this file. It may be corrupted, protected by DRM, "
+                "or not an audio file."
+            )
+        if info["has_video"]:
+            return None, "This is a video file. Please upload an audio file."
+        if max_duration_s and info["duration_s"] and info["duration_s"] > max_duration_s:
+            return None, f"Audio is longer than {max_duration_s // 60} minutes."
+        return info, None
+
     # Future audio processing methods can be added below
-    
+
     @staticmethod
     def get_audio_metadata(audio_bytes: bytes, filename: str) -> Optional[dict]:
         """

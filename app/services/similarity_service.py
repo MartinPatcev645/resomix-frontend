@@ -154,12 +154,22 @@ class SimilarityService:
             ".m4a",
             ".aac",
             ".ogg",
+            ".oga",
+            ".opus",
             ".wma",
             ".aiff",
-            ".mp4",
+            ".aif",
+            ".amr",
+            ".caf",
+            ".mka",
+            ".wv",
+            ".ape",
         ]:
-            # Default to .mp3 if extension is missing or invalid
-            file_ext = ".mp3"
+            # `.audio`, NOT `.mp3`. Naming an unknown container `.mp3` was a lie the media server
+            # then believed: its preview step decides "is this already an MP3?" from the name, so
+            # an Opus file arrived as `<uuid>.mp3`, was stored unconverted, and broke playback,
+            # peaks and HLS. An extension it cannot place makes it read the content instead.
+            file_ext = ".audio"
         secure_filename = f"upload_{track_uuid}{file_ext}"
         files_data = {
             "file": (secure_filename, audio_bytes, "application/octet-stream")

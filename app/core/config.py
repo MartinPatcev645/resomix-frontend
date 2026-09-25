@@ -308,6 +308,12 @@ class Settings(BaseModel):
     max_file_size: int = Field(
         default=100 * 1024 * 1024, description="Maximum file size in bytes (100MB)"
     )
+    # Uploads are gated on length as well as size, because the two are not the same question. A
+    # 100 MB Opus file is several hours of audio, and every stage after this one (stems, the
+    # 8-fold structure ensemble, HLS segmentation) costs time per second of audio, not per byte.
+    max_audio_duration_seconds: int = Field(
+        default=20 * 60, description="Longest upload we accept, in seconds (20 minutes)"
+    )
     temp_dir: str = Field(
         default="temp_audio", description="Temporary directory for uploaded files"
     )
@@ -799,6 +805,7 @@ class Settings(BaseModel):
             "DEMO_MODE": "demo_mode",
             "SIMILARITY_AUTH_REQUIRED": "similarity_auth_required",
             "SIMILARITY_JOB_TTL_SECONDS": "similarity_job_ttl_seconds",
+            "MAX_AUDIO_DURATION_SECONDS": "max_audio_duration_seconds",
             "SYSTEM_PARTNER_ID": "system_partner_id",
             "PREVIEW_FERNET_SECRET": "preview_fernet_secret",
             "TOKEN_ENCRYPTION_KEY": "token_encryption_key",
@@ -958,6 +965,7 @@ class Settings(BaseModel):
                     "invoice_retention_years",
                     "deletion_request_sla_days",
                     "similarity_job_ttl_seconds",
+                    "max_audio_duration_seconds",
                     "backup_stale_after_hours",
                     "backup_history_retention_days",
                 ]:

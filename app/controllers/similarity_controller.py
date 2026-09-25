@@ -317,17 +317,20 @@ class SimilarityController:
         # Same conditional as the blocking path: without ffmpeg we cannot inspect the streams, so
         # we accept and let the pipeline report a failure rather than reject a probably-fine file.
         # (`is_ffmpeg_available` is lru_cached, so it is a dict lookup, not a subprocess spawn.)
+        #
+        # The gate is the CONTENT. Any container with an audio stream is accepted, whatever the
+        # file is called, because uploads arrive named anything: WhatsApp sends Opus as `.mpeg`,
+        # a phone sends AAC as `.m4a`, a browser may send no extension at all. What comes back is
+        # also what names the file for the services downstream, so none of them has to guess.
+        probe_info = None
         if self.audio_service.is_ffmpeg_available():
-            is_valid_audio = await run_in_threadpool(
-                self.audio_service.validate_audio_format, audio_bytes, secure_filename
+            probe_info, probe_error = await run_in_threadpool(
+                self.audio_service.inspect_upload, audio_bytes, settings.max_audio_duration_seconds
             )
-            if not is_valid_audio:
+            if probe_error:
                 return JSONResponse(
                     status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                    content=format_response(
-                        success=False,
-                        error="The uploaded file does not contain valid audio streams according to our analysis.",
-                    ),
+                    content=format_response(success=False, error=probe_error),
                 )
 
         # --- persist the track, then hand off ---
@@ -353,9 +356,10 @@ class SimilarityController:
             )
 
         job_id = self.upload_jobs.new_job_id()
-        _, ext = os.path.splitext(original_filename or "")
-        if not ext:
-            ext = ".mp3"
+        # The probe's extension, not the uploaded one. A file named `.mpeg` that holds Opus used to
+        # be spooled and forwarded as `.mpeg`, and the media server then decided what to do with it
+        # from that name.
+        ext = (probe_info or {}).get("extension") or os.path.splitext(original_filename or "")[1] or ".audio"
         spool_path = os.path.join(settings.temp_dir, f"simupload_{job_id}{ext}")
         try:
             os.makedirs(settings.temp_dir, exist_ok=True)
@@ -840,11 +844,12 @@ class SimilarityController:
         is_ffmpeg_available = self.audio_service.is_ffmpeg_available()
 
         if is_ffmpeg_available:
-            # ffprobe writes a temp file and forks a subprocess — off the event loop.
-            is_valid_audio = await run_in_threadpool(
-                self.audio_service.validate_audio_format, audio_bytes, secure_filename
+            # ffprobe writes a temp file and forks a subprocess — off the event loop. The gate is
+            # the file's content, so any container holding audio is accepted whatever it is named.
+            probe_info, probe_error = await run_in_threadpool(
+                self.audio_service.inspect_upload, audio_bytes, settings.max_audio_duration_seconds
             )
-            if not is_valid_audio:
+            if probe_error:
                 duration_ms = (time.time() - start_time) * 1000
                 self.logging_service.log(
                     async_db=db,
@@ -865,7 +870,7 @@ class SimilarityController:
                     duration_ms=duration_ms,
                     context="Audio format validation during similarity upload",
                     metadata={
-                        "error": "File is not valid audio",
+                        "error": probe_error,
                         "ffmpeg_available": is_ffmpeg_available,
                         "validation_step": "audio_format_check",
                         "file_content_type": file.content_type,
@@ -876,10 +881,7 @@ class SimilarityController:
                 )
                 return JSONResponse(
                     status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                    content=format_response(
-                        success=False,
-                        error="The uploaded file does not contain valid audio streams according to our analysis.",
-                    ),
+                    content=format_response(success=False, error=probe_error),
                 )
 
             # Audio validation passed, now upload to database first

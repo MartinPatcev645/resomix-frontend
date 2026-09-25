@@ -43,6 +43,7 @@ from app.services.analysis_projection import project_summary
 from app.services.analysis_readings_service import attach_readings
 from app.services.analysis_service import AnalysisService
 from app.services.antivirus_service import AntivirusService
+from app.services.audio_service import AudioService
 from app.services.entitlement_gate import EntitlementGate
 from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.services.track_analysis_result_service import TrackAnalysisResultService
@@ -72,6 +73,7 @@ class AnalysisResultController:
         self.entitlement_gate = EntitlementGate()
         self.operation_limit_evaluator = OperationLimitEvaluator()
         self.antivirus_service = AntivirusService()
+        self.audio_service = AudioService()
         self.track_upload_service = TrackUploadService()
         self.track_repository = TrackRepository()
         self.playlist_repository = PlaylistRepository()
@@ -313,6 +315,30 @@ class AnalysisResultController:
         if not scan.get("clean"):
             return self._reject(415, "The uploaded file was rejected for security reasons.")
 
+        # 5b) Is it actually audio, and short enough to be worth the pipeline?
+        #
+        # This path had no such check. A renamed PDF, a video, or a four-hour DJ set all passed
+        # here and failed somewhere deeper, after the upload was stored and an analysis row
+        # existed. The similarity path has always probed; both now answer the same way, from the
+        # file's content rather than its name.
+        probe_info = None
+        if self.audio_service.is_ffmpeg_available():
+            probe_info, probe_error = await run_in_threadpool(
+                self.audio_service.inspect_upload, audio_bytes, settings.max_audio_duration_seconds
+            )
+            if probe_error:
+                return self._reject(415, probe_error)
+
+        # The name this file travels under. The stem stays the user's, because the analysis page
+        # prints it, but the extension comes from the probe so nothing downstream is misled by a
+        # WhatsApp `.mpeg` that actually holds Opus.
+        upload_name = file.filename or "upload"
+        probe_ext = (probe_info or {}).get("extension") or ""
+        stem = os.path.splitext(upload_name)[0] or "upload"
+        send_filename = f"{stem}{probe_ext}" if probe_ext else (
+            upload_name if os.path.splitext(upload_name)[1] else f"{upload_name}.audio"
+        )
+
         # 6) Persist the track (library-owned), then mint the Alwyzon-owned analysis id.
         await file.seek(0)
         upload = await self.track_upload_service.upload_track_to_database(
@@ -329,7 +355,7 @@ class AnalysisResultController:
         #    library show "Get analysis" for a track whose analysis was never created).
         created = await self.analysis_client.create_analysis(
             audio_bytes=audio_bytes,
-            original_filename=file.filename or "upload.mp3",
+            original_filename=send_filename,
             analysis_id=analysis_id,
         )
         if created.get("status") == "error":
@@ -367,7 +393,7 @@ class AnalysisResultController:
         # exceeding their cap; this only moves WHEN the counter ticks, by a few seconds.
         self._enqueue_background(
             analysis_id=analysis_id, track_id=track_id, track_uuid=track_uuid,
-            audio_bytes=audio_bytes, original_filename=file.filename or "upload.mp3",
+            audio_bytes=audio_bytes, original_filename=send_filename,
             user_id=user_id, partner_id=partner_id,
         )
 
@@ -482,9 +508,10 @@ class AnalysisResultController:
                 analysis_id=analysis_id, track_id=track_id, user_id=user_id, partner_id=partner_id
             )
 
+            # `original_filename` already carries the probed extension (see the caller).
             _, ext = os.path.splitext(original_filename or "")
             if not ext:
-                ext = ".mp3"
+                ext = ".audio"
             os.makedirs(settings.temp_dir, exist_ok=True)
             spool_path = os.path.join(settings.temp_dir, f"simsib_{analysis_id}{ext}")
             with open(spool_path, "wb") as fh:
