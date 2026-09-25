@@ -149,7 +149,7 @@ export const WorkspaceRail: React.FC<{ mode?: WorkspaceMode }> = ({ mode = "disc
                 <button
                   type="button"
                   className={itemBtnClass}
-                  onClick={() => navigate(`/analysis?id=${a.analysisUuid}`)}
+                  onClick={() => navigate(`/track-intelligence?id=${a.analysisUuid}`)}
                 >
                   {sanitizeWorkspaceTitle(a.title)}
                   <span className={metaClass}>

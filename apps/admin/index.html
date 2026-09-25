@@ -9,6 +9,11 @@
   <meta name="description"
     content="Admin dashboard for Resomix" />
   <link rel="icon" type="image/svg+xml" href="/logo.png" />
+  <!-- Internal tool. Never indexed, on any host it is served from: production, staging or a
+       preview build. `nofollow` as well, because the links behind it are admin routes. This tag is
+       what actually removes a URL that is already in an index, which is why robots.txt still lets
+       the page be fetched. See public/robots.txt. -->
+  <meta name="robots" content="noindex, nofollow" />
   <meta name="author" content="Resomix" />
   <meta property="og:site_name" content="Resomix" />
   <meta property="og:locale" content="en_US" />

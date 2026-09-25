@@ -37,7 +37,7 @@ export function WorkspacePage({ mode }: { mode: WorkspaceMode }) {
   const { handleSelectTrack } = useTrackSimilarity();
   const [urlDiscoveryActive, setUrlDiscoveryActive] = React.useState(false);
 
-  // `/analysis?id=` — the SUMMARY view. The full dashboard lives at `/analysis/full?id=`
+  // `/track-intelligence?id=` — the SUMMARY view. The full dashboard lives at `/track-intelligence/full?id=`
   // and is reached by choosing it, so a free user is never dropped on an upgrade CTA by a
   // link that only meant "open this analysis".
   const showFullAnalysis = mode === "analysis" && !!urlId;
@@ -62,7 +62,7 @@ export function WorkspacePage({ mode }: { mode: WorkspaceMode }) {
   }, [showFullAnalysis, seedTrackId, loadCachedResponse, setPlaylistResponse, navigate, handleSelectTrack]);
 
   // Discovery-only: a leftover successful upload/search response must not bounce
-  // /analysis back to /sonic-discovery (that made Analyse appear unselectable).
+  // /track-intelligence back to /sonic-discovery (that made Analyse appear unselectable).
   React.useEffect(() => {
     if (mode !== "discovery" || showFullAnalysis) return;
     if (response && response.success) {
@@ -90,7 +90,7 @@ export function WorkspacePage({ mode }: { mode: WorkspaceMode }) {
         {showPlaylistResults ? (
           <WorkspaceDiscoveryResults />
         ) : showFullAnalysis ? (
-          /* `/analysis?id=` — the summary, rendered INSIDE the shell exactly as
+          /* `/track-intelligence?id=` — the summary, rendered INSIDE the shell exactly as
              `/sonic-discovery?id=` renders a playlist. It used to early-return above the shell, so
              opening an analysis dropped the nav, the usage chip and the page chrome and left a bare
              card floating on the background. */

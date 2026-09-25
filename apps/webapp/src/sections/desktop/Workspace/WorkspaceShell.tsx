@@ -87,7 +87,7 @@ export const WorkspaceShell: React.FC<WorkspaceShellProps> = ({
       // A plain landing / redirect onto the page carries no such state, so the visitor stays at the
       // top (see WorkspaceStage). Navigation state (not a URL param) keeps the address clean and
       // auto-clears on refresh.
-      navigate(next === "discovery" ? "/sonic-discovery" : "/analysis", {
+      navigate(next === "discovery" ? "/sonic-discovery" : "/track-intelligence", {
         state: { workspaceModeSwitch: true },
       });
     });

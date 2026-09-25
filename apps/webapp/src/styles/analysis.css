@@ -1,0 +1,91 @@
+/* ─── Analysis page redesign tokens ─────────────────────────────────────────
+   Companion to sections.css. Import once, after sections.css. */
+:root {
+  /* tab bar (2b) */
+  --an-tab-active-bg: #0c2a30;
+  --an-tab-active-fg: #4fd1e0;
+  --an-tab-active-desc: #b9e6ec;
+  --an-tab-bg: #0e0e0e;
+  --an-tab-bg-hover: #161616;
+  --an-tab-border: #1c1c1c;
+  --an-tab-border-hover: #3a3a3a;
+  --an-tab-stripe: #2a2a2a;
+  --an-tab-fg: #d8d2cd;
+  --an-tab-desc: #9a938e;
+  --an-tab-key-bg: #1c1c1c;
+  --an-tab-key-fg: #7d7772;
+  --an-tab-hint: #5a554f;
+
+  /* surfaces */
+  --an-page: #0b0b0b;
+  --an-card: #111111;
+  --an-lane: #0e0e0e;
+  --an-player: #0f0f0f;
+  --an-border: #1c1c1c;
+  --an-rule: #161616;
+  --an-grid: #2a2a2a;
+
+  /* text */
+  --an-text: #f2efec;
+  --an-text-strong: #d8d2cd;
+  --an-text-secondary: #9a938e;
+  --an-text-muted: #7d7772;
+  --an-text-faint: #5a554f;
+
+  /* accent (matches charts.tsx ACCENT) */
+  --an-accent: #EE4A26;
+  --an-playhead: #EE4A26;
+  --an-lufs-line: #f2efec;
+
+  /* confidence flag */
+  --an-flag-bg: #2a2308;
+  --an-flag-fg: #ffd166;
+
+  /* stems */
+  --an-stem-drums: #ff8c42;
+  --an-stem-bass: #6f9bff;
+  --an-stem-other: #4fd1e0;
+  --an-stem-vocals: #b48cff;
+
+  /* pitch / harmony */
+  --an-pitch: #4fd1e0;
+
+  /* perceptual meters */
+  --an-meter-danceable: #ff8c42;
+  --an-meter-electronic: #ff8c42;
+  --an-meter-vocal: #b48cff;
+  --an-meter-approachable: #d6e34a;
+  --an-meter-bright: #4fd1e0;
+  --an-meter-acoustic: #9fb3c8;
+
+  /* genre list */
+  --an-model-discogs: #EE4A26;
+  --an-model-maest: #d8d2cd;
+
+  /* mood tags */
+  --an-tag-hot-bg: #341d0d;
+  --an-tag-hot-fg: #ff8c42;
+  --an-tag-bg: #111111;
+  --an-tag-fg: #d8d2cd;
+  --an-tag-edge: #2a2a2a;
+
+  /* motion */
+  --an-fast: 120ms;
+}
+
+/* ─── Timeline lane geometry ────────────────────────────────────────────────
+   Every lane is `gutter · chart · right axis`, and the page-level playhead has to line up with
+   the CHART column across all of them. Both insets live here, once, so the lanes and the playhead
+   can never drift apart: the lane grid builds its columns from them and the playhead offsets
+   itself by them. On a phone the lanes stack full width and both collapse to zero. */
+.an-lane-stack {
+  --an-lane-left: 0px;
+  --an-lane-right: 0px;
+}
+
+@media (min-width: 1024px) {
+  .an-lane-stack {
+    --an-lane-left: calc(var(--px-112) + var(--px-12));
+    --an-lane-right: calc(var(--px-44) + var(--px-12));
+  }
+}

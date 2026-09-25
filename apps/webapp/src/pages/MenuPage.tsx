@@ -92,16 +92,16 @@ const MenuPage: React.FC<MenuPageProps> = ({ onClose }) => {
                 [Library]
               </a>
               <a 
-                href={`${BASE_BETA_URL}/analysis`}
+                href={`${BASE_BETA_URL}/track-intelligence`}
                 className="text-[length:var(--px-16)] font-semibold font-helvetica uppercase text-center cursor-pointer menu-link" 
                 id="beta-menu-analysis-link"
-                aria-label="Analysis"
+                aria-label="Track Intelligence"
                 onClick={(e) => {
                   e.preventDefault();
-                  window.location.href = `${BASE_BETA_URL}/analysis`;
+                  window.location.href = `${BASE_BETA_URL}/track-intelligence`;
                 }}
               >
-                [Analysis]
+                [Track Intelligence]
               </a>
               <button 
                 type="button"

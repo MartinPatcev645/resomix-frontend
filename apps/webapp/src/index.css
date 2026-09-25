@@ -88,6 +88,10 @@
 @import "./styles/pixels.css";
 @import "./styles/fonts.css";
 @import "./styles/font-fallbacks.css";
+@import "./styles/sections.css";
+/* Analysis page redesign tokens. After sections.css, which it is a companion to: the section
+   palette stays the data palette, and these add the surfaces, tabs and meters around it. */
+@import "./styles/analysis.css";
 
 /* ─── Brand font stacks ──────────────────────────────────────────────────────
    These variables were REFERENCED in 103 places and DEFINED nowhere.

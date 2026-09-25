@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { AUDIO_INPUT_ACCEPT } from "@resomix/api-client";
 import { BASE_LANDING_URL } from "@resomix/config";
 import { useEntitlements } from "@resomix/hooks";
 import { useAuthStore } from "@resomix/stores";
@@ -21,7 +22,9 @@ import {
   patchAnalysisCache,
 } from "./workspaceStateCache.ts";
 
-const INPUT_ACCEPT = "audio/*,.mp3,.wav,.flac,.aiff,.aif,.mpeg,.mpg,.m4a,.ogg";
+// Shared with the similarity panel, so one place decides what the picker offers. The server
+// probes what actually arrives and converts it, so the list only has to be generous.
+const INPUT_ACCEPT = AUDIO_INPUT_ACCEPT;
 
 export const WorkspaceAnalysisPanel: React.FC = () => {
   const {

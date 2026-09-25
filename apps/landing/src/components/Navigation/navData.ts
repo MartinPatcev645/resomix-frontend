@@ -7,10 +7,10 @@ export const BETA_URL = BASE_BETA_URL || 'https://beta.resomix.com';
 /**
  * The analysis tool. The beta root lands on Sonic Discovery, so any CTA that promises analysis
  * ("Analyse a Track") has to name this route explicitly. Built off the guarded BETA_URL — with a
- * bare BASE_BETA_URL an unset env would turn this into a same-origin `/analysis` on the marketing
+ * bare BASE_BETA_URL an unset env would turn this into a same-origin `/track-intelligence` on the marketing
  * site — and the trailing slash is trimmed in case the env value carries one.
  */
-export const BETA_ANALYSIS_URL = `${BETA_URL.replace(/\/$/, '')}/analysis`;
+export const BETA_ANALYSIS_URL = `${BETA_URL.replace(/\/$/, '')}/track-intelligence`;
 
 export type NavStatus = 'coming-next' | 'scoping-available';
 

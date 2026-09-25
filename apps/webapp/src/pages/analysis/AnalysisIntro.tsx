@@ -49,7 +49,7 @@ export const AnalysisIntro: React.FC<AnalysisIntroProps> = ({ items, onOpen }) =
               return (
                 <a
                   key={a.analysisUuid}
-                  href={`/analysis?id=${a.analysisUuid}`}
+                  href={`/track-intelligence?id=${a.analysisUuid}`}
                   onClick={(e) => {
                     if (shouldOpenInNewTab(e)) return;
                     e.preventDefault();

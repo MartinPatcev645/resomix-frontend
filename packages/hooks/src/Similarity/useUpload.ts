@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from "react";
-import { emitUsageChanged, getSimilarTracks, API_CONFIG } from "@resomix/api-client";
+import { emitUsageChanged, getSimilarTracks, isProbablyAudio, API_CONFIG, AUDIO_INPUT_ACCEPT } from "@resomix/api-client";
 // import { waitForSegmentation } from "@resomix/api-client"; // Commented out - segmentation polling no longer needed
 import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { create } from "zustand";
@@ -89,12 +89,7 @@ export function useUpload(options?: UseUploadOptions) {
     const { topSk, setUploadedCoverArt } = usePlayerStore();
     const { checkTermsAcceptance } = useTermsAcceptance();
 
-    const inputAccept = useMemo(() => {
-        // Include explicit mime types, wildcard for broader mobile support, and common extensions as fallback
-        const mimes = API_CONFIG.ALLOWED_AUDIO_TYPES;
-        const extensions = [".mp3", ".wav", ".ogg", ".aac", ".flac"];
-        return ["audio/*", ...mimes, ...extensions].join(",");
-    }, []);
+    const inputAccept = useMemo(() => AUDIO_INPUT_ACCEPT, []);
 
     const openFilePicker = useCallback(async () => {
         // Check terms acceptance before allowing file picker
@@ -113,12 +108,13 @@ export function useUpload(options?: UseUploadOptions) {
         if (file.size > API_CONFIG.MAX_FILE_SIZE) {
             return { valid: false, error: `File too large. Maximum size is ${API_CONFIG.MAX_FILE_SIZE / (1024 * 1024)}MB.` };
         }
-        // Some mobile browsers may not populate file.type; fallback to extension-based check
-        const typeOk = !!file.type && API_CONFIG.ALLOWED_AUDIO_TYPES.includes(file.type);
-        if (typeOk) return { valid: true };
-        const name = file.name?.toLowerCase() || "";
-        const extOk = [".mp3", ".wav", ".ogg", ".aac", ".flac"].some((ext) => name.endsWith(ext));
-        if (!extOk) return { valid: false, error: "Invalid file type. Please upload an audio file." };
+        // Size is the only thing worth deciding here. The server probes the file's actual streams,
+        // refuses what is not audio and converts what it cannot process directly, so a phone
+        // recording (`audio/x-m4a`, `audio/mp4`, or no type at all) must not be stopped in the
+        // browser as it was before.
+        if (!isProbablyAudio(file)) {
+            return { valid: false, error: "Invalid file type. Please upload an audio file." };
+        }
         return { valid: true };
     }, []);
 

@@ -46,7 +46,7 @@ export const WorkspaceTaskSelector: React.FC<{ mode: WorkspaceMode }> = ({ mode 
   const selectTask = (next: WorkspaceMode) => {
     if (next === mode) return;
     withViewTransition(() => {
-      navigate(next === "discovery" ? "/sonic-discovery" : "/analysis", {
+      navigate(next === "discovery" ? "/sonic-discovery" : "/track-intelligence", {
         state: { workspaceModeSwitch: true },
       });
     });

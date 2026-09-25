@@ -13,16 +13,23 @@ import { LANDING_ORIGIN, ROUTE_SEO, SITE_ORIGIN } from '@/routes/seoConfig.ts';
  * output, because what a scraper receives is the only thing that matters here.
  *
  * Two rules are specific to this app and are the ones worth guarding:
- *   - the signed-in workspace and auth screens must carry `noindex` STATICALLY, since the blanket
- *     noindex that used to cover them is gone;
+ *   - the app is a service, so every route carries `noindex` STATICALLY except `/auth/login`, the
+ *     way in. A crawler must read that from the file, before any JavaScript runs;
  *   - /subscribe and /contact must canonicalise to the marketing site even in the raw HTML, or the
  *     two origins compete for the same query.
  */
 
 const DIST = resolve(process.cwd(), 'dist');
 const built = existsSync(resolve(DIST, 'index.html'));
-const html = (route: string) =>
-  readFileSync(resolve(DIST, route === '/' ? 'index.html' : `${route.slice(1)}/index.html`), 'utf8');
+/**
+ * Flat `dist/<route>.html`, the same shape the landing build emits and for the same reason:
+ * `dist/<route>/index.html` makes Pages redirect /sonic-discovery to /sonic-discovery/, and the
+ * bare path is the canonical one. This helper still looked for the directory form, so every
+ * assertion below threw ENOENT instead of checking anything.
+ */
+const fileFor = (route: string) =>
+  resolve(DIST, route === '/' ? 'index.html' : `${route.slice(1)}.html`);
+const html = (route: string) => readFileSync(fileFor(route), 'utf8');
 const tag = (src: string, re: RegExp) => src.match(re)?.[1];
 
 const TITLE = /<title>([^<]*)<\/title>/;
@@ -34,7 +41,7 @@ describe.skipIf(!built)('prerendered per-route head', () => {
 
   it('emits an HTML file for every route', () => {
     const missing = routes.filter(
-      (r) => !existsSync(resolve(DIST, r === '/' ? 'index.html' : `${r.slice(1)}/index.html`)),
+      (r) => !existsSync(fileFor(r)),
     );
     expect(missing).toEqual([]);
   });
@@ -46,24 +53,26 @@ describe.skipIf(!built)('prerendered per-route head', () => {
 
   it('no longer serves the app-home title on a sub-route', () => {
     const home = tag(html('/'), TITLE);
-    for (const route of ['/sonic-discovery', '/analysis', '/subscribe']) {
+    for (const route of ['/sonic-discovery', '/track-intelligence', '/subscribe']) {
       expect(tag(html(route), TITLE)).not.toBe(home);
     }
   });
 });
 
 describe.skipIf(!built)('privacy holds in the raw HTML', () => {
+  const WORKSPACE = ['/', '/sonic-discovery', '/track-intelligence'];
   const PRIVATE = ['/library', '/profile', '/sessions', '/change-password'];
-  const AUTH = ['/auth/login', '/auth/register', '/auth/forgot-password'];
+  const AUTH = ['/auth/register', '/auth/forgot-password'];
 
-  it.each([...PRIVATE, ...AUTH, '/error', '/loader'])('%s is noindex before any JS runs', (route) => {
-    expect(tag(html(route), ROBOTS)).toBe('noindex, follow');
-  });
+  it.each([...WORKSPACE, ...PRIVATE, ...AUTH, '/error', '/loader'])(
+    '%s is noindex before any JS runs',
+    (route) => {
+      expect(tag(html(route), ROBOTS)).toBe('noindex, follow');
+    },
+  );
 
-  it('leaves the public workspace indexable', () => {
-    for (const route of ['/', '/sonic-discovery', '/analysis']) {
-      expect(tag(html(route), ROBOTS)).toBe('index, follow');
-    }
+  it('lets sign-in be found, since that is the way into the service', () => {
+    expect(tag(html('/auth/login'), ROBOTS)).toBe('index, follow');
   });
 
   it('never emits nofollow', () => {

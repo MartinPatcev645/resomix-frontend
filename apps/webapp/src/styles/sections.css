@@ -1,0 +1,52 @@
+/* ─── Track-structure section colours ("Spectrum", approved design 3a) ───────
+   Ported verbatim from the design handoff (design_handoff_section_colors/tokens.css).
+
+   Seventeen section words in seven role groups. The hue is the role (openers cyan · rise lime ·
+   peak red-orange · sustain orange · release violet · descent blue · close steel). Each group has
+   one deep background; the words inside a group differ only by foreground shade. Every
+   foreground/background pair is at least 4.5:1.
+
+   Deliberately NOT overridden in `.light`: a section is always drawn on its own tint, so a word
+   keeps the same colour in either theme. A new word joins an existing group, reuses its
+   background and takes a foreground between the group's existing tones. Register it in
+   `utils/sectionColors.ts` as well, or it falls back to "part". */
+:root {
+  --section-intro-bg: #0c2a30;
+  --section-intro-fg: #4fd1e0;
+  --section-opening-bg: #0c2a30;
+  --section-opening-fg: #3fbccb;
+  --section-build-bg: #262b0e;
+  --section-build-fg: #d6e34a;
+  --section-swell-bg: #262b0e;
+  --section-swell-fg: #c2d13a;
+  --section-drop-bg: #38120d;
+  --section-drop-fg: #ff5a36;
+  --section-main-bg: #38120d;
+  --section-main-fg: #f26a42;
+  --section-full-bg: #38120d;
+  --section-full-fg: #e4643f;
+  --section-groove-bg: #341d0d;
+  --section-groove-fg: #ff8c42;
+  --section-part-bg: #341d0d;
+  --section-part-fg: #e09a6a;
+  --section-breakdown-bg: #201637;
+  --section-breakdown-fg: #b48cff;
+  --section-break-bg: #201637;
+  --section-break-fg: #c9a8ff;
+  --section-sparse-bg: #201637;
+  --section-sparse-fg: #9c7fe0;
+  --section-cooldown-bg: #111a33;
+  --section-cooldown-fg: #6f9bff;
+  --section-wind-down-bg: #111a33;
+  --section-wind-down-fg: #5f88e6;
+  --section-fade-bg: #111a33;
+  --section-fade-fg: #5476c4;
+  --section-outro-bg: #171c23;
+  --section-outro-fg: #9fb3c8;
+  --section-closing-bg: #171c23;
+  --section-closing-fg: #86979f;
+
+  /* The strip's own type and its time row, from the same handoff. */
+  --section-font: -apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, sans-serif;
+  --section-meta: #7d7772;
+}

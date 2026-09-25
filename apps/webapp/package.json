@@ -27,6 +27,8 @@
     "@resomix/ui": "workspace:*",
     "@tailwindcss/vite": "^4.1.11",
     "@types/three": "^0.178.1",
+    "fast-png": "^8.0.0",
+    "jspdf": "^4.2.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-easy-crop": "^6.2.2",

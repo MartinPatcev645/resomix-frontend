@@ -12,6 +12,7 @@ import {
   PAGE_BTN_DANGER as BTN_DANGER,
   PAGE_BTN_PRIMARY as BTN_PRIMARY,
   PAGE_BTN_SECONDARY as BTN_SECONDARY,
+  PAGE_BTN_BACK as BTN_BACK,
   PAGE_FIELD as FIELD,
   PAGE_FIELD_LABEL as FIELD_LABEL,
   PAGE_INSET_ROW as INSET_ROW,
@@ -217,7 +218,7 @@ export default function ProfileContent({
         {/* Same control and label as the Library's back button, so both account pages exit the
             same way (baseUrl is the beta workspace in both apps). */}
         <div className="mb-[var(--px-24)]">
-          <a href={baseUrl} aria-label="Sonic Discovery" className={`${BTN_SECONDARY} gap-[var(--px-6)]`}>
+          <a href={baseUrl} aria-label="Sonic Discovery" className={BTN_BACK}>
             <svg viewBox="0 0 24 24" className="h-[var(--px-14)] w-[var(--px-14)] shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <polyline points="15 18 9 12 15 6" />
             </svg>

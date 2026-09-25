@@ -25,7 +25,7 @@ export const PAID_CHECKOUT_DISABLED_REASON = PAID_CHECKOUT.disabledReason;
 
 /**
  * Sample Full Track Intelligence band. Off until an approved demonstration track exists —
- * linking to an empty `/analysis` is worse than no button. Flip `.enabled` when a demo track ships.
+ * linking to an empty `/track-intelligence` is worse than no button. Flip `.enabled` when a demo track ships.
  */
 export const SAMPLE_REPORT = {
   enabled: false,

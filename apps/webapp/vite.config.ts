@@ -132,6 +132,11 @@ export default defineConfig({
             // pays for it.
             if (id.includes('/pica/') || id.includes('/image-blob-reduce/') ||
                 id.includes('/multimath/') || id.includes('/glur/')) return 'image-resize'
+            // Same story for the analysis PDF export: the PDF writer and the PNG encoder are only
+            // `import()`ed when someone presses Export PDF.
+            if (id.includes('/jspdf/') || id.includes('/fast-png/') ||
+                id.includes('/fflate/') || id.includes('/pako/') ||
+                id.includes('/iobuffer/')) return 'pdf-export'
             if (id.includes('react-router')) return 'router'
             if (id.includes('/three')) return 'three'
             if (id.includes('@react-three/fiber')) return 'r3f'

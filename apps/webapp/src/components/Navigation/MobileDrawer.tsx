@@ -283,10 +283,10 @@ export function MobileDrawer({
                   </li>
                   <li>
                     <a
-                      href="/analysis"
+                      href="/track-intelligence"
                       onClick={(e) => {
                         e.preventDefault();
-                        handleNavigate('/analysis');
+                        handleNavigate('/track-intelligence');
                       }}
                     >
                       <span className="nav-util-icon" aria-hidden="true">

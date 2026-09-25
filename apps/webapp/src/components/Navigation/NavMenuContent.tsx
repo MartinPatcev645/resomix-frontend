@@ -364,11 +364,11 @@ export function buildProfileMenuItems({
       onClick: () => onNavigate('/library'),
     },
     {
-      label: 'Analysis',
+      label: 'Track Intelligence',
       id: 'nav-analysis-menu-item',
-      href: '/analysis',
+      href: '/track-intelligence',
       icon: <AnalysisIcon />,
-      onClick: () => onNavigate('/analysis'),
+      onClick: () => onNavigate('/track-intelligence'),
     },
     {
       label: 'Logout',

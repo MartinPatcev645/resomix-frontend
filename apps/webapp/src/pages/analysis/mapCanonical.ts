@@ -15,6 +15,7 @@ import type {
   ScoredLabel,
   Series,
   StemMetrics,
+  StructureInfo,
   StructureSegment,
   TimelineTrack,
   VoiceRegion,
@@ -53,6 +54,52 @@ const segments = (list: any): StructureSegment[] =>
     flags: arr<string>(s?.flags),
   }));
 
+/**
+ * The `structure` block -> the section list plus the whole-track reading.
+ *
+ * Every section is kept, including the hidden start / end markers, because the strip lays blocks
+ * out by width and a missing leading block would shift everything after it. `label` is what the
+ * UI prints, so it is the displayed word and its number, never the canonical class: that is what
+ * keeps "drop" off a groove track everywhere this list is read, not just where it is drawn.
+ *
+ * Returns null when the block is absent or carries neither sections nor a gate, which is the
+ * signal for "no structure to show" rather than "a track with no sections".
+ */
+const structureBlock = (block: any): { info: StructureInfo; segments: StructureSegment[] } | null => {
+  if (!block || typeof block !== "object") return null;
+  const status: StructureInfo["status"] = block.status === "gate" ? "gate" : "ok";
+  const segs: StructureSegment[] = arr<any>(block.sections).map((s) => {
+    const hidden = s?.hidden === true;
+    const word = hidden ? "" : str(s?.word);
+    const number = typeof s?.number === "string" && s.number ? ` ${s.number}` : "";
+    return {
+      startMs: num(s?.start_ms),
+      endMs: num(s?.end_ms),
+      label: hidden ? "" : `${word}${number}`,
+      confidence: 0, // the model publishes no calibrated per-section confidence
+      bars: typeof s?.bars === "number" ? s.bars : null,
+      flags: [],
+      word,
+      shown: hidden ? "" : str(s?.shown),
+      role: str(s?.label),
+      hidden,
+      startBar: typeof s?.start_bar === "number" ? s.start_bar : null,
+    };
+  });
+  if (status === "ok" && !segs.some((s) => !s.hidden)) return null;
+  return {
+    info: {
+      status,
+      gate: typeof block.gate === "string" ? block.gate : null,
+      summary: str(block.summary),
+      family: typeof block.family === "string" ? block.family : null,
+      vocabulary: typeof block.vocabulary === "string" ? block.vocabulary : null,
+      familyReason: typeof block.family_reason === "string" ? block.family_reason : null,
+    },
+    segments: segs,
+  };
+};
+
 const numberRecord = (obj: any): Record<string, number> => {
   const out: Record<string, number> = {};
   if (obj && typeof obj === "object") for (const [k, v] of Object.entries(obj)) out[k] = num(v);
@@ -81,6 +128,7 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
   // stage records its own failures in this block rather than failing the run, so
   // an empty one means "fall back to v1", not "this track has no structure".
   const v2 = raw?.structure_v2?.segments?.length ? raw.structure_v2 : null;
+  const structure = structureBlock(raw?.structure);
   const tl = raw?.timeline ?? {};
   const comp = raw?.composition ?? {};
   const rd = raw?.readings ?? {};
@@ -145,11 +193,12 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
     energy: {
       energyCurve: series(en.energy_curve),
       onsetTimesSeconds: arr<number>(en.onset_times_seconds),
-      // structure_v2 when the service produced it, else the original v1 map.
-      // Feeding it in here rather than at each call site means the timeline
-      // strip, the summary card and the readings all move over together, and
-      // results that predate v2 keep rendering exactly as they do today.
-      structureSegments: segments(v2?.segments ?? en.structure_segments),
+      // The `structure` block when the service produced it, else the older v2 / v1 maps. Fed in
+      // here rather than at each call site so every consumer moves over together, and so results
+      // that predate the block keep exactly the sentences they have today. Note the panel and the
+      // table are only DRAWN when `structure` below is present: the v1 / v2 readings were
+      // withdrawn and must not reappear on old results.
+      structureSegments: structure ? structure.segments : segments(v2?.segments ?? en.structure_segments),
       bassEntryMs: num(en.bass_entry_ms),
     },
     structureV2: v2
@@ -172,6 +221,7 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
           flags: arr<string>(v2.flags),
         }
       : null,
+    structure: structure ? structure.info : null,
     semantics: {
       genreTop: scored(sem.genre_top),
       styleMaestTop: scored(sem.style_maest_top),

@@ -53,13 +53,15 @@
     DEFAULTS ONLY. src/components/RouteMeta.tsx rewrites title, description, canonical, robots and
     the og:/twitter: tags per route.
 
-    Previously this was a blanket "noindex, nofollow" while robots.txt invited crawling and shipped
-    a sitemap — three contradictory signals. Crawling is now allowed, and the pages that should stay
-    out of the index (the signed-in workspace, the auth screens) say so individually.
+    The default is noindex because this app is a service (see src/routes/seoConfig.ts). Sign-in is
+    the one route that opts back in, and it does that through its own prerendered head. This shell
+    is also what an unknown path is served, and an unknown path on a service is never a search
+    result.
 
-    nofollow is gone entirely: it stranded link equity on every outbound link for no benefit.
+    It is "follow", not "nofollow". The old blanket tag was noindex,nofollow, and the nofollow
+    stranded link equity on every outbound link for no benefit.
   -->
-  <meta name="robots" content="index, follow">
+  <meta name="robots" content="noindex, follow">
   <meta name="description" content="Drop a reference track and get ranked matches that actually belong next to it. Sonic discovery, track analysis and playlists in one workspace.">
   <link rel="canonical" href="https://beta.resomix.com/">
 
