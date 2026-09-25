@@ -437,22 +437,43 @@ export default function AnalysisPage() {
                 bottom. The handoff's sideways-scrolling row was worse in practice: the last cards
                 sat off-screen with nothing to say so, and the row held its scroll position while
                 the rest of the page moved. Nothing here scrolls horizontally now. */}
+            {/* Tempo and Key spin only while part 2 is still running. They used to spin on a
+                null value alone, so a track whose key/tempo the GPU could not produce (a container
+                its Essentia cannot read, for one) sat here "analyzing…" forever on a finished
+                analysis. */}
             <div className="grid grid-cols-2 gap-[var(--px-12)] lg:grid-cols-5">
               <div>
                 <StatCard
                   label="Tempo"
-                  value={data.rhythm.bpm == null ? <Spinner size={20} /> : fmtBpm(data.rhythm.bpm)}
+                  value={
+                    data.rhythm.bpm != null ? fmtBpm(data.rhythm.bpm)
+                      : part2Done ? "—"
+                      : <Spinner size={20} />
+                  }
                   unit={data.rhythm.bpm == null ? undefined : "BPM"}
-                  sub={data.rhythm.bpm == null ? "analyzing…" : `${data.rhythm.beatCount} beats`}
+                  sub={
+                    data.rhythm.bpm != null ? `${data.rhythm.beatCount} beats`
+                      : part2Done ? "unavailable for this track"
+                      : "analyzing…"
+                  }
                   hint="Tempo in beats per minute, measured from the pulse of the track itself."
                 />
               </div>
               <div>
                 <StatCard
                   label="Key"
-                  value={data.tonality.key == null ? <Spinner size={20} /> : keyLabel ? `${keyLabel.name} ${keyLabel.scale === "major" ? "maj" : "min"}` : "—"}
+                  value={
+                    data.tonality.key != null
+                      ? (keyLabel ? `${keyLabel.name} ${keyLabel.scale === "major" ? "maj" : "min"}` : "—")
+                      : part2Done ? "—"
+                      : <Spinner size={20} />
+                  }
                   unit={data.tonality.camelot ?? undefined}
-                  sub={data.tonality.key == null ? "analyzing…" : `${(data.tonality.strength * 100).toFixed(0)}% strength`}
+                  sub={
+                    data.tonality.key != null ? `${(data.tonality.strength * 100).toFixed(0)}% strength`
+                      : part2Done ? "unavailable for this track"
+                      : "analyzing…"
+                  }
                   hint="Estimated musical key and scale, tuned for electronic music, with its Camelot code for harmonic mixing."
                 />
               </div>
