@@ -17,6 +17,9 @@ const METERS: { label: string; sub: string; pick: (s: AnalysisData["semantics"])
   { label: "Acoustic", sub: "instrumentation", pick: (s) => s.moodAcoustic, color: "var(--an-meter-acoustic)" },
 ];
 
+/** Closest the marker's centre gets to an edge of the plot, as a fraction of its width. */
+const MARKER_INSET = 0.03;
+
 /** How many tags get a pill. The rest are named once underneath. */
 const TAG_SHOWN = 6;
 /** At or above this, a tag is drawn hot. */
@@ -39,8 +42,17 @@ export const VibeTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
   const hidden = tags.slice(TAG_SHOWN);
 
   // Valence and arousal are −1…+1; the plot is 0…1 from the bottom-left.
-  const x = (s.valence + 1) / 2;
-  const y = (s.arousal + 1) / 2;
+  //
+  // Clamped a hair off each edge, because the marker is centred on its position: an extreme score
+  // would otherwise hang half of the dot outside the square. The shift is under one percent of the
+  // plot, far smaller than the model's own confidence.
+  const clamp = (v: number) => Math.min(1 - MARKER_INSET, Math.max(MARKER_INSET, v));
+  const x = clamp((s.valence + 1) / 2);
+  const y = clamp((s.arousal + 1) / 2);
+  // The caption sits on whichever side of the dot has room. On a bright track the dot is near the
+  // right edge, and a caption pinned to its right ran outside the plot — obvious on a phone, where
+  // the square is only as wide as the screen.
+  const captionLeftOfDot = x > 0.5;
 
   return (
     <div className="flex flex-col gap-[var(--px-32)] lg:grid lg:grid-cols-[var(--px-360)_minmax(0,1fr)] lg:items-start lg:gap-[var(--px-40)]">
@@ -68,7 +80,13 @@ export const VibeTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
               boxShadow: "0 0 0 6px color-mix(in srgb, var(--an-accent) 13%, transparent)",
             }}
           >
-            <span className="absolute left-[var(--px-18)] top-1/2 -translate-y-1/2 whitespace-nowrap font-fira text-[length:var(--px-10)] text-[var(--an-text-secondary)]">
+            <span
+              className={[
+                "absolute top-1/2 -translate-y-1/2 whitespace-nowrap font-fira",
+                "text-[length:var(--px-10)] text-[var(--an-text-secondary)]",
+                captionLeftOfDot ? "right-[var(--px-18)]" : "left-[var(--px-18)]",
+              ].join(" ")}
+            >
               this track
             </span>
           </span>
