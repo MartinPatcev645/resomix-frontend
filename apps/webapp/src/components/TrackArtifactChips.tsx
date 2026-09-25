@@ -254,7 +254,7 @@ export function TrackArtifactChips({
           label="Analysis"
           icon={<AnalysisIcon />}
           title="Open the analysis for this track"
-          href={`/analysis?id=${track.analysis_uuid}`}
+          href={`/track-intelligence?id=${track.analysis_uuid}`}
           onClick={() => onOpenAnalysis(track.analysis_uuid as string)}
           fullWidth={stacked}
         />

@@ -205,7 +205,15 @@ export const getUrl = (endpoint: string, queryParams: Record<string, unknown> = 
   return url.toString();
 };
 
-// File validation helper
+/**
+ * The only file check the client makes.
+ *
+ * Size is the one thing the browser can answer reliably. Format is not: a phone recording arrives
+ * as `audio/x-m4a`, `audio/mp4` or with an empty `type`, and a WhatsApp voice note comes named
+ * `.mpeg` while holding Opus. The old list of twelve MIME types rejected all of those before they
+ * ever left the browser. The server probes the actual streams, so this only has to catch the
+ * obvious mistake of picking a photo or a PDF.
+ */
 export const validateAudioFile = (file: File): { valid: boolean; error?: string } => {
   if (file.size > API_CONFIG.MAX_FILE_SIZE) {
     return {
@@ -213,10 +221,29 @@ export const validateAudioFile = (file: File): { valid: boolean; error?: string 
       error: `File too large. Maximum size is ${API_CONFIG.MAX_FILE_SIZE / (1024 * 1024)}MB.`,
     };
   }
-  if (!API_CONFIG.ALLOWED_AUDIO_TYPES.includes(file.type)) {
+  if (!isProbablyAudio(file)) {
     return { valid: false, error: "Invalid file type. Please upload an audio file." };
   }
   return { valid: true };
+};
+
+/** Extensions worth accepting when the browser reports no type at all. */
+const AUDIO_EXTENSIONS = [
+  ".mp3", ".wav", ".flac", ".aiff", ".aif", ".aifc", ".m4a", ".m4b", ".aac", ".ogg", ".oga",
+  ".opus", ".wma", ".amr", ".caf", ".mka", ".wv", ".ape", ".mpeg", ".mpg",
+];
+
+/**
+ * `accept` for a file input. The wildcard is what phones honour; the extensions are for desktop
+ * pickers that ignore it and would otherwise grey out a perfectly good `.m4a`.
+ */
+export const AUDIO_INPUT_ACCEPT = ["audio/*", ...AUDIO_EXTENSIONS].join(",");
+
+/** Any audio type the browser recognises, or a known audio extension when it recognises none. */
+export const isProbablyAudio = (file: File): boolean => {
+  if (file.type) return file.type.startsWith("audio/");
+  const name = file.name?.toLowerCase() ?? "";
+  return AUDIO_EXTENSIONS.some((ext) => name.endsWith(ext));
 };
 
 /**

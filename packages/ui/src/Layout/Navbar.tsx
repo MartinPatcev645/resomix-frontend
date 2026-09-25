@@ -73,15 +73,15 @@ export const Navbar: React.FC<NavbarProps> = ({ logo, mode = 'home', customClass
       onClick: () => onNavigate?.(`${baseBetaUrl}/library`),
     },
     {
-      label: "Analysis",
+      label: "Track Intelligence",
       id: "navbar-analysis-menu-item",
-      href: `${baseBetaUrl}/analysis`,
+      href: `${baseBetaUrl}/track-intelligence`,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
           <path d="M3 3v18h18M7 17V13m4 4V9m4 8v-6m4 6V7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ),
-      onClick: () => onNavigate?.(`${baseBetaUrl}/analysis`),
+      onClick: () => onNavigate?.(`${baseBetaUrl}/track-intelligence`),
     },
     ] : []),
     {

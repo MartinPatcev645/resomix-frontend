@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { attachHls, shortGenre, useResponsive } from "@resomix/hooks";
-import { getPlaylistPlaybackSession } from "@resomix/api-client";
+import { AUDIO_INPUT_ACCEPT, getPlaylistPlaybackSession } from "@resomix/api-client";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
 import { useRecentAnalyses } from "./analysis/useRecentAnalyses.js";
 import { AnalysisIntro } from "./analysis/AnalysisIntro.js";
@@ -70,7 +70,7 @@ export default function AnalysisPage() {
   const { isDesktop } = useResponsive();
 
   /**
-   * Which view is open, held in the URL rather than in state so a shared `/analysis/full?id=…`
+   * Which view is open, held in the URL rather than in state so a shared `/track-intelligence/full?id=…`
    * link can point at the tab it was read on. An unknown value falls back to Timeline instead of
    * rendering nothing.
    */
@@ -258,7 +258,7 @@ export default function AnalysisPage() {
               AuthScreen / LibraryPage / WorkspaceShell) — please don't set a bespoke value here.
               md: restores the original desktop 52/60, which is unchanged. */}
           <h1 className="font-helvetica text-[length:var(--px-28)] leading-[var(--px-32)] font-medium uppercase break-words md:text-[length:var(--px-52)] md:leading-[var(--px-60)]">
-            Analysis
+            Track Intelligence
           </h1>
           <p className="mt-[var(--px-8)] font-helvetica text-[length:var(--px-14)] lg:text-[length:var(--px-10)] font-extralight lg:opacity-80">
             Upload a track to see what it's actually made of
@@ -271,7 +271,7 @@ export default function AnalysisPage() {
             onBack={() =>
               // Back to the SUMMARY for this analysis — what the caller is entitled to and what
               // they were looking at. Sending them to the upload landing lost their place.
-              navigate(analysisId ? `/analysis?id=${analysisId}` : cameFromLibrary ? "/library" : "/analysis")
+              navigate(analysisId ? `/track-intelligence?id=${analysisId}` : cameFromLibrary ? "/library" : "/track-intelligence")
             }
           />
         )}
@@ -332,7 +332,7 @@ export default function AnalysisPage() {
                 <>
                   <span className="font-helvetica text-[length:var(--px-16)] font-medium uppercase">Drop a track</span>
                   <span className="font-helvetica text-[length:var(--px-11)] opacity-50">
-                    or click to browse · MP3 · WAV · FLAC · AIFF
+                    or click to browse · most audio formats
                   </span>
                 </>
               ) : (
@@ -351,7 +351,7 @@ export default function AnalysisPage() {
               <input
                 ref={inputRef}
                 type="file"
-                accept="audio/*,.mp3,.wav,.flac,.aiff,.aif,.mpeg,.mpg,.m4a,.ogg"
+                accept={AUDIO_INPUT_ACCEPT}
                 className="hidden"
                 onChange={(e) => pick(e.target.files?.[0])}
               />

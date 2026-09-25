@@ -7,7 +7,7 @@ import {
 } from "./workspaceCopy.ts";
 import { WORKSPACE_PANEL_CLASS, WORKSPACE_BTN_PRIMARY } from "./workspacePanelStyles.ts";
 
-const ANALYSIS_RETURN_PATH = "/analysis";
+const ANALYSIS_RETURN_PATH = "/track-intelligence";
 
 /** Signed-out analysis gate — login-only upload is enforced server-side. */
 export const WorkspaceAnalysisGate: React.FC = () => (

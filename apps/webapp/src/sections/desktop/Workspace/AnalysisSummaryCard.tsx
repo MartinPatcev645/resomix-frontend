@@ -350,7 +350,7 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
               setFullGate(reason);
               return;
             }
-            navigate(`/analysis/full?id=${analysisId}`);
+            navigate(`/track-intelligence/full?id=${analysisId}`);
           }}
           className={WORKSPACE_BTN_SECONDARY}
         >

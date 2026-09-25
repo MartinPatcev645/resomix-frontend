@@ -3,7 +3,7 @@ import { getMyTracks } from "@resomix/api-client";
 import { displayArtistOrOmit, sanitizeWorkspaceTitle } from "@/utils/trackUtils.ts";
 
 export interface RecentAnalysis {
-  /** The analysis uuid — open with /analysis?id=<this>. */
+  /** The analysis uuid — open with /track-intelligence?id=<this>. */
   analysisUuid: string;
   title: string;
   artist: string | null;

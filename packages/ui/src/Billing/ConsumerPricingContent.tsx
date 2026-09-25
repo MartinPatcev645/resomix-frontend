@@ -727,7 +727,7 @@ export function ConsumerPricingContent({
               onClick={() => {
                 // BLOCKED // NEEDS RULING: no approved demo-track id — band stays gated.
                 const root = (baseUrl || "/").replace(/\/$/, "");
-                window.location.href = !root || root === "/" ? "/analysis" : `${root}/analysis`;
+                window.location.href = !root || root === "/" ? "/track-intelligence" : `${root}/track-intelligence`;
               }}
             >
               {SEE_PRO.cta}

@@ -53,14 +53,14 @@ describe.skipIf(!built)('prerendered per-route head', () => {
 
   it('no longer serves the app-home title on a sub-route', () => {
     const home = tag(html('/'), TITLE);
-    for (const route of ['/sonic-discovery', '/analysis', '/subscribe']) {
+    for (const route of ['/sonic-discovery', '/track-intelligence', '/subscribe']) {
       expect(tag(html(route), TITLE)).not.toBe(home);
     }
   });
 });
 
 describe.skipIf(!built)('privacy holds in the raw HTML', () => {
-  const WORKSPACE = ['/', '/sonic-discovery', '/analysis'];
+  const WORKSPACE = ['/', '/sonic-discovery', '/track-intelligence'];
   const PRIVATE = ['/library', '/profile', '/sessions', '/change-password'];
   const AUTH = ['/auth/register', '/auth/forgot-password'];
 

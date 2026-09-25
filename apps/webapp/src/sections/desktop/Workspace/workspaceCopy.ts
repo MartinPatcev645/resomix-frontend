@@ -48,7 +48,7 @@ export const SEARCH_MODE_HINT =
   "Choose how Resomix should search: Auto (all fields), Artist (artist name only), or Title (track title only).";
 
 export const UPLOAD_DROP_HEADING = "Drop a reference file";
-export const UPLOAD_FORMAT_LINE = "MP3 · WAV · FLAC · AIFF · up to 100 MB";
+export const UPLOAD_FORMAT_LINE = "Most audio formats · up to 100 MB · up to 20 minutes";
 export const UPLOAD_BROWSE_ACTION = "Choose file";
 export const UPLOAD_RETENTION_SHORT =
   "Temporary reference audio is deleted within 24 hours.";
@@ -90,7 +90,7 @@ export const PROCESSING_NOTE =
   "Search references typically return in ~5–6 s; uploads in ~12–20 s depending on load. Observed, not a service-level commitment.";
 
 export const ANALYSIS_UPLOAD_HEADING = "Drop a track to analyse";
-export const ANALYSIS_UPLOAD_FORMAT = "MP3 · WAV · FLAC · AIFF · up to 100 MB";
+export const ANALYSIS_UPLOAD_FORMAT = "Most audio formats · up to 100 MB · up to 20 minutes";
 export const ANALYSIS_UPLOAD_QUOTA_HINT =
   "Counts against your monthly upload allowance.";
 export const ANALYSE_TRACK_CTA = "Analyse track";

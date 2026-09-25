@@ -42,7 +42,7 @@ describe('every route is accounted for', () => {
 
 describe('the app stays out of the index', () => {
   // The workspace itself: a service, not pages to be found. Its marketing equivalents rank instead.
-  const WORKSPACE = ['/', '/sonic-discovery', '/analysis'];
+  const WORKSPACE = ['/', '/sonic-discovery', '/track-intelligence'];
   // These render a redirect or an empty shell to a logged-out crawler.
   const PRIVATE = ['/library', '/profile', '/sessions', '/change-password'];
   const AUTH = [

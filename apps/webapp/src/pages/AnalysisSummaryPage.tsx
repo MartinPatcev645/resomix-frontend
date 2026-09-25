@@ -5,7 +5,7 @@ import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
 import { AnalysisSummaryCard } from "@/sections/desktop/Workspace/AnalysisSummaryCard.tsx";
 
 /**
- * AnalysisSummaryPage — `/analysis?id=<uuid>`.
+ * AnalysisSummaryPage — `/track-intelligence?id=<uuid>`.
  *
  * WHY THIS EXISTS
  * ---------------
@@ -18,7 +18,7 @@ import { AnalysisSummaryCard } from "@/sections/desktop/Workspace/AnalysisSummar
  *
  * So `?id=` now shows the **summary card** — the thing every plan is entitled to, and the same
  * component the workspace renders straight after an upload. The dashboard moved to
- * `/analysis/full?id=`, reached only by choosing it.
+ * `/track-intelligence/full?id=`, reached only by choosing it.
  *
  * The card is rendered from the *projected* payload, so a free user sees exactly what they would
  * have seen in the workspace: BPM, key, energy, the persona blurb, and the link through
@@ -45,7 +45,7 @@ export default function AnalysisSummaryPage() {
     if (analysisId) void loadById(analysisId);
   }, [analysisId, loadById]);
 
-  const backHref = cameFromLibrary ? "/library" : "/analysis";
+  const backHref = cameFromLibrary ? "/library" : "/track-intelligence";
 
   return (
     /* No page padding: this renders INSIDE WorkspaceShell, which already supplies the top offset
@@ -53,7 +53,7 @@ export default function AnalysisSummaryPage() {
     <section className="w-full">
       <div className="mx-auto w-full max-w-4xl text-[var(--color-primary)]">
         <div className="mb-[var(--px-16)]">
-          <BackButton label={cameFromLibrary ? "Back to Library" : "Back to Analysis"} to={backHref} />
+          <BackButton label={cameFromLibrary ? "Back to Library" : "Back to Track Intelligence"} to={backHref} />
         </div>
 
         {!analysisId && (

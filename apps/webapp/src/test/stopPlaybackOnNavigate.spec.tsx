@@ -78,7 +78,7 @@ describe('useStopPlaybackOnNavigate', () => {
 
   it('stops when leaving the page entirely', () => {
     mountAt('/sonic-discovery?id=playlist-a');
-    go('/analysis');
+    go('/track-intelligence');
 
     expect(stop).toHaveBeenCalledTimes(1);
   });

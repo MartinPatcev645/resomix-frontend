@@ -62,8 +62,8 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
       'Search the catalogue by sound rather than tags: upload or pick a reference and explore what sits next to it.',
     noindex: true,
   },
-  '/analysis': {
-    title: 'Track Analysis: See What a Track Is Made Of | Resomix',
+  '/track-intelligence': {
+    title: 'Track Intelligence: See What a Track Is Made Of | Resomix',
     description:
       'Upload a track to read its tempo, key, energy and sonic character, then jump straight to similar recordings.',
     noindex: true,
@@ -71,8 +71,8 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
 
   /* The full Track Intelligence dashboard. `noindex` on purpose: it is only ever reachable with a
      specific `?id=`, it is a Pro capability, and an indexed shell with no analysis behind it would
-     be a dead result. `/analysis` is the page that should rank. */
-  '/analysis/full': {
+     be a dead result. `/track-intelligence` is the page that should rank. */
+  '/track-intelligence/full': {
     title: 'Full Track Intelligence | Resomix',
     description:
       'The complete breakdown of a track: spectrograms, chromagram, beat and phrase grids, mood and genre over time, and stem composition.',
@@ -123,6 +123,12 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
   '/error': { title: 'Something went wrong | Resomix', description: 'An unexpected error occurred.', noindex: true },
   '/loader': { title: 'Processing your upload | Resomix', description: 'Your upload is being analysed.', noindex: true },
   '/playlist': { title: 'Playlist | Resomix', description: 'Redirecting to the discovery workspace.', noindex: true },
+
+  /* The page was called Analysis until Sept 2026. Both old paths still resolve, so that every
+     link already shared or bookmarked keeps working, and they carry a head like `/playlist` does
+     for the same reason. */
+  '/analysis': { title: 'Redirecting to Track Intelligence | Resomix', description: 'This page moved to /track-intelligence.', noindex: true },
+  '/analysis/full': { title: 'Redirecting to the full Track Intelligence | Resomix', description: 'This page moved to /track-intelligence/full.', noindex: true },
   '/404': { title: 'Page not found | Resomix', description: 'That page does not exist.', noindex: true },
 };
 

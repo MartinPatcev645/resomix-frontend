@@ -42,7 +42,13 @@ export * from "./admin/tracks";
 export * from "./ingest"; // legacy — deprecated, kept for backwards compat
 export * from "./types/partner";
 export * from "./types/api";
-export { default as apiAxiosInstance, generateIdempotencyKey } from "./utils";
+export {
+  default as apiAxiosInstance,
+  generateIdempotencyKey,
+  isProbablyAudio,
+  validateAudioFile,
+  AUDIO_INPUT_ACCEPT,
+} from "./utils";
 
 // Auth exports
 export { default as authClient } from "./authClient";

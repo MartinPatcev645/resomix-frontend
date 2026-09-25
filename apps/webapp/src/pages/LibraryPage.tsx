@@ -1093,7 +1093,7 @@ export default function LibraryPage() {
                         <TrackArtifactChips
                           track={track}
                           onOpenPlaylist={(uuid) => navigate(`/sonic-discovery?id=${uuid}`, { state: { from: "library" } })}
-                          onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`, { state: { from: "library" } })}
+                          onOpenAnalysis={(uuid) => navigate(`/track-intelligence?id=${uuid}`, { state: { from: "library" } })}
                           onComingSoon={() => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon")}
                           onArtifactNotice={(message) => handleStatusChange("error", message, "Not available")}
                         />
@@ -1106,7 +1106,7 @@ export default function LibraryPage() {
                           track={track}
                           layout="stacked"
                           onOpenPlaylist={(uuid) => navigate(`/sonic-discovery?id=${uuid}`, { state: { from: "library" } })}
-                          onOpenAnalysis={(uuid) => navigate(`/analysis?id=${uuid}`, { state: { from: "library" } })}
+                          onOpenAnalysis={(uuid) => navigate(`/track-intelligence?id=${uuid}`, { state: { from: "library" } })}
                           onComingSoon={() => handleStatusChange("success", "Analysis is coming soon!", "Feature Coming Soon")}
                           onArtifactNotice={(message) => handleStatusChange("error", message, "Not available")}
                         />

@@ -567,14 +567,24 @@ function drawRuler(
   const baseY = flip ? y : y + h;
   line(doc, x, baseY, x + w, baseY, C.grid, 0.5);
   const labelY = flip ? y + 3 : y + 1;
+  const tickTo = flip ? baseY + 3 : baseY - 3;
+
+  // Both ends always, so the scale reads on a short track with no interior tick, and a mark under
+  // every label so a reader can see exactly where the time falls rather than near it.
+  const marks: { ms: number; align: "left" | "center" | "right" }[] = [{ ms: 0, align: "left" }];
   for (let t = 60_000; t < durationMs; t += 60_000) {
-    const f = t / durationMs;
     // The track length is always printed at the right edge, so a tick that would sit under it is
     // dropped rather than stacked on top of it.
-    if (f > 0.92) break;
-    text(doc, clock(t), x + f * w, labelY, { size: 5.6, color: C.inkMuted, align: "center" });
+    if (t / durationMs > 0.92) break;
+    marks.push({ ms: t, align: "center" });
   }
-  text(doc, clock(durationMs), x + w, labelY, { size: 5.6, color: C.inkMuted, align: "right" });
+  marks.push({ ms: durationMs, align: "right" });
+
+  marks.forEach((m) => {
+    const mx = x + (durationMs > 0 ? m.ms / durationMs : 0) * w;
+    line(doc, mx, baseY, mx, tickTo, C.grid, 0.5);
+    text(doc, clock(m.ms), mx, labelY, { size: 5.6, color: C.inkMuted, align: m.align });
+  });
 }
 
 function drawStructure(
