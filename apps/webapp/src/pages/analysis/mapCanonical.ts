@@ -23,6 +23,16 @@ import type {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const num = (v: unknown, d = 0): number => (typeof v === "number" && Number.isFinite(v) ? v : d);
+/**
+ * Like `num`, but a missing number stays missing.
+ *
+ * `num`'s zero default is right for a curve or a score, where 0 is a real reading and an empty
+ * chart is the honest result. It is wrong for a measurement: a track with no loudness range
+ * rendered as "LRA 0.0 LU", which is not "we could not measure it", it is a specific and false
+ * claim about the master. Use this wherever 0 would be indistinguishable from a real value.
+ */
+const numOrNull = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v) ? v : null;
 const str = (v: unknown, d = ""): string => (typeof v === "string" ? v : d);
 const arr = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
 
@@ -149,10 +159,10 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
       codec: str(id.codec),
     },
     technical: {
-      integratedLufs: num(tech.integrated_loudness_lufs),
-      loudnessRangeLu: num(tech.loudness_range_lu),
-      samplePeakDbfs: num(tech.sample_peak_dbfs),
-      truePeakDbtp: num(tech.true_peak_dbtp),
+      integratedLufs: numOrNull(tech.integrated_loudness_lufs),
+      loudnessRangeLu: numOrNull(tech.loudness_range_lu),
+      samplePeakDbfs: numOrNull(tech.sample_peak_dbfs),
+      truePeakDbtp: numOrNull(tech.true_peak_dbtp),
       averageLoudnessDb: num(tech.average_loudness_db),
       crestFactor: num(tech.crest_factor),
       loudnessCurve: series(tech.loudness_curve),

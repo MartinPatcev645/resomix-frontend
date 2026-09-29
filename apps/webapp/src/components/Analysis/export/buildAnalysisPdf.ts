@@ -393,10 +393,15 @@ function drawStats(L: Layout, data: AnalysisData): void {
       sub: `${(data.tonality.strength * 100).toFixed(0)}% strength`,
     },
     {
+      // Nullable, and printed as "—" when absent: the export is the copy a user sends on, so a
+      // measurement we do not have must not arrive in someone's inbox as 0.0.
       label: "Loudness",
-      value: data.technical.integratedLufs.toFixed(1),
-      unit: "LUFS",
-      sub: `LRA ${data.technical.loudnessRangeLu.toFixed(1)} LU · true peak ${data.technical.truePeakDbtp.toFixed(1)} dBTP`,
+      value: data.technical.integratedLufs?.toFixed(1) ?? "—",
+      unit: data.technical.integratedLufs != null ? "LUFS" : undefined,
+      sub: [
+        data.technical.loudnessRangeLu != null ? `LRA ${data.technical.loudnessRangeLu.toFixed(1)} LU` : null,
+        data.technical.truePeakDbtp != null ? `peak ${data.technical.truePeakDbtp.toFixed(1)} dBTP` : null,
+      ].filter(Boolean).join(" · ") || "range and peak unavailable",
     },
     {
       label: "Length",

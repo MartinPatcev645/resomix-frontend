@@ -80,7 +80,11 @@ export interface AnalysisData {
   // `samplePeakDbfs` is the loudest sample in the file; `truePeakDbtp` reconstructs the waveform
   // between samples, so it can sit above 0 where the sample peak sits below it. Two numbers, two
   // units, never one field called "peak".
-  technical: { integratedLufs: number; loudnessRangeLu: number; samplePeakDbfs: number; truePeakDbtp: number; averageLoudnessDb: number; crestFactor: number; loudnessCurve: Series; rmsEnergyCurve: Series };
+  //
+  // The four measurements are nullable and the UI must print "—" for a null. They were `number`
+  // defaulting to 0, which put "0.0 LUFS · LRA 0.0 LU · true peak 0.0 dBTP" on a real master when
+  // the measurement was unavailable. A missing reading has to look missing.
+  technical: { integratedLufs: number | null; loudnessRangeLu: number | null; samplePeakDbfs: number | null; truePeakDbtp: number | null; averageLoudnessDb: number; crestFactor: number; loudnessCurve: Series; rmsEnergyCurve: Series };
   // bpm/key/scale/camelot are null while the GPU (Essentia) value is still loading
   // — the rhythm/tonality stages defer them; the UI shows a loader until they land.
   rhythm: { bpm: number | null; confidence: number; beatTimesSeconds: number[]; beatCount: number; barCount: number; downbeatsSeconds: number[]; phraseBoundariesSeconds: number[] };

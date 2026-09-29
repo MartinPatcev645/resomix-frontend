@@ -12,6 +12,7 @@ import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { attachHls, shortGenre, useResponsive } from "@resomix/hooks";
 import { AUDIO_INPUT_ACCEPT, getPlaylistPlaybackSession } from "@resomix/api-client";
 import { useTrackAnalysis } from "./analysis/useTrackAnalysis.js";
+import type { AnalysisData } from "./analysis/data.js";
 import { useRecentAnalyses } from "./analysis/useRecentAnalyses.js";
 import { AnalysisIntro } from "./analysis/AnalysisIntro.js";
 import { FullAnalysisLocked } from "@/components/Entitlements/FullAnalysisLocked.tsx";
@@ -37,6 +38,22 @@ const fmtDuration = (ms: number) => {
 };
 // Live BPM is a float (e.g. 123.0 or 128.4); show whole numbers cleanly.
 const fmtBpm = (b: number) => (Number.isInteger(b) ? String(b) : b.toFixed(1));
+
+/**
+ * The second line of the Loudness card.
+ *
+ * Each measurement is printed only if we have it. The range and the true peak need ffmpeg's gated
+ * R128 pass; where that is unavailable the service measures the channels itself and leaves those
+ * two unset rather than approximating them, and "LRA 0.0 LU · true peak 0.0 dBTP" would report
+ * that absence as a finding about the master.
+ */
+const loudnessSub = (t: AnalysisData["technical"]): string => {
+  const parts: string[] = [];
+  if (t.loudnessRangeLu != null) parts.push(`LRA ${t.loudnessRangeLu.toFixed(1)} LU`);
+  if (t.truePeakDbtp != null) parts.push(`peak ${t.truePeakDbtp.toFixed(1)} dBTP`);
+  if (parts.length) return parts.join(" · ");
+  return t.integratedLufs != null ? "range and peak unavailable" : "unavailable for this track";
+};
 
 export default function AnalysisPage() {
   const { status, data, error, progress, fileName, audioUrl, part1Ready, analysisId, playlistUuid, analyze, loadById, reset } = useTrackAnalysis();
@@ -480,9 +497,9 @@ export default function AnalysisPage() {
               <div>
                 <StatCard
                   label="Loudness"
-                  value={data.technical.integratedLufs.toFixed(1)}
-                  unit="LUFS"
-                  sub={`LRA ${data.technical.loudnessRangeLu.toFixed(1)} LU · true peak ${data.technical.truePeakDbtp.toFixed(1)} dBTP`}
+                  value={data.technical.integratedLufs?.toFixed(1) ?? "—"}
+                  unit={data.technical.integratedLufs != null ? "LUFS" : undefined}
+                  sub={loudnessSub(data.technical)}
                   hint="Integrated loudness in LUFS (EBU R128), measured across the whole track in its own channel layout. True peak is in dBTP, so inter-sample overshoots above 0 show up here even when no single sample clips."
                 />
               </div>
