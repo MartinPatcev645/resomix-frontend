@@ -77,7 +77,10 @@ export type StemMetrics = { energyCurve: Series; presencePct: number };
 
 export interface AnalysisData {
   identity: { filename: string; durationMs: number; sampleRateHz: number; bitRate: number; channels: number; codec: string };
-  technical: { integratedLufs: number; loudnessRangeLu: number; truePeakDbtp: number; averageLoudnessDb: number; crestFactor: number; loudnessCurve: Series; rmsEnergyCurve: Series };
+  // `samplePeakDbfs` is the loudest sample in the file; `truePeakDbtp` reconstructs the waveform
+  // between samples, so it can sit above 0 where the sample peak sits below it. Two numbers, two
+  // units, never one field called "peak".
+  technical: { integratedLufs: number; loudnessRangeLu: number; samplePeakDbfs: number; truePeakDbtp: number; averageLoudnessDb: number; crestFactor: number; loudnessCurve: Series; rmsEnergyCurve: Series };
   // bpm/key/scale/camelot are null while the GPU (Essentia) value is still loading
   // — the rhythm/tonality stages defer them; the UI shows a loader until they land.
   rhythm: { bpm: number | null; confidence: number; beatTimesSeconds: number[]; beatCount: number; barCount: number; downbeatsSeconds: number[]; phraseBoundariesSeconds: number[] };

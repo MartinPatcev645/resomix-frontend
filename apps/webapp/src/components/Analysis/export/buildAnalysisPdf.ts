@@ -396,7 +396,7 @@ function drawStats(L: Layout, data: AnalysisData): void {
       label: "Loudness",
       value: data.technical.integratedLufs.toFixed(1),
       unit: "LUFS",
-      sub: `LRA ${data.technical.loudnessRangeLu.toFixed(1)} · peak ${data.technical.truePeakDbtp.toFixed(1)}`,
+      sub: `LRA ${data.technical.loudnessRangeLu.toFixed(1)} LU · true peak ${data.technical.truePeakDbtp.toFixed(1)} dBTP`,
     },
     {
       label: "Length",

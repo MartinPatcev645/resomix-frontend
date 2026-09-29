@@ -151,6 +151,7 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
     technical: {
       integratedLufs: num(tech.integrated_loudness_lufs),
       loudnessRangeLu: num(tech.loudness_range_lu),
+      samplePeakDbfs: num(tech.sample_peak_dbfs),
       truePeakDbtp: num(tech.true_peak_dbtp),
       averageLoudnessDb: num(tech.average_loudness_db),
       crestFactor: num(tech.crest_factor),

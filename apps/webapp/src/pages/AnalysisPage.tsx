@@ -482,8 +482,8 @@ export default function AnalysisPage() {
                   label="Loudness"
                   value={data.technical.integratedLufs.toFixed(1)}
                   unit="LUFS"
-                  sub={`LRA ${data.technical.loudnessRangeLu.toFixed(1)} LU · peak ${data.technical.truePeakDbtp.toFixed(1)} dB`}
-                  hint="Integrated loudness in LUFS (EBU R128), the overall perceived level across the whole track."
+                  sub={`LRA ${data.technical.loudnessRangeLu.toFixed(1)} LU · true peak ${data.technical.truePeakDbtp.toFixed(1)} dBTP`}
+                  hint="Integrated loudness in LUFS (EBU R128), measured across the whole track in its own channel layout. True peak is in dBTP, so inter-sample overshoots above 0 show up here even when no single sample clips."
                 />
               </div>
               <div>
