@@ -273,7 +273,11 @@ export function StatCard({
   hint?: string;
 }) {
   return (
-    <div className="group relative rounded-[var(--px-10)] border border-[var(--an-border)] bg-[var(--an-card)] p-[var(--px-14)] transition-colors hover:border-[var(--rx-color-border-strong)]">
+    <div
+      // `h-full`: the five cards share a grid row and must stay one height. A genre name that
+      // wraps ("Progressive House") made its card a line taller than the other four.
+      className="group relative h-full rounded-[var(--px-10)] border border-[var(--an-border)] bg-[var(--an-card)] p-[var(--px-14)] transition-colors hover:border-[var(--rx-color-border-strong)]"
+    >
       <div className="font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-2)] text-[var(--an-text-muted)]">
         {label}
       </div>

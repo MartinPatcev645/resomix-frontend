@@ -7,15 +7,14 @@ import { sectionAtMs } from "@/utils/structureStrip.ts";
 import { camelotRootPitchClass } from "@/utils/analysisTimeline.ts";
 import { StructureStrip } from "../StructureStrip.tsx";
 import { EnergyLane } from "./EnergyLane.tsx";
-import { WaveformLane } from "./WaveformLane.tsx";
 import { TimelineLane, LANE_GRID } from "./TimelineLane.tsx";
 import { TimeRuler } from "./TimeRuler.tsx";
 
 /** Lane heights, in px at the design root size. Compact halves the tall ones for short viewports. */
 const HEIGHTS = {
-  desktop: { ruler: 18, waveform: 80, structure: 64, energy: 120, spectrum: 140, pitch: 96, row: 18, stems: 110 },
-  compact: { ruler: 18, waveform: 56, structure: 52, energy: 80, spectrum: 96, pitch: 64, row: 12, stems: 72 },
-  mobile: { ruler: 16, waveform: 48, structure: 48, energy: 72, spectrum: 84, pitch: 60, row: 14, stems: 72 },
+  desktop: { ruler: 18, structure: 64, energy: 120, spectrum: 140, pitch: 96, row: 18, stems: 110 },
+  compact: { ruler: 18, structure: 52, energy: 80, spectrum: 96, pitch: 64, row: 12, stems: 72 },
+  mobile: { ruler: 16, structure: 48, energy: 72, spectrum: 84, pitch: 60, row: 14, stems: 72 },
 };
 
 const CHROMA_ORDER = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -125,11 +124,16 @@ export const TimelineTab: React.FC<{
           <span className="hidden lg:block" />
         </div>
 
-        {/* The waveform leads, with the structure strip directly beneath it: the two are read
-            together, the shape of the track and the name of each part of it. */}
-        <TimelineLane title="Waveform" meta="amplitude">
+        {/* Energy leads, with the structure strip directly beneath it. It is the track's waveform
+            as a DJ reads it, bar by bar in each section's colour, and the strip under it names
+            each part of the shape above. The two stay tight; the lanes below are separate readings. */}
+        <TimelineLane
+          title="Energy"
+          meta="RMS per bar · — LUFS"
+          axis={["−6", "−10", "−14 dB"]}
+        >
           <TimeAxis durationMs={durationMs} currentMs={null} onSeek={onSeek}>
-            <WaveformLane data={data} durationMs={durationMs} height={h.waveform} />
+            <EnergyLane data={data} durationMs={durationMs} height={h.energy} />
           </TimeAxis>
         </TimelineLane>
 
@@ -150,16 +154,6 @@ export const TimelineTab: React.FC<{
         ) : (
           <LanePending label="Structure" pending={pending} height={h.structure} />
         )}
-
-        <TimelineLane
-          title="Energy"
-          meta="RMS per bar · — LUFS"
-          axis={["−6", "−10", "−14 dB"]}
-        >
-          <TimeAxis durationMs={durationMs} currentMs={null} onSeek={onSeek}>
-            <EnergyLane data={data} durationMs={durationMs} height={h.energy} />
-          </TimeAxis>
-        </TimelineLane>
 
         <TimelineLane
           title="Spectrum"

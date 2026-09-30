@@ -5,7 +5,6 @@ import { chromaLabelsForKey, keyFromCamelot } from "@/pages/analysis/heatviz.tsx
 import {
   barMeans,
   barsFromDownbeats,
-  envelopeColumns,
   camelotNeighbours,
   camelotRootPitchClass,
   inKeyPitchClasses,
@@ -110,8 +109,14 @@ export interface TrackFacts {
  */
 export function trackFacts(filename: string): TrackFacts {
   const file = filename || "Untitled";
-  const noExt = file.replace(/\.(mp3|wav|flac|aiff?|m4a|ogg|mpe?g)$/i, "");
-  const noIndex = noExt.replace(/^\s*\d{1,3}\s*[.\-_)]\s+/, "");
+  // Every audio extension on the end, since files arrive as "…mp3.mpeg" too.
+  const noExt = file.replace(/(\.(mp3|wav|flac|aiff?|m4a|ogg|mpe?g))+$/i, "");
+  // A download site's watermark on the end: "-electrobuzz.net", " (www.site.com)", "[site.ru]".
+  // A real title does not end in a domain, so this cannot eat one.
+  const noSite = noExt.replace(/[\s\-_]*[[(]?(?:www\.)?[a-z0-9-]+\.(?:net|com|org|ru|to|cc|me|io|info|biz)[\])]?\s*$/i, "");
+  // The track number: "02. ", "04-", "3 - ". Two or three digits may be glued straight to the
+  // artist ("04-Avocado"); a single digit needs a space after it, so "2-Step" keeps its name.
+  const noIndex = noSite.replace(/^\s*(?:\d{2,3}\s*[.\-_)]\s*|\d\s*[.\-_)]\s+)/, "");
   const split = noIndex.split(/\s+-\s+/);
   if (split.length >= 2) {
     const artist = split[0].trim();
@@ -137,7 +142,7 @@ const CHART_W = CONTENT_W - GUTTER - GAP_X - GAP_X - AXIS;
 const AXIS_X = CHART_X + CHART_W + GAP_X;
 
 /** Lane heights at full size. The whole stack is scaled together when a track needs more rows. */
-const LANE = { ruler: 11, waveform: 40, structure: 34, energy: 58, spectrum: 74, pitch: 46, row: 10, rowGap: 2, stems: 56, gap: 9 };
+const LANE = { ruler: 11, structure: 34, energy: 58, spectrum: 74, pitch: 46, row: 10, rowGap: 2, stems: 56, gap: 9 };
 
 /* ------------------------------------------------------------------ document */
 
@@ -405,7 +410,9 @@ function drawStats(L: Layout, data: AnalysisData): void {
   const sections = segments.filter((s) => !s.hidden).length;
   const bars = segments.reduce((sum, s) => sum + (s.bars ?? 0), 0);
 
-  const cards: { label: string; value: string; unit?: string; sub: string }[] = [
+  // `valueSize`: the genre is a name, not a number, and on the page it is set at 18px against the
+  // numbers' 26px. The same ratio here keeps it from being cut to "Progre…".
+  const cards: { label: string; value: string; unit?: string; sub: string; valueSize?: number }[] = [
     {
       label: "Tempo",
       value: data.rhythm.bpm == null ? "—" : fmtBpm(data.rhythm.bpm),
@@ -436,32 +443,53 @@ function drawStats(L: Layout, data: AnalysisData): void {
     },
     {
       label: "Genre",
+      valueSize: 11,
       value: topGenre.length ? shortGenre(topGenre[0].label) : "—",
       unit: topGenre.length ? `${(topGenre[0].score * 100).toFixed(0)}%` : undefined,
       sub: topGenre[1] ? `${shortGenre(topGenre[1].label)} ${(topGenre[1].score * 100).toFixed(0)}%` : "top match",
     },
   ];
 
-  const h = 50;
-  L.ensure(h);
   const gap = 8;
   const w = (CONTENT_W - gap * (cards.length - 1)) / cards.length;
+  const VALUE_TOP = 19;
+
+  // Each value laid out first: a number on one line, a name wrapped onto at most two, the unit
+  // after its last line. The row is then as tall as its tallest card and every card is drawn at
+  // that height, as on the page, so one long genre never leaves the row ragged.
+  const laid = cards.map((c) => {
+    const size = c.valueSize ?? 15;
+    const valueOpts = { size, bold: true, color: C.ink } as const;
+    const unitW = c.unit ? widthOf(doc, c.unit, { size: 7 }) + 3 : 0;
+    const room = w - 18 - unitW;
+    let lines = c.valueSize ? wrap(doc, c.value, room, valueOpts) : [c.value];
+    if (lines.length > 2) lines = [lines[0], lines.slice(1).join(" ")];
+    lines = lines.map((l) => ellipsis(doc, l, room, valueOpts));
+    const lineH = size * 1.15;
+    return { c, valueOpts, lines, lineH, blockH: Math.max(15, lines.length * lineH) };
+  });
+  const h = Math.max(50, ...laid.map((l) => VALUE_TOP + l.blockH + 3 + 13));
+  L.ensure(h);
 
   // One size for all five second lines, the largest at which every one fits on a line. The
   // Loudness line ("LRA 5.1 LU · peak -0.7 dBTP") is the long one and was being cut to "dBT…";
   // shrinking only that card would make the row uneven, so the whole row steps down together.
   const subSize = [6.5, 6.2, 5.9, 5.6].find((size) => cards.every((c) => widthOf(doc, c.sub, { size }) <= w - 18)) ?? 5.6;
-  cards.forEach((c, i) => {
+  laid.forEach(({ c, valueOpts, lines, lineH, blockH }, i) => {
     const x = MARGIN_X + i * (w + gap);
     card(doc, x, L.y, w, h);
     text(doc, c.label.toUpperCase(), x + 9, L.y + 8, { size: 6, color: C.inkMuted, spacing: 1 });
-    const valueOpts = { size: 15, bold: true, color: C.ink } as const;
-    const shown = ellipsis(doc, c.value, w - 18 - (c.unit ? widthOf(doc, c.unit, { size: 7 }) + 4 : 0), valueOpts);
-    text(doc, shown, x + 9, L.y + 19, valueOpts);
+    // A 15pt number sits where it always did; a smaller name sits on the same cap line.
+    const top = L.y + VALUE_TOP + (15 - valueOpts.size) * 0.35;
+    lines.forEach((line, k) => text(doc, line, x + 9, top + k * lineH, valueOpts));
     if (c.unit) {
-      text(doc, c.unit, x + 9 + widthOf(doc, shown, valueOpts) + 3, L.y + 25, { size: 7, color: C.inkSoft });
+      const last = lines[lines.length - 1];
+      // Shares the value's baseline: 6pt down at 15pt, as it always sat, and proportionally less for a name.
+      const baseline = top + (lines.length - 1) * lineH + (valueOpts.size - 7) * 0.75;
+      text(doc, c.unit, x + 9 + widthOf(doc, last, valueOpts) + 3, baseline, { size: 7, color: C.inkSoft });
     }
-    text(doc, ellipsis(doc, c.sub, w - 18, { size: subSize }), x + 9, L.y + 37, { size: subSize, color: C.inkMuted });
+    const subY = L.y + VALUE_TOP + blockH + 3;
+    text(doc, ellipsis(doc, c.sub, w - 18, { size: subSize }), x + 9, subY, { size: subSize, color: C.inkMuted });
   });
   L.gap(h + 18);
 }
@@ -492,12 +520,10 @@ function drawTimeline(L: Layout, data: AnalysisData, plates: Plates): void {
   const headH = 29 + (summaryLines.length ? summaryLines.length * 12 + 8 : 0);
 
   // Every lane, and what the stack costs before it is fitted to the page.
-  const hasWave = (data.technical.rmsEnergyCurve?.values?.length ?? 0) > 0;
   const laneHeights = [
     LANE.ruler,
-    hasWave ? LANE.waveform : 0,
-    segments.length ? LANE.structure : 0,
     LANE.energy,
+    segments.length ? LANE.structure : 0,
     LANE.spectrum,
     LANE.pitch,
     ...ribbons.map((r) => r.track.series.length * LANE.row + (r.track.series.length - 1) * LANE.rowGap),
@@ -524,23 +550,17 @@ function drawTimeline(L: Layout, data: AnalysisData, plates: Plates): void {
   drawRuler(doc, L.y, h("ruler"), durationMs, false);
   L.gap(h("ruler") + gapY);
 
-  // The waveform leads, with the structure strip directly beneath it, as on the Timeline tab.
-  if (hasWave) {
-    laneLabel(doc, L.y, "Waveform", "amplitude");
-    drawWaveform(doc, L.y, h("waveform"), data, durationMs);
-    L.gap(h("waveform") + gapY);
-  }
+  // Energy leads, with the structure strip directly beneath it, as on the Timeline tab.
+  laneLabel(doc, L.y, "Energy", "RMS per bar");
+  laneAxis(doc, L.y, h("energy"), ["−6", "−10", "−14 dB"]);
+  drawEnergy(doc, L.y, h("energy"), data, durationMs);
+  L.gap(h("energy") + gapY);
 
   if (segments.length) {
     laneLabel(doc, L.y, "Structure", shown ? `${shown} sections` : undefined);
     drawStructure(doc, L.y, h("structure"), segments, durationMs);
     L.gap(h("structure") + gapY);
   }
-
-  laneLabel(doc, L.y, "Energy", "RMS per bar");
-  laneAxis(doc, L.y, h("energy"), ["−6", "−10", "−14 dB"]);
-  drawEnergy(doc, L.y, h("energy"), data, durationMs);
-  L.gap(h("energy") + gapY);
 
   const nyquist = data.identity.sampleRateHz > 0 ? data.identity.sampleRateHz / 2 : 22050;
   const spectrum = plates.spectrum;
@@ -593,48 +613,6 @@ function drawTimeline(L: Layout, data: AnalysisData, plates: Plates): void {
 
   drawRuler(doc, L.y, h("ruler"), durationMs, true);
   L.gap(h("ruler"));
-}
-
-/**
- * The waveform: short-term RMS mirrored about a centre line, each stretch in its section's colour.
- * The same picture as `WaveformLane` on the page, drawn as one polygon per section.
- */
-function drawWaveform(doc: jsPDF, y: number, h: number, data: AnalysisData, durationMs: number): void {
-  fillRect(doc, CHART_X, y, CHART_W, h, C.lane, 2);
-  line(doc, CHART_X, y + h / 2, CHART_X + CHART_W, y + h / 2, C.grid, 0.4);
-  const columns = envelopeColumns(data.technical.rmsEnergyCurve?.values, 360);
-  const n = columns.length;
-  if (!n || durationMs <= 0) return;
-  const segments = data.energy.structureSegments;
-  const toneAt = (c: number) => {
-    const section = sectionAtMs(segments, ((c + 0.5) / n) * durationMs);
-    return section ? sectionTone(sectionWord(section)).fg : null;
-  };
-  const colW = CHART_W / n;
-  const half = (h / 2) * 0.94;
-  const mid = y + h / 2;
-  let start = 0;
-  let current = toneAt(0);
-  const close = (end: number) => {
-    const top: Point[] = [];
-    const bottom: Point[] = [];
-    for (let c = start; c < end; c++) {
-      const amp = columns[c] * half;
-      const x0 = CHART_X + c * colW;
-      top.push({ x: x0, y: mid - amp }, { x: x0 + colW, y: mid - amp });
-      bottom.push({ x: x0, y: mid + amp }, { x: x0 + colW, y: mid + amp });
-    }
-    polygon(doc, [...top, ...bottom.reverse()], current ?? blend(C.inkMuted, C.lane, 0.5));
-  };
-  for (let c = 1; c < n; c++) {
-    const next = toneAt(c);
-    if (next !== current) {
-      close(c);
-      start = c;
-      current = next;
-    }
-  }
-  close(n);
 }
 
 /**
@@ -901,7 +879,7 @@ function drawHarmony(L: Layout, data: AnalysisData): void {
   cy += 54;
   if (showAlternative && altLabel) {
     keyCard(doc, rx, cy, rw, "Alternative", `${altLabel.name} ${altLabel.scale}`,
-      tonality.altCamelot ? `${tonality.altCamelot} Camelot · could also read as` : "could also read as");
+      tonality.altCamelot ? `${tonality.altCamelot} Camelot · runner-up` : "runner-up");
     cy += 54;
   }
   keyCard(doc, rx, cy, rw, "Tonic", tonicIndex != null ? chromaLabelsForKey(tonality.camelot)[tonicIndex] : "—",
@@ -1118,7 +1096,7 @@ function drawVibe(L: Layout, data: AnalysisData): void {
   L.y = rowTop + rowH + 8;
 
   if (hidden.length) {
-    const label = `hidden: ${hidden.map((t) => `${t.label} ${Math.round(t.score * 100)}`).join(" · ")}`;
+    const label = `hidden: ${hidden.map((t) => `${t.label}\u00a0${Math.round(t.score * 100)}`).join(" · ")}`;
     L.gap(paragraph(doc, label, MARGIN_X, L.y, CONTENT_W, { size: 6.4, color: C.inkFaint, leading: 9 }));
   }
   L.gap(18);

@@ -515,7 +515,9 @@ export default function AnalysisPage() {
                 {topGenre.length > 0 ? (
                   <StatCard
                     label="Genre"
-                    value={<span className="text-[length:var(--px-18)]">{shortGenre(topGenre[0].label)}</span>}
+                    // `tracking-normal`: the page's 1px letter spacing added 17px to "Progressive House" and
+                    // wrapped it beside its percentage. Without it the longest common names fit.
+                    value={<span className="text-[length:var(--px-18)] tracking-normal">{shortGenre(topGenre[0].label)}</span>}
                     unit={`${(topGenre[0].score * 100).toFixed(0)}%`}
                     sub={
                       topGenre[1]

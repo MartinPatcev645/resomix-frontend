@@ -71,7 +71,7 @@ export const HarmonyTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
             <KeyCard
               label="Alternative"
               value={altLabel ? `${altLabel.name} ${altLabel.scale}` : "—"}
-              sub={tonality.altCamelot ? `${tonality.altCamelot} Camelot · could also read as` : "no second candidate"}
+              sub={tonality.altCamelot ? `${tonality.altCamelot} Camelot · runner-up` : "no second candidate"}
               dim
             />
           )}

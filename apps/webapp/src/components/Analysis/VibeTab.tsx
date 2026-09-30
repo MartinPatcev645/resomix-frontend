@@ -160,7 +160,7 @@ export const VibeTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
             </div>
             {hidden.length > 0 && (
               <p className="m-0 font-fira text-[length:var(--px-10)] text-[var(--an-text-faint)]">
-                hidden: {hidden.map((t) => `${t.label} ${Math.round(t.score * 100)}`).join(" · ")}
+                hidden: {hidden.map((t) => `${t.label}\u00a0${Math.round(t.score * 100)}`).join(" · ")}
               </p>
             )}
           </section>

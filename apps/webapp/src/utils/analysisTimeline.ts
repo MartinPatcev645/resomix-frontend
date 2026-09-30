@@ -240,29 +240,3 @@ export function genreAgreement(rows: GenreRow[]): string {
   }
   return `${both.length} of ${rows.length} labels were picked by both models; the rest come from one model only.`;
 }
-
-/**
- * An amplitude curve reduced to `columns` values for drawing, scaled so the loudest is 1.
- *
- * Each column keeps the LOUDEST frame that falls in it, not the average. A waveform is read by its
- * peaks, and averaging a 25 ms curve down to a few hundred columns flattens exactly the kicks and
- * transients that make a drop look like a drop.
- */
-export function envelopeColumns(values: number[] | null | undefined, columns: number): number[] {
-  const n = values?.length ?? 0;
-  if (!n || columns <= 0) return [];
-  const width = Math.min(columns, n);
-  const out = new Array<number>(width);
-  for (let c = 0; c < width; c++) {
-    const start = Math.floor((c * n) / width);
-    const end = Math.max(start + 1, Math.floor(((c + 1) * n) / width));
-    let peak = 0;
-    for (let i = start; i < end; i++) {
-      const v = values![i];
-      if (Number.isFinite(v) && v > peak) peak = v;
-    }
-    out[c] = peak;
-  }
-  const max = out.reduce((m, v) => (v > m ? v : m), 0);
-  return max > 0 ? out.map((v) => v / max) : out.map(() => 0);
-}

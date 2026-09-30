@@ -147,6 +147,24 @@ describe("trackFacts", () => {
   it("keeps a hyphenated title whole", () => {
     expect(trackFacts("Artist - Track - Remix Name.mp3").title).toBe("Track - Remix Name");
   });
+
+  /** The Solina export printed "04-Avocado" as the artist and ended its title in "-electrobuzz.net". */
+  it("drops a track number glued to the artist and a download site on the end", () => {
+    expect(
+      trackFacts("04-Avocado, Moody Kablawi, Dave Dinger - Solina (Daniel Jaeger Remix)-electrobuzz.net.flac"),
+    ).toMatchObject({ artist: "Avocado, Moody Kablawi, Dave Dinger", title: "Solina (Daniel Jaeger Remix)" });
+  });
+
+  it("strips a double extension", () => {
+    expect(trackFacts("01. Luckes - Boomerang (Original Mix).mp3.mpeg")).toMatchObject({
+      artist: "Luckes",
+      title: "Boomerang (Original Mix)",
+    });
+  });
+
+  it("leaves a name that merely starts with a digit alone", () => {
+    expect(trackFacts("2-Step Kings - Tune.mp3").artist).toBe("2-Step Kings");
+  });
 });
 
 describe("formatUtc", () => {

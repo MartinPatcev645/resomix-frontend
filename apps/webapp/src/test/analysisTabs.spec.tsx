@@ -85,10 +85,13 @@ describe("Timeline tab", () => {
     render(
       <TimelineTab data={full} durationMs={240000} currentMs={60000} onSeek={noop} isDesktop compact={false} onToggleCompact={noop} pending={false} />,
     );
-    for (const lane of ["Waveform", "Structure", "Energy", "Spectrum", "Pitch", "Stems"]) {
+    for (const lane of ["Energy", "Structure", "Spectrum", "Pitch", "Stems"]) {
       expect(screen.getByText(lane)).toBeInTheDocument();
     }
     expect(screen.getByText(/32-bar intro/)).toBeInTheDocument();
+    // Energy leads, with the structure strip directly beneath it.
+    const order = screen.getByText("Energy").compareDocumentPosition(screen.getByText("Structure"));
+    expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText(/124 BPM/)).toBeInTheDocument();
     // Heat-row names are shortened like everywhere else; the raw model label is far too long for
     // the gutter and truncated to "electronic---te…".
