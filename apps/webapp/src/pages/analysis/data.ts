@@ -75,6 +75,7 @@ export type TimelineTrack = { series: LabelSeries[]; hopMs: number };
 export type VoiceRegion = { startMs: number; endMs: number; meanScore: number };
 export type StemMetrics = { energyCurve: Series; presencePct: number };
 
+
 export interface AnalysisData {
   identity: { filename: string; durationMs: number; sampleRateHz: number; bitRate: number; channels: number; codec: string };
   // `samplePeakDbfs` is the loudest sample in the file; `truePeakDbtp` reconstructs the waveform
