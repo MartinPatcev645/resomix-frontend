@@ -235,6 +235,8 @@ describe("the exported document", () => {
     const withDate = plain({ ...full, analyzedAt: Date.UTC(2026, 8, 26, 9, 12) });
     expect(withDate).toContain("26 September 2026, 09:12 UTC");
     expect(withDate).toContain("EXPORTED");
+    // Once, in the Track table. The cover used to repeat it a few lines above the same table.
+    expect(withDate.split(meta.exportedOn).length - 1).toBe(1);
     // "bounce_test_final.wav" carries no artist, and the row is left out rather than faked.
     expect(plain(partial)).not.toContain("not in the filename");
   });

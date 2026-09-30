@@ -3,8 +3,13 @@ import { shortGenre } from "@resomix/hooks";
 import type { AnalysisData } from "@/pages/analysis/data.ts";
 import { BarList } from "@/pages/analysis/charts.tsx";
 
-/** How many rows each list shows. Beyond this the scores are noise. */
-const TOP_N = 7;
+/**
+ * How many rows each list shows. Beyond this the scores are noise.
+ *
+ * The PDF export prints the same lists (TOP_N in export/buildAnalysisPdf.ts) and the two must match:
+ * a forwarded PDF that lists three genres the page never showed reads as a different result.
+ */
+const TOP_N = 10;
 
 /**
  * Genre and sonic style, as two ranked lists.

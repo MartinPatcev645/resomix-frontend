@@ -172,9 +172,17 @@ export function buildAnalysisPdf(makeDoc: () => jsPDF, data: AnalysisData, meta:
     chroma: chromaPng(data.tonality.chromagram),
   };
 
-  const probe = layout(makeDoc(), data, facts, meta, plates, []);
+  const probe = layout(makeDoc(), data, facts, meta, plates, [], 0);
   const pages = probe.doc.getNumberOfPages();
   const spread = computeSpread(probe.marks);
+
+  // The cover holds two sections, so all of its leftover lands in the one gap above the Track table,
+  // and on a short title that is a hole in the middle of the page. Most of it goes to the cover
+  // graphic instead, which then grows into the room. It is moved, not added: the table below starts
+  // exactly where it would have, so the page count cannot change.
+  const coverFits = probe.marks[0]?.page === 1 && probe.marks[1]?.page === 1;
+  const heroGrow = coverFits && hasHero(data) ? Math.min(HERO_GROW_MAX, spread[1] * 0.6) : 0;
+  if (heroGrow > 0) spread[1] -= heroGrow;
 
   // Spacing a page out can, at the margin, push its last section over the edge and add a sheet:
   // a section asks for room before it draws and sometimes asks for a little more than it takes.
@@ -183,7 +191,7 @@ export function buildAnalysisPdf(makeDoc: () => jsPDF, data: AnalysisData, meta:
   // milliseconds of arithmetic.
   let out = probe;
   for (const factor of [1, 0.6, 0.3]) {
-    const attempt = layout(makeDoc(), data, facts, meta, plates, spread.map((s) => s * factor));
+    const attempt = layout(makeDoc(), data, facts, meta, plates, spread.map((s) => s * factor), heroGrow * factor);
     if (attempt.doc.getNumberOfPages() === pages) {
       out = attempt;
       break;
@@ -201,6 +209,7 @@ function layout(
   meta: PdfMeta,
   plates: Plates,
   spread: number[],
+  heroGrow: number,
 ): Layout {
   paintPage(doc);
   const L = new Layout(doc, spread);
@@ -211,7 +220,7 @@ function layout(
     L.end();
   };
 
-  section(() => drawCover(L, data, facts, meta, plates));
+  section(() => drawCover(L, data, facts, meta, plates, heroGrow));
   // The facts table and the stat cards are one block: they are the same statement about the track
   // and a page turn or a gap between them would read as two.
   section(() => {
@@ -234,7 +243,14 @@ function layout(
 
 /* --------------------------------------------------------------------- cover */
 
-function drawCover(L: Layout, data: AnalysisData, facts: TrackFacts, meta: PdfMeta, plates: Plates): void {
+function drawCover(
+  L: Layout,
+  data: AnalysisData,
+  facts: TrackFacts,
+  meta: PdfMeta,
+  plates: Plates,
+  heroGrow: number,
+): void {
   const { doc } = L;
   const x = MARGIN_X;
 
@@ -294,7 +310,7 @@ function drawCover(L: Layout, data: AnalysisData, facts: TrackFacts, meta: PdfMe
     body,
   );
   L.gap(24);
-  L.gap(drawHero(doc, x, L.y, CONTENT_W, data, plates));
+  L.gap(drawHero(doc, x, L.y, CONTENT_W, data, plates, heroGrow));
 
   const contents: [string, string, string][] = [
     ["01", "Timeline", "structure, energy, spectrum, pitch, style, mood, stems"],
@@ -311,41 +327,51 @@ function drawCover(L: Layout, data: AnalysisData, facts: TrackFacts, meta: PdfMe
     const whatLines = wrap(doc, what, colW, { size: 6.8, color: C.inkFaint });
     whatLines.forEach((l, k) => text(doc, l, cx, L.y + 12 + nameLines.length * 12 + 3 + k * 9, { size: 6.8, color: C.inkFaint }));
   });
+  // No export date here. The Track table directly below carries both dates, and a second copy of
+  // one of them a few lines above it read as a repeat.
   L.gap(64);
-
-  text(doc, `Exported ${meta.exportedOn}`, x, L.y, { size: 7.5, color: C.inkFaint, spacing: 0.4 });
-  L.gap(24);
 }
 
 /**
  * The track at a glance, across the foot of the cover.
  *
  * The cover otherwise carries nothing but type, and a page of type with a gap in it reads as a
- * page that ran out. This is the one picture that says what the track IS in a glance: its sections
- * in their own colours, and the energy underneath them on the same time axis. Both are drawn by
- * the same code the Timeline uses, just across the full width instead of a lane.
+ * page that ran out. This is the one picture that says what the track IS in a glance: the energy
+ * in its sections' colours, with the sections named underneath on the same time axis. Both are
+ * drawn by the same code the Timeline uses, just across the full width instead of a lane, and in
+ * the Timeline's order (energy above structure) so the cover and page 2 read the same way.
  *
  * Nothing is invented for it. A result with no structure and no beat grid has no glance to show,
  * so it draws nothing and the page closes up around it.
+ *
+ * `grow` is spare height from the foot of the cover, shared between the energy and the spectrum.
+ * The section strip keeps its size, since its labels are set for it.
  */
-function drawHero(doc: jsPDF, x: number, y: number, w: number, data: AnalysisData, plates: Plates): number {
+function drawHero(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  data: AnalysisData,
+  plates: Plates,
+  grow: number,
+): number {
+  if (!hasHero(data)) return 0;
   const durationMs = data.identity.durationMs;
   const segments = data.energy.structureSegments;
-  const hasBeat = (data.rhythm.downbeatsSeconds?.length ?? 0) > 0;
-  if (durationMs <= 0 || (!segments.length && !hasBeat)) return 0;
 
   const structureH = 32;
-  const energyH = 74;
-  const spectrumH = 58;
+  const energyH = 74 + (plates.spectrum ? grow * 0.55 : grow);
+  const spectrumH = 58 + grow * 0.45;
   const rulerH = 11;
   let cy = y;
 
+  drawEnergy(doc, cy, energyH, data, durationMs, x, w);
+  cy += energyH + 3;
   if (segments.length) {
     drawStructure(doc, cy, structureH, segments, durationMs, x, w);
     cy += structureH + 3;
   }
-  drawEnergy(doc, cy, energyH, data, durationMs, x, w);
-  cy += energyH + 3;
   if (plates.spectrum) {
     image(doc, plates.spectrum.data, x, cy, w, spectrumH, "an-hero-spectrum");
     cy += spectrumH;
@@ -354,6 +380,15 @@ function drawHero(doc: jsPDF, x: number, y: number, w: number, data: AnalysisDat
   cy += rulerH;
 
   return cy - y + 10;
+}
+
+/** Most extra height the cover graphic takes from the foot of the cover. */
+const HERO_GROW_MAX = 56;
+
+/** Whether the cover has a graphic at all. Without sections or a beat grid there is no glance. */
+function hasHero(data: AnalysisData): boolean {
+  const hasBeat = (data.rhythm.downbeatsSeconds?.length ?? 0) > 0;
+  return data.identity.durationMs > 0 && (data.energy.structureSegments.length > 0 || hasBeat);
 }
 
 /* ---------------------------------------------------------------- the track */
@@ -1104,6 +1139,7 @@ function drawVibe(L: Layout, data: AnalysisData): void {
 
 /* --------------------------------------------------------------------- genre */
 
+/** Rows per list. Kept equal to TOP_N in GenreTab.tsx, so the PDF and the page list the same genres. */
 const TOP_N = 10;
 
 function drawGenre(L: Layout, data: AnalysisData): void {
