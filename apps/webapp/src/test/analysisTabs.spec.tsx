@@ -85,7 +85,7 @@ describe("Timeline tab", () => {
     render(
       <TimelineTab data={full} durationMs={240000} currentMs={60000} onSeek={noop} isDesktop compact={false} onToggleCompact={noop} pending={false} />,
     );
-    for (const lane of ["Structure", "Energy", "Spectrum", "Pitch", "Stems"]) {
+    for (const lane of ["Waveform", "Structure", "Energy", "Spectrum", "Pitch", "Stems"]) {
       expect(screen.getByText(lane)).toBeInTheDocument();
     }
     expect(screen.getByText(/32-bar intro/)).toBeInTheDocument();
@@ -118,6 +118,23 @@ describe("Harmony tab", () => {
     render(<HarmonyTab data={partial} />);
     expect(screen.getByText("Key")).toBeInTheDocument();
   });
+
+  /**
+   * The cross-check always finds a best-fitting neighbour, usually the parallel key. Beside a
+   * confident reading that read as doubt the analysis does not have, so the card only appears when
+   * the key is actually flagged ambiguous.
+   */
+  it("offers an alternative key only when the key is in doubt", () => {
+    render(<HarmonyTab data={full} />);
+    expect(screen.getByText("Alternative")).toBeInTheDocument();
+  });
+
+  it("does not offer an alternative beside a confident key", () => {
+    const confident = { ...full, tonality: { ...full.tonality, ambiguous: false } };
+    render(<HarmonyTab data={confident} />);
+    expect(screen.queryByText("Alternative")).not.toBeInTheDocument();
+    expect(screen.getByText("Tonic")).toBeInTheDocument();
+  });
 });
 
 describe("Vibe tab", () => {
@@ -131,6 +148,18 @@ describe("Vibe tab", () => {
     expect(screen.getByText("retro")).toBeInTheDocument();
     expect(screen.queryByText("sexy")).not.toBeInTheDocument();
     expect(screen.getByText(/hidden: sexy 12 · sport 8/)).toBeInTheDocument();
+  });
+
+  /**
+   * The top three pills are drawn hot whatever their scores, since mood tags rarely pass 30% and a
+   * fixed 50% line lit nothing. Hot pills carry the larger padding.
+   */
+  it("highlights the three strongest mood tags, and only those", () => {
+    render(<VibeTab data={full} />);
+    const pill = (label: string) => screen.getAllByText(label).find((el) => el.style.padding) as HTMLElement;
+    for (const hot of ["energetic", "deep", "dark"]) expect(pill(hot).style.padding).toBe("9px 17px");
+    for (const cold of ["funny", "party", "retro"]) expect(pill(cold).style.padding).toBe("5px 11px");
+    expect(screen.getByText(/top three highlighted/)).toBeInTheDocument();
   });
 
   /**

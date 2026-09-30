@@ -1,5 +1,5 @@
 import type { AnalysisData } from "@/pages/analysis/data.ts";
-import { buildAnalysisPdf, trackFacts } from "./buildAnalysisPdf.ts";
+import { buildAnalysisPdf, formatUtc, trackFacts } from "./buildAnalysisPdf.ts";
 
 /**
  * Build the document and hand it to the browser as a download.
@@ -21,7 +21,7 @@ export async function exportAnalysisPdf(data: AnalysisData, options: ExportPdfOp
 
   const facts = trackFacts(data.identity.filename);
   const doc = buildAnalysisPdf(makeDoc, data, {
-    exportedOn: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }),
+    exportedOn: formatUtc(Date.now()),
     landingUrl: options.landingUrl,
     betaUrl: options.betaUrl,
   });

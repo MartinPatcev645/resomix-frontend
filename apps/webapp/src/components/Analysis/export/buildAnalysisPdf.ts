@@ -5,6 +5,7 @@ import { chromaLabelsForKey, keyFromCamelot } from "@/pages/analysis/heatviz.tsx
 import {
   barMeans,
   barsFromDownbeats,
+  envelopeColumns,
   camelotNeighbours,
   camelotRootPitchClass,
   inKeyPitchClasses,
@@ -12,7 +13,7 @@ import {
   meanChromaFromMatrix,
   meanInRange,
 } from "@/utils/analysisTimeline.ts";
-import { sectionAtMs, sectionWord } from "@/utils/structureStrip.ts";
+import { abbreviateSectionLabel, sectionAtMs, sectionWord } from "@/utils/structureStrip.ts";
 import { chromaPng, spectrogramPng } from "./pdfImages.ts";
 import {
   annulusSegment,
@@ -47,6 +48,7 @@ import {
   PAGE_W,
   sectionTone,
   STEM_RGB,
+  type RGB,
 } from "./pdfTheme.ts";
 
 /**
@@ -73,6 +75,25 @@ const clock = (ms: number) => {
 };
 const fmtBpm = (b: number) => (Number.isInteger(b) ? String(b) : b.toFixed(1));
 const fmtHz = (hz: number) => (hz >= 1000 ? `${Math.round(hz / 1000)}k` : `${Math.round(hz)}`);
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+/**
+ * A timestamp as "27 September 2026, 14:05 UTC".
+ *
+ * UTC so the two dates on an export mean the same thing to whoever it is forwarded to, wherever
+ * they are. Built by hand rather than with `toLocaleString`, whose month abbreviations and
+ * separators change with the browser's ICU data ("Sept" in some builds, "Sep" in others).
+ */
+export function formatUtc(epochMs: number): string {
+  const d = new Date(epochMs);
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}, ${hh}:${mm} UTC`;
+}
 
 export interface TrackFacts {
   title: string;
@@ -116,7 +137,7 @@ const CHART_W = CONTENT_W - GUTTER - GAP_X - GAP_X - AXIS;
 const AXIS_X = CHART_X + CHART_W + GAP_X;
 
 /** Lane heights at full size. The whole stack is scaled together when a track needs more rows. */
-const LANE = { ruler: 11, structure: 34, energy: 58, spectrum: 74, pitch: 46, row: 10, rowGap: 2, stems: 56, gap: 9 };
+const LANE = { ruler: 11, waveform: 40, structure: 34, energy: 58, spectrum: 74, pitch: 46, row: 10, rowGap: 2, stems: 56, gap: 9 };
 
 /* ------------------------------------------------------------------ document */
 
@@ -334,9 +355,11 @@ function drawHero(doc: jsPDF, x: number, y: number, w: number, data: AnalysisDat
 
 function drawFacts(L: Layout, data: AnalysisData, facts: TrackFacts, meta: PdfMeta): void {
   const { doc } = L;
+  // A row we cannot fill is left out rather than printed as a placeholder. "Artist: not in the
+  // filename" read to a professional reviewer as a fault in the report.
   const rows: [string, string][] = [
     ["Title", facts.title],
-    ["Artist", facts.artist ?? "not in the filename"],
+    ...(facts.artist ? ([["Artist", facts.artist]] as [string, string][]) : []),
     ["File", facts.file],
     ["Length", clock(data.identity.durationMs)],
     [
@@ -350,7 +373,10 @@ function drawFacts(L: Layout, data: AnalysisData, facts: TrackFacts, meta: PdfMe
         .filter(Boolean)
         .join(" · "),
     ],
-    ["Analysed", meta.exportedOn],
+    // When the audio was analysed and when this copy was made are different moments, and both
+    // matter once a PDF is forwarded: the first says how current the reading is.
+    ...(data.analyzedAt != null ? ([["Analysed", formatUtc(data.analyzedAt)]] as [string, string][]) : []),
+    ["Exported", meta.exportedOn],
   ];
   L.ensure(26 + rows.length * 16);
   sectionHead(L, "—", "The track");
@@ -420,6 +446,11 @@ function drawStats(L: Layout, data: AnalysisData): void {
   L.ensure(h);
   const gap = 8;
   const w = (CONTENT_W - gap * (cards.length - 1)) / cards.length;
+
+  // One size for all five second lines, the largest at which every one fits on a line. The
+  // Loudness line ("LRA 5.1 LU · peak -0.7 dBTP") is the long one and was being cut to "dBT…";
+  // shrinking only that card would make the row uneven, so the whole row steps down together.
+  const subSize = [6.5, 6.2, 5.9, 5.6].find((size) => cards.every((c) => widthOf(doc, c.sub, { size }) <= w - 18)) ?? 5.6;
   cards.forEach((c, i) => {
     const x = MARGIN_X + i * (w + gap);
     card(doc, x, L.y, w, h);
@@ -430,7 +461,7 @@ function drawStats(L: Layout, data: AnalysisData): void {
     if (c.unit) {
       text(doc, c.unit, x + 9 + widthOf(doc, shown, valueOpts) + 3, L.y + 25, { size: 7, color: C.inkSoft });
     }
-    text(doc, ellipsis(doc, c.sub, w - 18, { size: 6.5 }), x + 9, L.y + 37, { size: 6.5, color: C.inkMuted });
+    text(doc, ellipsis(doc, c.sub, w - 18, { size: subSize }), x + 9, L.y + 37, { size: subSize, color: C.inkMuted });
   });
   L.gap(h + 18);
 }
@@ -461,8 +492,10 @@ function drawTimeline(L: Layout, data: AnalysisData, plates: Plates): void {
   const headH = 29 + (summaryLines.length ? summaryLines.length * 12 + 8 : 0);
 
   // Every lane, and what the stack costs before it is fitted to the page.
+  const hasWave = (data.technical.rmsEnergyCurve?.values?.length ?? 0) > 0;
   const laneHeights = [
     LANE.ruler,
+    hasWave ? LANE.waveform : 0,
     segments.length ? LANE.structure : 0,
     LANE.energy,
     LANE.spectrum,
@@ -491,6 +524,13 @@ function drawTimeline(L: Layout, data: AnalysisData, plates: Plates): void {
   drawRuler(doc, L.y, h("ruler"), durationMs, false);
   L.gap(h("ruler") + gapY);
 
+  // The waveform leads, with the structure strip directly beneath it, as on the Timeline tab.
+  if (hasWave) {
+    laneLabel(doc, L.y, "Waveform", "amplitude");
+    drawWaveform(doc, L.y, h("waveform"), data, durationMs);
+    L.gap(h("waveform") + gapY);
+  }
+
   if (segments.length) {
     laneLabel(doc, L.y, "Structure", shown ? `${shown} sections` : undefined);
     drawStructure(doc, L.y, h("structure"), segments, durationMs);
@@ -510,10 +550,18 @@ function drawTimeline(L: Layout, data: AnalysisData, plates: Plates): void {
   else fillRect(doc, CHART_X, L.y, CHART_W, h("spectrum"), C.lane, 2);
   L.gap(h("spectrum") + gapY);
 
-  const tonic = data.tonality.key ? data.tonality.key.replace(/\s.*$/, "") : null;
+  // The tonic spelled for the key and placed at its own row, as on the Timeline tab. Evenly spaced
+  // labels printed "B, C, C" on a C minor track, with the middle C pointing at F#.
+  const tonicIndex = camelotRootPitchClass(data.tonality.camelot);
+  const tonic =
+    tonicIndex != null
+      ? chromaLabelsForKey(data.tonality.camelot)[tonicIndex]
+      : data.tonality.key
+        ? data.tonality.key.replace(/\s.*$/, "")
+        : null;
   const chroma = plates.chroma;
   laneLabel(doc, L.y, "Pitch", tonic ? `tonic ${tonic}` : "chromagram");
-  laneAxis(doc, L.y, h("pitch"), ["B", tonic ?? "—", "C"]);
+  drawPitchAxis(doc, L.y, h("pitch"), tonicIndex, tonic);
   if (chroma) image(doc, chroma.data, CHART_X, L.y, CHART_W, h("pitch"), "an-chroma");
   else fillRect(doc, CHART_X, L.y, CHART_W, h("pitch"), C.lane, 2);
   L.gap(h("pitch") + gapY);
@@ -545,6 +593,62 @@ function drawTimeline(L: Layout, data: AnalysisData, plates: Plates): void {
 
   drawRuler(doc, L.y, h("ruler"), durationMs, true);
   L.gap(h("ruler"));
+}
+
+/**
+ * The waveform: short-term RMS mirrored about a centre line, each stretch in its section's colour.
+ * The same picture as `WaveformLane` on the page, drawn as one polygon per section.
+ */
+function drawWaveform(doc: jsPDF, y: number, h: number, data: AnalysisData, durationMs: number): void {
+  fillRect(doc, CHART_X, y, CHART_W, h, C.lane, 2);
+  line(doc, CHART_X, y + h / 2, CHART_X + CHART_W, y + h / 2, C.grid, 0.4);
+  const columns = envelopeColumns(data.technical.rmsEnergyCurve?.values, 360);
+  const n = columns.length;
+  if (!n || durationMs <= 0) return;
+  const segments = data.energy.structureSegments;
+  const toneAt = (c: number) => {
+    const section = sectionAtMs(segments, ((c + 0.5) / n) * durationMs);
+    return section ? sectionTone(sectionWord(section)).fg : null;
+  };
+  const colW = CHART_W / n;
+  const half = (h / 2) * 0.94;
+  const mid = y + h / 2;
+  let start = 0;
+  let current = toneAt(0);
+  const close = (end: number) => {
+    const top: Point[] = [];
+    const bottom: Point[] = [];
+    for (let c = start; c < end; c++) {
+      const amp = columns[c] * half;
+      const x0 = CHART_X + c * colW;
+      top.push({ x: x0, y: mid - amp }, { x: x0 + colW, y: mid - amp });
+      bottom.push({ x: x0, y: mid + amp }, { x: x0 + colW, y: mid + amp });
+    }
+    polygon(doc, [...top, ...bottom.reverse()], current ?? blend(C.inkMuted, C.lane, 0.5));
+  };
+  for (let c = 1; c < n; c++) {
+    const next = toneAt(c);
+    if (next !== current) {
+      close(c);
+      start = c;
+      current = next;
+    }
+  }
+  close(n);
+}
+
+/**
+ * The Pitch lane's right axis. B at the top row, C at the bottom, the tonic at its own row in the
+ * pitch colour. When the tonic IS B or C it is not printed twice; that end label is coloured.
+ */
+function drawPitchAxis(doc: jsPDF, y: number, h: number, tonicIndex: number | null, tonic: string | null): void {
+  const rowTop = (pc: number) => y + (1 - (pc + 0.5) / 12) * h - 2.8;
+  const clampY = (v: number) => Math.min(y + h - 5.6, Math.max(y, v));
+  const mark = (label: string, pc: number, accent: boolean) =>
+    text(doc, label, AXIS_X, clampY(rowTop(pc)), { size: 5.6, color: accent ? C.pitch : C.inkMuted, bold: accent });
+  mark("B", 11, tonicIndex === 11);
+  mark("C", 0, tonicIndex === 0);
+  if (tonicIndex != null && tonicIndex !== 0 && tonicIndex !== 11 && tonic) mark(tonic, tonicIndex, true);
 }
 
 function laneLabel(doc: jsPDF, y: number, title: string, meta?: string): void {
@@ -609,12 +713,15 @@ function drawStructure(
     const tone = sectionTone(sectionWord(s));
     fillRect(doc, x, y, w, h, tone.bg, 2);
     fillRect(doc, x, y, w, 1.6, tone.fg);
-    const label = (s.label || "").toUpperCase();
+    // The handoff's rule for a narrow block: the full name when it fits, else three letters and
+    // the number ("GRO 1"), else nothing. The name always wins over the bar count, which is the
+    // order the strip on screen hides them in; a block reading only "16 bars" says nothing.
     const labelOpts = { size: 6.4, bold: true, color: tone.fg, spacing: 0.3 } as const;
-    if (label && widthOf(doc, label, labelOpts) < w - 6) {
-      text(doc, label, x + w / 2, y + h / 2 - 7, { ...labelOpts, align: "center" });
-    }
-    if (s.bars) {
+    const full = (s.label || "").toUpperCase();
+    const short = s.label ? abbreviateSectionLabel(s.label) : "";
+    const label = [full, short].find((t) => t && widthOf(doc, t, labelOpts) < w - 6) ?? "";
+    if (label) text(doc, label, x + w / 2, y + h / 2 - 7, { ...labelOpts, align: "center" });
+    if (s.bars && label) {
       const barsText = `${s.bars} ${s.bars === 1 ? "bar" : "bars"}`;
       const barsOpts = { size: 5.8, color: tone.fg } as const;
       if (widthOf(doc, barsText, barsOpts) < w - 6) {
@@ -766,8 +873,21 @@ function drawHarmony(L: Layout, data: AnalysisData): void {
   const altLabel = keyFromCamelot(tonality.altCamelot);
   const neighbours = camelotNeighbours(tonality.camelot);
 
+  // Key, then the Alternative only when the key is genuinely in doubt, then the tonic, as on the
+  // Harmony tab. The cross-check always finds a best-fitting neighbour and it is usually the
+  // parallel key, so printing it beside a confident reading invented a doubt the analysis does not
+  // have (Smile Funk: C minor at 84%, "alternative" C major).
+  const showAlternative = !!tonality.ambiguous && !!altLabel;
+  const tonicIndex = camelotRootPitchClass(tonality.camelot);
+  const chromaAll =
+    tonality.meanChroma?.length === 12 ? tonality.meanChroma : meanChromaFromMatrix(tonality.chromagram?.data);
+  const chromaSum = chromaAll.reduce((a, b) => a + b, 0);
+  const tonicShare =
+    chromaSum > 0 && tonicIndex != null && chromaAll.length === 12 ? Math.round((chromaAll[tonicIndex] / chromaSum) * 100) : null;
+
   const wheelSize = 176;
-  L.ensure(26 + wheelSize + 10);
+  const noticeH = tonality.ambiguous ? 28 : 0;
+  L.ensure(26 + wheelSize + noticeH + 10);
   sectionHead(L, "02", "Harmony", tonality.camelot ?? undefined);
 
   const top = L.y;
@@ -775,22 +895,31 @@ function drawHarmony(L: Layout, data: AnalysisData): void {
 
   const rx = MARGIN_X + wheelSize + 24;
   const rw = CONTENT_W - wheelSize - 24;
-  keyCard(doc, rx, top, rw, "Key", keyLabel ? `${keyLabel.name} ${keyLabel.scale}` : "—",
+  let cy = top;
+  keyCard(doc, rx, cy, rw, "Key", keyLabel ? `${keyLabel.name} ${keyLabel.scale}` : "—",
     tonality.camelot ? `${tonality.camelot} Camelot · ${(tonality.strength * 100).toFixed(0)}% strength` : "not read");
-  keyCard(doc, rx, top + 54, rw, "Alternative", altLabel ? `${altLabel.name} ${altLabel.scale}` : "—",
-    tonality.altCamelot ? `${tonality.altCamelot} Camelot · second candidate` : "no second candidate");
+  cy += 54;
+  if (showAlternative && altLabel) {
+    keyCard(doc, rx, cy, rw, "Alternative", `${altLabel.name} ${altLabel.scale}`,
+      tonality.altCamelot ? `${tonality.altCamelot} Camelot · could also read as` : "could also read as");
+    cy += 54;
+  }
+  keyCard(doc, rx, cy, rw, "Tonic", tonicIndex != null ? chromaLabelsForKey(tonality.camelot)[tonicIndex] : "—",
+    tonicShare == null ? "—" : `${tonicShare}% of pitch energy`, C.pitch);
+  L.gap(wheelSize + 12);
 
   if (tonality.ambiguous) {
-    fillRect(doc, rx, top + 110, rw, 20, C.flagBg, 3);
+    fillRect(doc, MARGIN_X, L.y, CONTENT_W, 20, C.flagBg, 3);
     text(
       doc,
       `Key may be ambiguous${altLabel ? `, possibly ${altLabel.name} ${altLabel.scale} (${tonality.altCamelot})` : ""}`,
-      rx + 8,
-      top + 116,
+      MARGIN_X + 10,
+      L.y + 6,
       { size: 7.5, color: C.flagFg },
     );
+    L.gap(noticeH);
   }
-  L.gap(wheelSize + 18);
+  L.gap(6);
 
   if (neighbours.length) {
     L.ensure(56);
@@ -836,10 +965,10 @@ function drawHarmony(L: Layout, data: AnalysisData): void {
   }
 }
 
-function keyCard(doc: jsPDF, x: number, y: number, w: number, label: string, value: string, sub: string): void {
+function keyCard(doc: jsPDF, x: number, y: number, w: number, label: string, value: string, sub: string, valueColor: RGB = C.ink): void {
   card(doc, x, y, w, 46);
   text(doc, label.toUpperCase(), x + 10, y + 8, { size: 6.2, color: C.inkMuted, spacing: 1 });
-  text(doc, ellipsis(doc, value, w - 20, { size: 16, bold: true }), x + 10, y + 18, { size: 16, bold: true, color: C.ink });
+  text(doc, ellipsis(doc, value, w - 20, { size: 16, bold: true }), x + 10, y + 18, { size: 16, bold: true, color: valueColor });
   text(doc, ellipsis(doc, sub, w - 20, { size: 7 }), x + 10, y + 35, { size: 7, color: C.inkMuted });
 }
 
@@ -957,12 +1086,14 @@ function drawVibe(L: Layout, data: AnalysisData): void {
   // Head, one row of pills and the line naming the rest. A second row is rare and the page has
   // room for it; asking for two up front pushed the whole block onto the next sheet.
   L.ensure(14 + 34 + 12);
-  minorHead(L, "Mood tags", "above 50% highlighted");
+  minorHead(L, "Mood tags", "top three highlighted");
   let x = MARGIN_X;
   let rowTop = L.y;
   let rowH = 0;
-  shownTags.forEach((t) => {
-    const hot = t.score >= 0.5;
+  shownTags.forEach((t, i) => {
+    // The top three, always, as on the Vibe tab. Mood scores rarely pass 30%, so a 50% line lit
+    // nothing and the legend promised a highlight the page never drew.
+    const hot = i < 3;
     const size = 8 + Math.round(Math.min(1, Math.max(0, t.score)) * 3);
     const label = t.label.toLowerCase();
     const pct = `${Math.round(t.score * 100)}%`;

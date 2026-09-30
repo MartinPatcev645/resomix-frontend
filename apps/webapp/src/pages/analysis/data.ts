@@ -110,4 +110,10 @@ export interface AnalysisData {
    * the full Track Intelligence page is gated.
    */
   fullAnalysisLocked?: boolean;
+  /**
+   * When the analysis finished, in epoch milliseconds, from the service's provenance. Null on
+   * results that did not record it. The export prints it beside the export time, since a PDF
+   * forwarded weeks later should say how current its reading is.
+   */
+  analyzedAt?: number | null;
 }

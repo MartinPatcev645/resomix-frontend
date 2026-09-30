@@ -25,6 +25,12 @@ export const TimelineLane: React.FC<{
   meta?: React.ReactNode;
   /** Desktop-only right axis. Rendered top-to-bottom, evenly spaced. */
   axis?: React.ReactNode[];
+  /**
+   * The right axis at chosen heights instead, `at` running 0 (top) to 1 (bottom). For an axis
+   * whose labels mean a place on the chart, like the tonic's row on the Pitch lane, where evenly
+   * spaced labels would point at the wrong row. Replaces `axis` when given.
+   */
+  axisMarks?: { label: React.ReactNode; at: number }[];
   /** Sits beside the title on desktop, where the gutter has width to spare (the stems donut). */
   titleAside?: React.ReactNode;
   /** Extra gutter content under the title, such as the stem switches. */
@@ -32,7 +38,7 @@ export const TimelineLane: React.FC<{
   /** Spacing the caller controls, so the stack can group lanes that belong together. */
   className?: string;
   children: React.ReactNode;
-}> = ({ title, meta, axis, titleAside, gutterExtra, className = "", children }) => (
+}> = ({ title, meta, axis, axisMarks, titleAside, gutterExtra, className = "", children }) => (
   <div className={`flex flex-col gap-[var(--px-6)] ${LANE_GRID} ${className}`}>
     <div className="flex items-baseline justify-between gap-[var(--px-8)] lg:flex-col lg:items-start lg:justify-start lg:gap-[var(--px-4)] lg:pt-[var(--px-2)]">
       <span className="flex w-full items-center justify-between gap-[var(--px-8)]">
@@ -51,12 +57,27 @@ export const TimelineLane: React.FC<{
 
     <div className="min-w-0">{children}</div>
 
-    <div className="hidden lg:flex lg:flex-col lg:justify-between lg:py-[var(--px-2)]">
-      {(axis ?? []).map((t, i) => (
-        <span key={i} className="font-fira text-[length:var(--px-9)] leading-none text-[var(--an-text-muted)]">
-          {t}
-        </span>
-      ))}
-    </div>
+    {axisMarks ? (
+      <div className="relative hidden lg:block">
+        {axisMarks.map((m, i) => (
+          <span
+            key={i}
+            className="absolute left-0 -translate-y-1/2 font-fira text-[length:var(--px-9)] leading-none text-[var(--an-text-muted)]"
+            // Clamped so the first and last labels sit inside the lane rather than half above it.
+            style={{ top: `clamp(var(--px-5), ${m.at * 100}%, calc(100% - var(--px-5)))` }}
+          >
+            {m.label}
+          </span>
+        ))}
+      </div>
+    ) : (
+      <div className="hidden lg:flex lg:flex-col lg:justify-between lg:py-[var(--px-2)]">
+        {(axis ?? []).map((t, i) => (
+          <span key={i} className="font-fira text-[length:var(--px-9)] leading-none text-[var(--an-text-muted)]">
+            {t}
+          </span>
+        ))}
+      </div>
+    )}
   </div>
 );

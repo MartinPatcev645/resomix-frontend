@@ -2,18 +2,20 @@ import React, { useMemo } from "react";
 import { shortGenre } from "@resomix/hooks";
 import type { AnalysisData } from "@/pages/analysis/data.ts";
 import { fmtClock, hexA, Spinner, TimeAxis, useToggleSet } from "@/pages/analysis/charts.tsx";
-import { ChromaView, Donut, RibbonChart, SpectrogramView, StemArea, STEM_COLORS } from "@/pages/analysis/heatviz.tsx";
+import { ChromaView, chromaLabelsForKey, Donut, RibbonChart, SpectrogramView, StemArea, STEM_COLORS } from "@/pages/analysis/heatviz.tsx";
 import { sectionAtMs } from "@/utils/structureStrip.ts";
+import { camelotRootPitchClass } from "@/utils/analysisTimeline.ts";
 import { StructureStrip } from "../StructureStrip.tsx";
 import { EnergyLane } from "./EnergyLane.tsx";
+import { WaveformLane } from "./WaveformLane.tsx";
 import { TimelineLane, LANE_GRID } from "./TimelineLane.tsx";
 import { TimeRuler } from "./TimeRuler.tsx";
 
 /** Lane heights, in px at the design root size. Compact halves the tall ones for short viewports. */
 const HEIGHTS = {
-  desktop: { ruler: 18, structure: 64, energy: 120, spectrum: 140, pitch: 96, row: 18, stems: 110 },
-  compact: { ruler: 18, structure: 52, energy: 80, spectrum: 96, pitch: 64, row: 12, stems: 72 },
-  mobile: { ruler: 16, structure: 48, energy: 72, spectrum: 84, pitch: 60, row: 14, stems: 72 },
+  desktop: { ruler: 18, waveform: 80, structure: 64, energy: 120, spectrum: 140, pitch: 96, row: 18, stems: 110 },
+  compact: { ruler: 18, waveform: 56, structure: 52, energy: 80, spectrum: 96, pitch: 64, row: 12, stems: 72 },
+  mobile: { ruler: 16, waveform: 48, structure: 48, energy: 72, spectrum: 84, pitch: 60, row: 14, stems: 72 },
 };
 
 const CHROMA_ORDER = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -54,7 +56,17 @@ export const TimelineTab: React.FC<{
 
   const nyquist = data.identity.sampleRateHz > 0 ? data.identity.sampleRateHz / 2 : 22050;
   const spectrumAxis = [1, 0.75, 0.5, 0.25, 0].map((f) => fmtHz(nyquist * f));
-  const tonic = data.tonality.key ? data.tonality.key.replace(/\s.*$/, "") : null;
+  // The tonic, spelled for the key (Eb, not D#) and placed on its own row of the chromagram.
+  // Evenly spaced labels put it in the middle whatever it was, which on a C minor track printed
+  // "B, C, C" and pointed the tonic at F#.
+  const tonicIndex = camelotRootPitchClass(data.tonality.camelot);
+  const tonic =
+    tonicIndex != null
+      ? chromaLabelsForKey(data.tonality.camelot)[tonicIndex]
+      : data.tonality.key
+        ? data.tonality.key.replace(/\s.*$/, "")
+        : null;
+  const pitchMarks = pitchAxisMarks(tonicIndex, tonic);
   const bpmText = data.rhythm.bpm == null ? null : `${Number.isInteger(data.rhythm.bpm) ? data.rhythm.bpm : data.rhythm.bpm.toFixed(1)} BPM`;
 
   const spectrogram = data.spectral.linearSpectrogram ?? data.spectral.melSpectrogram;
@@ -113,6 +125,14 @@ export const TimelineTab: React.FC<{
           <span className="hidden lg:block" />
         </div>
 
+        {/* The waveform leads, with the structure strip directly beneath it: the two are read
+            together, the shape of the track and the name of each part of it. */}
+        <TimelineLane title="Waveform" meta="amplitude">
+          <TimeAxis durationMs={durationMs} currentMs={null} onSeek={onSeek}>
+            <WaveformLane data={data} durationMs={durationMs} height={h.waveform} />
+          </TimeAxis>
+        </TimelineLane>
+
         {segments.length > 0 ? (
           <TimelineLane title="Structure" meta={shownSections ? `${shownSections} sections` : undefined}>
             <TimeAxis
@@ -163,11 +183,7 @@ export const TimelineTab: React.FC<{
           title="Pitch"
           className={spacedLane}
           meta={tonic ? `chromagram · tonic ${tonic}` : "chromagram"}
-          axis={[
-            "B",
-            <span key="tonic" className="text-[var(--an-pitch)]">{tonic ?? "—"}</span>,
-            "C",
-          ]}
+          axisMarks={pitchMarks}
         >
           <ChromaView
             matrix={data.tonality.chromagram}
@@ -315,3 +331,21 @@ const LanePending: React.FC<{ label: string; pending: boolean; height: number }>
     </div>
   </TimelineLane>
 );
+
+/**
+ * Where the Pitch lane's right-axis labels sit. `ChromaView` draws C at the bottom and B at the
+ * top, one row per pitch class, so each label goes at its own row's centre. When the tonic IS the
+ * top or bottom row it is not printed twice; that end label takes the tonic's colour instead.
+ */
+function pitchAxisMarks(tonicIndex: number | null, tonic: string | null): { label: React.ReactNode; at: number }[] {
+  const rowCentre = (pc: number) => 1 - (pc + 0.5) / 12;
+  const cyan = (text: string) => <span className="text-[var(--an-pitch)]">{text}</span>;
+  const marks: { label: React.ReactNode; at: number }[] = [
+    { label: tonicIndex === 11 ? cyan("B") : "B", at: rowCentre(11) },
+    { label: tonicIndex === 0 ? cyan("C") : "C", at: rowCentre(0) },
+  ];
+  if (tonicIndex != null && tonicIndex !== 0 && tonicIndex !== 11 && tonic) {
+    marks.push({ label: cyan(tonic), at: rowCentre(tonicIndex) });
+  }
+  return marks;
+}

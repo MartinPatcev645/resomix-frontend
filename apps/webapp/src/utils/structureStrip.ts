@@ -100,3 +100,17 @@ export function structureListMeta(
     ? `${n} · conf ${median.toFixed(2)}`
     : `${n} sections · median confidence ${median.toFixed(2)}`;
 }
+
+/**
+ * A section label short enough for a narrow block: the first three letters of the word, plus the
+ * occurrence number. "groove 1" becomes "GRO 1", "wind-down" becomes "WIN".
+ *
+ * This is the handoff's rule for blocks too narrow for the full name. The full name is still what
+ * the tooltip and the current-section chip show, so nothing is lost, only shortened where it sits.
+ */
+export function abbreviateSectionLabel(label: string): string {
+  const match = /^\s*([a-z-]+)\s*(\d+[a-z]?)?\s*$/i.exec(label);
+  if (!match) return label.trim().slice(0, 3).toUpperCase();
+  const word = match[1].replace(/-/g, "").slice(0, 3).toUpperCase();
+  return match[2] ? `${word} ${match[2].toUpperCase()}` : word;
+}

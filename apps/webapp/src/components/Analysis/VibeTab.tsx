@@ -22,8 +22,15 @@ const MARKER_INSET = 0.03;
 
 /** How many tags get a pill. The rest are named once underneath. */
 const TAG_SHOWN = 6;
-/** At or above this, a tag is drawn hot. */
-const TAG_HOT = 0.5;
+/**
+ * How many of the strongest tags are drawn hot. Always the top three, not a score threshold.
+ *
+ * Mood tags are scored one at a time, each against "not this mood", so on most tracks every one
+ * sits well under half. A 50% line lit nothing at all on Smile Funk, whose strongest tags were 28%,
+ * and the legend promised something the page never did. The top three are always the three that
+ * best describe the track, which is what the highlight is for.
+ */
+const TAG_HOT_COUNT = 3;
 
 /**
  * Vibe: where the track sits emotionally, how it is built, and what it is about.
@@ -125,12 +132,12 @@ export const VibeTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
             <div className="flex items-baseline justify-between gap-[var(--px-10)]">
               <h2 className="m-0 font-helvetica text-[length:var(--px-14)] font-medium text-[var(--an-text)]">Mood tags</h2>
               <span className="font-fira text-[length:var(--px-10)] text-[var(--an-text-muted)]">
-                size = confidence · above 50% highlighted
+                size = confidence · top three highlighted
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-[var(--px-6)]">
-              {shown.map((t) => {
-                const hot = t.score >= TAG_HOT;
+              {shown.map((t, i) => {
+                const hot = i < TAG_HOT_COUNT;
                 // Size carries the score, so the strongest tags read first without a legend.
                 const size = 12 + Math.round(Math.min(1, Math.max(0, t.score)) * 6);
                 return (

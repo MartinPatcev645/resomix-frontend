@@ -3,6 +3,7 @@ import {
   barMeans,
   barsFromDownbeats,
   camelotNeighbours,
+  envelopeColumns,
   camelotRootPitchClass,
   inKeyPitchClasses,
   meanChromaFromMatrix,
@@ -13,6 +14,7 @@ import {
   parseCamelot,
   topSeriesByMean,
 } from "@/utils/analysisTimeline.ts";
+import { abbreviateSectionLabel } from "@/utils/structureStrip.ts";
 
 /**
  * The Timeline tab's maths, at the points where a real track breaks it: a beatless result with no
@@ -180,5 +182,38 @@ describe("key spelling and note energy", () => {
   it("returns nothing for a chromagram that is not 12 rows", () => {
     expect(meanChromaFromMatrix([[1, 2]])).toEqual([]);
     expect(meanChromaFromMatrix(null)).toEqual([]);
+  });
+});
+
+describe("envelopeColumns", () => {
+  it("keeps the loudest frame in each column, so transients survive the reduction", () => {
+    // Four frames into two columns: a quiet frame and a kick, then two quiet ones.
+    expect(envelopeColumns([0.1, 1, 0.2, 0.2], 2)).toEqual([1, 0.2]);
+  });
+
+  it("scales the loudest column to 1", () => {
+    expect(Math.max(...envelopeColumns([0.2, 0.4, 0.1, 0.3], 4))).toBe(1);
+  });
+
+  it("never draws more columns than the curve has frames", () => {
+    expect(envelopeColumns([0.5, 1], 720)).toHaveLength(2);
+  });
+
+  it("is empty for a curve that has not arrived, and flat for a silent one", () => {
+    expect(envelopeColumns(null, 720)).toEqual([]);
+    expect(envelopeColumns([0, 0, 0], 3)).toEqual([0, 0, 0]);
+  });
+});
+
+describe("abbreviateSectionLabel", () => {
+  it("keeps three letters of the word and the number, as the handoff specifies", () => {
+    expect(abbreviateSectionLabel("groove 1")).toBe("GRO 1");
+    expect(abbreviateSectionLabel("intro 2")).toBe("INT 2");
+    expect(abbreviateSectionLabel("drop 1a")).toBe("DRO 1A");
+  });
+
+  it("handles a hyphenated word and a word with no number", () => {
+    expect(abbreviateSectionLabel("wind-down")).toBe("WIN");
+    expect(abbreviateSectionLabel("outro")).toBe("OUT");
   });
 });

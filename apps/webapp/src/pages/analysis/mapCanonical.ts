@@ -260,6 +260,11 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
       stems: stemRecord(comp.stems),
       vocalRegions: regions(comp.vocal_regions),
     },
+    // `completed_epoch` is seconds; the app keeps times in milliseconds.
+    analyzedAt:
+      typeof raw?.provenance?.completed_epoch === "number" && Number.isFinite(raw.provenance.completed_epoch)
+        ? raw.provenance.completed_epoch * 1000
+        : null,
     readings: {
       forDj: str(rd.for_dj ?? rd.dj ?? rd.for_djs),
       forProducers: str(rd.for_producers ?? rd.producers ?? rd.for_producer),

@@ -21,6 +21,7 @@ export const HarmonyTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
   const keyLabel = keyFromCamelot(tonality.camelot);
   const altLabel = keyFromCamelot(tonality.altCamelot);
   const neighbours = camelotNeighbours(tonality.camelot);
+  const showAlternative = !!tonality.ambiguous && !!altLabel;
 
   // Spelled for the key: F minor reads Db and Eb, not C# and D#.
   const noteNames = chromaLabelsForKey(tonality.camelot);
@@ -51,7 +52,12 @@ export const HarmonyTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
       </div>
 
       <div className="flex flex-col gap-[var(--px-28)]">
-        <div className="grid grid-cols-1 gap-[var(--px-12)] sm:grid-cols-3">
+        {/* The Alternative card only when the key is genuinely in doubt. The cross-check always
+            finds a best-fitting neighbour, and it is usually the parallel key because that shares
+            the tonic, so showing it beside a confident reading (C minor at 84%, say) invites a
+            doubt the analysis does not have. The key a DJ mixes into, the relative, is already
+            below under mix-compatible keys. */}
+        <div className={`grid grid-cols-1 gap-[var(--px-12)] ${showAlternative ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
           <KeyCard
             label="Key"
             value={keyLabel ? `${keyLabel.name} ${keyLabel.scale}` : "—"}
@@ -61,12 +67,14 @@ export const HarmonyTab: React.FC<{ data: AnalysisData }> = ({ data }) => {
                 : "not read yet"
             }
           />
-          <KeyCard
-            label="Alternative"
-            value={altLabel ? `${altLabel.name} ${altLabel.scale}` : "—"}
-            sub={tonality.altCamelot ? `${tonality.altCamelot} Camelot · second candidate` : "no second candidate"}
-            dim
-          />
+          {showAlternative && (
+            <KeyCard
+              label="Alternative"
+              value={altLabel ? `${altLabel.name} ${altLabel.scale}` : "—"}
+              sub={tonality.altCamelot ? `${tonality.altCamelot} Camelot · could also read as` : "no second candidate"}
+              dim
+            />
+          )}
           <KeyCard
             label="Tonic"
             value={keyLabel?.name ?? "—"}

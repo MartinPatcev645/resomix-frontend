@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { jsPDF } from "jspdf";
 
 import { mapCanonicalToAnalysisData } from "../pages/analysis/mapCanonical.js";
-import { buildAnalysisPdf, trackFacts } from "../components/Analysis/export/buildAnalysisPdf.js";
+import { buildAnalysisPdf, formatUtc, trackFacts } from "../components/Analysis/export/buildAnalysisPdf.js";
 import { pdfFilename } from "../components/Analysis/export/exportAnalysisPdf.js";
 import { chromaPng, spectrogramPng } from "../components/Analysis/export/pdfImages.js";
 
@@ -149,6 +149,17 @@ describe("trackFacts", () => {
   });
 });
 
+describe("formatUtc", () => {
+  it("prints the date, the time and the zone, the same way on every browser", () => {
+    expect(formatUtc(Date.UTC(2026, 8, 27, 14, 5))).toBe("27 September 2026, 14:05 UTC");
+  });
+
+  it("uses UTC, not the machine's clock", () => {
+    // 23:30 UTC on the 30th is already the 1st in Pakistan; the export must still say the 30th.
+    expect(formatUtc(Date.UTC(2026, 8, 30, 23, 30))).toBe("30 September 2026, 23:30 UTC");
+  });
+});
+
 describe("pdfFilename", () => {
   it("names the file after the track", () => {
     expect(pdfFilename("Modem · Joto")).toBe("Modem · Joto - Resomix analysis.pdf");
@@ -198,6 +209,16 @@ describe("the exported document", () => {
 
   it("does not throw on a part-1 result with no structure, genre or stems", () => {
     expect(() => buildAnalysisPdf(makeDoc, partial, meta)).not.toThrow();
+  });
+
+  it("prints both dates, and no placeholder where the artist is unknown", () => {
+    const plain = (data: typeof full) =>
+      buildAnalysisPdf(() => new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" }), data, meta).output();
+    const withDate = plain({ ...full, analyzedAt: Date.UTC(2026, 8, 26, 9, 12) });
+    expect(withDate).toContain("26 September 2026, 09:12 UTC");
+    expect(withDate).toContain("EXPORTED");
+    // "bounce_test_final.wav" carries no artist, and the row is left out rather than faked.
+    expect(plain(partial)).not.toContain("not in the filename");
   });
 
   it("carries the track and the platform as real, searchable text", () => {

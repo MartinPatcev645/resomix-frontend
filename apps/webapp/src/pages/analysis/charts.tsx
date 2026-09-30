@@ -285,7 +285,10 @@ export function StatCard({
           <span className="font-fira text-[length:var(--px-11)] leading-none text-[var(--an-text-muted)]">{unit}</span>
         )}
       </div>
-      {sub && <div className="mt-[var(--px-8)] font-fira text-[length:var(--px-11)] text-[var(--an-text-muted)]">{sub}</div>}
+      {/* `tracking-normal` on purpose. The page wrapper sets 1px letter spacing that this line
+          inherited, and at 11px mono that is enough to push "LRA 5.1 LU · peak -0.7 dBTP" onto a
+          second line in a five-across row, making every card in the row a line taller. */}
+      {sub && <div className="mt-[var(--px-8)] font-fira text-[length:var(--px-11)] tracking-normal text-[var(--an-text-muted)]">{sub}</div>}
       {hint && (
         <div className="pointer-events-none absolute left-[var(--px-8)] right-[var(--px-8)] top-full z-30 mt-[var(--px-4)] rounded-[var(--px-6)] border border-[var(--opacity-20)] bg-black/90 px-[var(--px-8)] py-[var(--px-6)] font-helvetica text-[length:var(--px-9)] font-light leading-snug opacity-0 transition-opacity duration-150 group-hover:opacity-100">
           {hint}
