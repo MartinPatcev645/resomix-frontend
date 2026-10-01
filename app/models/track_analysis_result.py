@@ -75,7 +75,7 @@ class TrackAnalysisResult(Base):
     camelot: Mapped[Optional[str]] = mapped_column(String(8), nullable=True)             # tonality.camelot
     loudness_lufs: Mapped[Optional[float]] = mapped_column(mysql.FLOAT, nullable=True)   # technical.integrated_loudness_lufs
     top_genre: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)         # semantics.genre_top[0]
-    top_style: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)         # semantics.style_maest_top[0]
+    top_style: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)         # top label of the semantics style list
     top_mood: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)          # semantics.mood_theme_top[0]
     top_instrument: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)    # semantics.instrument_top[0]
     danceability: Mapped[Optional[float]] = mapped_column(mysql.FLOAT, nullable=True)    # semantics.danceability

@@ -37,6 +37,7 @@ from app.api.middlewares.cors import setup_cors
 from app.api.middlewares.partner_audit import PartnerAuditMiddleware
 from app.api.middlewares.idempotency import IdempotencyMiddleware
 from app.observability import TimingMiddleware
+from app.api.middlewares.public_names import PublicNamesMiddleware
 from app.api.middlewares.rate_limit import limiter, rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 import time
@@ -439,6 +440,9 @@ from app.core.error_context import install as _install_error_capture
 _install_error_capture()
 
 app.add_middleware(TimingMiddleware)
+# Added last, so it is the outermost layer and sees every JSON body, error bodies included, just
+# before it leaves. Renames internal model names wherever they appear. See app/utils/public_names.py.
+app.add_middleware(PublicNamesMiddleware)
 
 # Mount static files for exports BEFORE including routers to avoid conflicts
 exports_dir = os.path.join(os.getcwd(), "exports")

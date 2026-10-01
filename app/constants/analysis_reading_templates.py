@@ -55,7 +55,7 @@ Identity
 
 Semantics (model predictions, not measurements)
     {genre}               top genre, short form                      "House"
-    {style}               top MAEST style indicator                  "Deep House"
+    {style}               top style indicator                        "Deep House"
     {danceability_pct}    danceability                               "82%"
     {valence_pct}         valence                                    "64%"
     {arousal_pct}         arousal                                    "71%"

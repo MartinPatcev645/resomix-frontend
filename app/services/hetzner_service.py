@@ -276,7 +276,7 @@ class HetznerService:
         """
         Trigger a full FAISS index rebuild on the Hetzner media server for a specific partner.
 
-        Calls Hetzner once per engine (maest + discogs) because the endpoint requires
+        Calls Hetzner once per similarity index because the endpoint requires
         both ``partner_id`` and ``engine`` as mandatory fields.
 
         Args:
@@ -284,7 +284,7 @@ class HetznerService:
 
         Returns:
             Dict with overall ``success`` boolean and per-engine results under
-            ``engines.maest`` and ``engines.discogs``.
+            ``engines``, one entry per index.
         """
         if not self.hetzner_url or not self.internal_api_key:
             return {"success": False, "error": "Media server not configured"}

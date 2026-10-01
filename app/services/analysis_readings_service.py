@@ -97,7 +97,7 @@ def _tempo(value: Any) -> Optional[str]:
 
 
 def _short_genre(label: Any) -> Optional[str]:
-    """Discogs labels arrive as "Electronic---House"; the leaf is the readable part.
+    """Genre labels arrive as "Electronic---House"; the leaf is the readable part.
 
     Mirrors ``shortGenre`` in packages/hooks, so the sentence and the genre chip beside it never
     disagree.
@@ -269,7 +269,7 @@ def extract_facts(result: Dict[str, Any]) -> Dict[str, str]:
     energy = _section(result, "energy")
     semantics = _section(result, "semantics")
 
-    # structure_v2 decides whether a tempo may be quoted at all. Essentia always
+    # structure_v2 decides whether a tempo may be quoted at all. The tempo stage always
     # returns a BPM, even for a beatless ambient track where it means nothing —
     # that is how "steady 154.8 BPM" ended up under a track with no beat. When
     # v2 says not to show it, drop the fact and every tempo template with it.

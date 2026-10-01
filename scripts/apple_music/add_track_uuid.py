@@ -3,7 +3,7 @@ Script A of the old-catalogue → new-DB migration.
 
 Writes the canonical **track_uuid** onto every record in ``apple_matches.jsonl`` (matched or not) so
 the DB rows line up with the media-server assets WITHOUT any renaming. The uuid is computed the SAME
-way as the media backfill (``resomix-similarity-open/scripts/run_maest_backfill.py::uuid_for``):
+way as the media backfill (its ``uuid_for`` in ``resomix-similarity-open/scripts/``):
 
     track_uuid = uuid5(RESOMIX_NS, object_id)   # deterministic — same old id → same uuid, always
 
@@ -29,7 +29,7 @@ INPUT = os.path.join(SCRIPT_DIR, "apple_matches.jsonl")
 OUTPUT = os.path.join(SCRIPT_DIR, "apple_matches.migrate.jsonl")
 UUID_MAP = os.path.join(SCRIPT_DIR, "uuid_map.tsv")
 
-# MUST match run_maest_backfill.py exactly, or DB uuids won't match the on-disk assets.
+# MUST match the media backfill's uuid_for exactly, or DB uuids won't match the on-disk assets.
 RESOMIX_NS = uuid.UUID("5f7e3a2c-9b1d-4e6a-8c0f-2d4b6a8e1f3c")
 
 PROGRESS_EVERY = 100_000

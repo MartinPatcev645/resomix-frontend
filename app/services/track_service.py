@@ -375,7 +375,7 @@ class TrackService:
           2. soft-delete any similarity playlist generated from this track (seed),
           3. (next sprint) soft-delete the track's analysis record once analysis exists,
           4. purge the track's media-server assets — peaks, segments, embeddings
-             (maest + discogs), preview, cover, raw — in a background task so a slow/down
+             (both similarity indexes), preview, cover, raw — in a background task so a slow/down
              media server never fails the user's delete.
         """
         try:

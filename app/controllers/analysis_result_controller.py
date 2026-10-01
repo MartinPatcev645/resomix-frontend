@@ -2,15 +2,13 @@
 Analysis Result Controller (consumer-facing)
 ============================================
 
-Reads for the single-value analysis summary + minting the tokenized retrieval "boarding pass"
-for the full cached JSON on the Hetzner served cache (see
-``docs/UPLOADS_AND_SEARCH_LIMITS_PLAN.md`` §4-5).
+Reads for the single-value analysis summary and the proxied analysis result (see
+``docs/UPLOADS_AND_SEARCH_LIMITS_PLAN.md`` §4-5). The tokenized direct-from-cache fetch is
+retired; ``mint_retrieval_token`` explains why.
 
 Authorization: an analysis is owned by the uploading user (``user_id``) and may later be made
-public (``is_public``). The token mint is the security boundary — Alwyzon signs a retrieval token
-ONLY for the owner or a public analysis; the Hetzner node then enforces that the requested id
-equals the id embedded in the token. We apply the same owner-or-public check to the summary read
-so a per-id endpoint can't enumerate other users' analyses.
+public (``is_public``). Every read applies the owner-or-public check, so a per-id endpoint
+can't enumerate other users' analyses.
 
 Version: 1.0.0
 Init Date: July 2026
@@ -39,7 +37,7 @@ from app.models.track_analysis_result import (
 from app.models.user import User
 from app.repositories.playlist_repository import PlaylistRepository
 from app.repositories.track_repository import TrackRepository
-from app.services.analysis_projection import project_summary
+from app.services.analysis_projection import project_summary, public_analysis
 from app.services.analysis_readings_service import attach_readings
 from app.services.analysis_service import AnalysisService
 from app.services.antivirus_service import AntivirusService
@@ -48,22 +46,16 @@ from app.services.entitlement_gate import EntitlementGate
 from app.services.operation_limit_evaluator import OperationLimitEvaluator
 from app.services.track_analysis_result_service import TrackAnalysisResultService
 from app.services.track_upload_service import TrackUploadService, generate_track_uuid
-from app.utils.edge_auth import generate_analysis_token
-from app.utils.quota_response import operation_limit_response, plan_required_response
+from app.utils.public_names import scrub_text
+from app.utils.quota_response import operation_limit_response
 from app.utils.response_utils import format_response
 
 logger = logging.getLogger(__name__)
 
 
-def _client_ip(request: Request) -> str:
-    """Resolve the originating client IP, honouring upstream proxy headers (token IP-lock)."""
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    real_ip = request.headers.get("x-real-ip")
-    if real_ip:
-        return real_ip.strip()
-    return request.client.host if request.client else "unknown"
+def _public_message(upstream: dict, fallback: str) -> str:
+    """An upstream error message, safe to show. The analysis service may name what failed inside it."""
+    return scrub_text(upstream.get("message") or fallback, everything=True)
 
 
 class AnalysisResultController:
@@ -168,64 +160,22 @@ class AnalysisResultController:
         analysis_uuid: str,
         current_user: Optional[User],
     ) -> JSONResponse:
-        """Mint a short-lived retrieval token for the full cached JSON (owner-or-public).
+        """RETIRED. Always 410; no token is minted.
 
-        The token embeds this ``analysis_uuid`` + ``scope="analysis"`` + ip + exp; the frontend
-        calls ``{hetzner_media_base}/analysis/{analysis_uuid}?token=…`` and Hetzner enforces the
-        id match. Refusing to mint (not owner / not public) is what withholds access.
+        The token let the client fetch the full result straight from the analysis service's cache,
+        skipping this proxy. That copy is the service's raw document, with every field that says
+        how the result was produced, so it cannot be offered to a caller. The full result is served
+        by ``get_result`` instead, which applies ``public_analysis`` on every plan.
 
-        ⚠️ THIS IS THE BYPASS PATH FOR ``can_view_full_analysis``. What the token buys is the **raw
-        cached JSON straight from the analysis service** — the whole document, with no opportunity
-        to project it, because Alwyzon is not in that request at all. Gating ``get_result`` while
-        leaving this open would mean the full dashboard was one extra call away for everyone.
-        So the mint carries the same entitlement check, and refusing to mint is again what
-        withholds access.
-
-        The client already handles this: ``alwyzonFinalResult`` prefers the cache and falls back to
-        the proxy on any failure, so a free user's failed mint lands on the projected result rather
-        than an error.
+        The route stays so an old client gets a clean refusal. The frontend fell back to
+        ``/result`` on any failed mint, so a client that still calls this keeps working.
         """
-        row = await self.service.get_by_analysis_uuid(db, analysis_uuid)
-        if row is None:
-            return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=format_response(success=False, error="Analysis not found."),
-            )
-        if not self._authorized(row, current_user):
-            return JSONResponse(
-                status_code=status.HTTP_403_FORBIDDEN,
-                content=format_response(
-                    success=False,
-                    error="You don't have access to this analysis.",
-                    reason="forbidden",
-                ),
-            )
-
-        full_gate = await self.entitlement_gate.check_boolean(
-            db, FeatureKey.CAN_VIEW_FULL_ANALYSIS, user=current_user
-        )
-        if not full_gate.allowed:
-            return plan_required_response(
-                full_gate,
-                message=(
-                    "Full Track Intelligence is a Pro feature. Your summary — BPM, key, energy "
-                    "and structure — stays free."
-                ),
-            )
-
-        token_data = generate_analysis_token(analysis_uuid, _client_ip(request))
         return JSONResponse(
-            status_code=status.HTTP_200_OK,
+            status_code=status.HTTP_410_GONE,
             content=format_response(
-                success=True,
-                data={
-                    "token": token_data["token"],
-                    "expires_in": token_data["expires_in"],
-                    "analysis_uuid": analysis_uuid,
-                    "scope": "analysis",
-                    # Frontend composes {hetzner_media_base}{retrieval_path}?token=<token>.
-                    "retrieval_path": f"/analysis/{analysis_uuid}",
-                },
+                success=False,
+                error=f"Retired. Fetch the result from /analysis/{analysis_uuid}/result.",
+                reason="retired",
             ),
         )
 
@@ -422,7 +372,10 @@ class AnalysisResultController:
             # so the UI can show "no longer available", and reserve 502 for a genuine upstream fault.
             if status_doc.get("status_code") == 404:
                 return self._reject(404, "This analysis is no longer available.", reason="expired")
-            return self._reject(502, status_doc.get("message") or "Status check failed.", reason="upstream_error")
+            return self._reject(502, _public_message(status_doc, "Status check failed."), reason="upstream_error")
+        if isinstance(status_doc.get("error"), str):
+            # Shown to the user when a job fails, and worded by the analysis service.
+            status_doc["error"] = scrub_text(status_doc["error"], everything=True)
         status_doc = await self._attach_playback_refs(db, row, status_doc)
         return JSONResponse(status_code=200, content=format_response(success=True, data=status_doc))
 
@@ -447,7 +400,7 @@ class AnalysisResultController:
             # Same as get_status: an evicted analysis 404s upstream → report "expired", not 502.
             if result.get("status_code") == 404:
                 return self._reject(404, "This analysis is no longer available.", reason="expired")
-            return self._reject(502, result.get("message") or "Result fetch failed.", reason="upstream_error")
+            return self._reject(502, _public_message(result, "Result fetch failed."), reason="upstream_error")
 
         # Before the projection, not after: `readings` is an allow-listed summary-card field, so
         # attaching it first means the free card and the Pro dashboard show the same sentences.
@@ -459,6 +412,8 @@ class AnalysisResultController:
         # After the projection, never before — the playback ids are plumbing the client needs on
         # every plan, and the allow-list would drop them if they were attached first.
         result = await self._attach_playback_refs(db, row, result)
+        # Every plan, last: drop how the result was produced and use the public field names.
+        result = public_analysis(result)
         return JSONResponse(status_code=200, content=format_response(success=True, data=result))
 
     async def _may_view_full_analysis(

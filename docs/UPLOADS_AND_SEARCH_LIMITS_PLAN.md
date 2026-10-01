@@ -201,7 +201,7 @@ Name chosen to read as *analysis results*, not metadata/metatags. One row per an
 | `key` / `scale` / `camelot` | str | `tonality.*` |
 | `loudness_lufs` | float | `technical.integrated_loudness_lufs` |
 | `top_genre` | str | `semantics.genre_top[0].label` (top-1 of the top-7) |
-| `top_style` | str | `semantics.style_maest_top[0].label` |
+| `top_style` | str | top label of the semantics style list (`semantics.style_top` in responses) |
 | `top_mood` | str | `semantics.mood_theme_top[0].label` |
 | `top_instrument` | str | `semantics.instrument_top[0].label` |
 | `danceability` | float | `semantics.danceability` |

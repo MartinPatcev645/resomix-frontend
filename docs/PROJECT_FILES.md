@@ -471,7 +471,6 @@
 - `docs/technical/alwyzon_server.md` — Configuration reference for the Alwyzon-hosted SFTP server infrastructure.
 - `docs/technical/hetzner_server.md` — Configuration reference for the Hetzner Cloud server and network setup.
 - `docs/technical/nginx.txt` — Nginx reverse proxy configuration snippet for the production server deployment.
-- `docs/technical/prompt.md` — AI assistant prompt used to generate or refine technical architecture documentation.
 - `docs/technical/prompt_response.md` — AI-generated response to the technical architecture documentation prompt.
 - `docs/testing_suite_setup.md` — Guide for setting up the test database and running the full integration test suite.
 - `docs/PROJECT_FILES.md` — This file: complete annotated inventory of every source file in the project.

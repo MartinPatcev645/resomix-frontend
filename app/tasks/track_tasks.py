@@ -3,7 +3,7 @@ Track Background Tasks
 ======================
 
 Celery tasks for user/uploaded-track maintenance. Currently: purging a deleted uploaded
-track's media-server assets (peaks, segments, embeddings [maest + discogs], preview, cover,
+track's media-server assets (peaks, segments, embeddings for both indexes, preview, cover,
 raw) off the similarity/media server.
 
 Runs off the request path so a slow or unreachable media server never fails (or delays) the

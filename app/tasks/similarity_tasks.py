@@ -10,7 +10,7 @@ Why the work moved off the request
 ----------------------------------
 Capacity testing on 2026-08-13: 20 concurrent 40 MB uploads finished on the server at 93 s,
 and Cloudflare closes an origin request at 100 s — 15 of 20 completed results were thrown
-away as 524s. The GPU embedding step is serialised platform-wide (Essentia's TensorFlow
+away as 524s. The GPU embedding step is serialised platform-wide (the embedding
 predictors are not thread-safe, so each worker holds an inference lock), which is what makes
 the tail grow with concurrency. Nothing here makes that faster; it stops the answer being
 lost when it is slow.

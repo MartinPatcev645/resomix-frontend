@@ -56,7 +56,7 @@ class DocumentFile(Base):
     ddex_resource_ref: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     # Category for the admin file browser / analytics:
-    # "embedding_maest" | "embedding_discogs" | "peaks" | "ingest_report" | "manifest_csv" | ...
+    # one embedding type per similarity index | "peaks" | "ingest_report" | "manifest_csv" | ...
     doc_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
 
     created_at: Mapped[DateTime] = mapped_column(

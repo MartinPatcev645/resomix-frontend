@@ -1,14 +1,14 @@
 """
-Enrich a Discogs-similarity JSON with track metadata
-====================================================
+Enrich a similarity-run JSON with track metadata
+================================================
 
-Takes the JSON produced by ``resomix-similarity-open/scripts/discogs_similarity.py`` (a list of
+Takes the JSON produced by the media server's similarity script in ``resomix-similarity-open`` (a list of
 results with ``uuid``/``score``/``filename``) and fills in **title**, **artist** and **duration**
 for each track by looking them up in the Alwyzon ``tracks`` table (by UUID).
 
 Run from the repo root with the venv (so it uses the app's DB settings/.env):
 
-    .venv/bin/python scripts/enrich_similarity_json.py slipslide_discogs100.json
+    .venv/bin/python scripts/enrich_similarity_json.py slipslide_top100.json
     .venv/bin/python scripts/enrich_similarity_json.py results.json --out enriched.json
 
 By default it writes ``<input>.enriched.json`` next to the input and prints a table. Existing keys
@@ -59,7 +59,7 @@ def _fetch_meta(uuids):
 
 def main():
     ap = argparse.ArgumentParser(description="Enrich a similarity JSON with title/artist/duration.")
-    ap.add_argument("json_file", help="Path to the discogs_similarity.py output JSON")
+    ap.add_argument("json_file", help="Path to the similarity script's output JSON")
     ap.add_argument("--out", default=None, help="Where to write the enriched JSON (default: <input>.enriched.json)")
     args = ap.parse_args()
 

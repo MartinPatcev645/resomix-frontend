@@ -1,17 +1,11 @@
 """
-Analysis gating — result projection and the token bypass (pricing v2.1, C3)
-===========================================================================
+Analysis gating: result projection, and the retired token path (pricing v2.1, C3)
+=================================================================================
 
-Two paths reach the full canonical analysis, and gating one without the other gates nothing:
-
-  1. ``GET  /analysis/{id}/result``       — proxied through here, so it can be projected.
-  2. ``POST /analysis/{uuid}/token``      — mints a token the client redeems **directly against the
-     analysis service's cache**. Alwyzon is not in that request, so there is no opportunity to
-     project anything: the whole document is handed over. Leaving it open would put the Pro
-     dashboard one extra call away for everyone.
-
-The client already copes with a refused mint — ``alwyzonFinalResult`` prefers the cache and falls
-back to the proxy on any failure — so a free user lands on the projected result, not an error.
+The full canonical analysis is reached through one path only, ``GET /analysis/{id}/result``,
+which is proxied through here so it can be projected for the caller's plan and stripped of how it
+was produced. ``POST /analysis/{uuid}/token`` used to mint a token for the analysis service's raw
+cache, which skipped both. It now always answers 410.
 
 Fakes throughout: no DB, no analysis service, no Redis.
 """
@@ -187,7 +181,10 @@ class TestEntitlementLookupFailsOpen:
 
 
 @pytest.mark.asyncio
-class TestTokenMintIsTheOtherDoor:
+class TestTokenMintIsRetired:
+    """The token bought the analysis service's raw cached document, which carries fields that say
+    how the result was produced. It is retired; the full result comes through ``get_result``."""
+
     async def _mint(self, controller, user=_User()):
         class _Req:
             headers = {}
@@ -195,36 +192,38 @@ class TestTokenMintIsTheOtherDoor:
 
         return await controller.mint_retrieval_token(None, _Req(), "an-1", user)
 
-    async def test_pro_can_mint(self):
+    async def test_pro_is_refused_with_410(self):
         c = _controller(full=True)
-        assert (await self._mint(c)).status_code == 200
+        assert (await self._mint(c)).status_code == 410
 
-    async def test_free_cannot_mint(self):
-        """The token buys the RAW cached JSON straight from the analysis service — no projection is
-        possible, because we are not in that request."""
-        c = _controller(full=False)
-        assert (await self._mint(c)).status_code == 402
-
-    async def test_the_refusal_says_plan_required(self):
-        c = _controller(full=False)
+    async def test_no_token_is_ever_issued(self):
+        c = _controller(full=True)
         body = json.loads((await self._mint(c)).body)
-        assert body["code"] == "plan_required"
+        assert "token" not in json.dumps(body.get("data") or {})
+        assert body["reason"] == "retired"
 
-    async def test_the_refusal_reassures_about_the_summary(self):
-        """The copy has to say the card stays free, or the message reads as "your analysis is
-        gone" rather than "the dashboard is Pro"."""
-        c = _controller(full=False)
-        body = json.loads((await self._mint(c)).body)
-        assert "summary" in body["error"].lower()
 
-    async def test_no_token_is_present_in_a_refusal(self):
-        c = _controller(full=False)
-        assert "token" not in (await self._mint(c)).body.decode()
+@pytest.mark.asyncio
+class TestResultHidesHowItWasMade:
+    async def test_internal_fields_never_reach_any_plan(self):
+        raw = dict(_FULL)
+        raw["provenance"] = {"completed_epoch": 1.0, "library_versions": {"x": "1"}, "stage_errors": {}}
+        raw["semantics"] = {"style_maest_top": [{"label": "House", "score": 0.5}]}
+        raw["identity"] = {"input_filename": "a.mp3", "maest_embedding_dim": 768, "embeddings_source": {}}
+        raw["structure"] = {"summary": "s", "model": "m", "device": "cuda"}
+        for full in (True, False):
+            data = _data(await _controller(full=full, result=raw).get_result(None, "an-1", _User()))
+            assert data["semantics"]["style_top"][0]["label"] == "House"
+            assert "style_maest_top" not in data["semantics"]
+            assert "maest_embedding_dim" not in data["identity"]
+            assert "model" not in data["structure"]
+            if full:
+                assert data["provenance"] == {"completed_epoch": 1.0}
 
-    async def test_ownership_is_still_checked_first(self):
-        """A stranger must be told 403, not offered an upgrade — buying Pro would not give them
-        access to someone else's analysis."""
-        row = _Row()
-        row.user_id = 999
-        c = _controller(full=True, row=row)
-        assert (await self._mint(c)).status_code == 403
+
+@pytest.mark.asyncio
+class TestUpstreamErrorTextIsScrubbed:
+    async def test_a_failed_job_message_does_not_name_a_tool(self):
+        c = _controller(full=True, result={"status": "error", "status_code": 500, "message": "Essentia decode failed"})
+        body = json.loads((await c.get_result(None, "an-1", _User())).body)
+        assert "essentia" not in json.dumps(body).lower()

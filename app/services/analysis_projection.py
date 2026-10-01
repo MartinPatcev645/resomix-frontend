@@ -49,6 +49,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable, Optional
 
+from app.utils.public_names import scrub_text
+
 # Per-section allow-lists, keyed by the canonical (snake_case) names the analysis service emits.
 SUMMARY_FIELDS: Dict[str, frozenset] = {
     "identity": frozenset(
@@ -86,7 +88,7 @@ SUMMARY_FIELDS: Dict[str, frozenset] = {
     # grid, which gets a sentence instead of sections. Deliberately NOT
     # `family_detail` (the genre routing's raw numbers, kept to calibrate its
     # thresholds, the same reason `beat_support` is withheld below),
-    # `routed_family`, or the model / attention_backend / device provenance.
+    # `routed_family`, or how the structure pass was run (see public_analysis below).
     "structure": frozenset(
         {"status", "gate", "sections", "summary", "family", "vocabulary", "family_reason"}
     ),
@@ -159,3 +161,55 @@ def project_summary(result: Any, *, upgrade: str = "pro") -> Any:
     projected[LOCK_FLAG] = True
     projected["upgrade"] = upgrade
     return projected
+
+
+# --------------------------------------------------------------------------- #
+# Public view: what any caller may see of HOW a result was made
+# --------------------------------------------------------------------------- #
+
+# The analysis service records how it produced a result (library versions, per-stage timings and
+# errors, process memory, which model ran the structure pass and on what hardware). That is for
+# debugging the service and says a lot about how it is built. A caller gets when it ran and which
+# schema it follows, nothing more.
+_PROVENANCE_PUBLIC = frozenset(
+    {"schema_version", "service_version", "started_epoch", "completed_epoch", "elapsed_seconds"}
+)
+_IDENTITY_PRIVATE = frozenset({"discogs_embedding_dim", "maest_embedding_dim", "embeddings_source"})
+_STRUCTURE_PRIVATE = frozenset({"model", "attention_backend", "device"})
+
+
+def public_analysis(result: Any) -> Any:
+    """Strip a result of everything that describes how it was produced, for ANY caller.
+
+    Runs on every plan, after the summary projection. Field names that carry an internal model
+    name are renamed to their public spelling here as well (``semantics.style_top``), so the
+    response does not depend on the middleware net in ``app/utils/public_names.py`` for its shape.
+    """
+    if not isinstance(result, dict):
+        return result
+    out = dict(result)
+
+    provenance = out.get("provenance")
+    if isinstance(provenance, dict):
+        out["provenance"] = {k: v for k, v in provenance.items() if k in _PROVENANCE_PUBLIC}
+
+    identity = out.get("identity")
+    if isinstance(identity, dict):
+        out["identity"] = {k: v for k, v in identity.items() if k not in _IDENTITY_PRIVATE}
+
+    structure = out.get("structure")
+    if isinstance(structure, dict):
+        out["structure"] = {k: v for k, v in structure.items() if k not in _STRUCTURE_PRIVATE}
+
+    semantics = out.get("semantics")
+    if isinstance(semantics, dict) and "style_maest_top" in semantics:
+        semantics = dict(semantics)
+        semantics["style_top"] = semantics.pop("style_maest_top")
+        out["semantics"] = semantics
+
+    # Upstream error text is the analysis service's own wording and can name what failed inside it.
+    for key in ("error", "message"):
+        if isinstance(out.get(key), str):
+            out[key] = scrub_text(out[key], everything=True)
+
+    return out

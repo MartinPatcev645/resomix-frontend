@@ -24,7 +24,7 @@ admin_log_service = AdminOperationLogService()
     "/rebuild-index",
     summary="Rebuild FAISS Indexes",
     description=(
-        "Trigger a rebuild of FAISS indexes (maest + discogs) on the Hetzner similarity server "
+        "Trigger a rebuild of both FAISS similarity indexes on the Hetzner similarity server "
         "for the specified partner. Both engines are rebuilt in sequence."
     ),
     status_code=status.HTTP_202_ACCEPTED,
@@ -35,7 +35,7 @@ async def rebuild_similarity_index(
     current_admin: User = Depends(require_admin),
     _: User = Depends(require_permission("similarity:manage")),
 ):
-    """Trigger a rebuild of FAISS indexes (maest + discogs) for a specific partner."""
+    """Trigger a rebuild of both FAISS similarity indexes for a specific partner."""
     from app.api.dependencies.database import get_database_session
 
     result = await hetzner_service.rebuild_index(partner_id=partner_id)

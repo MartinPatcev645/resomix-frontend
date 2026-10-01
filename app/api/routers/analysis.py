@@ -10,8 +10,8 @@ Upload + return-visit access for analysis-as-an-artifact (see
   * ``GET  /analysis/{id}/status``            — poll job status (owner-or-public).
   * ``GET  /analysis/{id}/result``            — the partial/full canonical result (owner-or-public).
   * ``GET  /analysis/{analysis_uuid}``        — the single-value summary (owner-or-public).
-  * ``POST /analysis/{analysis_uuid}/token``  — mint a retrieval token for the full cached JSON
-                                                on the Hetzner served cache (owner-or-public).
+  * ``POST /analysis/{analysis_uuid}/token``  (retired, always 410; the full result comes from
+                                                ``/result``, which hides internal fields)
 
 Frontend surface (System Partner 1 + guests) — requires the frontend's partner key like the
 other consumer routers.
@@ -83,7 +83,7 @@ async def get_analysis_summary(
     return await controller.get_summary(db, analysis_uuid, current_user)
 
 
-@router.post("/{analysis_uuid}/token", status_code=200, summary="Mint a cached-analysis retrieval token")
+@router.post("/{analysis_uuid}/token", status_code=200, summary="Retired (always 410). Use /analysis/{id}/result")
 async def mint_analysis_token(
     analysis_uuid: str,
     request: Request,

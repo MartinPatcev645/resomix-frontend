@@ -503,8 +503,8 @@ This calls Hetzner twice (once per engine) and returns:
   "success": true,
   "partner_id": 42,
   "engines": {
-    "maest":   { "success": true, "data": { "index_size": 500 } },
-    "discogs": { "success": true, "data": { "index_size": 500 } }
+    "index_a": { "success": true, "data": { "index_size": 500 } },
+    "index_b": { "success": true, "data": { "index_size": 500 } }
   }
 }
 ```

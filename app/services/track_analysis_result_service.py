@@ -62,7 +62,7 @@ class TrackAnalysisResultService:
 
     @staticmethod
     def _genre_leaf(label: Optional[str]) -> Optional[str]:
-        """Discogs genres are hierarchical (``Parent---Child``, e.g. ``Electronic---Deep House``).
+        """Genre labels are hierarchical (``Parent---Child``, e.g. ``Electronic---Deep House``).
         We store/display the leaf only (``Deep House``) — matches the frontend's ``shortGenre`` and
         keeps the stored value clean at the root instead of relying on display-time trimming."""
         if not label:

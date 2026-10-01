@@ -4,7 +4,7 @@
 
 A powerful backend for finding similar tracks, managing playlists, and discovering music from a database of **2.3M+ tracks** backed by MariaDB. Built for scalability, security, and clean architecture.
 
-> 📌 **For setup instructions, see [QUICK_START.md](QUICK_START.md)** — this guide focuses on development practices and architecture.
+> 📌 **New here? Start with [ONBOARDING.md](ONBOARDING.md)** (Windows setup, git workflow, coding practices, tests). [QUICK_START.md](QUICK_START.md) is the original setup guide. This README focuses on development practices and architecture.
 
 ---
 

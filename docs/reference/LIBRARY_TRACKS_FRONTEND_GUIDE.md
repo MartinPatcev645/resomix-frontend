@@ -209,7 +209,7 @@ DELETE /api/v1/tracks/my-tracks/{track_uuid}
 
 **Soft delete + cascade** — sets `is_active=false`; the track immediately disappears from the library, catalog, search, and similarity. On delete the backend also:
 1. **soft-deletes the similarity playlist** generated from this track (it disappears from the user's playlists too) — `data.playlists_deleted` tells you how many;
-2. **purges the track's media-server assets in the background** — peaks, segments, embeddings (maest + discogs), preview, cover, raw audio;
+2. **purges the track's media-server assets in the background** — peaks, segments, embeddings (both similarity indexes), preview, cover, raw audio;
 3. *(next sprint)* will soft-delete the track's audio-analysis record once analysis exists.
 
 ### Response (200 OK)
