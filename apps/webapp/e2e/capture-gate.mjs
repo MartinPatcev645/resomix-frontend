@@ -530,7 +530,7 @@ const MOCK_ANALYSIS_RESULT = {
   },
   semantics: {
     genre_top: [{ label: 'Electronic---Deep House', score: 0.72 }],
-    style_maest_top: [],
+    style_top: [],
     mood_theme_top: [],
     instrument_top: [],
     mood_dimensions: { energy: 0.68 },

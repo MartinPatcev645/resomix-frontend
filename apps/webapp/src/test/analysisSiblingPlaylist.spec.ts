@@ -15,7 +15,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const getAnalysisStatus = vi.fn();
 const getAnalysisResult = vi.fn();
-const mintAnalysisToken = vi.fn();
 
 vi.mock('@resomix/api-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@resomix/api-client')>();
@@ -23,7 +22,6 @@ vi.mock('@resomix/api-client', async (importOriginal) => {
     ...actual,
     getAnalysisStatus: (id: string) => getAnalysisStatus(id),
     getAnalysisResult: (id: string) => getAnalysisResult(id),
-    mintAnalysisToken: (id: string) => mintAnalysisToken(id),
     uploadForAnalysis: vi.fn(),
   };
 });
@@ -57,7 +55,6 @@ beforeEach(() => {
   // The mapper is deliberately defensive, so an empty canonical doc is a valid "finished" result.
   getAnalysisResult.mockResolvedValue({ success: true, data: {} });
   // Force the direct-cache path to fail so the fetch falls back to the mocked proxy result.
-  mintAnalysisToken.mockResolvedValue({ success: false });
 });
 
 describe('sibling similarity playlist after an analysis completes', () => {

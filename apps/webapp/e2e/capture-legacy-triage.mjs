@@ -105,7 +105,7 @@ const MOCK_ANALYSIS = {
   rhythm: { bpm: 126, confidence: 0.94, beat_times_seconds: [], bar_count: 32 },
   tonality: { key: 'G', scale: 'minor', strength: 0.9, camelot: '6A', chromagram: { data: [] } },
   energy: { energy_curve: { values: [0.2, 0.5, 0.8], hop_ms: 500 }, structure_segments: [], bass_entry_ms: 48000, onset_times_seconds: [] },
-  semantics: { genre_top: [{ label: 'Electronic---Deep House', score: 0.72 }], style_maest_top: [], mood_theme_top: [], instrument_top: [], mood_dimensions: { energy: 0.68 }, danceability: 0.79, approachability: 0.5, voice_instrumental: 'instrumental', voice_score: 0.14, timbre_bright: 0.5, timbre_dark: 0.5, mood_acoustic: 0.2, mood_electronic: 0.8, valence: 0.42, arousal: 0.71 },
+  semantics: { genre_top: [{ label: 'Electronic---Deep House', score: 0.72 }], style_top: [], mood_theme_top: [], instrument_top: [], mood_dimensions: { energy: 0.68 }, danceability: 0.79, approachability: 0.5, voice_instrumental: 'instrumental', voice_score: 0.14, timbre_bright: 0.5, timbre_dark: 0.5, mood_acoustic: 0.2, mood_electronic: 0.8, valence: 0.42, arousal: 0.71 },
   spectral: { centroid_curve: { values: [] }, rolloff_curve: { values: [] }, flatness_curve: { values: [] }, bandwidth_curve: { values: [] }, zcr_curve: { values: [] }, mel_spectrogram: { data: [] } },
   timeline: { genre_over_time: { series: [], hop_ms: 30000 }, mood_over_time: { series: [], hop_ms: 30000 }, instrument_over_time: { series: [], hop_ms: 30000 }, voice_regions: [] },
   composition: { stems: {}, vocal_regions: [] },

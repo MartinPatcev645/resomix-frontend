@@ -135,8 +135,8 @@ export const AnalysisSummaryCard: React.FC<AnalysisSummaryCardProps> = ({
   const styleLabel =
     data.semantics.genreTop[0]?.label != null
       ? shortGenre(data.semantics.genreTop[0].label)
-      : data.semantics.styleMaestTop[0]?.label != null
-        ? shortGenre(data.semantics.styleMaestTop[0].label)
+      : data.semantics.styleTop[0]?.label != null
+        ? shortGenre(data.semantics.styleTop[0].label)
         : "N/A";
 
   const bpmLabel =

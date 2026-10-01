@@ -1,7 +1,7 @@
 /**
  * useTrackAnalysis — upload → analyze → result state machine.
  *
- * Default (prod): routes through **Alwyzon** (the single upload front-door), so the upload is
+ * Everything goes through **Alwyzon** (the single upload front-door), so the upload is
  * login-only and counts against `uploads_per_month`, and every upload also yields a similarity
  * playlist (generated as a background sibling). Alwyzon foregrounds the analysis on the
  * resomix-analysis-service and proxies status/result back:
@@ -9,8 +9,10 @@
  *   GET  /api/v1/analysis/{id}/status    -> { state, part1_ready, progress:{percent}, error }
  *   GET  /api/v1/analysis/{id}/result    -> canonical analysis JSON (partial then full)
  *
- * Dev fallback (VITE_ANALYSIS_VIA_ALWYZON=false): talks DIRECTLY to the analysis service
- * (`VITE_ANALYSIS_ENDPOINT`) — only usable when that service has no internal key set.
+ * There is no path straight to the analysis service, for the result or anything else. Its own
+ * copy of a result carries internal fields that Alwyzon removes on the way out, so the browser
+ * only ever talks to Alwyzon. (A direct-from-cache fetch and a dev-only direct transport both
+ * existed once and were removed for that reason.)
  *
  * Part 1 (fast local DSP) renders as soon as the backend checkpoints it; the semantic/GPU part 2
  * fills in when the full result lands (progressive delivery). The snake_case canonical result is
@@ -22,25 +24,11 @@ import {
   uploadForAnalysis,
   getAnalysisStatus,
   getAnalysisResult,
-  mintAnalysisToken,
 } from "@resomix/api-client";
 import type { AnalysisData } from "./data.js";
 import { mapCanonicalToAnalysisData } from "./mapCanonical.js";
 import { makePlayableUrl } from "./audioPlayable.js";
 import { shouldDeferToSessionExpiredModal } from "@/utils/sessionExpiryGuard.ts";
-
-/** resomix-analysis-service (FastAPI) public base URL. Used by the dev-direct fallback AND by the
- *  direct-from-cache result fetch below (the served cache lives on the analysis service). */
-export const ANALYSIS_ENDPOINT =
-  import.meta.env.VITE_ANALYSIS_ENDPOINT ?? "http://localhost:8010";
-
-/** Route uploads through Alwyzon (default). Set VITE_ANALYSIS_VIA_ALWYZON=false for dev-direct. */
-const VIA_ALWYZON = (import.meta.env.VITE_ANALYSIS_VIA_ALWYZON ?? "true") !== "false";
-
-/** Fetch the completed result DIRECTLY from the served cache via an Alwyzon-minted token, so the
- *  heavy JSON bypasses Alwyzon's proxy. Default on; set VITE_ANALYSIS_DIRECT_CACHE=false to disable.
- *  Always falls back to the proxy on any failure (e.g. token IP-lock mismatch behind a proxy). */
-const DIRECT_CACHE = (import.meta.env.VITE_ANALYSIS_DIRECT_CACHE ?? "true") !== "false";
 
 // Poll with a gentle backoff: quick at first (part 1 lands in a few seconds), then slower while
 // the GPU part 2 runs (often 1-2 min). Halves the request volume vs a fixed 1.5s interval — which
@@ -66,7 +54,7 @@ export type AnalysisStatus = "idle" | "uploading" | "analyzing" | "done" | "erro
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Normalized status document shared by both transports. */
+/** Normalized status document. */
 interface StatusDoc {
   state?: string;
   part1_ready?: boolean;
@@ -74,76 +62,17 @@ interface StatusDoc {
   error?: string;
   // Alwyzon enriches status/result with the uploaded track's uuid and its sibling similarity
   // playlist's uuid (owner-gated). The analysis screen plays the upload over HLS by reusing that
-  // playlist's seed-only manifest. Absent on the dev-direct transport (the analysis service doesn't
-  // know either id) and until the async sibling playlist exists.
+  // playlist's seed-only manifest. Absent until the async sibling playlist exists.
   track_uuid?: string;
   playlist_uuid?: string;
   // "pending" | "ready" | "unavailable" | "failed" — whether the sibling playlist is still being
-  // generated. Absent on the dev-direct transport (the analysis service knows nothing about
-  // playlists), which is why an undefined state never starts a watch.
+  // generated. An undefined state never starts a watch.
   sibling_playlist_state?: string;
 }
 type StatusFetcher = (id: string) => Promise<StatusDoc>;
 type ResultFetcher = (id: string) => Promise<unknown>;
 
-async function errText(res: Response, fallback: string): Promise<string> {
-  try {
-    const j = await res.json();
-    return (j?.detail as string) || (j?.error as string) || `${fallback} (${res.status})`;
-  } catch {
-    return `${fallback} (${res.status})`;
-  }
-}
-
-/**
- * POST the file with a REAL upload-progress callback via XHR (dev-direct path only).
- * Resolves with the parsed JSON body (or rejects with the server's error detail).
- */
-function uploadWithProgress(
-  url: string,
-  form: FormData,
-  onProgress: (pct: number) => void,
-): Promise<{ analysis_id?: string }> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", url);
-    xhr.responseType = "json";
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-    };
-    xhr.upload.onload = () => onProgress(100);
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(xhr.response ?? {});
-      } else {
-        const body = xhr.response as { detail?: string; error?: string } | null;
-        reject(new Error(body?.detail || body?.error || `Upload failed (${xhr.status})`));
-      }
-    };
-    xhr.onerror = () => reject(new Error("Upload failed (network error)"));
-    xhr.ontimeout = () => reject(new Error("Upload timed out"));
-    xhr.send(form);
-  });
-}
-
-// --- transport-specific fetchers ------------------------------------------- //
-
-const directStatus: StatusFetcher = async (id) => {
-  const res = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}`);
-  if (res.status === 404) throw new Error("Analysis not found");
-  if (!res.ok) throw new Error(await errText(res, "Status check failed"));
-  const st = (await res.json()) as StatusDoc & { progress?: { percent?: number } };
-  return {
-    state: st.state, part1_ready: st.part1_ready, percent: st.progress?.percent ?? 0, error: st.error,
-    track_uuid: st.track_uuid, playlist_uuid: st.playlist_uuid,
-    sibling_playlist_state: st.sibling_playlist_state,
-  };
-};
-const directResult: ResultFetcher = async (id) => {
-  const res = await fetch(`${ANALYSIS_ENDPOINT}/v1/analyses/${id}/result`);
-  if (!res.ok) throw new Error(await errText(res, "Result fetch failed"));
-  return res.json();
-};
+// --- fetchers -------------------------------------------------------------- //
 
 const alwyzonStatus: StatusFetcher = async (id) => {
   const res = await getAnalysisStatus(id);
@@ -165,32 +94,6 @@ const alwyzonResult: ResultFetcher = async (id) => {
   return (res as { data: unknown }).data;
 };
 
-/** Direct-from-served-cache fetch of the FULL result: mint a token via Alwyzon, then GET the JSON
- *  straight from the analysis service (bypasses Alwyzon's proxy for the heavy payload). */
-const fetchResultFromCache: ResultFetcher = async (id) => {
-  const tok = await mintAnalysisToken(id);
-  if (!tok || (tok as { success?: boolean }).success === false) {
-    throw new Error((tok as { error?: string })?.error || "Token mint failed");
-  }
-  const { token, retrieval_path } = (tok as { data: { token: string; retrieval_path: string } }).data;
-  const res = await fetch(`${ANALYSIS_ENDPOINT}${retrieval_path}?token=${encodeURIComponent(token)}`);
-  if (!res.ok) throw new Error(`Cache fetch failed (${res.status})`);
-  return res.json();
-};
-
-/** The FINAL (completed) result fetcher for the Alwyzon transport: prefer the served cache, fall
- *  back to the proxy on any failure so a misconfigured cache path can never break the flow. */
-const alwyzonFinalResult: ResultFetcher = async (id) => {
-  if (DIRECT_CACHE) {
-    try {
-      return await fetchResultFromCache(id);
-    } catch {
-      /* fall back to the Alwyzon proxy below */
-    }
-  }
-  return alwyzonResult(id);
-};
-
 /**
  * Poll a job to completion: surface part-1 as soon as it's ready, then the full result. Shared
  * by a fresh upload and by loading an existing id from the URL, over either transport.
@@ -202,7 +105,6 @@ async function pollAnalysis(
   onResult: (data: AnalysisData, done: boolean) => void,
   fetchStatus: StatusFetcher,
   fetchResult: ResultFetcher,
-  fetchFinal: ResultFetcher = fetchResult,
   onMeta: (meta: { trackUuid?: string; playlistUuid?: string; siblingState?: string }) => void = () => {},
 ): Promise<void> {
   const startedAt = Date.now();
@@ -231,7 +133,7 @@ async function pollAnalysis(
     if (st.part1_ready && !part1Shown && st.state !== "succeeded") {
       part1Shown = true;
       try {
-        const raw = await fetchResult(id); // part-1 (partial) via the proxy
+        const raw = await fetchResult(id); // part-1 (partial)
         if (!isLive()) return;
         onResult(mapCanonicalToAnalysisData(raw), false);
       } catch {
@@ -244,7 +146,7 @@ async function pollAnalysis(
     interval = Math.min(interval + POLL_INTERVAL_STEP_MS, POLL_INTERVAL_MAX_MS);
   }
 
-  const raw = await fetchFinal(id); // full result — prefer the served cache
+  const raw = await fetchResult(id); // full result
   if (!isLive()) return;
   onResult(mapCanonicalToAnalysisData(raw), true);
 }
@@ -362,31 +264,19 @@ export function useTrackAnalysis() {
       live(() => setStatus("uploading"));
       live(() => setProgress(0));
 
-      let id: string | undefined;
-      if (VIA_ALWYZON) {
-        const up = await uploadForAnalysis(file, (pct) => live(() => setProgress(pct)));
-        if (!up || (up as { success?: boolean }).success === false) {
-          const reason = (up as { reason?: string })?.reason;
-          const serverMsg = (up as { error?: string })?.error;
-          const msg =
-            reason === "login_required"
-              ? "Please log in to analyze a track."
-              : reason === "upgrade_required"
-                ? serverMsg || "You've used all your uploads this month. Upgrade to analyze more."
-                : serverMsg || "Upload failed";
-          throw new Error(msg);
-        }
-        id = (up as { data: { analysis_id?: string } }).data.analysis_id;
-      } else {
-        const form = new FormData();
-        form.append("file", file);
-        const created = await uploadWithProgress(
-          `${ANALYSIS_ENDPOINT}/v1/analyses`,
-          form,
-          (pct) => live(() => setProgress(pct)),
-        );
-        id = created.analysis_id;
+      const up = await uploadForAnalysis(file, (pct) => live(() => setProgress(pct)));
+      if (!up || (up as { success?: boolean }).success === false) {
+        const reason = (up as { reason?: string })?.reason;
+        const serverMsg = (up as { error?: string })?.error;
+        const msg =
+          reason === "login_required"
+            ? "Please log in to analyze a track."
+            : reason === "upgrade_required"
+              ? serverMsg || "You've used all your uploads this month. Upgrade to analyze more."
+              : serverMsg || "Upload failed";
+        throw new Error(msg);
       }
+      const id = (up as { data: { analysis_id?: string } }).data.analysis_id;
       if (!id) throw new Error("Server did not return an analysis id");
       live(() => setAnalysisId(id)); // -> the page mirrors this into ?id=
 
@@ -406,9 +296,8 @@ export function useTrackAnalysis() {
               setPart1Ready(true);
             }
           }),
-        VIA_ALWYZON ? alwyzonStatus : directStatus,
-        VIA_ALWYZON ? alwyzonResult : directResult,
-        VIA_ALWYZON ? alwyzonFinalResult : directResult,
+        alwyzonStatus,
+        alwyzonResult,
         (meta) => live(() => {
           if (meta.trackUuid) setTrackUuid(meta.trackUuid);
           if (meta.playlistUuid) rememberPlaylistUuid(meta.playlistUuid);
@@ -421,8 +310,8 @@ export function useTrackAnalysis() {
       // the "Find similar tracks" CTA enables itself instead of staying dead for a playlist that
       // lands a moment later.
       // Watch ONLY while the server says the sibling is still being generated. Without a pending
-      // state there is nothing to wait for — an older upload that predates automatic pairing, a job
-      // that produced no playlist, or the dev-direct transport which never reports one.
+      // state there is nothing to wait for — an older upload that predates automatic pairing, or a
+      // job that produced no playlist.
       if (!playlistUuidRef.current && siblingStateRef.current === "pending") {
         live(() => setPlaylistPending(true));
         // Deliberately NOT awaited: this call must still resolve as soon as the ANALYSIS is done.
@@ -432,7 +321,7 @@ export function useTrackAnalysis() {
         void pollSiblingPlaylist(
           id,
           () => runId.current === myRun,
-          VIA_ALWYZON ? alwyzonStatus : directStatus,
+          alwyzonStatus,
           (uuid) => live(() => rememberPlaylistUuid(uuid)),
         ).finally(() => live(() => setPlaylistPending(false)));
       }
@@ -480,9 +369,8 @@ export function useTrackAnalysis() {
               setPart1Ready(true);
             }
           }),
-        VIA_ALWYZON ? alwyzonStatus : directStatus,
-        VIA_ALWYZON ? alwyzonResult : directResult,
-        VIA_ALWYZON ? alwyzonFinalResult : directResult,
+        alwyzonStatus,
+        alwyzonResult,
         (meta) => live(() => {
           if (meta.trackUuid) setTrackUuid(meta.trackUuid);
           if (meta.playlistUuid) rememberPlaylistUuid(meta.playlistUuid);
@@ -495,8 +383,8 @@ export function useTrackAnalysis() {
       // the "Find similar tracks" CTA enables itself instead of staying dead for a playlist that
       // lands a moment later.
       // Watch ONLY while the server says the sibling is still being generated. Without a pending
-      // state there is nothing to wait for — an older upload that predates automatic pairing, a job
-      // that produced no playlist, or the dev-direct transport which never reports one.
+      // state there is nothing to wait for — an older upload that predates automatic pairing, or a
+      // job that produced no playlist.
       if (!playlistUuidRef.current && siblingStateRef.current === "pending") {
         live(() => setPlaylistPending(true));
         // Deliberately NOT awaited: this call must still resolve as soon as the ANALYSIS is done.
@@ -506,7 +394,7 @@ export function useTrackAnalysis() {
         void pollSiblingPlaylist(
           id,
           () => runId.current === myRun,
-          VIA_ALWYZON ? alwyzonStatus : directStatus,
+          alwyzonStatus,
           (uuid) => live(() => rememberPlaylistUuid(uuid)),
         ).finally(() => live(() => setPlaylistPending(false)));
       }

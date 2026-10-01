@@ -82,13 +82,6 @@ VITE_DEMO_MODE=false
 # Google sign-in. MUST be the same client id the backend has as GOOGLE_CLIENT_ID,
 # or "Continue with Google" fails token verification. Ask for the dev client id.
 VITE_GOOGLE_CLIENT_ID=
-
-# Analysis routing. Leave VIA_ALWYZON=true (default, production behaviour).
-# Set it to false ONLY to hit a local analysis service directly, which works
-# just when that service has no internal API key configured.
-VITE_ANALYSIS_VIA_ALWYZON=true
-VITE_ANALYSIS_ENDPOINT=http://localhost:8010
-VITE_ANALYSIS_DIRECT_CACHE=false
 ```
 
 ```bash
@@ -108,13 +101,11 @@ VITE_SERVER_MEDIA=http://localhost:8002
 | `VITE_SERVER_MEDIA` | all | Media/similarity server (HLS, previews, peaks) |
 | `VITE_DEMO_MODE` | webapp | `true` masks catalogue metadata (`"dEm0"` ids) |
 | `VITE_GOOGLE_CLIENT_ID` | webapp | Must match the backend's `GOOGLE_CLIENT_ID` |
-| `VITE_ANALYSIS_*` | webapp | Defaults are correct; only touch for direct-to-service dev |
 | `VITE_TELEMETRY_HEARTBEAT_MS` | webapp | Optional, has a default |
 | `VITE_SPOTIFY_CLIENT_ID` / `VITE_TIDAL_CLIENT_ID` | webapp | Only for the (dormant) transfer features |
 | `VITE_FACEBOOK/INSTAGRAM/TWITTER/SOUNDCLOUD_URL` | landing, webapp | Footer links |
 
-> **Known drift — don't be misled by `env.example`:** the examples omit `VITE_GOOGLE_CLIENT_ID` and
-> the `VITE_ANALYSIS_*` vars, and still list `VITE_PUBLIC_POSTHOG_KEY` / `VITE_PUBLIC_POSTHOG_HOST`
+> **Known drift — don't be misled by `env.example`:** the examples omit `VITE_GOOGLE_CLIENT_ID`, and still list `VITE_PUBLIC_POSTHOG_KEY` / `VITE_PUBLIC_POSTHOG_HOST`
 > and `VITE_BASE_ADMIN_URL`, which are **referenced nowhere in the code**. Use the blocks above.
 > If you add a new var, add it to the app's `env.example` **and** this table.
 

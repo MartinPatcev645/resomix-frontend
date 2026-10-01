@@ -187,10 +187,10 @@ export function camelotNeighbours(code: string | null | undefined): CamelotNeigh
 
 export interface GenreRow {
   label: string;
-  /** Discogs-400 score, or null when that model did not rank this label. */
-  discogs: number | null;
-  /** MAEST-519 score, or null when that model did not rank this label. */
-  maest: number | null;
+  /** Score in the genre list, or null when that list did not rank this label. */
+  genre: number | null;
+  /** Score in the style list, or null when that list did not rank this label. */
+  style: number | null;
   /** Sort key: the models' best claim for this label. */
   max: number;
 }
@@ -203,38 +203,38 @@ export interface GenreRow {
  */
 export function mergeGenreModels(
   genreTop: ScoredLabel[],
-  styleMaestTop: ScoredLabel[],
+  styleTop: ScoredLabel[],
   shorten: (label: string) => string,
 ): GenreRow[] {
   const rows = new Map<string, GenreRow>();
-  const add = (items: ScoredLabel[], field: "discogs" | "maest") => {
+  const add = (items: ScoredLabel[], field: "genre" | "style") => {
     for (const item of items) {
       const label = shorten(item.label);
-      const row = rows.get(label) ?? { label, discogs: null, maest: null, max: 0 };
+      const row = rows.get(label) ?? { label, genre: null, style: null, max: 0 };
       // Keep the strongest score when shortening collapses two raw labels onto one name.
       if (row[field] == null || item.score > (row[field] as number)) row[field] = item.score;
       rows.set(label, row);
     }
   };
-  add(genreTop, "discogs");
-  add(styleMaestTop, "maest");
+  add(genreTop, "genre");
+  add(styleTop, "style");
 
   return [...rows.values()]
-    .map((r) => ({ ...r, max: Math.max(r.discogs ?? 0, r.maest ?? 0) }))
+    .map((r) => ({ ...r, max: Math.max(r.genre ?? 0, r.style ?? 0) }))
     .sort((a, b) => {
       if (b.max !== a.max) return b.max - a.max;
-      return Math.min(b.discogs ?? 0, b.maest ?? 0) - Math.min(a.discogs ?? 0, a.maest ?? 0);
+      return Math.min(b.genre ?? 0, b.style ?? 0) - Math.min(a.genre ?? 0, a.style ?? 0);
     });
 }
 
 /** One sentence on how much the two models agree, for the Genre tab footer. */
 export function genreAgreement(rows: GenreRow[]): string {
-  const both = rows.filter((r) => r.discogs != null && r.maest != null);
+  const both = rows.filter((r) => r.genre != null && r.style != null);
   if (!rows.length) return "No genre prediction yet.";
   if (!both.length) return "The two models picked entirely different labels for this track.";
   const top = rows[0];
-  if (top.discogs != null && top.maest != null) {
-    const gap = Math.abs(top.discogs - top.maest);
+  if (top.genre != null && top.style != null) {
+    const gap = Math.abs(top.genre - top.style);
     if (gap <= 0.15) return `Both models lead with ${top.label}, within ${Math.round(gap * 100)} points of each other.`;
     return `Both models rank ${top.label} first, though they disagree by ${Math.round(gap * 100)} points on how strongly.`;
   }

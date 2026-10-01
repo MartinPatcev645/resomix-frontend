@@ -250,7 +250,7 @@ The logged-in user's own uploaded tracks (the "library" page). All endpoints **r
 - **Soft delete** (`is_active=false`): the track immediately disappears from the library, catalog, search, and similarity results.
 - **Cascade** (on delete):
   1. the **similarity playlist** generated from this track is soft-deleted too (vanishes from the user's playlists) — `data.playlists_deleted` reports how many;
-  2. the track's **media-server assets are purged** in the background — peaks, segments, embeddings (maest + discogs), preview, cover, and raw audio;
+  2. the track's **media-server assets are purged** in the background — peaks, segments, embeddings (both similarity indexes), preview, cover, and raw audio;
   3. *(next sprint)* the track's audio-analysis record will also be soft-deleted once analysis exists.
 - **Idempotent:** a second delete of the same track returns `404`.
 - **`404`** if the track does not exist, is not owned by the caller, or was already deleted.
@@ -977,7 +977,7 @@ Control whether individual partner tracks are searchable (active in the FAISS si
 
 #### Set Track Live (Activate + FAISS Index)
 - **`POST /api/v1/admin/tracks/{track_id}/set-live`**
-- **Description:** Marks the track active (`is_active = true`) and inserts its pre-generated embeddings into the partner's FAISS index for both `maest` and `discogs` engines. Embeddings must already exist on the media server (generated via the embeddings job first).
+- **Description:** Marks the track active (`is_active = true`) and inserts its pre-generated embeddings into both of the partner's FAISS similarity indexes (`index_a` and `index_b` in responses). Embeddings must already exist on the media server (generated via the embeddings job first).
 - **Returns:**
   ```json
   {
@@ -986,8 +986,8 @@ Control whether individual partner tracks are searchable (active in the FAISS si
     "is_active": true,
     "faiss_indexed": true,
     "index_results": {
-      "maest": { "success": true, "data": { "index_size": 71 } },
-      "discogs": { "success": true, "data": { "index_size": 71 } }
+      "index_a": { "success": true, "data": { "index_size": 71 } },
+      "index_b": { "success": true, "data": { "index_size": 71 } }
     }
   }
   ```

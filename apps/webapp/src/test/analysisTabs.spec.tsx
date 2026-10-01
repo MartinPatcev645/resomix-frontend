@@ -8,6 +8,7 @@ import { HarmonyTab } from "../components/Analysis/HarmonyTab.js";
 import { VibeTab } from "../components/Analysis/VibeTab.js";
 import { GenreTab } from "../components/Analysis/GenreTab.js";
 import { AnalysisStickyPlayer } from "../components/Analysis/AnalysisStickyPlayer.js";
+import { internalNamesIn } from "./internalNames.ts";
 
 /**
  * A mount test for the four redesigned tabs and the sticky player.
@@ -49,7 +50,7 @@ const full = mapCanonicalToAnalysisData({
   },
   semantics: {
     genre_top: [{ label: "Electronic---Tech House", score: 0.72 }, { label: "Electronic---Techno", score: 0.18 }],
-    style_maest_top: [{ label: "Electronic---Tech House", score: 0.61 }, { label: "Electronic---Minimal", score: 0.4 }],
+    style_top: [{ label: "Electronic---Tech House", score: 0.61 }, { label: "Electronic---Minimal", score: 0.4 }],
     mood_theme_top: [
       { label: "energetic", score: 0.78 }, { label: "deep", score: 0.64 }, { label: "dark", score: 0.31 },
       { label: "funny", score: 0.28 }, { label: "party", score: 0.24 }, { label: "retro", score: 0.19 },
@@ -198,7 +199,7 @@ describe("Genre tab", () => {
 
   it("names no model anywhere a reader can see", () => {
     const { container } = render(<GenreTab data={full} onOpenTimeline={noop} />);
-    expect(container.textContent).not.toMatch(/discogs|maest|jamendo|demucs|essentia/i);
+    expect(internalNamesIn(container.textContent ?? "")).toEqual([]);
   });
 });
 

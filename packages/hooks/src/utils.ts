@@ -28,7 +28,7 @@ export function formatPercentage(percentage: number, decimals: number = 2): stri
 }
 
 /**
- * Display form of a model genre/style label. The Discogs-400 model emits hierarchical labels
+ * Display form of a model genre/style label. The genre model emits hierarchical labels
  * joined by "---" (e.g. "Electronic---Ambient", "Electronic---House---Deep House"); we show only
  * the most-specific leaf ("Ambient", "Deep House"). No-op for plain labels ("Afro House").
  *

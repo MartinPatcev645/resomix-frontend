@@ -67,8 +67,8 @@ export function resolveAnalysisReadings(data: AnalysisData): {
   const style =
     data.semantics.genreTop[0]?.label != null
       ? shortGenre(data.semantics.genreTop[0].label)
-      : data.semantics.styleMaestTop[0]?.label != null
-        ? shortGenre(data.semantics.styleMaestTop[0].label)
+      : data.semantics.styleTop[0]?.label != null
+        ? shortGenre(data.semantics.styleTop[0].label)
         : "N/A";
 
   return {

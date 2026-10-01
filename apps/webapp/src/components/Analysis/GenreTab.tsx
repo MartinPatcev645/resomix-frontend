@@ -22,7 +22,7 @@ const TOP_N = 10;
  * is ours to know and change.
  */
 export const GenreTab: React.FC<{ data: AnalysisData; onOpenTimeline: () => void }> = ({ data, onOpenTimeline }) => {
-  const genre = (data.semantics.styleMaestTop ?? []).slice(0, TOP_N);
+  const genre = (data.semantics.styleTop ?? []).slice(0, TOP_N);
   const style = (data.semantics.genreTop ?? []).slice(0, TOP_N);
 
   return (

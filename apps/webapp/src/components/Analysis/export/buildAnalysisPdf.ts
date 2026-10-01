@@ -438,8 +438,8 @@ function drawFacts(L: Layout, data: AnalysisData, facts: TrackFacts, meta: PdfMe
 function drawStats(L: Layout, data: AnalysisData): void {
   const { doc } = L;
   const keyLabel = keyFromCamelot(data.tonality.camelot);
-  const topGenre: ScoredLabel[] = data.semantics.styleMaestTop?.length
-    ? data.semantics.styleMaestTop
+  const topGenre: ScoredLabel[] = data.semantics.styleTop?.length
+    ? data.semantics.styleTop
     : data.semantics.genreTop ?? [];
   const segments = data.energy.structureSegments;
   const sections = segments.filter((s) => !s.hidden).length;
@@ -1144,7 +1144,7 @@ const TOP_N = 10;
 
 function drawGenre(L: Layout, data: AnalysisData): void {
   const { doc } = L;
-  const genre = (data.semantics.styleMaestTop ?? []).slice(0, TOP_N);
+  const genre = (data.semantics.styleTop ?? []).slice(0, TOP_N);
   const style = (data.semantics.genreTop ?? []).slice(0, TOP_N);
   const shown = Math.max(genre.length, style.length, 1);
   L.ensure(26 + 22 + shown * 22 + 30);

@@ -127,12 +127,12 @@ describe("mergeGenreModels", () => {
       id,
     );
     expect(rows.map((r) => r.label)).toEqual(["house", "minimal", "techno"]);
-    expect(rows[0]).toMatchObject({ discogs: 0.8, maest: 0.6, max: 0.8 });
+    expect(rows[0]).toMatchObject({ genre: 0.8, style: 0.6, max: 0.8 });
   });
 
   it("keeps a label only one model found, with a gap for the other", () => {
     const rows = mergeGenreModels([{ label: "dub", score: 0.4 }], [], id);
-    expect(rows[0]).toMatchObject({ discogs: 0.4, maest: null });
+    expect(rows[0]).toMatchObject({ genre: 0.4, style: null });
   });
 
   it("keeps the stronger score when shortening collapses two labels into one", () => {
@@ -145,7 +145,7 @@ describe("mergeGenreModels", () => {
       (l) => l.split("---").pop() as string,
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0].discogs).toBe(0.7);
+    expect(rows[0].genre).toBe(0.7);
   });
 
   it("says something honest when the models share nothing", () => {

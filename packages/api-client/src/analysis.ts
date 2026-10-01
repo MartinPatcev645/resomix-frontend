@@ -6,17 +6,16 @@
  * browser→analysis-service call in prod). See `docs/UPLOADS_AND_SEARCH_LIMITS_PLAN.md` §4.
  *
  *   - `getAnalysisSummary(uuid)` → the single-value summary row (owner-or-public).
- *   - `mintAnalysisToken(uuid)`  → a short-lived, IP-locked retrieval token + `retrieval_path`.
+ *   - `getAnalysisResult(id)`    → the full or partial result, as Alwyzon serves it.
  *
- * The caller composes the full cached-JSON fetch itself:
- *   `${analysisMediaBase}${retrieval_path}?token=${token}` → the Hetzner served cache
- * (the webapp owns the media base URL, so this package stays env-agnostic).
+ * The result always comes through Alwyzon, which removes internal fields on the way out. The old
+ * token fetch straight from the analysis service's cache is retired on the server (410).
  *
  * Uses `authClient` so a logged-in user's JWT rides along (the server gates owner-or-public).
  */
 
 import authClient from "./authClient";
-import { axiosWrapper, handleApiError, validateAudioFile, quotaSilent } from "./utils";
+import { axiosWrapper, handleApiError, validateAudioFile } from "./utils";
 import { API_CONFIG } from "./config";
 
 /** Single-value analysis summary (mirror of the backend `to_dict`). */
@@ -52,21 +51,6 @@ export interface AnalysisSummaryEnvelope {
   data: AnalysisSummary;
 }
 
-/** Retrieval token for the full cached JSON on the Hetzner served cache. */
-export interface AnalysisRetrievalToken {
-  token: string;
-  expires_in: number;
-  analysis_uuid: string;
-  scope: "analysis";
-  /** Compose `${analysisMediaBase}${retrieval_path}?token=${token}` to fetch the full JSON. */
-  retrieval_path: string;
-}
-
-export interface AnalysisTokenEnvelope {
-  success: boolean;
-  data: AnalysisRetrievalToken;
-}
-
 const analysisPath = (analysisUuid: string): string =>
   `${API_CONFIG.ENDPOINTS.ANALYSIS}/${encodeURIComponent(analysisUuid)}`;
 
@@ -75,25 +59,6 @@ export const getAnalysisSummary = async (analysisUuid: string) => {
   try {
     return await axiosWrapper<AnalysisSummaryEnvelope>(
       authClient.get(analysisPath(analysisUuid)),
-    );
-  } catch (error) {
-    return handleApiError(error as Error);
-  }
-};
-
-/**
- * Mint a short-lived retrieval token for the full cached JSON (owner-or-public).
- *
- * This is a **speculative** call: it is the fast path to the served cache, and the caller falls
- * back to the projected proxy result whenever it fails. On a plan without `can_view_full_analysis`
- * it is refused with a 402 by design — that refusal is a routine branch, not something the user
- * did, so it is marked silent and does not open the upgrade modal. Opening a summary must not pop
- * an upgrade prompt nobody asked for.
- */
-export const mintAnalysisToken = async (analysisUuid: string) => {
-  try {
-    return await axiosWrapper<AnalysisTokenEnvelope>(
-      authClient.post(`${analysisPath(analysisUuid)}/token`, undefined, quotaSilent()),
     );
   } catch (error) {
     return handleApiError(error as Error);

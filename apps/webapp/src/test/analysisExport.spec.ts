@@ -88,7 +88,7 @@ const full = mapCanonicalToAnalysisData({
       { label: "Electronic---House", score: 0.12 }, { label: "Electronic---Trance", score: 0.09 },
       { label: "Electronic---Progressive House", score: 0.05 },
     ],
-    style_maest_top: [
+    style_top: [
       { label: "Electronic---Techno", score: 0.81 }, { label: "Electronic---Hard Techno", score: 0.4 },
       { label: "Electronic---Acid", score: 0.26 }, { label: "Electronic---Minimal", score: 0.2 },
       { label: "Electronic---Industrial", score: 0.16 }, { label: "Electronic---Trance", score: 0.1 },

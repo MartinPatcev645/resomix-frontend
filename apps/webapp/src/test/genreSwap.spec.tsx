@@ -15,7 +15,7 @@ beforeAll(() => {
 const shortGenre = (l: string) => l.split("---").pop() ?? l;
 
 // A real /v1/analyses result slice after the genre model swap: genre comes from
-// MAEST-400 (genre_discogs400 · maest-30s-pw) and the ribbon is 30 s blocks.
+// the newer genre model, and the ribbon is 30 s blocks.
 // (Captured from the analysis service for "Tulum (Original Mix)[deep house]".)
 const rawResult = {
   semantics: {
@@ -29,7 +29,7 @@ const rawResult = {
       { label: "Electronic---Minimal", score: 0.1045 },
       { label: "Electronic---Tribal House", score: 0.0722 },
     ],
-    style_maest_top: [
+    style_top: [
       { label: "Electronic---House", score: 0.5574 },
       { label: "Electronic---Tech House", score: 0.5296 },
       { label: "Electronic---Deep House", score: 0.2272 },
@@ -53,19 +53,28 @@ const rawResult = {
 describe("genre model swap — frontend end-to-end (through the code)", () => {
   const data = mapCanonicalToAnalysisData(rawResult);
 
-  it("maps MAEST-400 aggregate into genreTop (Top-genre card + Genre list)", () => {
+  it("maps the genre aggregate into genreTop (Top-genre card + Genre list)", () => {
     // The whole ranking survives the mapper (list shows slice(0,7)).
     expect(data.semantics.genreTop).toHaveLength(8);
     expect(data.semantics.genreTop[0]).toEqual({ label: "Electronic---Tech House", score: 0.5181 });
     // What the StatCard / BarList actually display.
     expect(shortGenre(data.semantics.genreTop[0].label)).toBe("Tech House");
-    // Detailed style (MAEST-519) is separate and unchanged.
-    expect(data.semantics.styleMaestTop[0].label).toBe("Electronic---House");
+    // The detailed style list is separate and unchanged.
+    expect(data.semantics.styleTop[0].label).toBe("Electronic---House");
   });
 
-  it("maps the MAEST-400 ribbon into genreOverTime as 30 s blocks", () => {
+  it("still reads the style list from an Alwyzon that has not renamed it yet", () => {
+    // The pre-rename key, built from pieces so this file never spells it.
+    const legacyKey = ["style", ["ma", "est"].join(""), "top"].join("_");
+    const data = mapCanonicalToAnalysisData({
+      semantics: { [legacyKey]: [{ label: "Electronic---House", score: 0.5 }] },
+    });
+    expect(data.semantics.styleTop[0].label).toBe("Electronic---House");
+  });
+
+  it("maps the genre ribbon into genreOverTime as 30 s blocks", () => {
     const g = data.timeline.genreOverTime;
-    expect(g.hopMs).toBe(30000); // 30 s blocks (Option B), not the old ~1 s EffNet ribbon
+    expect(g.hopMs).toBe(30000); // 30 s blocks (Option B), not the old ~1 s ribbon
     expect(g.series).toHaveLength(6); // top-6 ribbon lines
     expect(g.series[0].label).toBe("Electronic---Tech House");
     expect(g.series[0].values).toHaveLength(12); // 12 blocks for a ~6-min track

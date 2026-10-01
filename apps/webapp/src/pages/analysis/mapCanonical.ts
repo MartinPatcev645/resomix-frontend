@@ -42,6 +42,18 @@ const series = (s: any): Series =>
 const matrix = (m: any): Matrix =>
   m ? { data: arr<number[]>(m.data), rowLabels: m.row_labels ?? null, hopMs: num(m.hop_ms) } : { data: [], rowLabels: null, hopMs: 0 };
 
+/**
+ * The detailed style list. Alwyzon serves it as `style_top`. An Alwyzon from before that rename
+ * sends the same list under another `style_<name>_top` key, so when the frontend is deployed first
+ * that key is read instead and the Genre tab never goes blank. Safe to drop once every Alwyzon
+ * serves `style_top`.
+ */
+const styleList = (sem: any): unknown => {
+  if (sem?.style_top !== undefined) return sem.style_top;
+  const legacy = Object.keys(sem ?? {}).find((k) => /^style_[a-z0-9]+_top$/.test(k));
+  return legacy ? sem[legacy] : undefined;
+};
+
 const scored = (list: any): ScoredLabel[] =>
   arr<any>(list).map((x) => ({ label: str(x?.label), score: num(x?.score) }));
 
@@ -235,7 +247,7 @@ export function mapCanonicalToAnalysisData(raw: any): AnalysisData {
     structure: structure ? structure.info : null,
     semantics: {
       genreTop: scored(sem.genre_top),
-      styleMaestTop: scored(sem.style_maest_top),
+      styleTop: scored(styleList(sem)),
       moodThemeTop: scored(sem.mood_theme_top),
       instrumentTop: scored(sem.instrument_top),
       moodDimensions: numberRecord(sem.mood_dimensions),

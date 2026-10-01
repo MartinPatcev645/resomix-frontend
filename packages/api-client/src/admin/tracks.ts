@@ -96,8 +96,8 @@ export interface SetTrackLiveResponse {
   is_active: boolean;
   faiss_indexed: boolean;
   index_results: {
-    maest: FaissEngineResult;
-    discogs: FaissEngineResult;
+    index_a: FaissEngineResult;
+    index_b: FaissEngineResult;
   };
 }
 
@@ -149,7 +149,7 @@ export const getAdminTrackDetail = async (
 };
 
 /**
- * Activate a track and insert it into both FAISS engines (maest + discogs).
+ * Activate a track and insert it into both FAISS similarity indexes.
  * Embeddings must already exist on the media server before calling this.
  */
 export const setTrackLive = async (

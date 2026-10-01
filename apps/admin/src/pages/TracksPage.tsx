@@ -96,7 +96,7 @@ function TracksPage() {
           <Alert 
             type="info" 
             showIcon 
-            message="This will insert pre-generated embeddings into both MAEST & Discogs similarity search indices." 
+            message="This will insert pre-generated embeddings into both similarity search indices." 
             className="rounded-xl mt-2"
           />
         </div>

@@ -1,5 +1,8 @@
 # Resomix Monorepo Guide
 
+> **New here?** Start with [ONBOARDING.md](ONBOARDING.md), then [instructions.md](instructions.md). This README is older
+> and partly out of date (it predates the admin app and the stores package).
+
 > One repo · Two apps · Three shared packages · Turbo‑powered builds
 
 ---

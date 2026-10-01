@@ -253,7 +253,7 @@ Repository facts that differ from expectations or from clean convention (record 
 2. `@resomix/stores` missing from landing `package.json`/aliases/tsconfig — works via hoisting.
 3. Landing Home sections hardcode copy (no i18n); About sections are translated.
 4. `SubscribePage` absent from `pages/index.ts` barrel; `/pricing` and `/subscribe` render the same content.
-5. `env.example` drift: stale PostHog/`VITE_BASE_ADMIN_URL` entries; missing `VITE_GOOGLE_CLIENT_ID`, `VITE_ANALYSIS_*`.
+5. `env.example` drift: stale PostHog/`VITE_BASE_ADMIN_URL` entries; missing `VITE_GOOGLE_CLIENT_ID`.
 6. `StaticNoise` renders on all breakpoints (desktop-only guard commented out) in both layouts; known GPU/multi-tab risk (`STABILITY_PLAN.md`).
 7. `MenuPage` bypasses `handleNavigate` with raw `window.location.href` for internal links.
 8. `pixels.css` differs per app (landing ~273 tokens, webapp ~272, incl. a duplicate `--px-850`); no shared token file.

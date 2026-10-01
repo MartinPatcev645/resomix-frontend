@@ -196,8 +196,8 @@ export default function AnalysisPage() {
    * style second, so the card shows the same list the tab calls Genre, falling back to the other
    * when only that one has landed.
    */
-  const topGenre = data?.semantics.styleMaestTop?.length
-    ? data.semantics.styleMaestTop
+  const topGenre = data?.semantics.styleTop?.length
+    ? data.semantics.styleTop
     : (data?.semantics.genreTop ?? []);
 
   const barsAndSections = useMemo(() => {
@@ -456,7 +456,7 @@ export default function AnalysisPage() {
                 the rest of the page moved. Nothing here scrolls horizontally now. */}
             {/* Tempo and Key spin only while part 2 is still running. They used to spin on a
                 null value alone, so a track whose key/tempo the GPU could not produce (a container
-                its Essentia cannot read, for one) sat here "analyzing…" forever on a finished
+                the analyser cannot read, for one) sat here "analyzing…" forever on a finished
                 analysis. */}
             <div className="grid grid-cols-2 gap-[var(--px-12)] lg:grid-cols-5">
               <div>
@@ -567,7 +567,7 @@ export default function AnalysisPage() {
                 ))}
 
               {tab === "genre" &&
-                (data.semantics.genreTop.length > 0 || data.semantics.styleMaestTop.length > 0 ? (
+                (data.semantics.genreTop.length > 0 || data.semantics.styleTop.length > 0 ? (
                   <GenreTab data={data} onOpenTimeline={() => setTab("timeline")} />
                 ) : (
                   <TabPending title="Genre" detail="genre · style" pending={!part2Done} />

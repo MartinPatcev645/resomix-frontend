@@ -58,7 +58,7 @@ export type StructureInfo = {
  *
  *   `profile`     which vocabulary the labels are drawn from, so copy can avoid
  *                 saying "drop" about a track that has no beat;
- *   `bpmDisplay`  whether a tempo may be shown at all. Essentia returns a BPM for
+ *   `bpmDisplay`  whether a tempo may be shown at all. The tempo stage returns a BPM for
  *                 everything, including ambient, which is how a beatless track
  *                 ended up captioned "steady 154.8 BPM".
  */
@@ -86,7 +86,7 @@ export interface AnalysisData {
   // defaulting to 0, which put "0.0 LUFS · LRA 0.0 LU · true peak 0.0 dBTP" on a real master when
   // the measurement was unavailable. A missing reading has to look missing.
   technical: { integratedLufs: number | null; loudnessRangeLu: number | null; samplePeakDbfs: number | null; truePeakDbtp: number | null; averageLoudnessDb: number; crestFactor: number; loudnessCurve: Series; rmsEnergyCurve: Series };
-  // bpm/key/scale/camelot are null while the GPU (Essentia) value is still loading
+  // bpm/key/scale/camelot are null while the GPU value is still loading
   // — the rhythm/tonality stages defer them; the UI shows a loader until they land.
   rhythm: { bpm: number | null; confidence: number; beatTimesSeconds: number[]; beatCount: number; barCount: number; downbeatsSeconds: number[]; phraseBoundariesSeconds: number[] };
   tonality: { key: string | null; scale: string | null; strength: number; camelot: string | null; chromagram: Matrix; altCamelot: string | null; ambiguous: boolean | null; keyMargin: number | null; tonicInTopChroma: boolean | null; tuningHz: number | null; tuningCents: number | null; meanChroma: number[] };
@@ -100,7 +100,7 @@ export interface AnalysisData {
    * this block: the older v1 / v2 readings were withdrawn and must not reappear on old results.
    */
   structure: StructureInfo | null;
-  semantics: { genreTop: ScoredLabel[]; styleMaestTop: ScoredLabel[]; moodThemeTop: ScoredLabel[]; instrumentTop: ScoredLabel[]; moodDimensions: Record<string, number>; danceability: number; approachability: number; voiceInstrumental: string; voiceScore: number; timbreBright: number; timbreDark: number; moodAcoustic: number; moodElectronic: number; valence: number; arousal: number };
+  semantics: { genreTop: ScoredLabel[]; styleTop: ScoredLabel[]; moodThemeTop: ScoredLabel[]; instrumentTop: ScoredLabel[]; moodDimensions: Record<string, number>; danceability: number; approachability: number; voiceInstrumental: string; voiceScore: number; timbreBright: number; timbreDark: number; moodAcoustic: number; moodElectronic: number; valence: number; arousal: number };
   timeline: { genreOverTime: TimelineTrack; moodOverTime: TimelineTrack; instrumentOverTime: TimelineTrack; voiceRegions: VoiceRegion[] };
   composition: { stems: Record<string, StemMetrics>; vocalRegions: VoiceRegion[] };
   /** Optional narrative readings from the canonical result (may be absent on partial jobs). */

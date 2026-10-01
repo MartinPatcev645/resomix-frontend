@@ -224,7 +224,7 @@ test('analysis summary always shows reading tabs', async ({ page }) => {
           tonality: { camelot: '8A', key: 'A', scale: 'minor', strength: 0.5, chromagram: { data: [] } },
           technical: { integrated_loudness_lufs: -10, loudness_range_lu: 5 },
           energy: { energy_curve: { values: [0.1, 0.5, 0.3], hop_ms: 80000 }, structure_segments: [] },
-          semantics: { genre_top: [], style_maest_top: [], mood_theme_top: [], instrument_top: [], mood_dimensions: {} },
+          semantics: { genre_top: [], style_top: [], mood_theme_top: [], instrument_top: [], mood_dimensions: {} },
           spectral: { centroid_curve: { values: [] }, rolloff_curve: { values: [] }, flatness_curve: { values: [] }, bandwidth_curve: { values: [] }, zcr_curve: { values: [] }, mel_spectrogram: { data: [] } },
           timeline: { genre_over_time: { series: [], hop_ms: 1 }, mood_over_time: { series: [], hop_ms: 1 }, instrument_over_time: { series: [], hop_ms: 1 }, voice_regions: [] },
           composition: { stems: {}, vocal_regions: [] },
