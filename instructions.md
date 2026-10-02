@@ -334,6 +334,24 @@ webapp — changing "the profile page" usually means touching both.
 
 ---
 
+## 10a. `lastmod`, the one field you must maintain by hand
+
+Every indexable route in `apps/landing/src/routes/seoConfig.ts` carries a `lastmod` date, and the
+sitemap is built from it. **Set it to today whenever you change that page's content, its title or
+its description, and leave it alone otherwise.** It is not a deploy stamp and it is not a
+"touched the file" stamp; a refactor that renders the same page needs no bump.
+
+The build refuses to produce a sitemap if an indexable route has no `lastmod`, if the format is not
+`YYYY-MM-DD`, or if the date is in the future. A new route therefore cannot ship without one.
+
+Why it is worth the discipline. The sitemap used to stamp every URL with the build date, so all
+twenty pages claimed to change on every deploy. Google reads `lastmod` to decide what to re-crawl
+and discounts it entirely once it proves unreliable, which costs us the signal exactly when we need
+it: Google had been discovering our pages largely through links on `staging-landing`, and staging is
+now `noindex, nofollow`, so the sitemap carries discovery on its own.
+
+---
+
 ## 11. i18n (landing only)
 
 No literal copy in landing sections. Use `useTranslation('common')` + `t('about.about_one.headline')`
@@ -353,6 +371,8 @@ and add keys to `src/locales`. Strings may contain markup and are rendered with
 - [ ] Both themes checked; mobile, 1280px **and** wide (≥1920px) checked
 - [ ] If desktop/mobile files are split, **both** updated
 - [ ] Route registered, guard correct, layout `mode` updated
+- [ ] **Changed a landing page's content or its title/description? Bump that route's `lastmod` in
+      `seoConfig.ts` to today.** See §10a
 - [ ] New env var? added to `env.example` **and** the §1b table — and it holds no secret
 - [ ] `pnpm build` (or `pnpm --filter <app> build`) passes
 

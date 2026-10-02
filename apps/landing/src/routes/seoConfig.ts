@@ -35,6 +35,21 @@ export interface RouteEntity {
 export interface RouteSeo {
   title: string;
   description: string;
+  /**
+   * The day this page's content last genuinely changed, as `YYYY-MM-DD`.
+   *
+   * CHANGE THIS WHEN YOU CHANGE THE PAGE, and at no other time. It is not a deploy stamp.
+   *
+   * The sitemap used to stamp every URL with the build date, so all twenty pages claimed to have
+   * changed on every deploy. Google reads `lastmod` to decide what is worth re-crawling and
+   * discounts it once it proves unreliable, which is the opposite of what we need: discovery used
+   * to come largely from links on the staging site, and staging is now `noindex, nofollow`, so the
+   * sitemap has to carry it alone.
+   *
+   * Seeded from the last commit that touched each page component. Required on every indexable
+   * route; the sitemap build fails on a missing or future date.
+   */
+  lastmod?: string;
   /** Sitemap hints. Omit `changefreq`/`priority` to use the defaults below. */
   changefreq?: 'daily' | 'weekly' | 'monthly' | 'yearly';
   priority?: number;
@@ -65,6 +80,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     description:
       'Resomix finds electronic music by how it sounds. Drop one track and its PYXIS-1 engine returns a ranked shortlist, reads one recording or searches a catalogue.',
     changefreq: 'weekly',
+    lastmod: '2026-09-18',
     priority: 1.0,
   },
   '/about': {
@@ -72,6 +88,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     description:
       'Built in Thessaloniki by DJs and signal-processing engineers, Resomix powers Sonic Discovery, Track Intelligence and Catalogue Intelligence from the audio.',
     changefreq: 'monthly',
+    lastmod: '2026-09-18',
     priority: 0.6,
   },
 
@@ -80,24 +97,28 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     title: 'Music Similarity & Audio Analysis Platform | Resomix',
     description:
       'Resomix uses PYXIS-1 to find sonically related tracks, analyse one recording in detail and make authorised catalogues searchable: one engine, three workflows.',
+    lastmod: '2026-09-17',
     priority: 0.9,
   },
   '/product/sonic-discovery': {
     title: 'Find Similar Tracks by Sound: Sonic Discovery | Resomix',
     description:
       'Resomix Sonic Discovery is a music similarity search tool. Start with one track or upload a reference and PYXIS-1 returns a ranked playlist of similar tracks.',
+    lastmod: '2026-09-17',
     priority: 0.9,
   },
   '/product/track-intelligence': {
     title: 'Track Analysis: Structure, Key, BPM & Energy | Resomix',
     description:
       'Resomix Track Intelligence is track analysis software. It reads BPM, key and Camelot, structure, energy, loudness, timbre, genre and mood from one recording.',
+    lastmod: '2026-09-17',
     priority: 0.9,
   },
   '/product/catalog-intelligence': {
     title: 'Make Your Music Catalog Searchable by Sound | Resomix',
     description:
       'Search your music catalogue by sound. Resomix processes authorised recordings into a private, partner-scoped index, and one reference returns ranked matches.',
+    lastmod: '2026-09-17',
     priority: 0.9,
   },
 
@@ -106,6 +127,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     title: 'Music Similarity & Audio Analysis API | Resomix Developers',
     description:
       'The Resomix API is a music similarity and audio analysis API with search, similarity by track or upload, and versioned track analysis of your own catalogue.',
+    lastmod: '2026-09-18',
     priority: 0.8,
     entity: { type: 'WebAPI', name: 'Resomix API', documentation: 'https://api-docs.resomix.com/' },
   },
@@ -113,6 +135,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     title: 'Partner With Resomix: Catalogue Discovery by Sound',
     description:
       'Partner with Resomix. Labels, distributors, publishers and platforms make authorised catalogues searchable by sound through a private pilot or the live API.',
+    lastmod: '2026-09-18',
     priority: 0.8,
     entity: RESOMIX_SERVICE('Resomix for Partners', 'Music catalogue search by sound'),
   },
@@ -120,6 +143,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     title: 'Request a Guided Catalogue Pilot: Resomix for Partners',
     description:
       'Test Resomix on your own catalogue. A managed private pilot for labels, distributors and catalogue teams. Agree scope and scorecard, then review ranked results.',
+    lastmod: '2026-09-18',
     priority: 0.8,
     entity: RESOMIX_SERVICE('Resomix Private Catalogue Pilot', 'Managed music catalogue evaluation'),
   },
@@ -128,6 +152,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     description:
       'How Resomix handles audio. Uploads are deleted within 24 hours, partner catalogues stay in private indexes, and your audio is never used for training.',
     changefreq: 'monthly',
+    lastmod: '2026-09-18',
     priority: 0.7,
   },
 
@@ -136,6 +161,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     title: 'Catalogue Search by Sound for Record Labels | Resomix',
     description:
       'Resomix lets record labels search their catalogue by sound. Authorised recordings become a private index where older, relevant tracks surface beside new ones.',
+    lastmod: '2026-09-17',
     priority: 0.8,
     entity: RESOMIX_SERVICE('Resomix for Record Labels', 'Catalogue search by sound'),
   },
@@ -143,6 +169,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     title: 'Sonic Catalogue Search for Music Publishers | Resomix',
     description:
       'Turn your catalogue into a living asset. Resomix analyses authorised recordings so publishers can rediscover works and explore representation by sound.',
+    lastmod: '2026-09-17',
     priority: 0.8,
     entity: RESOMIX_SERVICE('Resomix for Music Publishers', 'Catalogue search by sound'),
   },
@@ -150,6 +177,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     title: 'Reference-Based Music Search for Sync Agencies | Resomix',
     description:
       'Use an audio reference to surface sonically relevant candidates for human review. Resomix supports the search, never automated clearance or rights calls.',
+    lastmod: '2026-09-17',
     priority: 0.8,
     entity: RESOMIX_SERVICE('Resomix for Sync Agencies', 'Reference-based music search'),
   },
@@ -157,6 +185,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     title: 'Sound-First Search for Music & Sample Libraries | Resomix',
     description:
       'Resomix gives music libraries and sample providers search by sound. Start from one sound and PYXIS-1 surfaces related loops, samples and tracks in the library.',
+    lastmod: '2026-09-17',
     priority: 0.8,
     entity: RESOMIX_SERVICE('Resomix for Music Libraries and Sample Providers', 'Music library search by sound'),
   },
@@ -164,6 +193,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     title: 'Find Your Next Track by Sound: Resomix for DJs & Sets',
     description:
       'Resomix is a music discovery tool for DJs. Start from one record and audition a ranked shortlist that mixes well, matched on groove, energy and character.',
+    lastmod: '2026-09-17',
     priority: 0.8,
     entity: RESOMIX_SERVICE('Resomix for DJs', 'Music discovery by sound'),
   },
@@ -171,6 +201,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     title: 'Playlist Curation by Sound: Resomix for Music Curators',
     description:
       'Resomix is a playlist curation tool for music curators. Start from an audio reference and review ranked, sonically related candidates beyond charts and tags.',
+    lastmod: '2026-09-17',
     priority: 0.8,
     entity: RESOMIX_SERVICE('Resomix for Music Curators', 'Playlist curation by sound'),
   },
@@ -178,6 +209,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     title: 'Reference & Track Analysis by Sound: Resomix for Producers',
     description:
       'Resomix helps producers decode a reference track. Inspect arrangement, energy and timbre, then explore sonically related music. The creative decision is yours.',
+    lastmod: '2026-09-17',
     priority: 0.8,
     entity: RESOMIX_SERVICE('Resomix for Producers', 'Reference track analysis and discovery'),
   },
@@ -188,6 +220,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     description:
       'Compare the free and Pro Resomix plans for sonic discovery and track analysis. Start free in the production beta and upgrade when you are ready.',
     changefreq: 'monthly',
+    lastmod: '2026-09-18',
     priority: 0.7,
   },
   '/contact': {
@@ -195,6 +228,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     description:
       'Reach the Resomix team in Thessaloniki for product support, partner and catalogue enquiries, or press. Write to support@resomix.com and we will get back to you.',
     changefreq: 'yearly',
+    lastmod: '2026-09-18',
     priority: 0.5,
   },
   '/waitlist': {
@@ -202,6 +236,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     description:
       'Request early access to Resomix for reference-based sonic discovery, track analysis and catalogue search.',
     changefreq: 'monthly',
+    lastmod: '2026-09-18',
     priority: 0.5,
   },
 

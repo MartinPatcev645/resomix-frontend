@@ -142,17 +142,32 @@ export default defineConfig(({ mode }) => {
         name: 'generate-sitemap',
         apply: 'build' as const,
         closeBundle() {
+          /* `lastmod` is read from ROUTE_SEO, never stamped from the clock.
+             It used to be `new Date()` at build time, which told Google all twenty pages changed on
+             every deploy. Google uses lastmod to schedule re-crawls and stops trusting it once it
+             moves while the pages do not, so the stamp was spending the signal it was meant to send.
+             Guarded here rather than in a test because a wrong date ships silently otherwise. */
           const today = new Date().toISOString().slice(0, 10)
           const urls = Object.entries(ROUTE_SEO)
             .filter(([, seo]) => !seo.noindex)
             .map(([routePath, seo]) => {
+              const { lastmod } = seo
+              if (!lastmod || !/^\d{4}-\d{2}-\d{2}$/.test(lastmod)) {
+                throw new Error(
+                  `sitemap: ${routePath} needs a lastmod of the form YYYY-MM-DD in seoConfig.ts ` +
+                    `(got ${JSON.stringify(lastmod)}). Set it to the day the page last changed.`,
+                )
+              }
+              if (lastmod > today) {
+                throw new Error(`sitemap: ${routePath} has a lastmod in the future (${lastmod}).`)
+              }
               const loc = routePath === '/' ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${routePath}`
               const changefreq = seo.changefreq ?? SITEMAP_DEFAULTS.changefreq
               const priority = (seo.priority ?? SITEMAP_DEFAULTS.priority).toFixed(1)
               return [
                 '  <url>',
                 `    <loc>${loc}</loc>`,
-                `    <lastmod>${today}</lastmod>`,
+                `    <lastmod>${lastmod}</lastmod>`,
                 `    <changefreq>${changefreq}</changefreq>`,
                 `    <priority>${priority}</priority>`,
                 '  </url>',
