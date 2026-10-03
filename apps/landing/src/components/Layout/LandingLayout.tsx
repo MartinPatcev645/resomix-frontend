@@ -6,7 +6,7 @@ import { LogoRFooter } from "../LogoRFooter.tsx";
 import { OptionalAuthRoute } from "../OptionalAuthRoute.tsx";
 import { SiteHeader } from "../Navigation/SiteHeader.tsx";
 import { MobileDrawer } from "../Navigation/MobileDrawer.tsx";
-import { useResponsive } from "@resomix/hooks";
+import { useHydrated, useResponsive } from "@resomix/hooks";
 import { BASE_BETA_URL, BASE_LANDING_URL } from "@resomix/config";
 
 /**
@@ -18,6 +18,16 @@ export function LandingLayout() {
        The build assumes desktop and the first client render has to agree with it, or React discards
        the prerendered markup. The real viewport is measured in a layout effect, before paint. */
     const { isDesktop } = useResponsive({ ssrSafe: true });
+    const hydrated = useHydrated();
+    /* The navbar and footer are prerendered in BOTH versions, and CSS shows the one that fits the
+       screen (`lg:hidden` / `max-lg:hidden`). The build cannot know the device, and the JavaScript
+       that would tell it can take seconds on a slow phone network. Until then a phone showed the
+       desktop navbar, which did nothing when tapped, and the desktop footer, whose 1280px headline
+       overflowed the screen. With both in the HTML, a phone shows its own navbar and footer from the
+       first paint. Once hydrated, only the matching pair stays mounted. Page bodies still switch
+       after hydration; they did not misbehave. */
+    const showDesktopChrome = !hydrated || isDesktop;
+    const showMobileChrome = !hydrated || !isDesktop;
     const location = useLocation();
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -147,7 +157,17 @@ export function LandingLayout() {
                 aria-hidden={!isNavPending}
                 aria-label="Loading page"
             />
-            <div id="landing-page-root" className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen relative`}>
+            <div
+                id="landing-page-root"
+                /* `overflow-x-clip` keeps the page exactly as wide as the screen, whatever is inside
+                   it. The desktop footer's 1280px headline once made the whole page wider than a
+                   phone, so it could be zoomed out to a black strip on the right. The navbar and
+                   footer now pick their version by CSS (see showDesktopChrome above); this is the
+                   net under anything else that overflows. `clip`, not `hidden`, because `hidden`
+                   turns this into a scroll container and breaks `position: sticky` inside it. Same
+                   rule as the web app's WebLayout. */
+                className={`${isDesktop ? 'bg-[var(--color-secondary)]' : 'bg-[var(--color-primary-background)]'} min-h-screen relative overflow-x-clip`}
+            >
                 {/* Shared void-field backdrop for pages that don't render their own (the marketing
                     pages in the list below already ship their page-scoped void-field). Keeps every
                     page on the same home-style background. */}
@@ -156,10 +176,10 @@ export function LandingLayout() {
                 )}
                 <div className="mx-auto text-[var(--color-text-secondary)] relative z-30 max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]">
                     <SideLines
-                        navbar={isDesktop ? undefined : mobileNavbar}
+                        navbar={showMobileChrome ? mobileNavbar : undefined}
                         mode={mode}
                     >
-                        {isDesktop && desktopNavbar}
+                        {showDesktopChrome && <div className="max-lg:hidden">{desktopNavbar}</div>}
 
                         <main
                             key={location.pathname}
@@ -168,10 +188,13 @@ export function LandingLayout() {
                             <Outlet />
                         </main>
 
-                        {isDesktop ? (
-                            <GlobalFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
-                        ) : (
-                            <div className="mt-[var(--px-60)]">
+                        {showDesktopChrome && (
+                            <div className="max-lg:hidden">
+                                <GlobalFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
+                            </div>
+                        )}
+                        {showMobileChrome && (
+                            <div className="mt-[var(--px-60)] lg:hidden">
                                 <GlobalMobileFooter logo={footerLogo} baseUrl={BASE_LANDING_URL} onNavigate={handleNavigate} />
                             </div>
                         )}
