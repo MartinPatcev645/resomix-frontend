@@ -1,5 +1,6 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { useMpDefs } from './mpDefs.ts';
+import { BLOG } from '@/routes/blogLinks.ts';
 
 /* S3 · The catalogue visibility gap. */
 export function MpVisibilityGap() {
@@ -14,7 +15,7 @@ export function MpVisibilityGap() {
         <div className="mp-copycol">
           <p className="mp-body-p">{t('musicPublishers.gap.p1')}</p>
           <p className="mp-body-p">{t('musicPublishers.gap.p2')}</p>
-          <p className="mp-body-p">{t('musicPublishers.gap.p3')}</p>
+          <p className="mp-body-p"><Trans i18nKey="musicPublishers.gap.p3" components={{ a: <a href={BLOG.beyondTags} /> }} /></p>
         </div>
       </div>
 

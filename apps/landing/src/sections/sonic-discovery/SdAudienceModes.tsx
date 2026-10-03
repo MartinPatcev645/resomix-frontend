@@ -1,6 +1,10 @@
 import { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
+import { BLOG } from '@/routes/blogLinks.ts';
 import { pulsesOf, ridgeD } from './sdEngine.ts';
+
+/** Blog destination per audience copy block, from the interlinking map. Only MB-08 is mapped. */
+const AUDIENCE_BLOG: Record<string, string | undefined> = { djCopy: BLOG.techno };
 
 export type AudienceMode = 'dj' | 'prod' | 'sup';
 
@@ -241,7 +245,14 @@ export function SdAudienceModes({ mode, onModeChange, onScrollToConsole }: SdAud
       <div className="sd-aud">
         <div>
           <h3 className="sd-h3b uppercase">{t(`sonicDiscovery.aud.${content.headKey}`)}</h3>
-          <p className="sd-body">{t(`sonicDiscovery.aud.${content.copyKey}`)}</p>
+          <p className="sd-body">
+            {/* MB-08. Only the DJ tab carries a blog link, and only the active tab is prerendered,
+                so the map's "server-rendered <a>" rule holds for it and no other tab needs one. */}
+            <Trans
+              i18nKey={`sonicDiscovery.aud.${content.copyKey}`}
+              components={{ a: <a href={AUDIENCE_BLOG[content.copyKey] ?? ''} /> }}
+            />
+          </p>
           <ul className="sd-audattrs">
             {content.attrKeys.map((key) => (
               <li key={key}>{t(`sonicDiscovery.aud.${key}`)}</li>

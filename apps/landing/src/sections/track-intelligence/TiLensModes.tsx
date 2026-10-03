@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { BLOG } from '@/routes/blogLinks.ts';
 import {
   MODES,
   LANE_ORDER,
@@ -16,6 +17,9 @@ import {
 import { SvgText } from './tiSvgHelpers.tsx';
 
 const API_DOCS_URL = 'https://api-docs.resomix.com/';
+
+/** Blog destination per lens mode, from the interlinking map. Only MB-08's sibling MB-11 is mapped. */
+const LENS_MODE_BLOG: Partial<Record<ModeKey, string>> = { dj: BLOG.techno };
 
 const MODE_KEYS: ModeKey[] = ['dj', 'prod', 'label', 'sup', 'api'];
 
@@ -160,7 +164,13 @@ export function TiLensModes({ onScrollToProfile }: TiLensModesProps) {
       <div className="ti-lensmode">
         <div>
           <h3 className="ti-h3b uppercase">{t(`trackIntelligence.decision.modes.${mode}.head`)}</h3>
-          <p className="ti-body">{t(`trackIntelligence.decision.modes.${mode}.copy`)}</p>
+          <p className="ti-body">
+            {/* MB-11. Only the DJ mode is mapped to a blog post. */}
+            <Trans
+              i18nKey={`trackIntelligence.decision.modes.${mode}.copy`}
+              components={{ a: <a href={LENS_MODE_BLOG[mode] ?? ''} /> }}
+            />
+          </p>
           <ul className="ti-lensattrs">
             {(t(`trackIntelligence.decision.modes.${mode}.attrs`, { returnObjects: true }) as string[]).map(
               (attr) => (

@@ -7,6 +7,10 @@ import {
   type AudienceId,
   type RouteId,
 } from './pnData.ts';
+import { BLOG } from '@/routes/blogLinks.ts';
+
+/** Blog destination per audience tab, from the interlinking map. Only MB-30 is mapped. */
+const AUDIENCE_BLOG: Partial<Record<AudienceId, string>> = { label: BLOG.discoveryRevenue };
 
 interface PnAudiencesProps {
   activePath: RouteId;
@@ -66,7 +70,14 @@ export function PnAudiences({ activePath, onSelectPath }: PnAudiencesProps) {
         <div className="pn-audrows">
           <div>
             <span className="pn-k uppercase">{t('partners.audiences.colQuestion')}</span>
-            <p>{t(`partners.audiences.profiles.${audience}.question`)}</p>
+            <p>
+              {/* MB-30 sits on the Labels question, which is the default tab and therefore the
+                  only one prerendered. The map requires the anchor in the server-rendered HTML. */}
+              <Trans
+                i18nKey={`partners.audiences.profiles.${audience}.question`}
+                components={{ a: <a href={AUDIENCE_BLOG[audience] ?? ''} /> }}
+              />
+            </p>
           </div>
           <div>
             <span className="pn-k uppercase">{t('partners.audiences.colRoute')}</span>

@@ -8,12 +8,16 @@ interface FaqItem {
   q: string;
   a: string;
   /**
-   * Optional call to action under the answer, in the site's bracket-link style. An internal path,
-   * hash allowed: LandingLayout scrolls to the anchor once the target page has mounted. It is a
-   * real `<a href>` in the static HTML, so crawlers can follow it. The FAQPage schema keeps the
-   * answer text only, which is why the link sits beside the answer and not inside it.
+   * Optional call to action under the answer, in the site's bracket-link style. It is a real
+   * `<a href>` in the static HTML, so crawlers can follow it. The FAQPage schema keeps the answer
+   * text only, which is why the link sits beside the answer and not inside it.
+   *
+   * Set exactly one of `to` or `href`. `to` is an internal path, hash allowed: LandingLayout
+   * scrolls to the anchor once the target page has mounted. `href` is an absolute external URL,
+   * which the interlinking map uses to reach the blog, and must not go through react-router's
+   * `Link`, which would read it as a path. `href` wins if both are somehow set.
    */
-  link?: { label: string; to: string };
+  link?: { label: string; to?: string; href?: string };
 }
 
 /**
@@ -54,9 +58,17 @@ export function FaqSection({ ns }: { ns: FaqNamespace }) {
               {item.link ? (
                 <>
                   {' '}
-                  <Link className="faq-link font-fira" to={item.link.to}>
-                    {item.link.label}
-                  </Link>
+                  {item.link.href ? (
+                    /* Absolute, off-site. No nofollow, no UTM and no new tab: the interlinking map
+                       treats these as internal links that should pass authority. */
+                    <a className="faq-link font-fira" href={item.link.href}>
+                      {item.link.label}
+                    </a>
+                  ) : item.link.to ? (
+                    <Link className="faq-link font-fira" to={item.link.to}>
+                      {item.link.label}
+                    </Link>
+                  ) : null}
                 </>
               ) : null}
             </dd>

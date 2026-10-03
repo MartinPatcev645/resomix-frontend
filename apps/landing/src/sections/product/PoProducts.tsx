@@ -1,6 +1,7 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { usePoDefs } from './poDefs.ts';
+import { BLOG } from '@/routes/blogLinks.ts';
 
 /* S2 · Three product workflows + subordinate API rail. */
 export function PoProducts() {
@@ -20,7 +21,7 @@ export function PoProducts() {
           <div className="po-pm">
             <span className="po-q">{t('product.products.sdQ')}</span>
             <h3>{t('product.products.sdTitle')}</h3>
-            <p>{t('product.products.sdBody')}</p>
+            <p><Trans i18nKey="product.products.sdBody" components={{ a: <a href={BLOG.techno} /> }} /></p>
             <div className="po-mv">
               <svg viewBox="0 0 220 64" role="img" aria-label={t('product.products.sdAria')}>
                 <circle cx="22" cy="32" r="11" fill={url('halo')} />
@@ -93,7 +94,7 @@ export function PoProducts() {
           <div className="po-pm">
             <span className="po-q">{t('product.products.ciQ')}</span>
             <h3>{t('product.products.ciTitle')}</h3>
-            <p>{t('product.products.ciBody')}</p>
+            <p><Trans i18nKey="product.products.ciBody" components={{ a: <a href={BLOG.beyondTags} /> }} /></p>
             <div className="po-mv">
               <svg viewBox="0 0 220 64" role="img" aria-label={t('product.products.ciAria')}>
                 <rect x="10" y="8" width="110" height="48" fill="none" stroke="rgba(255,255,255,.46)" strokeWidth="1.4" />

@@ -79,8 +79,11 @@ describe.skipIf(!built)('prerendered per-route body', () => {
   });
 
   it('points every FAQ call to action at a real page and a real anchor', () => {
-    // A FAQ answer can carry a bracket link (FaqSection.tsx). With 404.html in place a wrong path
-    // is a genuine 404, and a wrong hash silently lands at the top of the page instead of the form.
+    // A FAQ answer can carry a bracket link (FaqSection.tsx), either an internal path or, for the
+    // interlinking map, an absolute blog URL. With 404.html in place a wrong path is a genuine 404,
+    // and a wrong hash silently lands at the top of the page instead of the form. An external one
+    // cannot be resolved from the build, so it is held to the map's rules instead: absolute https
+    // on the blog host, trailing slash, and no tracking parameters.
     const broken: string[] = [];
     let found = 0;
     for (const r of routes) {
@@ -88,6 +91,15 @@ describe.skipIf(!built)('prerendered per-route body', () => {
       for (const tag of tags.filter((a) => /class="[^"]*\bfaq-link\b/.test(a))) {
         found++;
         const href = tag.match(/href="([^"]+)"/)?.[1] ?? '';
+        if (/^https?:/.test(href)) {
+          if (!/^https:\/\/blog\.resomix\.com\/[a-z0-9-]+\/$/.test(href)) {
+            broken.push(`${r} -> ${href} (not a canonical blog URL)`);
+          }
+          if (/nofollow|target=/.test(tag)) {
+            broken.push(`${r} -> ${href} (external FAQ link must not nofollow or open a new tab)`);
+          }
+          continue;
+        }
         const [path, hash] = href.split('#');
         const file = resolve(DIST, path === '/' ? 'index.html' : `${path.slice(1)}.html`);
         if (!path.startsWith('/') || !existsSync(file)) {

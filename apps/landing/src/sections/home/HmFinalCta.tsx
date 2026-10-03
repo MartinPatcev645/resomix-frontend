@@ -1,6 +1,7 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { BASE_BETA_URL } from '@resomix/config';
+import { BLOG } from '@/routes/blogLinks.ts';
 
 export function HmFinalCta() {
   const { t } = useTranslation('common');
@@ -10,7 +11,7 @@ export function HmFinalCta() {
     <section className="hm-section hm-final" id="hm-final">
       <div className="hm-frame">
         <h2 className="hm-h2b uppercase">{t('home.final.head')}</h2>
-        <p className="hm-body">{t('home.final.body')}</p>
+        <p className="hm-body"><Trans i18nKey="home.final.body" components={{ a: <a href={BLOG.story} /> }} /></p>
         <div className="hm-paths" aria-hidden="true">
           <svg className="hm-sl" viewBox="0 0 1152 140">
           {/* the hero's dimensions return */}

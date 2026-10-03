@@ -24,7 +24,7 @@
     },
     "statement": {
       "head": "Resomix brings the art of music selection into the age of algorithmic precision",
-      "sub": "Beyond charts, metadata and release date: discover and filter music by how it actually sounds.",
+      "sub": "Beyond charts, metadata and release date: discover and filter music by how it actually sounds. Here is <a>why metadata isn't enough</a>.",
       "capSound": "The sound itself",
       "capChars": "70+ measurable audio characteristics",
       "capResult": "A ranked, usable result"
@@ -152,7 +152,7 @@
       "eyebrow": "Built for people who work in sound",
       "djs": {
         "label": "DJs",
-        "outcome": "Crate digging, enhanced: discover music beyond traditional boundaries."
+        "outcome": "Crate digging, enhanced: discover music beyond traditional boundaries. You can <a>see how it works for finding new techno</a>."
       },
       "producers": {
         "label": "Producers",
@@ -160,11 +160,11 @@
       },
       "curators": {
         "label": "Curators",
-        "outcome": "Build playlists that flow by sound, not by titles and release dates."
+        "outcome": "Build playlists that flow by sound, not by titles and release dates. Read <a>how supervisors and curators use Resomix</a>."
       },
       "labels": {
         "label": "Labels & Distributors",
-        "outcome": "Turn your deep catalogue into a valuable revenue source."
+        "outcome": "Turn your deep catalogue into a valuable revenue source. See how labels <a>turn a back catalogue into revenue</a>."
       },
       "platforms": {
         "label": "Platforms & Music Tech",
@@ -206,7 +206,7 @@
     },
     "final": {
       "head": "You bring the vision. We surface the sound.",
-      "body": "Resomix maps the measurable character of a track and surfaces its closest sonic relationships, no matter who released it or when. That's what discovery should be.",
+      "body": "Resomix maps the measurable character of a track and surfaces its closest sonic relationships, no matter who released it or when. That's what discovery should be. Read <a>the story behind Resomix</a>.",
       "capIndiv": "Individual professionals",
       "capCatalogues": "Catalogues & platforms",
       "fork1who": "For DJs, producers and curators",

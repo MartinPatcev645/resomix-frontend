@@ -1,4 +1,5 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
+import { BLOG } from '@/routes/blogLinks.ts';
 
 export function PrCraft() {
   const { t } = useTranslation('common');
@@ -10,7 +11,7 @@ export function PrCraft() {
           <div>
             <p className="pr-eyebrow uppercase">{t('producers.craft.eyebrow')}</p>
             <h2 className="pr-h2b uppercase">{t('producers.craft.h2')}</h2>
-            <p className="pr-body">{t('producers.craft.body')}</p>
+            <p className="pr-body"><Trans i18nKey="producers.craft.body" components={{ a: <a href={BLOG.story} /> }} /></p>
           </div>
 
           <figure

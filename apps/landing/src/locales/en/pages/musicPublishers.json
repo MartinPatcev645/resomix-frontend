@@ -21,7 +21,7 @@
       "h2": "A Big Catalogue Is Not Enough – When You Don’t Know It",
       "p1": "Spending years building a catalogue, only to barely touch its true potential, is the problem of every music publisher today.",
       "p2": "The story usually goes like this: new releases are prioritised, while older songs slowly disappear from view. That’s partly intrinsic to the modern music industry, where new songs are more sought-after, whereas songs that are not old enough to be considered vintage live in this limbo where no one looks for them.",
-      "p3": "Metadata can help rediscover songs buried in a catalogue, but it’s not designed to see sonic connection: it shows you songs that are tagged the same way, but that doesn’t mean they’re sonically related, or that they can fill the same purpose. What you need is an engine specifically designed to explore your entire catalogue through the sound itself.",
+      "p3": "Metadata can help rediscover songs buried in a catalogue, but it’s not designed to see sonic connection: it shows you songs that are tagged the same way, but that doesn’t mean they’re sonically related, or that they can fill the same purpose. What you need is an engine specifically designed to explore your entire catalogue through the sound itself. Read <a>why tags and metadata fall short</a>.",
       "figureAriaD": "A catalogue timeline with three zones: established workhorses, a large quiet underexposed middle, and recent visible releases. A metadata rail sits above; a sonic relationship layer sits below. One orange path bypasses the metadata grouping and connects a recent reference to a work inside the underexposed middle.",
       "figureAriaM": "Mobile: the three catalogue zones stacked, with the metadata rail above, the sonic layer below, and one orange path connecting a recent reference to an underexposed work."
     },
@@ -41,7 +41,7 @@
       "leadIn": "For a music publisher, this can make it easier to:",
       "c1": {
         "title": "Rediscover forgotten works",
-        "text": "Bring older compositions back into light and identify new opportunities for them.",
+        "text": "Bring older compositions back into light and identify new opportunities for them. See <a>how an older catalogue becomes reliable revenue</a>.",
         "figureAria": "A quiet archive cell is illuminated by a new reference path."
       },
       "c2": {

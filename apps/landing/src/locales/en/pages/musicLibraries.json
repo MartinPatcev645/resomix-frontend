@@ -14,7 +14,7 @@
     "tags": {
       "eyebrow": "The problem",
       "h2": "Aren't tags enough?",
-      "p1": "Most sample libraries rely on metadata to help users navigate their catalogues. Genre, instrument, BPM, key, mood and other tags are helpful, but they can only describe a sound up to a certain point.",
+      "p1": "Most sample libraries rely on metadata to help users navigate their catalogues. Genre, instrument, BPM, key, mood and other tags are helpful, but they can only describe a sound up to a certain point. Read <a>why tags describe a sound only so far</a>.",
       "p2": "Two drum patterns might both be tagged as \"electronic\", but sound completely different. Two vocal samples might both be described as \"emotional\", while having very little in common sonically.",
       "p3": "The problem is even more apparent when a producer doesn't know exactly what they're looking for: maybe a synth texture like one they heard in another track, or a drum loop that has the same energy as their reference, but they don't know what to search for.",
       "figureAria": "Two drum patterns share the same electronic tag but their waveforms look nothing alike; below, a sound a producer can hear in their head sits beside a search field they cannot fill"
@@ -24,7 +24,7 @@
       "h2": "A new way to explore your catalogue",
       "lead1": "Resomix can give music libraries and sample providers a new way to help users explore their catalogues.",
       "lead2": "By analysing the sonic characteristics of individual sounds and loops, Resomix's PYXIS-1 engine can identify subtle relationships that traditional metadata might miss.",
-      "lead3": "Instead of searching exclusively through tags, users of a sample library could start with a sound they already like and explore other elements that share its sonic DNA.",
+      "lead3": "Instead of searching exclusively through tags, users of a sample library could start with a sound they already like and explore other elements that share its sonic DNA. See <a>how supervisors search a library from a reference sound</a>.",
       "couldMean": "For music libraries and sample providers, this could mean:",
       "items": {
         "findFaster": {

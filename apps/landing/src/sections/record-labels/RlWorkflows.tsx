@@ -1,4 +1,8 @@
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
+import { BLOG } from '@/routes/blogLinks.ts';
+
+/** Blog destination per workflow card, from the interlinking map. Only MB-17 is mapped. */
+const WORKFLOW_BLOG: Record<string, string | undefined> = { dormant: BLOG.backCatalogue };
 
 function DemoFieldArt() {
   return (
@@ -151,7 +155,13 @@ export function RlWorkflows() {
               <div className="rl-wf-art" aria-hidden="true">
                 {card.art}
               </div>
-              <p className="rl-wf-txt">{t(`recordLabels.workflows.items.${card.key}`)}</p>
+              <p className="rl-wf-txt">
+                {/* MB-17 sits on the dormant-catalogue card. */}
+                <Trans
+                  i18nKey={`recordLabels.workflows.items.${card.key}`}
+                  components={{ a: <a href={WORKFLOW_BLOG[card.key] ?? ''} /> }}
+                />
+              </p>
             </article>
           ))}
         </div>

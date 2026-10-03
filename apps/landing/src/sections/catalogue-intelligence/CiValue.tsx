@@ -1,5 +1,6 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { useCiDefs } from './ciDefs.ts';
+import { BLOG } from '@/routes/blogLinks.ts';
 
 /* S5 · Catalogue value — sonic relevance as another route into discovery.
    Geometry transplanted verbatim from the approved preview; fictional
@@ -14,14 +15,14 @@ export function CiValue() {
         <div className="ci-eyebrow">{t('catalogueIntelligence.value.eyebrow')}</div>
         <h2 className="ci-h2">{t('catalogueIntelligence.value.h2')}</h2>
         <div className="ci-copycol">
-          <p className="ci-body-p">{t('catalogueIntelligence.value.body1')}</p>
+          <p className="ci-body-p"><Trans i18nKey="catalogueIntelligence.value.body1" components={{ a: <a href={BLOG.beyondTags} /> }} /></p>
           <p className="ci-body-p">{t('catalogueIntelligence.value.body2')}</p>
         </div>
 
         <div className="ci-outputs ci-three">
           <div className="ci-module">
             <div className="ci-tt ci-alt">{t('catalogueIntelligence.value.mod1Title')}</div>
-            <p>{t('catalogueIntelligence.value.mod1Body')}</p>
+            <p><Trans i18nKey="catalogueIntelligence.value.mod1Body" components={{ a: <a href={BLOG.backCatalogue} /> }} /></p>
           </div>
           <div className="ci-module">
             <div className="ci-tt ci-alt">{t('catalogueIntelligence.value.mod2Title')}</div>
@@ -29,7 +30,7 @@ export function CiValue() {
           </div>
           <div className="ci-module">
             <div className="ci-tt ci-alt">{t('catalogueIntelligence.value.mod3Title')}</div>
-            <p>{t('catalogueIntelligence.value.mod3Body')}</p>
+            <p><Trans i18nKey="catalogueIntelligence.value.mod3Body" components={{ a: <a href={BLOG.discoveryRevenue} /> }} /></p>
           </div>
         </div>
       </div>

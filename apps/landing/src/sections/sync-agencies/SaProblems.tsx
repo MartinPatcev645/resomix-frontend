@@ -1,4 +1,5 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
+import { BLOG } from '@/routes/blogLinks.ts';
 
 function UntaggedArt({ tagged, unseen }: { tagged: string; unseen: string }) {
   return (
@@ -143,7 +144,7 @@ export function SaProblems() {
           ))}
         </div>
 
-        <p className="sa-tp-balance">{t('syncAgencies.problems.balance')}</p>
+        <p className="sa-tp-balance"><Trans i18nKey="syncAgencies.problems.balance" components={{ a: <a href={BLOG.supervisors} /> }} /></p>
       </div>
     </section>
   );

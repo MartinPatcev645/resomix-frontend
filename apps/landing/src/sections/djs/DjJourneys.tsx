@@ -1,4 +1,5 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
+import { BLOG } from '@/routes/blogLinks.ts';
 
 function RediscoverArt({
   bside,
@@ -201,7 +202,7 @@ export function DjJourneys() {
         <div className="dj-wf-lead">
           <p className="dj-body">{t('djs.journeys.lead1')}</p>
           <p className="dj-body">{t('djs.journeys.lead2')}</p>
-          <p className="dj-body">{t('djs.journeys.lead3')}</p>
+          <p className="dj-body"><Trans i18nKey="djs.journeys.lead3" components={{ a: <a href={BLOG.techno} /> }} /></p>
           <p className="dj-body dj-body-soft" style={{ marginBottom: 0 }}>
             {t('djs.journeys.intro')}
           </p>

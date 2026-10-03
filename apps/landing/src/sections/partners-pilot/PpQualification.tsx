@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
+import { BLOG } from '@/routes/blogLinks.ts';
+
+/** Blog destination per qualification row, from the interlinking map. Only row 0 is mapped. */
+const MATRIX_BLOG: Record<number, string> = { 0: BLOG.backCatalogue };
 
 export function PpQualification() {
   const { t } = useTranslation('common');
@@ -24,10 +28,17 @@ export function PpQualification() {
         <h2 className="pp-h2b uppercase">{t('partnersPilot.qualification.title')}</h2>
       </header>
       <div className="pp-qmx">
-        {matrixRows.map((row) => (
+        {matrixRows.map((row, i) => (
           <div key={row.type} className="pp-qrow">
             <span className="pp-qrow-t uppercase">{row.type}</span>
-            <p>{row.question}</p>
+            <p>
+              {/* MB-31 sits on the first row. Keyed by index so the anchor stays inside the
+                  translated question rather than being appended as a separate element. */}
+              <Trans
+                i18nKey={`partnersPilot.qualification.matrix.${i}.question`}
+                components={{ a: <a href={MATRIX_BLOG[i] ?? ''} /> }}
+              />
+            </p>
           </div>
         ))}
       </div>

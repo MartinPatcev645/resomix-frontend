@@ -23,7 +23,7 @@
     "rail": {
       "eyebrow": "For music curators",
       "h2": "Expand your curation with Resomix",
-      "lead1": "What curators need is a discovery engine that analyses the audio itself, without relying on metadata, giving them a fresh approach to the music they find and select for their projects.",
+      "lead1": "What curators need is a discovery engine that analyses the audio itself, without relying on metadata, giving them a fresh approach to the music they find and select for their projects. Read <a>how supervisors and curators use Resomix</a>.",
       "lead2": "By analysing the structural, harmonic, rhythmic, timbral, and emotional qualities of a reference track, Resomix's PYXIS-1 engine is designed to discover new connections between songs, hidden underneath the surface of the genres the songs naturally fall into.",
       "intro": "What does all this actually mean for a music curator:",
       "listAria": "What Resomix means for a music curator",
@@ -46,7 +46,7 @@
         },
         "directions": {
           "label": "Explore new directions",
-          "text": "without losing the mood and identity of your selection."
+          "text": "without losing the mood and identity of your selection. See an example of <a>curating an ambient playlist by sound</a>."
         }
       },
       "pull": "Instead of starting every search from a genre, artist, or keyword, you can now use a single track as a reference point and explore where its sonic DNA can take you."

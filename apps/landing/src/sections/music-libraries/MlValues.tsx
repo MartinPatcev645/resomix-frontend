@@ -1,4 +1,5 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
+import { BLOG } from '@/routes/blogLinks.ts';
 
 const VALUE_KEYS = [
   'findFaster',
@@ -122,7 +123,7 @@ export function MlValues() {
         <h2 className="ml-h2b uppercase">{t('musicLibraries.values.h2')}</h2>
         <p className="ml-body">{t('musicLibraries.values.lead1')}</p>
         <p className="ml-body">{t('musicLibraries.values.lead2')}</p>
-        <p className="ml-body">{t('musicLibraries.values.lead3')}</p>
+        <p className="ml-body"><Trans i18nKey="musicLibraries.values.lead3" components={{ a: <a href={BLOG.supervisors} /> }} /></p>
         <p className="ml-body ml-body-soft" style={{ marginBottom: 0 }}>
           {t('musicLibraries.values.couldMean')}
         </p>

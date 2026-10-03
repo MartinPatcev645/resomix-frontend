@@ -1,6 +1,10 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
+import { BLOG } from '@/routes/blogLinks.ts';
 
 const RAIL_KEYS = ['continuity', 'connections', 'taste', 'forgotten', 'directions'] as const;
+
+/** Blog destination per rail item, from the interlinking map. Only MB-27 is mapped. */
+const RAIL_BLOG: Partial<Record<(typeof RAIL_KEYS)[number], string>> = { directions: BLOG.ambient };
 
 export function McuRail() {
   const { t } = useTranslation('common');
@@ -10,7 +14,7 @@ export function McuRail() {
       <div className="mcu-frame">
         <p className="mcu-eyebrow uppercase">{t('musicCurators.rail.eyebrow')}</p>
         <h2 className="mcu-h2b uppercase">{t('musicCurators.rail.h2')}</h2>
-        <p className="mcu-body">{t('musicCurators.rail.lead1')}</p>
+        <p className="mcu-body"><Trans i18nKey="musicCurators.rail.lead1" components={{ a: <a href={BLOG.supervisors} /> }} /></p>
         <p className="mcu-body">{t('musicCurators.rail.lead2')}</p>
         <p className="mcu-body mcu-rail-intro">{t('musicCurators.rail.intro')}</p>
 
@@ -24,7 +28,14 @@ export function McuRail() {
               <span className="mcu-row-n">{String(i + 1).padStart(2, '0')}</span>
               <span>
                 <span className="mcu-row-k">{t(`musicCurators.rail.items.${key}.label`)}</span>
-                <span className="mcu-row-o">{t(`musicCurators.rail.items.${key}.text`)}</span>
+                <span className="mcu-row-o">
+                  {/* MB-27 sits on the mood-and-identity item, the only one the map allows for
+                      the ambient post. */}
+                  <Trans
+                    i18nKey={`musicCurators.rail.items.${key}.text`}
+                    components={{ a: <a href={RAIL_BLOG[key] ?? ''} /> }}
+                  />
+                </span>
               </span>
               <span className="mcu-row-tr" aria-hidden="true">
                 <RailTrace index={i} />

@@ -1,5 +1,6 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { useMpDefs } from './mpDefs.ts';
+import { BLOG } from '@/routes/blogLinks.ts';
 
 /* S5 · Five publisher outcomes, each with its own micro-visual. */
 export function MpOutcomes() {
@@ -14,7 +15,7 @@ export function MpOutcomes() {
           <div className="mp-card">
             <span className="mp-num">01</span>
             <h3>{t('musicPublishers.outcomes.c1.title')}</h3>
-            <p>{t('musicPublishers.outcomes.c1.text')}</p>
+            <p><Trans i18nKey="musicPublishers.outcomes.c1.text" components={{ a: <a href={BLOG.backCatalogue} /> }} /></p>
             <div className="mp-mv">
               <svg viewBox="0 0 200 74" role="img" aria-label={t('musicPublishers.outcomes.c1.figureAria')}>
                 <g fill="rgba(255,255,255,.1)">

@@ -1,4 +1,5 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
+import { BLOG } from '@/routes/blogLinks.ts';
 
 export function RlCreativity() {
   const { t } = useTranslation('common');
@@ -12,7 +13,7 @@ export function RlCreativity() {
             <h2 className="rl-h2b uppercase">{t('recordLabels.creativity.h2')}</h2>
             <p className="rl-body">{t('recordLabels.creativity.p1')}</p>
             <p className="rl-body">{t('recordLabels.creativity.p2')}</p>
-            <p className="rl-body rl-body-emph">{t('recordLabels.creativity.p3')}</p>
+            <p className="rl-body rl-body-emph"><Trans i18nKey="recordLabels.creativity.p3" components={{ a: <a href={BLOG.story} /> }} /></p>
           </div>
 
           <figure

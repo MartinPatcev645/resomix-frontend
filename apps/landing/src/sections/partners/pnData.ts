@@ -72,6 +72,14 @@ export interface CapabilityBranch {
   items: [string, string];
   dest: string;
   y: number;
+  /**
+   * Optional contextual blog link for this capability, from the interlinking map (MB-29).
+   *
+   * It is rendered only in the open rail list, never in the SVG figure: `items` is drawn into
+   * `<text>` nodes, where an anchor would be invalid, and the same two strings feed both. Keeping
+   * the link in its own field is what lets the list carry it while the figure stays plain.
+   */
+  blog?: { label: string; href: string };
 }
 
 export const CAPABILITY_BRANCHES: CapabilityBranch[] = [
@@ -84,6 +92,10 @@ export const CAPABILITY_BRANCHES: CapabilityBranch[] = [
     ],
     dest: '/product/catalog-intelligence',
     y: 60,
+    blog: {
+      label: 'how a back catalogue becomes revenue',
+      href: 'https://blog.resomix.com/how-your-labels-back-catalogue-becomes-a-reliable-revenue-stream/',
+    },
   },
   {
     id: 'sonic-discovery',

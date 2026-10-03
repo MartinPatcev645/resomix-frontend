@@ -1,4 +1,5 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
+import { BLOG } from '@/routes/blogLinks.ts';
 
 function BriefArt({ briefIn, varied }: { briefIn: string; varied: string }) {
   return (
@@ -144,7 +145,7 @@ export function SaWorkflows() {
         <p className="sa-eyebrow uppercase">{t('syncAgencies.workflows.eyebrow')}</p>
         <h2 className="sa-h2b uppercase">{t('syncAgencies.workflows.h2')}</h2>
         <div className="sa-wf-lead">
-          <p className="sa-body">{t('syncAgencies.workflows.lead1')}</p>
+          <p className="sa-body"><Trans i18nKey="syncAgencies.workflows.lead1" components={{ a: <a href={BLOG.beyondTags} /> }} /></p>
           <p className="sa-body" style={{ marginBottom: 0 }}>
             {t('syncAgencies.workflows.lead2')}
           </p>

@@ -92,6 +92,13 @@ export function PnCapabilityBranches() {
               {branch.items.map((item) => (
                 <li key={item}>{item}</li>
               ))}
+              {/* MB-29. List only: the same `items` strings are drawn as SVG <text> above, where
+                  an anchor would be invalid, so the link lives in its own entry. */}
+              {branch.blog ? (
+                <li>
+                  <a href={branch.blog.href}>{branch.blog.label}</a>
+                </li>
+              ) : null}
             </ul>
             <button
               type="button"

@@ -99,8 +99,8 @@ Total Task Estimate: 1.5h - 2h
   each page its own date, changed only when that page actually changes, plus a check that stops a
   deploy if a date is missing or set in the future.
 - Fix Estimate: 0.5h - 1h
-- Status: Built and tested, held back from deployment until you approve. It ships with the next
-  landing release if you say yes, and costs nothing to drop if you say no.
+- Status: Done and live. Each page now carries a real date of its own, and the build refuses to
+  publish a sitemap if a date is missing or wrong, so this cannot drift back.
 
 **Found During Testing**
 
