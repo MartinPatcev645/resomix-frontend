@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
-import AppleMusicIcon from '@/assets/icons/cc/apple-music.svg';
+import RekordboxLogo from '@/assets/Rekordbox-Logo.webp';
 
 /**
  * A small "Tip" pill that lives in the top-right corner of the Apple export modal. It gently
@@ -117,12 +117,15 @@ const RekordboxTip: React.FC = () => {
           }
         >
           <div className="flex items-center gap-[var(--px-8)] mb-[var(--px-8)]">
+            {/* The popover is about rekordbox, so it carries rekordbox's mark. The Apple Music
+                icon is already on the modal itself. */}
             <img
-              src={AppleMusicIcon}
+              src={RekordboxLogo}
               alt=""
               aria-hidden="true"
               draggable={false}
-              className="w-[var(--px-16)] h-[var(--px-16)]"
+              loading="lazy"
+              className="w-[var(--px-16)] h-[var(--px-16)] rounded-[var(--px-3)]"
             />
             <span className="font-fira text-[length:var(--px-10)] font-medium uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-primary)]">
               Using this in rekordbox
