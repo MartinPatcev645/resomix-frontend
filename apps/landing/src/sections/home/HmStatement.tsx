@@ -8,7 +8,7 @@ export function HmStatement() {
     <section className="hm-statement hm-section" id="hm-statement">
       <div className="hm-frame">
         <h2 className="hm-h2b uppercase">{t('home.statement.head')}</h2>
-        <p className="hm-sub"><Trans i18nKey="home.statement.sub" components={{ a: <a href={BLOG.beyondTags} /> }} /></p>
+        <p className="hm-sub"><Trans i18nKey="home.statement.sub" components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={BLOG.beyondTags} /> }} /></p>
         <div className="hm-gesture" aria-hidden="true">
           <svg className="hm-sl" viewBox="0 0 1152 90">
           {/* the sound itself */}

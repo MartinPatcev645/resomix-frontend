@@ -144,7 +144,7 @@ export function SaProblems() {
           ))}
         </div>
 
-        <p className="sa-tp-balance"><Trans i18nKey="syncAgencies.problems.balance" components={{ a: <a href={BLOG.supervisors} /> }} /></p>
+        <p className="sa-tp-balance"><Trans i18nKey="syncAgencies.problems.balance" components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={BLOG.supervisors} /> }} /></p>
       </div>
     </section>
   );

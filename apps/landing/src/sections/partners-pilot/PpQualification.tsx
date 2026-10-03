@@ -36,7 +36,7 @@ export function PpQualification() {
                   translated question rather than being appended as a separate element. */}
               <Trans
                 i18nKey={`partnersPilot.qualification.matrix.${i}.question`}
-                components={{ a: <a href={MATRIX_BLOG[i] ?? ''} /> }}
+                components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={MATRIX_BLOG[i] ?? ''} /> }}
               />
             </p>
           </div>

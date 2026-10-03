@@ -13,7 +13,7 @@ export function RlMetadata() {
             <h2 className="rl-h2b uppercase">{t('recordLabels.metadata.h2')}</h2>
             <p className="rl-body">{t('recordLabels.metadata.p1')}</p>
             <p className="rl-body">{t('recordLabels.metadata.p2')}</p>
-            <p className="rl-body rl-body-emph"><Trans i18nKey="recordLabels.metadata.p3" components={{ a: <a href={BLOG.beyondTags} /> }} /></p>
+            <p className="rl-body rl-body-emph"><Trans i18nKey="recordLabels.metadata.p3" components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={BLOG.beyondTags} /> }} /></p>
           </div>
 
           <figure

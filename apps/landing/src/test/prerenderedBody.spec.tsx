@@ -95,8 +95,11 @@ describe.skipIf(!built)('prerendered per-route body', () => {
           if (!/^https:\/\/blog\.resomix\.com\/[a-z0-9-]+\/$/.test(href)) {
             broken.push(`${r} -> ${href} (not a canonical blog URL)`);
           }
-          if (/nofollow|target=/.test(tag)) {
-            broken.push(`${r} -> ${href} (external FAQ link must not nofollow or open a new tab)`);
+          if (/nofollow|sponsored/.test(tag)) {
+            broken.push(`${r} -> ${href} (external FAQ link must not nofollow)`);
+          }
+          if (!/class="[^"]*\brx-copylink\b/.test(tag)) {
+            broken.push(`${r} -> ${href} (off-site link needs rx-copylink so it reads as a link)`);
           }
           continue;
         }

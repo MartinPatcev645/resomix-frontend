@@ -145,7 +145,7 @@ export function SaWorkflows() {
         <p className="sa-eyebrow uppercase">{t('syncAgencies.workflows.eyebrow')}</p>
         <h2 className="sa-h2b uppercase">{t('syncAgencies.workflows.h2')}</h2>
         <div className="sa-wf-lead">
-          <p className="sa-body"><Trans i18nKey="syncAgencies.workflows.lead1" components={{ a: <a href={BLOG.beyondTags} /> }} /></p>
+          <p className="sa-body"><Trans i18nKey="syncAgencies.workflows.lead1" components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={BLOG.beyondTags} /> }} /></p>
           <p className="sa-body" style={{ marginBottom: 0 }}>
             {t('syncAgencies.workflows.lead2')}
           </p>

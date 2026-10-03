@@ -59,9 +59,16 @@ export function FaqSection({ ns }: { ns: FaqNamespace }) {
                 <>
                   {' '}
                   {item.link.href ? (
-                    /* Absolute, off-site. No nofollow, no UTM and no new tab: the interlinking map
-                       treats these as internal links that should pass authority. */
-                    <a className="faq-link font-fira" href={item.link.href}>
+                    /* Absolute, off-site. `rx-copylink` carries the accent colour, the underline
+                       and the ↗, so it reads as a link that leaves the site; `faq-link` keeps its
+                       place and spacing under the answer. No nofollow and no UTM, so it still
+                       passes authority. */
+                    <a
+                      className="faq-link rx-copylink font-fira"
+                      target="_blank"
+                      rel="noopener"
+                      href={item.link.href}
+                    >
                       {item.link.label}
                     </a>
                   ) : item.link.to ? (

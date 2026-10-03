@@ -327,3 +327,48 @@ html #stcm-modal footer a.stcm-credit-link {
     animation: none !important;
   }
 }
+
+/* Contextual links into the Journal, from the interlinking map (src/routes/blogLinks.ts).
+   Unlike the site's bracket links, which announce themselves with [ ] and can stay underline-free
+   until hover, these sit mid-sentence inside grey body copy. A link a reader cannot see is a link
+   nobody clicks, so these carry the accent colour and a dotted underline at rest, and firm up to a
+   solid underline on hover and keyboard focus.
+   The trailing ↗ marks that the link leaves resomix.com, matching the "↗ external" convention in
+   the nav. Its empty alt text keeps screen readers from announcing the glyph itself. */
+.rx-copylink {
+  color: var(--color-neon-orange, #ee4a26);
+  text-decoration: underline dotted currentColor;
+  text-decoration-thickness: 1px;
+  text-underline-offset: var(--px-4, 0.25rem);
+  transition:
+    color 0.16s ease,
+    text-decoration-color 0.16s ease;
+}
+
+.rx-copylink::after {
+  content: '\2197' / '';
+  margin-left: 0.15em;
+  font-size: 0.85em;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+/* To white, not a brighter orange: `--color-primary-hover` is grey here, and orange-to-white is the
+   same direction of travel the consent dialog's links already take. */
+.rx-copylink:hover,
+.rx-copylink:focus-visible {
+  color: var(--color-primary, #ffffff);
+  text-decoration-style: solid;
+}
+
+.rx-copylink:focus-visible {
+  outline: 2px solid var(--color-neon-orange, #ee4a26);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rx-copylink {
+    transition: none;
+  }
+}

@@ -168,7 +168,7 @@ export function TiLensModes({ onScrollToProfile }: TiLensModesProps) {
             {/* MB-11. Only the DJ mode is mapped to a blog post. */}
             <Trans
               i18nKey={`trackIntelligence.decision.modes.${mode}.copy`}
-              components={{ a: <a href={LENS_MODE_BLOG[mode] ?? ''} /> }}
+              components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={LENS_MODE_BLOG[mode] ?? ''} /> }}
             />
           </p>
           <ul className="ti-lensattrs">

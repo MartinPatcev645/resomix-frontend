@@ -250,7 +250,7 @@ export function SdAudienceModes({ mode, onModeChange, onScrollToConsole }: SdAud
                 so the map's "server-rendered <a>" rule holds for it and no other tab needs one. */}
             <Trans
               i18nKey={`sonicDiscovery.aud.${content.copyKey}`}
-              components={{ a: <a href={AUDIENCE_BLOG[content.copyKey] ?? ''} /> }}
+              components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={AUDIENCE_BLOG[content.copyKey] ?? ''} /> }}
             />
           </p>
           <ul className="sd-audattrs">
