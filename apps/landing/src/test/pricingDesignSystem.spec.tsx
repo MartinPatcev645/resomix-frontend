@@ -41,12 +41,13 @@ const BILLING_DIR = resolve(process.cwd(), '../../packages/ui/src/Billing');
 const FREE_LIMITS = {
   searches_per_day: 3,
   uploads_per_month: 5,
-  top_sk_max: 20,
-  dropdown_max_tracks: 50,
+  top_sk_max: 50,
+  dropdown_max_tracks: 100,
   library_playlists_max: 5,
   exports_per_day: 1,
   export_track_limit: 20,
-  can_view_full_analysis: false,
+  can_view_full_analysis: true,
+  can_export_analysis_pdf: false,
   can_similarity_upload: true,
 };
 
@@ -59,6 +60,7 @@ const PRO_LIMITS = {
   exports_per_day: null as number | null,
   export_track_limit: 100,
   can_view_full_analysis: true,
+  can_export_analysis_pdf: true,
   can_similarity_upload: true,
 };
 
@@ -624,7 +626,7 @@ describe('founding offer framing and locale', () => {
     render(<ConsumerPricingContent />);
     await waitFor(() =>
       expect(
-        screen.getByText(/up to 100 matches per search and Full Track Intelligence/i),
+        screen.getByText(/all 100 matches in every result and Track Intelligence as a PDF report/i),
       ).toBeInTheDocument(),
     );
   });

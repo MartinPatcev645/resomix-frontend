@@ -62,6 +62,8 @@ export interface BillingPlanLimits {
   exports_per_day: number | null;
   export_track_limit: number | null;
   can_view_full_analysis: boolean;
+  /** Download Track Intelligence as a PDF report (Pro). */
+  can_export_analysis_pdf: boolean;
   can_similarity_upload: boolean;
 }
 

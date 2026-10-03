@@ -35,8 +35,8 @@ const { useUsageChip, resetEntitlementsCache } = await import('@resomix/hooks');
 const FREE_LIMITS = {
   searches_per_day: 3,
   uploads_per_month: 5,
-  top_sk_max: 20,
-  dropdown_max_tracks: 50,
+  top_sk_max: 50,
+  dropdown_max_tracks: 100,
   library_playlists_max: 5,
   exports_per_day: 1,
   export_track_limit: 20,

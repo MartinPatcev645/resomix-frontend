@@ -193,8 +193,9 @@ export function useEntitlements(): UseEntitlements {
     getBool,
     getStr,
     can: getBool,
-    dropdownMaxTracks: getInt(FEATURE_KEYS.DROPDOWN_MAX_TRACKS, 20),
-    maxTracksPerPlaylist: getInt(FEATURE_KEYS.MAX_TRACKS_PER_PLAYLIST, 10),
+    // Fallbacks are the GUEST values, used only until the plan arrives.
+    dropdownMaxTracks: getInt(FEATURE_KEYS.DROPDOWN_MAX_TRACKS, 50),
+    maxTracksPerPlaylist: getInt(FEATURE_KEYS.MAX_TRACKS_PER_PLAYLIST, 20),
     searchPlaylistsPerMonth: getInt(FEATURE_KEYS.SEARCH_PLAYLISTS_PER_MONTH, 5),
     uploadsPerMonth: getInt(FEATURE_KEYS.UPLOADS_PER_MONTH, 0),
     canSimilarityUpload: getBool(FEATURE_KEYS.CAN_SIMILARITY_UPLOAD),

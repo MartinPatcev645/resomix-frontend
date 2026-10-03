@@ -32,6 +32,8 @@ export const FEATURE_KEYS = {
   LIBRARY_PLAYLISTS_MAX: "library_playlists_max",
   EXPORTS_PER_DAY: "exports_per_day",
   CAN_VIEW_FULL_ANALYSIS: "can_view_full_analysis",
+  // October 2026: full Track Intelligence is free; downloading it as a PDF is Pro.
+  CAN_EXPORT_ANALYSIS_PDF: "can_export_analysis_pdf",
 } as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[keyof typeof FEATURE_KEYS];

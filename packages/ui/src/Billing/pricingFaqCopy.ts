@@ -25,11 +25,11 @@ export const FAQ_ITEMS = {
    */
   isFree: {
     q: "Is Resomix free?",
-    a: `Yes. Resomix is free to use with an account, and no card is required. Sonic Discovery and the complete analysis summary are included, and you can run three searches a day as a guest without signing up at all. Pro is for people who want uninterrupted discovery, more matches in each result and the full Track Intelligence dashboard.`,
+    a: `Yes. Resomix is free to use with an account, and no card is required. Sonic Discovery and full Track Intelligence are included, and you can run three searches a day as a guest without signing up at all. Pro is for people who want uninterrupted discovery, every match in each result and Track Intelligence as a PDF report.`,
   },
   tryFirst: {
     q: "Do I need a paid plan to try Resomix?",
-    a: `No. Start as a guest or on the free Resomix plan, run a real search on your own reference and read the analysis summary before you decide anything. There is no card to enter, and the free plan is not a timed trial.`,
+    a: `No. Start as a guest or on the free Resomix plan, run a real search on your own reference and, with a free account, read the full Track Intelligence of your own track before you decide anything. There is no card to enter, and the free plan is not a timed trial.`,
   },
   /*
    * The price is stated with its date attached. Everywhere else on this surface the number comes
@@ -53,12 +53,12 @@ export const FAQ_ITEMS = {
     a: `Nothing is deleted. Free lists your five most recent playlists in the Library; beyond that a playlist is still created, saved and fully usable by its link — you can open, play, rename, export and share it. The Library header shows the full count so the number never looks like work went missing. Pro lists all of them.`,
   },
   freeSummary: {
-    q: "What is in the Free analysis summary?",
+    q: "What is in the analysis summary?",
     a: `The complete card, not a teaser: BPM with confidence, key, scale and Camelot code, duration, loudness, the energy journey, the section map, genre and style, danceability, valence, arousal, vocal or instrumental, the written read-outs for DJs, producers and curators, and a link to the matching similarity playlist.`,
   },
   fullTi: {
     q: "What does Full Track Intelligence add?",
-    a: `Spectrograms, chromagram and tuning detail, beat, downbeat and phrase grids, spectral curves including centroid, rolloff, flatness, bandwidth and zero crossing, loudness and RMS energy across the whole recording, genre, mood and instrumentation over time, stem composition and vocal regions, and onset detection.`,
+    a: `Spectrograms, chromagram and tuning detail, beat, downbeat and phrase grids, spectral curves including centroid, rolloff, flatness, bandwidth and zero crossing, loudness and RMS energy across the whole recording, genre, mood and instrumentation over time, stem composition and vocal regions, and onset detection. It is included with every account, free or Pro. Pro adds a one-click PDF report of the whole page.`,
   },
   cancel: {
     q: "What happens if I cancel?",

@@ -102,6 +102,16 @@ function analysisFeature(limits: BillingPlanLimits): PlanFeature {
   };
 }
 
+/**
+ * The PDF report, shown only on a plan that has it. Free also reads the full Track Intelligence
+ * page, so this line is what tells the Pro card apart on analysis.
+ */
+function analysisPdfFeature(limits: BillingPlanLimits): PlanFeature | null {
+  return limits.can_export_analysis_pdf
+    ? { key: "analysisPdf", text: "Track Intelligence as a PDF report", included: true }
+    : null;
+}
+
 export function planFeatures(
   limits: BillingPlanLimits | undefined | null,
   options: PlanFeaturesOptions = {},
@@ -114,6 +124,8 @@ export function planFeatures(
     if (depth) features.push(depth);
     features.push(uploadsFeature(limits));
     features.push(analysisFeature(limits));
+    const pdf = analysisPdfFeature(limits);
+    if (pdf) features.push(pdf);
     return features;
   }
 
@@ -131,6 +143,8 @@ export function planFeatures(
       : "Track summary — BPM, key, energy, structure",
     included: true,
   });
+  const pdf = analysisPdfFeature(limits);
+  if (pdf) features.push(pdf);
 
   return features;
 }

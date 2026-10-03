@@ -253,6 +253,13 @@ export function PlanComparison({
       free: freeLimits?.can_view_full_analysis ? "on" : "—",
       pro: proLimits?.can_view_full_analysis ? "on" : "—",
     },
+    {
+      kind: "row",
+      label: COMPARE.rows.analysisPdf,
+      guest: "—",
+      free: freeLimits?.can_export_analysis_pdf ? "on" : "—",
+      pro: proLimits?.can_export_analysis_pdf ? "on" : "—",
+    },
 
     { kind: "grp", label: COMPARE.groups.library },
     {

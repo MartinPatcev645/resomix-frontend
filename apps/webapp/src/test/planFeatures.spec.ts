@@ -21,12 +21,13 @@ import type { BillingPlanLimits } from '@resomix/api-client';
 const FREE: BillingPlanLimits = {
   searches_per_day: 3,
   uploads_per_month: 5,
-  top_sk_max: 20,
-  dropdown_max_tracks: 50,
+  top_sk_max: 50,
+  dropdown_max_tracks: 100,
   library_playlists_max: 5,
   exports_per_day: 1,
   export_track_limit: 20,
-  can_view_full_analysis: false,
+  can_view_full_analysis: true,
+  can_export_analysis_pdf: false,
   can_similarity_upload: true,
 };
 
@@ -39,6 +40,7 @@ const PRO: BillingPlanLimits = {
   exports_per_day: null,
   export_track_limit: 100,
   can_view_full_analysis: true,
+  can_export_analysis_pdf: true,
   can_similarity_upload: true,
 };
 
@@ -47,7 +49,9 @@ const GUEST: BillingPlanLimits = {
   uploads_per_month: 0,
   library_playlists_max: 0,
   exports_per_day: 0,
-  top_sk_max: 10,
+  top_sk_max: 20,
+  dropdown_max_tracks: 50,
+  can_view_full_analysis: false,
 };
 
 const text = (limits: BillingPlanLimits) => planFeatures(limits).map((f) => f.text).join(' | ');
@@ -60,10 +64,10 @@ describe('free plan card', () => {
   });
 
   it('quotes what is UNLOCKED, not what is selectable', () => {
-    // A free user may select 50 but sees 20 unlocked. Quoting the dropdown number would promise
-    // 50 matches to someone who gets 20 — the single most misleading number available here.
-    expect(find(FREE, 'depth')?.text).toBe('Top 20 matches per search');
-    expect(text(FREE)).not.toContain('50');
+    // A free user may select 100 but sees 50 unlocked. Quoting the dropdown number would promise
+    // 100 matches to someone who gets 50, the single most misleading number available here.
+    expect(find(FREE, 'depth')?.text).toBe('Top 50 matches per search');
+    expect(text(FREE)).not.toContain('100');
   });
 
   it('quotes uploads monthly', () => {
@@ -75,9 +79,10 @@ describe('free plan card', () => {
     expect(find(FREE, 'library')?.text).toBe('5 playlists in your Library');
   });
 
-  it('describes the free analysis boundary', () => {
-    expect(find(FREE, 'analysis')?.text).toContain('summary');
-    expect(find(FREE, 'analysis')?.text).not.toContain('Full Track Intelligence');
+  it('offers full Track Intelligence but not the PDF report', () => {
+    // October 2026: the full page is free; the PDF download is what Pro adds.
+    expect(find(FREE, 'analysis')?.text).toBe('Full Track Intelligence');
+    expect(find(FREE, 'analysisPdf')).toBeUndefined();
   });
 });
 
@@ -97,6 +102,10 @@ describe('pro plan card', () => {
 
   it('offers full Track Intelligence', () => {
     expect(find(PRO, 'analysis')?.text).toBe('Full Track Intelligence');
+  });
+
+  it('offers the Track Intelligence PDF report', () => {
+    expect(find(PRO, 'analysisPdf')?.text).toBe('Track Intelligence as a PDF report');
   });
 
   it('still quotes the monthly upload cap, which is NOT unlimited', () => {

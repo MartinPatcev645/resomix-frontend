@@ -39,7 +39,8 @@ export type AccessAction =
   | "rateTrack"
   | "similarityUpload"
   | "exportApple"
-  | "viewFullAnalysis";
+  | "viewFullAnalysis"
+  | "exportAnalysisPdf";
 
 export type AccessVerdict = "allowed" | "login" | "upgrade" | "pending";
 
@@ -58,10 +59,13 @@ const ACTION_FEATURE: Record<AccessAction, string | null> = {
   // already knows the plan, so the upgrade prompt can be shown in place instead of after a route
   // change onto a page that has nothing to render.
   viewFullAnalysis: FEATURE_KEYS.CAN_VIEW_FULL_ANALYSIS,
+  // The PDF is built in the browser, so this verdict IS the gate. Free can read the full page but
+  // gets "upgrade" here; the button stays visible as a Pro nudge (ExportPdfButton).
+  exportAnalysisPdf: FEATURE_KEYS.CAN_EXPORT_ANALYSIS_PDF,
 };
 
 /** Guest defaults used while entitlements are unsettled — always fail-CLOSED on display. */
-const GUEST_UNLOCKED_TRACKS = 10;
+const GUEST_UNLOCKED_TRACKS = 20;
 
 export interface UseAccess {
   /** The verdict for one action. Components branch on this and nothing else. */

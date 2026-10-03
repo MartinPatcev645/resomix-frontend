@@ -51,14 +51,17 @@ export function useTrackCountOptions(): UseTrackCountOptions {
     () =>
       TRACK_COUNT_VALUES.map((value) => {
         const locked = value > effectiveCap;
-        // Locked options are greyed out; suffix them so the picker reads e.g. "50 tracks (Premium)".
+        // Locked options are greyed out and say what unlocks them. A guest's locked option opens
+        // with a free account (Free creates up to 100), so "(Premium)" would send them the wrong
+        // way; signed-in users only ever see a locked option when it is a paid one.
+        const suffix = isGuest ? "(Log in)" : "(Premium)";
         return {
           value,
-          label: locked ? `${value} tracks (Premium)` : `${value} tracks`,
+          label: locked ? `${value} tracks ${suffix}` : `${value} tracks`,
           locked,
         };
       }),
-    [effectiveCap]
+    [effectiveCap, isGuest]
   );
 
   // Keep the selected depth within the plan cap once entitlements are known.

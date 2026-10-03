@@ -39,7 +39,7 @@ export const PAGE = {
   titleAccent: null as string | null,
   /** `topSkMax` is Pro `limits.top_sk_max` from the billing API — never hardcode the match count. */
   subtitle: (topSkMax: number) =>
-    `Start free. Go Pro for uninterrupted discovery, up to ${topSkMax} matches per search and Full Track Intelligence.`,
+    `Start free. Go Pro for uninterrupted discovery, all ${topSkMax} matches in every result and Track Intelligence as a PDF report.`,
   pricesUnavailable:
     "Prices are temporarily unavailable. Nothing has been charged, and Free and Guest access are unaffected. Please try again shortly.",
   loading: "Loading…",
@@ -101,7 +101,7 @@ export const CARDS = {
 export const GUEST_RAIL = {
   label: "No account yet?",
   body:
-    "Run Sonic Discovery as a guest — three searches a day with the top 10 matches visible. Guest playlists are public by default; an account makes them private.",
+    "Run Sonic Discovery as a guest. Three searches a day, with the top 20 matches visible. Guest playlists are public by default; an account makes them private.",
   cta: "Try Sonic Discovery",
 } as const;
 
@@ -165,6 +165,7 @@ export const COMPARE = {
     completeSummary: "Complete analysis summary",
     similarityFromUpload: "Similarity playlist from your upload",
     fullDashboard: "Full Track Intelligence dashboard",
+    analysisPdf: "Track Intelligence as a PDF report",
     playlistsListed: "Playlists listed in your Library",
     playlistsCreate: "Playlists you can create",
     newPlaylistsAre: "New playlists are",
@@ -226,11 +227,12 @@ export const ERRORS = {
 export const GUEST_LIMITS_FALLBACK: BillingPlanLimits = {
   searches_per_day: 3,
   uploads_per_month: 0,
-  top_sk_max: 10,
-  dropdown_max_tracks: 20,
+  top_sk_max: 20,
+  dropdown_max_tracks: 50,
   library_playlists_max: 0,
   exports_per_day: 0,
   export_track_limit: 0,
   can_view_full_analysis: false,
+  can_export_analysis_pdf: false,
   can_similarity_upload: false,
 };
