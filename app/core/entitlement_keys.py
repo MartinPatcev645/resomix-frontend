@@ -32,6 +32,7 @@ class FeatureKey:
     LIBRARY_PLAYLISTS_MAX = "library_playlists_max"    # how many are LISTED in the Library
     EXPORTS_PER_DAY = "exports_per_day"                # window: daily
     CAN_VIEW_FULL_ANALYSIS = "can_view_full_analysis"  # the full Track Intelligence page
+    CAN_EXPORT_ANALYSIS_PDF = "can_export_analysis_pdf"  # download Track Intelligence as a PDF
     SEARCH_RESULTS_MAX = "search_results_max"          # rows returned by /search
 
 

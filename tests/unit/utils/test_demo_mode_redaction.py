@@ -42,9 +42,14 @@ def _track(position: int) -> dict:
     }
 
 
+HIDDEN_COUNT = 10
+
+
 @pytest.fixture()
 def payload() -> dict:
-    return {"similar_tracks": [_track(i) for i in range(20)]}
+    # Always HIDDEN_COUNT tracks past the guest cap, so the redaction tests below have rows to check
+    # whatever the cap is. A fixed 20 made them pass on an empty list once the cap reached 20.
+    return {"similar_tracks": [_track(i) for i in range(ANON_VISIBLE_COUNT + HIDDEN_COUNT)]}
 
 
 # --- the bug this file exists for ------------------------------------------- #
@@ -54,7 +59,7 @@ def test_redacted_ids_are_distinct(payload):
     apply_demo_mode_redaction(payload, visible_count=ANON_VISIBLE_COUNT)
     hidden_ids = [t["id"] for t in payload["similar_tracks"][ANON_VISIBLE_COUNT:]]
 
-    assert len(hidden_ids) == 10
+    assert len(hidden_ids) == HIDDEN_COUNT
     assert len(set(hidden_ids)) == len(hidden_ids), "redacted rows must not share an id"
 
 
@@ -146,3 +151,11 @@ def test_only_unauthenticated_system_partner_callers_are_degraded():
     assert is_anonymous_frontend(authenticated=False, partner_id=1, system_partner_id=1) is True
     assert is_anonymous_frontend(authenticated=True, partner_id=1, system_partner_id=1) is False
     assert is_anonymous_frontend(authenticated=False, partner_id=4, system_partner_id=1) is False
+
+
+def test_guest_cap_matches_the_guest_plan():
+    """Guests are capped by this constant AND by the guest plan's `max_tracks_per_playlist`, and the
+    smaller wins. If they drift, raising the plan in admin silently changes nothing."""
+    from app.services.entitlement_seed import PLAN_ENTITLEMENTS
+
+    assert ANON_VISIBLE_COUNT == PLAN_ENTITLEMENTS["guest"]["max_tracks_per_playlist"] == 20

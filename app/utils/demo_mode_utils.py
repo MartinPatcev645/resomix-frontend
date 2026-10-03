@@ -13,7 +13,11 @@ from typing import Any, Dict, List, MutableMapping
 REDACTION_LIMIT = 20
 # How many tracks an un-authenticated ("logged-out") frontend caller may see/play in full
 # before the rest are scrambled. The scramble (not removal) lets the UI show "log in to unlock".
-ANON_VISIBLE_COUNT = 10
+#
+# MUST equal the guest plan's `max_tracks_per_playlist` (admin Plans page and entitlement_seed).
+# Guests are capped by BOTH, and the smaller wins, so raising only the plan value in admin leaves
+# guests where this constant is. It also sets how many tracks a guest can play (seed + this many).
+ANON_VISIBLE_COUNT = 20
 _ID_PATTERN = "dEm0"
 _TEXT_PATTERN = "demo"
 # Width of the per-row index appended to a masked id, so redacted rows do not all

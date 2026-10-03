@@ -112,7 +112,7 @@ class SimilarityController:
         """Server-authoritative result teasing for the frontend surface.
 
         Scrambles every result track beyond the caller's ``max_tracks_per_playlist`` entitlement
-        (guest 10 / free 20 / basic 50 / pro 100). This makes the "unlock N, tease the rest" UI
+        (guest 20 / free 50 / basic 50 / pro 100). This makes the "unlock N, tease the rest" UI
         non-bypassable — the locked tracks' real metadata never leaves the server. B2B partners
         (``partner_id != system_partner_id``) are never redacted; they have their own quota system.
         """

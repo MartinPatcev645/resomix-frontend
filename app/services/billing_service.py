@@ -561,6 +561,7 @@ class BillingService:
             "exports_per_day": cap(FeatureKey.EXPORTS_PER_DAY),
             "export_track_limit": cap(FeatureKey.EXPORT_TRACK_LIMIT),
             "can_view_full_analysis": bool(entitlements.get(FeatureKey.CAN_VIEW_FULL_ANALYSIS)),
+            "can_export_analysis_pdf": bool(entitlements.get(FeatureKey.CAN_EXPORT_ANALYSIS_PDF)),
             "can_similarity_upload": bool(entitlements.get(FeatureKey.CAN_SIMILARITY_UPLOAD)),
         }
 
