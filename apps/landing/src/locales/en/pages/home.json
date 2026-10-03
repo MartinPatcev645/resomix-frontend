@@ -24,7 +24,7 @@
     },
     "statement": {
       "head": "Resomix brings the art of music selection into the age of algorithmic precision",
-      "sub": "Beyond charts, metadata and release date: discover and filter music by how it actually sounds. <a>why metadata isn't enough</a>",
+      "sub": "Beyond charts, metadata and release date: discover and filter music by how it actually sounds. <a>Why metadata isn't enough</a>",
       "capSound": "The sound itself",
       "capChars": "70+ measurable audio characteristics",
       "capResult": "A ranked, usable result"
@@ -152,7 +152,7 @@
       "eyebrow": "Built for people who work in sound",
       "djs": {
         "label": "DJs",
-        "outcome": "Crate digging, enhanced: discover music beyond traditional boundaries. <a>see how it works for finding new techno</a>"
+        "outcome": "Crate digging, enhanced: discover music beyond traditional boundaries. <a>See how it works for finding new techno</a>"
       },
       "producers": {
         "label": "Producers",
@@ -160,11 +160,11 @@
       },
       "curators": {
         "label": "Curators",
-        "outcome": "Build playlists that flow by sound, not by titles and release dates. <a>how supervisors and curators use Resomix</a>"
+        "outcome": "Build playlists that flow by sound, not by titles and release dates. <a>How supervisors and curators use Resomix</a>"
       },
       "labels": {
         "label": "Labels & Distributors",
-        "outcome": "Turn your deep catalogue into a valuable revenue source. <a>turn a back catalogue into revenue</a>"
+        "outcome": "Turn your deep catalogue into a valuable revenue source. <a>Turn a back catalogue into revenue</a>"
       },
       "platforms": {
         "label": "Platforms & Music Tech",
@@ -206,7 +206,7 @@
     },
     "final": {
       "head": "You bring the vision. We surface the sound.",
-      "body": "Resomix maps the measurable character of a track and surfaces its closest sonic relationships, no matter who released it or when. That's what discovery should be. <a>the story behind Resomix</a>",
+      "body": "Resomix maps the measurable character of a track and surfaces its closest sonic relationships, no matter who released it or when. That's what discovery should be. <a>The story behind Resomix</a>",
       "capIndiv": "Individual professionals",
       "capCatalogues": "Catalogues & platforms",
       "fork1who": "For DJs, producers and curators",

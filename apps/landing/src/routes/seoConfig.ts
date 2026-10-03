@@ -152,7 +152,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     description:
       'How Resomix handles audio. Uploads are deleted within 24 hours, partner catalogues stay in private indexes, and your audio is never used for training.',
     changefreq: 'monthly',
-    lastmod: '2026-09-18',
+    lastmod: '2026-10-03',
     priority: 0.7,
   },
 

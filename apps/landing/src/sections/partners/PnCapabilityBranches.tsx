@@ -96,7 +96,7 @@ export function PnCapabilityBranches() {
                   an anchor would be invalid, so the link lives in its own entry. */}
               {branch.blog ? (
                 <li>
-                  <a className="rx-copylink" target="_blank" rel="noopener" href={branch.blog.href}>{branch.blog.label}</a>
+                  <a className="rx-copylink" href={branch.blog.href}>{branch.blog.label}</a>
                 </li>
               ) : null}
             </ul>

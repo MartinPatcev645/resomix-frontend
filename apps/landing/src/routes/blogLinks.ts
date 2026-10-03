@@ -8,15 +8,13 @@
  *   - absolute URLs, blog paths keep the trailing slash (the main site drops it, so a missing or
  *     extra slash costs a redirect hop on every link)
  *   - plain `<a href>` present in the server-rendered HTML, never injected after load
- *   - no rel="nofollow", no rel="sponsored", no UTM parameters
+ *   - no rel="nofollow", no rel="sponsored", no UTM parameters, no target="_blank"
  *   - in body copy or a card description, never inside a heading
  *   - one link per destination per page, at its first relevant mention
  *
- * One deliberate departure from the map, agreed on 3 October: these open in a new tab. The map
- * forbids `target="_blank"` and gives the reason "they should open in the same tab and pass
- * authority", but the target attribute has no bearing on how a link is crawled or what it passes.
- * The map's QA crawl still tests for it, so expect that one row to flag and explain it rather than
- * silently reverting. `rel="noopener"` rides along, and is not one of the rel values the map bans.
+ * These briefly opened in a new tab and no longer do, by George's decision on 3 October. If it is
+ * raised again: the map's stated reason for the ban, that a new tab would stop the link passing
+ * authority, is not true, `target` has no bearing on crawling. The rule still stands as his call.
  *
  * Anchor text lives in `src/locales` next to the copy it sits in; these are only the destinations.
  * Rendered through react-i18next's `<Trans components={{ a: <a href={BLOG.x} /> }} />`, which keeps

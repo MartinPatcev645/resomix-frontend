@@ -11,7 +11,7 @@ export function PrCraft() {
           <div>
             <p className="pr-eyebrow uppercase">{t('producers.craft.eyebrow')}</p>
             <h2 className="pr-h2b uppercase">{t('producers.craft.h2')}</h2>
-            <p className="pr-body"><Trans i18nKey="producers.craft.body" components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={BLOG.story} /> }} /></p>
+            <p className="pr-body"><Trans i18nKey="producers.craft.body" components={{ a: <a className="rx-copylink" href={BLOG.story} /> }} /></p>
           </div>
 
           <figure

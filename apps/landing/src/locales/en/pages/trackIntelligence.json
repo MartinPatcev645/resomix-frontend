@@ -193,7 +193,7 @@
       "modes": {
         "dj": {
           "head": "For DJs",
-          "copy": "Read the track before you hear it — arrangement, tempo, key, movement and weight, at a glance. <a>how DJs dig for new techno by sound</a>",
+          "copy": "Read the track before you hear it — arrangement, tempo, key, movement and weight, at a glance. <a>How DJs dig for new techno by sound</a>",
           "attrs": [
             "Structure: where every section starts and ends",
             "BPM: stable 124, confirmed across the beat grid",
@@ -350,7 +350,7 @@
           "q": "Can Track Intelligence enrich catalogue metadata?",
           "a": "For a partner catalogue, yes. The same analysis runs across every authorised recording so structure, tempo, key, mood and genre are described in the same terms for every track, and it can flag inconsistent tagging. Resomix does not edit your metadata. It gives your team consistent evidence to work from.",
           "link": {
-            "label": "why tags and metadata fall short",
+            "label": "Why tags and metadata fall short",
             "href": "https://blog.resomix.com/beyond-tags-and-metadata-better-music-discovery-for-record-labels/"
           }
         },

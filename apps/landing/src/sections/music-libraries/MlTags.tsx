@@ -11,7 +11,7 @@ export function MlTags() {
           <div>
             <p className="ml-eyebrow uppercase">{t('musicLibraries.tags.eyebrow')}</p>
             <h2 className="ml-h2b uppercase">{t('musicLibraries.tags.h2')}</h2>
-            <p className="ml-body"><Trans i18nKey="musicLibraries.tags.p1" components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={BLOG.beyondTags} /> }} /></p>
+            <p className="ml-body"><Trans i18nKey="musicLibraries.tags.p1" components={{ a: <a className="rx-copylink" href={BLOG.beyondTags} /> }} /></p>
             <p className="ml-body">{t('musicLibraries.tags.p2')}</p>
             <p className="ml-body ml-body-soft">{t('musicLibraries.tags.p3')}</p>
           </div>

@@ -15,7 +15,7 @@ export function MpOutcomes() {
           <div className="mp-card">
             <span className="mp-num">01</span>
             <h3>{t('musicPublishers.outcomes.c1.title')}</h3>
-            <p><Trans i18nKey="musicPublishers.outcomes.c1.text" components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={BLOG.backCatalogue} /> }} /></p>
+            <p><Trans i18nKey="musicPublishers.outcomes.c1.text" components={{ a: <a className="rx-copylink" href={BLOG.backCatalogue} /> }} /></p>
             <div className="mp-mv">
               <svg viewBox="0 0 200 74" role="img" aria-label={t('musicPublishers.outcomes.c1.figureAria')}>
                 <g fill="rgba(255,255,255,.1)">

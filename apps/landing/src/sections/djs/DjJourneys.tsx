@@ -202,7 +202,7 @@ export function DjJourneys() {
         <div className="dj-wf-lead">
           <p className="dj-body">{t('djs.journeys.lead1')}</p>
           <p className="dj-body">{t('djs.journeys.lead2')}</p>
-          <p className="dj-body"><Trans i18nKey="djs.journeys.lead3" components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={BLOG.techno} /> }} /></p>
+          <p className="dj-body"><Trans i18nKey="djs.journeys.lead3" components={{ a: <a className="rx-copylink" href={BLOG.techno} /> }} /></p>
           <p className="dj-body dj-body-soft" style={{ marginBottom: 0 }}>
             {t('djs.journeys.intro')}
           </p>

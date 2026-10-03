@@ -159,7 +159,7 @@ export function RlWorkflows() {
                 {/* MB-17 sits on the dormant-catalogue card. */}
                 <Trans
                   i18nKey={`recordLabels.workflows.items.${card.key}`}
-                  components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={WORKFLOW_BLOG[card.key] ?? ''} /> }}
+                  components={{ a: <a className="rx-copylink" href={WORKFLOW_BLOG[card.key] ?? ''} /> }}
                 />
               </p>
             </article>

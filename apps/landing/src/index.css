@@ -338,13 +338,20 @@ html #stcm-modal footer a.stcm-credit-link {
    bracket links hide their underline until hover, which works when [ ] already says "clickable"
    but not for a link sitting at the end of a sentence, so the underline is visible throughout.
 
+   The class is DOUBLED on purpose. Thirteen page stylesheets carry `.xx-page a { color: inherit;
+   text-decoration: none }` at (0,1,1), which outranks a single class and silently stripped both the
+   colour and the underline on every page that has one — the link looked styled on Music Publishers
+   and like plain body text on the homepage. Repeating the class lifts this to (0,2,0) and wins
+   everywhere without reaching for !important. The FAQ override in faq.css sits at (0,3,0) and still
+   takes precedence over this, which is intended.
+
    The trailing mark is the arrow from apps/webapp/src/assets/icons/arrow_small_up.svg, inlined as a
    mask rather than an <img> or an inline <svg>. A mask is painted with `background-color`, so the
    arrow takes `currentColor` and changes with the link on hover and focus for free; the file's own
    hard-coded white fill is ignored because a mask reads alpha, not colour. It also has to be CSS
    rather than markup: these anchors are injected by react-i18next's <Trans>, which replaces an
    element's children with the translated text and would discard a nested <svg>. */
-.rx-copylink {
+.rx-copylink.rx-copylink {
   color: var(--color-primary, #ffffff);
   text-decoration: underline dotted currentColor;
   text-decoration-thickness: 1px;
@@ -352,7 +359,7 @@ html #stcm-modal footer a.stcm-credit-link {
   transition: color 0.16s ease;
 }
 
-.rx-copylink::after {
+.rx-copylink.rx-copylink::after {
   content: '';
   display: inline-block;
   width: 0.58em;
@@ -370,19 +377,19 @@ html #stcm-modal footer a.stcm-credit-link {
   mask-position: center;
 }
 
-.rx-copylink:hover,
-.rx-copylink:focus-visible {
+.rx-copylink.rx-copylink:hover,
+.rx-copylink.rx-copylink:focus-visible {
   color: var(--color-neon-orange, #ee4a26);
 }
 
-.rx-copylink:focus-visible {
+.rx-copylink.rx-copylink:focus-visible {
   outline: 2px solid var(--color-neon-orange, #ee4a26);
   outline-offset: 2px;
   border-radius: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rx-copylink {
+  .rx-copylink.rx-copylink {
     transition: none;
   }
 }

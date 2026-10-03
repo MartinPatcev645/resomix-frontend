@@ -3,8 +3,11 @@ import { Trans, useTranslation } from 'react-i18next';
 import { BLOG } from '@/routes/blogLinks.ts';
 import { pulsesOf, ridgeD } from './sdEngine.ts';
 
-/** Blog destination per audience copy block, from the interlinking map. Only MB-08 is mapped. */
-const AUDIENCE_BLOG: Record<string, string | undefined> = { djCopy: BLOG.techno };
+/** Blog destination per audience copy block, from the interlinking map (MB-08, MB-09). */
+const AUDIENCE_BLOG: Record<string, string | undefined> = {
+  djCopy: BLOG.techno,
+  supCopy: BLOG.supervisors,
+};
 
 export type AudienceMode = 'dj' | 'prod' | 'sup';
 
@@ -220,7 +223,6 @@ const VIZ_CONFIG = [
 
 export function SdAudienceModes({ mode, onModeChange, onScrollToConsole }: SdAudienceModesProps) {
   const { t } = useTranslation('common');
-  const content = MODE_CONTENT[mode];
 
   return (
     <section id="sd-audiences" className="sd-section" aria-label="Professional use cases">
@@ -243,24 +245,37 @@ export function SdAudienceModes({ mode, onModeChange, onScrollToConsole }: SdAud
       </div>
 
       <div className="sd-aud">
+        {/* All three panels are rendered and toggled with CSS, the same way the visualisations
+            beside them already work. Swapping only the active one left MB-08 and MB-09 out of the
+            static HTML on every tab but the default, and the interlinking map requires its links to
+            be in the server-rendered markup rather than appearing after a click. */}
         <div>
-          <h3 className="sd-h3b uppercase">{t(`sonicDiscovery.aud.${content.headKey}`)}</h3>
-          <p className="sd-body">
-            {/* MB-08. Only the DJ tab carries a blog link, and only the active tab is prerendered,
-                so the map's "server-rendered <a>" rule holds for it and no other tab needs one. */}
-            <Trans
-              i18nKey={`sonicDiscovery.aud.${content.copyKey}`}
-              components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={AUDIENCE_BLOG[content.copyKey] ?? ''} /> }}
-            />
-          </p>
-          <ul className="sd-audattrs">
-            {content.attrKeys.map((key) => (
-              <li key={key}>{t(`sonicDiscovery.aud.${key}`)}</li>
-            ))}
-          </ul>
-          <button type="button" className="sd-pill sd-pill-line uppercase" onClick={onScrollToConsole}>
-            {t(`sonicDiscovery.aud.${content.ctaKey}`)}
-          </button>
+          {MODES.map((m) => {
+            const panel = MODE_CONTENT[m.id];
+            return (
+              <div key={m.id} className={`sd-audpanel${mode === m.id ? ' sd-on' : ''}`}>
+                <h3 className="sd-h3b uppercase">{t(`sonicDiscovery.aud.${panel.headKey}`)}</h3>
+                <p className="sd-body">
+                  <Trans
+                    i18nKey={`sonicDiscovery.aud.${panel.copyKey}`}
+                    components={{ a: <a className="rx-copylink" href={AUDIENCE_BLOG[panel.copyKey] ?? ''} /> }}
+                  />
+                </p>
+                <ul className="sd-audattrs">
+                  {panel.attrKeys.map((key) => (
+                    <li key={key}>{t(`sonicDiscovery.aud.${key}`)}</li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  className="sd-pill sd-pill-line uppercase"
+                  onClick={onScrollToConsole}
+                >
+                  {t(`sonicDiscovery.aud.${panel.ctaKey}`)}
+                </button>
+              </div>
+            );
+          })}
         </div>
         <div>
           {VIZ_CONFIG.map(({ id, mode: vizMode, hud, Viz }) => (

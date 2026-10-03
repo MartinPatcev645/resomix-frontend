@@ -93,7 +93,7 @@ export const CAPABILITY_BRANCHES: CapabilityBranch[] = [
     dest: '/product/catalog-intelligence',
     y: 60,
     blog: {
-      label: 'how a back catalogue becomes revenue',
+      label: 'How a back catalogue becomes revenue',
       href: 'https://blog.resomix.com/how-your-labels-back-catalogue-becomes-a-reliable-revenue-stream/',
     },
   },

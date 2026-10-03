@@ -2430,3 +2430,16 @@
     padding-block: var(--px-52);
   }
 }
+
+/*
+ * Audience panels, toggled the same way `.sd-audviz` toggles the visualisation beside them. All
+ * three are in the markup so the interlinking map's links (MB-08 on DJs, MB-09 on Supervisors &
+ * Curators) are present in the server-rendered HTML rather than appearing only after a click.
+ */
+.sd-page .sd-audpanel {
+  display: none;
+}
+
+.sd-page .sd-audpanel.sd-on {
+  display: block;
+}

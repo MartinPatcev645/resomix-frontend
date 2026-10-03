@@ -59,14 +59,11 @@ export function FaqSection({ ns }: { ns: FaqNamespace }) {
                 <>
                   {' '}
                   {item.link.href ? (
-                    /* Absolute, off-site. `rx-copylink` carries the accent colour, the underline
-                       and the ↗, so it reads as a link that leaves the site; `faq-link` keeps its
-                       place and spacing under the answer. No nofollow and no UTM, so it still
-                       passes authority. */
+                    /* Absolute, off-site. `rx-copylink` carries the underline and the arrow, so it
+                       reads as a link that leaves the site; `faq-link` keeps its place and spacing
+                       under the answer. No nofollow, no UTM and no new tab, per the map. */
                     <a
                       className="faq-link rx-copylink font-fira"
-                      target="_blank"
-                      rel="noopener"
                       href={item.link.href}
                     >
                       {item.link.label}

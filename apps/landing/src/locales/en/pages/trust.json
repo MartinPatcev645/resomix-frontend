@@ -50,7 +50,7 @@
         },
         "noTraining": {
           "control": "No training on supplied audio",
-          "description": "User and partner audio is not used to train or fine-tune PYXIS-1."
+          "description": "User and partner audio is not used to train or fine-tune PYXIS-1. <a>Why we built Resomix this way</a>"
         },
         "publicTls": {
           "control": "Public endpoint transport",

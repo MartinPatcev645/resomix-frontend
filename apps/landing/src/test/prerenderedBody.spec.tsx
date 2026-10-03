@@ -95,8 +95,8 @@ describe.skipIf(!built)('prerendered per-route body', () => {
           if (!/^https:\/\/blog\.resomix\.com\/[a-z0-9-]+\/$/.test(href)) {
             broken.push(`${r} -> ${href} (not a canonical blog URL)`);
           }
-          if (/nofollow|sponsored/.test(tag)) {
-            broken.push(`${r} -> ${href} (external FAQ link must not nofollow)`);
+          if (/nofollow|sponsored|target=/.test(tag)) {
+            broken.push(`${r} -> ${href} (map forbids nofollow, sponsored and target on these)`);
           }
           if (!/class="[^"]*\brx-copylink\b/.test(tag)) {
             broken.push(`${r} -> ${href} (off-site link needs rx-copylink so it reads as a link)`);

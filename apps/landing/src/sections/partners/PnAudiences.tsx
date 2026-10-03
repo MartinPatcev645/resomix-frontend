@@ -75,7 +75,7 @@ export function PnAudiences({ activePath, onSelectPath }: PnAudiencesProps) {
                   only one prerendered. The map requires the anchor in the server-rendered HTML. */}
               <Trans
                 i18nKey={`partners.audiences.profiles.${audience}.question`}
-                components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={AUDIENCE_BLOG[audience] ?? ''} /> }}
+                components={{ a: <a className="rx-copylink" href={AUDIENCE_BLOG[audience] ?? ''} /> }}
               />
             </p>
           </div>

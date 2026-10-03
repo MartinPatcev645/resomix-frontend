@@ -1,6 +1,10 @@
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
+import { BLOG } from '@/routes/blogLinks.ts';
 import { TrStatusChip } from './TrStatusChip.tsx';
 import type { LedgerRowDef } from './trData.ts';
+
+/** Blog destination per ledger row, from the interlinking map. Only MB-32 is mapped. */
+const LEDGER_BLOG: Record<string, string | undefined> = { noTraining: BLOG.story };
 
 interface TrLedgerRowProps {
   row: LedgerRowDef;
@@ -39,7 +43,11 @@ export function TrLedgerRow({ row, open = false, collapsible = false, onToggle, 
         <TrStatusChip status={row.status} />
       </span>
       <p role={cellRole}>
-        {t(row.descriptionKey)}
+        {/* MB-32 sits on the no-training row. */}
+        <Trans
+          i18nKey={row.descriptionKey}
+          components={{ a: <a className="rx-copylink" href={LEDGER_BLOG[row.id] ?? ''} /> }}
+        />
         {row.legalDisclosureKey ? (
           <>
             {' '}

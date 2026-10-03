@@ -11,7 +11,7 @@ export function HmFinalCta() {
     <section className="hm-section hm-final" id="hm-final">
       <div className="hm-frame">
         <h2 className="hm-h2b uppercase">{t('home.final.head')}</h2>
-        <p className="hm-body"><Trans i18nKey="home.final.body" components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={BLOG.story} /> }} /></p>
+        <p className="hm-body"><Trans i18nKey="home.final.body" components={{ a: <a className="rx-copylink" href={BLOG.story} /> }} /></p>
         <div className="hm-paths" aria-hidden="true">
           <svg className="hm-sl" viewBox="0 0 1152 140">
           {/* the hero's dimensions return */}

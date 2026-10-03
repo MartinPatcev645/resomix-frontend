@@ -13,7 +13,7 @@ export function RlCreativity() {
             <h2 className="rl-h2b uppercase">{t('recordLabels.creativity.h2')}</h2>
             <p className="rl-body">{t('recordLabels.creativity.p1')}</p>
             <p className="rl-body">{t('recordLabels.creativity.p2')}</p>
-            <p className="rl-body rl-body-emph"><Trans i18nKey="recordLabels.creativity.p3" components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={BLOG.story} /> }} /></p>
+            <p className="rl-body rl-body-emph"><Trans i18nKey="recordLabels.creativity.p3" components={{ a: <a className="rx-copylink" href={BLOG.story} /> }} /></p>
           </div>
 
           <figure

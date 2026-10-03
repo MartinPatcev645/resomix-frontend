@@ -15,7 +15,7 @@
       "h2": "When metadata isn't enough",
       "p1": "As a record label grows, it needs tools to help it search, organise, and understand its catalogue. It might be easier to do it all manually with a catalogue of 10, 20, or 50 releases. But what about 100, or 200?",
       "p2": "With these numbers, it's easy to lose sight of a project's narrative, or miss opportunities that'd increase the label's visibility. A forgotten track published years ago that'd be a perfect fit for a movie soundtrack, or an older release could find a new audience through its sonic similarity to a recent signing.",
-      "p3": "Metadata helps, but it doesn't describe how music actually sounds, which makes connections difficult to find. <a>why metadata can't describe how music sounds</a>",
+      "p3": "Metadata helps, but it doesn't describe how music actually sounds, which makes connections difficult to find. <a>Why metadata can't describe how music sounds</a>",
       "figureAria": "The same catalogue seen two ways: as a flat metadata table where every row looks alike, and as a sonic field where tracks group by how they sound and a forgotten release stands out"
     },
     "quote": {
@@ -31,7 +31,7 @@
       "lead2": "In the day-to-day management of a label, this process makes it easier to:",
       "items": {
         "demo": "Understand how new demos fit within an existing catalogue.",
-        "dormant": "Rediscover forgotten releases and put them in front of a new audience. <a>turn a back catalogue into reliable revenue</a>",
+        "dormant": "Rediscover forgotten releases and put them in front of a new audience. <a>Turn a back catalogue into reliable revenue</a>",
         "brief": "Respond to sync requests efficiently.",
         "cluster": "Build compilations or playlists around a cohesive sound, in no time."
       },
@@ -42,7 +42,7 @@
       "h2": "Sonic analysis at the service of creativity",
       "p1": "By making entire catalogues searchable purely by sound, a label team spends less time searching and more time discovering. In this case, the difference between these two similar terms is vital.",
       "p2": "Our deterministic engine can do the heavy lifting, highlighting opportunities for your label that might have been ignored. Your role, whether you're the label founder or marketing assistant, will always be to choose the right path for the label based on its history and creative integrity.",
-      "p3": "Resomix's similarity engine is not designed to replace the human \"touch\", but to enhance it and amplify it so that it can reach its true potential. <a>the thinking behind Resomix</a>",
+      "p3": "Resomix's similarity engine is not designed to replace the human \"touch\", but to enhance it and amplify it so that it can reach its true potential. <a>The thinking behind Resomix</a>",
       "figureAria": "The engine surfaces a small set of candidate tracks from the catalogue; a white ring marks the one the label team chooses; the decision stays human"
     },
     "faq": {

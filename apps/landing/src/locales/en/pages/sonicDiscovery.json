@@ -117,7 +117,7 @@
       "eyebrow": "04 // who it decides for",
       "title": "One engine. Different goals.",
       "djHead": "For DJs",
-      "djCopy": "Start with one reference track and instantly discover a shortlist of compatible alternatives. Compare groove, energy and harmony before deciding what to play next. <a>a DJ's guide to finding techno by sound</a>",
+      "djCopy": "Start with one reference track and instantly discover a shortlist of compatible alternatives. Compare groove, energy and harmony before deciding what to play next. <a>A DJ's guide to finding techno by sound</a>",
       "djA1": "Groove and tempo alignment for mixing",
       "djA2": "Energy comparison at a glance",
       "djA3": "Key and harmony, read in Track Intelligence",
@@ -131,7 +131,7 @@
       "prodA4": "Inspiration without imitation",
       "prodCta": "Explore related themes",
       "supHead": "For Supervisors & Curators",
-      "supCopy": "Answer a sonic brief with a detailed search: start from a known track, and build a shortlist that perfectly fits your needs.",
+      "supCopy": "Answer a sonic brief with a detailed search: start from a known track, and build a shortlist that perfectly fits your needs. <a>Search a brief by sound</a>",
       "supA1": "Reference-first search for briefs",
       "supA2": "Mood and texture alternatives",
       "supA3": "Less-obvious candidates outside genre tags",
@@ -214,7 +214,7 @@
           "q": "How does Resomix decide which tracks are similar?",
           "a": "Resomix's PYXIS-1 engine builds a sonic profile from more than 70 measurable audio characteristics of the whole recording, then compares it with a pre-analysed index. The result is deterministic, so the same reference against the same index returns the same shortlist, each result with its similarity score.",
           "link": {
-            "label": "why Resomix compares sound, not tags",
+            "label": "Why Resomix compares sound, not tags",
             "href": "https://blog.resomix.com/beyond-tags-and-metadata-better-music-discovery-for-record-labels/"
           }
         },

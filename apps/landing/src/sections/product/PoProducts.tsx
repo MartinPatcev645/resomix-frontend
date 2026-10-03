@@ -21,7 +21,7 @@ export function PoProducts() {
           <div className="po-pm">
             <span className="po-q">{t('product.products.sdQ')}</span>
             <h3>{t('product.products.sdTitle')}</h3>
-            <p><Trans i18nKey="product.products.sdBody" components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={BLOG.techno} /> }} /></p>
+            <p><Trans i18nKey="product.products.sdBody" components={{ a: <a className="rx-copylink" href={BLOG.techno} /> }} /></p>
             <div className="po-mv">
               <svg viewBox="0 0 220 64" role="img" aria-label={t('product.products.sdAria')}>
                 <circle cx="22" cy="32" r="11" fill={url('halo')} />
@@ -94,7 +94,7 @@ export function PoProducts() {
           <div className="po-pm">
             <span className="po-q">{t('product.products.ciQ')}</span>
             <h3>{t('product.products.ciTitle')}</h3>
-            <p><Trans i18nKey="product.products.ciBody" components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={BLOG.beyondTags} /> }} /></p>
+            <p><Trans i18nKey="product.products.ciBody" components={{ a: <a className="rx-copylink" href={BLOG.beyondTags} /> }} /></p>
             <div className="po-mv">
               <svg viewBox="0 0 220 64" role="img" aria-label={t('product.products.ciAria')}>
                 <rect x="10" y="8" width="110" height="48" fill="none" stroke="rgba(255,255,255,.46)" strokeWidth="1.4" />

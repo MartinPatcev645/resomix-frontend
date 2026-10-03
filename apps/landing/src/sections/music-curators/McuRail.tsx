@@ -14,7 +14,7 @@ export function McuRail() {
       <div className="mcu-frame">
         <p className="mcu-eyebrow uppercase">{t('musicCurators.rail.eyebrow')}</p>
         <h2 className="mcu-h2b uppercase">{t('musicCurators.rail.h2')}</h2>
-        <p className="mcu-body"><Trans i18nKey="musicCurators.rail.lead1" components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={BLOG.supervisors} /> }} /></p>
+        <p className="mcu-body"><Trans i18nKey="musicCurators.rail.lead1" components={{ a: <a className="rx-copylink" href={BLOG.supervisors} /> }} /></p>
         <p className="mcu-body">{t('musicCurators.rail.lead2')}</p>
         <p className="mcu-body mcu-rail-intro">{t('musicCurators.rail.intro')}</p>
 
@@ -33,7 +33,7 @@ export function McuRail() {
                       the ambient post. */}
                   <Trans
                     i18nKey={`musicCurators.rail.items.${key}.text`}
-                    components={{ a: <a className="rx-copylink" target="_blank" rel="noopener" href={RAIL_BLOG[key] ?? ''} /> }}
+                    components={{ a: <a className="rx-copylink" href={RAIL_BLOG[key] ?? ''} /> }}
                   />
                 </span>
               </span>
