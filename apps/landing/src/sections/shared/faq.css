@@ -65,18 +65,18 @@
 
 /*
  * The off-site variant, used by the interlinking map's two FAQ links. `.faq-list .faq-link` above
- * outranks the global `.rx-copylink` on specificity, so without this the accent colour and the
- * visible underline would be overridden back to white-and-transparent. Everything else about the
- * bracket link, its own line, its spacing and its tap target, is inherited unchanged.
+ * outranks the global `.rx-copylink` on specificity, so without this its transparent underline
+ * would win and the link would lose the affordance it is supposed to have. White with a visible
+ * dotted underline at rest, neon orange on hover and focus, matching every other link in the map.
+ * Everything else about the bracket link, its own line, its spacing and its tap target, is
+ * inherited unchanged.
  */
 .faq-list .faq-link.rx-copylink {
-  color: var(--color-neon-orange, #ee4a26);
   text-decoration-color: currentColor;
 }
 
 .faq-list .faq-link.rx-copylink:hover,
 .faq-list .faq-link.rx-copylink:focus-visible {
-  color: var(--color-primary, #ffffff);
+  color: var(--color-neon-orange, #ee4a26);
   text-decoration-color: currentColor;
-  text-decoration-style: solid;
 }

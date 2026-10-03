@@ -116,7 +116,7 @@
       "profiles": {
         "label": {
           "label": "Labels & label groups",
-          "question": "Can our repertoire, current and back catalogue, be surfaced from the references that matter now? Read about <a>discovery as a new revenue stream</a>.",
+          "question": "Can our repertoire, current and back catalogue, be surfaced from the references that matter now? <a>discovery as a new revenue stream</a>",
           "route": "<b>Private Catalogue Pilot</b>: test on a representative authorised sample first.",
           "conversation": "Catalogue scope, reference tracks, reviewers and an agreed scorecard."
         },

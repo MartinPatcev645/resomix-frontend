@@ -1,6 +1,10 @@
 
 
 :root {
+  /* apps/webapp/src/assets/icons/arrow_small_up.svg, inlined so `.rx-copylink::after` can
+     paint it as a mask and let it inherit the link's colour. Shape only; the fill is ignored. */
+  --rx-arrow-up-right: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 49 49'%3E%3Cpath d='M48.6667 48.2905H37.7423V29.5518L40.9792 26.3791L40.9792 16.3653L8.30723 48.2865L0.522602 40.6562L33.0894 8.63187L22.6707 8.63187L19.4339 11.8046L0.518555 11.8046L0.518555 0.898438L40.878 0.898437L48.6667 8.53272L48.6667 48.2905Z' fill='%23000'/%3E%3C/svg%3E");
+
   /* Phase 1B precision-industrial tokens (verbatim from packages/ui design-system). Needed here so
      shared @resomix/ui content built on the newer theme (e.g. Error404) renders correctly on this
      app too — webapp carries the same copy. */
@@ -329,36 +333,46 @@ html #stcm-modal footer a.stcm-credit-link {
 }
 
 /* Contextual links into the Journal, from the interlinking map (src/routes/blogLinks.ts).
-   Unlike the site's bracket links, which announce themselves with [ ] and can stay underline-free
-   until hover, these sit mid-sentence inside grey body copy. A link a reader cannot see is a link
-   nobody clicks, so these carry the accent colour and a dotted underline at rest, and firm up to a
-   solid underline on hover and keyboard focus.
-   The trailing ↗ marks that the link leaves resomix.com, matching the "↗ external" convention in
-   the nav. Its empty alt text keeps screen readers from announcing the glyph itself. */
+
+   White with a dotted underline at rest, neon orange on hover and keyboard focus. The site's
+   bracket links hide their underline until hover, which works when [ ] already says "clickable"
+   but not for a link sitting at the end of a sentence, so the underline is visible throughout.
+
+   The trailing mark is the arrow from apps/webapp/src/assets/icons/arrow_small_up.svg, inlined as a
+   mask rather than an <img> or an inline <svg>. A mask is painted with `background-color`, so the
+   arrow takes `currentColor` and changes with the link on hover and focus for free; the file's own
+   hard-coded white fill is ignored because a mask reads alpha, not colour. It also has to be CSS
+   rather than markup: these anchors are injected by react-i18next's <Trans>, which replaces an
+   element's children with the translated text and would discard a nested <svg>. */
 .rx-copylink {
-  color: var(--color-neon-orange, #ee4a26);
+  color: var(--color-primary, #ffffff);
   text-decoration: underline dotted currentColor;
   text-decoration-thickness: 1px;
   text-underline-offset: var(--px-4, 0.25rem);
-  transition:
-    color 0.16s ease,
-    text-decoration-color 0.16s ease;
+  transition: color 0.16s ease;
 }
 
 .rx-copylink::after {
-  content: '\2197' / '';
-  margin-left: 0.15em;
-  font-size: 0.85em;
-  line-height: 1;
-  opacity: 0.75;
+  content: '';
+  display: inline-block;
+  width: 0.58em;
+  height: 0.58em;
+  margin-left: 0.3em;
+  vertical-align: baseline;
+  background-color: currentColor;
+  -webkit-mask-image: var(--rx-arrow-up-right);
+  mask-image: var(--rx-arrow-up-right);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  mask-position: center;
 }
 
-/* To white, not a brighter orange: `--color-primary-hover` is grey here, and orange-to-white is the
-   same direction of travel the consent dialog's links already take. */
 .rx-copylink:hover,
 .rx-copylink:focus-visible {
-  color: var(--color-primary, #ffffff);
-  text-decoration-style: solid;
+  color: var(--color-neon-orange, #ee4a26);
 }
 
 .rx-copylink:focus-visible {

@@ -21,12 +21,12 @@
         "listeners": "The same song can be interpreted in many ways. Two people may listen to the same piece and experience completely different emotions. Personal taste is invaluable, but it can also make music discovery inconsistent, especially when working under tight deadlines.",
         "subtleties": "Metadata is essential, but it rarely captures the subtleties that make a song feel intimate, nostalgic, unsettling, or uplifting."
       },
-      "balance": "When consistency, speed, accuracy, and a personal touch are all equally important, how do you find the right balance? See <a>how supervisors and curators search by sound</a>."
+      "balance": "When consistency, speed, accuracy, and a personal touch are all equally important, how do you find the right balance? <a>how supervisors and curators search by sound</a>"
     },
     "workflows": {
       "eyebrow": "Working as one",
       "h2": "Sonic and human intelligence, working as one",
-      "lead1": "Resomix has brought to life a sonic similarity engine (PYXIS-1) that converts audio into detailed structural, harmonic, rhythmic, timbral, and emotional intelligence. Instead of relying on tags and release dates, it focuses on the sonic DNA of every song. Read <a>why sound beats metadata</a>.",
+      "lead1": "Resomix has brought to life a sonic similarity engine (PYXIS-1) that converts audio into detailed structural, harmonic, rhythmic, timbral, and emotional intelligence. Instead of relying on tags and release dates, it focuses on the sonic DNA of every song. <a>why sound beats metadata</a>",
       "lead2": "For a sync agency, this makes it easier to:",
       "items": {
         "brief": "Respond to creative briefs with confidence and variety.",
