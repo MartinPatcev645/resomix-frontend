@@ -469,6 +469,13 @@ button.nav-cta-primary:hover {
   flex-direction: column;
 }
 
+/* `.nav-hnav ul` (the top bar) also matches these nested lists and centres its items. In a column
+   that shrink-wrapped every row and centred it, so short rows (Home) sat right of the rest. Needs
+   the extra class to outrank `.nav-hnav ul`. */
+.nav-hnav .nav-mm-list {
+  align-items: stretch;
+}
+
 .nav-mm-link {
   display: grid;
   grid-template-columns: 1.75rem minmax(0, 1fr);

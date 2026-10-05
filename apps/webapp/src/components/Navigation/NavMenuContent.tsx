@@ -264,9 +264,14 @@ function NavNotice({ notice }: { notice: NavPanelNotice }) {
   );
 }
 
+/**
+ * Sized to its slot like the other menu icons. Without `w-full h-full`, Safari and every iOS browser
+ * (WebKit) collapse an unsized SVG to 0×0 inside the drawer and dropdown icon slots, which is why
+ * Profile showed no icon there. The header's `.nav-acct svg` rule still sets its own 14px size.
+ */
 export function AccountIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" className="w-full h-full" aria-hidden="true">
       <path
         fillRule="evenodd"
         clipRule="evenodd"
