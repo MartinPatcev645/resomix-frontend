@@ -1070,7 +1070,12 @@ class AppleMusicTransferService:
             top_artist = _most_common_artist(d.get("artist") for d in display_by_track.values())
 
             playlist_url = f"{settings.app_url.rstrip('/')}/sonic-discovery?id={playlist_id}"
-            playlist_name = custom_playlist_name or f'Resomix Sonic Match Found, for "{seed_ref}"'
+            # The Apple playlist takes the same name the playlist has in Resomix (including a rename).
+            # Apple Music's sidebar truncates long names, and the fixed prefix filled it, so every
+            # export read "Resomix Sonic..." and they could not be told apart. Resomix is still
+            # credited in the description below. `seed_ref` only covers a playlist with no name.
+            # playlist_name = custom_playlist_name or f'Resomix Sonic Match Found, for "{seed_ref}"'
+            playlist_name = custom_playlist_name or (playlist.name or "").strip() or seed_ref
             featuring = f"Featuring {top_artist} and more. " if top_artist else ""
             playlist_description = (
                 f'{featuring}Sonic matches for "{seed_ref}", discovered with Resomix — a music '

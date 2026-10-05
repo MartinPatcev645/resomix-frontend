@@ -1,6 +1,7 @@
-"""Seed reference used to name an exported Apple Music playlist.
+"""Seed reference used in an exported Apple Music playlist's description (and as its name only when
+the Resomix playlist has none; normally the export keeps the playlist's own name).
 
-An upload-seeded playlist exported as `Resomix Sonic Match Found, for "Unknown Artist - Totemo"`
+An upload-seeded playlist once exported as `Resomix Sonic Match Found, for "Unknown Artist - Totemo"`
 while the playlist page itself showed the artist correctly. The export consulted Apple's metadata
 and then `tracks.display_artist` only — but an UPLOAD carries its artist in `track_contributors`,
 which is what the playlist view reads. `display_artist` is typically empty for uploads, so the
