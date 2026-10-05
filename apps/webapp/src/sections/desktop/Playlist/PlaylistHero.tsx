@@ -17,9 +17,9 @@ import { CoverTextOverlay } from "@/components/Playlist/CoverTextOverlay.tsx";
 import { CoverCropModal } from "@/components/Playlist/CoverCropModal.tsx";
 import { playlistAccessChrome, PLAYLIST_LOCK_MARK } from "@/utils/playlistAccessChrome.ts";
 import { StickyReferenceBar } from "@/components/Playlist/StickyReferenceBar.tsx";
-import { PLAYLIST_DIVIDER_BORDER } from "@/utils/playlistChrome.ts";
+import { PlaylistHeroActions } from "@/components/Playlist/PlaylistHeroActions.tsx";
 import { WORKSPACE_FOCUS_VISIBLE } from "@/sections/desktop/Workspace/workspacePanelStyles.ts";
-import { HERO_TOOLBAR_BTN, HERO_TOOLBAR_BACK, HeroChevronLeft, HeroAutoplayToggle, HeroClockIcon, RenameIcon, ExportIcon, ShareIcon } from "@/components/Playlist/heroToolbar.tsx";
+import { HERO_TOOLBAR_BTN, HERO_TOOLBAR_BACK, HeroChevronLeft, HeroClockIcon } from "@/components/Playlist/heroToolbar.tsx";
 
 const PlaylistHero: React.FC = () => {
   const stickySentinelRef = React.useRef<HTMLDivElement | null>(null);
@@ -27,7 +27,6 @@ const PlaylistHero: React.FC = () => {
   const [showRename, setShowRename] = React.useState(false);
   const [showShare, setShowShare] = React.useState(false);
 
-  const [showExportMenu, setShowExportMenu] = React.useState(false);
   const [showDownloadExport, setShowDownloadExport] = React.useState(false);
   const [showAppleExport, setShowAppleExport] = React.useState(false);
   const [showEmbed, setShowEmbed] = React.useState(false);
@@ -94,8 +93,8 @@ const PlaylistHero: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const exportButtonWrapRef = React.useRef<HTMLDivElement | null>(null);
-  const exportMenuRef = React.useRef<HTMLDivElement | null>(null);
+  // The hero toolbar row. The sticky bar lines its copy of the controls up with this row's right edge.
+  const toolbarRef = React.useRef<HTMLDivElement | null>(null);
 
   // Reset fork state when playlist changes
   useEffect(() => {
@@ -191,21 +190,21 @@ const PlaylistHero: React.FC = () => {
   // The Export button just opens the menu (for everyone — guests included). Each option inside is
   // gated individually on click, so the menu always shows what's available and explains the gate
   // where it's hit (matches the requirement: the Apple option is visible to free users but gated).
+  // Returns whether the menu may open; the menu itself lives in PlaylistHeroActions.
   const handleExportButtonClick = () => {
-    if (isExporting) return;
+    if (isExporting) return false;
     // Guests can't use any export option (TXT/Apple/Embed all require login), so show the login
     // gate directly rather than opening a menu of locked items. verdict("export") is "login" only
     // for guests — free/pro resolve to "allowed" and get the menu.
     if (access.verdict("export") === "login") {
       setGate({ reason: "login_required", title: "Log in to export", body: "Create a free account or log in to export your playlists." });
-      return;
+      return false;
     }
-    setShowExportMenu((v) => !v);
+    return true;
   };
 
   // TXT download — gated on the plan's `can_export` capability.
   const handleDownloadExportClick = () => {
-    setShowExportMenu(false);
     withAccess("export", "Log in to export", "Create a free account or log in to export your playlists.", () => {
       if (!canExport) {
         handleStatusChange('error', 'No playlist data available to export', 'Export Failed');
@@ -218,7 +217,6 @@ const PlaylistHero: React.FC = () => {
   // Apple Music export — visible to everyone; gated on the `export_targets` entitlement containing
   // "apple". Guests get a login prompt, free users an upgrade prompt, entitled users the modal.
   const handleAppleExportClick = () => {
-    setShowExportMenu(false);
     const v = access.verdict("exportApple");
     if (v === "pending") return;
     if (v === "allowed") {
@@ -243,7 +241,6 @@ const PlaylistHero: React.FC = () => {
   // Embed — open for everyone; the modal itself guards on public/private (embedding needs a public
   // playlist, and the "make public" action inside is owner-only via the visibility endpoint).
   const handleEmbedClick = () => {
-    setShowExportMenu(false);
     setShowEmbed(true);
   };
 
@@ -255,33 +252,22 @@ const PlaylistHero: React.FC = () => {
     return !!res?.ok;
   };
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        showExportMenu &&
-        exportButtonWrapRef.current &&
-        exportMenuRef.current &&
-        !exportButtonWrapRef.current.contains(target) &&
-        !exportMenuRef.current.contains(target)
-      ) {
-        setShowExportMenu(false);
-      }
-    };
-
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showExportMenu) {
-        setShowExportMenu(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEsc);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEsc);
-    };
-  }, [showExportMenu]);
+  // Autoplay / Rename / Export / Share. The same controls, wired to the same handlers, render in the
+  // hero toolbar and in the sticky bar; only the ids differ.
+  const actionProps = {
+    autoplay,
+    onToggleAutoplay: () => setAutoplay(!autoplay),
+    renameChrome,
+    exportChrome,
+    shareChrome,
+    isExporting,
+    onRename: () => withAccess("rename", "Log in to rename", "Create a free account or log in to rename your playlists.", () => setShowRename(true)),
+    onShare: () => withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => setShowShare(true)),
+    onExportPress: handleExportButtonClick,
+    onExportTxt: handleDownloadExportClick,
+    onExportApple: handleAppleExportClick,
+    onExportEmbed: handleEmbedClick,
+  };
 
   // // Fork functionality with StatusMessage
   // const { fork, forking } = usePlaylistFork({
@@ -427,7 +413,7 @@ const PlaylistHero: React.FC = () => {
   return (
     <div className="relative w-full">
       {/* Toolbar */}
-      <div className="mb-[var(--px-14)] flex flex-wrap items-center gap-[var(--px-8)]">
+      <div ref={toolbarRef} className="mb-[var(--px-14)] flex flex-wrap items-center gap-[var(--px-8)]">
         {location.state?.from === "library" ? (
           <a
             aria-label="Back to Library"
@@ -458,94 +444,7 @@ const PlaylistHero: React.FC = () => {
           </a>
         )}
         <span className="flex-1" />
-        <Tooltip message={autoplay ? "Turn off Autoplay" : "Turn on Autoplay"}>
-          <button
-            type="button"
-            aria-pressed={autoplay}
-            aria-label={autoplay ? "Turn off Autoplay" : "Turn on Autoplay"}
-            onClick={() => setAutoplay(!autoplay)}
-            className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}`}
-            id="playlist-hero-autoplay-toggle"
-          >
-            <HeroAutoplayToggle on={autoplay} />
-            Autoplay
-          </button>
-        </Tooltip>
-        <Tooltip message="Rename your Playlist">
-          <button
-            type="button"
-            title={renameChrome.title}
-            aria-label="Rename"
-            onClick={() => withAccess("rename", "Log in to rename", "Create a free account or log in to rename your playlists.", () => setShowRename(true))}
-            className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}${renameChrome.className}`}
-            id="playlist-hero-rename-button"
-          >
-            <RenameIcon />
-            Rename{renameChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
-          </button>
-        </Tooltip>
-        <div ref={exportButtonWrapRef} className="relative">
-          <Tooltip message="Export your Playlist">
-            <button
-              type="button"
-              title={exportChrome.title}
-              aria-label="Export"
-              onClick={handleExportButtonClick}
-              disabled={isExporting}
-              className={`${HERO_TOOLBAR_BTN} disabled:cursor-not-allowed ${WORKSPACE_FOCUS_VISIBLE}${exportChrome.className}`}
-              id="playlist-hero-export-button"
-            >
-              <ExportIcon />
-              {isExporting ? "Exporting..." : "Export"}{exportChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
-            </button>
-          </Tooltip>
-          {showExportMenu && (
-            <div
-              ref={exportMenuRef}
-              role="menu"
-              aria-label="Export options"
-              className={`absolute right-0 top-[calc(100%+var(--px-6))] z-50 min-w-[var(--px-220)] border border-[var(--rx-color-border-default)] bg-[var(--rx-color-surface)] text-[var(--rx-color-text-primary)] shadow-lg`}
-            >
-              <button
-                role="menuitem"
-                className={`w-full px-[var(--px-12)] py-[var(--px-10)] text-left font-fira text-[length:var(--px-9)] font-light tracking-[var(--px-0-25)] text-[var(--rx-color-text-primary)] transition-colors hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} flex items-center gap-[var(--px-8)]`}
-                onClick={handleDownloadExportClick}
-                id="export-menu-download"
-              >
-                Export to TXT
-              </button>
-              <button
-                role="menuitem"
-                className={`w-full px-[var(--px-12)] py-[var(--px-10)] text-left font-fira text-[length:var(--px-9)] font-light tracking-[var(--px-0-25)] text-[var(--rx-color-text-primary)] transition-colors hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} flex items-center gap-[var(--px-8)] border-t ${PLAYLIST_DIVIDER_BORDER}`}
-                onClick={handleAppleExportClick}
-                id="export-menu-apple"
-              >
-                Export to Apple Music
-              </button>
-              <button
-                role="menuitem"
-                className={`w-full px-[var(--px-12)] py-[var(--px-10)] text-left font-fira text-[length:var(--px-9)] font-light tracking-[var(--px-0-25)] text-[var(--rx-color-text-primary)] transition-colors hover:bg-[rgba(255,255,255,0.06)] ${WORKSPACE_FOCUS_VISIBLE} flex items-center gap-[var(--px-8)] border-t ${PLAYLIST_DIVIDER_BORDER}`}
-                onClick={handleEmbedClick}
-                id="export-menu-embed"
-              >
-                Embed (iframe)
-              </button>
-            </div>
-          )}
-        </div>
-        <Tooltip message="Share your Playlist">
-          <button
-            type="button"
-            title={shareChrome.title}
-            aria-label="Share"
-            onClick={() => withAccess("share", "Log in to share", "Create a free account or log in to share your playlists.", () => setShowShare(true))}
-            className={`${HERO_TOOLBAR_BTN} ${WORKSPACE_FOCUS_VISIBLE}${shareChrome.className}`}
-            id="playlist-hero-share-button"
-          >
-            <ShareIcon />
-            Share{shareChrome.showLock ? ` ${PLAYLIST_LOCK_MARK}` : ""}
-          </button>
-        </Tooltip>
+        <PlaylistHeroActions idPrefix="playlist-hero" {...actionProps} />
       </div>
 
       {/* Header card — restrained orange tick connects reference to results below */}
@@ -674,6 +573,8 @@ const PlaylistHero: React.FC = () => {
       <StickyReferenceBar
         sentinelRef={stickySentinelRef}
         resultCount={playlistData?.similar_tracks?.length ?? 0}
+        actions={<PlaylistHeroActions idPrefix="playlist-sticky" menuIdPrefix="playlist-sticky-export-menu" {...actionProps} />}
+        actionsAlignRef={toolbarRef}
       />
 
       {/* Modals */}

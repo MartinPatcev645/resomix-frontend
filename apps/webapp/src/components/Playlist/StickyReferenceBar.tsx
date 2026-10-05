@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useGlobalAudioController, formatDuration } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { DEMO_MODE } from "@resomix/config";
@@ -16,6 +16,10 @@ interface StickyReferenceBarProps {
   /** Element that leaves the viewport when the full reference card scrolls away. */
   sentinelRef: React.RefObject<HTMLElement | null>;
   resultCount: number;
+  /** Playlist controls to keep in reach while scrolled (desktop passes the hero toolbar's). */
+  actions?: React.ReactNode;
+  /** Element whose right edge the actions line up with, so they sit where they did in the hero. */
+  actionsAlignRef?: React.RefObject<HTMLElement | null>;
 }
 
 /**
@@ -25,6 +29,8 @@ interface StickyReferenceBarProps {
 export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
   sentinelRef,
   resultCount,
+  actions,
+  actionsAlignRef,
 }) => {
   const { playlistData } = usePlaylistStore();
   const track = playlistData?.queried_track;
@@ -32,6 +38,11 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
   const currentTrackId = usePlayerStore((s) => s.currentTrackId);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const [visible, setVisible] = useState(false);
+  const hasActions = !!actions;
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  // Distance from the bar's inner right edge to the hero toolbar's right edge (the results column's
+  // edge, left of the rail). The trailing cell takes this width so the actions end exactly there.
+  const [actionsInset, setActionsInset] = useState(0);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -71,6 +82,28 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
     };
   }, [visible]);
 
+  useLayoutEffect(() => {
+    if (!visible || !hasActions) return;
+    const frame = frameRef.current;
+    const anchor = actionsAlignRef?.current;
+    if (!frame || !anchor) return;
+
+    const measure = () => {
+      const innerRight = frame.getBoundingClientRect().left + frame.clientLeft + frame.clientWidth;
+      setActionsInset(Math.max(0, Math.round(innerRight - anchor.getBoundingClientRect().right)));
+    };
+    measure();
+    // The rail comes and goes with login, and the window can be resized while the bar is up.
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    observer?.observe(frame);
+    observer?.observe(anchor);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [visible, hasActions, actionsAlignRef]);
+
   const trackId = track?.id;
   const isRefPlaying = !!trackId && currentTrackId === trackId && isPlaying;
 
@@ -84,6 +117,12 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
   }, [currentTrackId, hlsController, isPlaying, trackId]);
 
   if (!visible || !track) return null;
+
+  const resultCountCell = (
+    <div className="shrink-0 whitespace-nowrap border-l border-[var(--rx-color-border-subtle)] px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">
+      {resultCount} result{resultCount === 1 ? "" : "s"}
+    </div>
+  );
 
   const barClassName = [
     "pointer-events-auto fixed inset-x-0 z-[40] border-b bg-[#090909]",
@@ -102,7 +141,9 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
           the side-line margin so the bar's content and vertical borders land inside the dotted
           side-lines (px-20 on mobile, px-63 on desktop) instead of bleeding edge-to-edge. */}
       <div className="mx-auto w-full max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]">
-        <div className={`mx-[var(--px-20)] lg:mx-[var(--px-63)] flex min-h-[3.5rem] items-center gap-0 overflow-hidden border-x border-[var(--rx-color-border-default)] bg-[#090909] ${isRefPlaying ? "shadow-[inset_3px_0_0_0_var(--rx-color-accent)]" : ""}`}>
+        {/* No overflow clip when the bar carries actions: the Export menu drops down out of it. The
+            title still truncates on its own (pl-sticky-strip__text). */}
+        <div ref={frameRef} className={`mx-[var(--px-20)] lg:mx-[var(--px-63)] flex min-h-[3.5rem] items-center gap-0 ${hasActions ? "" : "overflow-hidden"} border-x border-[var(--rx-color-border-default)] bg-[#090909] ${isRefPlaying ? "shadow-[inset_3px_0_0_0_var(--rx-color-accent)]" : ""}`}>
         <button
           type="button"
           onClick={handlePlay}
@@ -132,9 +173,18 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
             {track.duration ? ` · ${formatDuration(Math.floor(track.duration))}` : ""}
           </div>
         </div>
-        <div className="shrink-0 whitespace-nowrap border-l border-[var(--rx-color-border-subtle)] px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-10)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-muted)]">
-          {resultCount} result{resultCount === 1 ? "" : "s"}
-        </div>
+        {hasActions ? (
+          <>
+            <div className="flex shrink-0 items-center gap-[var(--px-8)] pl-[var(--px-12)]">{actions}</div>
+            {/* At least as wide as the count, and otherwise as wide as the gap to the hero toolbar's
+                right edge, so the actions end where they did in the hero. */}
+            <div className="flex shrink-0 justify-end" style={{ width: actionsInset, minWidth: "max-content" }}>
+              {resultCountCell}
+            </div>
+          </>
+        ) : (
+          resultCountCell
+        )}
         </div>
       </div>
     </div>
