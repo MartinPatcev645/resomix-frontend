@@ -9,8 +9,10 @@ import {
   PLAYLIST_DIVIDER_STRONG,
   PLAYLIST_STICKY_REF_TOP,
 } from "@/utils/playlistChrome.ts";
-import PlaySvg from "@/assets/icons/play.svg";
-import PauseSvg from "@/assets/icons/pause.svg";
+import SimilarityPlayer from "@/components/Playlist/SimilarityPlayer.tsx";
+// White glyphs, as on the result rows: the plain play.svg / pause.svg are filled black.
+import PlaySvg from "@/assets/icons/play_white.svg";
+import PauseSvg from "@/assets/icons/pause_white.svg";
 
 interface StickyReferenceBarProps {
   /** Element that leaves the viewport when the full reference card scrolls away. */
@@ -20,7 +22,15 @@ interface StickyReferenceBarProps {
   actions?: React.ReactNode;
   /** Element whose right edge the actions line up with, so they sit where they did in the hero. */
   actionsAlignRef?: React.RefObject<HTMLElement | null>;
+  /** While the reference plays, open the same inline player the result rows open (desktop). */
+  inlinePlayer?: boolean;
 }
+
+/**
+ * A faint wash of the accent over the page black, so the bar reads apart from the nav above it and
+ * the table below. One place to tune it.
+ */
+const STICKY_BAR_BG = "color-mix(in srgb, var(--rx-color-accent) 7%, #090909)";
 
 /**
  * Compact sticky reference context — same global playback source as InputPlayer / result rows.
@@ -31,6 +41,7 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
   resultCount,
   actions,
   actionsAlignRef,
+  inlinePlayer = false,
 }) => {
   const { playlistData } = usePlaylistStore();
   const track = playlistData?.queried_track;
@@ -39,6 +50,7 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const [visible, setVisible] = useState(false);
   const hasActions = !!actions;
+  const barRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
   // Distance from the bar's inner right edge to the hero toolbar's right edge (the results column's
   // edge, left of the rail). The trailing cell takes this width so the actions end exactly there.
@@ -70,17 +82,25 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
     return () => observer.disconnect();
   }, [sentinelRef]);
 
-  useEffect(() => {
+  // The column headers stick right under the bar, so they need its real height. It is not fixed: the
+  // bar grows a player row while the reference plays.
+  const shown = visible && !!track;
+  useLayoutEffect(() => {
     const root = document.documentElement;
-    if (visible) {
-      root.style.setProperty(PLAYLIST_COMPACT_BAR_H_VAR, "3.5rem");
-    } else {
+    const bar = barRef.current;
+    if (!shown || !bar) {
       root.style.setProperty(PLAYLIST_COMPACT_BAR_H_VAR, "0px");
+      return;
     }
+    const sync = () => root.style.setProperty(PLAYLIST_COMPACT_BAR_H_VAR, `${bar.offsetHeight}px`);
+    sync();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(sync) : null;
+    observer?.observe(bar);
     return () => {
+      observer?.disconnect();
       root.style.setProperty(PLAYLIST_COMPACT_BAR_H_VAR, "0px");
     };
-  }, [visible]);
+  }, [shown]);
 
   useLayoutEffect(() => {
     if (!visible || !hasActions) return;
@@ -124,15 +144,18 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
     </div>
   );
 
+  const showPlayer = inlinePlayer && isRefPlaying && !DEMO_MODE;
+
   const barClassName = [
-    "pointer-events-auto fixed inset-x-0 z-[40] border-b bg-[#090909]",
+    "pointer-events-auto fixed inset-x-0 z-[40] border-b",
     PLAYLIST_DIVIDER_STRONG,
   ].join(" ");
 
   return (
     <div
+      ref={barRef}
       className={barClassName}
-      style={{ top: PLAYLIST_STICKY_REF_TOP }}
+      style={{ top: PLAYLIST_STICKY_REF_TOP, background: STICKY_BAR_BG }}
       role="region"
       aria-label="Reference track context"
       data-testid="playlist-sticky-reference-bar"
@@ -143,24 +166,36 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
       <div className="mx-auto w-full max-w-[var(--px-1023)] lg:max-w-[var(--px-2560)]">
         {/* No overflow clip when the bar carries actions: the Export menu drops down out of it. The
             title still truncates on its own (pl-sticky-strip__text). */}
-        <div ref={frameRef} className={`mx-[var(--px-20)] lg:mx-[var(--px-63)] flex min-h-[3.5rem] items-center gap-0 ${hasActions ? "" : "overflow-hidden"} border-x border-[var(--rx-color-border-default)] bg-[#090909] ${isRefPlaying ? "shadow-[inset_3px_0_0_0_var(--rx-color-accent)]" : ""}`}>
+        <div
+          ref={frameRef}
+          className={`mx-[var(--px-20)] lg:mx-[var(--px-63)] ${hasActions ? "" : "overflow-hidden"} border-x border-[var(--rx-color-border-default)] ${isRefPlaying ? "shadow-[inset_3px_0_0_0_var(--rx-color-accent)]" : ""}`}
+          style={{ background: STICKY_BAR_BG }}
+        >
+        <div className="flex min-h-[3.5rem] items-center gap-0">
+        {/* Same button as a result row's: the cover fills a bordered box, with the white glyph over a
+            scrim so it reads on any artwork, and the accent edge and wash while it plays. */}
         <button
           type="button"
           onClick={handlePlay}
           aria-label={isRefPlaying ? "Pause reference track" : "Play reference track"}
-          className={`relative flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center border-r border-[var(--rx-color-border-subtle)] bg-transparent pl-focus-ring ${isRefPlaying ? "border-[rgba(238,74,38,0.4)] bg-[rgba(238,74,38,0.16)]" : ""}`}
+          className={[
+            "relative ml-[var(--px-12)] flex h-[var(--px-44)] w-[var(--px-44)] shrink-0 items-center justify-center overflow-hidden rounded-[var(--rx-radius-control)] border border-[var(--rx-color-border-default)] bg-transparent transition-[background-color,border-color,color] pl-focus-ring",
+            isRefPlaying
+              ? "border-[rgba(238,74,38,0.7)]"
+              : "hover:cursor-pointer hover:border-[var(--rx-color-border-strong)]",
+          ].join(" ")}
           id="playlist-sticky-ref-play"
         >
           <TrackArtwork
             artworkUrl={track.artwork_url}
-            className="absolute inset-[var(--px-4)] h-auto w-auto rounded-[var(--rx-radius-control)]"
+            className="absolute inset-0 h-full w-full rounded-[var(--rx-radius-control)] border-0"
           />
-          <span className="absolute inset-0 flex items-center justify-center bg-black/45">
+          <span className={`absolute inset-0 flex items-center justify-center rounded-[var(--rx-radius-control)] ${isRefPlaying ? "bg-[rgba(238,74,38,0.28)]" : "bg-black/40"}`}>
             <img
               src={isRefPlaying ? PauseSvg : PlaySvg}
               alt=""
               aria-hidden="true"
-              className="h-[var(--px-10)] w-[var(--px-10)]"
+              className="h-[var(--px-18)] w-[var(--px-18)] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
             />
           </span>
         </button>
@@ -184,6 +219,22 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
           </>
         ) : (
           resultCountCell
+        )}
+        </div>
+        {/* The result rows' own inline player: seek, elapsed / total, ±10s, volume and the Apple
+            lockup. It ends under the hero's right edge, like the actions above it. */}
+        {showPlayer && (
+          <div
+            className="pb-[var(--px-8)] pl-[var(--px-12)] pr-[var(--px-12)]"
+            style={hasActions ? { paddingRight: actionsInset } : undefined}
+          >
+            <SimilarityPlayer
+              trackId={track.id}
+              isPlaying={isRefPlaying}
+              totalDuration={track.duration ?? 0}
+              appleDeepLinkUrl={track.type === "internal" ? track.deep_link_url : null}
+            />
+          </div>
         )}
         </div>
       </div>

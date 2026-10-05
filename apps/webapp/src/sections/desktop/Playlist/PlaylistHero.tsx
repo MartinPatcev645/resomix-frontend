@@ -575,6 +575,7 @@ const PlaylistHero: React.FC = () => {
         resultCount={playlistData?.similar_tracks?.length ?? 0}
         actions={<PlaylistHeroActions idPrefix="playlist-sticky" menuIdPrefix="playlist-sticky-export-menu" {...actionProps} />}
         actionsAlignRef={toolbarRef}
+        inlinePlayer
       />
 
       {/* Modals */}
