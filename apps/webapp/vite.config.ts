@@ -96,7 +96,7 @@ export default defineConfig({
       }
     }
   ],
-  server: { proxy: devProxy },
+  server: { port: 5174, strictPort: true, proxy: devProxy },
   preview: { proxy: devProxy },
   // server: {
   //   allowedHosts: ['ios-dev.fluxhub.ai'],
