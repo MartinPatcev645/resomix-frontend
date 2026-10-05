@@ -23,9 +23,22 @@ interface SimilarityPlayerProps {
    * variant of the desktop row, so the two are kept as separate branches below.
    */
   mobile?: boolean;
+  /**
+   * Height of the waveform (HLS tracks only; Apple previews draw a plain line regardless). Rows keep
+   * the thin 3px strip; the sticky reference bar passes the hero card's 28px so the reference
+   * waveform reads the same in both places.
+   */
+  waveformHeightClass?: string;
 }
 
-const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDuration, label, appleDeepLinkUrl, mobile = false }) => {
+const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({
+  trackId,
+  totalDuration,
+  label,
+  appleDeepLinkUrl,
+  mobile = false,
+  waveformHeightClass = "h-[var(--px-3)]",
+}) => {
   const volume = usePlayerStore((s) => s.volume);
   const networkError = usePlayerStore((s) => s.networkError);
   const networkErrorReason = usePlayerStore((s) => s.networkErrorReason);
@@ -79,7 +92,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({ trackId, totalDurat
       onSeek={ctl.seekTo}
     />
   ) : (
-    <div className="relative h-[var(--px-3)] w-full min-w-0 flex items-center">
+    <div className={`relative ${waveformHeightClass} w-full min-w-0 flex items-center`}>
       <div
         ref={ctl.containerRef}
         className={`h-full w-full ${ctl.wfLoading ? "invisible" : "visible"}`}

@@ -311,7 +311,7 @@ export function MobileDrawer({
                       }}
                     >
                       <span className="nav-util-icon" aria-hidden="true">
-                        <AccountIcon />
+                        <AccountIcon inList />
                       </span>
                       {navT('nav.appLinks.profile')}
                     </a>

@@ -290,10 +290,15 @@ function NavNotice({ notice }: { notice: NavPanelNotice }) {
  * Sized to its slot like the other menu icons. Without `w-full h-full`, Safari and every iOS browser
  * (WebKit) collapse an unsized SVG to 0×0 inside the dropdown icon slot, which is why Profile showed
  * no icon there. The header's `.nav-acct svg` rule still sets its own 14px size.
+ *
+ * `inList` is for rows that put it beside the line icons (Library, Analysis, Logout). The silhouette
+ * fills 20 of its 24 units where they fill 16 to 18, so at the same slot size it came out taller and,
+ * being heavy at the shoulders, looked lower than its neighbours. Padding the viewBox brings it to
+ * their size without moving its centre. The header's round account button keeps the full glyph.
  */
-export function AccountIcon() {
+export function AccountIcon({ inList = false }: { inList?: boolean } = {}) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className="w-full h-full" aria-hidden="true">
+    <svg viewBox={inList ? '-2 -2 28 28' : '0 0 24 24'} fill="none" className="w-full h-full" aria-hidden="true">
       <path
         fillRule="evenodd"
         clipRule="evenodd"

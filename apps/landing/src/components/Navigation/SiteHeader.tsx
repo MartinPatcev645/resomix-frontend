@@ -184,7 +184,7 @@ export function SiteHeader({
       label: 'Profile',
       id: 'nav-profile-menu-item',
       href: `${BETA_URL}/profile`,
-      icon: <AccountIcon />,
+      icon: <AccountIcon inList />,
       onClick: () => onProfileClick?.() ?? onNavigate(`${BETA_URL}/profile`),
     },
     {

@@ -137,7 +137,7 @@ export function MobileDrawer({
       label: 'Profile',
       id: 'nav-drawer-profile-menu-item',
       href: `${BETA_URL}/profile`,
-      icon: <AccountIcon />,
+      icon: <AccountIcon inList />,
       onClick: () => {
         if (onProfileClick) onProfileClick();
         else onNavigate(`${BETA_URL}/profile`);
