@@ -233,7 +233,7 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
               isPlaying={isRefPlaying}
               totalDuration={track.duration ?? 0}
               appleDeepLinkUrl={track.type === "internal" ? track.deep_link_url : null}
-              waveformHeightClass="h-[var(--px-28)]"
+              lineOnly
             />
           </div>
         )}

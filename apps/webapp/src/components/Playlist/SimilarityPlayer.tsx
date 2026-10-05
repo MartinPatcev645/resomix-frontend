@@ -24,11 +24,11 @@ interface SimilarityPlayerProps {
    */
   mobile?: boolean;
   /**
-   * Height of the waveform (HLS tracks only; Apple previews draw a plain line regardless). Rows keep
-   * the thin 3px strip; the sticky reference bar passes the hero card's 28px so the reference
-   * waveform reads the same in both places.
+   * Always draw the plain progress line, even for HLS tracks that have a waveform. The sticky
+   * reference bar uses it so an uploaded reference looks the same as an Apple preview there; the
+   * waveform stays on the hero card.
    */
-  waveformHeightClass?: string;
+  lineOnly?: boolean;
 }
 
 const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({
@@ -37,7 +37,7 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({
   label,
   appleDeepLinkUrl,
   mobile = false,
-  waveformHeightClass = "h-[var(--px-3)]",
+  lineOnly = false,
 }) => {
   const volume = usePlayerStore((s) => s.volume);
   const networkError = usePlayerStore((s) => s.networkError);
@@ -45,8 +45,10 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({
   const ctl = useWaveformControls({ id: trackId, totalDuration });
   const hlsController = useGlobalAudioController();
 
-  const playbackFailed = Boolean(ctl.wfError || networkError);
-  const playbackDetail = ctl.wfError || networkErrorReason || (networkError ? "network-error" : null);
+  // Without a waveform on screen, a failed peaks fetch says nothing about playback.
+  const peaksError = lineOnly ? null : ctl.wfError;
+  const playbackFailed = Boolean(peaksError || networkError);
+  const playbackDetail = peaksError || networkErrorReason || (networkError ? "network-error" : null);
 
   const retryPlayback = () => {
     hlsController.load(trackId, true);
@@ -84,15 +86,17 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({
     ? "h-[var(--px-14)] w-[var(--px-14)] shrink-0"
     : "h-[var(--px-10)] w-[var(--px-10)] lg:h-[var(--px-8)] lg:w-[var(--px-8)]";
 
-  const seekBar = ctl.isPreview ? (
+  const seekBar = ctl.isPreview || lineOnly ? (
     <PreviewProgressBar
       compact
       currentTime={ctl.uiTime}
-      duration={ctl.getPlayableDuration()}
+      // A preview's line spans the preview. An HLS track's spans the whole track, as the hero's
+      // waveform does: an upload may only stream a snippet of it, and its position is absolute.
+      duration={ctl.isPreview ? ctl.getPlayableDuration() : Math.max(totalDuration, ctl.getPlayableDuration() || 0)}
       onSeek={ctl.seekTo}
     />
   ) : (
-    <div className={`relative ${waveformHeightClass} w-full min-w-0 flex items-center`}>
+    <div className="relative h-[var(--px-3)] w-full min-w-0 flex items-center">
       <div
         ref={ctl.containerRef}
         className={`h-full w-full ${ctl.wfLoading ? "invisible" : "visible"}`}
