@@ -88,6 +88,7 @@ const NAV_COPY: Record<string, string> = {
   'nav.status.currentPage': 'Current page',
   'nav.cta.about': 'About',
   'nav.cta.pricing': 'Pricing',
+  'nav.cta.upgrade': 'Upgrade',
   'nav.cta.cataloguePilot': 'Catalogue Pilot',
   'nav.cta.feedback': 'Feedback',
   'nav.utility.home': 'Home',
@@ -113,6 +114,8 @@ const NAV_COPY: Record<string, string> = {
   'nav.faqAria': 'FAQ, opens in a new tab',
   'nav.legalDocumentsAria': 'Legal Documents, opens in a new tab',
   'nav.appLinks.library': 'Library',
+  'nav.appLinks.trackIntelligence': 'Track Intelligence',
+  'nav.appLinks.sonicDiscovery': 'Sonic Discovery',
   'nav.appLinks.analysis': 'Analysis',
   'nav.appLinks.profile': 'Profile',
 };

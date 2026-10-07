@@ -105,8 +105,6 @@ VITE_SERVER_MEDIA=http://localhost:8002
 | `VITE_SPOTIFY_CLIENT_ID` / `VITE_TIDAL_CLIENT_ID` | webapp | Only for the (dormant) transfer features |
 | `VITE_FACEBOOK/INSTAGRAM/TWITTER/SOUNDCLOUD_URL` | landing, webapp | Footer links |
 
-> **Known drift — don't be misled by `env.example`:** the examples omit `VITE_GOOGLE_CLIENT_ID`, and still list `VITE_PUBLIC_POSTHOG_KEY` / `VITE_PUBLIC_POSTHOG_HOST`
-> and `VITE_BASE_ADMIN_URL`, which are **referenced nowhere in the code**. Use the blocks above.
 > If you add a new var, add it to the app's `env.example` **and** this table.
 
 ---

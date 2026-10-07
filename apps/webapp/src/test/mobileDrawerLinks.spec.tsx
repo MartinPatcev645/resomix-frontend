@@ -1,9 +1,10 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { useAuthStore } from '@resomix/stores';
 import { MobileDrawer } from '../components/Navigation/MobileDrawer.tsx';
+import { NAV_UTILITY_LINKS } from '../components/Navigation/betaNavConfig.ts';
 
 /**
  * The drawer used to list the same destinations twice: once as a plain Library/Analysis pair above
@@ -104,5 +105,34 @@ describe('mobile drawer destinations', () => {
     const signIn = screen.getByRole('link', { name: /account/i });
     const feedback = screen.getByRole('button', { name: /feedback/i });
     expect(orderOf(signIn)).toBeLessThan(orderOf(feedback));
+  });
+
+  it('routes a bare landing path through onNavigate instead of a hard location change', () => {
+    // landingHref() is a bare path when VITE_BASE_LANDING_URL is unset. A hard
+    // window.location.href then loads /about inside the webapp, where that route
+    // does not exist. The drawer must hand it to onNavigate, same as the app links.
+    const about = NAV_UTILITY_LINKS.find((link) => link.key === 'about');
+    expect(about).toBeDefined();
+    const original = about!.route;
+    about!.route = '/about';
+
+    const onNavigate = vi.fn();
+    const onClose = vi.fn();
+    try {
+      render(
+        <MemoryRouter>
+          <div id="webapp-page-root">
+            <MobileDrawer isOpen onClose={onClose} onNavigate={onNavigate} />
+          </div>
+        </MemoryRouter>,
+      );
+
+      fireEvent.click(screen.getByRole('link', { name: /^about$/i }));
+      expect(onNavigate).toHaveBeenCalledWith('/about');
+      expect(onClose).toHaveBeenCalled();
+      expect(window.location.pathname).not.toBe('/about');
+    } finally {
+      about!.route = original;
+    }
   });
 });

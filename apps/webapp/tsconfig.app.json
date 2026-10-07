@@ -10,7 +10,6 @@
 
     /* Bundler mode */
     "moduleResolution": "NodeNext",
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@resomix/ui": ["../../packages/ui/src/index.ts"],

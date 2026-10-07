@@ -5,6 +5,7 @@ import { useAuthStore, useFeedbackStore } from '@resomix/stores';
 import {
   BETA_URL,
   CATALOGUE_PILOT_HREF,
+  LIBRARY_HREF,
   NAV_TOP_GROUPS,
   NAV_UTILITY_LINKS,
   getNavSectionForPath,
@@ -242,14 +243,21 @@ export function MobileDrawer({
                     </li>
                   );
                 }
+                // An absolute marketing URL leaves this origin as a normal browser navigation.
+                // A bare path (VITE_BASE_LANDING_URL unset) must go through handleNavigate:
+                // assigning window.location.href would load that path inside the webapp, where it does not exist.
+                const isAbsolute = /^https?:\/\//.test(link.route);
                 return (
                   <li key={link.key}>
                     <a
                       href={link.route}
                       onClick={(e) => {
+                        if (isAbsolute) {
+                          onClose();
+                          return;
+                        }
                         e.preventDefault();
-                        window.location.href = link.route;
-                        onClose();
+                        handleNavigate(link.route);
                       }}
                     >
                       {label}
@@ -269,10 +277,10 @@ export function MobileDrawer({
                 <>
                   <li>
                     <a
-                      href="/library"
+                      href={LIBRARY_HREF}
                       onClick={(e) => {
                         e.preventDefault();
-                        handleNavigate('/library');
+                        handleNavigate(LIBRARY_HREF);
                       }}
                     >
                       <span className="nav-util-icon" aria-hidden="true">

@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavGlyph } from './NavGlyphs.tsx';
 import type { NavItem, NavPanelNotice, NavTopGroup } from './betaNavConfig.ts';
-import { isCurrentNavRoute } from './betaNavConfig.ts';
+import { isCurrentNavRoute, LIBRARY_HREF, UPGRADE_HREF } from './betaNavConfig.ts';
 import { navT } from './navCopy.ts';
 import { openCookiePreferences, isCookiePreferencesAvailable } from './cookiePreferences.ts';
 
@@ -97,7 +97,17 @@ export function NavLinkRow({
   }
 
   const href = item.route ?? '#';
+  // Absolute marketing URLs must be a normal browser navigation. preventDefault plus the in-app
+  // router kept the click on this origin, or sent it at a host that is not running.
+  const isAbsolute = /^https?:\/\//.test(href);
   const handleClick = (e: React.MouseEvent) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+      return;
+    }
+    if (isAbsolute && !item.external) {
+      onClose?.();
+      return;
+    }
     e.preventDefault();
     if (item.external) {
       window.open(href, '_blank', 'noopener,noreferrer');
@@ -362,16 +372,16 @@ export function buildProfileMenuItems({
       // portal link, so "Upgrade" would be describing something they have already done.
       label: isPro ? 'Manage' : 'Upgrade',
       id: 'nav-upgrade-menu-item',
-      href: '/subscribe?from=app',
+      href: UPGRADE_HREF,
       icon: <UpgradeIcon />,
-      onClick: () => onNavigate('/subscribe?from=app'),
+      onClick: () => onNavigate(UPGRADE_HREF),
     },
     {
       label: 'Library',
       id: 'nav-library-menu-item',
-      href: '/library',
+      href: LIBRARY_HREF,
       icon: <LibraryIcon />,
-      onClick: () => onNavigate('/library'),
+      onClick: () => onNavigate(LIBRARY_HREF),
     },
     {
       label: 'Track Intelligence',

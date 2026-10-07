@@ -66,7 +66,33 @@ export const ABOUT_HREF = landingHref('/about');
 /** The marketing pricing page on resomix.com. Where the guest header's Pricing button points. */
 export const PRICING_HREF = landingHref('/pricing');
 
-export const NAV_TOP_GROUPS: NavTopGroup[] = [
+export const TRACK_INTELLIGENCE_HREF = '/track-intelligence';
+
+export const SONIC_DISCOVERY_HREF = '/sonic-discovery';
+
+export const LIBRARY_HREF = '/library';
+
+export const UPGRADE_HREF = '/subscribe?from=app';
+
+/**
+ * Marketing site. Beta `/` is Sonic Discovery and there is no `/about` route, so the Resources
+ * company set stays on the landing origin rather than splitting Home and About from Contact.
+ */
+export const MARKETING_HOME_HREF = landingHref('/');
+
+export const MARKETING_ABOUT_HREF = landingHref('/about');
+
+export const MARKETING_CONTACT_HREF = landingHref('/contact');
+
+/** Temporarily hidden from the header and mobile drawer. Remove a key to restore its group. */
+const HIDDEN_NAV_GROUPS: ReadonlySet<NavTopGroup['key']> = new Set([
+  'product',
+  'solutions',
+  'partners',
+  'developers',
+]);
+
+const ALL_NAV_TOP_GROUPS: NavTopGroup[] = [
   {
     key: 'product',
     side: 'left',
@@ -121,10 +147,10 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
     noteKey: 'plannedPagesNote',
   },
   {
-    // Mirrors the marketing site's Company group so both navbars read the same. Every destination
-    // is on the landing origin, so they go through landingHref() like the rest of this file.
+    // Mirrors the marketing site's Company group so both navbars read the same. Home, About and
+    // Contact are the production marketing pages: beta has no matching page for every one of them.
     key: 'company',
-    side: 'left',
+    side: 'right',
     panelId: 'panel-company',
     // Matches Solutions, the widest panel. At 34rem the two columns were cramped enough that
     // titles wrapped.
@@ -144,9 +170,9 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
         groupLabelKey: 'company',
         flex: '1 1 50%',
         items: [
-          { key: 'home', glyph: 'resomix', live: true, route: landingHref('/') },
-          { key: 'about', glyph: 'about', live: true, route: landingHref('/about') },
-          { key: 'contact', glyph: 'contact', live: true, route: landingHref('/contact') },
+          { key: 'home', glyph: 'resomix', live: true, route: MARKETING_HOME_HREF },
+          { key: 'about', glyph: 'about', live: true, route: MARKETING_ABOUT_HREF },
+          { key: 'contact', glyph: 'contact', live: true, route: MARKETING_CONTACT_HREF },
           // Trust, Rights & Security lives in the Partners panel; one home per link.
           { key: 'cookie-settings', glyph: 'legal', live: true, isCookieSettings: true },
         ],
@@ -210,6 +236,10 @@ export const NAV_TOP_GROUPS: NavTopGroup[] = [
   },
 ];
 
+export const NAV_TOP_GROUPS: NavTopGroup[] = ALL_NAV_TOP_GROUPS.filter(
+  (group) => !HIDDEN_NAV_GROUPS.has(group.key),
+);
+
 export interface NavUtilityLink {
   key: string;
   route: string;
@@ -220,16 +250,16 @@ export interface NavUtilityLink {
 
 export const NAV_UTILITY_LINKS: NavUtilityLink[] = [
   // Home first: from the beta app there is otherwise no way back to the marketing site, and it
-  // reads as the natural top of this list. `landingHref('/')` is resomix.com.
-  { key: 'home', route: landingHref('/') },
-  { key: 'about', route: landingHref('/about') },
+  // reads as the natural top of this list.
+  { key: 'home', route: MARKETING_HOME_HREF },
+  { key: 'about', route: MARKETING_ABOUT_HREF },
   { key: 'journal', route: BLOG_URL, external: true, externalAriaKey: 'journalAria' },
   { key: 'help-centre', route: 'https://support.resomix.com', external: true, externalAriaKey: 'helpCentreAria' },
   { key: 'faq', route: 'https://support.resomix.com', external: true, externalAriaKey: 'faqAria' },
   { key: 'legal-documents', route: 'https://support.resomix.com/hc/categories/1/3/legal', external: true, externalAriaKey: 'legalDocumentsAria' },
   { key: 'trust', route: landingHref('/trust') },
   // Grouped with the other company links rather than appended, so Cookie Settings stays last.
-  { key: 'contact', route: landingHref('/contact') },
+  { key: 'contact', route: MARKETING_CONTACT_HREF },
   { key: 'cookie-settings', route: '', isCookieSettings: true },
 ];
 

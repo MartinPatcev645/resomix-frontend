@@ -9,8 +9,13 @@ import {
   BETA_URL,
   CATALOGUE_PILOT_HREF,
   PRICING_HREF,
+  TRACK_INTELLIGENCE_HREF,
+  SONIC_DISCOVERY_HREF,
+  LIBRARY_HREF,
+  UPGRADE_HREF,
   NAV_TOP_GROUPS,
   getNavSectionForPath,
+  landingHref,
   type NavTopGroup,
 } from './betaNavConfig.ts';
 import { NavPanelContent, CaretIcon, AccountIcon, buildProfileMenuItems } from './NavMenuContent.tsx';
@@ -168,11 +173,6 @@ export function SiteHeader({
     isPro,
   });
 
-  const handleLogoClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    onNavigate('/');
-  };
-
   /**
    * Logout only — derived from the full list rather than rebuilt, so the item keeps a single
    * definition (id, icon, handler) and can never drift from the desktop one.
@@ -245,6 +245,94 @@ export function SiteHeader({
       </li>
     );
 
+  /** Hidden for Pro subscribers: they have nothing to upgrade to, and reach Manage from the account dropdown. */
+  const upgradeNavItem = (idPrefix = '') =>
+    isPro ? null : (
+      <li key="upgrade" id={`${idPrefix}mi-upgrade`}>
+        <div className="nav-mm-item-wrap">
+          <a
+            className="nav-mm-trigger"
+            href={UPGRADE_HREF}
+            id={`${idPrefix}nav-upgrade-link`}
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate(UPGRADE_HREF);
+            }}
+          >
+            {navT('nav.cta.upgrade')}
+          </a>
+        </div>
+      </li>
+    );
+
+  /** Signed-in only, like the account-dropdown entry: the Library is a protected route. */
+  const libraryNavItem = (idPrefix = '') => {
+    if (!isAuthenticated) return null;
+    const isCurrent = currentPath.startsWith('/library');
+    return (
+      <li key="library" id={`${idPrefix}mi-library`} className={isCurrent ? 'is-section' : undefined}>
+        <div className="nav-mm-item-wrap">
+          <a
+            className="nav-mm-trigger"
+            href={LIBRARY_HREF}
+            id={`${idPrefix}nav-library-link`}
+            aria-current={isCurrent ? 'page' : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate(LIBRARY_HREF);
+            }}
+          >
+            {navT('nav.appLinks.library')}
+          </a>
+        </div>
+      </li>
+    );
+  };
+
+  const trackIntelligenceNavItem = (idPrefix = '') => {
+    const isCurrent = currentPath.startsWith(TRACK_INTELLIGENCE_HREF);
+    return (
+      <li key="track-intelligence" id={`${idPrefix}mi-track-intelligence`} className={isCurrent ? 'is-section' : undefined}>
+        <div className="nav-mm-item-wrap">
+          <a
+            className="nav-mm-trigger"
+            href={TRACK_INTELLIGENCE_HREF}
+            id={`${idPrefix}nav-track-intelligence-link`}
+            aria-current={isCurrent ? 'page' : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate(TRACK_INTELLIGENCE_HREF);
+            }}
+          >
+            {navT('nav.appLinks.trackIntelligence')}
+          </a>
+        </div>
+      </li>
+    );
+  };
+
+  const sonicDiscoveryNavItem = (idPrefix = '') => {
+    const isCurrent = currentPath.startsWith(SONIC_DISCOVERY_HREF);
+    return (
+      <li key="sonic-discovery" id={`${idPrefix}mi-sonic-discovery`} className={isCurrent ? 'is-section' : undefined}>
+        <div className="nav-mm-item-wrap">
+          <a
+            className="nav-mm-trigger"
+            href={SONIC_DISCOVERY_HREF}
+            id={`${idPrefix}nav-sonic-discovery-link`}
+            aria-current={isCurrent ? 'page' : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate(SONIC_DISCOVERY_HREF);
+            }}
+          >
+            {navT('nav.appLinks.sonicDiscovery')}
+          </a>
+        </div>
+      </li>
+    );
+  };
+
   const feedbackCta = (
     <button
       type="button"
@@ -277,7 +365,7 @@ export function SiteHeader({
    * colliding with the main one.
    */
   const logoLink = (
-    <a href="/" aria-label="Resomix home" onClick={handleLogoClick}>
+    <a href={landingHref('/')} aria-label="Resomix home">
       <LogoHeader className="nav-logo-mark" />
     </a>
   );
@@ -416,6 +504,7 @@ export function SiteHeader({
               groups={leftGroups}
               {...navListProps}
               setItemRef={mainItemRef}
+              trailingItem={[sonicDiscoveryNavItem(), trackIntelligenceNavItem()]}
             />
           </nav>
 
@@ -428,6 +517,7 @@ export function SiteHeader({
                 {...navListProps}
                 setItemRef={mainItemRef}
                 leadingItem={pricingNavItem()}
+                trailingItem={[libraryNavItem(), upgradeNavItem()]}
               />
             </nav>
             {accountControl}
@@ -452,6 +542,10 @@ export function SiteHeader({
               {...navListProps}
               idPrefix="sticky-"
               setItemRef={stickyItemRef}
+              trailingItem={[
+                sonicDiscoveryNavItem('sticky-'),
+                trackIntelligenceNavItem('sticky-'),
+              ]}
             />
           </nav>
 
@@ -465,6 +559,7 @@ export function SiteHeader({
                 idPrefix="sticky-"
                 setItemRef={stickyItemRef}
                 leadingItem={pricingNavItem('sticky-')}
+                trailingItem={[libraryNavItem('sticky-'), upgradeNavItem('sticky-')]}
               />
             </nav>
             {accountControl}
