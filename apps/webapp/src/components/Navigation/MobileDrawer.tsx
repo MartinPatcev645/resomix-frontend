@@ -243,6 +243,9 @@ export function MobileDrawer({
                     </li>
                   );
                 }
+                // An absolute marketing URL leaves this origin as a normal browser navigation.
+                // A bare path (VITE_BASE_LANDING_URL unset) must go through handleNavigate:
+                // assigning window.location.href would load that path inside the webapp, where it does not exist.
                 const isAbsolute = /^https?:\/\//.test(link.route);
                 return (
                   <li key={link.key}>
