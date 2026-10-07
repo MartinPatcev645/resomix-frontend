@@ -7,6 +7,10 @@ search and admin, and it is the only server the browser talks to for data. The f
 The stack is Python 3.12, FastAPI, async SQLAlchemy 2, MariaDB with Alembic migrations, Redis,
 Celery and Stripe. Commands below are for **Windows PowerShell**.
 
+> Production currently runs Python **3.10**, not 3.12. Develop on 3.12 as described here, since
+> that is what the Dockerfile and this guide target, but do not assume a 3.11 or 3.12 language
+> feature will run in production until that is reconciled. It is tracked in `OPEN_TODOS.md`.
+
 ## How we work with git
 
 - `demo` is staging and `main` is production.
@@ -178,6 +182,9 @@ add endpoints that hand out the raw output of the media or analysis services.
 
 ## Reference
 
-- `README.md` covers the architecture and the development patterns in more depth.
-- `QUICK_START.md` is the original local setup guide (macOS and Windows).
-- `docs/reference/frontend_api_integration_guide.md` is the endpoint reference.
+- `../README.md` covers what the service provides and how it is built, in more depth.
+- `QUICK_START.md`, beside this file, is the original local setup guide and covers macOS.
+- `reference/frontend_api_integration_guide.md` is the endpoint reference.
+- `RUNBOOK.md`, beside this file, is day-to-day operations.
+- `outdated/` holds superseded documents. Useful for why a thing was done, never for how it
+  works now.

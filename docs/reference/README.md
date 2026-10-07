@@ -4,12 +4,13 @@ This folder holds the **shareable, canonical** documentation for the Resomix
 Alwyzon control-plane: the docs we keep aligned with the running system and hand
 to **partners, frontend developers, and auditors**.
 
-Everything *outside* this folder under `docs/` (scoping reports, gap analyses,
-roadmaps, implementation plans, status snapshots, internal impl notes) is
-**internal development material** — useful to us, not meant for external sharing.
+Everything else under `docs/` is internal. Current operating material sits in
+`docs/` itself, and anything superseded has been moved to `docs/outdated/`, which
+is kept for reference and is not maintained.
 
-> Keep this separation intact: when a new doc is partner/developer-facing and
-> meant to stay in sync with the code, put it here. Working notes stay in `docs/`.
+> Keep this separation intact. A new document that is partner or developer facing
+> and meant to stay in sync with the code belongs here. Internal operating notes
+> stay in `docs/`. Nothing is ever deleted; it moves to `docs/outdated/`.
 
 ---
 
@@ -35,12 +36,16 @@ roadmaps, implementation plans, status snapshots, internal impl notes) is
 |----------|---------|
 | [PARTNER_ONBOARDING.md](PARTNER_ONBOARDING.md) | Operator runbook for onboarding a B2B partner end-to-end. |
 | [fresh_server_setup_runbook.md](fresh_server_setup_runbook.md) | Stand up the control-plane on a clean VPS (fresh DB, no restore). |
-| [restore_runbook.md](restore_runbook.md) | Disaster-recovery / database restoration procedure. |
+
+> **Restoring from backup is not documented here.** The procedure lives in the
+> `server-backups` repository, at `docs/DR-RUNBOOK.md`. The old `restore_runbook.md`
+> described a Docker and mariabackup process we do not use and has been moved to
+> `docs/outdated/`.
 
 ## Compliance & technical due-diligence pack
 
-Shareable with partners and auditors. (Internal security-audit reports are kept
-out of this folder, under `docs/` / `docs/technical/`.)
+Shareable with partners and auditors. Internal security-audit reports are kept out
+of this folder, under `docs/outdated/technical/`.
 
 | Document | Purpose |
 |----------|---------|
@@ -50,5 +55,8 @@ out of this folder, under `docs/` / `docs/technical/`.)
 | [4.Resiliance_availability.md](4.Resiliance_availability.md) | Resilience & availability. |
 | [5.Data_backup.md](5.Data_backup.md) | Data backup. |
 | [6.Example_questions.md](6.Example_questions.md) | Common due-diligence Q&A. |
-| [alwyzon_server.md](alwyzon_server.md) | Alwyzon control-plane server reference. |
-| [hetzner_server.md](hetzner_server.md) | Hetzner media/similarity server reference. |
+
+> The per-server reference documents that used to sit here, `alwyzon_server.md` and
+> `hetzner_server.md`, were written from memory and have been superseded by the
+> discovery pass in `server-backups/docs/SERVERS.md`, which was run on the machines
+> themselves. Both have been moved to `docs/outdated/`.

@@ -1,7 +1,8 @@
 # Open TODOs — consolidated
 
 **Written 2026-08-17**, at the end of the outage/hardening session. **Updated 2026-08-18** (items 22–23,
-from the Apple Music mobile-export investigation). This is the single index of everything
+from the Apple Music mobile-export investigation). **Updated 2026-10-07** (item 24, from the
+documentation clean-up). This is the single index of everything
 known-and-not-done across all four repos. Each item says what it is, **why it matters** (so a future
 reader can judge whether to skip it), where the detail lives, and rough effort.
 
@@ -286,6 +287,28 @@ also matches them and reports 4 failed files. **Cosmetic, but dangerous**: a gen
 would be lost in expected noise. Exclude them in the vitest config or rename to `*.pure.ts`.
 
 ---
+
+### 24. Production runs Python 3.10, the repository targets 3.12
+**What:** `requirements.txt`, the `Dockerfile` and `docs/ONBOARDING.md` all target Python **3.12**.
+The production Alwyzon machine has **3.10 only**, with no 3.11 or 3.12 installed, and runs the
+application on it. Confirmed by the discovery pass in `server-backups/docs/SERVERS.md`.
+
+**Why it matters:** nothing is broken today, because nothing in the codebase uses a 3.11 or 3.12
+language feature. But the gap is silent and one-directional. The first time somebody writes a
+`match` statement with a newer pattern, an exception group, or anything else that parses on their
+machine and in CI but not on 3.10, it fails at import time in production and nowhere before it.
+Local tests, Docker and staging would all pass.
+
+**Where:** `requirements.txt`, `Dockerfile`, `docs/ONBOARDING.md`, and the venv on the production
+box.
+
+**Options:** either build 3.12 on the production machine as was already done on the media box for
+the analysis service, or drop the repository's target to 3.10 and say so everywhere. The first is
+the better end state, the second is the honest short-term fix. Either is small. Leaving the two
+disagreeing is the only bad option.
+
+**Effort:** 1–2h for either path, most of it verification.
+
 
 ## Deferred by decision (not forgotten)
 

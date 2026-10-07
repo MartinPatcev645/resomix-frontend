@@ -1679,7 +1679,7 @@ This runbook stops before loading live data.
   `server-backups`: `docs/PHASE-8.md`, section *"The recovery procedure, as actually
   run"*, which restores both boxes with `bin/restore.sh --role alwyzon|media` from
   the restic repository on the Storage Box (62 minutes for both boxes on the
-  2026-09 drill). **Do not follow [restore_runbook.md](restore_runbook.md)**: it
+  2026-09 drill). **Do not follow [restore_runbook.md](../../../server-backups/docs/DR-RUNBOOK.md)**: it
   describes a Docker `mariabackup` + cron + rsync system with `--password=test`
   that does not exist, and a drill that did not happen as described. After the
   restore: B4's migrate-only check, then D2's ownership fixes and restart order.

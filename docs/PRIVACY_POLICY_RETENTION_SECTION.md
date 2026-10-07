@@ -17,7 +17,7 @@ Drop-in copy for two things we are currently missing:
 
 Every claim below matches what the code does as of migration `d3f7a1c5e982`. It was written from
 the implementation, not the other way round, so it can be checked against
-[`ACCOUNT_DELETION_GDPR_OPTIONS.md`](ACCOUNT_DELETION_GDPR_OPTIONS.md) §4 line by line.
+[`ACCOUNT_DELETION_GDPR_OPTIONS.md`](outdated/ACCOUNT_DELETION_GDPR_OPTIONS.md) §4 line by line.
 
 **Two blanks need filling before this ships:**
 
