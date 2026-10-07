@@ -66,23 +66,23 @@ export const ABOUT_HREF = landingHref('/about');
 /** The marketing pricing page on resomix.com. Where the guest header's Pricing button points. */
 export const PRICING_HREF = landingHref('/pricing');
 
-export const TRACK_INTELLIGENCE_HREF = 'https://beta.resomix.com/track-intelligence';
+export const TRACK_INTELLIGENCE_HREF = '/track-intelligence';
 
-export const SONIC_DISCOVERY_HREF = 'https://beta.resomix.com/sonic-discovery';
+export const SONIC_DISCOVERY_HREF = '/sonic-discovery';
 
-export const LIBRARY_HREF = 'https://beta.resomix.com/library?tab=tracks&page=1';
+export const LIBRARY_HREF = '/library';
 
-export const UPGRADE_HREF = 'https://beta.resomix.com/subscribe?from=app';
+export const UPGRADE_HREF = '/subscribe?from=app';
 
 /**
  * Marketing site. Beta `/` is Sonic Discovery and there is no `/about` route, so the Resources
- * company set stays on resomix.com rather than splitting Home and About from Contact.
+ * company set stays on the landing origin rather than splitting Home and About from Contact.
  */
-export const MARKETING_HOME_HREF = 'https://resomix.com/';
+export const MARKETING_HOME_HREF = landingHref('/');
 
-export const MARKETING_ABOUT_HREF = 'https://resomix.com/about';
+export const MARKETING_ABOUT_HREF = landingHref('/about');
 
-export const MARKETING_CONTACT_HREF = 'https://resomix.com/contact';
+export const MARKETING_CONTACT_HREF = landingHref('/contact');
 
 /** Temporarily hidden from the header and mobile drawer. Remove a key to restore its group. */
 const HIDDEN_NAV_GROUPS: ReadonlySet<NavTopGroup['key']> = new Set([

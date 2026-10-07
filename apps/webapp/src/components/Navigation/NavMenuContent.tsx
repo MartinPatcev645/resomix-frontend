@@ -374,18 +374,14 @@ export function buildProfileMenuItems({
       id: 'nav-upgrade-menu-item',
       href: UPGRADE_HREF,
       icon: <UpgradeIcon />,
-      onClick: () => {
-        window.location.href = UPGRADE_HREF;
-      },
+      onClick: () => onNavigate(UPGRADE_HREF),
     },
     {
       label: 'Library',
       id: 'nav-library-menu-item',
       href: LIBRARY_HREF,
       icon: <LibraryIcon />,
-      onClick: () => {
-        window.location.href = LIBRARY_HREF;
-      },
+      onClick: () => onNavigate(LIBRARY_HREF),
     },
     {
       label: 'Track Intelligence',

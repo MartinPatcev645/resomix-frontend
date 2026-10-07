@@ -274,7 +274,13 @@ export function MobileDrawer({
               {isAuthenticated ? (
                 <>
                   <li>
-                    <a href={LIBRARY_HREF}>
+                    <a
+                      href={LIBRARY_HREF}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleNavigate(LIBRARY_HREF);
+                      }}
+                    >
                       <span className="nav-util-icon" aria-hidden="true">
                         <LibraryIcon />
                       </span>

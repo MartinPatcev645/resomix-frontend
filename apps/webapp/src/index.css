@@ -136,9 +136,8 @@
 
 /* scale the REM unit */
 html {
-  font-size: clamp(14.22px, 1.389vw, 17.78px);
-  /* 1.389vw = 17.78px at 1280 px; cap stops growth above 1280. ~11% above the landing root
-     (clamp(12.8px, 1.25vw, 16px)) so the app reads at the landing's on-screen size. */
+  font-size: clamp(12.8px, 1.25vw, 16px);
+  /* 1.25vw = 16px at 1280 px because 1280 × 1.25% = 16 px; cap stops growth above 1280 */
 }
 
 /* optional crisp lines */

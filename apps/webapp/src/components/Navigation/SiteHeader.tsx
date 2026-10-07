@@ -13,9 +13,9 @@ import {
   SONIC_DISCOVERY_HREF,
   LIBRARY_HREF,
   UPGRADE_HREF,
-  MARKETING_HOME_HREF,
   NAV_TOP_GROUPS,
   getNavSectionForPath,
+  landingHref,
   type NavTopGroup,
 } from './betaNavConfig.ts';
 import { NavPanelContent, CaretIcon, AccountIcon, buildProfileMenuItems } from './NavMenuContent.tsx';
@@ -173,11 +173,6 @@ export function SiteHeader({
     isPro,
   });
 
-  const handleLogoClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    onNavigate(MARKETING_HOME_HREF);
-  };
-
   /**
    * Logout only — derived from the full list rather than rebuilt, so the item keeps a single
    * definition (id, icon, handler) and can never drift from the desktop one.
@@ -259,6 +254,10 @@ export function SiteHeader({
             className="nav-mm-trigger"
             href={UPGRADE_HREF}
             id={`${idPrefix}nav-upgrade-link`}
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate(UPGRADE_HREF);
+            }}
           >
             {navT('nav.cta.upgrade')}
           </a>
@@ -278,6 +277,10 @@ export function SiteHeader({
             href={LIBRARY_HREF}
             id={`${idPrefix}nav-library-link`}
             aria-current={isCurrent ? 'page' : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate(LIBRARY_HREF);
+            }}
           >
             {navT('nav.appLinks.library')}
           </a>
@@ -286,33 +289,49 @@ export function SiteHeader({
     );
   };
 
-  const trackIntelligenceNavItem = (idPrefix = '') => (
-    <li key="track-intelligence" id={`${idPrefix}mi-track-intelligence`}>
-      <div className="nav-mm-item-wrap">
-        <a
-          className="nav-mm-trigger"
-          href={TRACK_INTELLIGENCE_HREF}
-          id={`${idPrefix}nav-track-intelligence-link`}
-        >
-          {navT('nav.appLinks.trackIntelligence')}
-        </a>
-      </div>
-    </li>
-  );
+  const trackIntelligenceNavItem = (idPrefix = '') => {
+    const isCurrent = currentPath.startsWith(TRACK_INTELLIGENCE_HREF);
+    return (
+      <li key="track-intelligence" id={`${idPrefix}mi-track-intelligence`} className={isCurrent ? 'is-section' : undefined}>
+        <div className="nav-mm-item-wrap">
+          <a
+            className="nav-mm-trigger"
+            href={TRACK_INTELLIGENCE_HREF}
+            id={`${idPrefix}nav-track-intelligence-link`}
+            aria-current={isCurrent ? 'page' : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate(TRACK_INTELLIGENCE_HREF);
+            }}
+          >
+            {navT('nav.appLinks.trackIntelligence')}
+          </a>
+        </div>
+      </li>
+    );
+  };
 
-  const sonicDiscoveryNavItem = (idPrefix = '') => (
-    <li key="sonic-discovery" id={`${idPrefix}mi-sonic-discovery`}>
-      <div className="nav-mm-item-wrap">
-        <a
-          className="nav-mm-trigger"
-          href={SONIC_DISCOVERY_HREF}
-          id={`${idPrefix}nav-sonic-discovery-link`}
-        >
-          {navT('nav.appLinks.sonicDiscovery')}
-        </a>
-      </div>
-    </li>
-  );
+  const sonicDiscoveryNavItem = (idPrefix = '') => {
+    const isCurrent = currentPath.startsWith(SONIC_DISCOVERY_HREF);
+    return (
+      <li key="sonic-discovery" id={`${idPrefix}mi-sonic-discovery`} className={isCurrent ? 'is-section' : undefined}>
+        <div className="nav-mm-item-wrap">
+          <a
+            className="nav-mm-trigger"
+            href={SONIC_DISCOVERY_HREF}
+            id={`${idPrefix}nav-sonic-discovery-link`}
+            aria-current={isCurrent ? 'page' : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate(SONIC_DISCOVERY_HREF);
+            }}
+          >
+            {navT('nav.appLinks.sonicDiscovery')}
+          </a>
+        </div>
+      </li>
+    );
+  };
 
   const feedbackCta = (
     <button
@@ -346,7 +365,7 @@ export function SiteHeader({
    * colliding with the main one.
    */
   const logoLink = (
-    <a href={MARKETING_HOME_HREF} aria-label="Resomix home" onClick={handleLogoClick}>
+    <a href={landingHref('/')} aria-label="Resomix home">
       <LogoHeader className="nav-logo-mark" />
     </a>
   );
