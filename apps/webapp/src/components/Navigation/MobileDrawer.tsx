@@ -254,8 +254,7 @@ export function MobileDrawer({
                           return;
                         }
                         e.preventDefault();
-                        window.location.href = link.route;
-                        onClose();
+                        handleNavigate(link.route);
                       }}
                     >
                       {label}
