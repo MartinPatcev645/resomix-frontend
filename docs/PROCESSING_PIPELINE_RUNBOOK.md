@@ -6,7 +6,7 @@
 > **Audience:** anyone (including future-you, manually) operating or extending this system.
 > **Companion docs:** `docs/ingestion_pipeline_v2_plan.md` (the design/decisions),
 > `docs/ingestion_v2_handoff.md` (per-stage handoff),
-> `resomix-similarity-open/docs/reference/INGESTION_PIPELINE_REDESIGN.md` (the merged spec incl. §9 playback).
+> `resomix-similarity-open/docs/INGESTION_AND_JOBS.md`, which describes what was built. The original merged spec including §9 playback was archived on 2026-10-07 to `resomix-similarity-open/docs/outdated/INGESTION_PIPELINE_REDESIGN.md`.
 >
 > **Two repos / two roles — memorise this split, it governs the whole doc:**
 > - **Alwyzon** = `basic_fastapi_server_resomix` — the **control plane**. Owns the **database**,
