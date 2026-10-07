@@ -163,7 +163,7 @@ Four auth tiers are supported depending on the caller:
 ### 5.2 Get User Playlists
 - **`GET /api/v1/playlists/get-all-playlists/`** — Requires JWT
 - **Query params:** `page`, `page_size` (default 20), `play_time`, `num_tracks`, `start_date`, `end_date`, `is_public`, `own_favorites`, `all_favorites`
-- **Returns:** Paginated **lightweight** summaries of the caller's own playlists (no embedded track list), newest first, with top-level `total`. Each item: `uuid`, `name`, `is_public`, `seed_track_title`, `seed_track_type` (`"upload"` | `"internal"`), `fork_id`, `num_tracks`, `play_time`, `created_at`, `is_favorite`, `is_following`. See [GET_ALL_USER_PLAYLISTS_FRONTEND_GUIDE.md](./GET_ALL_USER_PLAYLISTS_FRONTEND_GUIDE.md) for the full shape.
+- **Returns:** Paginated **lightweight** summaries of the caller's own playlists (no embedded track list), newest first, with top-level `total`. Each item: `uuid`, `name`, `is_public`, `seed_track_title`, `seed_track_type` (`"upload"` | `"internal"`), `fork_id`, `num_tracks`, `play_time`, `created_at`, `is_favorite`, `is_following`. The full shape is in `basic_fastapi_server_resomix/docs/reference/GET_ALL_USER_PLAYLISTS_FRONTEND_GUIDE.md`, in the Alwyzon repository.
 - **Note:** the internal integer primary key (`pk`) is **not** returned on any user-facing response — always key playlists by `uuid`.
 
 ### 5.3 Rename / Change Visibility (Share) — **Requires JWT + ownership**

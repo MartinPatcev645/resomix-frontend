@@ -123,6 +123,11 @@ that matter most.
 
 ## Reference
 
-- `instructions.md` is the frontend rulebook, including the full pre-push checklist (section 12).
-- `docs/routes.md` is the API endpoint reference.
-- `docs/DESIGN_SYSTEM.md` covers the tokens and visual language.
+- `instructions.md`, at the repository root, is the frontend rulebook, including the full
+  pre-push checklist (section 12). Read all of it.
+- `docs/ROUTES.md` is the API endpoint reference.
+- `packages/ui/src/design-system/README.md` and the `styles.css` beside it are the tokens
+  and the visual language. **That is the live source.** An older `docs/DESIGN_SYSTEM.md`
+  used to be cited here and describes a design system that was never shipped, so it is now
+  in `docs/outdated/design-proposal-jul-2026/`.
+- `docs/README.md` indexes everything else.
