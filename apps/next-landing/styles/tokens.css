@@ -1,0 +1,390 @@
+
+
+:root {
+  /* apps/webapp/src/assets/icons/arrow_small_up.svg, inlined so `.rx-copylink::after` can
+     paint it as a mask and let it inherit the link's colour. Shape only; the fill is ignored. */
+  --rx-arrow-up-right: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 49 49'%3E%3Cpath d='M48.6667 48.2905H37.7423V29.5518L40.9792 26.3791L40.9792 16.3653L8.30723 48.2865L0.522602 40.6562L33.0894 8.63187L22.6707 8.63187L19.4339 11.8046L0.518555 11.8046L0.518555 0.898438L40.878 0.898437L48.6667 8.53272L48.6667 48.2905Z' fill='%23000'/%3E%3C/svg%3E");
+
+  /* Phase 1B precision-industrial tokens (verbatim from packages/ui design-system). Needed here so
+     shared @resomix/ui content built on the newer theme (e.g. Error404) renders correctly on this
+     app too — webapp carries the same copy. */
+  --rx-color-canvas: #050505;
+  --rx-color-surface: #111111;
+  --rx-color-surface-raised: #171717;
+  --rx-color-text-primary: rgba(255, 255, 255, 0.96);
+  --rx-color-text-secondary: rgba(255, 255, 255, 0.8);
+  --rx-color-text-muted: rgba(255, 255, 255, 0.72);
+  --rx-color-border-subtle: rgba(255, 255, 255, 0.09);
+  --rx-color-border-default: rgba(255, 255, 255, 0.16);
+  --rx-color-border-strong: rgba(255, 255, 255, 0.24);
+  --rx-color-accent: #ee4a26;
+  --rx-color-accent-hover: #f46545;
+  --rx-color-accent-soft: rgba(238, 74, 38, 0.14);
+  --rx-color-disabled: rgba(255, 255, 255, 0.42);
+  --rx-color-error: #ff7660;
+  --rx-color-success: #63d28f;
+  --rx-radius-control: 2px;
+  --rx-radius-tag: 2px;
+  --rx-ring: 0 0 0 1px rgba(5, 5, 5, 0.95), 0 0 0 3px rgba(255, 143, 116, 0.92);
+  --rx-duration-fast: 120ms;
+  --rx-duration-base: 160ms;
+  --rx-ease-standard: ease;
+
+  /* Dark theme (default) */
+  --color-primary: #ffffff;
+  --color-primary-hover: #B9B9B9;
+  --color-primary-background: #111111;
+  --color-noise-background: #242423;
+  --color-noise-border: #50504F;
+  --color-secondary: #000000;
+  --color-text-primary: #000000;
+  --color-text-secondary: #ffffff;
+  --color-neon-orange: #EE4A26;
+  /* Transparency levels (black base) */
+  --opacity-10: rgba(0, 0, 0, 0.10);
+  --opacity-15: rgba(0, 0, 0, 0.15);
+  --opacity-20: rgba(0, 0, 0, 0.20);
+  --opacity-25: rgba(0, 0, 0, 0.25);
+  --opacity-30: rgba(0, 0, 0, 0.30);
+  --opacity-40: rgba(0, 0, 0, 0.40);
+  --opacity-50: rgba(0, 0, 0, 0.50);
+  --opacity-60: rgba(0, 0, 0, 0.60);
+  --opacity-70: rgba(0, 0, 0, 0.70);
+  --opacity-80: rgba(0, 0, 0, 0.80);
+  --opacity-90: rgba(0, 0, 0, 0.90);
+  --opacity-95: rgba(0, 0, 0, 0.95);
+}
+
+.light {
+  /* Light theme overrides */
+  --color-primary: #000000;
+  --color-primary-hover: #B9B9B9;
+  --color-secondary: #ffffff;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #000000;
+  /* Transparency levels (white base) */
+  --opacity-10: rgba(255, 255, 255, 0.10);
+  --opacity-15: rgba(255, 255, 255, 0.15);
+  --opacity-20: rgba(255, 255, 255, 0.20);
+  --opacity-25: rgba(255, 255, 255, 0.25);
+  --opacity-30: rgba(255, 255, 255, 0.30);
+  --opacity-40: rgba(255, 255, 255, 0.40);
+  --opacity-50: rgba(255, 255, 255, 0.50);
+  --opacity-60: rgba(255, 255, 255, 0.60);
+  --opacity-70: rgba(255, 255, 255, 0.70);
+  --opacity-80: rgba(255, 255, 255, 0.80);
+  --opacity-90: rgba(255, 255, 255, 0.90);
+  --opacity-95: rgba(255, 255, 255, 0.95);
+}
+
+
+
+/* ─── Brand font stacks ──────────────────────────────────────────────────────
+   These variables were REFERENCED in 103 places and DEFINED nowhere.
+
+   74 of those references pass no fallback (`font-family: var(--font-fira)`), so the declaration
+   was invalid at computed-value time and the element quietly inherited instead. It looked correct
+   only because the page root already carries `.font-helvetica`. The other 29 pass a fallback
+   (`var(--font-fira, 'Fira Code', monospace)`) and resolved to that arm — the right font, but a
+   stack with no metric-matched fallback in it, so those elements could still shift on font swap.
+
+   Defining them here fixes both, and keeps the stacks identical to the .font-* utility classes in
+   fonts.css. Each includes its metric-matched fallback (see styles/font-fallbacks.css). */
+:root {
+  --font-helvetica: 'Helvetica_Neue', 'Helvetica_Neue Fallback', 'Helvetica Neue', 'HelveticaNeue', sans-serif;
+  --font-fira: 'Fira Code', 'Fira Code Fallback', 'FiraCode', monospace;
+  --font-benzin: 'Benzin', 'Benzin Fallback', 'Benzin-Bold', 'Benzin Bold', 'BenzinBold', sans-serif;
+  --font-auger: 'Auger Mono TEST', 'Auger Mono', 'AugerMono', monospace;
+}
+
+
+@layer utilities {
+  .w-fluid-1280 {
+    width: clamp(1280px, 100vw, 2560px);
+  }
+}
+
+/* ─── Fluid desktop scaling (html) ───────────────────────── */
+:root {
+  /* design reference */
+  --ideal-width: 1280;
+  --min-width: 1280px;
+  --max-width: 2560px;
+}
+
+/* scale the REM unit */
+html {
+  font-size: clamp(12.8px, 1.25vw, 16px);
+  /* 1.25vw = 16px at 1280px; the cap stops growth above that. Matches the web app.
+     This cap used to be 32px, which was the entire reason the marketing site rendered
+     larger: the floor and growth rate were already identical, so the two sites matched
+     exactly up to a 1280px viewport and diverged only beyond it. */
+}
+
+/* optional crisp lines */
+svg { vector-effect: non-scaling-stroke; }
+
+/* ─── Fluid mobile scaling (html) ───────────────────────── */
+@media (max-width: 1023px) {
+  :root {
+    /* design reference */
+    --ideal-width: 393;
+    --min-width: 250px;
+    --max-width: 1023px;
+  }
+
+  /* scale the REM unit for mobile */
+  html {
+    /* 16px at 393px viewport, ~10px at 250px, ~26px at 1023px */
+    font-size: clamp(10px, 4.07vw, 26px);
+    /* 4.07vw ≈ 16px at a 393px viewport. Cap matches the web app too — it bites from
+       ~639px upward, which is where tablets were also rendering larger than beta. */
+  }
+}
+
+/* ─── Hide scrollbars across all browsers ───────────────────────── */
+html, body {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;    /* Firefox */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;            /* Chrome, Safari, Opera */
+}
+
+/* ─── Cookie consent (Silktide) ──────────────────────────────────────────────
+   The vendor widget ships its own look; this re-skins it in the site's language:
+   solid hairline edges instead of dotted, 2px corners, Fira Code uppercase
+   controls, accent used sparingly. Kept byte-identical in both apps so the panel
+   reads the same on resomix.com and on beta.
+
+   `!important` throughout because the vendor stylesheet is injected at runtime,
+   after ours.
+
+   CONSENT PARITY: the widget puts `stcm-button-primary` on accept-all, reject-all
+   AND save alike, so a single rule keeps every choice the same visual weight.
+   That is deliberate — making "accept" louder than "reject" is a dark pattern and
+   is exactly what consent guidance prohibits. Only "save preferences", which is
+   not an accept-vs-reject choice, carries the accent.
+   ───────────────────────────────────────────────────────────────────────── */
+html #stcm-wrapper {
+  --backgroundColor: #111111 !important;
+  --primaryColor: #ffffff !important;
+  --textColor: rgba(255, 255, 255, 0.92) !important;
+  --buttonTextColor: #ffffff !important;
+  --fontFamily: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+  --backdropColor: rgba(0, 0, 0, 0.72) !important;
+  --borderRadius: 2px !important;
+}
+
+/* The floating revocation badge stays hidden; the nav's "Cookie Settings" entry
+   opens the panel by clicking it programmatically, which works while hidden. */
+#stcm-icon {
+  display: none !important;
+}
+
+html #stcm-banner,
+html #stcm-modal {
+  background: #111111 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+
+/* Controls: the same treatment as the site's secondary button. */
+html #stcm-wrapper .stcm-button,
+html #stcm-wrapper .stcm-button-primary,
+html #stcm-wrapper .stcm-button-secondary {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  border-radius: 2px !important;
+  color: #ffffff !important;
+  font-family: 'Fira Code', monospace !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.09em !important;
+  text-transform: uppercase !important;
+  padding: 0.875rem 1.625rem !important;
+  min-height: 2.75rem !important;
+  cursor: pointer !important;
+  transition: color 160ms ease, border-color 160ms ease !important;
+}
+
+html #stcm-wrapper .stcm-button:hover,
+html #stcm-wrapper .stcm-button-primary:hover,
+html #stcm-wrapper .stcm-button-secondary:hover {
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* The site's hero-primary treatment: accent fill, near-black label, notched
+   top-right / bottom-left corners, hover lifting to a lighter tint.
+
+   ONLY on "save and close". The widget also puts `stcm-button-primary` on
+   accept-all and reject-all, but those two are the consent choice itself and
+   must stay identical to each other — filling one would make agreeing louder
+   than declining. Save is a neutral "apply what I picked", so it can carry the
+   emphasis without tilting the choice. */
+html #stcm-wrapper .stcm-modal-save {
+  background: #ee4a26 !important;
+  border-color: #ee4a26 !important;
+  color: #101010 !important;
+  font-weight: 600 !important;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  ) !important;
+}
+
+html #stcm-wrapper .stcm-modal-save:hover {
+  background: #f2603f !important;
+  border-color: #f2603f !important;
+  /* Hold the label dark — the shared hover tints text, which would be
+     orange-on-orange on a filled control. */
+  color: #101010 !important;
+}
+
+/* Toggles: neutral track, accent when the category is on. */
+html #stcm-modal .stcm-toggle-track {
+  background: rgba(255, 255, 255, 0.16) !important;
+}
+
+html #stcm-modal .stcm-toggle input:checked + .stcm-toggle-track {
+  background: #ee4a26 !important;
+}
+
+html #stcm-modal .stcm-toggle-thumb {
+  background: #ffffff !important;
+}
+
+html #stcm-modal .stcm-toggle-on,
+html #stcm-modal .stcm-toggle-off {
+  font-family: 'Fira Code', monospace !important;
+  font-size: 0.6875rem !important;
+  letter-spacing: 0.06em !important;
+  color: #111111 !important;
+}
+
+html #stcm-modal .stcm-modal-close {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+html #stcm-modal .stcm-modal-close:hover {
+  color: #ffffff !important;
+}
+
+html #stcm-modal footer a.stcm-credit-link {
+  color: rgba(255, 255, 255, 0.45) !important;
+  font-size: 0.6875rem !important;
+}
+
+
+/* Mobile hero headings: hyphenate rather than overflow.
+   Every landing page has exactly one <h1> — the hero — set in Benzin at display size, and a single
+   long word ("CATALOGUE", "DISCOVERABLE") can be wider than a 390px phone on its own. `hyphens:
+   auto` breaks it across lines WITH a trailing hyphen, which is what a reader expects; the source
+   strings are sentence case (uppercase comes from text-transform), so the hyphenation dictionary
+   sees real words.
+
+   `hyphens: auto` alone is NOT enough and must not be relied on: it silently does nothing when the
+   engine has no hyphenation dictionary for the locale, which is what happened here — the heading
+   simply ran past the side rules again. The words that actually need it therefore carry explicit
+   SOFT HYPHENS (U+00AD) in the locale strings; a soft hyphen is a real break opportunity, so it is
+   taken in preference to the emergency break below and it renders the "-".
+
+   `overflow-wrap: break-word` is the last resort only, for a token with neither. Order matters: a
+   line breaks at a soft hyphen if it has one, else at a dictionary point if the engine has one, else
+   mid-word without a hyphen — never overflowing. All dropped at 768px, where the heroes have room. */
+@media (max-width: 767px) {
+  h1 {
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    overflow-wrap: break-word;
+  }
+}
+
+/* Shared @resomix/ui dialogs use this mount fade (verbatim from the webapp, which owns the
+   original). Opacity only — no transform, so nothing shifts as a modal appears. */
+@keyframes workspace-panel-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe\:animate-\[workspace-panel-in_150ms_ease-out_both\] {
+    animation: none !important;
+  }
+}
+
+/* Contextual links into the Journal, from the interlinking map (src/routes/blogLinks.ts).
+
+   White with a dotted underline at rest, neon orange on hover and keyboard focus. The site's
+   bracket links hide their underline until hover, which works when [ ] already says "clickable"
+   but not for a link sitting at the end of a sentence, so the underline is visible throughout.
+
+   The class is DOUBLED on purpose. Thirteen page stylesheets carry `.xx-page a { color: inherit;
+   text-decoration: none }` at (0,1,1), which outranks a single class and silently stripped both the
+   colour and the underline on every page that has one — the link looked styled on Music Publishers
+   and like plain body text on the homepage. Repeating the class lifts this to (0,2,0) and wins
+   everywhere without reaching for !important. The FAQ override in faq.css sits at (0,3,0) and still
+   takes precedence over this, which is intended.
+
+   The trailing mark is the arrow from apps/webapp/src/assets/icons/arrow_small_up.svg, inlined as a
+   mask rather than an <img> or an inline <svg>. A mask is painted with `background-color`, so the
+   arrow takes `currentColor` and changes with the link on hover and focus for free; the file's own
+   hard-coded white fill is ignored because a mask reads alpha, not colour. It also has to be CSS
+   rather than markup: these anchors are injected by react-i18next's <Trans>, which replaces an
+   element's children with the translated text and would discard a nested <svg>. */
+.rx-copylink.rx-copylink {
+  color: var(--color-primary, #ffffff);
+  text-decoration: underline dotted currentColor;
+  text-decoration-thickness: 1px;
+  text-underline-offset: var(--px-4, 0.25rem);
+  transition: color 0.16s ease;
+}
+
+.rx-copylink.rx-copylink::after {
+  content: '';
+  display: inline-block;
+  width: 0.58em;
+  height: 0.58em;
+  margin-left: 0.3em;
+  vertical-align: baseline;
+  background-color: currentColor;
+  -webkit-mask-image: var(--rx-arrow-up-right);
+  mask-image: var(--rx-arrow-up-right);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.rx-copylink.rx-copylink:hover,
+.rx-copylink.rx-copylink:focus-visible {
+  color: var(--color-neon-orange, #ee4a26);
+}
+
+.rx-copylink.rx-copylink:focus-visible {
+  outline: 2px solid var(--color-neon-orange, #ee4a26);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rx-copylink.rx-copylink {
+    transition: none;
+  }
+}

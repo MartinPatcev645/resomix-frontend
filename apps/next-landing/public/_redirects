@@ -1,0 +1,4 @@
+# Permanent redirects carried from the current marketing site.
+# Destinations that are not built in this home-only export 404 until those routes exist.
+/subscribe                        /pricing                         301
+/product/catalogue-intelligence   /product/catalog-intelligence    301

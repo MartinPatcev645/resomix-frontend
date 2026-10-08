@@ -1,0 +1,1928 @@
+/* Homepage scoped styles — all selectors under .hm-page / .hm-* */
+
+.hm-page {
+  /* Homepage-scoped readability / ink tokens (do not touch global tokens) */
+  --hm-ink-support: #a0a0a0;
+  --hm-ink-quiet: #8e8e8e;
+  --hm-ink-bright: #d4d4d4;
+  --hm-border: rgba(255, 255, 255, 0.18);
+  --hm-border-soft: rgba(255, 255, 255, 0.12);
+  --hm-border-cta: rgba(255, 255, 255, 0.48);
+  --hm-panel: rgba(255, 255, 255, 0.025);
+  --hm-stroke: 1.25;
+  overflow-x: clip;
+}
+
+.light .hm-page {
+  --hm-ink-support: #5c5c5c;
+  --hm-ink-quiet: #6a6a6a;
+  --hm-ink-bright: #333;
+  --hm-border: rgba(16, 16, 16, 0.18);
+  --hm-border-soft: rgba(16, 16, 16, 0.12);
+  --hm-border-cta: rgba(16, 16, 16, 0.42);
+  --hm-panel: rgba(16, 16, 16, 0.03);
+}
+
+.hm-page .hm-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hm-page .hm-layer-plate {
+  z-index: -3;
+  background: var(--color-secondary) var(--hm-plate-dark) center / cover no-repeat;
+  opacity: 0.8;
+}
+
+.light .hm-page .hm-layer-plate {
+  background-image: var(--hm-plate-light);
+}
+
+.hm-page .hm-layer-grain {
+  z-index: -1;
+  background: var(--hm-grain-dark) repeat;
+  background-size: 256px 256px;
+  opacity: 0.045;
+}
+
+.light .hm-page .hm-layer-grain {
+  background-image: var(--hm-grain-light);
+}
+
+.hm-page .hm-frame {
+  max-width: min(80rem, 100%);
+  margin-inline: auto;
+  padding-inline: var(--px-24);
+  position: relative;
+  z-index: 10;
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-frame {
+    padding-inline: var(--px-48);
+  }
+}
+
+.hm-page .hm-section {
+  padding-block: 2.75rem;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.09);
+  position: relative;
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-section {
+    padding-block: 3.25rem;
+  }
+}
+
+.light .hm-page .hm-section {
+  border-bottom-color: rgba(16, 16, 16, 0.09);
+}
+
+.hm-page .hm-section:last-of-type {
+  border-bottom: none;
+}
+
+.hm-page a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.hm-page a:focus-visible,
+.hm-page button:focus-visible,
+.hm-page [tabindex]:focus-visible {
+  outline: 2px solid var(--color-neon-orange);
+  outline-offset: var(--px-3);
+}
+
+.hm-page button {
+  touch-action: manipulation;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.hm-page .hm-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.hm-page .hm-eyebrow {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.14em;
+  color: var(--hm-ink-support);
+  text-transform: uppercase;
+  margin: 0 0 var(--px-12);
+  display: flex;
+  align-items: center;
+  gap: var(--px-10);
+}
+
+.hm-page .hm-eyebrow::before {
+  content: '';
+  width: var(--px-32);
+  border-top: 1px solid var(--color-neon-orange);
+}
+
+.hm-page .hm-h2b {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-22);
+  line-height: 1.16;
+  letter-spacing: 0.02em;
+  margin: 0 0 var(--px-12);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-h2b {
+    font-size: var(--px-32);
+  }
+}
+
+.hm-page .hm-h3b {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-16);
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  margin: 0 0 var(--px-10);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-h3b {
+    font-size: var(--px-19);
+  }
+}
+
+.hm-page .hm-body {
+  color: var(--hm-ink-bright);
+  font-size: var(--px-16);
+  line-height: 1.7;
+  margin: 0;
+  max-width: 44rem;
+  font-weight: 300;
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-body {
+    font-size: var(--px-17);
+  }
+}
+
+.hm-page .hm-lbl-dim {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.08em;
+  color: var(--hm-ink-support);
+  text-transform: uppercase;
+}
+
+/* Canonical landing SECONDARY button — matches the webapp's Autoplay toggle: white label,
+   accent icon, faint edge that brightens on hover. Keep every page identical. */
+.hm-page .hm-tlink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--px-8);
+  background: transparent;
+  border-radius: var(--px-2);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: var(--px-14) var(--px-26);
+  min-height: var(--px-44);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: var(--color-primary);
+}
+
+.hm-page .hm-tlink:hover {
+  border-color: var(--color-primary);
+}
+
+
+.hm-page .hm-tlink::after {
+  content: ' →';
+  color: var(--color-neon-orange);
+}
+
+/* Canonical landing PRIMARY button — matches the webapp's Logout control: white label on an
+   accent edge, label and icon tint to the accent on hover. Keep every page identical. */
+.hm-page .hm-cta-p {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--px-8);
+  background: transparent;
+  border-radius: var(--px-2);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: var(--px-14) var(--px-26);
+  min-height: var(--px-44);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+  border: 1px solid var(--color-neon-orange);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.hm-page .hm-cta-p:hover {
+  color: var(--color-neon-orange);
+}
+
+
+
+/* Canonical landing SECONDARY button — matches the webapp's Autoplay toggle: white label,
+   accent icon, faint edge that brightens on hover. Keep every page identical. */
+.hm-page .hm-cta-s {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--px-8);
+  background: transparent;
+  border-radius: var(--px-2);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: var(--px-14) var(--px-26);
+  min-height: var(--px-44);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: var(--color-primary);
+}
+
+
+.hm-page .hm-cta-s::before {
+  content: '';
+  width: var(--px-6);
+  border-top: 1px solid var(--color-neon-orange);
+}
+
+.hm-page .hm-cta-s:hover {
+  border-color: var(--color-primary);
+}
+
+
+.hm-page .hm-cta-s:focus-visible {
+  outline: 2px solid var(--color-neon-orange);
+  outline-offset: var(--px-3);
+}
+
+.hm-page .hm-sl path,
+.hm-page .hm-sl polyline,
+.hm-page .hm-sl circle,
+.hm-page .hm-sl rect,
+.hm-page .hm-sl line,
+.hm-page .hm-sl ellipse {
+  stroke: currentColor;
+  fill: none;
+  stroke-width: var(--hm-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.hm-page .hm-sl .hm-f {
+  fill: currentColor;
+  stroke: none;
+}
+
+.hm-page .hm-sl text {
+  font-family: 'Fira Code', monospace;
+  letter-spacing: 0.06em;
+  fill: var(--hm-ink-support);
+  stroke: none;
+  text-transform: uppercase;
+}
+
+.hm-page .hm-caps {
+  display: grid;
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--hm-ink-support);
+}
+
+.hm-page .hm-join svg path,
+.hm-page .hm-join svg line,
+.hm-page .hm-join svg polyline {
+  vector-effect: non-scaling-stroke;
+}
+
+/* ---------- motion ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .hm-page.hm-motion-on .hm-anim .hm-pulse-el {
+    animation: hm-pulse 2.6s ease-in-out infinite;
+  }
+  .hm-page.hm-motion-on .hm-anim .hm-dashflow {
+    stroke-dasharray: 5 7;
+    animation: hm-dash 9s linear infinite;
+  }
+  .hm-page.hm-motion-on .hm-anim .hm-glowp {
+    animation: hm-glow 3.2s ease-in-out infinite;
+  }
+}
+
+@keyframes hm-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes hm-dash {
+  to {
+    stroke-dashoffset: -120;
+  }
+}
+
+@keyframes hm-glow {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.hm-page.hm-motion-reduced * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ---------- 1 · HERO ---------- */
+.hm-page .hm-hero {
+  padding: 3.25rem 0 0;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.09);
+  overflow: hidden;
+}
+
+.light .hm-page .hm-hero {
+  border-bottom-color: rgba(16, 16, 16, 0.09);
+}
+
+.hm-page .hm-beta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--px-8);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hm-ink-support);
+  border: 1px dotted var(--hm-border);
+  padding: var(--px-6) var(--px-12);
+  margin-bottom: var(--px-20);
+}
+
+.light .hm-page .hm-beta {
+  border-color: rgba(16, 16, 16, 0.18);
+}
+
+.hm-page .hm-beta i {
+  width: var(--px-7);
+  height: var(--px-7);
+  border-radius: 50%;
+  background: var(--color-neon-orange);
+  font-style: normal;
+}
+
+.hm-page .hm-benzin {
+  font-family: 'Benzin', 'Arial Black', sans-serif;
+  text-transform: uppercase;
+  /* Mobile (<768px) uses the shared landing hero size — keep in sync with .rl-benzin, do not make bespoke */
+  line-height: 1.06;
+  letter-spacing: 0.005em;
+  margin: 0 0 var(--px-20);
+  max-width: 16ch;
+  /* mobile-only guard: long unbroken words must not overflow the side rules */
+  overflow-wrap: anywhere;
+  color: var(--color-primary);
+}
+
+/* restores the pre-existing tablet/desktop size (base used to govern >=768px) */
+@media (min-width: 768px) {
+  .hm-page .hm-benzin {
+    line-height: 1.04;
+    overflow-wrap: normal;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-benzin {
+  }
+}
+
+.hm-page .hm-plat {
+  color: var(--hm-ink-bright);
+  font-size: var(--px-16);
+  line-height: 1.6;
+  max-width: 38rem;
+  margin: 0 0 var(--px-28);
+  font-weight: 300;
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-plat {
+    font-size: var(--px-21);
+  }
+}
+
+.hm-page .hm-ctas {
+  display: flex;
+  gap: var(--px-16);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--px-24);
+}
+
+.hm-page .hm-ctas .hm-tlink {
+  margin-left: var(--px-4);
+}
+
+.hm-page .hm-hero-art {
+  position: relative;
+  margin: 0;
+  color: var(--hm-ink-support);
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-hero-art {
+    margin: 0 calc(-1 * var(--px-24));
+  }
+}
+
+@media (min-width: 1280px) {
+  .hm-page .hm-hero-art {
+    margin: 0 calc(-1 * var(--px-48));
+  }
+}
+
+.hm-page .hm-hero-glow {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 78%;
+  background: radial-gradient(46rem 16rem at 66% 52%, rgba(238, 74, 38, 0.12), transparent 65%);
+  pointer-events: none;
+}
+
+.hm-page .hm-hero-art svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.hm-page .hm-hero-d text.hm-dest,
+.hm-page .hm-hero-m text.hm-dest {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  fill: #fff;
+}
+
+.light .hm-page .hm-hero-d text.hm-dest,
+.light .hm-page .hm-hero-m text.hm-dest {
+  fill: #111;
+}
+
+.hm-page .hm-hero-d {
+  display: none !important;
+}
+
+.hm-page .hm-hero-m {
+  display: block !important;
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 0 var(--px-24);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-hero-d {
+    display: block !important;
+  }
+  .hm-page .hm-hero-m {
+    display: none !important;
+  }
+}
+
+/* ---------- 2 · STATEMENT ---------- */
+.hm-page .hm-statement {
+  padding-block: 2.25rem;
+}
+
+.hm-page .hm-statement .hm-h2b {
+  max-width: 22ch;
+  font-size: var(--px-24);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-statement .hm-h2b {
+    font-size: var(--px-38);
+  }
+}
+
+.hm-page .hm-statement .hm-sub {
+  color: var(--hm-ink-bright);
+  font-size: var(--px-16);
+  max-width: 40rem;
+  margin-top: var(--px-12);
+  font-weight: 300;
+  line-height: 1.6;
+}
+
+.hm-page .hm-gesture {
+  margin-top: var(--px-28);
+  color: var(--hm-ink-support);
+}
+
+.hm-page .hm-gesture svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.hm-page .hm-gesture .hm-caps {
+  grid-template-columns: 1fr;
+  gap: var(--px-4);
+  margin-top: var(--px-12);
+}
+
+.hm-page .hm-gesture .hm-caps span {
+  text-align: left;
+}
+
+@media (min-width: 640px) {
+  .hm-page .hm-gesture .hm-caps {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+  }
+  .hm-page .hm-gesture .hm-caps span:nth-child(2) {
+    text-align: center;
+  }
+  .hm-page .hm-gesture .hm-caps span:nth-child(3) {
+    text-align: right;
+    color: #d0d0d0;
+  }
+}
+
+/* ---------- 3 · PRODUCTS ---------- */
+.hm-page .hm-prods {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--px-16);
+  margin-top: var(--px-32);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-prods {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--px-20);
+  }
+}
+
+.hm-page .hm-prod {
+  border: 1px solid var(--hm-border);
+  background: var(--hm-panel);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.light .hm-page .hm-prod {
+  border-color: var(--hm-border);
+  background: var(--hm-panel);
+}
+
+.hm-page .hm-prod::before {
+  content: '';
+  position: absolute;
+  left: var(--px-22);
+  top: 0;
+  width: var(--px-28);
+  border-top: 1px solid var(--color-neon-orange);
+  z-index: 2;
+}
+
+.hm-page .hm-wbar {
+  display: flex;
+  align-items: center;
+  gap: var(--px-8);
+  border-bottom: 1px solid var(--hm-border-soft);
+  padding: var(--px-10) var(--px-22);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.light .hm-page .hm-wbar {
+  border-bottom-color: var(--hm-border-soft);
+  background: rgba(16, 16, 16, 0.02);
+}
+
+.hm-page .hm-wbar .hm-wt {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.1em;
+  color: var(--hm-ink-support);
+  text-transform: uppercase;
+}
+
+.hm-page .hm-world {
+  border-bottom: 1px solid var(--hm-border-soft);
+  position: relative;
+  overflow: hidden;
+}
+
+.light .hm-page .hm-world {
+  border-bottom-color: var(--hm-border-soft);
+}
+
+.hm-page .hm-world svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.hm-page .hm-ptxt {
+  padding: var(--px-22);
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-10);
+  flex: 1;
+}
+
+.hm-page .hm-out {
+  color: var(--color-primary);
+  font-size: var(--px-16);
+  line-height: 1.5;
+  font-weight: 400;
+  margin: 0;
+}
+
+.hm-page .hm-pd {
+  color: var(--hm-ink-support);
+  font-size: var(--px-14);
+  line-height: 1.55;
+  flex: 1;
+  margin: 0;
+  font-weight: 300;
+}
+
+.hm-page .hm-pyx {
+  margin-top: var(--px-24);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--hm-ink-support);
+  display: flex;
+  align-items: center;
+  gap: var(--px-10);
+}
+
+.hm-page .hm-pyx::before {
+  content: '';
+  width: var(--px-20);
+  border-top: 1px solid var(--color-neon-orange);
+}
+
+/* ---------- 4 · FLOW ---------- */
+.hm-page .hm-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--px-8);
+  align-items: stretch;
+  margin-top: var(--px-28);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-flow {
+    grid-template-columns: 5fr auto 4fr auto 5fr;
+    gap: var(--px-16);
+  }
+}
+
+.hm-page .hm-fstage {
+  border: 1px solid var(--hm-border-soft);
+  background: transparent;
+  padding: var(--px-18);
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-12);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-fstage {
+    padding: var(--px-20);
+    gap: var(--px-14);
+  }
+}
+
+.light .hm-page .hm-fstage {
+  border-color: var(--hm-border-soft);
+  background: transparent;
+}
+
+.hm-page .hm-fstep {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  line-height: 1.5;
+}
+
+.hm-page .hm-fstep b {
+  color: var(--color-neon-orange);
+  font-weight: 500;
+  margin-right: var(--px-6);
+}
+
+.hm-page .hm-fsub {
+  color: var(--hm-ink-support);
+  font-size: var(--px-14);
+  line-height: 1.5;
+  margin-top: calc(-1 * var(--px-4));
+}
+
+.hm-page .hm-ftile {
+  border: 1px dotted var(--hm-ink-quiet);
+  padding: var(--px-14) var(--px-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-6);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-ftile {
+    padding: var(--px-15) var(--px-16);
+  }
+}
+
+.light .hm-page .hm-ftile {
+  background: rgba(16, 16, 16, 0.015);
+}
+
+.hm-page .hm-ftile .hm-fk {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-12);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.hm-page .hm-ftile .hm-fd {
+  color: var(--hm-ink-support);
+  font-size: var(--px-13);
+  line-height: 1.5;
+}
+
+.hm-page .hm-fcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-10);
+  flex: 1;
+  justify-content: center;
+}
+
+.hm-page .hm-fcard .hm-fd {
+  color: var(--hm-ink-support);
+  font-size: var(--px-14);
+  line-height: 1.55;
+}
+
+.hm-page .hm-fcard svg {
+  width: 100%;
+  max-width: 13rem;
+  height: auto;
+  color: var(--color-neon-orange);
+}
+
+.hm-page .hm-fres {
+  border: 1px solid rgba(238, 74, 38, 0.35);
+  padding: var(--px-14) var(--px-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-8);
+  background: rgba(238, 74, 38, 0.04);
+}
+
+.hm-page .hm-rrow {
+  display: grid;
+  grid-template-columns: var(--px-18) 1fr;
+  gap: var(--px-8);
+  align-items: center;
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.05em;
+  color: var(--hm-ink-support);
+}
+
+.hm-page .hm-rrow .hm-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.09);
+  position: relative;
+}
+
+.light .hm-page .hm-rrow .hm-bar {
+  background: rgba(16, 16, 16, 0.09);
+}
+
+.hm-page .hm-rrow .hm-bar i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--hm-ink-quiet);
+  font-style: normal;
+}
+
+.hm-page .hm-rrow.hm-top {
+  color: var(--color-primary);
+}
+
+.hm-page .hm-rrow.hm-top .hm-bar i {
+  background: var(--color-neon-orange);
+}
+
+.hm-page .hm-fopt {
+  border: 1px dashed var(--hm-border-soft);
+  padding: var(--px-14) var(--px-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-6);
+  opacity: 0.9;
+}
+
+.light .hm-page .hm-fopt {
+  border-color: var(--hm-border-soft);
+}
+
+.hm-page .hm-opt {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-10);
+  letter-spacing: 0.1em;
+  color: var(--hm-ink-support);
+  border: 1px dashed var(--hm-border);
+  padding: var(--px-2) var(--px-6);
+  margin-left: var(--px-6);
+  text-transform: uppercase;
+}
+
+.light .hm-page .hm-opt {
+  border-color: var(--hm-border);
+}
+
+.hm-page .hm-join {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-neon-orange);
+  min-height: var(--px-28);
+  flex: none;
+}
+
+.hm-page .hm-join-h {
+  display: none !important;
+  width: 2.5rem;
+  height: 1.75rem;
+}
+
+.hm-page .hm-join-v {
+  display: block !important;
+  width: var(--px-20);
+  height: var(--px-28);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-join-h {
+    display: block !important;
+  }
+  .hm-page .hm-join-v {
+    display: none !important;
+  }
+}
+
+.hm-page .hm-ws-cta {
+  margin-top: var(--px-24);
+  display: flex;
+  gap: var(--px-16);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ---------- 5 · TRACK INTELLIGENCE ---------- */
+.hm-page .hm-ti-head {
+  max-width: 46rem;
+  margin-bottom: var(--px-24);
+}
+
+.hm-page .hm-texture {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-19);
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  margin: 0 0 var(--px-12);
+  color: var(--color-primary);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-texture {
+    font-size: var(--px-26);
+  }
+}
+
+.hm-page .hm-ti-comp {
+  border: 1px solid var(--hm-border);
+  background: rgba(255, 255, 255, 0.02);
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--px-20)) 0,
+    100% var(--px-20),
+    100% 100%,
+    var(--px-20) 100%,
+    0 calc(100% - var(--px-20))
+  );
+}
+
+.light .hm-page .hm-ti-comp {
+  border-color: var(--hm-border);
+  background: rgba(16, 16, 16, 0.02);
+}
+
+.hm-page .hm-ti-hud {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--px-16);
+  flex-wrap: wrap;
+  padding: var(--px-14) var(--px-20) 0;
+}
+
+.hm-page .hm-ti-hudlbl {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.12em;
+  color: var(--hm-ink-support);
+  text-transform: uppercase;
+}
+
+.hm-page .hm-ti-truth {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.1em;
+  color: var(--hm-ink-support);
+  text-transform: uppercase;
+  border: 1px solid var(--hm-border);
+  padding: var(--px-4) var(--px-10);
+  white-space: nowrap;
+}
+
+.hm-page .hm-ti-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-ti-grid {
+    grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+  }
+}
+
+.hm-page .hm-ti-art {
+  padding: var(--px-16) var(--px-20) var(--px-8);
+  color: var(--hm-ink-support);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-ti-art {
+    padding: var(--px-16) 0 var(--px-14) var(--px-20);
+  }
+}
+
+.hm-page .hm-ti-art svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.hm-page .hm-ti-desk {
+  display: none !important;
+}
+
+.hm-page .hm-ti-mob {
+  display: block !important;
+}
+
+@media (min-width: 640px) {
+  .hm-page .hm-ti-desk {
+    display: block !important;
+  }
+  .hm-page .hm-ti-mob {
+    display: none !important;
+  }
+}
+
+.hm-page .hm-ti-metrics {
+  border-left: 0;
+  border-top: 1px dotted rgba(255, 255, 255, 0.09);
+  padding: var(--px-20);
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-14);
+  justify-content: center;
+}
+
+.light .hm-page .hm-ti-metrics {
+  border-top-color: rgba(16, 16, 16, 0.09);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-ti-metrics {
+    border-left: 1px dotted rgba(255, 255, 255, 0.09);
+    border-top: 0;
+  }
+  .light .hm-page .hm-ti-metrics {
+    border-left-color: rgba(16, 16, 16, 0.09);
+  }
+}
+
+.hm-page .hm-mk {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.1em;
+  color: var(--hm-ink-support);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: var(--px-4);
+}
+
+.hm-page .hm-mv {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-22);
+  letter-spacing: 0.03em;
+  color: var(--color-primary);
+}
+
+.hm-page .hm-mv2 {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-13);
+  color: var(--hm-ink-bright);
+}
+
+.hm-page .hm-mgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--px-16);
+}
+
+.hm-page .hm-mread {
+  border-top: 1px dotted rgba(255, 255, 255, 0.09);
+  padding-top: var(--px-14);
+  color: var(--hm-ink-bright);
+  font-size: var(--px-14);
+  line-height: 1.55;
+}
+
+.light .hm-page .hm-mread {
+  border-top-color: rgba(16, 16, 16, 0.09);
+}
+
+.hm-page .hm-ti-cap {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--px-16);
+  flex-wrap: wrap;
+  border-top: 1px dotted rgba(255, 255, 255, 0.09);
+  padding: var(--px-12) var(--px-20);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.07em;
+  color: var(--hm-ink-support);
+  text-transform: uppercase;
+}
+
+.light .hm-page .hm-ti-cap {
+  border-top-color: rgba(16, 16, 16, 0.09);
+}
+
+.hm-page .hm-ti-after {
+  margin-top: var(--px-16);
+}
+
+/* ---------- 6 · CATALOGUE ---------- */
+.hm-page .hm-cat-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--px-32);
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-cat-grid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 3rem;
+  }
+}
+
+.hm-page .hm-cat-list {
+  list-style: none;
+  margin: var(--px-20) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-10);
+}
+
+.hm-page .hm-cat-list li {
+  display: flex;
+  gap: var(--px-10);
+  color: var(--color-text-secondary);
+  font-size: var(--px-15);
+  font-weight: 300;
+}
+
+.hm-page .hm-cat-list li::before {
+  content: '—';
+  color: var(--color-neon-orange);
+  flex: none;
+}
+
+.hm-page .hm-cat-ctas {
+  display: flex;
+  gap: var(--px-16);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: var(--px-28);
+}
+
+.hm-page .hm-cat-map {
+  border: 1px solid var(--hm-border);
+  background: rgba(255, 255, 255, 0.02);
+  position: relative;
+  margin: 0;
+}
+
+.light .hm-page .hm-cat-map {
+  border-color: var(--hm-border);
+  background: rgba(16, 16, 16, 0.02);
+}
+
+.hm-page .hm-cat-map svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.hm-page .hm-cm-desk {
+  display: none !important;
+}
+
+.hm-page .hm-cm-mob {
+  display: block !important;
+}
+
+@media (min-width: 640px) {
+  .hm-page .hm-cm-desk {
+    display: block !important;
+  }
+  .hm-page .hm-cm-mob {
+    display: none !important;
+  }
+}
+
+.hm-page .hm-legend {
+  display: flex;
+  gap: var(--px-16) var(--px-24);
+  flex-wrap: wrap;
+  border-top: 1px dotted rgba(255, 255, 255, 0.09);
+  padding: var(--px-12) var(--px-20);
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.07em;
+  color: var(--hm-ink-support);
+  text-transform: uppercase;
+}
+
+.light .hm-page .hm-legend {
+  border-top-color: rgba(16, 16, 16, 0.09);
+}
+
+.hm-page .hm-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--px-7);
+}
+
+.hm-page .hm-legend i {
+  width: var(--px-8);
+  height: var(--px-8);
+  border-radius: 50%;
+  font-style: normal;
+  flex: none;
+}
+
+.hm-page .hm-l1 i {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.light .hm-page .hm-l1 i {
+  background: rgba(16, 16, 16, 0.35);
+}
+
+.hm-page .hm-l2 i {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.light .hm-page .hm-l2 i {
+  border-color: rgba(16, 16, 16, 0.4);
+}
+
+.hm-page .hm-l3 i {
+  background: var(--color-neon-orange);
+}
+
+.hm-page .hm-l4 i {
+  background: transparent;
+  border: 1px solid var(--color-neon-orange);
+}
+
+.hm-page .hm-cat-body {
+  font-size: var(--px-15);
+}
+
+/* ---------- 7 · API ---------- */
+.hm-page .hm-api-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--px-10);
+  align-items: stretch;
+  margin-top: var(--px-28);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-api-flow {
+    grid-template-columns: 5fr auto 7fr auto 5fr auto 5fr;
+    gap: var(--px-14);
+    align-items: center;
+  }
+}
+
+.hm-page .hm-astage {
+  border: 1px solid var(--hm-border);
+  background: var(--hm-panel);
+  padding: var(--px-18);
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-10);
+  justify-content: center;
+  min-height: 100%;
+}
+
+.light .hm-page .hm-astage {
+  border-color: var(--hm-border);
+  background: var(--hm-panel);
+}
+
+.hm-page .hm-anum {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.12em;
+  color: var(--color-neon-orange);
+}
+
+.hm-page .hm-at {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-13);
+  letter-spacing: 0.03em;
+  color: var(--color-primary);
+  line-height: 1.35;
+}
+
+.hm-page .hm-ad {
+  color: var(--hm-ink-bright);
+  font-size: var(--px-14);
+  line-height: 1.5;
+  font-weight: 300;
+}
+
+.hm-page .hm-aiso {
+  border: 1px dashed rgba(238, 74, 38, 0.55);
+  position: relative;
+  background: rgba(238, 74, 38, 0.03);
+}
+
+.hm-page .hm-aiso::before {
+  content: '';
+  position: absolute;
+  inset: var(--px-5);
+  border: 1px dashed rgba(238, 74, 38, 0.22);
+  pointer-events: none;
+}
+
+.hm-page .hm-aiso-tag {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-neon-orange);
+}
+
+.hm-page .hm-lanes {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  border: 1px dotted rgba(255, 255, 255, 0.09);
+}
+
+.light .hm-page .hm-lanes {
+  border-color: rgba(16, 16, 16, 0.09);
+}
+
+.hm-page .hm-lanes span {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  padding: var(--px-6) var(--px-4);
+  border-left: 1px dotted rgba(255, 255, 255, 0.09);
+  flex: 1;
+  text-align: center;
+}
+
+.light .hm-page .hm-lanes span {
+  border-left-color: rgba(16, 16, 16, 0.09);
+}
+
+.hm-page .hm-lanes span:first-child {
+  border-left: 0;
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-lanes {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+  .hm-page .hm-lanes span {
+    border-left: 0;
+    border-top: 1px dotted rgba(255, 255, 255, 0.09);
+    text-align: left;
+    padding: var(--px-6) var(--px-10);
+    flex: none;
+  }
+  .light .hm-page .hm-lanes span {
+    border-top-color: rgba(16, 16, 16, 0.09);
+  }
+  .hm-page .hm-lanes span:first-child {
+    border-top: 0;
+  }
+}
+
+.hm-page .hm-acode {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  line-height: 1.7;
+  color: var(--hm-ink-support);
+  border: 1px dotted rgba(255, 255, 255, 0.09);
+  padding: var(--px-10) var(--px-12);
+  white-space: pre;
+  display: none;
+}
+
+.light .hm-page .hm-acode {
+  border-color: rgba(16, 16, 16, 0.09);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-acode {
+    display: block;
+  }
+}
+
+.hm-page .hm-arows {
+  display: none;
+  flex-direction: column;
+  gap: var(--px-6);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-arows {
+    display: flex;
+  }
+}
+
+.hm-page .hm-arows i {
+  display: block;
+  height: var(--px-7);
+  background: rgba(255, 255, 255, 0.07);
+  font-style: normal;
+}
+
+.light .hm-page .hm-arows i {
+  background: rgba(16, 16, 16, 0.07);
+}
+
+.hm-page .hm-arows i:first-child {
+  background: rgba(238, 74, 38, 0.3);
+  width: 85%;
+}
+
+.hm-page .hm-arows i:nth-child(2) {
+  width: 70%;
+}
+
+.hm-page .hm-arows i:nth-child(3) {
+  width: 55%;
+}
+
+.hm-page .hm-dev-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--px-32);
+  flex-wrap: wrap;
+  margin-top: var(--px-24);
+}
+
+.hm-page .hm-truth {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.06em;
+  color: var(--hm-ink-support);
+  text-transform: uppercase;
+}
+
+/* ---------- 8 · AUDIENCES ---------- */
+.hm-page .hm-aud-band {
+  position: relative;
+  margin-top: var(--px-28);
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.028),
+    transparent 30%,
+    transparent 70%,
+    rgba(255, 255, 255, 0.028)
+  );
+}
+
+.light .hm-page .hm-aud-band {
+  border-color: rgba(16, 16, 16, 0.16);
+  background: linear-gradient(
+    to right,
+    rgba(16, 16, 16, 0.028),
+    transparent 30%,
+    transparent 70%,
+    rgba(16, 16, 16, 0.028)
+  );
+}
+
+.hm-page .hm-aud {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-aud {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.hm-page .hm-a {
+  border-left: 0;
+  border-top: 1px dotted rgba(255, 255, 255, 0.09);
+  padding: var(--px-18) var(--px-16) var(--px-20);
+}
+
+.light .hm-page .hm-a {
+  border-top-color: rgba(16, 16, 16, 0.09);
+}
+
+.hm-page .hm-a:nth-child(-n + 2) {
+  border-top: 0;
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-a {
+    border-left: 1px dotted rgba(255, 255, 255, 0.09);
+    border-top: 0;
+    padding: var(--px-20) var(--px-20) var(--px-22);
+  }
+  .light .hm-page .hm-a {
+    border-left-color: rgba(16, 16, 16, 0.09);
+  }
+  .hm-page .hm-a:first-child {
+    border-left: 0;
+  }
+  .hm-page .hm-a:nth-child(-n + 2) {
+    border-top: 0;
+  }
+}
+
+.hm-page .hm-ak {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-15);
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
+  display: block;
+  margin: var(--px-14) 0 var(--px-7);
+}
+
+.hm-page .hm-ao {
+  color: var(--hm-ink-bright);
+  font-size: var(--px-14);
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+.light .hm-page .hm-ao {
+  color: var(--hm-ink-bright);
+}
+
+.hm-page .hm-tr {
+  height: 2.25rem;
+  color: var(--hm-ink-support);
+}
+
+.hm-page .hm-tr svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- 9 · TRUST ---------- */
+.hm-page .hm-trust-vis {
+  margin: var(--px-24) 0 var(--px-18);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-left: 3px solid var(--color-neon-orange);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.light .hm-page .hm-trust-vis {
+  border-color: rgba(16, 16, 16, 0.16);
+  border-left-color: var(--color-neon-orange);
+  background: rgba(16, 16, 16, 0.035);
+}
+
+.hm-page .hm-zones {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-zones {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+.hm-page .hm-z {
+  padding: var(--px-18) var(--px-20);
+  border-left: 0;
+  border-top: 1px dashed rgba(255, 255, 255, 0.16);
+}
+
+.light .hm-page .hm-z {
+  border-top-color: rgba(16, 16, 16, 0.16);
+}
+
+.hm-page .hm-z:first-child {
+  border-top: 0;
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-z {
+    padding: var(--px-18) var(--px-22);
+    border-left: 1px dashed rgba(255, 255, 255, 0.16);
+    border-top: 0;
+  }
+  .light .hm-page .hm-z {
+    border-left-color: rgba(16, 16, 16, 0.16);
+  }
+  .hm-page .hm-z:first-child {
+    border-left: 0;
+  }
+}
+
+.hm-page .hm-zi {
+  display: block;
+  width: var(--px-18);
+  height: var(--px-18);
+  color: var(--color-neon-orange);
+  margin-bottom: var(--px-12);
+}
+
+.hm-page .hm-zi svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hm-page .hm-zt {
+  font-family: 'Helvetica_Neue', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--px-14);
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
+  display: block;
+  margin-bottom: var(--px-8);
+}
+
+.hm-page .hm-zd {
+  color: var(--hm-ink-bright);
+  font-size: var(--px-14);
+  line-height: 1.65;
+  font-weight: 300;
+}
+
+.light .hm-page .hm-zd {
+  color: var(--hm-ink-bright);
+}
+
+.hm-page .hm-trust-line {
+  display: flex;
+  gap: var(--px-24);
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: var(--px-4);
+}
+
+.hm-page .hm-trust-line .hm-tlink {
+  font-size: var(--px-14);
+  color: #fff;
+  border-bottom: 1px solid var(--hm-ink-support);
+  padding-bottom: var(--px-3);
+}
+
+.light .hm-page .hm-trust-line .hm-tlink {
+  color: #111;
+}
+
+/* ---------- 10 · FINAL ---------- */
+.hm-page .hm-final {
+  border-bottom: 0;
+  padding-bottom: 4.75rem;
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-final {
+    padding-bottom: 5.5rem;
+  }
+}
+
+.hm-page .hm-final .hm-h2b {
+  font-size: var(--px-26);
+  max-width: 20ch;
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-final .hm-h2b {
+    font-size: var(--px-42);
+  }
+}
+
+.hm-page .hm-final .hm-body {
+  margin-bottom: var(--px-24);
+}
+
+.hm-page .hm-paths {
+  position: relative;
+  color: var(--hm-ink-support);
+  margin-bottom: var(--px-8);
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .hm-page .hm-paths {
+    display: block;
+  }
+}
+
+.hm-page .hm-paths svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.hm-page .hm-paths .hm-caps {
+  grid-template-columns: 1fr 1fr;
+  margin: var(--px-4) 0 var(--px-14);
+}
+
+.hm-page .hm-paths .hm-caps span:first-child {
+  color: #d0d0d0;
+}
+
+.hm-page .hm-paths .hm-caps span:last-child {
+  text-align: right;
+}
+
+.hm-page .hm-fork {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--px-20);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-fork {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.hm-page .hm-f {
+  border: 1px solid var(--hm-border);
+  background: var(--hm-panel);
+  padding: var(--px-24) var(--px-20);
+  display: flex;
+  flex-direction: column;
+  gap: var(--px-14);
+  align-items: flex-start;
+  position: relative;
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-f {
+    padding: var(--px-28) var(--px-24);
+  }
+}
+
+.light .hm-page .hm-f {
+  border-color: rgba(16, 16, 16, 0.16);
+  background: rgba(16, 16, 16, 0.03);
+}
+
+.hm-page .hm-f.hm-pro {
+  border-color: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.4);
+}
+
+.light .hm-page .hm-f.hm-pro {
+  border-color: rgba(16, 16, 16, 0.28);
+  background: rgba(16, 16, 16, 0.04);
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.08);
+}
+
+.hm-page .hm-f.hm-pro::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-left: 3px solid var(--color-neon-orange);
+}
+
+.hm-page .hm-who {
+  font-family: 'Fira Code', monospace;
+  font-size: var(--px-11);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--hm-ink-support);
+}
+
+.hm-page .hm-fdork {
+  color: var(--color-text-secondary);
+  font-size: var(--px-15);
+  flex: 1;
+  margin: 0;
+  font-weight: 300;
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .hm-page .hm-hero {
+    padding-top: 3.5rem;
+  }
+  .hm-page .hm-ctas .hm-cta-p,
+  .hm-page .hm-ctas .hm-cta-s,
+  .hm-page .hm-ws-cta .hm-cta-p,
+  .hm-page .hm-fork .hm-cta-p,
+  .hm-page .hm-fork .hm-cta-s {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Canonical landing SECONDARY button — matches the webapp's Autoplay toggle: white label,
+   accent icon, faint edge that brightens on hover. Keep every page identical. */
+.light .hm-page .hm-cta-s,
+.light .hm-page .hm-tlink {
+  border-color: rgba(16, 16, 16, 0.24);
+}
+
+/* Disabled: these buttons are used as form submits on the partners pages, where the control
+   was previously indistinguishable from an enabled one. Hover is neutralised too, so a
+   disabled control never suggests it will respond. */
+.hm-page .hm-cta-p:disabled,
+.hm-page .hm-cta-s:disabled,
+.hm-page .hm-tlink:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--color-text-secondary);
+}
+
+.hm-page .hm-cta-p:disabled:hover,
+.hm-page .hm-cta-s:disabled:hover,
+.hm-page .hm-tlink:disabled:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: var(--color-text-secondary);
+}
+
+/* ─── HERO primary ───────────────────────────────────────────────────────────
+   The one filled control on the page: accent fill, near-black label, and the
+   notched top-right / bottom-left corners. Hover lifts the fill to a lighter
+   tint rather than changing the label, which would drop contrast on the fill.
+
+   Scoped to the hero because the same class is reused by the closing CTA, which
+   stays outlined — one filled call to action per page, and it is this one.
+   ──────────────────────────────────────────────────────────────────────────── */
+.hm-page .hm-hero .hm-cta-p {
+  background: var(--color-neon-orange);
+  border-color: var(--color-neon-orange);
+  color: #101010;
+  font-weight: 600;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
+}
+
+.hm-page .hm-hero .hm-cta-p:hover {
+  background: #f2603f;
+  border-color: #f2603f;
+  /* Hold the label dark — the canonical primary tints its text on hover, which on
+     a filled accent would be orange-on-orange. */
+  color: #101010;
+}
+
+/* ---------- hero headline accent ----------
+   The emphasised phrase is marked with [[...]] in the translation string and rendered as this span
+   by components/HeroTitle.tsx. One colour rule, no breakpoint variants: the hero has a single <h1>,
+   so mobile and desktop stay in step on their own. */
+.hm-page .hm-benzin .hm-em {
+  color: var(--color-neon-orange);
+}
+
+/* ---------- canonical hero title ----------
+   One ramp for all 17 heroes, taken from /product/catalog-intelligence: 32 mobile, 36 tablet,
+   48 desktop, weight 900. Previously every page picked its own — desktop sizes ranged 46 to 76px
+   and four heroes declared no weight at all. Sizes/weights above this block were removed, so this
+   is the single source for the headline. */
+.hm-page .hm-benzin {
+  font-size: var(--px-32);
+  font-weight: 900;
+}
+
+@media (min-width: 768px) {
+  .hm-page .hm-benzin {
+    font-size: var(--px-36);
+  }
+}
+
+@media (min-width: 1024px) {
+  .hm-page .hm-benzin {
+    font-size: var(--px-48);
+  }
+}
+
+/* Hero block spacing, aligned across every hero to the homepage's 44/52. */
+.hm-page .rx-hero-pad {
+  padding-block: var(--px-44);
+}
+
+@media (min-width: 1024px) {
+  .hm-page .rx-hero-pad {
+    padding-block: var(--px-52);
+  }
+}
