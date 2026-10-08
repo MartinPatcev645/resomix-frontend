@@ -52,11 +52,22 @@ class Partner(Base):
     The ``tier`` column drives quota limits and feature flags resolved
     later by the quota-enforcement middleware (W1-8).
 
-    **Canonical Sandbox (`partner_id = 1`):**
-    ID 1 is reserved for the "Resomix Sandbox" tenant. All B2C consumer data, 
-    public demo tracks, and sandbox-key authenticated requests map here. 
-    Refer to [ADR-001](/docs/may_2026/ADR-001-canonical-sandbox-tenant.md) 
-    for strict isolation rules.
+    **The system partner (`partner_id = 1`):**
+    ID 1 is the Resomix frontend's own tenant, and it is used exclusively for that.
+    Everything our own site and app does maps here, which is all B2C consumer data
+    and the whole consumer catalogue. It is resolved through
+    ``SYSTEM_PARTNER_ID`` in ``app/api/dependencies/partner.py``, set from the
+    ``SYSTEM_PARTNER_ID`` environment variable and defaulting to 1.
+
+    Every B2B partner gets their own id, and tenant isolation keeps their data
+    separate from partner 1 and from each other. So partner 1 is not a shared or
+    default bucket that partner data can fall into. It is one tenant like any other
+    that happens to be ours.
+
+    It was called the "canonical sandbox" when it was introduced, in
+    ``docs/outdated/may_2026/ADR-001-canonical-sandbox-tenant.md``. That name is
+    historical and misleading now, and it has nothing to do with the retired
+    `sandbox.resomix.com` B2B sandbox service.
     """
 
     __tablename__ = "partners"
