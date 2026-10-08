@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
-import { ConsentBanner } from '@/components/ConsentBanner'
+import { ConsentBanner, GoogleTagManager } from '@/components'
 import { siteJsonLd } from '@/lib/jsonld'
-import { SITE_ORIGIN } from '@/lib/site'
+import { GTM_ID, SITE_ORIGIN } from '@/lib/site'
 import './globals.css'
 
 export const viewport: Viewport = {
@@ -24,6 +24,15 @@ export const metadata: Metadata = {
   },
 }
 
+/* The exported HTML contains the Beta Stage banner. This hides it before first paint for a
+   visitor who already dismissed it. Keep the key in sync with BetaNotice. */
+const dismissNotice = `
+try {
+  if (localStorage.getItem("demo_stage_notice_dismissed") === "true")
+    document.documentElement.setAttribute("data-demo-dismissed", "");
+} catch (e) {}
+`
+
 const consentDefaults = `
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
@@ -35,12 +44,12 @@ gtag("consent", "default", {
   wait_for_update: 500
 });
 gtag("js", new Date());
-gtag("config", "GTM-PD9XQZRV");
+gtag("config", ${JSON.stringify(GTM_ID)});
 `
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* The consent manager looks this stylesheet up by id before injecting its own. */}
         {/* eslint-disable-next-line @next/next/no-css-tags */}
@@ -50,13 +59,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="preload" href="/fonts/FiraCode-Medium.latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://bserver.resomix.com" crossOrigin="use-credentials" />
         <link rel="author" href="/humans.txt" type="text/plain" />
+        <style>{'[data-demo-dismissed] [data-demo-banner] { display: none; }'}</style>
+        <script dangerouslySetInnerHTML={{ __html: dismissNotice }} />
         <script dangerouslySetInnerHTML={{ __html: consentDefaults }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd()) }} />
       </head>
       <body className="bg-[var(--color-secondary)]">
         <noscript>
           <iframe
-            src="https://www.googletagmanager.com/ns.html?id=GTM-PD9XQZRV"
+            src={`https://www.googletagmanager.com/ns.html?id=${encodeURIComponent(GTM_ID)}`}
             height="0"
             width="0"
             style={{ display: 'none', visibility: 'hidden' }}
@@ -65,6 +76,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </noscript>
         {children}
         <ConsentBanner />
+        <GoogleTagManager />
       </body>
     </html>
   )

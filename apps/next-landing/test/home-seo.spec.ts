@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { assertLastmod, canonicalUrl, sitemapRoutes } from '../lib/seo'
 
 /**
  * SEO and accessibility checks against the static export.
@@ -133,17 +134,66 @@ describe('exported homepage', () => {
 })
 
 describe('sitemap and robots', () => {
-  it('lists only the homepage with the content lastmod', () => {
+  it('lists every indexable ROUTE_SEO entry with its content lastmod', () => {
     const xml = read(resolve(OUT, 'sitemap.xml'))
     const locs = [...xml.matchAll(/<loc>([^<]*)<\/loc>/g)].map((match) => match[1])
-    expect(locs).toEqual(['https://resomix.com/'])
-    expect(xml).toContain('2026-10-03')
+    const routes = sitemapRoutes()
+    expect(locs).toEqual(routes.map((route) => canonicalUrl(route.path)))
+    expect(locs).toContain('https://resomix.com/')
+    for (const route of routes) expect(xml).toContain(`<lastmod>${route.lastmod}</lastmod>`)
+  })
+
+  it('guards lastmod against missing, malformed and future dates', () => {
+    const today = '2026-10-08'
+    expect(() => assertLastmod('/x', undefined, today)).toThrow(/needs a lastmod/)
+    expect(() => assertLastmod('/x', '2026-10-8', today)).toThrow(/needs a lastmod/)
+    expect(() => assertLastmod('/x', '2026-10-09', today)).toThrow(/in the future/)
+    expect(assertLastmod('/x', '2026-10-08', today)).toBe('2026-10-08')
+  })
+
+  it('gives every registered route a lastmod', () => {
+    const today = new Date().toISOString().slice(0, 10)
+    for (const route of sitemapRoutes()) expect(() => assertLastmod(route.path, route.lastmod, today)).not.toThrow()
   })
 
   it('allows crawling and points at the sitemap', () => {
     const txt = read(resolve(OUT, 'robots.txt'))
     expect(txt).toMatch(/Allow:\s*\//)
     expect(txt).toContain('Sitemap: https://resomix.com/sitemap.xml')
+  })
+})
+
+describe('third-party staging', () => {
+  const layout = read(resolve(ROOT, 'app/layout.tsx'))
+
+  it('keeps gtm.js out of the static HTML', () => {
+    expect(html).not.toContain('googletagmanager.com/gtm.js')
+  })
+
+  it('injects GTM through the staged client component instead', () => {
+    // Without this, "gtm.js absent" would also pass if GTM never loaded at all.
+    expect(layout).toMatch(/<GoogleTagManager\s*\/>/)
+    const component = read(resolve(ROOT, 'components/GoogleTagManager.tsx'))
+    expect(component).toContain('useGoogleTagManager(GTM_ID, analyticsReady)')
+  })
+
+  it('ships inline Consent Mode defaults and the noscript fallback with one container id', () => {
+    expect(html).toMatch(/gtag\(\s*"consent"\s*,\s*"default"/)
+    expect(html).toMatch(/analytics_storage:\s*"denied"/)
+    expect(html).toContain('ns.html?id=GTM-PD9XQZRV')
+    expect(layout).not.toContain('GTM-PD9XQZRV')
+  })
+})
+
+describe('beta stage notice', () => {
+  it('ships the banner in the exported HTML', () => {
+    expect(html).toContain('data-demo-banner')
+    expect(html).toContain('Beta Stage Notice')
+  })
+
+  it('hides a dismissed banner before first paint', () => {
+    expect(html).toMatch(/localStorage\.getItem\("demo_stage_notice_dismissed"\)/)
+    expect(html).toMatch(/\[data-demo-dismissed\]\s*\[data-demo-banner\]\s*\{\s*display:\s*none/)
   })
 })
 

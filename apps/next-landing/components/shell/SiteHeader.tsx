@@ -3,8 +3,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LogoHeader } from '@/components/LogoHeader';
-import { MenuIcon } from '@/components/MenuIcon';
+import { LogoHeader, MenuIcon } from '@/components';
 import { BETA_URL, NAV_TOP_GROUPS, getNavSectionForPath, type NavTopGroup } from './navData';
 import { NavPanelContent, CaretIcon, AccountIcon } from './NavMenuContent';
 import { useHeaderScroll, useMegaMenu } from './useMegaMenu';

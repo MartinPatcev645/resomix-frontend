@@ -1,36 +1,20 @@
 import type { Metadata } from 'next'
-import { SiteChrome } from '@/components/shell/SiteChrome'
+import { SiteChrome } from '@/components/shell'
 import { core } from '@/lib/i18n'
 import { homeJsonLd } from '@/lib/jsonld'
-import { HOME_SEO, OG_IMAGE, SITE_ORIGIN } from '@/lib/site'
-import { Home } from '@/sections/home/Home'
+import { canonicalUrl, routeMetadata } from '@/lib/seo'
+import { Home } from '@/sections/home'
 
 /**
- * Written as tags rather than Metadata fields. With `trailingSlash: false`,
- * Next resolves a root URL to the origin with no slash. The public canonical
- * for `/` stays `https://resomix.com/`.
+ * Canonical and og:url are tags here, not `alternates.canonical`/`openGraph.url`. Next's
+ * resolveAbsoluteUrlWithPathname (next/dist/lib/metadata/resolvers/resolve-url.js) rewrites any URL
+ * whose pathname is `/` to its bare origin, absolute input included, and only re-adds the slash
+ * when `trailingSlash` is on. The public canonical for `/` is `https://resomix.com/`. Other routes
+ * get theirs from routeMetadata.
  */
-const CANONICAL = `${SITE_ORIGIN}/`
+const CANONICAL = canonicalUrl('/')
 
-export const metadata: Metadata = {
-  title: HOME_SEO.title,
-  description: HOME_SEO.description,
-  robots: { index: true, follow: true },
-  openGraph: {
-    type: 'website',
-    title: HOME_SEO.title,
-    description: HOME_SEO.description,
-    siteName: 'Resomix',
-    locale: 'en_US',
-    images: [{ url: OG_IMAGE, alt: 'Resomix — sonic intelligence platform' }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: HOME_SEO.title,
-    description: HOME_SEO.description,
-    images: [OG_IMAGE],
-  },
-}
+export const metadata: Metadata = routeMetadata('/')
 
 export default function Page() {
   return (

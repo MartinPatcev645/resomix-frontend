@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { HomeMotion } from '@/components/HomeMotion'
+import { HomeMotion } from '@/components'
 import { FaqSection } from '@/sections/home/FaqSection'
 import { HmApi } from '@/sections/home/HmApi'
 import { HmAudiences } from '@/sections/home/HmAudiences'

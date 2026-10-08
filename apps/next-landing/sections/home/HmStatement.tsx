@@ -1,4 +1,4 @@
-import { RichText } from '@/components/RichText'
+import { RichText } from '@/components'
 import { t } from '@/lib/i18n'
 import { BLOG } from '@/lib/blog'
 

@@ -2,7 +2,7 @@
 
 import { useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogoRFooter } from '@/components/LogoRFooter'
+import { BetaNotice, LogoRFooter } from '@/components'
 import type { CoreCopy } from '@/lib/i18n'
 import { CopyProvider } from './copy'
 import { GlobalFooter, GlobalMobileFooter } from './Footer'
@@ -34,6 +34,7 @@ export function SiteChrome({ copy, children }: { copy: CoreCopy; children: React
 
   return (
     <CopyProvider copy={copy}>
+      <BetaNotice />
       <div
         id="landing-page-root"
         className="bg-[var(--color-secondary)] min-h-screen relative overflow-x-clip"

@@ -1,5 +1,6 @@
 import { tValue } from '@/lib/i18n'
-import { SITE_ORIGIN, HOME_SEO, OG_IMAGE } from '@/lib/site'
+import { canonicalUrl, ROUTE_SEO } from '@/lib/seo'
+import { SITE_ORIGIN, OG_IMAGE } from '@/lib/site'
 
 export interface FaqItem {
   q: string
@@ -12,7 +13,8 @@ export function homeFaqItems(): FaqItem[] {
 
 /** Homepage FAQ + WebPage nodes. Same shape the Vite prerender writes for `/`. */
 export function homeJsonLd(): Record<string, unknown> {
-  const url = `${SITE_ORIGIN}/`
+  const url = canonicalUrl('/')
+  const seo = ROUTE_SEO['/']
   return {
     '@context': 'https://schema.org',
     '@graph': [
@@ -20,8 +22,8 @@ export function homeJsonLd(): Record<string, unknown> {
         '@type': 'WebPage',
         '@id': `${url}#webpage`,
         url,
-        name: HOME_SEO.title,
-        description: HOME_SEO.description,
+        name: seo.title,
+        description: seo.description,
         isPartOf: { '@id': `${SITE_ORIGIN}/#website` },
         about: { '@id': `${SITE_ORIGIN}/#organization` },
         inLanguage: 'en',

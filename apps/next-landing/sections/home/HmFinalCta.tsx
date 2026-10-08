@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { RichText } from '@/components/RichText'
+import { RichText } from '@/components'
 import { t } from '@/lib/i18n'
 import { BLOG } from '@/lib/blog'
 import { BETA_URL } from '@/lib/site'

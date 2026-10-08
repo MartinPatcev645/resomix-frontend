@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
   output: 'export',
   trailingSlash: false,
   images: { unoptimized: true },
+  // Only stops `next dev` writing a Next-managed block into AGENTS.md; this repo's agent rules live
+  // in instructions.md and .cursor/rules. No effect on the export or the Markdown twins.
   agentRules: false,
 }
 

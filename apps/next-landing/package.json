@@ -2,6 +2,9 @@
   "name": "next-landing",
   "private": true,
   "version": "0.0.0",
+  "sideEffects": [
+    "*.css"
+  ],
   "scripts": {
     "dev": "next dev --port 5177",
     "build": "next build && vitest run",

@@ -10,11 +10,7 @@ export const BETA_URL = (process.env.NEXT_PUBLIC_BASE_BETA_URL ?? 'https://beta.
 
 export const BLOG_URL = 'https://blog.resomix.com'
 
-export const HOME_SEO = {
-  title: 'Resomix: Find & Analyse Electronic Music by Sound',
-  description:
-    'Resomix finds electronic music by how it sounds. Drop one track and its PYXIS-1 engine returns a ranked shortlist, reads one recording or searches a catalogue.',
-  lastmod: '2026-10-03',
-} as const
+/** Google Tag Manager container. Matches VITE_GTM_ID's fallback in apps/landing. */
+export const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID ?? 'GTM-PD9XQZRV'
 
 export const OG_IMAGE = `${SITE_ORIGIN}/og-cover.png`

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { HeroTitle } from '@/components/HeroTitle'
+import { HeroTitle } from '@/components'
 import { t } from '@/lib/i18n'
 import { BETA_URL } from '@/lib/site'
 
