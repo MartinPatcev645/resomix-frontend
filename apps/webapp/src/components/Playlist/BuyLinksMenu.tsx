@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import TraxsourceIcon from "@/assets/icons/stores/traxsource.svg";
 import BandcampIcon from "@/assets/icons/stores/bandcamp.svg";
 import { pushStoreLinkClicked } from "@resomix/hooks";
+import { HERO_TOOLBAR_BTN } from "@/components/Playlist/heroToolbar.tsx";
 import type { BuyLink, BuyStore, StoreLinkTracking } from "@/utils/trackUtils.ts";
 
 /**
@@ -10,7 +11,11 @@ import type { BuyLink, BuyStore, StoreLinkTracking } from "@/utils/trackUtils.ts
  * spot on every row so the eye learns it (George's layout, October 2026). It opens a short menu with
  * the same store links the playing row shows as "GET IT // ...". A row with no store link keeps an
  * empty slot of the same width, so every title lines up. A click on a store is logged as
- * `store_link_clicked` with `row_state: "closed"` (bought while scrolling).
+ * `store_link_clicked` with `row_state: "closed"` (bought while scrolling) unless the caller says
+ * the track is playing.
+ *
+ * `variant="toolbar"` is the same menu behind a full toolbar button (cart + "Buy"), for the reference
+ * card and the sticky bar, where it sits with Autoplay, Rename, Export and Share.
  *
  * The menu is portalled and fixed-positioned under the button, so neither the table's sticky header
  * nor the sticky reference bar can clip or cover it. It closes on an outside click, Escape, scroll
@@ -19,6 +24,11 @@ import type { BuyLink, BuyStore, StoreLinkTracking } from "@/utils/trackUtils.ts
 interface BuyLinksMenuProps {
   links: BuyLink[];
   tracking: StoreLinkTracking;
+  /** "icon": the small square after a row title. "toolbar": a hero-toolbar button. */
+  variant?: "icon" | "toolbar";
+  /** Whether the track is playing when the menu is used, for the analytics `row_state`. */
+  rowState?: "open" | "closed";
+  id?: string;
   /** Smaller square for the mobile title line, so the row does not grow taller. */
   compact?: boolean;
   className?: string;
@@ -44,7 +54,15 @@ function CartGlyph({ className }: { className: string }) {
   );
 }
 
-export function BuyLinksMenu({ links, tracking, compact = false, className = "" }: BuyLinksMenuProps) {
+export function BuyLinksMenu({
+  links,
+  tracking,
+  variant = "icon",
+  rowState = "closed",
+  id,
+  compact = false,
+  className = "",
+}: BuyLinksMenuProps) {
   const SLOT = compact ? "h-[var(--px-18)] w-[var(--px-18)] shrink-0" : "h-[var(--px-26)] w-[var(--px-26)] shrink-0";
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
@@ -84,27 +102,49 @@ export function BuyLinksMenu({ links, tracking, compact = false, className = "" 
     };
   }, [open, pos, close]);
 
-  if (links.length === 0) return <span aria-hidden="true" className={`${SLOT} ${className}`.trim()} />;
+  if (links.length === 0) {
+    return variant === "toolbar" ? null : <span aria-hidden="true" className={`${SLOT} ${className}`.trim()} />;
+  }
+
+  const toggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpen((v) => !v);
+  };
 
   return (
     <>
+      {variant === "toolbar" ? (
+        <button
+          ref={buttonRef}
+          id={id}
+          type="button"
+          aria-label="Buy this track"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          title="Buy this track"
+          onClick={toggle}
+          className={`${HERO_TOOLBAR_BTN} !px-[var(--px-12)] ${open ? "border-[var(--color-primary)]" : ""} ${className}`.trim()}
+        >
+          <CartGlyph className="pointer-events-none h-[var(--px-16)] w-[var(--px-16)] text-[var(--color-accent,#EE4A26)]" />
+          Buy
+        </button>
+      ) : (
       <button
         ref={buttonRef}
+        id={id}
         type="button"
         aria-label="Buy this track"
         aria-haspopup="menu"
         aria-expanded={open}
         title="Buy this track"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((v) => !v);
-        }}
+        onClick={toggle}
         className={`${SLOT} inline-flex items-center justify-center rounded-[var(--rx-radius-control)] border text-[var(--color-accent,#EE4A26)] transition-colors hover:cursor-pointer hover:border-[var(--color-accent,#EE4A26)] hover:bg-[rgba(238,74,38,0.12)] ${
           open ? "border-[var(--color-accent,#EE4A26)] bg-[rgba(238,74,38,0.12)]" : "border-[var(--rx-color-border-default)]"
         } ${className}`.trim()}
       >
         <CartGlyph className={compact ? "h-[var(--px-12)] w-[var(--px-12)]" : "h-[var(--px-16)] w-[var(--px-16)]"} />
       </button>
+      )}
       {open &&
         pos &&
         createPortal(
@@ -124,7 +164,7 @@ export function BuyLinksMenu({ links, tracking, compact = false, className = "" 
                 rel="noopener noreferrer"
                 onClick={(e) => {
                   e.stopPropagation();
-                  pushStoreLinkClicked({ store: link.store, rowState: "closed", ...tracking });
+                  pushStoreLinkClicked({ store: link.store, rowState, ...tracking });
                   close();
                 }}
                 className="flex items-center gap-[var(--px-8)] px-[var(--px-12)] py-[var(--px-8)] font-fira text-[length:var(--px-12)] text-[var(--rx-color-text-secondary)] outline-none transition-colors hover:bg-white/5 hover:text-[var(--rx-color-text-primary)] focus-visible:bg-white/5 focus-visible:text-[var(--rx-color-text-primary)]"

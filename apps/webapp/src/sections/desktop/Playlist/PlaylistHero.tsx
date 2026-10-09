@@ -4,7 +4,7 @@ import { formatDuration, usePlaylistExport, useAccess, useFavoritePlaylist, useP
 import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
 import { resolveLabel, firstGenre, buyLinksFor } from "@/utils/trackUtils.ts";
-import { GetItLinks } from "@/components/Playlist/GetItLinks.tsx";
+import { BuyLinksMenu } from "@/components/Playlist/BuyLinksMenu.tsx";
 import { autoFluidGridStyle } from "@/utils/playlistGrid.ts";
 import { useNavigate, useLocation } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport, PlaylistShare } from "@/components/index.ts";
@@ -57,6 +57,9 @@ const PlaylistHero: React.FC = () => {
   // so the text never flashes over a blank state.
   const [coverLoaded, setCoverLoaded] = React.useState(false);
   const { autoplay, setAutoplay } = usePlayerStore();
+  const heroIsPlaying = usePlayerStore(
+    (s) => !!playlistData?.queried_track?.id && s.currentTrackId === playlistData.queried_track.id && s.isPlaying,
+  );
   const { canExport, isExporting } = usePlaylistExport();
   // Single source of truth for gated actions (share/rename/favorite/…): useAccess merges the
   // client auth flag with the server entitlements and yields one verdict per action —
@@ -524,12 +527,22 @@ const PlaylistHero: React.FC = () => {
                 {playlistData?.playlist?.name || "No playlist data"}
               </h1>
             )}
+            {/* A catalogue reference's Buy button, top right above Private/Public: the info layer,
+                never the player rows below with the Apple badge. Nothing renders for uploads. */}
+            {!isLoading && playlistData?.queried_track && (
+              <BuyLinksMenu
+                links={buyLinksFor(playlistData.queried_track)}
+                tracking={{ surface: "hero", trackId: playlistData.queried_track.id }}
+                rowState={heroIsPlaying ? "open" : "closed"}
+                variant="toolbar"
+                id="playlist-hero-buy-button"
+                className="ml-[var(--px-12)] shrink-0"
+              />
+            )}
           </div>
 
           {/* Row 2 — reference-track facts, edge to edge: duration · year · genre · label, then the
-              size of the playlist itself. A catalogue reference adds its "GET IT // ..." store
-              links here, on the info layer, never in the player rows below with the Apple badge. */}
-          <div className="flex min-w-0 flex-wrap items-center gap-x-[var(--px-20)] gap-y-[var(--px-4)]">
+              size of the playlist itself. */}
           <p className="font-fira text-[length:var(--px-10)] tracking-[var(--px-1)] text-[var(--color-primary)] opacity-60 m-0">
             <HeroClockIcon />{' '}
             {playlistData?.queried_track.duration ? formatDuration(Math.floor(playlistData.queried_track.duration)) : '--:--'}
@@ -538,13 +551,6 @@ const PlaylistHero: React.FC = () => {
             {resolveLabel(playlistData?.queried_track.label) ? ` · ${resolveLabel(playlistData?.queried_track.label)}` : ''}
             {playlistData?.similar_tracks?.length ? ` · ${playlistData.similar_tracks.length} tracks` : ''}
           </p>
-          {playlistData?.queried_track && (
-            <GetItLinks
-              links={buyLinksFor(playlistData.queried_track)}
-              tracking={{ surface: "hero", trackId: playlistData.queried_track.id }}
-            />
-          )}
-          </div>
 
           {/* Rows 3 & 4 — the player owns both rows; the hero hands it the controls that belong to
               the playlist (favourite/visibility inline with the seek bar, rating in the control row). */}

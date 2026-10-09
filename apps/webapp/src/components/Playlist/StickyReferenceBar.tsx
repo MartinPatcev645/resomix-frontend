@@ -3,7 +3,6 @@ import { useGlobalAudioController, formatDuration } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { DEMO_MODE } from "@resomix/config";
 import { displayOrNA, buyLinksFor } from "@/utils/trackUtils.ts";
-import { GetItLinks } from "@/components/Playlist/GetItLinks.tsx";
 import { BuyLinksMenu } from "@/components/Playlist/BuyLinksMenu.tsx";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import {
@@ -147,11 +146,12 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
   );
 
   const showPlayer = inlinePlayer && isRefPlaying && !DEMO_MODE;
-  // Catalogue references only (uploads have no store links). Same two layers as a result row: the
-  // cart after the title while closed, the "GET IT // ..." line on the top line while the strip is
-  // open, and nothing from the stores inside the strip, which is Apple's player alone.
+  // Catalogue references only (uploads have no store links). With the toolbar (desktop) a Buy button
+  // leads Autoplay / Rename / Export / Share; without it (mobile) a small cart follows the title.
+  // Nothing from the stores goes inside the strip below, which is Apple's player alone.
   const buyLinks = buyLinksFor(track);
   const buyTracking = { surface: "sticky" as const, trackId: track.id };
+  const buyRowState = isRefPlaying ? ("open" as const) : ("closed" as const);
 
   const barClassName = [
     "pointer-events-auto fixed inset-x-0 z-[40] border-b",
@@ -207,28 +207,33 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
           </span>
         </button>
         <div className="flex min-w-0 flex-1 items-center gap-[var(--px-16)]">
-        {/* pl-sticky-strip__text grows (flex: 1); while the GET IT line shows, the text keeps only
-            its own width so the line can centre in the top line's free middle. */}
-        <div
-          className="pl-sticky-strip__text min-w-0 px-[var(--px-12)] py-[var(--px-8)]"
-          style={showPlayer && buyLinks.length > 0 ? { flex: "0 1 auto" } : undefined}
-        >
+        <div className="pl-sticky-strip__text min-w-0 px-[var(--px-12)] py-[var(--px-8)]">
           <div className="flex min-w-0 items-center gap-[var(--px-8)]">
             <div className="min-w-0 truncate font-helvetica text-[length:var(--px-13)] font-light uppercase leading-[var(--px-16)] text-[var(--rx-color-text-primary)]">
               {displayOrNA(track.title)}
             </div>
-            {!showPlayer && buyLinks.length > 0 && <BuyLinksMenu links={buyLinks} tracking={buyTracking} compact />}
+            {!hasActions && buyLinks.length > 0 && (
+              <BuyLinksMenu links={buyLinks} tracking={buyTracking} rowState={buyRowState} compact />
+            )}
           </div>
           <div className="font-helvetica text-[length:var(--px-12)] font-light leading-[var(--px-15)] text-[var(--rx-color-text-secondary)]">
             {displayOrNA(track.artist)}
             {track.duration ? ` · ${formatDuration(Math.floor(track.duration))}` : ""}
           </div>
         </div>
-        {showPlayer && <GetItLinks links={buyLinks} tracking={buyTracking} className="mx-auto" />}
         </div>
         {hasActions ? (
           <>
-            <div className="flex shrink-0 items-center gap-[var(--px-8)] pl-[var(--px-12)]">{actions}</div>
+            <div className="flex shrink-0 items-center gap-[var(--px-8)] pl-[var(--px-12)]">
+              <BuyLinksMenu
+                links={buyLinks}
+                tracking={buyTracking}
+                rowState={buyRowState}
+                variant="toolbar"
+                id="playlist-sticky-buy-button"
+              />
+              {actions}
+            </div>
             {/* At least as wide as the count, and otherwise as wide as the gap to the hero toolbar's
                 right edge, so the actions end where they did in the hero. */}
             <div className="flex shrink-0 justify-end" style={{ width: actionsInset, minWidth: "max-content" }}>
