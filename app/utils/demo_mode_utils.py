@@ -123,7 +123,9 @@ def _redact_tracks(tracks: List[MutableMapping[str, Any]], visible_count: int) -
 
         # Hidden tracks must not leak their Apple preview/artwork/deep-link — playback is gated
         # behind login. Null the Apple playback fields so the UI shows "log in to unlock".
-        for key in ("preview_url", "artwork_url", "deep_link_url", "apple_song_id"):
+        # The store links go too: a Traxsource or Bandcamp URL spells out artist and title.
+        for key in ("preview_url", "artwork_url", "deep_link_url", "apple_song_id",
+                    "traxsource_url", "bandcamp_url"):
             if key in track:
                 track[key] = None
 

@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.apple_music_repository import AppleMusicRepository
+from app.services.store_link_enrichment import fetch_store_link_map, merge_store_links
 from app.utils.similarity_utils import dedupe_by_apple_identity
 
 logger = logging.getLogger(__name__)
@@ -89,7 +90,9 @@ def _merge_apple_into_track(track: Dict[str, Any], apple: Optional[Dict[str, Any
 
 
 async def enrich_tracks_with_apple(db: AsyncSession, tracks: List[Dict[str, Any]]) -> None:
-    """Batch-join Apple data onto a list of serialized track dicts (each carrying numeric track_id)."""
+    """Batch-join Apple data onto a list of serialized track dicts (each carrying numeric track_id),
+    plus the outside store links (``store_link_enrichment``), which need the same track_id before
+    the Apple merge drops it."""
     if not tracks:
         return
     track_ids = [t.get("track_id") for t in tracks if isinstance(t, dict) and t.get("track_id") is not None]
@@ -101,8 +104,10 @@ async def enrich_tracks_with_apple(db: AsyncSession, tracks: List[Dict[str, Any]
             apple_map = await _apple_repo.async_get_by_track_ids(db, track_ids)
         except Exception as exc:  # noqa: BLE001 - non-critical enrichment
             logger.warning("Apple Music enrichment failed (%s tracks) — falling back to HLS: %s", len(track_ids), exc)
+    store_map = await fetch_store_link_map(db, track_ids)
     for t in tracks:
         if isinstance(t, dict):
+            merge_store_links(t, store_map.get(t.get("track_id")))
             _merge_apple_into_track(t, apple_map.get(t.get("track_id")))
 
 

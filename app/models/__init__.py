@@ -68,6 +68,7 @@ from .partner_notification import PartnerNotification
 from .track_analysis_result import TrackAnalysisResult
 from .track_artifact_status import TrackArtifactStatus
 from .apple_music import AppleMusicTrack
+from .track_store_link import TrackStoreLink
 from .user_service_connection import UserServiceConnection
 from .backup_run import BackupRun, BackupComponent
 
@@ -144,6 +145,7 @@ __all__ = [
     "TrackAnalysisResult",
     "TrackArtifactStatus",
     "AppleMusicTrack",
+    "TrackStoreLink",
     "UserServiceConnection",
     # Consumer billing / subscriptions
     "PlanPrice",
