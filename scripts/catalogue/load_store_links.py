@@ -62,35 +62,46 @@ def _connect():
     )
 
 
-def read_links(path: Path, prefixes: tuple[str, ...]) -> tuple[dict[str, str], int]:
-    """{track_uuid: url} from the TSV, and how many lines were rejected (bad URL or shape)."""
-    links: dict[str, str] = {}
-    bad = 0
-    opener = gzip.open if path.suffix == ".gz" else open
-    with opener(path, "rt", encoding="utf-8") as f:
-        header = f.readline().rstrip("\n").split("\t")
-        if header[:2] != ["track_uuid", "url"]:
-            raise SystemExit(f"{path}: expected a 'track_uuid<TAB>url' header, got {header}")
-        for line in f:
-            parts = line.rstrip("\n").split("\t")
-            if len(parts) != 2 or len(parts[0]) != 36 or not parts[1].startswith(prefixes) or len(parts[1]) > 500:
-                bad += 1
-                continue
-            links[parts[0]] = parts[1]
-    return links, bad
+class LinkFile:
+    """Streams (track_uuid, url) pairs from the TSV, counting the lines it rejects (bad URL or shape).
+    Streamed in chunks rather than loaded whole: the staging box has under 2 GB of RAM, and 2M
+    links held in a dict would take a good part of it from the running app."""
+
+    def __init__(self, path: Path, prefixes: tuple[str, ...]) -> None:
+        self.path, self.prefixes = path, prefixes
+        self.read = self.bad = 0
+
+    def chunks(self, size: int):
+        opener = gzip.open if self.path.suffix == ".gz" else open
+        with opener(self.path, "rt", encoding="utf-8") as f:
+            header = f.readline().rstrip("\n").split("\t")
+            if header[:2] != ["track_uuid", "url"]:
+                raise SystemExit(f"{self.path}: expected a 'track_uuid<TAB>url' header, got {header}")
+            chunk: dict[str, str] = {}
+            for line in f:
+                parts = line.rstrip("\n").split("\t")
+                if (len(parts) != 2 or len(parts[0]) != 36 or not parts[1].startswith(self.prefixes)
+                        or len(parts[1]) > 500):
+                    self.bad += 1
+                    continue
+                chunk[parts[0]] = parts[1]
+                self.read += 1
+                if len(chunk) >= size:
+                    yield chunk
+                    chunk = {}
+            if chunk:
+                yield chunk
 
 
 def resolve_track_ids(cur, uuids: list[str]) -> dict[str, int]:
     """{track_uuid: tracks.id} for the catalogue tracks the database has."""
-    out: dict[str, int] = {}
-    for i in range(0, len(uuids), LOOKUP_CHUNK):
-        chunk = uuids[i:i + LOOKUP_CHUNK]
-        cur.execute(
-            f"SELECT uuid, id FROM tracks WHERE type = 'electrobuzz' AND uuid IN ({','.join(['%s'] * len(chunk))})",
-            chunk,
-        )
-        out.update({u: int(t) for u, t in cur.fetchall()})
-    return out
+    if not uuids:
+        return {}
+    cur.execute(
+        f"SELECT uuid, id FROM tracks WHERE type = 'electrobuzz' AND uuid IN ({','.join(['%s'] * len(uuids))})",
+        uuids,
+    )
+    return {u: int(t) for u, t in cur.fetchall()}
 
 
 def main() -> int:
@@ -102,9 +113,7 @@ def main() -> int:
                    help="also empty this store's link on tracks that are not in the file")
     args = p.parse_args()
     column, prefixes = STORES[args.store]
-
-    links, bad = read_links(args.links.expanduser(), prefixes)
-    log(f"{args.links}: {len(links):,} links, {bad:,} lines rejected")
+    links = LinkFile(args.links.expanduser(), prefixes)
 
     conn = _connect()
     cur = conn.cursor()
@@ -116,31 +125,36 @@ def main() -> int:
     if not cur.fetchone():
         raise SystemExit("track_store_links does not exist here yet: run `alembic upgrade head` first")
 
-    ids = resolve_track_ids(cur, list(links))
-    log(f"{len(ids):,} of them are catalogue tracks in this database, {len(links) - len(ids):,} are not")
-
     cur.execute(f"SELECT COUNT(*) FROM track_store_links WHERE {column} IS NOT NULL")
     before = cur.fetchone()[0]
-    log(f"{column} is set on {before:,} tracks now")
+    log(f"{column} is set on {before:,} tracks now; reading {links.path}")
 
+    if args.apply and args.clear_missing:
+        cur.execute("CREATE TEMPORARY TABLE loaded_ids (track_id INT UNSIGNED PRIMARY KEY)")
+
+    upsert = (f"INSERT INTO track_store_links (track_id, {column}) VALUES (%s, %s) "
+              f"ON DUPLICATE KEY UPDATE {column} = VALUES({column})")
+    found = 0
+    for n, chunk in enumerate(links.chunks(LOOKUP_CHUNK)):
+        ids = resolve_track_ids(cur, list(chunk))
+        found += len(ids)
+        if args.apply and ids:
+            rows = [(tid, chunk[u]) for u, tid in ids.items()]
+            for i in range(0, len(rows), WRITE_CHUNK):
+                cur.executemany(upsert, rows[i:i + WRITE_CHUNK])
+            if args.clear_missing:
+                cur.executemany("INSERT IGNORE INTO loaded_ids VALUES (%s)", [(t,) for t in ids.values()])
+            conn.commit()
+        if n % 40 == 0:
+            log(f"  {links.read:,} read, {found:,} are catalogue tracks here")
+
+    log(f"{links.read:,} links read ({links.bad:,} lines rejected); {found:,} are catalogue tracks in this "
+        f"database, {links.read - found:,} are not")
     if not args.apply:
         log("dry run finished; add --apply to write")
         return 0
 
-    rows = [(tid, links[u]) for u, tid in ids.items()]
-    sql = (f"INSERT INTO track_store_links (track_id, {column}) VALUES (%s, %s) "
-           f"ON DUPLICATE KEY UPDATE {column} = VALUES({column})")
-    for i in range(0, len(rows), WRITE_CHUNK):
-        cur.executemany(sql, rows[i:i + WRITE_CHUNK])
-        conn.commit()
-        if (i // WRITE_CHUNK) % 100 == 0:
-            log(f"  {min(i + WRITE_CHUNK, len(rows)):,} / {len(rows):,}")
-
     if args.clear_missing:
-        cur.execute("CREATE TEMPORARY TABLE loaded_ids (track_id INT UNSIGNED PRIMARY KEY)")
-        tids = [(tid,) for tid in ids.values()]
-        for i in range(0, len(tids), WRITE_CHUNK):
-            cur.executemany("INSERT INTO loaded_ids VALUES (%s)", tids[i:i + WRITE_CHUNK])
         cur.execute(f"""UPDATE track_store_links s LEFT JOIN loaded_ids l ON l.track_id = s.track_id
                         SET s.{column} = NULL WHERE s.{column} IS NOT NULL AND l.track_id IS NULL""")
         log(f"cleared {cur.rowcount:,} links no longer in the file")
