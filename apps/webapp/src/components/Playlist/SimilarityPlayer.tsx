@@ -7,6 +7,7 @@ import { WaveformLoader } from "@resomix/ui";
 import { PreviewProgressBar } from "@/components/Playlist/PreviewProgressBar.tsx";
 import { PlaybackUnavailable } from "@/components/Playlist/PlaybackUnavailable.tsx";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
+import { StoreLinks } from "@/components/Playlist/StoreLinks.tsx";
 
 
 interface SimilarityPlayerProps {
@@ -17,6 +18,9 @@ interface SimilarityPlayerProps {
   label?: string | null;
   /** Apple Music deep link — desktop closes its control row with the lockup. */
   appleDeepLinkUrl?: string | null;
+  /** "Buy on ..." store links, shown after the Apple lockup. */
+  traxsourceUrl?: string | null;
+  bandcampUrl?: string | null;
   /**
    * Mobile layout: a full-width seek bar on its own row, then skips + meta. It drops the volume
    * control (phones have hardware volume), and is a distinct structure rather than a responsive
@@ -36,6 +40,8 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({
   totalDuration,
   label,
   appleDeepLinkUrl,
+  traxsourceUrl,
+  bandcampUrl,
   mobile = false,
   lineOnly = false,
 }) => {
@@ -228,6 +234,12 @@ const SimilarityPlayer: React.FC<SimilarityPlayerProps> = ({
             className="shrink-0"
           />
         )}
+        <StoreLinks
+          traxsourceUrl={traxsourceUrl}
+          bandcampUrl={bandcampUrl}
+          className="shrink-0"
+          iconClass="w-[var(--px-20)] h-[var(--px-20)]"
+        />
       </div>
     </div>
   );

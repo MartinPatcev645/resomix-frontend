@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
+import { StoreLinks } from "@/components/Playlist/StoreLinks.tsx";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import { PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
@@ -341,8 +342,11 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 />
                                 {/* Expanded-row actions. A 3-column grid rather than
                                     justify-between so the Apple lockup is centred against the ROW,
-                                    not against whatever space the side controls leave over. */}
-                                <div className="grid w-full grid-cols-3 items-center gap-[var(--px-8)]">
+                                    not against whatever space the side controls leave over. The
+                                    middle column is sized to its content (lockup + store icons) and
+                                    the sides split the rest equally, so the centre stays centred
+                                    without the icons spilling into the side cells. */}
+                                <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-[var(--px-8)]">
                                     <div className="flex items-center gap-[var(--px-6)] justify-self-start">
                                         <button
                                             type="button"
@@ -369,12 +373,19 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                             />
                                         </button>
                                     </div>
-                                    <div className="flex min-w-0 items-center justify-center justify-self-center">
+                                    <div className="flex min-w-0 items-center justify-center justify-self-center gap-[var(--px-6)]">
                                         {track.type === "internal" && track.deep_link_url && (
                                             <AppleMusicBadge
                                                 deepLinkUrl={track.deep_link_url}
                                                 playing
                                                 fullHeightClass="h-[var(--px-20)]"
+                                            />
+                                        )}
+                                        {track.type === "internal" && (
+                                            <StoreLinks
+                                                traxsourceUrl={track.traxsource_url}
+                                                bandcampUrl={track.bandcamp_url}
+                                                iconClass="w-[var(--px-20)] h-[var(--px-20)]"
                                             />
                                         )}
                                     </div>

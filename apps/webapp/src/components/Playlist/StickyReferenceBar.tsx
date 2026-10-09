@@ -233,6 +233,8 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
               isPlaying={isRefPlaying}
               totalDuration={track.duration ?? 0}
               appleDeepLinkUrl={track.type === "internal" ? track.deep_link_url : null}
+              traxsourceUrl={track.type === "internal" ? track.traxsource_url : null}
+              bandcampUrl={track.type === "internal" ? track.bandcamp_url : null}
               lineOnly
             />
           </div>

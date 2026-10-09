@@ -12,12 +12,15 @@ import { DEMO_MODE } from "@resomix/config";
 import { PreviewProgressBar } from "@/components/Playlist/PreviewProgressBar.tsx";
 import { PlaybackUnavailable } from "@/components/Playlist/PlaybackUnavailable.tsx";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
+import { StoreLinks } from "@/components/Playlist/StoreLinks.tsx";
 
 interface InputPlayerProps {
   trackId?: string;
   totalDuration: number;
   /** Catalogue seed deep link — badge renders when type is internal and this is set. */
   deepLinkUrl?: string | null;
+  traxsourceUrl?: string | null;
+  bandcampUrl?: string | null;
   trackType?: string;
   playButtonDataAttributes?: Record<string, string>;
   /**
@@ -46,6 +49,8 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
   trackId,
   totalDuration,
   deepLinkUrl,
+  traxsourceUrl,
+  bandcampUrl,
   trackType,
   playButtonDataAttributes,
   mobile = false,
@@ -243,6 +248,15 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
     />
   ) : null;
 
+  const storeLinks =
+    trackType === "internal" ? (
+      <StoreLinks
+        traxsourceUrl={traxsourceUrl}
+        bandcampUrl={bandcampUrl}
+        className={`shrink-0 ${controlsDimmed ? "pointer-events-none opacity-45" : ""}`}
+      />
+    ) : null;
+
   const deletedNote = isDeleted ? (
     <p className="w-full font-fira text-[length:var(--px-9)] text-red-500 opacity-90">
       Your uploaded track has been deleted.
@@ -269,6 +283,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
           </div>
           <div className="player-control-secondary-cluster flex min-w-0 flex-1 items-center justify-end gap-[var(--px-8)]">
             {appleBadge}
+            {storeLinks}
             {elapsedTime}
           </div>
         </div>
@@ -303,6 +318,7 @@ const InputPlayer: React.FC<InputPlayerProps> = ({
         <div className="player-control-secondary-cluster ml-auto flex min-w-0 items-center justify-end gap-[var(--px-12)]">
           {controlRowActions}
           {appleBadge}
+          {storeLinks}
           {elapsedTime}
         </div>
       </div>

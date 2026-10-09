@@ -500,6 +500,8 @@ const PlaylistHero: React.FC = () => {
             totalDuration={playlistData.queried_track.duration ?? 0}
             trackType={playlistData.queried_track.type}
             deepLinkUrl={playlistData.queried_track.deep_link_url}
+            traxsourceUrl={playlistData.queried_track.traxsource_url}
+            bandcampUrl={playlistData.queried_track.bandcamp_url}
             playButtonDataAttributes={{
               "data-testid": "play-button",
               "data-track-id": playlistData?.queried_track.id || "",

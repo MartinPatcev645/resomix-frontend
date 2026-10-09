@@ -416,6 +416,8 @@ const PlaylistTable: React.FC = () => {
                                 isPlaying={isTrackPlaying}
                                 totalDuration={track.duration}
                                 appleDeepLinkUrl={track.type === "internal" ? track.deep_link_url : null}
+                                traxsourceUrl={track.type === "internal" ? track.traxsource_url : null}
+                                bandcampUrl={track.type === "internal" ? track.bandcamp_url : null}
                             />
                         </div>
                     )}
