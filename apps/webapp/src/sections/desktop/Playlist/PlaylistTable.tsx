@@ -10,7 +10,9 @@ import PlaySvg from "@/assets/icons/play_white.svg";
 import PauseSvg from "@/assets/icons/pause_white.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
-import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
+import { resolveLabel, firstGenre, displayOrNA, buyLinksFor } from "@/utils/trackUtils.ts";
+import { GetItLinks } from "@/components/Playlist/GetItLinks.tsx";
+import { BuyLinksMenu } from "@/components/Playlist/BuyLinksMenu.tsx";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 import { prefetchAudio } from "@/utils/prefetchAudio.ts";
 import { PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
@@ -181,6 +183,7 @@ const PlaylistTable: React.FC = () => {
         const isRestricted = restrictedMode !== "none";
         const isSelected = currentTrackId === track.id;
         const isTrackPlaying = isSelected && isPlaying;
+        const buyLinks = isRestricted ? [] : buyLinksFor(track);
         const isUnavailable = isSelected && networkError;
         const isTopRank = track.rank === 1;
         const isAlternate = rowIndex % 2 === 1;
@@ -270,13 +273,17 @@ const PlaylistTable: React.FC = () => {
                     </div>
                     {/* select-none overrides the row's `select-text`: artist/title are not copyable
                         (both platforms), while the rest of the row stays selectable.
-                        While playing, the two columns merge into one left-aligned cell stacking
-                        title over artist — everything else keeps its normal column treatment. */}
+                        While playing, title over artist moves into one left-aligned cell. With store
+                        links it takes the artist column and the freed title column carries the
+                        "GET IT // ..." line, on the top line and far from the Apple badge in the
+                        player strip (George's layout); without links it spans both columns as before.
+                        Everything else keeps its normal column treatment. */}
                     {isTrackPlaying && !isRestricted ? (
+                        <>
                         <div
                             className="pl-unavailable-dim min-w-0 select-none text-left leading-[var(--px-18)]"
                             role="cell"
-                            style={{ gridColumn: "span 2" }}
+                            style={buyLinks.length ? undefined : { gridColumn: "span 2" }}
                         >
                             <div
                                 className="truncate text-[length:var(--px-14)] font-helvetica font-light uppercase text-[var(--rx-color-text-primary)]"
@@ -291,6 +298,12 @@ const PlaylistTable: React.FC = () => {
                                 {displayOrNA(track.artist)}
                             </div>
                         </div>
+                        {buyLinks.length > 0 && (
+                            <div className="min-w-0 self-start pt-[var(--px-1)]" role="cell">
+                                <GetItLinks links={buyLinks} />
+                            </div>
+                        )}
+                        </>
                     ) : (
                         <>
                             <div
@@ -300,12 +313,17 @@ const PlaylistTable: React.FC = () => {
                             >
                                 {displayOrNA(track.artist)}
                             </div>
-                            <div
-                                className="pl-unavailable-dim min-w-0 select-none truncate text-center text-[length:var(--px-14)] font-helvetica font-light uppercase text-[var(--rx-color-text-primary)]"
-                                role="cell"
-                                title={displayOrNA(track.title)}
-                            >
-                                {displayOrNA(track.title)}
+                            {/* The buy "$" sits right after the title in a fixed slot on every row
+                                (empty when the track has no store link), so titles stay aligned and
+                                the button is always in the same place. */}
+                            <div className="flex min-w-0 items-center gap-[var(--px-8)]" role="cell">
+                                <div
+                                    className="pl-unavailable-dim min-w-0 flex-1 select-none truncate text-center text-[length:var(--px-14)] font-helvetica font-light uppercase text-[var(--rx-color-text-primary)]"
+                                    title={displayOrNA(track.title)}
+                                >
+                                    {displayOrNA(track.title)}
+                                </div>
+                                <BuyLinksMenu links={buyLinks} />
                             </div>
                         </>
                     )}
@@ -416,8 +434,6 @@ const PlaylistTable: React.FC = () => {
                                 isPlaying={isTrackPlaying}
                                 totalDuration={track.duration}
                                 appleDeepLinkUrl={track.type === "internal" ? track.deep_link_url : null}
-                                traxsourceUrl={track.type === "internal" ? track.traxsource_url : null}
-                                bandcampUrl={track.type === "internal" ? track.bandcamp_url : null}
                             />
                         </div>
                     )}

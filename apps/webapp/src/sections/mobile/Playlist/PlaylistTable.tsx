@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
-import { StoreLinks } from "@/components/Playlist/StoreLinks.tsx";
+import { GetItLinks } from "@/components/Playlist/GetItLinks.tsx";
+import { BuyLinksMenu } from "@/components/Playlist/BuyLinksMenu.tsx";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import { PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
@@ -14,7 +15,7 @@ import PlaySvg from "@/assets/icons/play_white.svg";
 import MoreSvg from "@/assets/icons/more.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
-import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
+import { resolveLabel, firstGenre, displayOrNA, buyLinksFor } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 import { prefetchAudio } from "@/utils/prefetchAudio.ts";
 import {
@@ -187,6 +188,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
         const isRestricted = restrictedMode !== "none";
         const isSelected = currentTrackId === track.id;
         const isThisPlaying = isSelected && isPlaying;
+        const buyLinks = isRestricted ? [] : buyLinksFor(track);
         const isUnavailable = isSelected && networkError;
         const isTopRank = track.rank === 1;
         // Score is a 0–1 similarity — the meter fills to the true value (clamped for safety).
@@ -272,6 +274,11 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                             <span className="block truncate">{displayOrNA(track.title)}</span>
                                         )}
                                     </div>
+                                    {/* Closed rows: the buy "$" right after the title (the playing
+                                        row shows the same links as "GET IT // ..." instead). */}
+                                    {!isThisPlaying && buyLinks.length > 0 && (
+                                        <BuyLinksMenu links={buyLinks} compact className="self-center" />
+                                    )}
                                     {isTopRank && !isRestricted && (
                                         <span className="shrink-0 font-fira text-[length:var(--px-8)] uppercase tracking-[var(--px-1)] text-[var(--color-accent,#EE4A26)]">
                                             TOP
@@ -332,6 +339,9 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                         </div>
                         {isThisPlaying && !isRestricted && (
                             <>
+                                {/* Store links above the progress bar, never beside the Apple
+                                    lockup below (Apple's preview terms; George's layout). */}
+                                <GetItLinks links={buyLinks} />
                                 {/* No `genre` — the collapsed row's meta line already carries it. */}
                                 <SimilarityPlayer
                                     mobile
@@ -342,11 +352,8 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                 />
                                 {/* Expanded-row actions. A 3-column grid rather than
                                     justify-between so the Apple lockup is centred against the ROW,
-                                    not against whatever space the side controls leave over. The
-                                    middle column is sized to its content (lockup + store icons) and
-                                    the sides split the rest equally, so the centre stays centred
-                                    without the icons spilling into the side cells. */}
-                                <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-[var(--px-8)]">
+                                    not against whatever space the side controls leave over. */}
+                                <div className="grid w-full grid-cols-3 items-center gap-[var(--px-8)]">
                                     <div className="flex items-center gap-[var(--px-6)] justify-self-start">
                                         <button
                                             type="button"
@@ -373,19 +380,12 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                             />
                                         </button>
                                     </div>
-                                    <div className="flex min-w-0 items-center justify-center justify-self-center gap-[var(--px-6)]">
+                                    <div className="flex min-w-0 items-center justify-center justify-self-center">
                                         {track.type === "internal" && track.deep_link_url && (
                                             <AppleMusicBadge
                                                 deepLinkUrl={track.deep_link_url}
                                                 playing
                                                 fullHeightClass="h-[var(--px-20)]"
-                                            />
-                                        )}
-                                        {track.type === "internal" && (
-                                            <StoreLinks
-                                                traxsourceUrl={track.traxsource_url}
-                                                bandcampUrl={track.bandcamp_url}
-                                                iconClass="w-[var(--px-20)] h-[var(--px-20)]"
                                             />
                                         )}
                                     </div>
