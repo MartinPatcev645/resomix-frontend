@@ -1,17 +1,20 @@
-import type { BuyLink } from "@/utils/trackUtils.ts";
+import { pushStoreLinkClicked } from "@resomix/hooks";
+import type { BuyLink, StoreLinkTracking } from "@/utils/trackUtils.ts";
 
 /**
  * The playing row's buy line, "GET IT // Traxsource · Bandcamp", with the stores as text links
  * (George's layout, October 2026). It sits on the row's top line, well away from the Apple badge:
  * Apple's preview terms do not allow other stores beside its player, so store links never share the
- * player strip. Renders nothing when the track has no store link.
+ * player strip. Renders nothing when the track has no store link. A click is logged as
+ * `store_link_clicked` with `row_state: "open"` (bought while listening).
  */
 interface GetItLinksProps {
   links: BuyLink[];
+  tracking: StoreLinkTracking;
   className?: string;
 }
 
-export function GetItLinks({ links, className = "" }: GetItLinksProps) {
+export function GetItLinks({ links, tracking, className = "" }: GetItLinksProps) {
   if (links.length === 0) return null;
 
   return (
@@ -32,7 +35,10 @@ export function GetItLinks({ links, className = "" }: GetItLinksProps) {
             rel="noopener noreferrer"
             aria-label={`Buy on ${link.label}`}
             title={`Buy on ${link.label}`}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              pushStoreLinkClicked({ store: link.store, rowState: "open", ...tracking });
+            }}
             className="truncate text-[var(--rx-color-text-secondary)] underline-offset-[var(--px-3)] transition-colors hover:text-[var(--color-accent,#EE4A26)] hover:underline"
           >
             {link.label}

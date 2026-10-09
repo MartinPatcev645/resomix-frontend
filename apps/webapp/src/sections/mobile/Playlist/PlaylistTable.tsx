@@ -277,7 +277,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                     {/* Closed rows: the buy "$" right after the title (the playing
                                         row shows the same links as "GET IT // ..." instead). */}
                                     {!isThisPlaying && buyLinks.length > 0 && (
-                                        <BuyLinksMenu links={buyLinks} compact className="self-center" />
+                                        <BuyLinksMenu links={buyLinks} tracking={{ surface: "row", trackId: track.id }} compact className="self-center" />
                                     )}
                                     {isTopRank && !isRestricted && (
                                         <span className="shrink-0 font-fira text-[length:var(--px-8)] uppercase tracking-[var(--px-1)] text-[var(--color-accent,#EE4A26)]">
@@ -341,7 +341,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                             <>
                                 {/* Store links above the progress bar, never beside the Apple
                                     lockup below (Apple's preview terms; George's layout). */}
-                                <GetItLinks links={buyLinks} />
+                                <GetItLinks links={buyLinks} tracking={{ surface: "row", trackId: track.id }} />
                                 {/* No `genre` — the collapsed row's meta line already carries it. */}
                                 <SimilarityPlayer
                                     mobile

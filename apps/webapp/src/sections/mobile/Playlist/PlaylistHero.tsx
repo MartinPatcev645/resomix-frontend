@@ -10,7 +10,8 @@ import AppleExportModal from "@/components/Modals/Transfer/AppleExportModal.tsx"
 import StarSvg from "@/assets/icons/star_white.svg";
 import DefaultCover from "@/assets/default-playlist-cover.jpg";
 import { DEMO_MODE } from "@resomix/config";
-import { resolveLabel } from "@/utils/trackUtils.ts";
+import { resolveLabel, buyLinksFor } from "@/utils/trackUtils.ts";
+import { GetItLinks } from "@/components/Playlist/GetItLinks.tsx";
 import { useNavigate, useLocation } from "react-router-dom";
 import { playlistAccessChrome, PLAYLIST_LOCK_MARK } from "@/utils/playlistAccessChrome.ts";
 import { StickyReferenceBar } from "@/components/Playlist/StickyReferenceBar.tsx";
@@ -492,6 +493,14 @@ const PlaylistHero: React.FC = () => {
           {resolveLabel(playlistData?.queried_track.label) ? ` · ${resolveLabel(playlistData?.queried_track.label)}` : ""}
           {playlistData?.similar_tracks?.length ? ` · ${playlistData.similar_tracks.length} results` : ""}
         </p>
+        {/* A catalogue reference's store links: their own line under the facts (the info layer), never
+            in the player below with the Apple badge. Nothing renders for uploads. */}
+        {playlistData?.queried_track && (
+          <GetItLinks
+            links={buyLinksFor(playlistData.queried_track)}
+            tracking={{ surface: "hero", trackId: playlistData.queried_track.id }}
+          />
+        )}
 
         {playlistData?.queried_track.id && (
           <InputPlayer

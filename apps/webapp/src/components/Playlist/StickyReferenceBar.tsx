@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { useGlobalAudioController, formatDuration } from "@resomix/hooks";
 import { usePlayerStore, usePlaylistStore } from "@resomix/stores";
 import { DEMO_MODE } from "@resomix/config";
-import { displayOrNA } from "@/utils/trackUtils.ts";
+import { displayOrNA, buyLinksFor } from "@/utils/trackUtils.ts";
+import { GetItLinks } from "@/components/Playlist/GetItLinks.tsx";
+import { BuyLinksMenu } from "@/components/Playlist/BuyLinksMenu.tsx";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import {
   PLAYLIST_COMPACT_BAR_H_VAR,
@@ -145,6 +147,11 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
   );
 
   const showPlayer = inlinePlayer && isRefPlaying && !DEMO_MODE;
+  // Catalogue references only (uploads have no store links). Same two layers as a result row: the
+  // cart after the title while closed, the "GET IT // ..." line on the top line while the strip is
+  // open, and nothing from the stores inside the strip, which is Apple's player alone.
+  const buyLinks = buyLinksFor(track);
+  const buyTracking = { surface: "sticky" as const, trackId: track.id };
 
   const barClassName = [
     "pointer-events-auto fixed inset-x-0 z-[40] border-b",
@@ -199,14 +206,25 @@ export const StickyReferenceBar: React.FC<StickyReferenceBarProps> = ({
             />
           </span>
         </button>
-        <div className="pl-sticky-strip__text min-w-0 flex-1 px-[var(--px-12)] py-[var(--px-8)]">
-          <div className="font-helvetica text-[length:var(--px-13)] font-light uppercase leading-[var(--px-16)] text-[var(--rx-color-text-primary)]">
-            {displayOrNA(track.title)}
+        <div className="flex min-w-0 flex-1 items-center gap-[var(--px-16)]">
+        {/* pl-sticky-strip__text grows (flex: 1); while the GET IT line shows, the text keeps only
+            its own width so the line can centre in the top line's free middle. */}
+        <div
+          className="pl-sticky-strip__text min-w-0 px-[var(--px-12)] py-[var(--px-8)]"
+          style={showPlayer && buyLinks.length > 0 ? { flex: "0 1 auto" } : undefined}
+        >
+          <div className="flex min-w-0 items-center gap-[var(--px-8)]">
+            <div className="min-w-0 truncate font-helvetica text-[length:var(--px-13)] font-light uppercase leading-[var(--px-16)] text-[var(--rx-color-text-primary)]">
+              {displayOrNA(track.title)}
+            </div>
+            {!showPlayer && buyLinks.length > 0 && <BuyLinksMenu links={buyLinks} tracking={buyTracking} compact />}
           </div>
           <div className="font-helvetica text-[length:var(--px-12)] font-light leading-[var(--px-15)] text-[var(--rx-color-text-secondary)]">
             {displayOrNA(track.artist)}
             {track.duration ? ` · ${formatDuration(Math.floor(track.duration))}` : ""}
           </div>
+        </div>
+        {showPlayer && <GetItLinks links={buyLinks} tracking={buyTracking} className="mx-auto" />}
         </div>
         {hasActions ? (
           <>

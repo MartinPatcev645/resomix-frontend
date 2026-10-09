@@ -79,3 +79,9 @@ export function buyLinksFor(track: {
   if (track.bandcamp_url) links.push({ store: 'bandcamp', label: 'Bandcamp', url: track.bandcamp_url });
   return links;
 }
+
+/** Where a store link was shown, for the `store_link_clicked` analytics event. */
+export interface StoreLinkTracking {
+  surface: 'row' | 'sticky' | 'hero';
+  trackId?: string | null;
+}

@@ -72,3 +72,25 @@ export function pushSignupCompleted(params: {
   if (params.userId) event.user_id = params.userId;
   push(event);
 }
+
+/**
+ * Fired when someone opens a download-store link from a track ("GET IT // ..." or the cart menu).
+ * GTM forwards it to PostHog as `store_link_clicked` (George, October 2026). `row_state` says
+ * whether the track's player was open (they buy while listening) or closed (while scrolling);
+ * `surface` says where on the page: a result row, the sticky reference bar or the reference card.
+ */
+export function pushStoreLinkClicked(params: {
+  store: 'traxsource' | 'bandcamp';
+  rowState: 'open' | 'closed';
+  surface: 'row' | 'sticky' | 'hero';
+  trackId?: string | null;
+}): void {
+  const event: DataLayerEvent = {
+    event: 'store_link_clicked',
+    store: params.store,
+    row_state: params.rowState,
+    surface: params.surface,
+  };
+  if (params.trackId) event.track_id = params.trackId;
+  push(event);
+}

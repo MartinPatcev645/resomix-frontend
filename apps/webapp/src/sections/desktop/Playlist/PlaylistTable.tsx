@@ -300,7 +300,7 @@ const PlaylistTable: React.FC = () => {
                         </div>
                         {buyLinks.length > 0 && (
                             <div className="min-w-0 self-start pt-[var(--px-1)]" role="cell">
-                                <GetItLinks links={buyLinks} />
+                                <GetItLinks links={buyLinks} tracking={{ surface: "row", trackId: track.id }} />
                             </div>
                         )}
                         </>
@@ -323,7 +323,7 @@ const PlaylistTable: React.FC = () => {
                                 >
                                     {displayOrNA(track.title)}
                                 </div>
-                                <BuyLinksMenu links={buyLinks} />
+                                <BuyLinksMenu links={buyLinks} tracking={{ surface: "row", trackId: track.id }} />
                             </div>
                         </>
                     )}
