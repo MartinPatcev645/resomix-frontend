@@ -42,8 +42,11 @@ class ServiceProvider:
     REKORDBOX = "rekordbox"
     BEATPORT = "beatport"
     DEEZER = "deezer"
+    # Import-only (public collection, no credentials) — stored in bandcamp_connections, not
+    # user_service_connections.
+    BANDCAMP = "bandcamp"
 
-    ALL = [APPLE_MUSIC, SPOTIFY, TIDAL, REKORDBOX, BEATPORT, DEEZER]
+    ALL = [APPLE_MUSIC, SPOTIFY, TIDAL, REKORDBOX, BEATPORT, DEEZER, BANDCAMP]
 
     @classmethod
     def is_valid(cls, provider: str) -> bool:

@@ -19,6 +19,7 @@ from .track_tasks import purge_uploaded_track_assets
 # The worker half of the poll-based similarity upload. Same rule as above: without this import
 # the job is enqueued, never runs, and the client polls `queued` until the record expires.
 from .similarity_tasks import run_similarity_upload
+from .bandcamp_tasks import sync_bandcamp_collection
 
 __all__ = [
     "celery_app", "dispatch_webhook",
@@ -26,4 +27,5 @@ __all__ = [
     "generate_track_analysis", "persist_analysis_summary", "generate_similarity_sibling",
     "purge_uploaded_track_assets",
     "run_similarity_upload",
+    "sync_bandcamp_collection",
 ]

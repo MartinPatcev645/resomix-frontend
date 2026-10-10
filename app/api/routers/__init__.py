@@ -43,6 +43,7 @@ from .ratings import router as ratings_router
 from .spotify_transfer import router as spotify_transfer_router
 from .tidal_transfer import router as tidal_transfer_router
 from .apple_music_transfer import router as apple_music_transfer_router
+from .bandcamp import router as bandcamp_router
 from .waitlist import router as waitlist_router
 from .dummy import router as dummy_router
 from .auth import router as auth_router
@@ -86,6 +87,7 @@ v1_routers = [
     (spotify_transfer_router, V1_PREFIX),
     (tidal_transfer_router, V1_PREFIX),
     (apple_music_transfer_router, V1_PREFIX),
+    (bandcamp_router, V1_PREFIX),
     (partner_router, V1_PREFIX),
     (monthly_pipeline_router, V1_PREFIX),
     (open_tracks_pipeline_router, V1_PREFIX),

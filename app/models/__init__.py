@@ -71,6 +71,8 @@ from .apple_music import AppleMusicTrack
 from .track_store_link import TrackStoreLink
 from .user_service_connection import UserServiceConnection
 from .backup_run import BackupRun, BackupComponent
+from .bandcamp import BandcampConnection
+from .music_collection import UserMusicCollectionItem, SyncJob
 
 # Make models available at package level
 __all__ = [
@@ -155,4 +157,8 @@ __all__ = [
     # Backup / disaster recovery
     "BackupRun",
     "BackupComponent",
+    # Imported external collections (Bandcamp)
+    "BandcampConnection",
+    "UserMusicCollectionItem",
+    "SyncJob",
 ]

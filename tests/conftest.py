@@ -82,6 +82,9 @@ _HIGH_WATER_TABLES: tuple[str, ...] = (
     "contacts",
     "feedbacks",
     "system_logs",
+    # imported collections (sync_jobs has a UUID PK, so its rows are removed by the tests)
+    "user_music_collection",
+    "bandcamp_connections",
     # auth
     "users",
 )
