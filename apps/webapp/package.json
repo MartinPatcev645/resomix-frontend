@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "mock:init": "msw init public --no-save",
+    "dev:bandcamp-mock": "pnpm mock:init && vite --mode bandcamp-mock",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

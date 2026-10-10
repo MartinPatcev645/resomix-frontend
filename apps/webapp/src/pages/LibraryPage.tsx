@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useLibraryUrlState } from "@/hooks/useLibraryUrlState.ts";
 import { StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartFilledIcon, HeartStrokeIcon } from "@resomix/ui";
 import { useAuthStore } from "@resomix/stores";
@@ -479,6 +479,13 @@ export default function LibraryPage() {
           <p className="mt-[var(--px-12)] font-helvetica text-[length:var(--px-15)] font-light leading-[var(--px-22)] text-[var(--rx-color-text-secondary)] opacity-70">
             Your saved playlists and track collections
           </p>
+          <Link
+            to="/library/bandcamp"
+            className={`${PAGE_BTN_SECONDARY} mt-[var(--px-16)]`}
+            id="library-bandcamp-link"
+          >
+            Import from Bandcamp
+          </Link>
         </header>
 
         <div className="w-full">

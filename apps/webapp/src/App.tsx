@@ -22,6 +22,7 @@ const UiSystemSpecimenPage = lazy(() => import("@/pages/UiSystemSpecimenPage.tsx
 // const PlayerPage = lazy(() => import("@/pages/PlayerPage.tsx"));
 const UploadLoader = lazy(() => import("@/components/index.ts").then(m => ({ default: m.UploadLoader })));
 const LibraryPage = lazy(() => import("@/pages/LibraryPage.tsx"));
+const BandcampPage = lazy(() => import("@/features/bandcamp/pages/BandcampPage.tsx"));
 // The full Track Intelligence dashboard — its own route since pricing v2.1;
 // `/track-intelligence?id=` is
 // the summary.
@@ -189,6 +190,7 @@ function App() {
               <Route path="/sessions" element={<AuthPage mode="sessions" />} />
               <Route path="/change-password" element={<AuthPage mode="change-password" />} />
               <Route path="/library" element={<LibraryPage />} />
+              <Route path="/library/bandcamp" element={<BandcampPage />} />
             </Route>
 
             {/* Guest-Only Auth Routes */}

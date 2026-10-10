@@ -72,6 +72,8 @@ export const SONIC_DISCOVERY_HREF = '/sonic-discovery';
 
 export const LIBRARY_HREF = '/library';
 
+export const BANDCAMP_HREF = '/library/bandcamp';
+
 export const UPGRADE_HREF = '/subscribe?from=app';
 
 /**

@@ -18,15 +18,26 @@ void CONFIG;
 import { initDeviceHash } from '@resomix/api-client'
 void initDeviceHash();
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <App />
-    </BrowserRouter>
-  </StrictMode>,
-)
+// Bandcamp mock mode (`pnpm dev:bandcamp-mock`). Kept as an inline literal check so a production
+// build folds it to `false` and drops MSW and the mock data entirely.
+async function enableDevMocks() {
+  if (import.meta.env.DEV && import.meta.env.VITE_BANDCAMP_MOCK === 'true') {
+    const { enableBandcampMock } = await import('./features/bandcamp/mocks/enableBandcampMock.ts')
+    await enableBandcampMock()
+  }
+}
+
+void enableDevMocks().finally(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <App />
+      </BrowserRouter>
+    </StrictMode>,
+  )
+})

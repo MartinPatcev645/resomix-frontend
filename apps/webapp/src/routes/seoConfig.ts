@@ -99,6 +99,7 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
   /* ---------- signed-in workspace: crawlable, never indexed ---------- */
   // A crawler sees a redirect or an empty shell here; indexing it would put a blank page in results.
   '/library': { title: 'Your Library | Resomix', description: 'Your saved playlists and uploads.', noindex: true },
+  '/library/bandcamp': { title: 'Bandcamp Collection | Resomix', description: 'Import and explore your public Bandcamp collection.', noindex: true },
   '/profile': { title: 'Your Profile | Resomix', description: 'Account, plan and billing settings.', noindex: true },
   '/sessions': { title: 'Active Sessions | Resomix', description: 'Devices signed in to your account.', noindex: true },
   '/change-password': { title: 'Change Password | Resomix', description: 'Update your account password.', noindex: true },

@@ -10,6 +10,7 @@
     "dev:landing": "pnpm --filter ./apps/landing dev",
     "dev:next-landing": "npm run dev --prefix apps/next-landing",
     "dev:webapp": "pnpm --filter ./apps/webapp dev",
+    "dev:webapp:bandcamp-mock": "pnpm --filter ./apps/webapp dev:bandcamp-mock",
     "dev:admin": "pnpm --filter ./apps/admin dev",
     "dev:embed": "pnpm --filter ./apps/embed dev",
     "build": "turbo run build",

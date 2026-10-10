@@ -12,7 +12,7 @@ import { defineConfig, transformWithEsbuild } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
-import { writeFileSync } from 'node:fs'
+import { rmSync, writeFileSync } from 'node:fs'
 import { ROUTE_SEO, SITEMAP_DEFAULTS, SITE_ORIGIN } from './src/routes/seoConfig.ts'
 import { prerenderHead } from '../../tooling/prerenderHead.ts'
 import { minifyPublicScripts } from '../../tooling/minifyPublicScripts.ts'
@@ -71,6 +71,15 @@ export default defineConfig({
         )
         // eslint-disable-next-line no-console
         console.log(`  sitemap.xml  ${Object.keys(ROUTE_SEO).length} routes -> ${entries.length} indexed`)
+      },
+    },
+    {
+      /* `pnpm mock:init` drops the MSW worker into public/ for dev mock mode; public/ is copied
+         verbatim, so a local production build would otherwise ship it. */
+      name: 'strip-msw-worker',
+      apply: 'build',
+      closeBundle() {
+        rmSync(path.resolve(__dirname, 'dist/mockServiceWorker.js'), { force: true })
       },
     },
     react(), 

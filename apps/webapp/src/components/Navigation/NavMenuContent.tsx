@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavGlyph } from './NavGlyphs.tsx';
 import type { NavItem, NavPanelNotice, NavTopGroup } from './betaNavConfig.ts';
-import { isCurrentNavRoute, LIBRARY_HREF, UPGRADE_HREF } from './betaNavConfig.ts';
+import { BANDCAMP_HREF, isCurrentNavRoute, LIBRARY_HREF, UPGRADE_HREF } from './betaNavConfig.ts';
 import { navT } from './navCopy.ts';
 import { openCookiePreferences, isCookiePreferencesAvailable } from './cookiePreferences.ts';
 
@@ -382,6 +382,13 @@ export function buildProfileMenuItems({
       href: LIBRARY_HREF,
       icon: <LibraryIcon />,
       onClick: () => onNavigate(LIBRARY_HREF),
+    },
+    {
+      label: 'Bandcamp',
+      id: 'nav-bandcamp-menu-item',
+      href: BANDCAMP_HREF,
+      icon: <LibraryIcon />,
+      onClick: () => onNavigate(BANDCAMP_HREF),
     },
     {
       label: 'Track Intelligence',
