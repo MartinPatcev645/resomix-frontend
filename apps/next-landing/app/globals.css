@@ -1,0 +1,12 @@
+@import "tailwindcss";
+@source "../app";
+@source "../components";
+@source "../sections";
+
+@import "../styles/pixels.css";
+@import "../styles/font-fallbacks.css";
+@import "../styles/fonts.css";
+@import "../styles/tokens.css";
+@import "../components/shell/navigation.css";
+@import "../sections/shared/faq.css";
+@import "../sections/home/home.css";

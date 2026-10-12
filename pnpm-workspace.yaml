@@ -1,3 +1,5 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+  # Own npm install and Cloudflare project. Must not enter the pnpm lockfile or Turbo.
+  - '!apps/next-landing'

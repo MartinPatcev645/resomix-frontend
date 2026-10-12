@@ -1,0 +1,31 @@
+{
+  "name": "next-landing",
+  "private": true,
+  "version": "0.0.0",
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "dev": "next dev --port 5177",
+    "build": "next build && vitest run",
+    "start": "npx serve out",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "16.4.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.11",
+    "@types/node": "^24.1.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.1.6",
+    "eslint": "^9.30.1",
+    "eslint-config-next": "16.4.0",
+    "tailwindcss": "^4.1.11",
+    "typescript": "~5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

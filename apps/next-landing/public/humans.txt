@@ -1,0 +1,28 @@
+# humanstxt.org
+
+/* TEAM */
+  Developer: Resomix Development Team
+  Site: https://resomix.com
+  Location: Greece
+
+/* THANKS */
+  React: https://reactjs.org
+  Vite: https://vitejs.dev
+  Three.js: https://threejs.org
+  Tailwind CSS: https://tailwindcss.com
+
+/* SITE */
+  Last update: 2026/01/13
+  Language: English
+  Doctype: HTML5
+  IDE: Visual Studio Code
+  Standards: HTML5, CSS3, ES6+
+  Components: React, TypeScript
+
+/* DESCRIPTION */
+  Resomix is a Sonic Analysis platform that helps DJs discover tracks by feeling, not by genre.
+
+/* CONTACT */
+  Website: https://resomix.com
+  Email: support@resomix.com
+  Social: @resomix

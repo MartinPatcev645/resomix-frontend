@@ -1,0 +1,82 @@
+/*
+ * Shared FAQ list.
+ *
+ * The section shell, eyebrow and heading come from each page's own classes (faqFamilies.ts). Only
+ * the question-and-answer list is styled here, and it follows the trust page's rights Q&A
+ * (.tr-qa in trust.css) so the two read as one system. No reveal or fade classes on purpose: the
+ * copy must be visible in the static HTML and must never wait on an observer.
+ */
+.faq-list {
+  margin: var(--px-28) 0 0;
+  max-width: 52rem;
+}
+
+.faq-list dt {
+  font-weight: 400;
+  color: var(--color-primary);
+  font-size: var(--px-17);
+  line-height: 1.5;
+  padding-top: var(--px-24);
+}
+
+.faq-list dt:first-of-type {
+  padding-top: 0;
+}
+
+.faq-list dd {
+  margin: var(--px-8) 0 0;
+  padding-bottom: var(--px-22);
+  color: var(--color-text-secondary);
+  font-size: var(--px-15);
+  font-weight: 300;
+  line-height: 1.7;
+  /* Neutral grey, so the divider holds on both the dark and the light theme. */
+  border-bottom: 1px dotted rgba(128, 128, 128, 0.28);
+}
+
+.faq-list dd:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+/*
+ * Optional call to action under an answer. It follows the site's bracket links (.tr-bracket in
+ * trust.css): mono face, dotted underline that appears in the accent colour on hover. It sits on
+ * its own line so the answer reads as a complete sentence without it, and the vertical padding
+ * keeps the tap target above the 24px the accessibility audit asks for.
+ */
+.faq-list .faq-link {
+  display: block;
+  width: fit-content;
+  margin-top: var(--px-10);
+  padding: var(--px-6) 0;
+  font-size: var(--px-13);
+  letter-spacing: var(--px-1);
+  color: var(--color-primary);
+  text-decoration: underline dotted transparent;
+  text-underline-offset: var(--px-4);
+}
+
+.faq-list .faq-link:hover,
+.faq-list .faq-link:focus-visible {
+  color: var(--color-neon-orange, #ee4a26);
+  text-decoration-color: var(--color-neon-orange, #ee4a26);
+}
+
+/*
+ * The off-site variant, used by the interlinking map's two FAQ links. `.faq-list .faq-link` above
+ * outranks the global `.rx-copylink` on specificity, so without this its transparent underline
+ * would win and the link would lose the affordance it is supposed to have. White with a visible
+ * dotted underline at rest, neon orange on hover and focus, matching every other link in the map.
+ * Everything else about the bracket link, its own line, its spacing and its tap target, is
+ * inherited unchanged.
+ */
+.faq-list .faq-link.rx-copylink {
+  text-decoration-color: currentColor;
+}
+
+.faq-list .faq-link.rx-copylink:hover,
+.faq-list .faq-link.rx-copylink:focus-visible {
+  color: var(--color-neon-orange, #ee4a26);
+  text-decoration-color: currentColor;
+}
