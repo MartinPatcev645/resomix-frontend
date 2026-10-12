@@ -5,7 +5,25 @@ TrackResolver matching rules
 Exercises the pure matching core (``normalize`` / ``pick_match``) the DB lookup feeds into.
 """
 
-from app.services.track_resolver import DURATION_TOLERANCE_MS, normalize, pick_match
+from app.services.track_resolver import (
+    DURATION_TOLERANCE_MS,
+    bandcamp_url_key,
+    bandcamp_url_variants,
+    normalize,
+    pick_match,
+)
+
+
+def test_bandcamp_url_key_ignores_scheme_case_and_trailing_slash():
+    assert bandcamp_url_key("HTTPS://Label.com/track/Song/") == "label.com/track/song"
+    assert bandcamp_url_key("http://label.com/track/Song") == bandcamp_url_key("https://Label.com/track/Song/")
+    assert bandcamp_url_key(None) == ""
+    assert set(bandcamp_url_variants("http://Label.com/track/Song/")) == {
+        "https://label.com/track/song",
+        "https://label.com/track/song/",
+        "http://label.com/track/song",
+        "http://label.com/track/song/",
+    }
 
 
 def test_normalize_ignores_case_accents_punctuation_and_spacing():

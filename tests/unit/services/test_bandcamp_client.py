@@ -8,6 +8,8 @@ of awaited so retry/backoff paths run instantly.
 
 import html
 import json
+import time
+from datetime import datetime, timezone
 
 import httpx
 import pytest
@@ -21,6 +23,7 @@ from app.services.bandcamp_client import (
     BandcampFan,
     BandcampRateLimited,
     BandcampRequestCapReached,
+    BandcampUnavailable,
     BandcampUserNotFound,
     normalize_username,
 )
@@ -43,8 +46,8 @@ PUBLIC_BLOB = {
 }
 
 
-def _item(tralbum_id: int, *, track: bool = False, title: str = "Title") -> dict:
-    return {
+def _item(tralbum_id: int, *, track: bool = False, title: str = "Title", token: str = None) -> dict:
+    row = {
         "tralbum_id": tralbum_id,
         "tralbum_type": "t" if track else "a",
         "item_type": "track" if track else "album",
@@ -55,6 +58,9 @@ def _item(tralbum_id: int, *, track: bool = False, title: str = "Title") -> dict
         "item_url": f"https://artist.bandcamp.com/{'track' if track else 'album'}/{tralbum_id}",
         "featured_track_duration": 245.5 if track else None,
     }
+    if token:
+        row["token"] = token
+    return row
 
 
 class Recorder:
@@ -124,6 +130,22 @@ async def test_get_fan_is_cached():
     assert len(calls) == 1
 
 
+async def test_fan_cache_drops_expired_entries_on_write():
+    bandcamp_client._fan_cache["stale"] = (
+        time.monotonic() - 1,
+        BandcampFan(username="stale", fan_id=1, name=None, item_count=0),
+    )
+
+    def handler(request):
+        return httpx.Response(200, text=_fan_page(PUBLIC_BLOB))
+
+    client, _ = _client(handler)
+    async with client:
+        await client.get_fan("martin")
+    assert "stale" not in bandcamp_client._fan_cache
+    assert "martin" in bandcamp_client._fan_cache
+
+
 async def test_get_fan_404_is_user_not_found():
     client, _ = _client(lambda r: httpx.Response(404, text="not found"))
     async with client:
@@ -136,6 +158,14 @@ async def test_page_without_fan_data_is_user_not_found():
     async with client:
         with pytest.raises(BandcampUserNotFound):
             await client.get_fan("nobody")
+
+
+@pytest.mark.parametrize("body", ["<html><title>Client Challenge</title></html>", "<html>/_fs-ch- blocked</html>"])
+async def test_client_challenge_is_unavailable(body):
+    client, _ = _client(lambda r: httpx.Response(200, text=body))
+    async with client:
+        with pytest.raises(BandcampUnavailable):
+            await client.get_fan("martin")
 
 
 async def test_hidden_collection_is_private():
@@ -218,6 +248,37 @@ async def test_iter_collection_paginates_until_no_more():
     assert track.external_id == "t2" and track.item_type == "track" and track.duration_ms == 245500
 
 
+async def test_collection_page_client_challenge_is_unavailable():
+    client, _ = _client(lambda r: httpx.Response(200, text="<html>Client Challenge</html>"))
+    fan = BandcampFan(username="martin", fan_id=1, name=None, item_count=3)
+    async with client:
+        with pytest.raises(BandcampUnavailable):
+            async for _page in client.iter_collection(fan):
+                pass
+
+
+async def test_item_token_sets_added_at_and_resume_token_is_honoured():
+    seen = []
+
+    def handler(request):
+        seen.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "items": [_item(9, track=True, token="1700000000:9:t::")],
+                "more_available": False,
+                "last_token": "1700000000:9:t::",
+            },
+        )
+
+    client, _ = _client(handler)
+    fan = BandcampFan(username="martin", fan_id=1, name=None, item_count=1)
+    async with client:
+        pages = [page async for page in client.iter_collection(fan, older_than_token="1690000000::a::")]
+    assert seen[0]["older_than_token"] == "1690000000::a::"
+    assert pages[0][0].added_at == datetime.fromtimestamp(1700000000, timezone.utc).replace(tzinfo=None)
+
+
 async def test_empty_collection_makes_no_item_requests():
     calls = []
     client, _ = _client(lambda r: calls.append(r) or httpx.Response(500))
@@ -239,8 +300,9 @@ async def test_request_cap_stops_the_sync():
     fan = BandcampFan(username="martin", fan_id=1, name=None, item_count=500)
     pages = []
     async with client:
-        with pytest.raises(BandcampRequestCapReached):
+        with pytest.raises(BandcampRequestCapReached) as exc_info:
             async for page in client.iter_collection(fan):
                 pages.append(page)
     assert len(pages) == 3
     assert client.requests_made == 3
+    assert exc_info.value.resume_token == "tok2"

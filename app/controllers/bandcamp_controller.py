@@ -2,13 +2,14 @@
 Bandcamp Controller
 ===================
 
-HTTP side of the Bandcamp collection import. The request only verifies the username and creates a
-job; the import itself runs in the Celery worker (``app.tasks.bandcamp_tasks``). Bandcamp is never
-called from the frontend, and only its public pages are read — see ``app.services.bandcamp_client``.
+HTTP side of the Bandcamp collection import. The controller calls ``BandcampService`` only;
+the service checks the username with the Bandcamp client, and the import itself runs in the
+Celery worker (``app.tasks.bandcamp_tasks``). Bandcamp is never called from the frontend, and
+only its public pages are read — see ``app.services.bandcamp_client``.
 """
 
 import logging
-from typing import Callable, Optional
+from typing import Optional
 
 from fastapi import status
 from fastapi.responses import JSONResponse
@@ -16,12 +17,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.services.bandcamp_client import (
-    BandcampClient,
     BandcampCollectionPrivate,
     BandcampError,
     BandcampRateLimited,
+    BandcampUnavailable,
     BandcampUserNotFound,
-    normalize_username,
 )
 from app.services.bandcamp_service import BandcampService
 from app.utils.response_utils import format_response
@@ -32,6 +32,7 @@ _ERROR_STATUS = (
     (BandcampUserNotFound, status.HTTP_404_NOT_FOUND),
     (BandcampCollectionPrivate, status.HTTP_403_FORBIDDEN),
     (BandcampRateLimited, status.HTTP_429_TOO_MANY_REQUESTS),
+    (BandcampUnavailable, status.HTTP_503_SERVICE_UNAVAILABLE),
 )
 
 
@@ -40,13 +41,8 @@ def _error(status_code: int, message: str) -> JSONResponse:
 
 
 class BandcampController:
-    def __init__(
-        self,
-        service: Optional[BandcampService] = None,
-        client_factory: Callable[[], BandcampClient] = BandcampClient,
-    ) -> None:
+    def __init__(self, service: Optional[BandcampService] = None) -> None:
         self.service = service or BandcampService()
-        self.client_factory = client_factory
 
     @staticmethod
     def _enqueue(job_id: str, partner_id: Optional[int]) -> None:
@@ -58,22 +54,15 @@ class BandcampController:
         self, db: AsyncSession, current_user: User, raw_username: str, partner_id: Optional[int]
     ) -> JSONResponse:
         try:
-            username = normalize_username(raw_username)
+            job, created = await self.service.connect(db, current_user.id, raw_username)
         except ValueError as e:
             return _error(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
-
-        try:
-            async with self.client_factory() as client:
-                await client.get_fan(username)
         except BandcampError as e:
             for exc_type, code in _ERROR_STATUS:
                 if isinstance(e, exc_type):
                     return _error(code, str(e))
             logger.warning("Bandcamp verification failed for user %s: %s", current_user.id, e)
             return _error(status.HTTP_502_BAD_GATEWAY, str(e))
-
-        try:
-            job, created = await self.service.connect(db, current_user.id, username)
         except Exception as e:  # noqa: BLE001
             logger.error("Failed to save Bandcamp connection: %s", str(e))
             await db.rollback()
@@ -106,10 +95,16 @@ class BandcampController:
         )
 
     async def get_collection(
-        self, db: AsyncSession, current_user: User, page: int, page_size: int, q: Optional[str]
+        self,
+        db: AsyncSession,
+        current_user: User,
+        page: int,
+        page_size: int,
+        q: Optional[str],
+        matched: bool,
     ) -> JSONResponse:
         items, total = await self.service.list_collection(
-            db, current_user.id, page=page, page_size=page_size, q=q
+            db, current_user.id, page=page, page_size=page_size, q=q, matched=matched
         )
         return JSONResponse(
             status_code=status.HTTP_200_OK,

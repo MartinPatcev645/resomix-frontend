@@ -29,6 +29,7 @@ import logging
 import re
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import AsyncIterator, Awaitable, Callable, Dict, List, Optional, Tuple
 
 import httpx
@@ -69,8 +70,16 @@ class BandcampRateLimited(BandcampError):
     pass
 
 
+class BandcampUnavailable(BandcampError):
+    """Bandcamp's CDN answered with a bot-check page instead of the collection."""
+
+
 class BandcampRequestCapReached(BandcampError):
-    pass
+    """The per-sync request cap was hit. ``resume_token`` is the next older_than_token."""
+
+    def __init__(self, message: str, *, resume_token: Optional[str] = None) -> None:
+        super().__init__(message)
+        self.resume_token = resume_token
 
 
 @dataclass(frozen=True)
@@ -91,6 +100,7 @@ class BandcampItem:
     artwork_url: Optional[str]
     source_url: Optional[str]
     duration_ms: Optional[int]
+    added_at: Optional[datetime] = None
 
 
 def normalize_username(raw: str) -> str:
@@ -115,10 +125,34 @@ def normalize_username(raw: str) -> str:
 
 
 _fan_cache: Dict[str, Tuple[float, BandcampFan]] = {}
+_CHALLENGE_MARKERS = ("Client Challenge", "/_fs-ch-")
+_CAP_MESSAGE = "Stopped early to stay within the Bandcamp request limit. Sync again later to continue."
+_UNAVAILABLE_MESSAGE = "Bandcamp is temporarily unavailable. Please try again later."
+# Item tokens start with the unix time the fan added the item, same as the paging token.
+_MIN_ADDED_AT = 1_000_000_000
+_MAX_ADDED_AT = 4_102_444_800
 
 
 def clear_cache() -> None:
     _fan_cache.clear()
+
+
+def _remember_fan(username: str, fan: BandcampFan) -> None:
+    """Cache one fan page and drop entries that have already expired."""
+    now = time.monotonic()
+    expired = [key for key, (expiry, _) in _fan_cache.items() if expiry <= now]
+    for key in expired:
+        del _fan_cache[key]
+    _fan_cache[username] = (now + FAN_CACHE_TTL_S, fan)
+
+
+def _raise_if_challenge(response: httpx.Response) -> None:
+    """A challenged request is HTTP 200 with an HTML interstitial, not a missing user."""
+    if response.status_code != 200:
+        return
+    body = response.text or ""
+    if any(marker in body for marker in _CHALLENGE_MARKERS):
+        raise BandcampUnavailable(_UNAVAILABLE_MESSAGE)
 
 
 class BandcampClient:
@@ -195,20 +229,29 @@ class BandcampClient:
             name=fan_data.get("name"),
             item_count=int(collection_data.get("item_count") or 0),
         )
-        _fan_cache[username] = (time.monotonic() + FAN_CACHE_TTL_S, fan)
+        _remember_fan(username, fan)
         return fan
 
-    async def iter_collection(self, fan: BandcampFan) -> AsyncIterator[List[BandcampItem]]:
-        """Yield the collection newest-first, one page at a time."""
+    async def iter_collection(
+        self, fan: BandcampFan, *, older_than_token: Optional[str] = None
+    ) -> AsyncIterator[List[BandcampItem]]:
+        """Yield the collection newest-first, one page at a time.
+
+        ``older_than_token`` resumes a sync that stopped at the request cap. The token
+        raised with ``BandcampRequestCapReached`` is the page that was not fetched.
+        """
         if fan.item_count == 0:
             return
-        token = f"{int(time.time())}::a::"
+        token = older_than_token or f"{int(time.time())}::a::"
         while True:
-            response = await self._request(
-                "POST",
-                COLLECTION_ITEMS_PATH,
-                json={"fan_id": fan.fan_id, "older_than_token": token, "count": PAGE_SIZE},
-            )
+            try:
+                response = await self._request(
+                    "POST",
+                    COLLECTION_ITEMS_PATH,
+                    json={"fan_id": fan.fan_id, "older_than_token": token, "count": PAGE_SIZE},
+                )
+            except BandcampRequestCapReached as exc:
+                raise BandcampRequestCapReached(_CAP_MESSAGE, resume_token=token) from exc
             self._raise_for_status(response)
             try:
                 payload = response.json()
@@ -231,9 +274,7 @@ class BandcampClient:
 
         for attempt in range(self._max_retries + 1):
             if self._requests_made >= self._max_requests:
-                raise BandcampRequestCapReached(
-                    "Stopped early to stay within the Bandcamp request limit. Sync again later to continue."
-                )
+                raise BandcampRequestCapReached(_CAP_MESSAGE)
             if self._requests_made > 0:
                 await self._sleep(self._request_delay_s)
             self._requests_made += 1
@@ -252,6 +293,7 @@ class BandcampClient:
                     return response
                 await self._sleep(self._retry_delay(response, attempt))
                 continue
+            _raise_if_challenge(response)
             return response
 
         raise AssertionError("unreachable")
@@ -305,4 +347,21 @@ def _parse_item(raw: dict) -> Optional[BandcampItem]:
         artwork_url=raw.get("item_art_url"),
         source_url=raw.get("item_url"),
         duration_ms=duration_ms,
+        added_at=_added_at_from_token(raw.get("token")),
     )
+
+
+def _added_at_from_token(token: Optional[str]) -> Optional[datetime]:
+    """The item token starts with the unix time the fan added it, as the paging token does."""
+    if not token:
+        return None
+    head = str(token).split(":", 1)[0]
+    if not head.isdigit():
+        return None
+    stamp = int(head)
+    if stamp < _MIN_ADDED_AT or stamp > _MAX_ADDED_AT:
+        return None
+    try:
+        return datetime.fromtimestamp(stamp, timezone.utc).replace(tzinfo=None)
+    except (OverflowError, OSError, ValueError):
+        return None

@@ -192,9 +192,6 @@ def _start_workers() -> "list[subprocess.Popen]":
             # it only as a DuplicateNodenameWarning (see RUNBOOK).
             "-n", f"{node}@%h",
         ]
-        # Celery's prefork pool is unsupported on Windows: tasks are reserved but never start.
-        if sys.platform == "win32":
-            cmd.append("--pool=solo")
         print(f"[run_alwyzon] starting Celery worker: {' '.join(cmd)}", flush=True)
         # start_new_session=True → the worker and celery's pool children get their own process
         # group, which we signal as a unit on shutdown.

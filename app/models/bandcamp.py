@@ -23,6 +23,7 @@ from . import Base
 CONNECTION_PENDING = "pending"
 CONNECTION_SYNCING = "syncing"
 CONNECTION_READY = "ready"
+CONNECTION_PARTIAL = "partial"
 CONNECTION_FAILED = "failed"
 
 
@@ -45,6 +46,9 @@ class BandcampConnection(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default=CONNECTION_PENDING)
     last_synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(mysql.TEXT, nullable=True)
+    # Set when a sync stops at the request cap. The next sync continues from this
+    # older_than_token instead of starting again at the newest purchase.
+    resume_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.current_timestamp()

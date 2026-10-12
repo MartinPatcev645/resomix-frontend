@@ -13,7 +13,7 @@ change and a re-import is an upsert, never a duplicate.
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import CHAR, DateTime, ForeignKey, Index, String, UniqueConstraint
+from sqlalchemy import CHAR, Boolean, DateTime, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.dialects import mysql
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -26,14 +26,10 @@ COLLECTION_SOURCE_BANDCAMP = "bandcamp"
 ITEM_TYPE_ALBUM = "album"
 ITEM_TYPE_TRACK = "track"
 
-ANALYSIS_NONE = "none"
-ANALYSIS_QUEUED = "queued"
-ANALYSIS_DONE = "done"
-ANALYSIS_FAILED = "failed"
-
 SYNC_QUEUED = "queued"
 SYNC_RUNNING = "running"
 SYNC_DONE = "done"
+SYNC_PARTIAL = "partial"
 SYNC_FAILED = "failed"
 SYNC_ACTIVE = (SYNC_QUEUED, SYNC_RUNNING)
 
@@ -63,12 +59,13 @@ class UserMusicCollectionItem(Base):
     artwork_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     source_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     duration_ms: Mapped[Optional[int]] = mapped_column(mysql.INTEGER(unsigned=True), nullable=True)
+    # When the fan added the item to their Bandcamp collection (from the item token), not when we imported it.
+    added_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # SET NULL: a catalogue track being removed must not delete what the user owns.
     resomix_track_id: Mapped[Optional[int]] = mapped_column(
         mysql.INTEGER(unsigned=True), ForeignKey("tracks.id", ondelete="SET NULL"), nullable=True, index=True
     )
-    analysis_status: Mapped[str] = mapped_column(String(10), nullable=False, default=ANALYSIS_NONE)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.current_timestamp()
@@ -89,7 +86,7 @@ class UserMusicCollectionItem(Base):
             "artwork_url": self.artwork_url,
             "source_url": self.source_url,
             "resomix_track_id": self.resomix_track_id,
-            "analysis_status": self.analysis_status,
+            "added_at": self.added_at.isoformat() if self.added_at else None,
         }
 
 
@@ -111,6 +108,11 @@ class SyncJob(Base):
     total: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), nullable=False, default=0)
     processed: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), nullable=False, default=0)
     error: Mapped[Optional[str]] = mapped_column(mysql.TEXT, nullable=True)
+    # Decided in connect, while the previous connection status is still visible.
+    # A ready connection re-syncs newest-first and stops at the first known page;
+    # resume_token continues a sync that stopped at the request cap.
+    incremental: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
+    resume_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.current_timestamp()

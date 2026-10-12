@@ -16,7 +16,7 @@ both columns NULL, shows no store button.
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, Index, String
 from sqlalchemy.dialects import mysql
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -29,6 +29,7 @@ class TrackStoreLink(Base):
 
     __tablename__ = "track_store_links"
     __table_args__ = (
+        Index("ix_track_store_links_bandcamp_url", "bandcamp_url"),
         {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
     )
 
