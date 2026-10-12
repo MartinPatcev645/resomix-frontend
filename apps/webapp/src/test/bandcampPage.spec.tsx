@@ -88,11 +88,12 @@ describe("BandcampPage", () => {
   });
 
   it("drops a stale search from the URL so it cannot filter the next connection", async () => {
-    renderPage("/library/bandcamp?q=mvr341&page=2");
+    renderPage("/library/bandcamp?q=mvr341&page=2&matched=true");
     await submitUsername("coolfan");
     await screen.findByRole("heading", { name: "Your collection" }, { timeout: 8000 });
     expect(await screen.findByText("30 items")).toBeInTheDocument();
     expect(screen.getByLabelText("Search your collection")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "In Resomix" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("rejects an artist page before calling the API", async () => {
@@ -134,7 +135,10 @@ describe("BandcampPage", () => {
     expect(await screen.findByText("Importing your collection")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "Your collection" }, { timeout: 8000 })).toBeInTheDocument();
     expect(await screen.findByText("30 items")).toBeInTheDocument();
+    expect(screen.getByText("15 in Resomix")).toBeInTheDocument();
     expect(screen.getByText("Connected as coolfan")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Analyze" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sync" })).toBeInTheDocument();
 
     const cards = screen.getAllByRole("article");
     const album = cards.find((c) => within(c).queryAllByText("Album").length > 0)!;
@@ -179,6 +183,74 @@ describe("BandcampPage", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Disconnect" }));
     expect(await screen.findByLabelText("Bandcamp username")).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("filters the collection to items already in Resomix", async () => {
+    renderPage();
+    await submitUsername("coolfan");
+    await screen.findByText("30 items", {}, { timeout: 8000 });
+
+    fireEvent.click(screen.getByRole("button", { name: "In Resomix" }));
+    expect(await screen.findByText("15 items")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "In Resomix" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("15 in Resomix")).toBeInTheDocument();
+  });
+
+  it("starts another sync from the collection without disconnecting", async () => {
+    renderPage();
+    await submitUsername("coolfan");
+    await screen.findByRole("heading", { name: "Your collection" }, { timeout: 8000 });
+
+    fireEvent.click(screen.getByRole("button", { name: "Sync" }));
+    expect(await screen.findByText("Importing your collection")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Your collection" }, { timeout: 8000 })).toBeInTheDocument();
+  });
+
+  it("shows an import that stopped early, with Sync still available", async () => {
+    server.use(
+      http.get("*/api/v1/bandcamp/connection", () =>
+        HttpResponse.json({
+          success: true,
+          data: {
+            connected: true,
+            username: "coolfan",
+            status: "failed",
+            last_synced_at: null,
+            active_job_id: null,
+            item_count: 4000,
+            matched_count: 1200,
+            error_message: "Bandcamp stopped responding after 4,000 items.",
+          },
+        }),
+      ),
+      http.get("*/api/v1/bandcamp/collection", () =>
+        HttpResponse.json({
+          success: true,
+          data: {
+            items: [{ id: "1", item_type: "track", artist: "A", title: "Kept", resomix_track_id: "9" }],
+            total: 4000,
+            page: 1,
+            page_size: 24,
+          },
+        }),
+      ),
+    );
+    renderPage();
+    expect(await screen.findByText("Import stopped early")).toBeInTheDocument();
+    expect(screen.getByText("Bandcamp stopped responding after 4,000 items.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sync" })).toBeInTheDocument();
+    expect(await screen.findByText("4000 items")).toBeInTheDocument();
+    expect(screen.getByText("1200 in Resomix")).toBeInTheDocument();
+  });
+
+  it("says the problem is on Bandcamp's side when Bandcamp is unavailable", async () => {
+    server.use(
+      http.post("*/api/v1/bandcamp/connect", () => HttpResponse.json({ success: false, error: "bot check" }, { status: 503 })),
+    );
+    renderPage();
+    await submitUsername("coolfan");
+    expect(await screen.findByText("Bandcamp is unavailable")).toBeInTheDocument();
+    expect(screen.getByText(/the problem is on Bandcamp's side/i)).toBeInTheDocument();
   });
 
   it("opens straight onto the collection when already connected", async () => {

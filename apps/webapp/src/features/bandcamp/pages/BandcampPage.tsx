@@ -46,10 +46,10 @@ export default function BandcampPage({ pollingOptions }: { pollingOptions?: Sync
   const { recheck } = connection;
 
   // A search left in the URL from an earlier connection must not filter the next one.
-  const { clearSearch, query, page } = collection;
+  const { clearBrowseState, query, page, matchedOnly } = collection;
   useEffect(() => {
-    if (connection.phase === "disconnected" && (query || page > 1)) clearSearch();
-  }, [connection.phase, query, page, clearSearch]);
+    if (connection.phase === "disconnected" && (query || page > 1 || matchedOnly)) clearBrowseState();
+  }, [connection.phase, query, page, matchedOnly, clearBrowseState]);
 
   const handleDisconnect = async () => {
     const ok = await connection.disconnect();
@@ -118,6 +118,11 @@ export default function BandcampPage({ pollingOptions }: { pollingOptions?: Sync
           <CollectionView
             collection={collection}
             username={connection.username}
+            matchedCount={connection.matchedCount}
+            importError={connection.importError}
+            syncError={connection.connectError}
+            syncing={connection.submitting}
+            onSync={() => void connection.retrySync()}
             onDisconnectClick={() => setConfirmOpen(true)}
             onNotConnected={handleNotConnected}
             disconnectButtonRef={disconnectButtonRef}

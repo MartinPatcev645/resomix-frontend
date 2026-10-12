@@ -31,12 +31,14 @@ export function useBandcampConnection(pollingOptions?: SyncPollingOptions) {
   const [disconnecting, setDisconnecting] = useState(false);
   const [disconnectError, setDisconnectError] = useState<BandcampApiError | null>(null);
   const [checkToken, setCheckToken] = useState(0);
+  const [connectionState, setConnectionState] = useState<BandcampConnectionState | null>(null);
 
   useEffect(() => {
     if (phase !== "checking") return;
     const controller = new AbortController();
     getBandcampConnection(controller.signal)
       .then((state) => {
+        setConnectionState(state);
         setUsername(state.username);
         setJobId(state.activeJobId);
         setPhase(phaseFor(state));
@@ -54,14 +56,34 @@ export function useBandcampConnection(pollingOptions?: SyncPollingOptions) {
 
   useEffect(() => {
     if (phase !== "syncing" || !jobId) return;
-    if (polling.status === "ready") {
-      setJobId(null);
-      setPhase("ready");
-    } else if (polling.requestError?.kind === "not_connected") {
+    if (polling.requestError?.kind === "not_connected") {
       // The job is gone (disconnected elsewhere, or cleaned up) — ask the backend again.
       setJobId(null);
       setPhase("checking");
+      return;
     }
+    if (polling.status !== "ready") return;
+
+    // Refresh matched count and any early-stop message before showing the collection.
+    let cancelled = false;
+    getBandcampConnection()
+      .then((state) => {
+        if (cancelled) return;
+        setConnectionState(state);
+        setUsername(state.username);
+        setJobId(state.activeJobId);
+        setPhase(phaseFor(state));
+      })
+      .catch((raw) => {
+        if (cancelled) return;
+        const error = mapError(raw, "connection");
+        if (error.kind === "aborted") return;
+        setJobId(null);
+        setPhase("ready");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [phase, jobId, polling.status, polling.requestError]);
 
   const connect = useCallback(
@@ -114,6 +136,7 @@ export function useBandcampConnection(pollingOptions?: SyncPollingOptions) {
     }
     setJobId(null);
     setUsername(null);
+    setConnectionState(null);
     setConnectError(null);
     setPhase("disconnected");
     setDisconnecting(false);
@@ -123,6 +146,8 @@ export function useBandcampConnection(pollingOptions?: SyncPollingOptions) {
   return {
     phase,
     username,
+    matchedCount: connectionState?.matchedCount ?? null,
+    importError: connectionState?.connected ? connectionState.errorMessage : null,
     sync: phase === "syncing" && !jobId ? { ...FAILED_ON_LOAD, restart: polling.restart } : polling,
     checkError,
     connectError,

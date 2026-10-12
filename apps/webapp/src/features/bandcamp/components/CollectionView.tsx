@@ -5,11 +5,19 @@ import type { useBandcampCollection } from "../hooks/useBandcampCollection.ts";
 import { COLLECTION_GRID, CollectionItemCard } from "./CollectionItemCard.tsx";
 import { CollectionSkeleton } from "./CollectionSkeleton.tsx";
 import { ErrorBody, StateNotice } from "./StateNotice.tsx";
+import type { BandcampApiError } from "../api/types.ts";
 import { errorCopyFor } from "../lib/errorCopy.ts";
 
 interface CollectionViewProps {
   collection: ReturnType<typeof useBandcampCollection>;
   username: string | null;
+  /** Items already in the Resomix catalogue, from the connection. Null when the backend did not send it. */
+  matchedCount: number | null;
+  /** Why the last import stopped, when it kept the rows it had fetched. */
+  importError: string | null;
+  syncError: BandcampApiError | null;
+  syncing: boolean;
+  onSync: () => void;
   onDisconnectClick: () => void;
   onNotConnected: () => void;
   disconnectButtonRef: Ref<HTMLButtonElement>;
@@ -19,6 +27,11 @@ interface CollectionViewProps {
 export function CollectionView({
   collection,
   username,
+  matchedCount,
+  importError,
+  syncError,
+  syncing,
+  onSync,
   onDisconnectClick,
   onNotConnected,
   disconnectButtonRef,
@@ -59,28 +72,69 @@ export function CollectionView({
             </p>
           ) : null}
         </div>
-        <button ref={disconnectButtonRef} type="button" className={`${PAGE_BTN_DANGER} self-start sm:self-auto`} onClick={onDisconnectClick}>
-          {BANDCAMP_COPY.disconnect.button}
+        <div className="flex flex-wrap gap-[var(--px-8)] self-start sm:self-auto">
+          <button
+            type="button"
+            className={importError ? PAGE_BTN_PRIMARY : PAGE_BTN_SECONDARY}
+            onClick={onSync}
+            disabled={syncing}
+            aria-busy={syncing || undefined}
+          >
+            {syncing ? BANDCAMP_COPY.collection.syncing : BANDCAMP_COPY.collection.sync}
+          </button>
+          <button ref={disconnectButtonRef} type="button" className={PAGE_BTN_DANGER} onClick={onDisconnectClick}>
+            {BANDCAMP_COPY.disconnect.button}
+          </button>
+        </div>
+      </div>
+
+      {importError ? (
+        <StateNotice tone="error" urgent title={BANDCAMP_COPY.collection.importStopped} body={importError} />
+      ) : null}
+
+      {syncError ? (
+        <StateNotice tone="error" urgent title={errorCopyFor(syncError.kind).title} body={<ErrorBody kind={syncError.kind} />} />
+      ) : null}
+
+      <div ref={listTopRef} className="flex w-full flex-col items-start gap-[var(--px-8)] scroll-mt-[var(--px-100)] sm:flex-row sm:items-end">
+        <div className="flex w-full min-w-0 flex-col items-start gap-[var(--px-8)]">
+          <label htmlFor={searchId} className={PAGE_FIELD_LABEL}>
+            {BANDCAMP_COPY.collection.searchLabel}
+          </label>
+          <input
+            id={searchId}
+            type="search"
+            value={collection.inputValue}
+            onChange={(e) => collection.setInputValue(e.target.value)}
+            placeholder={BANDCAMP_COPY.collection.searchPlaceholder}
+            autoComplete="off"
+            className={PAGE_FIELD}
+          />
+        </div>
+        <button
+          type="button"
+          aria-pressed={collection.matchedOnly}
+          onClick={() => collection.setMatchedOnly(!collection.matchedOnly)}
+          className={`${collection.matchedOnly ? PAGE_BTN_PRIMARY : PAGE_BTN_SECONDARY} shrink-0`}
+        >
+          {BANDCAMP_COPY.collection.inResomixFilter}
         </button>
       </div>
 
-      <div ref={listTopRef} className="flex w-full flex-col items-start gap-[var(--px-8)] scroll-mt-[var(--px-100)]">
-        <label htmlFor={searchId} className={PAGE_FIELD_LABEL}>
-          {BANDCAMP_COPY.collection.searchLabel}
-        </label>
-        <input
-          id={searchId}
-          type="search"
-          value={collection.inputValue}
-          onChange={(e) => collection.setInputValue(e.target.value)}
-          placeholder={BANDCAMP_COPY.collection.searchPlaceholder}
-          autoComplete="off"
-          className={PAGE_FIELD}
-        />
-      </div>
-
       <p role="status" aria-live="polite" aria-atomic="true" className="m-0 font-fira text-[length:var(--px-11)] uppercase tracking-[var(--px-1)] text-[var(--rx-color-text-secondary)]">
-        {data && !loading && !error ? BANDCAMP_COPY.collection.count(data.total) : ""}
+        {data && !loading && !error ? (
+          <>
+            <span>{BANDCAMP_COPY.collection.count(data.total)}</span>
+            {matchedCount !== null ? (
+              <>
+                <span>{" · "}</span>
+                <span>{BANDCAMP_COPY.collection.matchedCount(matchedCount)}</span>
+              </>
+            ) : null}
+          </>
+        ) : (
+          ""
+        )}
       </p>
 
       {error && error.kind !== "not_connected" ? (
@@ -98,6 +152,12 @@ export function CollectionView({
           <StateNotice title={BANDCAMP_COPY.collection.noResults(query)}>
             <button type="button" className={PAGE_BTN_SECONDARY} onClick={collection.clearSearch}>
               {BANDCAMP_COPY.collection.clearSearch}
+            </button>
+          </StateNotice>
+        ) : collection.matchedOnly ? (
+          <StateNotice title={BANDCAMP_COPY.collection.noneMatched}>
+            <button type="button" className={PAGE_BTN_SECONDARY} onClick={() => collection.setMatchedOnly(false)}>
+              {BANDCAMP_COPY.collection.showAll}
             </button>
           </StateNotice>
         ) : (

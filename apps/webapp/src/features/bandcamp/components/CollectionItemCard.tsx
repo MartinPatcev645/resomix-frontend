@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { PAGE_BTN_SECONDARY, PAGE_TEXT_LINK, RxBadge, Tooltip } from "@resomix/ui";
 import { BANDCAMP_COPY } from "../bandcampCopy.ts";
 import type { BandcampItem } from "../api/types.ts";
-import { analyzeAvailability, findSimilarAvailability, getItemStatus, type ActionAvailability } from "../lib/itemStatus.ts";
+import { findSimilarAvailability, getItemStatus, type ActionAvailability } from "../lib/itemStatus.ts";
 
 export const COLLECTION_GRID = "grid grid-cols-1 gap-[var(--px-12)] sm:grid-cols-2 lg:grid-cols-3";
 
@@ -51,7 +51,6 @@ export function CollectionItemCard({ item }: { item: BandcampItem }) {
   const [artworkFailed, setArtworkFailed] = useState(false);
   const status = getItemStatus(item);
   const findSimilar = findSimilarAvailability(item);
-  const analyze = analyzeAvailability(item);
   const typeLabel = item.itemType === "album" ? BANDCAMP_COPY.collection.album : BANDCAMP_COPY.collection.track;
   const showArtwork = item.artworkUrl && !artworkFailed;
 
@@ -107,7 +106,8 @@ export function CollectionItemCard({ item }: { item: BandcampItem }) {
         </div>
       </div>
 
-      <div className="mt-auto grid grid-cols-[repeat(2,minmax(0,1fr))] gap-[var(--px-8)]">
+      {/* TODO(bandcamp): put Analyze back beside Find similar once analyse-by-track exists. See analyzeAvailability. */}
+      <div className="mt-auto grid grid-cols-1">
         <ActionButton
           label={BANDCAMP_COPY.actions.findSimilar}
           availability={findSimilar}
@@ -117,7 +117,6 @@ export function CollectionItemCard({ item }: { item: BandcampItem }) {
             })
           }
         />
-        <ActionButton label={BANDCAMP_COPY.actions.analyze} availability={analyze} onRun={() => {}} />
       </div>
     </article>
   );

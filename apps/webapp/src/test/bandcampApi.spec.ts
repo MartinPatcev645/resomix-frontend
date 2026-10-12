@@ -30,6 +30,8 @@ describe("connection state", () => {
       lastSyncedAt: null,
       activeJobId: null,
       itemCount: 0,
+      matchedCount: 0,
+      errorMessage: null,
     });
   });
 
@@ -52,6 +54,8 @@ describe("connection state", () => {
         last_synced_at: "2026-10-10T17:00:00",
         active_job_id: "job-1",
         item_count: 12,
+        matched_count: 4,
+        error_message: "Bandcamp stopped responding after 4,000 items.",
       }),
     ).toEqual({
       connected: true,
@@ -60,6 +64,8 @@ describe("connection state", () => {
       lastSyncedAt: "2026-10-10T17:00:00",
       activeJobId: "job-1",
       itemCount: 12,
+      matchedCount: 4,
+      errorMessage: "Bandcamp stopped responding after 4,000 items.",
     });
   });
 
@@ -68,6 +74,8 @@ describe("connection state", () => {
       username: null,
       status: "none",
       activeJobId: null,
+      matchedCount: null,
+      errorMessage: null,
     });
   });
 });
@@ -92,9 +100,16 @@ describe("connect error mapping", () => {
     await expect(connectBandcamp("coolfan")).rejects.toMatchObject({ kind: "auth" });
   });
 
-  it("maps 5xx to unknown with the server's message", async () => {
+  it("maps 500 to unknown with the server's message", async () => {
     server.use(http.post("*/api/v1/bandcamp/connect", () => HttpResponse.json({ error: "boom" }, { status: 500 })));
     await expect(connectBandcamp("coolfan")).rejects.toMatchObject({ kind: "unknown", message: "boom" });
+  });
+
+  it.each([502, 503])("maps %s to unavailable, so the user knows it is Bandcamp's side", async (status) => {
+    server.use(
+      http.post("*/api/v1/bandcamp/connect", () => HttpResponse.json({ success: false, error: "blocked" }, { status })),
+    );
+    await expect(connectBandcamp("coolfan")).rejects.toMatchObject({ kind: "unavailable", status });
   });
 
   it("returns the job id on 202 and the same job when a sync is already running", async () => {
@@ -121,18 +136,23 @@ describe("collection and sync", () => {
       http.get("*/api/v1/bandcamp/collection", ({ request }) => {
         seen = new URL(request.url).searchParams;
         return HttpResponse.json({
-          items: [{ id: 1, item_type: "track", artist: "A", title: "T", resomix_track_id: 5, analysis_status: "done" }],
-          total: 1,
-          page: 2,
-          page_size: 10,
+          success: true,
+          data: {
+            items: [{ id: 1, item_type: "track", artist: "A", title: "T", resomix_track_id: 5 }],
+            total: 1,
+            page: 2,
+            page_size: 10,
+          },
         });
       }),
     );
-    const page = await getBandcampCollection({ page: 2, pageSize: 10, q: "  glass " });
+    const page = await getBandcampCollection({ page: 2, pageSize: 10, q: "  glass ", matched: true });
     expect(seen!.get("page")).toBe("2");
     expect(seen!.get("page_size")).toBe("10");
     expect(seen!.get("q")).toBe("glass");
-    expect(page.items[0]).toMatchObject({ id: "1", resomixTrackId: "5", analysisStatus: "done" });
+    expect(seen!.get("matched")).toBe("true");
+    expect(page.items[0]).toMatchObject({ id: "1", resomixTrackId: "5" });
+    expect(page.items[0]).not.toHaveProperty("analysisStatus");
   });
 
   it("omits an empty q", async () => {
@@ -140,11 +160,17 @@ describe("collection and sync", () => {
     server.use(
       http.get("*/api/v1/bandcamp/collection", ({ request }) => {
         seen = new URL(request.url).searchParams;
-        return HttpResponse.json({ items: [], total: 0, page: 1, page_size: 10 });
+        return HttpResponse.json({ success: true, data: { items: [], total: 0, page: 1, page_size: 10 } });
       }),
     );
     await getBandcampCollection({ page: 1, pageSize: 10, q: "   " });
     expect(seen!.has("q")).toBe(false);
+    expect(seen!.has("matched")).toBe(false);
+  });
+
+  it("rejects a response that is not the { success, data } envelope", async () => {
+    server.use(http.get("*/api/v1/bandcamp/connection", () => HttpResponse.json({ connected: true, username: "fan" })));
+    await expect(getBandcampConnection()).rejects.toMatchObject({ kind: "unknown" });
   });
 
   it("runs the mock sync through to a browsable collection, then disconnects", async () => {
@@ -174,27 +200,25 @@ describe("mapItem", () => {
       artworkUrl: null,
       sourceUrl: null,
       resomixTrackId: null,
-      analysisStatus: "none",
     });
   });
 
-  it("drops non-http links and unknown statuses", () => {
+  it("drops non-http links", () => {
     const item = mapItem({
       id: "x",
       item_type: "album",
       source_url: "javascript:alert(1)",
       artwork_url: "data:image/png;base64,AAAA",
-      analysis_status: "weird",
       resomix_track_id: "",
     });
-    expect(item).toMatchObject({ itemType: "album", sourceUrl: null, artworkUrl: null, analysisStatus: "none", resomixTrackId: null });
+    expect(item).toMatchObject({ itemType: "album", sourceUrl: null, artworkUrl: null, resomixTrackId: null });
   });
 });
 
 describe("mapSync", () => {
   it("treats a zero or missing total as unknown", () => {
-    expect(mapSync({ status: "syncing", processed: 3, total: 0 }).total).toBeNull();
-    expect(mapSync({ status: "syncing", processed: 3 }).total).toBeNull();
+    expect(mapSync({ status: "running", processed: 3, total: 0 }).total).toBeNull();
+    expect(mapSync({ status: "running", processed: 3 }).total).toBeNull();
   });
 
   it.each([
@@ -202,14 +226,11 @@ describe("mapSync", () => {
     ["running", "syncing"],
     ["done", "ready"],
     ["failed", "failed"],
-    ["pending", "pending"],
-    ["syncing", "syncing"],
-    ["ready", "ready"],
   ])("maps the backend status %s to %s", (raw, status) => {
     expect(mapSync({ status: raw }).status).toBe(status);
   });
 
-  it("falls back to pending for an unknown status", () => {
-    expect(mapSync({ status: "whatever" }).status).toBe("pending");
+  it.each(["pending", "syncing", "ready", "whatever"])("rejects a status the backend does not send: %s", (status) => {
+    expect(() => mapSync({ status })).toThrow(/sync status/i);
   });
 });

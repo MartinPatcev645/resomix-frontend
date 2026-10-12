@@ -11,7 +11,6 @@
 import { authClient } from "@resomix/api-client";
 import {
   BandcampApiError,
-  type BandcampAnalysisStatus,
   type BandcampCollectionPage,
   type BandcampCollectionQuery,
   type BandcampConnectionState,
@@ -45,7 +44,6 @@ export interface RawCollectionItem {
   artwork_url?: string | null;
   source_url?: string | null;
   resomix_track_id?: string | number | null;
-  analysis_status?: string | null;
 }
 
 interface RawCollectionResponse {
@@ -62,31 +60,41 @@ interface RawConnectionResponse {
   last_synced_at?: string | null;
   active_job_id?: string | number | null;
   item_count?: number;
+  matched_count?: number;
+  error_message?: string | null;
 }
 
-/** Tolerates the `{ success, data }` envelope most other Resomix endpoints use. */
+/** The backend always responds with `{ success, data }`. A body without `data` is a contract bug. */
 function unwrap<T>(body: unknown): T {
-  if (body && typeof body === "object" && "data" in body && "success" in body) {
-    return (body as { data: T }).data;
+  if (!body || typeof body !== "object" || !("data" in body) || (body as { data: unknown }).data == null) {
+    throw new BandcampApiError("unknown", "The server response did not include data.");
   }
-  return body as T;
+  return (body as { data: T }).data;
 }
 
-const ANALYSIS_STATUSES: readonly BandcampAnalysisStatus[] = ["none", "queued", "done", "failed"];
-
-/** The backend sends `queued | running | done | failed`; the brief's names are accepted too. */
+/** Job statuses the backend sends: `queued | running | done | failed`. */
 const SYNC_STATUS_MAP: Record<string, BandcampSyncStatus> = {
   queued: "pending",
-  pending: "pending",
   running: "syncing",
-  syncing: "syncing",
   done: "ready",
-  ready: "ready",
   failed: "failed",
 };
 
+function mapSyncStatus(raw: unknown): BandcampSyncStatus {
+  const status = SYNC_STATUS_MAP[String(raw ?? "").toLowerCase()];
+  if (!status) {
+    throw new BandcampApiError("unknown", `Unexpected sync status "${String(raw ?? "")}".`);
+  }
+  return status;
+}
+
 function asNumber(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+/** Missing counts stay null. Inventing 0 would hide a field the backend forgot to send. */
+function asOptionalCount(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : null;
 }
 
 function asText(value: unknown): string | null {
@@ -101,9 +109,6 @@ function asHttpUrl(value: unknown): string | null {
 
 export function mapItem(raw: RawCollectionItem): BandcampItem {
   const itemType: BandcampItemType = raw.item_type === "album" ? "album" : "track";
-  const analysisStatus = ANALYSIS_STATUSES.includes(raw.analysis_status as BandcampAnalysisStatus)
-    ? (raw.analysis_status as BandcampAnalysisStatus)
-    : "none";
   const trackId = raw.resomix_track_id;
   return {
     id: String(raw.id ?? ""),
@@ -114,12 +119,11 @@ export function mapItem(raw: RawCollectionItem): BandcampItem {
     artworkUrl: asHttpUrl(raw.artwork_url),
     sourceUrl: asHttpUrl(raw.source_url),
     resomixTrackId: trackId === null || trackId === undefined || trackId === "" ? null : String(trackId),
-    analysisStatus,
   };
 }
 
 export function mapSync(raw: RawSyncResponse): BandcampSyncState {
-  const status = SYNC_STATUS_MAP[String(raw.status ?? "").toLowerCase()] ?? "pending";
+  const status = mapSyncStatus(raw.status);
   const total = asNumber(raw.total, 0);
   return {
     status,
@@ -142,6 +146,8 @@ export function mapConnection(raw: RawConnectionResponse): BandcampConnectionSta
     lastSyncedAt: asText(raw.last_synced_at),
     activeJobId: connected && jobId !== null && jobId !== undefined && jobId !== "" ? String(jobId) : null,
     itemCount: Math.max(0, asNumber(raw.item_count, 0)),
+    matchedCount: asOptionalCount(raw.matched_count),
+    errorMessage: asText(raw.error_message),
   };
 }
 
@@ -192,13 +198,14 @@ export function mapError(error: unknown, context: RequestContext): BandcampApiEr
   else if (status === 404) kind = context === "connect" ? "not_found" : "not_connected";
   else if (status === 422) kind = "invalid";
   else if (status === 429) kind = "rate_limited";
+  else if (status === 502 || status === 503) kind = "unavailable";
   return new BandcampApiError(kind, message, status);
 }
 
 export async function getBandcampConnection(signal?: AbortSignal): Promise<BandcampConnectionState> {
   try {
     const res = await authClient.get(`${BANDCAMP_BASE}/connection`, { signal });
-    return mapConnection(unwrap<RawConnectionResponse>(res.data) ?? {});
+    return mapConnection(unwrap<RawConnectionResponse>(res.data));
   } catch (error) {
     throw mapError(error, "connection");
   }
@@ -220,7 +227,7 @@ export async function connectBandcamp(username: string): Promise<{ jobId: string
 export async function getBandcampSync(jobId: string, signal?: AbortSignal): Promise<BandcampSyncState> {
   try {
     const res = await authClient.get(`${BANDCAMP_BASE}/sync/${encodeURIComponent(jobId)}`, { signal });
-    return mapSync(unwrap<RawSyncResponse>(res.data) ?? {});
+    return mapSync(unwrap<RawSyncResponse>(res.data));
   } catch (error) {
     throw mapError(error, "sync");
   }
@@ -233,9 +240,10 @@ export async function getBandcampCollection(
   const params: Record<string, string | number> = { page: query.page, page_size: query.pageSize };
   const q = query.q?.trim();
   if (q) params.q = q;
+  if (query.matched) params.matched = "true";
   try {
     const res = await authClient.get(`${BANDCAMP_BASE}/collection`, { params, signal });
-    return mapCollection(unwrap<RawCollectionResponse>(res.data) ?? {}, query);
+    return mapCollection(unwrap<RawCollectionResponse>(res.data), query);
   } catch (error) {
     throw mapError(error, "collection");
   }

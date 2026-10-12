@@ -58,6 +58,10 @@ export const BANDCAMP_COPY = {
       title: "Something went wrong",
       body: "Something went wrong on our side. Please try again.",
     },
+    unavailable: {
+      title: "Bandcamp is unavailable",
+      body: "Bandcamp couldn't complete the request. The problem is on Bandcamp's side. Try again later.",
+    },
   },
 
   sync: {
@@ -77,6 +81,13 @@ export const BANDCAMP_COPY = {
     searchLabel: "Search your collection",
     searchPlaceholder: "Artist, title or album",
     count: (total: number) => (total === 1 ? "1 item" : `${total} items`),
+    matchedCount: (matched: number) => (matched === 1 ? "1 in Resomix" : `${matched} in Resomix`),
+    inResomixFilter: "In Resomix",
+    noneMatched: "No items in this collection are in Resomix yet.",
+    showAll: "Show all items",
+    sync: "Sync",
+    syncing: "Syncing…",
+    importStopped: "Import stopped early",
     noResults: (q: string) => `Nothing in your collection matches "${q}".`,
     clearSearch: "Clear search",
     empty: "This collection is empty or has no public items.",
@@ -96,9 +107,6 @@ export const BANDCAMP_COPY = {
   status: {
     inResomix: "In Resomix",
     notInResomix: "Not in Resomix yet",
-    pending: "Analysis pending",
-    done: "Analyzed",
-    failed: "Analysis failed",
   },
 
   actions: {

@@ -8,25 +8,13 @@ export interface ItemStatus {
 }
 
 /**
- * The badge for one collection item.
- *
- * An explicit analysis state is the more specific fact, so it wins; otherwise the badge says
- * whether the item is in the Resomix catalogue. "none" with no track id means nothing has been
- * queued — it must not read as "pending".
+ * The badge for one collection item: whether it is already in the Resomix catalogue.
+ * These rows have no audio here, so the badge never claims they have been analysed.
  */
-export function getItemStatus(item: Pick<BandcampItem, "analysisStatus" | "resomixTrackId">): ItemStatus {
-  switch (item.analysisStatus) {
-    case "queued":
-      return { label: BANDCAMP_COPY.status.pending, tone: "neutral" };
-    case "done":
-      return { label: BANDCAMP_COPY.status.done, tone: "success" };
-    case "failed":
-      return { label: BANDCAMP_COPY.status.failed, tone: "error" };
-    default:
-      return item.resomixTrackId
-        ? { label: BANDCAMP_COPY.status.inResomix, tone: "accent" }
-        : { label: BANDCAMP_COPY.status.notInResomix, tone: "neutral" };
-  }
+export function getItemStatus(item: Pick<BandcampItem, "resomixTrackId">): ItemStatus {
+  return item.resomixTrackId
+    ? { label: BANDCAMP_COPY.status.inResomix, tone: "accent" }
+    : { label: BANDCAMP_COPY.status.notInResomix, tone: "neutral" };
 }
 
 export interface ActionAvailability {
@@ -52,8 +40,8 @@ export function findSimilarAvailability(item: ActionItem): ActionAvailability {
 }
 
 /**
- * Track Intelligence has no "analyse by catalogue track id" endpoint yet, so Analyze is off for
- * every item. TODO(bandcamp): enable for matched items once the collection returns an
+ * Track Intelligence has no analyse-by-track route yet, so the collection does not render Analyze.
+ * TODO(bandcamp): enable for matched items once the collection returns an
  * `analysis_uuid` (open `/track-intelligence?id=`) or the backend adds analyse-by-track.
  */
 export function analyzeAvailability(item: ActionItem): ActionAvailability {

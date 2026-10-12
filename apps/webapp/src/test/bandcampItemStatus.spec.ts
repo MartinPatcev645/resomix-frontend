@@ -5,31 +5,17 @@ import {
   findSimilarAvailability,
   getItemStatus,
 } from "@/features/bandcamp/lib/itemStatus.ts";
-import type { BandcampAnalysisStatus } from "@/features/bandcamp/api/types.ts";
 
 describe("getItemStatus", () => {
-  const cases: Array<[BandcampAnalysisStatus, string | null, string]> = [
-    ["none", null, "Not in Resomix yet"],
-    ["none", "42", "In Resomix"],
-    ["queued", null, "Analysis pending"],
-    ["queued", "42", "Analysis pending"],
-    ["done", "42", "Analyzed"],
-    ["done", null, "Analyzed"],
-    ["failed", "42", "Analysis failed"],
-    ["failed", null, "Analysis failed"],
-  ];
-
-  it.each(cases)("analysis %s + track id %s -> %s", (analysisStatus, resomixTrackId, label) => {
-    expect(getItemStatus({ analysisStatus, resomixTrackId }).label).toBe(label);
+  it("says whether the item is in Resomix", () => {
+    expect(getItemStatus({ resomixTrackId: null })).toEqual({ label: "Not in Resomix yet", tone: "neutral" });
+    expect(getItemStatus({ resomixTrackId: "42" })).toEqual({ label: "In Resomix", tone: "accent" });
   });
 
-  it("never calls an unqueued, unmatched item pending", () => {
-    expect(getItemStatus({ analysisStatus: "none", resomixTrackId: null }).label).not.toMatch(/pending/i);
-  });
-
-  it("colours failures as errors and finished analyses as success", () => {
-    expect(getItemStatus({ analysisStatus: "failed", resomixTrackId: "1" }).tone).toBe("error");
-    expect(getItemStatus({ analysisStatus: "done", resomixTrackId: "1" }).tone).toBe("success");
+  it("never calls an unmatched item pending or analyzed", () => {
+    const label = getItemStatus({ resomixTrackId: null }).label;
+    expect(label).not.toMatch(/pending/i);
+    expect(label).not.toMatch(/analy[sz]ed/i);
   });
 });
 

@@ -68,7 +68,6 @@ function slug(text: string) {
 }
 
 function buildItems(): RawCollectionItem[] {
-  const statuses = ["none", "queued", "done", "failed"] as const;
   return Array.from({ length: 30 }, (_, i) => {
     const artist = ARTISTS[i % ARTISTS.length];
     const isAlbum = i % 4 === 0;
@@ -85,7 +84,6 @@ function buildItems(): RawCollectionItem[] {
       artwork_url: i % 7 === 6 ? null : `${origin}/__bandcamp-mock/artwork/${i + 1}.svg`,
       source_url: `https://${slug(artist)}.bandcamp.com/${isAlbum ? "album" : "track"}/${slug(isAlbum ? album : title)}`,
       resomix_track_id: matched ? String(1000 + i) : null,
-      analysis_status: matched ? statuses[Math.floor(i / 2) % statuses.length] : "none",
     };
   });
 }
@@ -157,11 +155,21 @@ export const bandcampHandlers = [
     await delay(200);
     const state = loadState();
     if (!state) {
-      return ok({ connected: false, username: null, status: "none", last_synced_at: null, active_job_id: null, item_count: 0 });
+      return ok({
+        connected: false,
+        username: null,
+        status: "none",
+        last_synced_at: null,
+        active_job_id: null,
+        item_count: 0,
+        matched_count: 0,
+        error_message: null,
+      });
     }
     const job = progress(state);
     const active = job.status === "queued" || job.status === "running";
     const status = { queued: "pending", running: "syncing", done: "ready", failed: "failed" }[job.status];
+    const imported = itemsFor(state).slice(0, job.status === "done" ? itemsFor(state).length : job.processed);
     return ok({
       connected: true,
       username: state.username,
@@ -169,6 +177,8 @@ export const bandcampHandlers = [
       last_synced_at: job.status === "done" ? new Date().toISOString() : null,
       active_job_id: active ? state.jobId : null,
       item_count: job.status === "done" ? itemsFor(state).length : job.processed,
+      matched_count: imported.filter((item) => item.resomix_track_id).length,
+      error_message: job.status === "failed" ? job.error : null,
     });
   }),
 
@@ -193,10 +203,12 @@ export const bandcampHandlers = [
     // Like the real backend: no connection is an empty 200, not a 404.
     if (!state) return ok({ items: [], total: 0, page, page_size: pageSize });
     const q = (url.searchParams.get("q") ?? "").toLowerCase();
+    const matchedOnly = url.searchParams.get("matched") === "true";
     const visible = progress(state).status === "done" ? itemsFor(state) : itemsFor(state).slice(0, Math.min(state.total, state.polls * 6));
-    const filtered = q
+    const searched = q
       ? visible.filter((item) => [item.artist, item.title, item.album].some((v) => v?.toLowerCase().includes(q)))
       : visible;
+    const filtered = matchedOnly ? searched.filter((item) => item.resomix_track_id) : searched;
     const start = (page - 1) * pageSize;
     return ok({ items: filtered.slice(start, start + pageSize), total: filtered.length, page, page_size: pageSize });
   }),

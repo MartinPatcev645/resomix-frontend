@@ -20,6 +20,7 @@ export function useBandcampCollection({ enabled }: { enabled: boolean }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlQuery = searchParams.get("q") ?? "";
   const page = readPage(searchParams.get("page"));
+  const matchedOnly = searchParams.get("matched") === "true";
 
   const [inputValue, setInputValue] = useState(urlQuery);
   const debouncedInput = useDebouncedValue(inputValue, SEARCH_DEBOUNCE_MS);
@@ -65,7 +66,7 @@ export function useBandcampCollection({ enabled }: { enabled: boolean }) {
     const controller = new AbortController();
     setLoading(true);
     setError(null);
-    getBandcampCollection({ page, pageSize: COLLECTION_PAGE_SIZE, q: urlQuery }, controller.signal)
+    getBandcampCollection({ page, pageSize: COLLECTION_PAGE_SIZE, q: urlQuery, matched: matchedOnly }, controller.signal)
       .then((result) => {
         setData(result);
         setLoading(false);
@@ -77,7 +78,7 @@ export function useBandcampCollection({ enabled }: { enabled: boolean }) {
         setLoading(false);
       });
     return () => controller.abort();
-  }, [enabled, page, urlQuery, reloadToken]);
+  }, [enabled, page, urlQuery, matchedOnly, reloadToken]);
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
 
@@ -106,16 +107,39 @@ export function useBandcampCollection({ enabled }: { enabled: boolean }) {
     });
   }, [updateParams]);
 
+  const setMatchedOnly = useCallback(
+    (on: boolean) => {
+      updateParams((next) => {
+        if (on) next.set("matched", "true");
+        else next.delete("matched");
+        next.delete("page");
+      });
+    },
+    [updateParams],
+  );
+
+  const clearBrowseState = useCallback(() => {
+    setInputValue("");
+    updateParams((next) => {
+      next.delete("q");
+      next.delete("page");
+      next.delete("matched");
+    });
+  }, [updateParams]);
+
   const reload = useCallback(() => setReloadToken((n) => n + 1), []);
 
   return {
     inputValue,
     setInputValue,
     query: urlQuery,
+    matchedOnly,
+    setMatchedOnly,
     page,
     totalPages,
     goToPage,
     clearSearch,
+    clearBrowseState,
     data,
     loading,
     error,

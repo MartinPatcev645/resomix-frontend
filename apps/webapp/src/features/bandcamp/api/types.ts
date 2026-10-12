@@ -5,8 +5,6 @@
 
 export type BandcampItemType = "album" | "track";
 
-export type BandcampAnalysisStatus = "none" | "queued" | "done" | "failed";
-
 export interface BandcampItem {
   id: string;
   itemType: BandcampItemType;
@@ -17,7 +15,6 @@ export interface BandcampItem {
   sourceUrl: string | null;
   /** Catalogue track id once the item has been matched into Resomix; null otherwise. */
   resomixTrackId: string | null;
-  analysisStatus: BandcampAnalysisStatus;
 }
 
 export interface BandcampCollectionPage {
@@ -31,6 +28,8 @@ export interface BandcampCollectionQuery {
   page: number;
   pageSize: number;
   q?: string;
+  /** When true, `GET /collection` is called with `matched=true`. */
+  matched?: boolean;
 }
 
 export type BandcampSyncStatus = "pending" | "syncing" | "ready" | "failed";
@@ -53,6 +52,10 @@ export interface BandcampConnectionState {
   /** The sync to resume polling, if one is queued or running. */
   activeJobId: string | null;
   itemCount: number;
+  /** How many imported items are already in the Resomix catalogue. Null when the backend omits it. */
+  matchedCount: number | null;
+  /** Set when a sync stopped early but kept the rows it had already imported. */
+  errorMessage: string | null;
 }
 
 export type BandcampErrorKind =
@@ -64,6 +67,7 @@ export type BandcampErrorKind =
   | "auth"
   | "network"
   | "aborted"
+  | "unavailable"
   | "unknown";
 
 export class BandcampApiError extends Error {
