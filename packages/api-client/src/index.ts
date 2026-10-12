@@ -3,6 +3,7 @@ export type { ApiConfig } from "./config";
 export * from "./similarity";
 export * from "./analysis";
 export * from "./search";
+export * from "./similarityLab";
 export * from "./feedback";
 export * from "./audio";
 export * from "./playlists";

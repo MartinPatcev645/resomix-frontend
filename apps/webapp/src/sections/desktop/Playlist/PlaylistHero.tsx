@@ -3,7 +3,8 @@ import { ConfirmDialog, StatusMessage, Tooltip, PrivateIcon, PublicIcon, HeartSt
 import { formatDuration, usePlaylistExport, useAccess, useFavoritePlaylist, usePlaylistVisibility, usePlaylistCover, type AccessAction } from "@resomix/hooks";
 import { usePlaylistStore, usePlayerStore, useAuthStore } from "@resomix/stores";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
-import { resolveLabel, firstGenre } from "@/utils/trackUtils.ts";
+import { resolveLabel, firstGenre, buyLinksFor } from "@/utils/trackUtils.ts";
+import { BuyLinksMenu } from "@/components/Playlist/BuyLinksMenu.tsx";
 import { autoFluidGridStyle } from "@/utils/playlistGrid.ts";
 import { useNavigate, useLocation } from "react-router-dom";
 import { InputPlayer, PlaylistRating, PlaylistRename, PlaylistExport, PlaylistShare } from "@/components/index.ts";
@@ -56,6 +57,9 @@ const PlaylistHero: React.FC = () => {
   // so the text never flashes over a blank state.
   const [coverLoaded, setCoverLoaded] = React.useState(false);
   const { autoplay, setAutoplay } = usePlayerStore();
+  const heroIsPlaying = usePlayerStore(
+    (s) => !!playlistData?.queried_track?.id && s.currentTrackId === playlistData.queried_track.id && s.isPlaying,
+  );
   const { canExport, isExporting } = usePlaylistExport();
   // Single source of truth for gated actions (share/rename/favorite/…): useAccess merges the
   // client auth flag with the server entitlements and yields one verdict per action —
@@ -522,6 +526,18 @@ const PlaylistHero: React.FC = () => {
               >
                 {playlistData?.playlist?.name || "No playlist data"}
               </h1>
+            )}
+            {/* A catalogue reference's Buy button, top right above Private/Public: the info layer,
+                never the player rows below with the Apple badge. Nothing renders for uploads. */}
+            {!isLoading && playlistData?.queried_track && (
+              <BuyLinksMenu
+                links={buyLinksFor(playlistData.queried_track)}
+                tracking={{ surface: "hero", trackId: playlistData.queried_track.id }}
+                rowState={heroIsPlaying ? "open" : "closed"}
+                variant="toolbar"
+                id="playlist-hero-buy-button"
+                className="ml-[var(--px-12)] shrink-0"
+              />
             )}
           </div>
 

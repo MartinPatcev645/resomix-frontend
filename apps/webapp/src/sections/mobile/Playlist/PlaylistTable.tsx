@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimilarityPlayer, ThumbIcon } from "@/components/index.ts";
 import { AppleMusicBadge } from "@/components/Playlist/AppleMusicBadge.tsx";
+import { GetItLinks } from "@/components/Playlist/GetItLinks.tsx";
+import { BuyLinksMenu } from "@/components/Playlist/BuyLinksMenu.tsx";
 import { TrackArtwork } from "@/components/Playlist/TrackArtwork.tsx";
 import { PlaylistLockedRegion } from "@/components/Playlist/PlaylistLockedRegion.tsx";
 import { GateCtaModal } from "@/components/Entitlements/GateCtaModal.tsx";
@@ -13,7 +15,7 @@ import PlaySvg from "@/assets/icons/play_white.svg";
 import MoreSvg from "@/assets/icons/more.svg";
 import SonicDiscoverySvg from "@/assets/icons/sonic_discovery.svg";
 import { BASE_BETA_URL, DEMO_MODE } from "@resomix/config";
-import { resolveLabel, firstGenre, displayOrNA } from "@/utils/trackUtils.ts";
+import { resolveLabel, firstGenre, displayOrNA, buyLinksFor } from "@/utils/trackUtils.ts";
 import { loadPlaylistAnalysis } from "@/utils/playlistAnalysis.ts";
 import { prefetchAudio } from "@/utils/prefetchAudio.ts";
 import {
@@ -186,6 +188,7 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
         const isRestricted = restrictedMode !== "none";
         const isSelected = currentTrackId === track.id;
         const isThisPlaying = isSelected && isPlaying;
+        const buyLinks = isRestricted ? [] : buyLinksFor(track);
         const isUnavailable = isSelected && networkError;
         const isTopRank = track.rank === 1;
         // Score is a 0–1 similarity — the meter fills to the true value (clamped for safety).
@@ -271,6 +274,11 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                                             <span className="block truncate">{displayOrNA(track.title)}</span>
                                         )}
                                     </div>
+                                    {/* Closed rows: the buy "$" right after the title (the playing
+                                        row shows the same links as "GET IT // ..." instead). */}
+                                    {!isThisPlaying && buyLinks.length > 0 && (
+                                        <BuyLinksMenu links={buyLinks} tracking={{ surface: "row", trackId: track.id }} compact className="self-center" />
+                                    )}
                                     {isTopRank && !isRestricted && (
                                         <span className="shrink-0 font-fira text-[length:var(--px-8)] uppercase tracking-[var(--px-1)] text-[var(--color-accent,#EE4A26)]">
                                             TOP
@@ -331,6 +339,9 @@ const PlaylistTable: React.FC<PlaylistTableProps> = ({ onMoreClick }) => {
                         </div>
                         {isThisPlaying && !isRestricted && (
                             <>
+                                {/* Store links above the progress bar, never beside the Apple
+                                    lockup below (Apple's preview terms; George's layout). */}
+                                <GetItLinks links={buyLinks} tracking={{ surface: "row", trackId: track.id }} />
                                 {/* No `genre` — the collapsed row's meta line already carries it. */}
                                 <SimilarityPlayer
                                     mobile

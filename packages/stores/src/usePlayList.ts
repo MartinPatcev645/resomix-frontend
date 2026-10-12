@@ -22,6 +22,10 @@ export interface Track {
   artwork_url?: string | null
   deep_link_url?: string | null
   apple_song_id?: string | null
+  // "Buy on ..." links (backend track_store_links). Null when that store has no match; always null
+  // on uploads and on tracks hidden by redaction.
+  traxsource_url?: string | null
+  bandcamp_url?: string | null
   album?: string | null
   genre?: string | null
 }

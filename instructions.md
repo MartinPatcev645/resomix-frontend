@@ -100,6 +100,7 @@ VITE_SERVER_MEDIA=http://localhost:8002
 | `VITE_SERVER_BACKEND` | all | Alwyzon origin → `API_CONFIG.BASE_URL`. Bare origin, **no path suffix**. Defaults to `https://bserver.resomix.com` if unset — so a missing value silently talks to **production** |
 | `VITE_SERVER_MEDIA` | all | Media/similarity server (HLS, previews, peaks) |
 | `VITE_DEMO_MODE` | webapp | `true` masks catalogue metadata (`"dEm0"` ids) |
+| `VITE_LAB_ENABLED` | webapp | `true` only on staging. Builds in the similarity lab page (`/lab/similarity`); anywhere else the page is dropped from the bundle |
 | `VITE_GOOGLE_CLIENT_ID` | webapp | Must match the backend's `GOOGLE_CLIENT_ID` |
 | `VITE_TELEMETRY_HEARTBEAT_MS` | webapp | Optional, has a default |
 | `VITE_SPOTIFY_CLIENT_ID` / `VITE_TIDAL_CLIENT_ID` | webapp | Only for the (dormant) transfer features |

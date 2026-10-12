@@ -23,6 +23,11 @@ const UiSystemSpecimenPage = lazy(() => import("@/pages/UiSystemSpecimenPage.tsx
 const UploadLoader = lazy(() => import("@/components/index.ts").then(m => ({ default: m.UploadLoader })));
 const LibraryPage = lazy(() => import("@/pages/LibraryPage.tsx"));
 const BandcampPage = lazy(() => import("@/features/bandcamp/pages/BandcampPage.tsx"));
+// Similarity lab, staging only. Read straight from import.meta.env (not @resomix/config) so Vite
+// sees a build-time constant: where VITE_LAB_ENABLED is not "true", the page and its chunk are
+// dropped from the bundle entirely instead of shipping unreachable.
+const LAB_ENABLED = import.meta.env.VITE_LAB_ENABLED === "true";
+const SimilarityLabPage = LAB_ENABLED ? lazy(() => import("@/pages/SimilarityLabPage.tsx")) : null;
 // The full Track Intelligence dashboard — its own route since pricing v2.1;
 // `/track-intelligence?id=` is
 // the summary.
@@ -183,6 +188,7 @@ function App() {
             <Route path="/analysis/full" element={<LegacyAnalysisRedirect to="/track-intelligence/full" />} />
             <Route path="/subscribe" element={<SubscribePage />} />
             {import.meta.env.DEV ? <Route path="/__ui-system" element={<UiSystemSpecimenPage />} /> : null}
+            {SimilarityLabPage ? <Route path="/lab/similarity" element={<SimilarityLabPage />} /> : null}
 
             {/* Protected Auth Routes */}
             <Route element={<ProtectedRoute />}>

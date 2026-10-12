@@ -55,3 +55,33 @@ export function firstGenre(genre: string | null | undefined): string | undefined
   if (!first || EMPTY_LABEL_VALUES.has(first)) return undefined;
   return first;
 }
+
+export type BuyStore = 'traxsource' | 'bandcamp';
+
+export interface BuyLink {
+  store: BuyStore;
+  label: string;
+  url: string;
+}
+
+/**
+ * The download stores a track can be bought from, in display order, only those with a link.
+ * Catalogue tracks only: uploads never carry store links, and hidden tracks arrive with them nulled.
+ */
+export function buyLinksFor(track: {
+  type?: string;
+  traxsource_url?: string | null;
+  bandcamp_url?: string | null;
+}): BuyLink[] {
+  if (track.type !== 'internal') return [];
+  const links: BuyLink[] = [];
+  if (track.traxsource_url) links.push({ store: 'traxsource', label: 'Traxsource', url: track.traxsource_url });
+  if (track.bandcamp_url) links.push({ store: 'bandcamp', label: 'Bandcamp', url: track.bandcamp_url });
+  return links;
+}
+
+/** Where a store link was shown, for the `store_link_clicked` analytics event. */
+export interface StoreLinkTracking {
+  surface: 'row' | 'sticky' | 'hero';
+  trackId?: string | null;
+}

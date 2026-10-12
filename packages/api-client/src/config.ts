@@ -39,6 +39,10 @@ export interface ApiConfig {
     SELECTION_SIMILARITY: string;
     ANALYSIS: string;
     SEARCH: string;
+    // Similarity lab (staging lab page only; the backend answers 404 unless switched on)
+    SIMILARITY_LAB_EXPERIMENTS: string;
+    SIMILARITY_LAB_SEEDS: string;
+    SIMILARITY_LAB_COMPARE: string;
     FEEDBACK: string;
     CONTACT: string;
     AUDIO_PREVIEW: string;
@@ -292,6 +296,9 @@ export const API_CONFIG: ApiConfig = {
     // Analysis-as-an-artifact (return-visit retrieval via Alwyzon; base + {analysis_uuid})
     ANALYSIS: "/api/v1/analysis",
     SEARCH: "/api/v1/search_tracks/",
+    SIMILARITY_LAB_EXPERIMENTS: "/api/v1/similarity-lab/experiments",
+    SIMILARITY_LAB_SEEDS: "/api/v1/similarity-lab/seeds",
+    SIMILARITY_LAB_COMPARE: "/api/v1/similarity-lab/compare",
     FEEDBACK: "/api/v1/feedback/",
     CONTACT: "/api/v1/contact/",
     AUDIO_PREVIEW: "/api/v1/preview/get_preview/",
