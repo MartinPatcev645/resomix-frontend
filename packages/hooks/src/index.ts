@@ -7,6 +7,7 @@ export * from "./usePopularTracks";
 export * from "./utils"
 export * from "./Similarity/useUpload";
 export * from "./Similarity/useSelection";
+export * from "./Similarity/useSimilarityLab";
 export * from './useFirstVisit';
 export * from './useTermsAcceptance';
 export * from './Entitlements/useEntitlements';

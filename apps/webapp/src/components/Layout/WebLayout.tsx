@@ -58,6 +58,7 @@ export function WebLayout() {
         if (path.startsWith('/auth/')) return 'auth';
         if (path === '/contact') return 'contact';
         if (path === '/error') return 'error';
+        if (path.startsWith('/lab/')) return 'profile';
         return '404';
     }, [location.pathname]);
 
